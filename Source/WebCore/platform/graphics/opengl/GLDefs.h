@@ -37,7 +37,6 @@
 #include <GLES2/gl2ext.h>
 #else
 #include "Extensions3DOpenGL.h"
-#include "OpenGLShims.h"
 #include <GL/gl.h>
 #include <GL/glext.h>
 #if USE(GLX)
@@ -46,6 +45,8 @@
 #include <GL/glxext.h>
 #endif
 #endif
+
+#include "OpenGLShims.h"
 
 #if USE(EGL)
 #define EGL_EGLEXT_PROTOTYPES 1

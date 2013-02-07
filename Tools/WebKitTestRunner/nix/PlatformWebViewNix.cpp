@@ -172,9 +172,16 @@ WKRetainPtr<WKImageRef> PlatformWebView::windowSnapshotImage()
 
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
+#if USE(OPENGL_ES_2)
+    // FIXME: We should swizzle the data to BRGA format.
+    GLenum pixelFormat = GL_RGBA;
+#else
+    GLenum pixelFormat = GL_BGRA;
+#endif
+
     // Read line by line using the Cairo internal format.
     for (int y = 0; y < height; y++)
-        glReadPixels(0, (height - (y + 1)), width, 1, GL_BGRA, GL_UNSIGNED_BYTE, data.get()+(y*stride));
+        glReadPixels(0, (height - (y + 1)), width, 1, pixelFormat, GL_UNSIGNED_BYTE, data.get()+(y*stride));
 
     cairo_surface_t* surface = cairo_image_surface_create_for_data(data.get(), format, width, height, stride);
 

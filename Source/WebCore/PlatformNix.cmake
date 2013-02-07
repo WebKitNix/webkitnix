@@ -151,6 +151,7 @@ if (WTF_USE_OPENGL_ES_2)
         platform/graphics/opengl/GraphicsContext3DOpenGLES.cpp
     )
     list(APPEND WebCore_LIBRARIES ${OPENGLES2_LIBRARIES})
+    add_definitions(-DWTF_USE_OPENGL_ES_2=1)
 else ()
     list(APPEND WebCore_SOURCES
         platform/graphics/opengl/Extensions3DOpenGL.cpp
@@ -171,6 +172,7 @@ if (WTF_USE_EGL)
         platform/graphics/surfaces/egl/EGLContext.cpp
     )
     list(APPEND WebCore_LIBRARIES ${EGL_LIBRARY})
+    add_definitions(-DWTF_USE_EGL=1)
 else ()
     list(APPEND WebCore_INCLUDE_DIRECTORIES
         platform/graphics/surfaces/glx
