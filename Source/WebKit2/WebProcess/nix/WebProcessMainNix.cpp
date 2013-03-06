@@ -80,7 +80,7 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
     WebProcess::shared().initialize(parameters);
 
     // Set SOUP cache.
-    GOwnPtr<char> soupCacheDirectory(g_build_filename(g_get_user_cache_dir(), g_get_prgname(), NULL));
+    GOwnPtr<char> soupCacheDirectory(g_build_filename(g_get_user_cache_dir(), "webkitnix", "webprocess", NULL));
     GRefPtr<SoupCache> soupCache = adoptGRef(soup_cache_new(soupCacheDirectory.get(), SOUP_CACHE_SINGLE_USER));
     soup_session_add_feature(session, SOUP_SESSION_FEATURE(soupCache.get()));
     soup_cache_load(soupCache.get());
