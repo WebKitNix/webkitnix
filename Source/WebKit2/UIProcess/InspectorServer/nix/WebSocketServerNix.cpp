@@ -24,17 +24,23 @@
 #include "WebSocketServer.h"
 
 #if ENABLE(INSPECTOR_SERVER)
-#include "WebSocketServerConnection.h"
-#include <WebCore/SocketStreamHandle.h>
+#ifdef WTF_USE_SOUP
 #include <gio/gio.h>
 #include <glib.h>
+#endif
+
+#include "WebSocketServerConnection.h"
+#include <WebCore/SocketStreamHandle.h>
 #include <wtf/PassOwnPtr.h>
 #include <wtf/gobject/GOwnPtr.h>
 #include <wtf/text/CString.h>
 
+
 using namespace WebCore;
 
 namespace WebKit {
+
+#ifdef WTF_USE_SOUP
 
 static gboolean connectionCallback(GSocketService* service, GSocketConnection* connection, GObject* sourceObject, WebSocketServer* server)
 {
@@ -65,6 +71,25 @@ void WebSocketServer::platformClose()
 {
     g_socket_service_stop(m_socketService.get());
 }
+
+
+#else
+void WebSocketServer::platformInitialize()
+{
+    // implement
+}
+
+bool WebSocketServer::platformListen(const String& bindAddress, unsigned short port)
+{
+    // implement
+    return 0;
+}
+
+void WebSocketServer::platformClose()
+{
+    // implement
+}
+#endif
 
 }
 

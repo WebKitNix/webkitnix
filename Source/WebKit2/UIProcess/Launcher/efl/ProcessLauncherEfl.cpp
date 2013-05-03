@@ -33,6 +33,9 @@
 #include <errno.h>
 #include <stdio.h>
 
+#include <sys/socket.h>
+#include <sys/un.h>
+
 using namespace WebCore;
 
 namespace WebKit {

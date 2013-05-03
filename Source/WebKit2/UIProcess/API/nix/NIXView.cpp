@@ -34,6 +34,8 @@
 #include <JavaScriptCore/WebKitAvailability.h>
 #include <WebKit2/WKBundle.h>
 
+#include <glib-object.h>
+
 using namespace WebKit;
 
 NIXView NIXViewCreate(WKContextRef context, WKPageGroupRef pageGroup)

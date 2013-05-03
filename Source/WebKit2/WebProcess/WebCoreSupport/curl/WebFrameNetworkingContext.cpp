@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2010, 2011 Apple Inc. All rights reserved.
- * Copyright (C) 2010 Brent Fulgham <bfulgham@webkit.org>
+ * Copyright (C) 2012 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,72 +24,32 @@
  */
 
 #include "config.h"
-#include "Download.h"
+#include "WebFrameNetworkingContext.h"
 
-#include <WebCore/NotImplemented.h>
+#include "WebFrame.h"
+#include "WebPage.h"
 
 using namespace WebCore;
 
 namespace WebKit {
 
-void Download::start()
+WebFrameNetworkingContext::WebFrameNetworkingContext(WebFrame* frame)
+    : FrameNetworkingContext(frame->coreFrame())
+    , m_initiatingPageID(0)
 {
-    notImplemented();
+    if (WebPage* page = frame->page())
+        m_initiatingPageID = page->pageID();
 }
 
-void Download::startWithHandle(ResourceHandle*, const ResourceResponse&)
+NetworkStorageSession& WebFrameNetworkingContext::storageSession() const
 {
-    notImplemented();
+    return NetworkStorageSession::defaultStorageSession();
 }
 
-void Download::cancel()
+uint64_t WebFrameNetworkingContext::initiatingPageID() const
 {
-    notImplemented();
+    return m_initiatingPageID;
 }
 
-void Download::platformDidFinish()
-{
-    notImplemented();
 }
 
-void Download::platformInvalidate()
-{
-    notImplemented();
-}
-
-void Download::didDecideDestination(const String& destination, bool allowOverwrite)
-{
-    notImplemented();
-}
-
-void Download::receivedCredential(const AuthenticationChallenge& authenticationChallenge, const Credential& credential)
-{
-    notImplemented();
-}
-
-void Download::receivedRequestToContinueWithoutCredential(const AuthenticationChallenge& authenticationChallenge)
-{
-    notImplemented();
-}
-
-void Download::receivedCancellation(const AuthenticationChallenge& authenticationChallenge)
-{
-    notImplemented();
-}
-
-void Download::useCredential(const AuthenticationChallenge&, const Credential&)
-{
-    notImplemented();
-}
-
-void Download::continueWithoutCredential(const AuthenticationChallenge&)
-{
-    notImplemented();
-}
-
-void Download::cancelAuthenticationChallenge(const AuthenticationChallenge&)
-{
-    notImplemented();
-}
-
-} // namespace WebKit

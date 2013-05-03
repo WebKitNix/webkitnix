@@ -10,7 +10,6 @@ list(APPEND WebCore_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/graphics/texmap"
     "${WEBCORE_DIR}/platform/linux"
     "${WEBCORE_DIR}/platform/mediastream/gstreamer"
-    "${WEBCORE_DIR}/platform/network/soup"
     "${PLATFORM_DIR}/nix/"
 )
 
@@ -103,21 +102,6 @@ list(APPEND WebCore_SOURCES
     platform/image-decoders/webp/WEBPImageDecoder.cpp
     platform/linux/GamepadDeviceLinux.cpp
     platform/mediastream/gstreamer/MediaStreamCenterGStreamer.cpp
-    platform/network/soup/AuthenticationChallengeSoup.cpp
-    platform/network/soup/CookieJarSoup.cpp
-    platform/network/soup/CookieStorageSoup.cpp
-    platform/network/soup/CredentialStorageSoup.cpp
-    platform/network/soup/DNSSoup.cpp
-    platform/network/soup/GOwnPtrSoup.cpp
-    platform/network/soup/NetworkStorageSessionSoup.cpp
-    platform/network/soup/ProxyResolverSoup.cpp
-    platform/network/soup/ProxyServerSoup.cpp
-    platform/network/soup/ResourceErrorSoup.cpp
-    platform/network/soup/ResourceHandleSoup.cpp
-    platform/network/soup/ResourceRequestSoup.cpp
-    platform/network/soup/ResourceResponseSoup.cpp
-    platform/network/soup/SocketStreamHandleSoup.cpp
-    platform/network/soup/SoupURIUtils.cpp
     platform/PlatformStrategies.cpp
     platform/text/nix/TextBreakIteratorInternalICUNix.cpp
 
@@ -219,7 +203,6 @@ list(APPEND WebCore_LIBRARIES
     ${GLIB_GIO_LIBRARIES}
     ${GLIB_GMODULE_LIBRARIES}
     ${GLIB_GOBJECT_LIBRARIES}
-    ${LIBSOUP_LIBRARIES}
     ${ZLIB_LIBRARIES}
     ${Platform_LIBRARY_NAME}
     ${HARFBUZZ_LIBRARIES}
@@ -233,7 +216,6 @@ list(APPEND WebCore_INCLUDE_DIRECTORIES
     ${LIBXSLT_INCLUDE_DIR}
     ${SQLITE_INCLUDE_DIR}
     ${GLIB_INCLUDE_DIRS}
-    ${LIBSOUP_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIRS}
     ${HARFBUZZ_INCLUDE_DIRS}
 )
@@ -295,5 +277,56 @@ endif ()
 if (ENABLE_GAMEPAD)
     list(APPEND WebCore_SOURCES
         platform/nix/GamepadsNix.cpp
+    )
+endif ()
+
+if (ENABLE_SOUP)
+    list(APPEND WebCore_SOURCES
+        platform/network/soup/AuthenticationChallengeSoup.cpp
+        platform/network/soup/CookieJarSoup.cpp
+        platform/network/soup/CookieStorageSoup.cpp
+        platform/network/soup/CredentialStorageSoup.cpp
+        platform/network/soup/DNSSoup.cpp
+        platform/network/soup/GOwnPtrSoup.cpp
+        platform/network/soup/NetworkStorageSessionSoup.cpp
+        platform/network/soup/ProxyResolverSoup.cpp
+        platform/network/soup/ProxyServerSoup.cpp
+        platform/network/soup/ResourceErrorSoup.cpp
+        platform/network/soup/ResourceHandleSoup.cpp
+        platform/network/soup/ResourceRequestSoup.cpp
+        platform/network/soup/ResourceResponseSoup.cpp
+        platform/network/soup/SocketStreamHandleSoup.cpp
+        platform/network/soup/SoupURIUtils.cpp
+    )
+
+    list(APPEND WebCore_INCLUDE_DIRECTORIES
+        "${WEBCORE_DIR}/platform/network/soup"
+        ${LIBSOUP_INCLUDE_DIRS}
+    )
+
+    list(APPEND WebCore_LIBRARIES
+        ${LIBSOUP_LIBRARIES}
+    )
+
+else ()
+    list(APPEND WebCore_INCLUDE_DIRECTORIES
+        "${WEBCORE_DIR}/platform/network/curl"
+    )
+
+    list(APPEND WebCore_SOURCES
+        platform/network/NetworkStorageSessionStub.cpp
+        platform/network/curl/CookieJarCurl.cpp
+        platform/network/curl/CookieStorageCurl.cpp
+        platform/network/curl/CredentialStorageCurl.cpp
+        platform/network/curl/DNSCurl.cpp
+        platform/network/curl/FormDataStreamCurl.cpp
+        platform/network/curl/ProxyServerCurl.cpp
+        platform/network/curl/ResourceHandleCurl.cpp
+        platform/network/curl/ResourceHandleManager.cpp
+        platform/network/curl/SocketStreamHandleCurl.cpp
+    )
+
+    list(APPEND WebCore_LIBRARIES
+        ${CURL_LIBRARIES}
     )
 endif ()

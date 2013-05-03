@@ -27,13 +27,16 @@
 #include "config.h"
 #include "WebProcessMainNix.h"
 
+#ifdef WTF_USE_SOUP
 #include "ProxyResolverSoup.h"
+#include <libsoup/soup.h>
+#endif
+
 #include "WKBase.h"
 #include <WebCore/CoordinatedGraphicsLayer.h>
 #include <WebCore/ResourceHandle.h>
 #include <WebCore/RunLoop.h>
 #include <WebKit2/WebProcess.h>
-#include <libsoup/soup.h>
 #include <runtime/InitializeThreading.h>
 #include <unistd.h>
 #include <wtf/MainThread.h>
@@ -51,8 +54,10 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
     if (argc != 2)
         return 1;
 
+#ifdef WTF_USE_SOUP
 #if !GLIB_CHECK_VERSION(2, 35, 0)
     g_type_init();
+#endif
 #endif
 
     JSC::initializeThreading();
@@ -60,13 +65,15 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
 
     RunLoop::initializeMainRunLoop();
 
-    SoupSession* session = WebCore::ResourceHandle::defaultSession();
     const char* httpProxy = getenv("http_proxy");
     if (httpProxy) {
         const char* noProxy = getenv("no_proxy");
+#ifdef WTF_USE_SOUP
+        SoupSession* session = WebCore::ResourceHandle::defaultSession();
         SoupProxyURIResolver* resolverNix = soupProxyResolverWkNew(httpProxy, noProxy);
         soup_session_add_feature(session, SOUP_SESSION_FEATURE(resolverNix));
         g_object_unref(resolverNix);
+#endif
     }
 
     int socket = atoi(argv[1]);
@@ -78,10 +85,13 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
 
     RunLoop::run();
 
+#ifdef WTF_USE_SOUP
+    SoupSession* session = WebCore::ResourceHandle::defaultSession();
     if (SoupSessionFeature* soupCache = soup_session_get_feature(session, SOUP_TYPE_CACHE)) {
         soup_cache_flush(SOUP_CACHE(soupCache));
         soup_cache_dump(SOUP_CACHE(soupCache));
     }
+#endif
 
     return 0;
 }

@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2010 Apple Inc. All rights reserved.
- * Portions Copyright (c) 2010 Motorola Mobility, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,41 +23,35 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "InjectedBundle.h"
+#ifndef PlatformCertificateInfo_h
+#define PlatformCertificateInfo_h
 
-#include "WKBundleAPICast.h"
-#include "WKBundleInitialize.h"
-#include <WebCore/FileSystem.h>
-#include <wtf/text/CString.h>
-
-#include <gmodule.h>
-#include <glib.h>
-
-using namespace WebCore;
+#include "ArgumentDecoder.h"
+#include "ArgumentEncoder.h"
+#include <WebCore/ResourceResponse.h>
 
 namespace WebKit {
 
-bool InjectedBundle::load(APIObject* initializationUserData)
-{
-    m_platformBundle = g_module_open(fileSystemRepresentation(m_path).data(), G_MODULE_BIND_LOCAL);
-    if (!m_platformBundle) {
-        g_warning("Error loading the injected bundle (%s): %s", m_path.utf8().data(), g_module_error());
-        return false;
+class PlatformCertificateInfo {
+public:
+    PlatformCertificateInfo()
+    {
     }
 
-    WKBundleInitializeFunctionPtr initializeFunction = 0;
-    if (!g_module_symbol(m_platformBundle, "WKBundleInitialize", reinterpret_cast<void**>(&initializeFunction)) || !initializeFunction) {
-        g_warning("Error loading WKBundleInitialize symbol from injected bundle.");
-        return false;
+    explicit PlatformCertificateInfo(const WebCore::ResourceResponse&)
+    {
     }
 
-    initializeFunction(toAPI(this), toAPI(initializationUserData));
-    return true;
-}
+    void encode(CoreIPC::ArgumentEncoder&) const
+    {
+    }
 
-void InjectedBundle::activateMacFontAscentHack()
-{
-}
+    static bool decode(CoreIPC::ArgumentDecoder&, PlatformCertificateInfo&)
+    {
+        return true;
+    }
+};
 
 } // namespace WebKit
+
+#endif // PlatformCertificateInfo_h

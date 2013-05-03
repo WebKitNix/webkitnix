@@ -24,7 +24,6 @@
  */
 
 #include "config.h"
-#include "DownloadSoupErrors.h"
 
 #include <WebCore/ErrorsNix.h>
 #include <WebCore/ResourceError.h>
