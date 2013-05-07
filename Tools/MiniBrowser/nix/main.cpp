@@ -210,6 +210,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     WKPreferencesSetFrameFlatteningEnabled(preferences, true);
     WKPreferencesSetDeveloperExtrasEnabled(preferences, true);
     WKPreferencesSetWebGLEnabled(preferences, true);
+    WKPreferencesSetOfflineWebApplicationCacheEnabled(preferences, true);
 
     char* debugVisualsEnvironment = getenv("WEBKIT_SHOW_COMPOSITING_DEBUG_VISUALS");
     bool showDebugVisuals = debugVisualsEnvironment && !strcmp(debugVisualsEnvironment, "1");
