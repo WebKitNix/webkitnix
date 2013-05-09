@@ -7,7 +7,7 @@ datadir=${prefix}/share/@WebKit2_LIBRARY_NAME@-@PROJECT_VERSION_MAJOR@
 Name: WebKitNix
 Description: Nix Web content engine
 Version: @PROJECT_VERSION@
-Requires: cairo
+Requires: cairo @REQUIRED_NETWORK@
 Libs: -L${libdir} -lWebKitNix
 Libs.private: @LIBS_PRIVATE@
 Cflags: -I${includedir}/@WebKit2_LIBRARY_NAME@-@PROJECT_VERSION_MAJOR@
