@@ -86,7 +86,7 @@ private:
     unsigned short m_port;
 #if PLATFORM(QT)
     OwnPtr<QtTcpServerHandler> m_tcpServerHandler;
-#elif USE(SOUP)
+#elif USE(SOUP) || USE(CURL)
     GRefPtr<GSocketService> m_socketService;
 #endif
 

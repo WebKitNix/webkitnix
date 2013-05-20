@@ -6,10 +6,17 @@ add_custom_target(forwarding-headersNixForWebKitTestRunner
 )
 set(ForwardingHeadersForWebKitTestRunner_NAME forwarding-headersNixForWebKitTestRunner)
 
-add_custom_target(forwarding-headersSoupForWebKitTestRunner
-    COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT_TESTRUNNER_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
-)
-set(ForwardingNetworkHeadersForWebKitTestRunner_NAME forwarding-headersSoupForWebKitTestRunner)
+if (ENABLE_SOUP)
+    add_custom_target(forwarding-headersSoupForWebKitTestRunner
+        COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT_TESTRUNNER_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
+    )
+    set(ForwardingNetworkHeadersForWebKitTestRunner_NAME forwarding-headersSoupForWebKitTestRunner)
+else ()
+    add_custom_target(forwarding-headerscurlForWebKitTestRunner
+        COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT_TESTRUNNER_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include curl
+    )
+    set(ForwardingNetworkHeadersForWebKitTestRunner_NAME forwarding-headerscurlForWebKitTestRunner)
+endif ()
 
 list(APPEND WebKitTestRunner_SOURCES
     ${WTF_DIR}/wtf/MD5.cpp

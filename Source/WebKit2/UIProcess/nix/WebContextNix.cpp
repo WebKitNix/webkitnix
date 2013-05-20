@@ -32,6 +32,8 @@
 #include <WebCore/NotImplemented.h>
 #include <wtf/gobject/GOwnPtr.h>
 
+#include <glib.h>
+
 #if ENABLE(INSPECTOR_SERVER)
 #include "WebInspectorServer.h"
 #endif

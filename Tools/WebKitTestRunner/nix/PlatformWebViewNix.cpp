@@ -34,6 +34,8 @@
 #include <cairo/cairo.h>
 #include <cassert>
 
+#include <glib.h>
+
 extern "C" {
 static gboolean callUpdateDisplay(gpointer);
 }

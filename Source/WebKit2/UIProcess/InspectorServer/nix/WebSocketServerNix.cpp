@@ -24,17 +24,20 @@
 #include "WebSocketServer.h"
 
 #if ENABLE(INSPECTOR_SERVER)
-#include "WebSocketServerConnection.h"
-#include <WebCore/SocketStreamHandle.h>
 #include <gio/gio.h>
 #include <glib.h>
+
+#include "WebSocketServerConnection.h"
+#include <WebCore/SocketStreamHandle.h>
 #include <wtf/PassOwnPtr.h>
 #include <wtf/gobject/GOwnPtr.h>
 #include <wtf/text/CString.h>
 
+
 using namespace WebCore;
 
 namespace WebKit {
+
 
 static gboolean connectionCallback(GSocketService* service, GSocketConnection* connection, GObject* sourceObject, WebSocketServer* server)
 {

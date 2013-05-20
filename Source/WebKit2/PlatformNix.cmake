@@ -25,12 +25,6 @@ list(APPEND WebKit2_SOURCES
     Shared/nix/WebEventFactoryNix.cpp
     Shared/gtk/ProcessExecutablePathGtk.cpp
 
-    Shared/soup/PlatformCertificateInfo.cpp
-    Shared/soup/WebCoreArgumentCodersSoup.cpp
-
-    UIProcess/API/C/soup/WKContextSoup.cpp
-    UIProcess/API/C/soup/WKSoupRequestManager.cpp
-
     UIProcess/API/nix/NIXView.cpp
 
     UIProcess/cairo/BackingStoreCairo.cpp
@@ -42,27 +36,13 @@ list(APPEND WebKit2_SOURCES
     UIProcess/nix/WebInspectorProxyNix.cpp
     UIProcess/nix/WebPageProxyNix.cpp
     UIProcess/efl/WebPreferencesEfl.cpp
-    UIProcess/soup/WebCookieManagerProxySoup.cpp
-    UIProcess/soup/WebSoupRequestManagerClient.cpp
-    UIProcess/soup/WebSoupRequestManagerProxy.cpp
 
     UIProcess/Launcher/efl/ProcessLauncherEfl.cpp
     UIProcess/efl/WebProcessProxyEfl.cpp
 
     UIProcess/Plugins/unix/PluginInfoStoreUnix.cpp
 
-    WebProcess/Cookies/soup/WebCookieManagerSoup.cpp
-    WebProcess/Cookies/soup/WebKitSoupCookieJarSqlite.cpp
-
-    Shared/Downloads/nix/DownloadSoupErrorsNix.cpp
-    Shared/Downloads/soup/DownloadSoup.cpp
-
     WebProcess/nix/WebProcessMainNix.cpp
-
-    WebProcess/soup/WebProcessSoup.cpp
-    WebProcess/soup/WebSoupRequestManager.cpp
-    WebProcess/soup/WebKitSoupRequestGeneric.cpp
-    WebProcess/soup/WebKitSoupRequestInputStream.cpp
 
     WebProcess/InjectedBundle/gtk/InjectedBundleGtk.cpp
 
@@ -75,18 +55,7 @@ list(APPEND WebKit2_SOURCES
     WebProcess/WebPage/nix/WebInspectorNix.cpp
     WebProcess/WebPage/nix/WebPageNix.cpp
 
-    WebProcess/soup/WebSoupRequestManager.cpp
-    WebProcess/soup/WebKitSoupRequestGeneric.cpp
-    WebProcess/soup/WebKitSoupRequestInputStream.cpp
-
-    WebProcess/WebCoreSupport/soup/WebFrameNetworkingContext.cpp
-
     UIProcess/Storage/StorageManager.cpp
-)
-
-list(APPEND WebKit2_MESSAGES_IN_FILES
-    UIProcess/soup/WebSoupRequestManagerProxy.messages.in
-    WebProcess/soup/WebSoupRequestManager.messages.in
 )
 
 list(APPEND WebKit2_INCLUDE_DIRECTORIES
@@ -94,25 +63,17 @@ list(APPEND WebKit2_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/nix"
     "${WEBCORE_DIR}/platform/graphics/cairo"
     "${WEBCORE_DIR}/platform/graphics/filters/texmap"
-    "${WEBCORE_DIR}/platform/network/soup"
     "${WEBCORE_DIR}/svg/graphics"
-    "${WEBKIT2_DIR}/Shared/soup"
     "${WEBKIT2_DIR}/Shared/nix"
-    "${WEBKIT2_DIR}/UIProcess/API/C/soup"
-    "${WEBKIT2_DIR}/UIProcess/soup"
     "${WEBKIT2_DIR}/UIProcess/nix"
-    "${WEBKIT2_DIR}/Shared/Downloads/soup"
     "${WEBKIT2_DIR}/WebProcess/nix"
-    "${WEBKIT2_DIR}/WebProcess/soup"
     "${WEBKIT2_DIR}/WebProcess/WebCoreSupport/nix"
-    "${WEBKIT2_DIR}/WebProcess/WebCoreSupport/soup"
     "${WTF_DIR}/wtf/gobject"
     ${CAIRO_INCLUDE_DIRS}
     ${LIBXML2_INCLUDE_DIR}
     ${LIBXSLT_INCLUDE_DIRS}
     ${SQLITE_INCLUDE_DIRS}
     ${GLIB_INCLUDE_DIRS}
-    ${LIBSOUP_INCLUDE_DIRS}
     ${WTF_DIR}
     ${HARFBUZZ_INCLUDE_DIRS}
     "${CMAKE_CURRENT_SOURCE_DIR}/UIProcess/API/nix/"
@@ -157,8 +118,6 @@ list(APPEND WebKit2_LIBRARIES
     ${GLIB_LIBRARIES}
     ${GLIB_GIO_LIBRARIES}
     ${GLIB_GOBJECT_LIBRARIES}
-    ${LIBSOUP_LIBRARIES}
-    rt
 )
 
 list(APPEND WebProcess_SOURCES
@@ -180,10 +139,84 @@ add_custom_target(forwarding-headerNix
 )
 set(ForwardingHeaders_NAME forwarding-headerNix)
 
-add_custom_target(forwarding-headerSoup
-    COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT2_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
-)
-set(ForwardingNetworkHeaders_NAME forwarding-headerSoup)
+if (ENABLE_SOUP)
+    list(APPEND WebKit2_SOURCES
+        Shared/soup/PlatformCertificateInfo.cpp
+        Shared/soup/WebCoreArgumentCodersSoup.cpp
+
+        UIProcess/API/C/soup/WKContextSoup.cpp
+        UIProcess/API/C/soup/WKSoupRequestManager.cpp
+
+        UIProcess/soup/WebCookieManagerProxySoup.cpp
+        UIProcess/soup/WebSoupRequestManagerClient.cpp
+        UIProcess/soup/WebSoupRequestManagerProxy.cpp
+
+        WebProcess/Cookies/soup/WebCookieManagerSoup.cpp
+        WebProcess/Cookies/soup/WebKitSoupCookieJarSqlite.cpp
+
+        Shared/Downloads/nix/DownloadSoupErrorsNix.cpp
+        Shared/Downloads/soup/DownloadSoup.cpp
+
+        WebProcess/soup/WebProcessSoup.cpp
+        WebProcess/soup/WebSoupRequestManager.cpp
+        WebProcess/soup/WebKitSoupRequestGeneric.cpp
+        WebProcess/soup/WebKitSoupRequestInputStream.cpp
+        WebProcess/soup/WebSoupRequestManager.cpp
+        WebProcess/soup/WebKitSoupRequestGeneric.cpp
+        WebProcess/soup/WebKitSoupRequestInputStream.cpp
+        WebProcess/WebCoreSupport/soup/WebFrameNetworkingContext.cpp
+    )
+
+    list(APPEND WebKit2_MESSAGES_IN_FILES
+        UIProcess/soup/WebSoupRequestManagerProxy.messages.in
+        WebProcess/soup/WebSoupRequestManager.messages.in
+    )
+
+    list(APPEND WebKit2_INCLUDE_DIRECTORIES
+        "${WEBCORE_DIR}/platform/network/soup"
+        "${WEBKIT2_DIR}/Shared/soup"
+        "${WEBKIT2_DIR}/UIProcess/API/C/soup"
+        "${WEBKIT2_DIR}/UIProcess/soup"
+        "${WEBKIT2_DIR}/Shared/Downloads/soup"
+        "${WEBKIT2_DIR}/WebProcess/soup"
+        "${WEBKIT2_DIR}/WebProcess/WebCoreSupport/soup"
+        ${LIBSOUP_INCLUDE_DIRS}
+    )
+    list(APPEND WebKit2_LIBRARIES
+        ${LIBSOUP_LIBRARIES}
+        rt
+    )
+
+    add_custom_target(forwarding-headerSoup
+        COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT2_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
+    )
+    set(ForwardingNetworkHeaders_NAME forwarding-headerSoup)
+else ()
+    list(APPEND WebKit2_SOURCES
+        Shared/curl/WebCoreArgumentCodersCurl.cpp
+        WebProcess/curl/WebProcessCurl.cpp
+        WebProcess/Cookies/curl/WebCookieManagerCurl.cpp
+
+        Shared/Downloads/curl/DownloadCurl.cpp
+
+        WebProcess/WebCoreSupport/curl/WebFrameNetworkingContext.cpp
+    )
+
+    list(APPEND WebKit2_INCLUDE_DIRECTORIES
+        "${WEBCORE_DIR}/platform/network/curl"
+        "${WEBKIT2_DIR}/Shared/curl"
+        "${WEBKIT2_DIR}/WebProcess/WebCoreSupport/curl"
+    )
+
+    list(APPEND WebKit2_LIBRARIES
+         ${GLIB_GMODULE_LIBRARIES}
+    )
+
+    add_custom_target(forwarding-headercurl
+        COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT2_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include curl
+    )
+    set(ForwardingNetworkHeaders_NAME forwarding-headercurl)
+endif ()
 
 configure_file(nix/WebKitNix.pc.in ${CMAKE_BINARY_DIR}/WebKit2/nix/WebKitNix.pc @ONLY)
 set(WebKitNix_HEADERS
