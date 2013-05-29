@@ -49,4 +49,9 @@ WK_EXPORT void WKCoordinatedSceneScrollBy(WKCoordinatedSceneLayer layer, WKSize 
 {
     toImpl(layer)->scrollBy(WebCore::FloatSize(offset.width, offset.height));
 }
+
+WK_EXPORT WKCoordinatedSceneLayer WKCoordinatedSceneGetAncestorScrollableContentsLayer(WKCoordinatedSceneLayer layer)
+{
+    return toAPI(toImpl(layer)->getAncestorScrollableLayer());
+}
 #endif

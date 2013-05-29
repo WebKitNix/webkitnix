@@ -73,6 +73,7 @@ public:
     void didCommitScrollOffset(const IntSize&);
     void setIsScrollable(bool isScrollable) { m_isScrollable = isScrollable; }
     bool isScrollable() const { return m_isScrollable; }
+    TextureMapperLayer* getAncestorScrollableLayer() const;
 
     TextureMapper* textureMapper() const;
     void setTextureMapper(TextureMapper* texmap) { m_textureMapper = texmap; }

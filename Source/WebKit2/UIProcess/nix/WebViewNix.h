@@ -180,10 +180,10 @@ public:
     virtual void suspendActiveDOMObjectsAndAnimations();
     virtual void resumeActiveDOMObjectsAndAnimations();
     virtual bool isSuspended();
+    WebCore::CoordinatedGraphicsScene* coordinatedGraphicsScene();
 
 private:
     WebCore::IntPoint roundedViewportPosition() const;
-    WebCore::CoordinatedGraphicsScene* coordinatedGraphicsScene();
     void updateVisibleContents();
 
     WebCore::TransformationMatrix userViewportToContentTransformation() const;

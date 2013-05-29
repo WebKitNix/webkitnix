@@ -734,6 +734,16 @@ template<class HitTestCondition> TextureMapperLayer* TextureMapperLayer::hitTest
     return condition(this, point) ? this : 0;
 }
 
+TextureMapperLayer* TextureMapperLayer::getAncestorScrollableLayer() const
+{
+    for (TextureMapperLayer* parent = m_parent; parent; parent = parent->m_parent) {
+        if (parent->isScrollable())
+            return parent;
+    }
+
+    return 0;
+}
+
 bool TextureMapperLayer::scrollableLayerHitTestCondition(TextureMapperLayer* layer, const FloatPoint& point)
 {
     // scrolling layer's m_parent->m_parent, the parent of the scrolling layes, is the one that defines the

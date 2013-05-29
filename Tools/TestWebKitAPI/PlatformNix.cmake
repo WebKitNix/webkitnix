@@ -107,6 +107,7 @@ set(webkit2TestList
     WebKit2/WKString
     WebKit2/WKStringJSString
     WebKit2/WillSendSubmitEvent
+    nix/OverflowScroll
     nix/SuspendResume
     nix/WebThemeEngine
     nix/WebViewFindZoomableArea

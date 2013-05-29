@@ -29,6 +29,7 @@
 #include "NIXEvents.h"
 #include <WebKit2/WKContext.h>
 #include <WebKit2/WKContextMenuItem.h>
+#include <WebKit2/WKCoordinatedScene.h>
 #include <WebKit2/WKPage.h>
 #include <WebKit2/WKPageGroup.h>
 #include <WebKit2/WKPopupItem.h>
@@ -152,6 +153,8 @@ WK_EXPORT void NIXViewSendGestureEvent(NIXView view, const NIXGestureEvent* even
 WK_EXPORT void NIXViewSuspendActiveDOMObjectsAndAnimations(NIXView view);
 WK_EXPORT void NIXViewResumeActiveDOMObjectsAndAnimations(NIXView view);
 WK_EXPORT bool NIXViewIsSuspended(NIXView view);
+
+WK_EXPORT WKCoordinatedScene NIXViewGetCoordinatedScene(NIXView view);
 
 #ifdef __cplusplus
 }

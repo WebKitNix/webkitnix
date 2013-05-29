@@ -38,6 +38,7 @@ typedef struct OpaqueCGScene* WKCoordinatedScene;
 typedef struct OpaqueCGLayer* WKCoordinatedSceneLayer;
 
 WK_EXPORT WKCoordinatedSceneLayer WKCoordinatedSceneFindScrollableContentsLayerAt(WKCoordinatedScene, WKPoint);
+WK_EXPORT WKCoordinatedSceneLayer WKCoordinatedSceneGetAncestorScrollableContentsLayer(WKCoordinatedSceneLayer);
 WK_EXPORT uint32_t WKCoordinatedSceneGetLayerID(WKCoordinatedSceneLayer);
 WK_EXPORT void WKCoordinatedSceneScrollBy(WKCoordinatedSceneLayer, WKSize);
 

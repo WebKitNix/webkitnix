@@ -30,6 +30,8 @@
 #include "WebContext.h"
 #include "WebPageGroup.h"
 
+#include "WKCoordinatedSceneAPICast.h"
+
 // Included here to be visible to forwarding headers generation script.
 #include <JavaScriptCore/WebKitAvailability.h>
 #include <WebKit2/WKBundle.h>
@@ -222,4 +224,9 @@ void NIXViewResumeActiveDOMObjectsAndAnimations(NIXView view)
 bool NIXViewIsSuspended(NIXView view)
 {
     return toImpl(view)->isSuspended();
+}
+
+WKCoordinatedScene NIXViewGetCoordinatedScene(NIXView view)
+{
+    return toAPI(toImpl(view)->coordinatedGraphicsScene());
 }
