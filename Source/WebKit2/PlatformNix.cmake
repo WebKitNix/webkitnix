@@ -23,6 +23,7 @@ list(APPEND WebKit2_SOURCES
     Shared/nix/NativeWebGestureEventNix.cpp
     Shared/nix/NativeWebTouchEventNix.cpp
     Shared/nix/WebEventFactoryNix.cpp
+
     Shared/efl/ProcessExecutablePathEfl.cpp
 
     UIProcess/API/C/CoordinatedGraphics/WKView.cpp
@@ -39,6 +40,7 @@ list(APPEND WebKit2_SOURCES
     UIProcess/nix/WebContextNix.cpp
     UIProcess/nix/WebInspectorProxyNix.cpp
     UIProcess/nix/WebPageProxyNix.cpp
+    UIProcess/nix/WebPopupMenuListenerNix.cpp
     UIProcess/efl/WebPreferencesEfl.cpp
 
     UIProcess/Launcher/efl/ProcessLauncherEfl.cpp

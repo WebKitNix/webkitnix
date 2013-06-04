@@ -35,6 +35,7 @@
 #include "NativeWebWheelEvent.h"
 #include "WebContext.h"
 #include "WebPageGroup.h"
+#include "WebPopupMenuListenerNix.h"
 #include "WebPreferences.h"
 #include <WebCore/CoordinatedGraphicsScene.h>
 #include <WebCore/TextureMapperGL.h>
@@ -154,6 +155,12 @@ void WebViewNix::updateTextInputState()
     const IntRect& editorRect = editor.editorRect;
     m_viewClientNix.updateTextInputState(this, editor.selectedText, editor.surroundingText, editor.inputMethodHints,
                                          editor.isContentEditable, editor.cursorRect, editor.editorRect);
+}
+
+
+PassRefPtr<WebPopupMenuProxy> WebViewNix::createPopupMenuProxy(WebPageProxy* page)
+{
+    return WebPopupMenuListenerNix::create(page);
 }
 
 } // namespace WebKit
