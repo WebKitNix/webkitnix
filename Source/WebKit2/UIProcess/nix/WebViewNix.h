@@ -73,6 +73,7 @@ protected:
     virtual void didRelaunchProcess() OVERRIDE;
     virtual void pageTransitionViewportReady() OVERRIDE;
     virtual PassRefPtr<WebContextMenuProxy> createContextMenuProxy(WebPageProxy*) OVERRIDE { return m_activeContextMenu; }
+    virtual PassRefPtr<WebPopupMenuProxy> createPopupMenuProxy(WebPageProxy*) OVERRIDE;
 
 private:
     WebViewNix(WebContext* context, WebPageGroup* pageGroup);
