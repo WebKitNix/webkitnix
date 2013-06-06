@@ -41,6 +41,8 @@
 #include <WebCore/CoordinatedGraphicsScene.h>
 #include <WebCore/TextureMapperGL.h>
 
+#include <glib.h>
+
 using namespace WebCore;
 
 namespace WebKit {
