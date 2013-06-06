@@ -105,7 +105,7 @@ String WebContext::platformDefaultLocalStorageDirectory() const
 
 String WebContext::platformDefaultDiskCacheDirectory() const
 {
-    GOwnPtr<gchar> diskCacheDirectory(g_build_filename(g_get_user_cache_dir(), g_get_prgname(), NULL));
+    GOwnPtr<gchar> diskCacheDirectory(g_build_filename(g_get_user_cache_dir(), "webkitnix", "cache", NULL));
     return WebCore::filenameToString(diskCacheDirectory.get());
 }
 
