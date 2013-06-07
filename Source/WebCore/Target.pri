@@ -3366,6 +3366,7 @@ enable?(WEB_AUDIO) {
         Modules/webaudio/DynamicsCompressorNode.h \
         Modules/webaudio/ScriptProcessorNode.h \
         Modules/webaudio/MediaElementAudioSourceNode.h \
+        Modules/webaudio/MediaStreamAudioDestinationNode.h \
         Modules/webaudio/MediaStreamAudioSourceNode.h \
         Modules/webaudio/OfflineAudioCompletionEvent.h \
         Modules/webaudio/OfflineAudioContext.h \
@@ -3455,6 +3456,7 @@ enable?(WEB_AUDIO) {
         Modules/webaudio/DelayProcessor.cpp \
         Modules/webaudio/DynamicsCompressorNode.cpp \
         Modules/webaudio/ScriptProcessorNode.cpp \
+        Modules/webaudio/MediaElementAudioDestinationNode.cpp \
         Modules/webaudio/MediaElementAudioSourceNode.cpp \
         Modules/webaudio/MediaStreamAudioSourceNode.cpp \
         Modules/webaudio/OfflineAudioCompletionEvent.cpp \

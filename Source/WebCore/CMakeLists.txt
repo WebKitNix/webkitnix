@@ -267,6 +267,7 @@ set(WebCore_IDL_FILES
     Modules/webaudio/DynamicsCompressorNode.idl
     Modules/webaudio/ScriptProcessorNode.idl
     Modules/webaudio/MediaElementAudioSourceNode.idl
+    Modules/webaudio/MediaStreamAudioDestinationNode.idl
     Modules/webaudio/MediaStreamAudioSourceNode.idl
     Modules/webaudio/OfflineAudioContext.idl
     Modules/webaudio/OfflineAudioCompletionEvent.idl
@@ -913,6 +914,7 @@ set(WebCore_SOURCES
     Modules/webaudio/DynamicsCompressorNode.cpp
     Modules/webaudio/ScriptProcessorNode.cpp
     Modules/webaudio/MediaElementAudioSourceNode.cpp
+    Modules/webaudio/MediaStreamAudioDestinationNode.cpp
     Modules/webaudio/MediaStreamAudioSourceNode.cpp
     Modules/webaudio/OfflineAudioContext.cpp
     Modules/webaudio/OfflineAudioCompletionEvent.cpp
