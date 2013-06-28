@@ -39,6 +39,7 @@ void prefetchDNS(const String& hostname)
 bool DNSResolveQueue::platformProxyIsEnabledInSystemPreferences()
 {
     notImplemented();
+    return false;
 }
 
 void DNSResolveQueue::platformResolve(const String& hostname)

@@ -65,16 +65,16 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
 
     RunLoop::initializeMainRunLoop();
 
+#ifdef WTF_USE_SOUP
     const char* httpProxy = getenv("http_proxy");
     if (httpProxy) {
         const char* noProxy = getenv("no_proxy");
-#ifdef WTF_USE_SOUP
         SoupSession* session = WebCore::ResourceHandle::defaultSession();
         SoupProxyURIResolver* resolverNix = soupProxyResolverWkNew(httpProxy, noProxy);
         soup_session_add_feature(session, SOUP_SESSION_FEATURE(resolverNix));
         g_object_unref(resolverNix);
-#endif
     }
+#endif
 
     int socket = atoi(argv[1]);
 

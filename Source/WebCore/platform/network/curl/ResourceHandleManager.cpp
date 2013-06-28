@@ -311,10 +311,9 @@ static size_t headerCallback(char* ptr, size_t size, size_t nmemb, void* data)
      */
     if (header == String("\r\n") || header == String("\n")) {
         CURL* h = d->m_handle;
-        CURLcode err;
 
         long httpCode = 0;
-        err = curl_easy_getinfo(h, CURLINFO_RESPONSE_CODE, &httpCode);
+        curl_easy_getinfo(h, CURLINFO_RESPONSE_CODE, &httpCode);
 
         if (isHttpInfo(httpCode)) {
             // Just return when receiving http info, e.g. HTTP/1.1 100 Continue.
@@ -323,11 +322,11 @@ static size_t headerCallback(char* ptr, size_t size, size_t nmemb, void* data)
         }
 
         double contentLength = 0;
-        err = curl_easy_getinfo(h, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &contentLength);
+        curl_easy_getinfo(h, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &contentLength);
         d->m_response.setExpectedContentLength(static_cast<long long int>(contentLength));
 
         const char* hdr;
-        err = curl_easy_getinfo(h, CURLINFO_EFFECTIVE_URL, &hdr);
+        curl_easy_getinfo(h, CURLINFO_EFFECTIVE_URL, &hdr);
         d->m_response.setURL(KURL(ParsedURLString, hdr));
 
         d->m_response.setHTTPStatusCode(httpCode);
