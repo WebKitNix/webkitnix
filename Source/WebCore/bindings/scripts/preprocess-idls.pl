@@ -29,7 +29,9 @@ my $preprocessor;
 my $idlFilesList;
 my $supplementalDependencyFile;
 my $windowConstructorsFile;
-my $workerContextConstructorsFile;
+my $workerGlobalScopeConstructorsFile;
+my $sharedWorkerGlobalScopeConstructorsFile;
+my $dedicatedWorkerGlobalScopeConstructorsFile;
 my $supplementalMakefileDeps;
 
 GetOptions('defines=s' => \$defines,
@@ -37,13 +39,17 @@ GetOptions('defines=s' => \$defines,
            'idlFilesList=s' => \$idlFilesList,
            'supplementalDependencyFile=s' => \$supplementalDependencyFile,
            'windowConstructorsFile=s' => \$windowConstructorsFile,
-           'workerContextConstructorsFile=s' => \$workerContextConstructorsFile,
+           'workerGlobalScopeConstructorsFile=s' => \$workerGlobalScopeConstructorsFile,
+           'sharedWorkerGlobalScopeConstructorsFile=s' => \$sharedWorkerGlobalScopeConstructorsFile,
+           'dedicatedWorkerGlobalScopeConstructorsFile=s' => \$dedicatedWorkerGlobalScopeConstructorsFile,
            'supplementalMakefileDeps=s' => \$supplementalMakefileDeps);
 
 die('Must specify #define macros using --defines.') unless defined($defines);
 die('Must specify an output file using --supplementalDependencyFile.') unless defined($supplementalDependencyFile);
 die('Must specify an output file using --windowConstructorsFile.') unless defined($windowConstructorsFile);
-die('Must specify an output file using --workerContextConstructorsFile.') unless defined($workerContextConstructorsFile);
+die('Must specify an output file using --workerGlobalScopeConstructorsFile.') unless defined($workerGlobalScopeConstructorsFile);
+die('Must specify an output file using --sharedWorkerGlobalScopeConstructorsFile.') unless defined($sharedWorkerGlobalScopeConstructorsFile);
+die('Must specify an output file using --dedicatedWorkerGlobalScopeConstructorsFile.') unless defined($dedicatedWorkerGlobalScopeConstructorsFile);
 die('Must specify the file listing all IDLs using --idlFilesList.') unless defined($idlFilesList);
 
 open FH, "< $idlFilesList" or die "Cannot open $idlFilesList\n";
@@ -56,7 +62,9 @@ my %idlFileToInterfaceName;
 my %supplementalDependencies;
 my %supplementals;
 my $windowConstructorsCode = "";
-my $workerContextConstructorsCode = "";
+my $workerGlobalScopeConstructorsCode = "";
+my $sharedWorkerGlobalScopeConstructorsCode = "";
+my $dedicatedWorkerGlobalScopeConstructorsCode = "";
 
 # Get rid of duplicates in idlFiles array.
 my %idlFileHash = map { $_, 1 } @idlFiles;
@@ -95,20 +103,22 @@ foreach my $idlFile (sort keys %idlFileHash) {
     unless (isCallbackInterfaceFromIDL($idlFileContents)) {
         my $extendedAttributes = getInterfaceExtendedAttributesFromIDL($idlFileContents);
         unless ($extendedAttributes->{"NoInterfaceObject"}) {
-            my $globalContext = $extendedAttributes->{"GlobalContext"} || "WindowOnly";
+            my @globalContexts = split("&", $extendedAttributes->{"GlobalContext"} || "DOMWindow");
             my $attributeCode = GenerateConstructorAttribute($interfaceName, $extendedAttributes);
-            $windowConstructorsCode .= $attributeCode unless $globalContext eq "WorkerOnly";
-            $workerContextConstructorsCode .= $attributeCode unless $globalContext eq "WindowOnly"
+            $windowConstructorsCode .= $attributeCode if grep(/^DOMWindow$/, @globalContexts);
+            $workerGlobalScopeConstructorsCode .= $attributeCode if grep(/^WorkerGlobalScope$/, @globalContexts);
+            $sharedWorkerGlobalScopeConstructorsCode .= $attributeCode if grep(/^SharedWorkerGlobalScope$/, @globalContexts);
+            $dedicatedWorkerGlobalScopeConstructorsCode .= $attributeCode if grep(/^DedicatedWorkerGlobalScope$/, @globalContexts);
         }
     }
     $supplementals{$fullPath} = [];
 }
 
-# Generate DOMWindow Constructors partial interface.
+# Generate partial interfaces for Constructors.
 GeneratePartialInterface("DOMWindow", $windowConstructorsCode, $windowConstructorsFile);
-
-# Generate WorkerContext Constructors partial interface.
-GeneratePartialInterface("WorkerContext", $workerContextConstructorsCode, $workerContextConstructorsFile);
+GeneratePartialInterface("WorkerGlobalScope", $workerGlobalScopeConstructorsCode, $workerGlobalScopeConstructorsFile);
+GeneratePartialInterface("SharedWorkerGlobalScope", $sharedWorkerGlobalScopeConstructorsCode, $sharedWorkerGlobalScopeConstructorsFile);
+GeneratePartialInterface("DedicatedWorkerGlobalScope", $dedicatedWorkerGlobalScopeConstructorsCode, $dedicatedWorkerGlobalScopeConstructorsFile);
 
 # Resolves partial interfaces and implements dependencies.
 foreach my $idlFile (keys %supplementalDependencies) {

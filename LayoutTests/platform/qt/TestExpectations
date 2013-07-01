@@ -364,18 +364,11 @@ fast/css/variables/variable-chain.html
 inspector/styles/variables/css-variables.html
 
 # MathML is disable.
-mathml/EmptyMFracCrash.xhtml
-mathml/EmptyMunderOverCrash.xhtml
-mathml/empty-mroot-crash.xhtml
-mathml/fenced-whitespace-separators-crash.html
-mathml/msub-anonymous-child-render-crash.html
-mathml/msubsup-fuzz.html
-mathml/msubsup-no-grandchild.xhtml
-mathml/msubsup-remove-children.xhtml
-mathml/munderover-remove-children.html
-mathml/presentation/mfenced-add-child2.html
-mathml/presentation/mfrac-nested.html
-mathml/presentation/sup-nested.html
+mathml/ [ Skip ]
+
+# ENABLE(USERSELECT_ALL) is disabled
+editing/selection/user-select-all-image-with-single-click.html [ Skip ]
+editing/selection/user-select-all-with-single-click.html [ Skip ]
 
 # =========================================================================== #
 #       Feature not yet supported.                                            #
@@ -680,9 +673,11 @@ http/tests/cookies/js-get-and-set-http-only-cookie.html
 # https://bugs.webkit.org/show_bug.cgi?id=109799
 webkit.org/b/90007 http/tests/security/mixedContent/insecure-audio-video-in-main-frame.html [ Skip ]
 
-# Assertion failure in MessagePort::contextDestroyed
-webkit.org/b/94458 [ Debug ] http/tests/security/XFrameOptions/x-frame-options-deny-meta-tag-parent-same-origin-allow.html [ Skip ]
-webkit.org/b/94458 [ Debug ] http/tests/security/XFrameOptions/x-frame-options-deny.html [ Skip ]
+# Assertion failure in MessagePort::contextDestroyed in http/tests/security/MessagePort/event-listener-context.html, usually attributed to later tests
+webkit.org/b/94458 [ DEBUG ] http/tests/security/MessagePort/event-listener-context.html [ Skip ]
+
+# Layout Test fast/repaint/fixed-right-in-page-scale.html and others in same path are flaky
+webkit.org/b/84720 [ DEBUG ] fast/repaint/fixed-right-in-page-scale.html [ Skip ]
 
 # =========================================================================== #
 #       Failing xmlhttprequest tests                                          #
@@ -1478,7 +1473,7 @@ css3/filters/effect-reference-hw.html
 
 # [Qt] Two new test in fast/regions/ flaky after r151282
 # https://bugs.webkit.org/show_bug.cgi?id=117338
-fast/regions/hover-display-block-none.html
+fast/css/hover-display-block-none.html
 fast/regions/hover-single-flow-into-other.html
 
 # New test flakey on Qt Linux Release introduced in r113086

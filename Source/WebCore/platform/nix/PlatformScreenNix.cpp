@@ -26,12 +26,11 @@
 #include "config.h"
 #include "PlatformScreen.h"
 
-#include "NotImplemented.h"
 #include "FloatRect.h"
-#include <wtf/text/WTFString.h>
+#include "NotImplemented.h"
 #include "Widget.h"
-
 #include <wtf/text/CString.h>
+#include <wtf/text/WTFString.h>
 
 namespace WebCore {
 

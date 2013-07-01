@@ -70,7 +70,7 @@ class DeprecatedPort(object):
             "qt-wk2": QtWK2Port,
             "efl": EflPort,
             "efl-wk2": EflWK2Port,
-            "nix": NixPort
+            "nix": NixPort,
         }
         default_port = {
             "Windows": WinPort,
@@ -82,7 +82,7 @@ class DeprecatedPort(object):
     def makeArgs(self):
         # FIXME: This shouldn't use a static Executive().
         args = '--makeargs="-j%s"' % Executive().cpu_count()
-        if os.environ.has_key('MAKEFLAGS'):
+        if 'MAKEFLAGS' in os.environ:
             args = '--makeargs="%s"' % os.environ['MAKEFLAGS']
         return args
 
@@ -231,6 +231,7 @@ class EflWK2Port(DeprecatedPort):
         command.append("--no-webkit1")
         command.append(super(EflWK2Port, self).makeArgs())
         return command
+
 
 class NixPort(DeprecatedPort):
     port_flag_name = "nix"

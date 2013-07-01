@@ -1,3 +1,591 @@
+2013-07-01  Sam Weinig  <sam@webkit.org>
+
+        WKPageLoadDataWithUserData neglects to set the base URL that is passed in
+        <rdar://problem/14306784>
+        https://bugs.webkit.org/show_bug.cgi?id=118256
+
+        Reviewed by Anders Carlsson.
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::loadData):
+        Pass the baseURL, not blankURL(), and remove an unnecessary multiplication by sizeof(uint8_t) which is always 1.
+
+2013-07-01  Kangil Han  <kangil.han@samsung.com>
+
+        Adopt toHTMLTextAreaElement for code cleanup
+        https://bugs.webkit.org/show_bug.cgi?id=118226
+
+        Reviewed by Andreas Kling.
+
+        To enhance readability, this patch adopts toHTMLTextAreaElement.
+        This also helps out to reduce duplicated use of static_cast.
+
+        * WebProcess/InjectedBundle/DOM/InjectedBundleNodeHandle.cpp:
+        (WebKit::InjectedBundleNodeHandle::htmlTextAreaElementLastChangeWasUserEdit):
+        * WebProcess/Plugins/PDF/PDFPluginTextAnnotation.mm:
+        (WebKit::PDFPluginTextAnnotation::createAnnotationElement):
+        * WebProcess/WebCoreSupport/WebEditorClient.cpp:
+        (WebKit::WebEditorClient::textDidChangeInTextArea):
+        * WebProcess/WebPage/WebFrame.cpp:
+        (WebKit::WebFrame::containsAnyFormControls):
+
+2013-06-28  Andreas Kling  <akling@apple.com>
+
+        Fix Windows builds after deprecatedCharactersWithNullTermination() removal.
+
+        * Platform/CoreIPC/win/ConnectionWin.cpp:
+        (CoreIPC::Connection::createServerAndClientIdentifiers):
+
+2013-06-28  Tim Horton  <timothy_horton@apple.com>
+
+        [wk2] WKView shouldn't force scrolling off if shouldClipToVisibleRect is set
+        https://bugs.webkit.org/show_bug.cgi?id=118174
+        <rdar://problem/14301175>
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView _updateViewExposedRect]):
+        Pass whether or not clips-to-visibleRect is enabled down to the WebPageProxy.
+
+        (-[WKView setMinimumSizeForAutoLayout:]):
+        Disable scrolling when using autolayout instead of when using clips-to-visibleRect.
+
+        (-[WKView setShouldClipToVisibleRect:]):
+        Clipping to the WKView's visibleRect does not strictly require scrolling to be disabled,
+        and in fact there are cases (RTL/TB pagination) where we *must* scroll, even when the view
+        is big enough to fit the content (the case clip-to-visibleRect was added for).
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/mac/WebPageProxyMac.mm:
+        (WebKit::WebPageProxy::viewExposedRectChanged):
+        (WebKit::WebPageProxy::exposedRectChangedTimerFired):
+        Keep track of and forward to the drawing area whether or not clips-to-visibleRect is enabled.
+
+        * WebProcess/WebPage/DrawingArea.h:
+        (WebKit::DrawingArea::setClipsToExposedRect): Added.
+        (WebKit::DrawingArea::didChangeScrollOffsetForAnyFrame): Added a missing space.
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::viewExposedRectChanged):
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/WebPage.messages.in:
+        Forward clips-to-visibleRect enabled state to the drawing area.
+
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+        Add storage for m_clipsToExposedRect.
+
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::TiledCoreAnimationDrawingArea):
+        (WebKit::TiledCoreAnimationDrawingArea::flushLayers):
+        (WebKit::TiledCoreAnimationDrawingArea::setClipsToExposedRect):
+        (WebKit::TiledCoreAnimationDrawingArea::updateMainFrameClipsToExposedRect):
+        (WebKit::TiledCoreAnimationDrawingArea::createPageOverlayLayer):
+        (WebKit::TiledCoreAnimationDrawingArea::didCommitChangesForLayer):
+        Check m_clipsToExposedRect instead of the main-frame's isScrollable() to determine
+        whether we should tell our TiledBackings to clip to the exposed rect we provide.
+
+        We don't need to listen to mainFrameScrollabilityChanged anymore.
+
+2013-06-28  Gavin Barraclough  <barraclough@apple.com>
+
+        Stale occlusion state after moving page back into window
+        https://bugs.webkit.org/show_bug.cgi?id=118202
+
+        Reviewed by Anders Carlsson.
+        
+        We need to update the occlusion state when the page goes back into the window.
+
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView viewDidMoveToWindow]):
+            - update occlusion state.
+
+2013-06-28  Gwang Yoon Hwang  <ryumiel@company100.net>
+
+        Coordinated Graphics: Separate CoordinatedLayerTreeHost into CoordinatedLayerTreeHost and CompositingCoordinator
+        https://bugs.webkit.org/show_bug.cgi?id=104360
+
+        Reviewed by Noam Rosenthal.
+
+        The CoordinatedLayerTreeHost has too many responsibilities. It
+        implements LayerTreeHost, GraphicsLayerClient,
+        CoordinatedGraphicsLayerClient, CoordinatedImageBacking::Client,
+        UpdateAtlas::Client, GraphicsLayerFactory and
+        WebCustomFilterProgramProxyClient.
+
+        This refactoring reduces the responsibilities of CoordinatedLayerTreeHost.
+
+        This patch introduces a new class called CompositingCoordinator, which
+        takes the responsibility of managing compositing resources in
+        WebProcess.
+
+        CoordinatedLayerTreeHost is responsible only for the scheduling and
+        IPC-specific stuff, which are relevant only for WebKit2.
+
+        No new tests, covered by existing tests.
+
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.cpp:
+        (WebKit::CoordinatedLayerTreeHost::~CoordinatedLayerTreeHost):
+        (WebKit::CoordinatedLayerTreeHost::CoordinatedLayerTreeHost):
+        (WebKit::CoordinatedLayerTreeHost::setRootCompositingLayer):
+        (WebKit::CoordinatedLayerTreeHost::invalidate):
+        (WebKit::CoordinatedLayerTreeHost::forceRepaint):
+        (WebKit::CoordinatedLayerTreeHost::sizeDidChange):
+        (WebKit::CoordinatedLayerTreeHost::setVisibleContentsRect):
+        (WebKit::CoordinatedLayerTreeHost::renderNextFrame):
+        (WebKit::CoordinatedLayerTreeHost::purgeBackingStores):
+        (WebKit::CoordinatedLayerTreeHost::willSyncLayerState):
+        (WebKit::CoordinatedLayerTreeHost::prepareCustomFilterProxiesForAnimations):
+        (WebKit::CoordinatedLayerTreeHost::checkCustomFilterProgramProxies):
+        (WebKit::CoordinatedLayerTreeHost::removeCustomFilterProgramProxy):
+        (WebKit::CoordinatedLayerTreeHost::didFlushRootLayer):
+        (WebKit::CoordinatedLayerTreeHost::performScheduledLayerFlush):
+        (WebKit::CoordinatedLayerTreeHost::createPageOverlayLayer):
+        (WebKit::CoordinatedLayerTreeHost::paintLayerContents):
+        (WebKit::CoordinatedLayerTreeHost::commitSceneState):
+        (WebKit::CoordinatedLayerTreeHost::deviceOrPageScaleFactorChanged):
+        (WebKit::CoordinatedLayerTreeHost::graphicsLayerFactory):
+        (WebKit::CoordinatedLayerTreeHost::scheduleAnimation):
+        (WebKit::CoordinatedLayerTreeHost::commitScrollOffset):
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.h:
+        * WebProcess/WebPage/LayerTreeHost.h:
+
+2013-06-28  Anders Carlsson  <andersca@apple.com>
+
+        Make the UI process run the Java Updater
+        https://bugs.webkit.org/show_bug.cgi?id=118197
+        <rdar://problem/14255677>
+
+        Reviewed by Sam Weinig.
+
+        Patch the relevant NSWorkspace method and pipe through the request to launch the Java updater to the UI process.
+
+        * PluginProcess/PluginProcess.h:
+        * PluginProcess/mac/PluginProcessMac.mm:
+        (WebKit::replacedNSWorkspace_launchApplicationAtURL_options_configuration_error):
+        (WebKit::initializeCocoaOverrides):
+        (WebKit::PluginProcess::launchApplicationAtURL):
+        * UIProcess/Plugins/PluginProcessProxy.h:
+        * UIProcess/Plugins/PluginProcessProxy.messages.in:
+        * UIProcess/Plugins/mac/PluginProcessProxyMac.mm:
+        (WebKit::isJavaUpdaterURL):
+        (WebKit::shouldLaunchApplicationAtURL):
+        (WebKit::PluginProcessProxy::launchApplicationAtURL):
+
+2013-06-28  Tim Horton  <timothy_horton@apple.com>
+
+        WARN_UNUSED_RESULT can't be used in API headers, but WKBundlePageExtendIncrementalRenderingSuppression tries to
+        https://bugs.webkit.org/show_bug.cgi?id=118196
+        <rdar://problem/14303613>
+
+        Reviewed by Anders Carlsson.
+
+        * WebProcess/InjectedBundle/API/c/WKBundlePagePrivate.h:
+
+2013-06-28  Andreas Kling  <akling@apple.com>
+
+        Don't fire process-became-responsive callback when disconnecting it.
+        <http://webkit.org/b/118166>
+
+        Reviewed by Anders Carlsson.
+
+        When disconnecting from a web process, call ResponsivenessTimer::invalidate() instead of
+        stop() to avoid firing the didBecomeResponsive() callback.
+
+        This lets the UI process react faster to actually unresponsive processes.
+
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::disconnect):
+
+2013-06-28  Sergio Villar Senin  <svillar@igalia.com>
+
+        [WK2][GTK] 100% CPU usage rendering a page with animations
+        https://bugs.webkit.org/show_bug.cgi?id=117703
+
+        Reviewed by Martin Robinson.
+
+        Unconditionally update the value of m_lastFlushTime in
+        ::flushAndRenderLayers. By doing that we avoid a neverending
+        sequence of layer flushes that happened when m_lastFlushTime==0
+        and flushPendingLayerChanges() was false. In that situation the
+        value m_lastFlushTime was never updated so a new flush was always
+        rescheduled.
+
+        * WebProcess/WebPage/gtk/LayerTreeHostGtk.cpp:
+        (WebKit::LayerTreeHostGtk::flushAndRenderLayers):
+
+2013-06-28  Andres Gomez  <agomez@igalia.com>
+
+        [GTK] MiniBrowser doesn't solve the saving location when there are no XDG settings
+        https://bugs.webkit.org/show_bug.cgi?id=117538
+
+        Reviewed by Carlos Garcia Campos.
+
+        If the XDG specification is not working for the "Downloads"
+        directory, let's use HOME as fallback.
+
+        * UIProcess/API/gtk/WebKitDownload.cpp:
+        (webkitDownloadDecideDestination):
+
+2013-06-28  Dariusz Frankiewicz  <d.frankiewic@samsung.com>
+
+        [EFL][WK2] Add spellcheck API tests in unit tests.
+        https://bugs.webkit.org/show_bug.cgi?id=118123
+
+        Reviewed by Christophe Dumez.
+
+        According to discussion in bug https://bugs.webkit.org/show_bug.cgi?id=113742
+        we're moving spelling tests from layout tests to unit tests.
+
+        * UIProcess/API/efl/tests/resources/spelling_selection_tests.html: Added.
+        New file is needed to make tests, with and without spellcheck attribute.
+        File contains basic site with content editable fields and buttons which select
+        different parts of misspelled words.
+
+        * UIProcess/API/efl/tests/test_ewk2_text_checker.cpp:
+        (countContextMenuItems):
+        Added method used to count number of items in context menu.
+
+2013-06-27  Kangil Han  <kangil.han@samsung.com>
+
+        Adopt is/toHTMLInputElement for code cleanup
+        https://bugs.webkit.org/show_bug.cgi?id=118130
+
+        Reviewed by Antti Koivisto.
+
+        To enhance readability, this patch adopts is/toHTMLInputElement.
+        This also helps out to reduce duplicated use of static_cast.
+
+        * WebProcess/InjectedBundle/DOM/InjectedBundleNodeHandle.cpp:
+        (WebKit::InjectedBundleNodeHandle::setHTMLInputElementValueForUser):
+        (WebKit::InjectedBundleNodeHandle::isHTMLInputElementAutofilled):
+        (WebKit::InjectedBundleNodeHandle::setHTMLInputElementAutofilled):
+        (WebKit::InjectedBundleNodeHandle::htmlInputElementLastChangeWasUserEdit):
+        * WebProcess/Plugins/PDF/PDFPluginTextAnnotation.mm:
+        (WebKit::PDFPluginTextAnnotation::createAnnotationElement):
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp:
+        (WebKit::WebChromeClient::focusedNodeChanged):
+        * WebProcess/WebCoreSupport/WebEditorClient.cpp:
+        (WebKit::WebEditorClient::textFieldDidBeginEditing):
+        (WebKit::WebEditorClient::textFieldDidEndEditing):
+        (WebKit::WebEditorClient::textDidChangeInTextField):
+        (WebKit::WebEditorClient::doTextFieldCommandFromEvent):
+        (WebKit::WebEditorClient::textWillBeDeletedInTextField):
+        * WebProcess/WebPage/WebFrame.cpp:
+        (WebKit::WebFrame::containsAnyFormControls):
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::editorState):
+
+2013-06-27  Eunmi Lee  <eunmi15.lee@samsung.com>
+
+        [EFL][WK2] Add WK2 C API to handle touch events.
+        https://bugs.webkit.org/show_bug.cgi?id=108915
+
+        Reviewed by Gyuyoung Kim.
+
+        Touch events for our target platforms differ (XInput2, Wayland, Tizen) so
+        for the EFL port we want to be able to feed events manually.
+
+        To keep our current API for desktop EFL/Enlightenment working, we convert
+        our currently limited EFL events to the new EFL specific C EwkTouchPoint
+        and EwkTouchEvent type.
+
+        EwkTouchPoint and EwkTouchEvent are exposed as WKTouchPointRef and
+        WKTouchEventRef, so they are opaque in the applications.
+
+        The WKViewSendTouchEvent can be used for any use-case (platform/product)
+        not involving the EFL events.
+
+        At the same time we make sure to avoid using WK2 internals in our EFL API
+        implementation.
+
+        * PlatformEfl.cmake:
+        * Shared/API/c/efl/WKBaseEfl.h:
+        * Shared/APIObject.h:
+        * Shared/NativeWebTouchEvent.h:
+        (WebKit::NativeWebTouchEvent::nativeEvent):
+        * Shared/efl/NativeWebTouchEventEfl.cpp:
+        (WebKit::NativeWebTouchEvent::NativeWebTouchEvent):
+        * Shared/efl/WebEventFactory.cpp:
+        (WebKit::toWebPlatformTouchPointState):
+        (WebKit::toWebEventType):
+        (WebKit::toWebEventModifiers):
+        (WebKit::WebEventFactory::createWebTouchEvent):
+        * Shared/efl/WebEventFactory.h:
+        * UIProcess/API/C/efl/WKAPICastEfl.h:
+        * UIProcess/API/C/efl/WKEventEfl.cpp: Added.
+        (WKTouchPointCreate):
+        (WKTouchEventCreate):
+        * UIProcess/API/C/efl/WKEventEfl.h: Added.
+        * UIProcess/API/C/efl/WKViewEfl.cpp:
+        (WKViewSendTouchEvent):
+        * UIProcess/API/C/efl/WKViewEfl.h:
+        * UIProcess/API/efl/EwkView.cpp:
+        (toWKTouchPointState):
+        (toWKEventModifiers):
+        (EwkView::feedTouchEvent):
+        (EwkView::feedTouchEvents):
+        * UIProcess/efl/EwkTouchEvent.cpp: Added.
+        (WebKit::EwkTouchEvent::EwkTouchEvent):
+        * UIProcess/efl/EwkTouchEvent.h: Added.
+        (WebKit::EwkTouchEvent::create):
+        (WebKit::EwkTouchEvent::eventType):
+        (WebKit::EwkTouchEvent::touchPoints):
+        (WebKit::EwkTouchEvent::modifiers):
+        (WebKit::EwkTouchEvent::timestamp):
+        (WebKit::EwkTouchEvent::type):
+        * UIProcess/efl/EwkTouchPoint.cpp: Added.
+        (WebKit::EwkTouchPoint::EwkTouchPoint):
+        * UIProcess/efl/EwkTouchPoint.h: Added.
+        (WebKit::EwkTouchPoint::create):
+        (WebKit::EwkTouchPoint::id):
+        (WebKit::EwkTouchPoint::state):
+        (WebKit::EwkTouchPoint::screenPosition):
+        (WebKit::EwkTouchPoint::position):
+        (WebKit::EwkTouchPoint::radius):
+        (WebKit::EwkTouchPoint::rotationAngle):
+        (WebKit::EwkTouchPoint::forceFactor):
+        (WebKit::EwkTouchPoint::type):
+        * UIProcess/efl/WebViewEfl.cpp:
+        (WebKit::WebViewEfl::sendTouchEvent):
+        * UIProcess/efl/WebViewEfl.h:
+
+2013-06-27  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Fix cast-align warnings in WebKit2/Platform/CoreIPC
+        https://bugs.webkit.org/show_bug.cgi?id=117987
+
+        Reviewed by Rob Buis, WK2 signed-off by Anders Carlsson.
+
+        * Platform/CoreIPC/ArgumentDecoder.cpp:
+        (CoreIPC::ArgumentDecoder::decode):
+        * Platform/CoreIPC/ArgumentEncoder.cpp:
+        (CoreIPC::ArgumentEncoder::encode):
+
+2013-06-27  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r152074.
+        http://trac.webkit.org/changeset/152074
+        https://bugs.webkit.org/show_bug.cgi?id=118137
+
+        It caused lots of layout and API test crash on Qt Wk2.
+        (Requested by kadam on #webkit).
+
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.cpp:
+        (WebKit::CoordinatedLayerTreeHost::~CoordinatedLayerTreeHost):
+        (WebKit::CoordinatedLayerTreeHost::CoordinatedLayerTreeHost):
+        (WebKit::CoordinatedLayerTreeHost::setRootCompositingLayer):
+        (WebKit::CoordinatedLayerTreeHost::invalidate):
+        (WebKit::CoordinatedLayerTreeHost::forceRepaint):
+        (WebKit::CoordinatedLayerTreeHost::sizeDidChange):
+        (WebKit::CoordinatedLayerTreeHost::flushPendingLayerChanges):
+        (WebKit::CoordinatedLayerTreeHost::clearPendingStateChanges):
+        (WebKit::CoordinatedLayerTreeHost::initializeRootCompositingLayerIfNeeded):
+        (WebKit::CoordinatedLayerTreeHost::syncLayerState):
+        (WebKit::CoordinatedLayerTreeHost::prepareCustomFilterProxiesIfNeeded):
+        (WebKit::CoordinatedLayerTreeHost::checkCustomFilterProgramProxies):
+        (WebKit::CoordinatedLayerTreeHost::removeCustomFilterProgramProxy):
+        (WebKit::CoordinatedLayerTreeHost::detachLayer):
+        (WebKit::CoordinatedLayerTreeHost::performScheduledLayerFlush):
+        (WebKit::CoordinatedLayerTreeHost::syncDisplayState):
+        (WebKit::CoordinatedLayerTreeHost::didPerformScheduledLayerFlush):
+        (WebKit::CoordinatedLayerTreeHost::createPageOverlayLayer):
+        (WebKit::CoordinatedLayerTreeHost::createImageBackingIfNeeded):
+        (WebKit::CoordinatedLayerTreeHost::createImageBacking):
+        (WebKit::CoordinatedLayerTreeHost::updateImageBacking):
+        (WebKit::CoordinatedLayerTreeHost::clearImageBackingContents):
+        (WebKit::CoordinatedLayerTreeHost::removeImageBacking):
+        (WebKit::CoordinatedLayerTreeHost::flushPendingImageBackingChanges):
+        (WebKit::CoordinatedLayerTreeHost::notifyAnimationStarted):
+        (WebKit::CoordinatedLayerTreeHost::notifyFlushRequired):
+        (WebKit::CoordinatedLayerTreeHost::paintContents):
+        (WebKit::CoordinatedLayerTreeHost::createGraphicsLayer):
+        (WebKit::CoordinatedLayerTreeHost::deviceScaleFactor):
+        (WebKit::CoordinatedLayerTreeHost::pageScaleFactor):
+        (WebKit::CoordinatedLayerTreeHost::createUpdateAtlas):
+        (WebKit::CoordinatedLayerTreeHost::removeUpdateAtlas):
+        (WebKit::CoordinatedLayerTreeHost::visibleContentsRect):
+        (WebKit::CoordinatedLayerTreeHost::mainContentsLayer):
+        (WebKit::CoordinatedLayerTreeHost::setVisibleContentsRect):
+        (WebKit::CoordinatedLayerTreeHost::deviceOrPageScaleFactorChanged):
+        (WebKit::CoordinatedLayerTreeHost::graphicsLayerFactory):
+        (WebKit::CoordinatedLayerTreeHost::scheduleAnimation):
+        (WebKit::CoordinatedLayerTreeHost::renderNextFrame):
+        (WebKit::CoordinatedLayerTreeHost::purgeBackingStores):
+        (WebKit::CoordinatedLayerTreeHost::paintToSurface):
+        (WebKit::CoordinatedLayerTreeHost::scheduleReleaseInactiveAtlases):
+        (WebKit::CoordinatedLayerTreeHost::releaseInactiveAtlasesTimerFired):
+        (WebKit::CoordinatedLayerTreeHost::commitScrollOffset):
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.h:
+        * WebProcess/WebPage/LayerTreeHost.h:
+        (WebKit::LayerTreeHost::setVisibleContentsRect):
+        (WebKit::LayerTreeHost::renderNextFrame):
+        (WebKit::LayerTreeHost::purgeBackingStores):
+
+2013-06-27  Xabier Rodriguez Calvar  <calvaris@igalia.com>
+
+        Fixing some compiler warnings
+        https://bugs.webkit.org/show_bug.cgi?id=117791
+
+        Reviewed by Martin Robinson.
+
+        * UIProcess/API/gtk/tests/WebExtensionTest.cpp: Properly
+        initialized GDBusInterfaceVTable.
+        * WebProcess/InjectedBundle/API/gtk/WebKitWebPage.cpp:
+        (webkitWebPageCreate): Added missing fields to the
+        WKBundlePageLoaderClient.
+
+2013-06-27  Iago Toral Quiroga  <itoral@igalia.com>
+
+        Use consistent file names for WidgetBackingStoreGtkX11 class
+        https://bugs.webkit.org/show_bug.cgi?id=118124
+
+        Reviewed by Carlos Garcia Campos.
+
+        * UIProcess/cairo/BackingStoreCairo.cpp:
+
+2013-06-27  Alberto Garcia  <agarcia@igalia.com>
+
+        [GTK] [WK2] Check value of WEBKIT_INJECTED_BUNDLE_PATH
+        https://bugs.webkit.org/show_bug.cgi?id=118055
+
+        Reviewed by Carlos Garcia Campos.
+
+        If the directory pointed at by WEBKIT_INJECTED_BUNDLE_PATH does
+        not exist, fall back to the system directory.
+
+        This makes MiniBrowser work outside the build tree.
+
+        * UIProcess/API/gtk/WebKitWebContext.cpp:
+        (injectedBundleDirectory):
+
+2013-06-26  Simon Cooper  <scooper@apple.com>
+
+        Sometimes the Flash Player plugin cannot make outgoing connections
+        https://bugs.webkit.org/show_bug.cgi?id=118110
+        <rdar://problem/14270933>
+
+        Reviewed by Alexey Proskuryakov.
+
+        Allow outgoing and incoming UDP data. Tidy up the QuickTime
+        profile as it gets the UDP ability from the common profile.
+
+        * Resources/PlugInSandboxProfiles/com.apple.QuickTime Plugin.plugin.sb:
+        * Resources/PlugInSandboxProfiles/com.apple.WebKit.plugin-common.sb:
+
+2013-06-26  Simon Cooper  <scooper@apple.com>
+
+        Flash Player: deny ipc-posix-sem 59918130
+        https://bugs.webkit.org/show_bug.cgi?id=118107
+        <rdar://problem/14271105>
+
+        Reviewed by Alexey Proskuryakov.
+
+        Allow same-sandbox scoped semaphores on Mavericks. Permit the
+        named semaphore for older releases.
+
+        * Resources/PlugInSandboxProfiles/com.macromedia.Flash Player.plugin.sb:
+
+2013-06-26  Gwang Yoon Hwang  <ryumiel@company100.net>
+
+        Coordinated Graphics: Separate CoordinatedLayerTreeHost into CoordinatedLayerTreeHost and CompositingCoordinator
+        https://bugs.webkit.org/show_bug.cgi?id=104360
+
+        Reviewed by Noam Rosenthal.
+
+        The CoordinatedLayerTreeHost has too many responsibilities. It
+        implements LayerTreeHost, GraphicsLayerClient,
+        CoordinatedGraphicsLayerClient, CoordinatedImageBacking::Client,
+        UpdateAtlas::Client, GraphicsLayerFactory and
+        WebCustomFilterProgramProxyClient.
+
+        This refactoring reduces the responsibilities of CoordinatedLayerTreeHost.
+
+        This patch introduces a new class called CompositingCoordinator, which
+        takes the responsibility of managing compositing resources in
+        WebProcess.
+
+        CoordinatedLayerTreeHost is responsible only for the scheduling and
+        IPC-specific stuff, which are relevant only for WebKit2.
+
+        No new tests, covered by existing tests.
+
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.cpp:
+        (WebKit::CoordinatedLayerTreeHost::~CoordinatedLayerTreeHost):
+        (WebKit::CoordinatedLayerTreeHost::CoordinatedLayerTreeHost):
+        (WebKit::CoordinatedLayerTreeHost::setRootCompositingLayer):
+        (WebKit::CoordinatedLayerTreeHost::invalidate):
+        (WebKit::CoordinatedLayerTreeHost::forceRepaint):
+        (WebKit::CoordinatedLayerTreeHost::sizeDidChange):
+        (WebKit::CoordinatedLayerTreeHost::setVisibleContentsRect):
+        (WebKit::CoordinatedLayerTreeHost::renderNextFrame):
+        (WebKit::CoordinatedLayerTreeHost::purgeBackingStores):
+        (WebKit::CoordinatedLayerTreeHost::willSyncLayerState):
+        (WebKit::CoordinatedLayerTreeHost::prepareCustomFilterProxiesForAnimations):
+        (WebKit::CoordinatedLayerTreeHost::checkCustomFilterProgramProxies):
+        (WebKit::CoordinatedLayerTreeHost::removeCustomFilterProgramProxy):
+        (WebKit::CoordinatedLayerTreeHost::didFlushRootLayer):
+        (WebKit::CoordinatedLayerTreeHost::performScheduledLayerFlush):
+        (WebKit::CoordinatedLayerTreeHost::createPageOverlayLayer):
+        (WebKit::CoordinatedLayerTreeHost::paintLayerContents):
+        (WebKit::CoordinatedLayerTreeHost::commitSceneState):
+        (WebKit::CoordinatedLayerTreeHost::deviceOrPageScaleFactorChanged):
+        (WebKit::CoordinatedLayerTreeHost::graphicsLayerFactory):
+        (WebKit::CoordinatedLayerTreeHost::scheduleAnimation):
+        (WebKit::CoordinatedLayerTreeHost::commitScrollOffset):
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.h:
+        * WebProcess/WebPage/LayerTreeHost.h:
+
+2013-06-26  Simon Cooper  <scooper@apple.com>
+
+        Silverlight deny ipc-posix-sem LC_Mutex playing Amazon Prime videos
+        https://bugs.webkit.org/show_bug.cgi?id=118102
+        <rdar://problem/14194077>
+
+        Reviewed by Alexey Proskuryakov.
+
+        Allow same-sandbox scoped semaphores on Mavericks. Permit the
+        named semaphore for older releases.
+
+        * Resources/PlugInSandboxProfiles/com.microsoft.SilverlightPlugin.sb:
+
+2013-06-26  Simon Cooper  <scooper@apple.com>
+
+        Update ColorSync shared memory names in plug-in sandbox profile
+        https://bugs.webkit.org/show_bug.cgi?id=118099
+
+        Reviewed by Alexey Proskuryakov.
+
+        Update the common profile to use the names used in Mavericks
+
+        * Resources/PlugInSandboxProfiles/com.apple.WebKit.plugin-common.sb:
+
+2013-06-26  Anders Carlsson  <andersca@apple.com>
+
+        Deprecate StringImpl::charactersWithNullTermination
+        https://bugs.webkit.org/show_bug.cgi?id=118108
+
+        Reviewed by Beth Dakin.
+
+        Rename calls to charactersWithNullTermination to deprecatedCharactersWithNullTermination.
+
+        * Platform/CoreIPC/win/ConnectionWin.cpp:
+        (CoreIPC::Connection::createServerAndClientIdentifiers):
+
+2013-06-26  Simon Cooper  <scooper@apple.com>
+
+        QuickTime plug-in cannot update com.apple.quicktime.plugin.preferences.plist file
+        https://bugs.webkit.org/show_bug.cgi?id=118098
+        <rdar://problem/13888138>
+
+        Reviewed by Alexey Proskuryakov.
+
+        Allow the preference file to be written
+
+        * Resources/PlugInSandboxProfiles/com.apple.QuickTime Plugin.plugin.sb:
+
 2013-06-24  Simon Cooper  <scooper@apple.com>
 
         Silverlight triggers sandbox violations: deny network-bind 0.0.0.0:0

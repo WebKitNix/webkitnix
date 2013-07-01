@@ -51,6 +51,7 @@
 #include "FrameSelection.h"
 #include "FrameView.h"
 #include "HTMLAnchorElement.h"
+#include "HTMLImageElement.h"
 #include "HTMLInputElement.h"
 #include "HTMLNames.h"
 #include "HTMLPlugInElement.h"
@@ -659,15 +660,15 @@ Element* DragController::draggableElement(const Frame* sourceFrame, Element* sta
             }
             if (dragMode == DRAG_AUTO) {
                 if ((m_dragSourceAction & DragSourceActionImage)
-                    && node->hasTagName(HTMLNames::imgTag)
+                    && isHTMLImageElement(node)
                     && sourceFrame->settings()
                     && sourceFrame->settings()->loadsImagesAutomatically()) {
                     state.type = static_cast<DragSourceAction>(state.type | DragSourceActionImage);
                     return toElement(node);
                 }
                 if ((m_dragSourceAction & DragSourceActionLink)
-                    && node->hasTagName(HTMLNames::aTag)
-                    && static_cast<HTMLAnchorElement*>(node)->isLiveLink()) {
+                    && isHTMLAnchorElement(node)
+                    && toHTMLAnchorElement(node)->isLiveLink()) {
                     state.type = static_cast<DragSourceAction>(state.type | DragSourceActionLink);
                     return toElement(node);
                 }

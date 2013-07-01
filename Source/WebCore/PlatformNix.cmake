@@ -257,18 +257,18 @@ endif ()
 add_definitions(-DDATA_DIR="${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}")
 
 if (ENABLE_WEB_AUDIO)
-  LIST(APPEND WebCore_INCLUDE_DIRECTORIES
+  list(APPEND WebCore_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/audio/nix"
   )
-  LIST(APPEND WebCore_SOURCES
+  list(APPEND WebCore_SOURCES
     platform/audio/nix/AudioBusNix.cpp
     platform/audio/nix/AudioDestinationNix.cpp
     platform/audio/nix/FFTFrameNix.cpp
   )
-  SET(WEB_AUDIO_DIR ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/webaudio/resources)
-  FILE(GLOB WEB_AUDIO_DATA "${WEBCORE_DIR}/platform/audio/resources/*.wav")
-  INSTALL(FILES ${WEB_AUDIO_DATA} DESTINATION ${WEB_AUDIO_DIR})
-  ADD_DEFINITIONS(-DUNINSTALLED_AUDIO_RESOURCES_DIR="${WEBCORE_DIR}/platform/audio/resources")
+  set(WEB_AUDIO_DIR ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/webaudio/resources)
+  file(GLOB WEB_AUDIO_DATA "${WEBCORE_DIR}/platform/audio/resources/*.wav")
+  install(FILES ${WEB_AUDIO_DATA} DESTINATION ${WEB_AUDIO_DIR})
+  add_definitions(-DUNINSTALLED_AUDIO_RESOURCES_DIR="${WEBCORE_DIR}/platform/audio/resources")
 endif ()
 
 if (ENABLE_GAMEPAD)

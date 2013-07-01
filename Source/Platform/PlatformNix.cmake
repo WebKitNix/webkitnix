@@ -1,11 +1,11 @@
-set (Platform_INCLUDES
+set(Platform_INCLUDES
     nix
     ${WEBCORE_DIR}/platform/graphics/ # For IntRect.h
     ${WTF_DIR} # For config.h
     ${CMAKE_BINARY_DIR} # For cmakeconfig.h
 )
 
-set (Platform_HEADERS
+set(Platform_HEADERS
     nix/public/Platform.h
     nix/public/WebColor.h
     nix/public/WebFFTFrame.h
@@ -21,7 +21,7 @@ set (Platform_HEADERS
     nix/public/WebVector.h
 )
 
-set (Platform_SOURCES
+set(Platform_SOURCES
     nix/src/Platform.cpp
     nix/src/DefaultWebThemeEngine.cpp
 )

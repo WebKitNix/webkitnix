@@ -103,7 +103,7 @@ class NixPort(Port):
         return [self._jhbuild_wrapper_path] + super(NixPort, self)._image_diff_command(*args, **kwargs)
 
     def _search_paths(self):
-        return [ self.port_name ]
+        return [self.port_name]
 
     def show_results_html_file(self, results_filename):
         run_launcher_args = ["file://%s" % results_filename]

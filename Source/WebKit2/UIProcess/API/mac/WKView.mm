@@ -415,7 +415,7 @@ struct WKViewInterpretKeyEventsParameters {
     if (_data->_useContentPreparationRectForVisibleRect)
         exposedRect = NSUnionRect(_data->_contentPreparationRect, exposedRect);
 
-    _data->_page->viewExposedRectChanged(exposedRect);
+    _data->_page->viewExposedRectChanged(exposedRect, _data->_clipsToVisibleRect);
 }
 
 - (void)setFrameSize:(NSSize)size
@@ -1980,6 +1980,10 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
     // update the active state first and then make it visible. If the view is about to be hidden, we hide it first and then
     // update the active state.
     if ([self window]) {
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+        if (_data->_windowOcclusionDetectionEnabled)
+            [self _setIsWindowOccluded:([[self window] occlusionState] & NSWindowOcclusionStateVisible) != NSWindowOcclusionStateVisible];
+#endif
         _data->_windowHasValidBackingStore = NO;
         [self doWindowDidChangeScreen];
         [self _updateWindowVisibility];
@@ -3328,6 +3332,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     BOOL expandsToFit = minimumSizeForAutoLayout.width > 0;
 
     _data->_page->setMinimumLayoutSize(IntSize(minimumSizeForAutoLayout.width, minimumSizeForAutoLayout.height));
+    _data->_page->setMainFrameIsScrollable(!expandsToFit);
 
     [self setShouldClipToVisibleRect:expandsToFit];
 }
@@ -3340,11 +3345,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
 - (void)setShouldClipToVisibleRect:(BOOL)clipsToVisibleRect
 {
     _data->_clipsToVisibleRect = clipsToVisibleRect;
-
-    if (clipsToVisibleRect)
-        [self _updateViewExposedRect];
-
-    _data->_page->setMainFrameIsScrollable(!clipsToVisibleRect);
+    [self _updateViewExposedRect];
 }
 
 - (NSColor *)underlayColor

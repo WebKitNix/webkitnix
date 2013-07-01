@@ -50,7 +50,9 @@
 #include <WebCore/FrameView.h>
 #include <WebCore/HTMLFormElement.h>
 #include <WebCore/HTMLFrameOwnerElement.h>
+#include <WebCore/HTMLInputElement.h>
 #include <WebCore/HTMLNames.h>
+#include <WebCore/HTMLTextAreaElement.h>
 #include <WebCore/JSCSSStyleDeclaration.h>
 #include <WebCore/JSElement.h>
 #include <WebCore/JSRange.h>
@@ -616,7 +618,7 @@ bool WebFrame::containsAnyFormControls() const
     for (Node* node = document->documentElement(); node; node = NodeTraversal::next(node)) {
         if (!node->isElementNode())
             continue;
-        if (toElement(node)->hasTagName(HTMLNames::inputTag) || toElement(node)->hasTagName(HTMLNames::selectTag) || toElement(node)->hasTagName(HTMLNames::textareaTag))
+        if (isHTMLInputElement(node) || toElement(node)->hasTagName(HTMLNames::selectTag) || isHTMLTextAreaElement(node))
             return true;
     }
     return false;

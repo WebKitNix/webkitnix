@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include "WinLauncher.h"
 
+#include "AccessibilityDelegate.h"
 #include "DOMDefaultImpl.h"
 #include "PrintWebUIDelegate.h"
 #include <WebKit/WebKitCOMAPI.h>
@@ -54,6 +55,7 @@ IWebViewPrivate* gWebViewPrivate = 0;
 HWND gViewWindow = 0;
 WinLauncherWebHost* gWebHost = 0;
 PrintWebUIDelegate* gPrintDelegate = 0;
+AccessibilityDelegate* gAccessibilityDelegate = 0;
 TCHAR szTitle[MAX_LOADSTRING];                    // The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
@@ -343,6 +345,7 @@ extern "C" __declspec(dllexport) int WINAPI dllLauncherEntryPoint(HINSTANCE, HIN
         goto exit;
 
     standardPreferences->setAcceleratedCompositingEnabled(TRUE);
+    standardPreferences->setAVFoundationEnabled(TRUE);
 
     HRESULT hr = WebKitCreateInstance(CLSID_WebView, 0, IID_IWebView, reinterpret_cast<void**>(&gWebView));
     if (FAILED(hr))
@@ -361,6 +364,12 @@ extern "C" __declspec(dllexport) int WINAPI dllLauncherEntryPoint(HINSTANCE, HIN
     gPrintDelegate = new PrintWebUIDelegate;
     gPrintDelegate->AddRef();
     hr = gWebView->setUIDelegate(gPrintDelegate);
+    if (FAILED (hr))
+        goto exit;
+
+    gAccessibilityDelegate = new AccessibilityDelegate;
+    gAccessibilityDelegate->AddRef();
+    hr = gWebView->setAccessibilityDelegate(gAccessibilityDelegate);
     if (FAILED (hr))
         goto exit;
 

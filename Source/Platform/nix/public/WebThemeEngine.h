@@ -31,9 +31,9 @@
 #ifndef WebThemeEngine_h
 #define WebThemeEngine_h
 
-#include "WebSize.h"
 #include "WebCanvas.h"
 #include "WebColor.h"
+#include "WebSize.h"
 
 namespace WebKit {
 
@@ -97,8 +97,7 @@ public:
         double animationStartTime;
     };
 
-    struct MeterExtraParams
-    {
+    struct MeterExtraParams {
         double min;
         double max;
         double value;

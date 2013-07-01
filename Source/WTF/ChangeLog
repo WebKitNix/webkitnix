@@ -1,3 +1,120 @@
+2013-06-28  Anders Carlsson  <andersca@apple.com>
+
+        Remove String::deprecatedCharactersWithNullTermination() and related code
+        https://bugs.webkit.org/show_bug.cgi?id=118211
+
+        Reviewed by Benjamin Poulain.
+
+        Remove String::deprecatedCharactersWithNullTermination, StringImpl::createWithTerminatingNullCharacter
+        and the s_hashFlagHasTerminatingNullCharacter flag. We no longer care about whether strings have a
+        terminating null character.
+
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::createFromLiteral):
+        (WTF::StringImpl::createWithoutCopying):
+        (WTF::StringImpl::getData16SlowCase):
+        (WTF::StringImpl::sizeInBytes):
+        * wtf/text/StringImpl.h:
+        (WTF::StringImpl::StringImpl):
+        (WTF::StringImpl::createFromLiteral):
+        (WTF::StringImpl::isolatedCopy):
+        * wtf/text/WTFString.cpp:
+        * wtf/text/WTFString.h:
+
+2013-06-27  Anders Carlsson  <andersca@apple.com>
+
+        Add a new String::charactersWithNullTermination() function that returns a vector
+        https://bugs.webkit.org/show_bug.cgi?id=118155
+
+        Reviewed by Andreas Kling.
+
+        This new String::charactersWithNullTermination() function returns a new Vector<UChar>
+        and does not modify the underlying string data.
+
+        * wtf/text/WTFString.cpp:
+        (WTF::String::charactersWithNullTermination):
+        * wtf/text/WTFString.h:
+
+2013-06-26  Anders Carlsson  <andersca@apple.com>
+
+        Deprecate StringImpl::charactersWithNullTermination
+        https://bugs.webkit.org/show_bug.cgi?id=118108
+
+        Reviewed by Beth Dakin.
+
+        The optimization in String and StringImpl to keep track of whether a string
+        has a null terminator isn't worth it; in most cases we call charactersWithNullTermination() on
+        temporary strings which ends up copying strings anyway.
+        
+        A better solution is to have a charactersWithNullTermination() function that returns a Vector<UChar>,
+        which is similar to what we have for String::utf8() and String::ascii(). This will be done in a follow-up patch.
+
+        * wtf/text/WTFString.cpp:
+        (WTF::String::deprecatedCharactersWithNullTermination):
+        * wtf/text/WTFString.h:
+
+2013-06-26  Anders Carlsson  <andersca@apple.com>
+
+        Add JSStringCreateWithCharactersNoCopy SPI
+        https://bugs.webkit.org/show_bug.cgi?id=118074
+        <rdar://problem/14279905>
+
+        Reviewed by Geoffrey Garen.
+
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::createFromLiteral):
+        Use the new ConstructWithoutCopying constructor, passing DoesHaveTerminatingNullCharacter to it.
+        Change the other createFromLiteral overload to just call the first.
+
+        (WTF::StringImpl::createWithoutCopying):
+        Add helper functions for creating strings that shouldn't copy their underlying data.
+
+        * wtf/text/StringImpl.h:
+        (WTF::StringImpl::StringImpl):
+        Rename the ConstructFromLiteralTag constructor enum to ConstructWithoutCopyingTag. Change the constructor
+        to take an enum that states whether the string has a terminating null character or not.
+
+        (WTF::StringImpl::createFromLiteral):
+        Call createWithoutCopying.
+
+        (WTF::StringImpl::requiresCopy):
+        Rename this from isASCIILiteral() and make it more generic so it can handle 16-bit strings as well.
+
+        (WTF::StringImpl::isolatedCopy):
+        If this string doesn't have to be copied, just create a new StringImpl object that references the current data.
+
+2013-06-26  Jer Noble  <jer.noble@apple.com>
+
+        Potential use-after-free after neutering AudioBuffer's underlying ArrayBuffer.
+        https://bugs.webkit.org/show_bug.cgi?id=118040
+
+        Reviewed by Filip Pizlo.
+
+        Add support for 'unneuterable' ArrayBufferViews. Views marked as such will have their underlying
+        ArrayBuffer objects copied rather than transferred to a new view.
+
+        * wtf/ArrayBuffer.cpp:
+        (WTF::ArrayBuffer::transfer): Check whether the associated views are neuterable, and if not
+                clone the ArrayBuffer rather than transferring it.
+        * wtf/ArrayBuffer.h:
+        (WTF::ArrayBufferContents::copyTo): Added. Utility function.
+        * wtf/ArrayBufferView.cpp:
+        (WTF::ArrayBufferView::ArrayBufferView):
+        (WTF::ArrayBufferView::neuter):
+        * wtf/ArrayBufferView.h:
+        (WTF::ArrayBufferView::setNeuterable):
+        (WTF::ArrayBufferView::isNeuterable):
+
+2013-06-26  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Enable CaptionUserPreferenceMediaAF on Windows.
+        https://bugs.webkit.org/show_bug.cgi?id=118076
+
+        Reviewed by Eric Carlson.
+
+        * wtf/Platform.h: Enable Media Accessibility Framework in Windows build environments
+          that support it.
+
 2013-06-24  Roger Fong  <roger_fong@apple.com>
 
         Unreviewed. AppleWin build fix, followup to r151915.

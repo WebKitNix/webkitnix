@@ -83,7 +83,7 @@ bool deleteFile(const String& path)
     CString filename = fileSystemRepresentation(path);
 
     if (!filename.isNull())
-        result = g_remove(filename.data()) == 0;
+        result = !g_remove(filename.data());
 
     return result;
 }
@@ -94,7 +94,7 @@ bool deleteEmptyDirectory(const String& path)
     CString filename = fileSystemRepresentation(path);
 
     if (!filename.isNull())
-        result = g_rmdir(filename.data()) == 0;
+        result = !g_rmdir(filename.data());
 
     return result;
 }
@@ -107,7 +107,7 @@ bool getFileSize(const String& path, long long& resultSize)
 
     GStatBuf statResult;
     gint result = g_stat(filename.data(), &statResult);
-    if (result != 0)
+    if (result)
         return false;
 
     resultSize = statResult.st_size;
@@ -122,7 +122,7 @@ bool getFileModificationTime(const String& path, time_t& modifiedTime)
 
     GStatBuf statResult;
     gint result = g_stat(filename.data(), &statResult);
-    if (result != 0)
+    if (result)
         return false;
 
     modifiedTime = statResult.st_mtime;
@@ -152,8 +152,7 @@ String pathByAppendingComponent(const String& path, const String& component)
 {
     if (path.endsWith(G_DIR_SEPARATOR_S))
         return path + component;
-    else
-        return path + G_DIR_SEPARATOR_S + component;
+    return path + G_DIR_SEPARATOR_S + component;
 }
 
 bool makeAllDirectories(const String& path)
@@ -164,7 +163,7 @@ bool makeAllDirectories(const String& path)
 
     gint result = g_mkdir_with_parents(filename.data(), S_IRWXU);
 
-    return result == 0;
+    return !result;
 }
 
 String homeDirectoryPath()
@@ -235,7 +234,7 @@ Vector<String> listDirectory(const String& path, const String& filter)
     if (!dir)
         return entries;
 
-    GPatternSpec *pspec = g_pattern_spec_new((filter.utf8()).data());
+    GPatternSpec* pspec = g_pattern_spec_new((filter.utf8()).data());
     while (const char* name = g_dir_read_name(dir)) {
         if (!g_pattern_match_string(pspec, name))
             continue;
@@ -308,8 +307,7 @@ long long seekFile(PlatformFileHandle handle, long long offset, FileSeekOrigin o
         ASSERT_NOT_REACHED();
     }
 
-    if (!g_seekable_seek(G_SEEKABLE(g_io_stream_get_input_stream(G_IO_STREAM(handle))),
-                         offset, seekType, 0, 0))
+    if (!g_seekable_seek(G_SEEKABLE(g_io_stream_get_input_stream(G_IO_STREAM(handle))), offset, seekType, 0, 0))
         return -1;
     return g_seekable_tell(G_SEEKABLE(g_io_stream_get_input_stream(G_IO_STREAM(handle))));
 }
@@ -317,8 +315,7 @@ long long seekFile(PlatformFileHandle handle, long long offset, FileSeekOrigin o
 int writeToFile(PlatformFileHandle handle, const char* data, int length)
 {
     gsize bytesWritten;
-    g_output_stream_write_all(g_io_stream_get_output_stream(G_IO_STREAM(handle)),
-                              data, length, &bytesWritten, 0, 0);
+    g_output_stream_write_all(g_io_stream_get_output_stream(G_IO_STREAM(handle)), data, length, &bytesWritten, 0, 0);
     return bytesWritten;
 }
 
@@ -326,8 +323,7 @@ int readFromFile(PlatformFileHandle handle, char* data, int length)
 {
     GOwnPtr<GError> error;
     do {
-        gssize bytesRead = g_input_stream_read(g_io_stream_get_input_stream(G_IO_STREAM(handle)),
-                                               data, length, 0, &error.outPtr());
+        gssize bytesRead = g_input_stream_read(g_io_stream_get_input_stream(G_IO_STREAM(handle)), data, length, 0, &error.outPtr());
         if (bytesRead >= 0)
             return bytesRead;
     } while (error && error->code == G_FILE_ERROR_INTR);

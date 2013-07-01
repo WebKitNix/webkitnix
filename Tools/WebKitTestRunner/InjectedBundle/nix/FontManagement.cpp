@@ -29,9 +29,11 @@
 
 #include <cstdio>
 #include <fontconfig/fontconfig.h>
+#include <glib.h>
 #include <wtf/Vector.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
+#include <wtf/gobject/GOwnPtr.h>
 
 static Vector<String> getFontFiles()
 {
@@ -53,8 +55,35 @@ static Vector<String> getFontFiles()
     return fontFilePaths;
 }
 
+CString getCustomBuildDir()
+{
+    const char* webkitOutputDir = g_getenv("WEBKITOUTPUTDIR");
+    if (webkitOutputDir)
+        return webkitOutputDir;
+
+    return CString();
+}
+
+static CString getFontsPath()
+{
+    CString webkitOutputDir = getCustomBuildDir();
+    GOwnPtr<char> fontsPath(g_build_filename(webkitOutputDir.data(), "Dependencies", "Root", "webkitgtk-test-fonts", NULL));
+    if (g_file_test(fontsPath.get(), static_cast<GFileTest>(G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
+        return fontsPath.get();
+
+    fontsPath.set(g_strdup(DOWNLOADED_FONTS_DIR));
+    if (g_file_test(fontsPath.get(), static_cast<GFileTest>(G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
+        return fontsPath.get();
+
+    fprintf(stderr, "Could not locate tests fonts, try setting WEBKITOUTPUTDIR.\n");
+    return CString();
+}
+
 static bool addFontDirectory(const CString& fontDirectory, FcConfig* config)
 {
+    if (fontDirectory.isNull())
+        return false;
+
     const char* path = fontDirectory.data();
     if (!FcConfigAppFontAddDir(config, reinterpret_cast<const FcChar8*>(path))) {
         fprintf(stderr, "Could not add font directory %s!\n", path);
@@ -87,14 +116,8 @@ void addFontsToEnvironment()
         exit(1);
     }
 
-    if (!addFontDirectory(DOWNLOADED_FONTS_DIR, config)) {
-        fprintf(stderr, "None of the font directories could be added. Either install them "
-                        "or file a bug at http://bugs.webkit.org if they are installed in "
-                        "another location.\n");
-        exit(1);
-    }
-
     addFontFiles(getFontFiles(), config);
+    addFontDirectory(getFontsPath(), config);
 
     if (!FcConfigSetCurrent(config)) {
         fprintf(stderr, "Could not set the current font configuration!\n");

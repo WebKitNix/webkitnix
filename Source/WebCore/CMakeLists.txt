@@ -177,7 +177,7 @@ set(WebCore_IDL_FILES
     Modules/filesystem/HTMLInputElementFileSystem.idl
     Modules/filesystem/Metadata.idl
     Modules/filesystem/MetadataCallback.idl
-    Modules/filesystem/WorkerContextFileSystem.idl
+    Modules/filesystem/WorkerGlobalScopeFileSystem.idl
 
     Modules/gamepad/Gamepad.idl
     Modules/gamepad/GamepadList.idl
@@ -204,7 +204,7 @@ set(WebCore_IDL_FILES
     Modules/indexeddb/IDBRequest.idl
     Modules/indexeddb/IDBTransaction.idl
     Modules/indexeddb/IDBVersionChangeEvent.idl
-    Modules/indexeddb/WorkerContextIndexedDatabase.idl
+    Modules/indexeddb/WorkerGlobalScopeIndexedDatabase.idl
 
     Modules/mediasource/MediaSource.idl
     Modules/mediasource/SourceBuffer.idl
@@ -242,7 +242,7 @@ set(WebCore_IDL_FILES
     Modules/notifications/Notification.idl
     Modules/notifications/NotificationCenter.idl
     Modules/notifications/NotificationPermissionCallback.idl
-    Modules/notifications/WorkerContextNotifications.idl
+    Modules/notifications/WorkerGlobalScopeNotifications.idl
 
     Modules/proximity/DeviceProximityEvent.idl
 
@@ -590,11 +590,11 @@ set(WebCore_IDL_FILES
     storage/StorageEvent.idl
 
     workers/AbstractWorker.idl
-    workers/DedicatedWorkerContext.idl
+    workers/DedicatedWorkerGlobalScope.idl
     workers/SharedWorker.idl
-    workers/SharedWorkerContext.idl
+    workers/SharedWorkerGlobalScope.idl
     workers/Worker.idl
-    workers/WorkerContext.idl
+    workers/WorkerGlobalScope.idl
     workers/WorkerLocation.idl
 
     xml/DOMParser.idl
@@ -650,6 +650,7 @@ set(WebCore_SVG_IDL_FILES
     svg/SVGElementInstanceList.idl
     svg/SVGEllipseElement.idl
     svg/SVGException.idl
+    svg/SVGExternalResourcesRequired.idl
     svg/SVGFEBlendElement.idl
     svg/SVGFEColorMatrixElement.idl
     svg/SVGFEComponentTransferElement.idl
@@ -676,6 +677,7 @@ set(WebCore_SVG_IDL_FILES
     svg/SVGFETileElement.idl
     svg/SVGFETurbulenceElement.idl
     svg/SVGFilterElement.idl
+    svg/SVGFitToViewBox.idl
     svg/SVGFontElement.idl
     svg/SVGFontFaceElement.idl
     svg/SVGFontFaceFormatElement.idl
@@ -687,6 +689,7 @@ set(WebCore_SVG_IDL_FILES
     svg/SVGGlyphElement.idl
     svg/SVGGlyphRefElement.idl
     svg/SVGGradientElement.idl
+    svg/SVGGraphicsElement.idl
     svg/SVGHKernElement.idl
     svg/SVGImageElement.idl
     svg/SVGLength.idl
@@ -745,6 +748,7 @@ set(WebCore_SVG_IDL_FILES
     svg/SVGSymbolElement.idl
     svg/SVGTRefElement.idl
     svg/SVGTSpanElement.idl
+    svg/SVGTests.idl
     svg/SVGTextContentElement.idl
     svg/SVGTextElement.idl
     svg/SVGTextPathElement.idl
@@ -752,6 +756,7 @@ set(WebCore_SVG_IDL_FILES
     svg/SVGTitleElement.idl
     svg/SVGTransform.idl
     svg/SVGTransformList.idl
+    svg/SVGURIReference.idl
     svg/SVGUnitTypes.idl
     svg/SVGUseElement.idl
     svg/SVGViewElement.idl
@@ -793,7 +798,7 @@ set(WebCore_SOURCES
     Modules/filesystem/FileWriterSync.cpp
     Modules/filesystem/HTMLInputElementFileSystem.cpp
     Modules/filesystem/LocalFileSystem.cpp
-    Modules/filesystem/WorkerContextFileSystem.cpp
+    Modules/filesystem/WorkerGlobalScopeFileSystem.cpp
 
     Modules/gamepad/Gamepad.cpp
     Modules/gamepad/GamepadList.cpp
@@ -833,7 +838,7 @@ set(WebCore_SOURCES
     Modules/indexeddb/IDBTransactionCoordinator.cpp
     Modules/indexeddb/IDBVersionChangeEvent.cpp
     Modules/indexeddb/PageGroupIndexedDatabase.cpp
-    Modules/indexeddb/WorkerContextIndexedDatabase.cpp
+    Modules/indexeddb/WorkerGlobalScopeIndexedDatabase.cpp
 
     Modules/mediasource/MediaSource.cpp
     Modules/mediasource/MediaSourceRegistry.cpp
@@ -875,7 +880,7 @@ set(WebCore_SOURCES
     Modules/notifications/NotificationCenter.cpp
     Modules/notifications/NotificationController.cpp
     Modules/notifications/Notification.cpp
-    Modules/notifications/WorkerContextNotifications.cpp
+    Modules/notifications/WorkerGlobalScopeNotifications.cpp
 
     Modules/proximity/DeviceProximityController.cpp
     Modules/proximity/DeviceProximityEvent.cpp
@@ -1979,6 +1984,7 @@ set(WebCore_SOURCES
     platform/graphics/filters/SpotLightSource.cpp
 
     platform/graphics/texmap/coordinated/AreaAllocator.cpp
+    platform/graphics/texmap/coordinated/CompositingCoordinator.cpp
     platform/graphics/texmap/coordinated/CoordinatedBackingStore.cpp
     platform/graphics/texmap/coordinated/CoordinatedGraphicsLayer.cpp
     platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp
@@ -2412,6 +2418,7 @@ set(WebCore_SOURCES
     svg/SVGGlyphElement.cpp
     svg/SVGGlyphRefElement.cpp
     svg/SVGGradientElement.cpp
+    svg/SVGGraphicsElement.cpp
     svg/SVGHKernElement.cpp
     svg/SVGImageElement.cpp
     svg/SVGImageLoader.cpp
@@ -2459,7 +2466,6 @@ set(WebCore_SOURCES
     svg/SVGStyleElement.cpp
     svg/SVGStyledElement.cpp
     svg/SVGStyledLocatableElement.cpp
-    svg/SVGStyledTransformableElement.cpp
     svg/SVGSwitchElement.cpp
     svg/SVGSymbolElement.cpp
     svg/SVGTRefElement.cpp
@@ -2498,15 +2504,15 @@ set(WebCore_SOURCES
     svg/properties/SVGPathSegListPropertyTearOff.cpp
 
     workers/AbstractWorker.cpp
-    workers/DedicatedWorkerContext.cpp
+    workers/DedicatedWorkerGlobalScope.cpp
     workers/DedicatedWorkerThread.cpp
     workers/DefaultSharedWorkerRepository.cpp
     workers/SharedWorker.cpp
-    workers/SharedWorkerContext.cpp
+    workers/SharedWorkerGlobalScope.cpp
     workers/SharedWorkerRepository.cpp
     workers/SharedWorkerThread.cpp
     workers/Worker.cpp
-    workers/WorkerContext.cpp
+    workers/WorkerGlobalScope.cpp
     workers/WorkerEventQueue.cpp
     workers/WorkerLocation.cpp
     workers/WorkerMessagingProxy.cpp
@@ -2594,11 +2600,11 @@ set(WebCore_LIBRARIES
 
 if (ENABLE_SQL_DATABASE AND ENABLE_WORKERS)
     list(APPEND WebCore_SOURCES
-        Modules/webdatabase/WorkerContextWebDatabase.cpp
+        Modules/webdatabase/WorkerGlobalScopeWebDatabase.cpp
     )
 
     list(APPEND WebCore_IDL_FILES
-        Modules/webdatabase/WorkerContextWebDatabase.idl
+        Modules/webdatabase/WorkerGlobalScopeWebDatabase.idl
     )
 endif ()
 
@@ -2963,7 +2969,9 @@ set(SCRIPTS_BINDINGS
 set(IDL_FILES_TMP ${DERIVED_SOURCES_WEBCORE_DIR}/idl_files.tmp)
 set(SUPPLEMENTAL_DEPENDENCY_FILE ${DERIVED_SOURCES_WEBCORE_DIR}/supplemental_dependency.tmp)
 set(WINDOW_CONSTRUCTORS_FILE ${DERIVED_SOURCES_WEBCORE_DIR}/DOMWindowConstructors.idl)
-set(WORKERCONTEXT_CONSTRUCTORS_FILE ${DERIVED_SOURCES_WEBCORE_DIR}/WorkerContextConstructors.idl)
+set(WORKERGLOBALSCOPE_CONSTRUCTORS_FILE ${DERIVED_SOURCES_WEBCORE_DIR}/WorkerGlobalScopeConstructors.idl)
+set(SHAREDWORKERGLOBALSCOPE_CONSTRUCTORS_FILE ${DERIVED_SOURCES_WEBCORE_DIR}/SharedWorkerGlobalScopeConstructors.idl)
+set(DEDICATEDWORKERGLOBALSCOPE_CONSTRUCTORS_FILE ${DERIVED_SOURCES_WEBCORE_DIR}/DedicatedWorkerGlobalScopeConstructors.idl)
 set(IDL_ATTRIBUTES_FILE ${WEBCORE_DIR}/bindings/scripts/IDLAttributes.txt)
 
 include(${WEBCORE_DIR}/UseJSC.cmake)

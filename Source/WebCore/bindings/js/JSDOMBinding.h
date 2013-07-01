@@ -77,7 +77,7 @@ class DOMStringList;
     };
 
     // Constructors using this base class depend on being in a Document and
-    // can never be used from a WorkerContext.
+    // can never be used from a WorkerGlobalScope.
     class DOMConstructorWithDocument : public DOMConstructorObject {
         typedef DOMConstructorObject Base;
     public:
@@ -249,7 +249,10 @@ class DOMStringList;
     AtomicStringImpl* findAtomicString(JSC::PropertyName);
 
     String valueToStringWithNullCheck(JSC::ExecState*, JSC::JSValue); // null if the value is null
+    AtomicString valueToAtomicStringWithNullCheck(JSC::ExecState*, JSC::JSValue);
+
     String valueToStringWithUndefinedOrNullCheck(JSC::ExecState*, JSC::JSValue); // null if the value is null or undefined
+    AtomicString valueToAtomicStringWithUndefinedOrNullCheck(JSC::ExecState*, JSC::JSValue);
 
     inline int32_t finiteInt32Value(JSC::JSValue value, JSC::ExecState* exec, bool& okay)
     {

@@ -49,8 +49,8 @@ list(APPEND WebKit2_SOURCES
     UIProcess/nix/WebPopupMenuListenerNix.cpp
     UIProcess/efl/WebPreferencesEfl.cpp
 
-    UIProcess/Launcher/gtk/ProcessLauncherGtk.cpp
-    UIProcess/gtk/WebProcessProxyGtk.cpp
+    UIProcess/Launcher/nix/ProcessLauncherNix.cpp
+    UIProcess/nix/WebProcessProxyNix.cpp
 
     UIProcess/Plugins/unix/PluginInfoStoreUnix.cpp
 

@@ -31,7 +31,7 @@
 
 namespace WebCore {
 
-void prefetchDNS(const String& hostname)
+void prefetchDNS(const String& /* hostname */)
 {
     notImplemented();
 }
@@ -39,6 +39,7 @@ void prefetchDNS(const String& hostname)
 bool DNSResolveQueue::platformProxyIsEnabledInSystemPreferences()
 {
     notImplemented();
+    return false;
 }
 
 void DNSResolveQueue::platformResolve(const String& hostname)

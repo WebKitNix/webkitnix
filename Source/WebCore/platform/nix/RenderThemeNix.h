@@ -40,7 +40,7 @@ public:
     virtual String extraQuirksStyleSheet();
     virtual String extraPlugInsStyleSheet();
 
-    virtual void systemFont(WebCore::CSSValueID cssValueId, FontDescription&) const OVERRIDE;
+    virtual void systemFont(WebCore::CSSValueID, FontDescription&) const OVERRIDE;
 
 #if ENABLE(PROGRESS_ELEMENT)
     // Returns the repeat interval of the animation for the progress bar.

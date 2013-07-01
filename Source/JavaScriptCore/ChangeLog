@@ -1,3 +1,89 @@
+2013-07-01  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Fix cast-align warnings in JavaScriptCore/heap/HandleBlockInlines.h
+        https://bugs.webkit.org/show_bug.cgi?id=118242
+
+        Reviewed by Mark Hahnenberg.
+
+        * heap/HandleBlockInlines.h:
+        (JSC::HandleBlock::nodes):
+
+2013-06-29  Andreas Kling  <akling@apple.com>
+
+        Follow-up to r152206: also update HashFlags8BitBuffer in the LLInt.
+
+        * llint/LowLevelInterpreter.asm:
+
+2013-06-28  Andreas Kling  <akling@apple.com>
+
+        Un-crashify JSC tests on debug bots after Anders had his way with StringImpl.
+
+        * llint/LLIntData.cpp:
+        (JSC::LLInt::Data::performAssertions):
+
+2013-06-28  Anders Carlsson  <andersca@apple.com>
+
+        Remove String::deprecatedCharactersWithNullTermination() and related code
+        https://bugs.webkit.org/show_bug.cgi?id=118211
+
+        Reviewed by Benjamin Poulain.
+
+        * API/JSStringRef.cpp:
+        (JSStringCreateWithCharactersNoCopy):
+        Update call to StringImpl::createWithoutCopying.
+
+2013-06-27  Timothy Hatcher  <timothy@apple.com>
+
+        Notify the debugger about functions created from source code via new Function() or WebCore::JSLazyEventListener.
+
+        https://bugs.webkit.org/show_bug.cgi?id=118063
+
+        Reviewed by Geoffrey Garen.
+
+        * bytecode/UnlinkedCodeBlock.cpp:
+        (JSC::UnlinkedFunctionExecutable::fromGlobalCode): Call Debugger::sourceParsed.
+
+2013-06-26  Anders Carlsson  <andersca@apple.com>
+
+        Add JSStringCreateWithCharactersNoCopy SPI
+        https://bugs.webkit.org/show_bug.cgi?id=118074
+        <rdar://problem/14279905>
+
+        Reviewed by Geoffrey Garen.
+
+        * API/JSStringRef.cpp:
+        (JSStringCreateWithCharactersNoCopy):
+        Create a new OpaqueJSString, using the newly added StringImpl::createWithoutCopying function.
+
+        * API/JSStringRefPrivate.h: Added.
+        Add a home for the JSStringCreateWithCharactersNoCopy function.
+
+        * API/OpaqueJSString.h:
+        (OpaqueJSString::OpaqueJSString):
+        Just call isolatedCopy on the passed in string.
+
+        * API/tests/testapi.c:
+        Add an API test for JSStringCreateWithCharactersNoCopy.
+
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        Add new files.
+
+2013-06-25  Ryosuke Niwa  <rniwa@webkit.org>
+
+        JSString should remember AtomicString
+        https://bugs.webkit.org/show_bug.cgi?id=117386
+
+        Reviewed by Geoffrey Garen.
+
+        Added JSValue::toAtomicString and JSString::atomicString. These two functions allow WebCore to update
+        JSString's m_value to set isAtomic flag and avoid the AtomicStringTable lookups in subsequent attempts
+        to obtain the AtomicString of the same value.
+
+        * runtime/JSCJSValue.h:
+        * runtime/JSString.h:
+        (JSC::JSString::atomicString):
+        (JSC::JSValue::toAtomicString):
+
 2013-06-24  Roger Fong  <roger_fong@apple.com>
 
         Unreviewed. Makefile build fix for AppleWindows.

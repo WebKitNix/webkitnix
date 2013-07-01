@@ -124,10 +124,10 @@ void RenderListBox::updateFromElement()
             HTMLElement* element = listItems[i];
             String text;
             Font itemFont = style()->font();
-            if (element->hasTagName(optionTag))
+            if (isHTMLOptionElement(element))
                 text = toHTMLOptionElement(element)->textIndentedToRespectGroupLabel();
-            else if (element->hasTagName(optgroupTag)) {
-                text = static_cast<const HTMLOptGroupElement*>(element)->groupLabelText();
+            else if (isHTMLOptGroupElement(element)) {
+                text = toHTMLOptGroupElement(element)->groupLabelText();
                 FontDescription d = itemFont.fontDescription();
                 d.setWeight(d.bolderWeight());
                 itemFont = Font(d, itemFont.letterSpacing(), itemFont.wordSpacing());
@@ -347,7 +347,7 @@ void RenderListBox::addFocusRingRects(Vector<IntRect>& rects, const LayoutPoint&
     const Vector<HTMLElement*>& listItems = select->listItems();
     for (int i = 0; i < size; ++i) {
         HTMLElement* element = listItems[i];
-        if (element->hasTagName(optionTag) && !element->isDisabledFormControl()) {
+        if (isHTMLOptionElement(element) && !element->isDisabledFormControl()) {
             rects.append(pixelSnappedIntRect(itemBoundingBoxRect(additionalOffset, i)));
             return;
         }
@@ -403,11 +403,11 @@ void RenderListBox::paintItemForeground(PaintInfo& paintInfo, const LayoutPoint&
         return;
 
     String itemText;
-    bool isOptionElement = element->hasTagName(optionTag);
+    bool isOptionElement = isHTMLOptionElement(element);
     if (isOptionElement)
         itemText = toHTMLOptionElement(element)->textIndentedToRespectGroupLabel();
-    else if (element->hasTagName(optgroupTag))
-        itemText = static_cast<const HTMLOptGroupElement*>(element)->groupLabelText();
+    else if (isHTMLOptGroupElement(element))
+        itemText = toHTMLOptGroupElement(element)->groupLabelText();
     applyTextTransform(style(), itemText, ' ');
 
     Color textColor = element->renderStyle() ? element->renderStyle()->visitedDependentColor(CSSPropertyColor) : style()->visitedDependentColor(CSSPropertyColor);
@@ -427,7 +427,7 @@ void RenderListBox::paintItemForeground(PaintInfo& paintInfo, const LayoutPoint&
     LayoutRect r = itemBoundingBoxRect(paintOffset, listIndex);
     r.move(itemOffsetForAlignment(textRun, itemStyle, itemFont, r));
 
-    if (element->hasTagName(optgroupTag)) {
+    if (isHTMLOptGroupElement(element)) {
         FontDescription d = itemFont.fontDescription();
         d.setWeight(d.bolderWeight());
         itemFont = Font(d, itemFont.letterSpacing(), itemFont.wordSpacing());
@@ -444,7 +444,7 @@ void RenderListBox::paintItemBackground(PaintInfo& paintInfo, const LayoutPoint&
     HTMLElement* element = listItems[listIndex];
 
     Color backColor;
-    if (element->hasTagName(optionTag) && toHTMLOptionElement(element)->selected()) {
+    if (isHTMLOptionElement(element) && toHTMLOptionElement(element)->selected()) {
         if (frame()->selection()->isFocusedAndActive() && document()->focusedElement() == node())
             backColor = theme()->activeListBoxSelectionBackgroundColor();
         else

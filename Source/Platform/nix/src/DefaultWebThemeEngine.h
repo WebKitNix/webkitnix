@@ -26,7 +26,7 @@ public:
 
     virtual WebColor tapHighlightColor() const;
 
-    virtual void paintButton(WebCanvas*, State state, const WebRect&, const ButtonExtraParams&) const;
+    virtual void paintButton(WebCanvas*, State, const WebRect&, const ButtonExtraParams&) const;
     virtual void paintTextField(WebCanvas*, State, const WebRect&) const;
     virtual void paintTextArea(WebCanvas*, State, const WebRect&) const;
     virtual WebSize getCheckboxSize() const;

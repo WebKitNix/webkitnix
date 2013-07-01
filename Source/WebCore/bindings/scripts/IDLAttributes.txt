@@ -19,6 +19,7 @@
 #
 
 ActiveDOMObject
+Atomic
 CPPPureInterface
 CachedAttribute
 CallWith=ScriptExecutionContext|ScriptState|ScriptArguments|CallStack
@@ -56,10 +57,9 @@ EnabledAtRuntime=*
 EnabledBySetting=*
 EnforceRange
 EventTarget
-ExtendsDOMGlobalObject
 GenerateIsReachable=|Impl|ImplContext|ImplDocument|ImplElementRoot|ImplFrame|ImplOwnerNodeRoot
 GetterRaisesException
-GlobalContext=WindowOnly|WorkerOnly|WindowAndWorker
+GlobalContext=DOMWindow|WorkerGlobalScope|SharedWorkerGlobalScope|DedicatedWorkerGlobalScope
 Immutable
 ImplementationLacksVTable
 ImplementationNamespace=*
@@ -67,7 +67,6 @@ ImplementedAs=*
 InitializedByEventConstructor
 InterfaceName=*
 IsIndex
-IsWorkerContext
 JSCustomDefineOwnProperty
 JSCustomDefineOwnPropertyOnPrototype
 JSCustomFinalize

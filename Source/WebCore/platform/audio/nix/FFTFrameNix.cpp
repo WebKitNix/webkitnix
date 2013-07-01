@@ -26,6 +26,7 @@
 
 #if ENABLE(WEB_AUDIO)
 #include "FFTFrame.h"
+
 #include "VectorMath.h"
 #include <public/Platform.h>
 #include <public/WebFFTFrame.h>

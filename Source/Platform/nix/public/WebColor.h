@@ -30,10 +30,9 @@
 
 namespace WebKit {
 
-typedef unsigned RGBA32;        // RGBA quadruplet
+typedef unsigned RGBA32; // RGBA quadruplet
 
-struct WebColor
-{
+struct WebColor {
     static const RGBA32 black = 0xFF000000;
     static const RGBA32 white = 0xFFFFFFFF;
     static const RGBA32 darkGray = 0xFF808080;

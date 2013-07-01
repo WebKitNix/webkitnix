@@ -28,10 +28,10 @@
 #include "config.h"
 #include "SharedTimer.h"
 
-#include <wtf/Assertions.h>
-#include <wtf/CurrentTime.h>
 #define GDK_PRIORITY_REDRAW (G_PRIORITY_HIGH_IDLE + 20)
 #include <glib.h>
+#include <wtf/Assertions.h>
+#include <wtf/CurrentTime.h>
 
 namespace WebCore {
 
@@ -43,7 +43,7 @@ void setSharedTimerFiredFunction(void (*f)())
     sharedTimerFiredFunction = f;
 }
 
-static gboolean timeout_cb(gpointer)
+static gboolean timeoutCallback(gpointer)
 {
     if (sharedTimerFiredFunction)
         sharedTimerFiredFunction();
@@ -57,12 +57,12 @@ void setSharedTimerFireInterval(double interval)
     guint intervalInMS = static_cast<guint>(interval * 1000);
 
     stopSharedTimer();
-    sharedTimer = g_timeout_add_full(GDK_PRIORITY_REDRAW, intervalInMS, timeout_cb, 0, 0);
+    sharedTimer = g_timeout_add_full(GDK_PRIORITY_REDRAW, intervalInMS, timeoutCallback, 0, 0);
 }
 
 void stopSharedTimer()
 {
-    if (sharedTimer == 0)
+    if (!sharedTimer)
         return;
 
     gboolean removedSource = g_source_remove(sharedTimer);

@@ -1,3 +1,162 @@
+2013-06-28  Dean Jackson  <dino@apple.com>
+
+        Update Apple System fonts in auto-complete
+        https://bugs.webkit.org/show_bug.cgi?id=118205
+        <rdar://problem/14308488>
+
+        Reviewed by Joseph Pecoraro.
+
+        Update for the new Apple System font names, and remove some invalid entries.
+
+        * UserInterface/CSSKeywordCompletions.js: General cleanup. Note that
+        "apple-system-short-caption2" looks like it was accidentally omitted. It wasn't :)
+
+2013-06-28  James Craig  <james@cookiecrook.com>
+
+        Web Inspector: AX: VoiceOver speaks all inspector search fields as 'required'
+        https://bugs.webkit.org/show_bug.cgi?id=118122
+
+        Reviewed by Timothy Hatcher.
+
+        Removed bogus "required" state, and switched :valid selector to use :not(:placeholder-shown)
+        so that screen readers will not indicate a bogus :required/:invalid state to the user.
+        Minor cosmetic difference blocked by http://webkit.org/b/118162
+
+        * UserInterface/FilterBar.css:
+        (.filter-bar > input[type="search"]:focus):
+        (.filter-bar > input[type="search"]:not(:placeholder-shown)):
+        * UserInterface/FilterBar.js:
+        (WebInspector.FilterBar):
+        * UserInterface/ResourceSidebarPanel.js:
+        (WebInspector.ResourceSidebarPanel):
+        * UserInterface/SearchBar.css:
+        (.search-bar > input[type="search"]:focus):
+        (.search-bar > input[type="search"]:not(:placeholder-shown)):
+        * UserInterface/SearchBar.js:
+        (WebInspector.SearchBar):
+
+2013-06-27  James Craig  <james@cookiecrook.com>
+
+        Web Inspector: AX: Add container ARIA roles (toolbar, main, labeled regions, etc.) 
+        so the layout is more discoverable to screen reader users
+        https://bugs.webkit.org/show_bug.cgi?id=118104
+
+        Reviewed by Timothy Hatcher.
+
+        Made the basic layout (toolbar, sidebars, main) of the Web Inspector understandable
+        and navigable with VoiceOver.
+
+        * Localizations/en.lproj/localizedStrings.js:
+        * UserInterface/ButtonNavigationItem.js:
+        * UserInterface/CSSStyleDetailsSidebarPanel.js:
+        * UserInterface/DashboardManager.js:
+        * UserInterface/Main.js:
+        * UserInterface/NavigationBar.js:
+        * UserInterface/NavigationItem.js:
+        * UserInterface/NavigationSidebarPanel.js:
+        * UserInterface/RadioButtonNavigationItem.js:
+        * UserInterface/Sidebar.js:
+        * UserInterface/SidebarPanel.js:
+        * UserInterface/Toolbar.js:
+
+2013-06-27  James Craig  <james@cookiecrook.com>
+
+        Web Inspector: AX: Console log of the Inspector does not announce output for screen readers
+        https://bugs.webkit.org/show_bug.cgi?id=115976
+
+        Reviewed by Timothy Hatcher.
+
+        Main console log area (div.console-messages) is now an ARIA live region (role="log")
+        so screen readers speak plain text updates.
+        
+        Also added contextual labels (e.g. input/output) but speech output verification of
+        those is currently blocked by http://webkit.org/b/118096
+
+        * Localizations/en.lproj/localizedStrings.js:
+        * UserInterface/ConsoleCommand.js:
+        (WebInspector.ConsoleCommand.prototype.toMessageElement):
+        * UserInterface/ConsoleCommandResult.js:
+        (WebInspector.ConsoleCommandResult.prototype.toMessageElement):
+        * UserInterface/LogContentView.css:
+        (@media reader):
+        * UserInterface/LogContentView.js:
+        (WebInspector.LogContentView):
+
+
+2013-06-27  Matthew Holden  <jftholden@yahoo.com>
+
+        Web Inspector: Display color picker in popover on color swatch click
+        https://bugs.webkit.org/show_bug.cgi?id=117919
+
+        Reviewed by Timothy Hatcher.
+
+        Includes fixes from second code review.
+
+        * Localizations/en.lproj/localizedStrings.js:
+        * UserInterface/CSSColorPicker.css: Added.
+        (.colorpicker-container):
+        (.colorpicker-fill-parent):
+        (.colorpicker-top):
+        (.colorpicker-color):
+        (.colorpicker-bottom span):
+        (.colorpicker-text):
+        (.colorpicker-color-text-value):
+        (.colorpicker-hue):
+        (.colorpicker-fill):
+        (.colorpicker-range-container):
+        (.colorpicker-range-container *):
+        (.colorpicker-range-container label):
+        (.colorpicker-range-container input):
+        (.colorpicker-saturation):
+        (.colorpicker-value):
+        (.colorpicker-dragger):
+        (.colorpicker-slider):
+        (.colorpicker-container .swatch):
+        (.colorpicker-container .swatch-inner):
+        * UserInterface/CSSColorPicker.js: Added.
+        (WebInspector.CSSColorPicker.consume):
+        (WebInspector.CSSColorPicker.move):
+        (WebInspector.CSSColorPicker.start):
+        (WebInspector.CSSColorPicker.stop):
+        (WebInspector.CSSColorPicker.makeDraggable):
+        (WebInspector.CSSColorPicker.hueDrag):
+        (WebInspector.CSSColorPicker.colorDragStart):
+        (WebInspector.CSSColorPicker.colorDrag):
+        (WebInspector.CSSColorPicker.alphaDrag):
+        (WebInspector.CSSColorPicker.colorSwatchClicked):
+        (WebInspector.CSSColorPicker):
+        (WebInspector.CSSColorPicker.prototype.get element):
+        (WebInspector.CSSColorPicker.prototype.set color):
+        (WebInspector.CSSColorPicker.prototype.get color):
+        (WebInspector.CSSColorPicker.prototype.get outputColorFormat):
+        (WebInspector.CSSColorPicker.prototype.get colorHueOnly):
+        (WebInspector.CSSColorPicker.prototype.set displayText):
+        (WebInspector.CSSColorPicker.prototype.shown):
+        (WebInspector.CSSColorPicker.prototype._updateHelperLocations):
+        (WebInspector.CSSColorPicker.prototype._updateDisplay):
+        (WebInspector.CSSColorPicker.hsvaToRGBA):
+        (WebInspector.CSSColorPicker.rgbaToHSVA):
+        * UserInterface/CSSStyleDeclarationTextEditor.js:
+        (WebInspector.CSSStyleDeclarationTextEditor.prototype.didDismissPopover):
+        (WebInspector.CSSStyleDeclarationTextEditor.prototype.):
+        (WebInspector.CSSStyleDeclarationTextEditor.prototype._createColorSwatches):
+        (WebInspector.CSSStyleDeclarationTextEditor.prototype.event.newColorText.colorTextMarker):
+        (WebInspector.CSSStyleDeclarationTextEditor.prototype.event.newColorText):
+        * UserInterface/Main.html:
+
+2013-06-26  Antoine Quint  <graouts@apple.com>
+
+        Web Inspector: stepping through while paused in debugger makes a popover appear
+        https://bugs.webkit.org/show_bug.cgi?id=117994
+
+        There is no obvious need to call tokenTrackingControllerNewHighlightCandidate when the
+        active call frame changes and it leads to an extraneous display of the popover.
+
+        Reviewed by Timothy Hatcher.
+
+        * UserInterface/SourceCodeTextEditor.js:
+        (WebInspector.SourceCodeTextEditor.prototype._activeCallFrameDidChange):
+
 2013-06-24  Antoine Quint  <graouts@apple.com>
 
         Web Inspector: WebInspector.displayNameForURL() failure prevents DOM inspection

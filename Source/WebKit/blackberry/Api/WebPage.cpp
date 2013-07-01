@@ -68,6 +68,7 @@
 #include "HTMLMediaElement.h"
 #include "HTMLNames.h"
 #include "HTMLParserIdioms.h"
+#include "HTMLTextAreaElement.h"
 #include "HTTPParsers.h"
 #include "HistoryItem.h"
 #include "IconDatabaseClientBlackBerry.h"
@@ -2133,7 +2134,7 @@ Platform::WebContext WebPagePrivate::webContext(TargetDetectionStrategy strategy
     layoutIfNeeded();
 
     bool nodeAllowSelectionOverride = false;
-    bool nodeIsImage = node->isHTMLElement() && node->hasTagName(HTMLNames::imgTag);
+    bool nodeIsImage = node->isHTMLElement() && isHTMLImageElement(node);
     Node* linkNode = node->enclosingLinkEventParentOrSelf();
     // Set link url only when the node is linked image, or text inside anchor. Prevent CCM popup when long press non-link element(eg. button) inside an anchor.
     if (linkNode && (node == linkNode || node->isTextNode() || nodeIsImage)) {
@@ -2161,10 +2162,10 @@ Platform::WebContext WebPagePrivate::webContext(TargetDetectionStrategy strategy
         HTMLImageElement* imageElement = 0;
         HTMLMediaElement* mediaElement = 0;
 
-        if (node->hasTagName(HTMLNames::imgTag))
-            imageElement = static_cast<HTMLImageElement*>(node.get());
-        else if (node->hasTagName(HTMLNames::areaTag))
-            imageElement = static_cast<HTMLAreaElement*>(node.get())->imageElement();
+        if (isHTMLImageElement(node))
+            imageElement = toHTMLImageElement(node.get());
+        else if (isHTMLAreaElement(node))
+            imageElement = toHTMLAreaElement(node.get())->imageElement();
 
         if (static_cast<HTMLElement*>(node.get())->isMediaElement())
             mediaElement = static_cast<HTMLMediaElement*>(node.get());
@@ -2229,7 +2230,7 @@ Platform::WebContext WebPagePrivate::webContext(TargetDetectionStrategy strategy
                     canStartSelection = nodeUnderFinger->canStartSelection();
             }
             context.setFlag(Platform::WebContext::IsInput);
-            if (element->hasTagName(HTMLNames::inputTag))
+            if (isHTMLInputElement(element))
                 context.setFlag(Platform::WebContext::IsSingleLine);
             if (DOMSupport::isPasswordElement(element))
                 context.setFlag(Platform::WebContext::IsPassword);
@@ -2831,7 +2832,7 @@ IntRect WebPagePrivate::blockZoomRectForNode(Node* node)
     double blockToPageRatio = static_cast<double>(pageArea - originalArea) / pageArea;
     double blockExpansionRatio = 5.0 * blockToPageRatio * blockToPageRatio;
 
-    if (!tnode->hasTagName(HTMLNames::imgTag) && !tnode->hasTagName(HTMLNames::inputTag) && !tnode->hasTagName(HTMLNames::textareaTag)) {
+    if (!isHTMLImageElement(tnode) && !isHTMLInputElement(tnode) && !isHTMLTextAreaElement(tnode)) {
         while ((tnode = tnode->parentNode())) {
             ASSERT(tnode);
             IntRect tRect = rectForNode(tnode);
@@ -4499,7 +4500,7 @@ bool WebPage::blockZoom(const Platform::IntPoint& documentTargetPoint)
 
         // Don't use a block if it is too close to the size of the actual contents.
         // We allow this for images only so that they can be zoomed tight to the screen.
-        if (!node->hasTagName(HTMLNames::imgTag)) {
+        if (!isHTMLImageElement(node)) {
             const IntRect tRect = viewportAccessor->roundToDocumentFromPixelContents(WebCore::FloatRect(blockRect));
             int blockArea = tRect.width() * tRect.height();
             int pageArea = d->contentsSize().width() * d->contentsSize().height();

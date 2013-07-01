@@ -20,6 +20,7 @@
 
 #include "config.h"
 #include "PlatformVideoWindow.h"
+
 #if USE(GSTREAMER) && !defined(GST_API_VERSION_1)
 
 #include "NotImplemented.h"

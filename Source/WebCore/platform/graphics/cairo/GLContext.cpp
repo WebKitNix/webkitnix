@@ -21,8 +21,14 @@
 
 #if USE(OPENGL) || USE(OPENGL_ES_2)
 
+#if USE(EGL)
 #include "GLContextEGL.h"
+#endif
+
+#if USE(GLX)
 #include "GLContextGLX.h"
+#endif
+
 #include <wtf/ThreadSpecific.h>
 
 #if PLATFORM(X11)

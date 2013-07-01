@@ -31,9 +31,9 @@
 #if PLATFORM(QT)
 #include <QTouchEvent>
 #elif PLATFORM(EFL)
-#include "ewk_touch.h"
-#include <Evas.h>
+#include "EwkTouchEvent.h"
 #include <WebCore/AffineTransform.h>
+#include <wtf/RefPtr.h>
 #elif PLATFORM(NIX)
 #include <NIXEvents.h>
 #endif
@@ -45,13 +45,15 @@ public:
 #if PLATFORM(QT)
     explicit NativeWebTouchEvent(const QTouchEvent*, const QTransform& fromItemTransform);
 #elif PLATFORM(EFL)
-    NativeWebTouchEvent(Ewk_Touch_Event_Type, const Eina_List*, const Evas_Modifier*, const WebCore::AffineTransform& toWebContent, const WebCore::AffineTransform& toDeviceScreen, double timestamp);
+    NativeWebTouchEvent(EwkTouchEvent*, const WebCore::AffineTransform&);
 #elif PLATFORM(NIX)
     NativeWebTouchEvent(const NIXTouchEvent& event);
 #endif
 
 #if PLATFORM(QT)
     const QTouchEvent* nativeEvent() const { return &m_nativeEvent; }
+#elif PLATFORM(EFL)
+    const EwkTouchEvent* nativeEvent() const { return m_nativeEvent.get(); }
 #elif PLATFORM(NIX)
     const NIXTouchEvent* nativeEvent() const { return &m_nativeEvent; }
 #endif
@@ -59,6 +61,8 @@ public:
 private:
 #if PLATFORM(QT)
     const QTouchEvent m_nativeEvent;
+#elif PLATFORM(EFL)
+    RefPtr<EwkTouchEvent> m_nativeEvent;
 #elif PLATFORM(NIX)
     NIXTouchEvent m_nativeEvent;
 #endif

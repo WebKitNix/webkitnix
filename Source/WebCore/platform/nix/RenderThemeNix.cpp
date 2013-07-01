@@ -29,16 +29,16 @@
 #include "InputTypeNames.h"
 #include "PaintInfo.h"
 #include "PlatformContextCairo.h"
-#include "public/WebCanvas.h"
-#include "public/WebThemeEngine.h"
-#include "public/WebRect.h"
 #include "public/Platform.h"
+#include "public/WebCanvas.h"
+#include "public/WebRect.h"
+#include "public/WebThemeEngine.h"
 #if ENABLE(PROGRESS_ELEMENT)
 #include "RenderProgress.h"
 #endif
 #if ENABLE(METER_ELEMENT)
-#include "RenderMeter.h"
 #include "HTMLMeterElement.h"
+#include "RenderMeter.h"
 #endif
 
 namespace WebCore {
@@ -329,18 +329,18 @@ void RenderThemeNix::adjustSliderThumbStyle(StyleResolver* styleResolver, Render
     style->setBoxShadow(nullptr);
 }
 
-const int SLIDER_THUMB_WIDTH = 10;
-const int SLIDER_THUMB_HEIGHT = 20;
+const int SliderThumbWidth = 10;
+const int SliderThumbHeight = 20;
 
 void RenderThemeNix::adjustSliderThumbSize(RenderStyle* style, Element*) const
 {
     ControlPart part = style->appearance();
     if (part == SliderThumbVerticalPart) {
-        style->setWidth(Length(SLIDER_THUMB_WIDTH, Fixed));
-        style->setHeight(Length(SLIDER_THUMB_HEIGHT, Fixed));
+        style->setWidth(Length(SliderThumbWidth, Fixed));
+        style->setHeight(Length(SliderThumbHeight, Fixed));
     } else if (part == SliderThumbHorizontalPart) {
-        style->setWidth(Length(SLIDER_THUMB_WIDTH, Fixed));
-        style->setHeight(Length(SLIDER_THUMB_HEIGHT, Fixed));
+        style->setWidth(Length(SliderThumbWidth, Fixed));
+        style->setHeight(Length(SliderThumbHeight, Fixed));
     }
 }
 

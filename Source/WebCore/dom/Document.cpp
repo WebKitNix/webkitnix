@@ -2655,8 +2655,8 @@ void Document::updateBaseURL()
         // Base URL change changes any relative visited links.
         // FIXME: There are other URLs in the tree that would need to be re-evaluated on dynamic base URL change. Style should be invalidated too.
         for (Element* element = ElementTraversal::firstWithin(this); element; element = ElementTraversal::next(element)) {
-            if (element->hasTagName(aTag))
-                static_cast<HTMLAnchorElement*>(element)->invalidateCachedVisitedLinkHash();
+            if (isHTMLAnchorElement(element))
+                toHTMLAnchorElement(element)->invalidateCachedVisitedLinkHash();
         }
     }
 }
@@ -3221,11 +3221,6 @@ void Document::setActiveElement(PassRefPtr<Element> newActiveElement)
     m_activeElement = newActiveElement;
 }
 
-void Document::focusedNodeRemoved()
-{
-    setFocusedElement(0);
-}
-
 void Document::removeFocusedNodeOfSubtree(Node* node, bool amongChildrenOnly)
 {
     if (!m_focusedElement || this->inPageCache()) // If the document is in the page cache, then we don't need to clear out the focused node.
@@ -3242,7 +3237,7 @@ void Document::removeFocusedNodeOfSubtree(Node* node, bool amongChildrenOnly)
         nodeInSubtree = (focusedElement == node) || focusedElement->isDescendantOf(node);
     
     if (nodeInSubtree)
-        document()->focusedNodeRemoved();
+        setFocusedElement(0);
 }
 
 void Document::hoveredElementDidDetach(Element* element)

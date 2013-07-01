@@ -23,6 +23,7 @@
 #define SVGElement_h
 
 #if ENABLE(SVG)
+#include "SVGLangSpace.h"
 #include "SVGLocatable.h"
 #include "SVGParsingError.h"
 #include "SVGPropertyInfo.h"
@@ -42,7 +43,7 @@ class SVGElementInstance;
 class SVGElementRareData;
 class SVGSVGElement;
 
-class SVGElement : public StyledElement {
+class SVGElement : public StyledElement, public SVGLangSpace {
 public:
     static PassRefPtr<SVGElement> create(const QualifiedName&, Document*);
     virtual ~SVGElement();
@@ -58,7 +59,7 @@ public:
     SVGDocumentExtensions* accessDocumentSVGExtensions();
 
     virtual bool isSVGStyledElement() const { return false; }
-    virtual bool isStyledTransformable() const { return false; }
+    virtual bool isSVGGraphicsElement() const { return false; }
     virtual bool isStyledLocatable() const { return false; }
     virtual bool isSVGSVGElement() const { return false; }
     virtual bool isFilterEffect() const { return false; }

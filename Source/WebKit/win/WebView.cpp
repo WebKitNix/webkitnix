@@ -730,6 +730,7 @@ HRESULT STDMETHODCALLTYPE WebView::close()
 
     setHostWindow(0);
 
+    setAccessibilityDelegate(0);
     setDownloadDelegate(0);
     setEditingDelegate(0);
     setFrameLoadDelegate(0);
@@ -2811,7 +2812,7 @@ void WebView::setToolTip(const String& toolTip)
         info.cbSize = sizeof(info);
         info.uFlags = TTF_IDISHWND;
         info.uId = reinterpret_cast<UINT_PTR>(m_viewWindow);
-        info.lpszText = const_cast<UChar*>(m_toolTip.charactersWithNullTermination());
+        info.lpszText = const_cast<UChar*>(m_toolTip.charactersWithNullTermination().data());
         ::SendMessage(m_toolTipHwnd, TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&info));
     }
 
@@ -2868,6 +2869,22 @@ void WebView::dispatchDidReceiveIconFromWebFrame(WebFrame* frame)
     if (m_frameLoadDelegate)
         // FIXME: <rdar://problem/5491010> - Pass in the right HBITMAP. 
         m_frameLoadDelegate->didReceiveIcon(this, 0, frame);
+}
+
+HRESULT WebView::setAccessibilityDelegate(
+    /* [in] */ IAccessibilityDelegate* d)
+{
+    m_accessibilityDelegate = d;
+    return S_OK;
+}
+
+HRESULT WebView::accessibilityDelegate(
+    /* [out][retval] */ IAccessibilityDelegate** d)
+{
+    if (!m_accessibilityDelegate)
+        return E_POINTER;
+
+    return m_accessibilityDelegate.copyRefTo(d);
 }
 
 HRESULT STDMETHODCALLTYPE WebView::setUIDelegate( 

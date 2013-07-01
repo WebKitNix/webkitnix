@@ -32,8 +32,8 @@
 #include <public/Platform.h>
 #include <public/WebAudioBus.h>
 #include <wtf/PassRefPtr.h>
-#include <wtf/text/StringConcatenate.h>
 #include <wtf/text/CString.h>
+#include <wtf/text/StringConcatenate.h>
 
 namespace WebCore {
 

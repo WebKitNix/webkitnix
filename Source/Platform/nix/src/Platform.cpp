@@ -31,10 +31,11 @@
 
 #include "config.h"
 #include "public/Platform.h"
+
 #include "DefaultWebThemeEngine.h"
 
-#include <wtf/PassOwnPtr.h>
 #include <wtf/OwnPtr.h>
+#include <wtf/PassOwnPtr.h>
 
 namespace WebKit {
 

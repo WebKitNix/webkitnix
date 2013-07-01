@@ -1,3 +1,458 @@
+2013-07-01  Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
+
+        [EFL][GTK] Migrate from WEBKITOUTPUTDIR to WEBKIT_OUTPUTDIR
+        https://bugs.webkit.org/show_bug.cgi?id=117249
+
+        Reviewed by Brent Fulgham.
+
+        Finish converting all use cases of WEBKITOUTPUTDIR to
+        WEBKIT_OUTPUTDIR, which seems to be preferred these days.
+
+        * DumpRenderTree/efl/FontManagement.cpp:
+        (getCustomBuildDir):
+        (getPlatformFontsPath):
+        * DumpRenderTree/gtk/DumpRenderTree.cpp:
+        (getOutputDir):
+        * Scripts/webkitdirs.pm:
+        (determineBaseProductDir):
+        (usesPerConfigurationBuildDirectory):
+        * Scripts/webkitpy/port/base.py:
+        (Port.to.setup_environ_for_server):
+        * Scripts/webkitpy/port/driver.py:
+        (Driver._setup_environ_for_driver):
+        * Scripts/webkitpy/port/gtk.py:
+        (GtkPort.setup_environ_for_server):
+        * WebKitTestRunner/InjectedBundle/gtk/ActivateFontsGtk.cpp:
+        (WTR::getOutputDir):
+        * jhbuild/jhbuildutils.py:
+        (get_dependencies_path):
+
+2013-07-01  Rafael Brandao  <rafael.lobo@webkit.org>
+
+        Unreviewed change of my email address.
+
+        * Scripts/webkitpy/common/config/contributors.json:
+
+2013-06-28  Andreas Kling  <akling@apple.com>
+
+        Fix Windows builds after deprecatedCharactersWithNullTermination() removal.
+
+        * DumpRenderTree/win/DumpRenderTree.cpp:
+        (addFontFallbackIfPresent):
+        (removeFontFallbackIfPresent):
+
+2013-06-28  Anders Carlsson  <andersca@apple.com>
+
+        Remove String::deprecatedCharactersWithNullTermination() and related code
+        https://bugs.webkit.org/show_bug.cgi?id=118211
+
+        Reviewed by Benjamin Poulain.
+
+        Remove all hasTerminatingNullCharacter() checks.
+
+        * TestWebKitAPI/Tests/WTF/AtomicString.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WTF/StringImpl.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WTF/WTFString.cpp:
+        (TestWebKitAPI::TEST):
+
+2013-06-28  Alexey Proskuryakov  <ap@apple.com>
+
+        [Mac] Crash when loading is stopped from -didReceiveResponse
+        https://bugs.webkit.org/show_bug.cgi?id=118209
+        <rdar://problem/14259249>
+
+        Reviewed by Brady Eidson.
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/mac/StopLoadingFromDidReceiveResponse.html: Added.
+        * TestWebKitAPI/Tests/mac/StopLoadingFromDidReceiveResponse.mm: Added.
+        (-[StopLoadingFromDidReceiveResponse webView:resource:didReceiveResponse:fromDataSource:]):
+        (TestWebKitAPI::TEST):
+
+2013-06-28  Andy Estes  <aestes@apple.com>
+
+        [Mac] Newer versions of clang use a default template instantiation depth that is too small for TestWebKitAPI
+        https://bugs.webkit.org/show_bug.cgi?id=118208
+
+        Reviewed by Mark Rowe.
+
+        Newer versions of clang use a default template depth of 128, but this
+        is too small for Tests/WTF/HashSet.cpp. Use 256 instead, which was the
+        previous default.
+
+        Clang lowered the default to keep recursive template instantiation
+        from overflowing the stack (see <rdar://problem/13935016>), but
+        TestWebKitAPI's C++ files don't trigger a stack overflow even with the
+        higher limit. If for some reason this starts happening then we can
+        lower the limit back down.
+
+        * TestWebKitAPI/Configurations/Base.xcconfig: Build TestWebKitAPI with -ftemplate-depth=256.
+
+2013-06-28  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [Tools] Add support for "webKitBranchBuild" git option when calculating jhbuildPath
+        https://bugs.webkit.org/show_bug.cgi?id=118195
+
+        Reviewed by Daniel Bates.
+
+        Currently, ports that use jhbuild fail to determine jhbuild directory
+        when "webKitBranchBuild" git configuration property is enabled. To reproduce
+        that issue in Efl port, enable that flag in .git/config, switch to a git branch
+        other than "master" and try to build webkit. The build will fail to
+        locate dependencies due to lack of pkg-config paths which should be set
+        by jhbuild.
+
+        For more details about "webKitBranchBuild" option, see:
+        https://trac.webkit.org/wiki/UsingGitWithWebKit
+
+        * Scripts/webkitdirs.pm:
+        (getJhbuildPath):
+
+2013-06-28  Jessie Berlin  <jberlin@apple.com>
+
+        WebKitTestRunner should disable automatic quote and dash substitution like DumpRenderTree does
+        https://bugs.webkit.org/show_bug.cgi?id=118201
+
+        Reviewed by Dean Jackson.
+
+        * WebKitTestRunner/mac/main.mm:
+        (main):
+        Modify NSUserDefaults directly since setAutomaticQuoteSubstitutionEnabled and
+        setAutomaticDashSubstitutionEnabled are not exposed on WKView.
+
+2013-06-28  David Farler  <dfarler@apple.com>
+
+        Upstream WebKit Nightly’s WebKitLauncher
+        https://bugs.webkit.org/show_bug.cgi?id=117418
+
+        Reviewed by Mark Rowe.
+
+        Literal patch from Nightly's OpenSource repo.
+
+        * WebKitLauncher/Configurations/Base.xcconfig:
+        * WebKitLauncher/Configurations/WebKitLauncher.xcconfig:
+        * WebKitLauncher/Info.plist:
+        * WebKitLauncher/WebKitLauncher.xcodeproj/project.pbxproj:
+        * WebKitLauncher/WebKitLauncherURLProtocol.m:
+        (+[WebKitLauncherURLProtocol load]):
+        (+[WebKitLauncherURLProtocol canInitWithRequest:]):
+        (-[WebKitLauncherURLProtocol startLoading]):
+        (-[WebKitLauncherURLProtocol handleWebKitVersionInformation]):
+        (-[WebKitLauncherURLProtocol resourceNotFound]):
+        * WebKitLauncher/WebKitNightlyEnablerSparkle.m:
+        (initializeSparkle):
+        * WebKitLauncher/main.m:
+        (determineExecutablePath):
+        (currentMacOSXVersion):
+        (main):
+        * WebKitLauncher/start.html:
+
+2013-06-28  Balazs Kelemen  <b.kelemen@samsung.com>
+
+        [EFL] back/forward keyboard shortcuts are non-intuitive
+        https://bugs.webkit.org/show_bug.cgi?id=118193
+
+        Reviewed by Christophe Dumez.
+
+        Changed shortcuts for go-back/go-forward to alt+left and alt+right.
+
+        * EWebLauncher/main.c:
+        (on_key_down):
+        * MiniBrowser/efl/main.c:
+        (on_key_down):
+
+2013-06-28  Roger Fong  <roger_fong@apple.com>
+
+        Enable AVFoundation in Web Prefs for WinLauncher and DumpRenderTree on Windows.
+        https://bugs.webkit.org/show_bug.cgi?id=118194.
+
+        Reviewed by Brent Fulgham.
+
+        * DumpRenderTree/win/DumpRenderTree.cpp:
+        (dllLauncherEntryPoint):
+        * WinLauncher/WinLauncher.cpp:
+        (dllLauncherEntryPoint):
+
+2013-06-28  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed build fix for AppleWin port. Fix some file paths.
+
+        * WinLauncher/WinLauncher.vcxproj/WinLauncherLib.vcxproj:
+        * WinLauncher/WinLauncher.vcxproj/WinLauncherLib.vcxproj.filters:
+
+2013-06-27  Roger Fong  <roger_fong@apple.com>
+
+        Add IAccessibilityDelegate implementation to WinLauncher for testing purposes.
+        https://bugs.webkit.org/show_bug.cgi?id=118160.
+
+        Reviewed by Brent Fulgham.
+
+        * WinLauncher/AccessibilityDelegate.cpp: Added.
+        (AccessibilityDelegate::QueryInterface):
+        (AccessibilityDelegate::AddRef):
+        (AccessibilityDelegate::Release):
+        (AccessibilityDelegate::fireFrameLoadStartedEvents): Just returns S_OK;
+        (AccessibilityDelegate::fireFrameLoadFinishedEvents): Ditto.
+        * WinLauncher/AccessibilityDelegate.h: Added.
+        (AccessibilityDelegate::AccessibilityDelegate):
+        * WinLauncher/WinLauncher.cpp:
+        (dllLauncherEntryPoint):
+        * WinLauncher/WinLauncher.vcxproj/WinLauncherLib.vcxproj:
+        * WinLauncher/WinLauncher.vcxproj/WinLauncherLib.vcxproj.filters:
+
+2013-06-28  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Clean up temporary files created by the bindings test script
+        https://bugs.webkit.org/show_bug.cgi?id=118189
+
+        Reviewed by Kentaro Hara.
+
+        Remove temporary files created by preprocess-idls.pl script after
+        the bindings tests are executed.
+
+        Based on Blink 153236 by Kentaro Hara <haraken@chromium.org>.
+
+        * Scripts/webkitpy/bindings/main.py:
+        (BindingsTests.main):
+
+2013-06-26  Dean Jackson  <dino@apple.com>
+
+        [Mac] Add Mavericks system font to Test systems
+        https://bugs.webkit.org/show_bug.cgi?id=118109
+
+        Reviewed by Simon Fraser.
+
+        OS X Mavericks uses a different font for system controls. Tell DRT and
+        WKTR about them otherwise they use a fallback font. Unfortunately the
+        fonts are hidden (not found in the list of available fonts) so I
+        had to add them manually.
+
+        Even though there is only one at the moment, I implemented this
+        as a set so it will be easier to add new fonts if necessary.
+
+        * DumpRenderTree/mac/DumpRenderTree.mm:
+        (allowedFontFamilySet): Fixed typo.
+        (systemHiddenFontFamilySet): New method that returns the system control font.
+        (drt_NSFontManager_availableFonts): Merge the hidden fonts.
+        * WebKitTestRunner/InjectedBundle/mac/ActivateFonts.mm:
+        (WTR::allowedFontFamilySet): Fixed typo.
+        (WTR::systemHiddenFontFamilySet): As above.
+        (WTR::wtr_NSFontManager_availableFonts):
+
+2013-06-27  Anders Carlsson  <andersca@apple.com>
+
+        Get rid of the last uses of deprecatedCharactersWithNullTermination()
+        https://bugs.webkit.org/show_bug.cgi?id=118159
+
+        Reviewed by Andreas Kling.
+
+        Replace calls to deprecatedCharactersWithNullTermination() with charactersWithNullTermination().data().
+
+        * DumpRenderTree/win/DumpRenderTree.cpp:
+        (findFontFallback):
+
+2013-06-27  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        Sync up w3c import script with changes in Blink
+        https://bugs.webkit.org/show_bug.cgi?id=118149
+
+        Reviewed by Dirk Pranke.
+
+        This is a port of the following blink changes:
+
+        https://codereview.chromium.org/15366004
+        https://chromiumcodereview.appspot.com/15592005
+        https://codereview.chromium.org/16021006
+        https://codereview.chromium.org/15590004
+        https://codereview.chromium.org/15901008
+        https://codereview.chromium.org/16171009
+        https://codereview.chromium.org/16465007
+        https://codereview.chromium.org/15981013
+
+        * Scripts/webkitpy/common/checkout/checkout_unittest.py:
+        (setUp):
+        (test_commit_message_for_this_commit):
+        * Scripts/webkitpy/port/base.py:
+        (Port):
+        * Scripts/webkitpy/port/test.py:
+        * Scripts/webkitpy/w3c/test_converter.py:
+        (W3CTestConverter.__init__):
+        (W3CTestConverter.read_webkit_prefixed_css_property_list):
+        (W3CTestConverter.convert_for_webkit):
+        (W3CTestConverter.convert_css):
+        (W3CTestConverter.convert_html):
+        (W3CTestConverter.convert_testharness_paths):
+        (W3CTestConverter.convert_prefixed_properties):
+        (W3CTestConverter.add_webkit_prefix_to_unprefixed_properties):
+        * Scripts/webkitpy/w3c/test_converter_unittest.py:
+        * Scripts/webkitpy/w3c/test_importer.py:
+        (main):
+        (configure_logging):
+        (configure_logging.LogHandler):
+        (configure_logging.LogHandler.format):
+        (parse_args):
+        (TestImporter.__init__):
+        (TestImporter.find_importable_tests):
+        (TestImporter.import_tests):
+        (TestImporter.setup_destination_directory):
+        (TestImporter.remove_deleted_files):
+        * Scripts/webkitpy/w3c/test_importer_unittest.py:
+        (TestImporterTest.test_import_dir_with_no_tests_and_no_hg):
+        (TestImporterTest.test_import_dir_with_no_tests):
+        (TestImporterTest):
+        * Scripts/webkitpy/w3c/test_parser.py:
+        (TestParser.load_file):
+        (TestParser.analyze_test):
+        (TestParser.support_files):
+        * Scripts/webkitpy/w3c/test_parser_unittest.py:
+
+2013-06-27  Csaba Osztrogonác  <ossy@webkit.org>
+
+        [webkitpy] AbstractPatchSequencingCommand should have _prepare_state
+        https://bugs.webkit.org/show_bug.cgi?id=118128
+
+        Reviewed by Ryosuke Niwa.
+
+        It is a preparation for a new webkit-patch command: run-tests-touched-by-attachment
+        https://bugs.webkit.org/show_bug.cgi?id=117831
+
+        * Scripts/webkitpy/tool/commands/download.py:
+        (AbstractPatchSequencingCommand):
+        (AbstractPatchSequencingCommand._prepare_to_process): Call _prepare_state before prepare_steps.
+        (AbstractPatchSequencingCommand._process_patch): Use the same initial state for each patch.
+        (AbstractPatchSequencingCommand._prepare_state): Added.
+
+2013-06-27  Brendan Long  <b.long@cablelabs.com>
+
+        [Qt] Build overrides -j when given --makeargs="-sj40"
+        https://bugs.webkit.org/show_bug.cgi?id=116897
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Scripts/webkitdirs.pm:
+        (buildQMakeProjects):
+        Change regex checking for -j* to also check for -*j*
+
+2013-06-27  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Remove [NoInterfaceObject] from WorkerGlobalScope
+        https://bugs.webkit.org/show_bug.cgi?id=118071
+
+        Reviewed by Kentaro Hara.
+
+        Update bindings test script to pass 2 additional parameters
+        now needed by the preprocess-idls.pl script.
+
+        * Scripts/webkitpy/bindings/main.py:
+        (BindingsTests.generate_supplemental_dependency):
+        (BindingsTests.main):
+
+2013-06-27  Xabier Rodriguez Calvar  <calvaris@igalia.com>
+
+        Fixing some compiler warnings
+        https://bugs.webkit.org/show_bug.cgi?id=117791
+
+        Reviewed by Martin Robinson.
+
+        * GNUmakefile.am: Silenced format warning.
+        * TestWebKitAPI/Tests/WebKit2/DOMWindowExtensionNoCache_Bundle.cpp:
+        (TestWebKitAPI::DOMWindowExtensionNoCache::globalObjectIsAvailableForFrame):
+        Solved warning about uninitialized variable.
+
+2013-06-27  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Fix bindings tests after r152080
+        https://bugs.webkit.org/show_bug.cgi?id=118118
+
+        Reviewed by Gyuyoung Kim.
+
+        r152080 renamed argument to preprocess-idls.pl from --workerContextConstructorsFile
+        to --workerGlobalScopeConstructorsFile. This patch updates to bindings test script
+        accordingly.
+
+        * Scripts/webkitpy/bindings/main.py:
+        (BindingsTests.generate_supplemental_dependency):
+        (BindingsTests.main):
+
+2013-06-26  Carlos Garcia Campos  <cargarcia@blackberry.com>
+
+        [BlackBerry] Handle testRunner.setCustomPolicyDelegate()
+        https://bugs.webkit.org/show_bug.cgi?id=117982
+
+        Reviewed by Rob Buis.
+
+        * DumpRenderTree/blackberry/DumpRenderTree.cpp:
+        (BlackBerry::WebKit::DumpRenderTree::DumpRenderTree): Initialize
+        m_policyDelegateIsPermissive.
+        (BlackBerry::WebKit::DumpRenderTree::resetToConsistentStateBeforeTesting):
+        Reset m_policyDelegateIsPermissive.
+        (BlackBerry::WebKit::DumpRenderTree::setCustomPolicyDelegate): Set
+        m_policyDelegateIsPermissive.
+        * DumpRenderTree/blackberry/DumpRenderTreeBlackBerry.h:
+        (BlackBerry::WebKit::DumpRenderTree::policyDelegateEnabled):
+        Return whether custom policy is enabled.
+        (BlackBerry::WebKit::DumpRenderTree::policyDelegateIsPermissive):
+        Return whether custom policy is permissive.
+
+2013-06-26  Anders Carlsson  <andersca@apple.com>
+
+        Deprecate StringImpl::charactersWithNullTermination
+        https://bugs.webkit.org/show_bug.cgi?id=118108
+
+        Reviewed by Beth Dakin.
+
+        Rename calls to charactersWithNullTermination to deprecatedCharactersWithNullTermination.
+
+        * DumpRenderTree/win/DumpRenderTree.cpp:
+        (findFontFallback):
+        (addFontFallbackIfPresent):
+        (removeFontFallbackIfPresent):
+
+2013-06-26  Nico Weber  <thakis@chromium.org>
+
+        Remove detect-mismached-virtual-const.
+        https://bugs.webkit.org/show_bug.cgi?id=117999
+
+        Reviewed by Anders Carlsson.
+
+        Clang warns on mismatched virtual const, so there's no need for this
+        script any more.
+
+        * Scripts/detect-mismatched-virtual-const: Removed.
+
+2013-06-26  Alex Christensen  <achristensen@apple.com>
+
+        Added a code coverage report.
+        https://bugs.webkit.org/show_bug.cgi?id=117941
+
+        Reviewed by Joseph Pecoraro.
+
+        * CodeCoverage: Added.
+        * CodeCoverage/results-template.html: Added.
+        * Scripts/generate-coverage-data: Generate and open the new report.
+
+2013-06-25  Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
+
+        gdb: Remove the webcore.py pretty printer.
+        https://bugs.webkit.org/show_bug.cgi?id=117992
+
+        Reviewed by Jochen Eisinger.
+
+        webcore.py has been only a placeholder for backwards compatibility
+        for almost 3 years. It should be safe enough to remove it now.
+
+        * gdb/webcore.py: Removed.
+
+2013-05-26  Peter Gal  <galpeter@inf.u-szeged.hu>
+
+        Creating cURL watchlist and adding myself to it.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Scripts/webkitpy/common/config/watchlist:
+
 2013-06-25  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
 
         Unreviewed, change my email address for watch list.

@@ -26,28 +26,29 @@
 #include "config.h"
 
 #include "DefaultWebThemeEngine.h"
+
 #include "public/WebColor.h"
 #include "public/WebRect.h"
 #include "public/WebSize.h"
 #include <algorithm>
-#include <cmath>
 #include <cairo/cairo.h>
+#include <cmath>
 
-const double BG_COLOR1 = 0xF6/256.0;
-const double BG_COLOR2 = 0xDE/256.0;
-const double BORDER_COLOR = 0xA4/256.0;
-const double BORDER_ONHOVER_COLOR = 0x7A/256.0;
-const double CHECK_COLOR = 0x66/256.0;
-const double TEXTFIELD_DARK_BORDER_COLOR = 0x9A/256.0;
-const double TEXTFIELD_LIGHT_BORDER_COLOR = 0xEE/256.0;
+const double BGColor1 = 0xF6 / 256.0;
+const double BGColor2 = 0xDE / 256.0;
+const double BorderColor = 0xA4 / 256.0;
+const double BorderOnHoverColor = 0x7A / 256.0;
+const double CheckColor = 0x66 / 256.0;
+const double TextFieldDarkBorderColor = 0x9A / 256.0;
+const double TextFieldLightBorderColor = 0xEE / 256.0;
 
-const int MENULIST_BORDER = 5;
-const int MENULIST_ARROW_SIZE = 6;
+const int MenuListBorder = 5;
+const int MenuListArrowSize = 6;
 
-const int INNERSPINBUTTON_BORDER = 3;
-const int INNERSPINBUTTON_ARROW_SIZE = 2;
+const int InnerSpinButtonBorder = 3;
+const int InnerSpinButtonArrowSize = 2;
 
-const WebKit::RGBA32 TAP_HIGHLIGHT_COLOR = 0x66000000;
+const WebKit::RGBA32 TapHighLightColor = 0x66000000;
 
 namespace WebKit {
 
@@ -108,13 +109,13 @@ WebColor DefaultWebThemeEngine::focusRingColor() const
 
 WebColor DefaultWebThemeEngine::tapHighlightColor() const
 {
-    return TAP_HIGHLIGHT_COLOR;
+    return TapHighLightColor;
 }
 
 static void gradientFill(cairo_t* cairo, double yStart, double yLength, bool inverted = false)
 {
-    double gradStartColor = BG_COLOR1;
-    double gradEndColor = BG_COLOR2;
+    double gradStartColor = BGColor1;
+    double gradEndColor = BGColor2;
     if (inverted)
         std::swap(gradStartColor, gradEndColor);
 
@@ -128,7 +129,7 @@ static void gradientFill(cairo_t* cairo, double yStart, double yLength, bool inv
 
 static void setupBorder(cairo_t * cairo, WebThemeEngine::State state)
 {
-    double borderColor = state == WebThemeEngine::StateHover ? BORDER_ONHOVER_COLOR : BORDER_COLOR;
+    double borderColor = state == WebThemeEngine::StateHover ? BorderOnHoverColor : BorderColor;
     cairo_set_source_rgb(cairo, borderColor, borderColor, borderColor);
     cairo_set_line_width(cairo, 1);
 }
@@ -155,13 +156,13 @@ void DefaultWebThemeEngine::paintTextField(WebCanvas* canvas, State, const WebRe
     const double correction = lineWidth / 2.0;
 
     cairo_set_line_width(canvas, lineWidth);
-    cairo_set_source_rgb(canvas, TEXTFIELD_DARK_BORDER_COLOR, TEXTFIELD_DARK_BORDER_COLOR, TEXTFIELD_DARK_BORDER_COLOR);
+    cairo_set_source_rgb(canvas, TextFieldDarkBorderColor, TextFieldDarkBorderColor, TextFieldDarkBorderColor);
     cairo_move_to(canvas, rect.x + correction, rect.y + correction + rect.height);
     cairo_rel_line_to(canvas, 0, -rect.height);
     cairo_rel_line_to(canvas, rect.width, 0);
     cairo_stroke(canvas);
 
-    cairo_set_source_rgb(canvas, TEXTFIELD_LIGHT_BORDER_COLOR, TEXTFIELD_LIGHT_BORDER_COLOR, TEXTFIELD_LIGHT_BORDER_COLOR);
+    cairo_set_source_rgb(canvas, TextFieldLightBorderColor, TextFieldLightBorderColor, TextFieldLightBorderColor);
     cairo_move_to(canvas, rect.x + correction + rect.width, rect.y + correction);
     cairo_rel_line_to(canvas, 0, rect.height);
     cairo_rel_line_to(canvas, -rect.width, 0);
@@ -192,7 +193,7 @@ void DefaultWebThemeEngine::paintCheckbox(WebCanvas* canvas, State state, const 
     if (param.checked) {
         const double border = 3;
         cairo_set_line_width(canvas, 2);
-        cairo_set_source_rgb(canvas, CHECK_COLOR, CHECK_COLOR, CHECK_COLOR);
+        cairo_set_source_rgb(canvas, CheckColor, CheckColor, CheckColor);
         cairo_move_to(canvas, rect.x + 0.5 + border, rect.y + 0.5 + rect.height - border);
         cairo_rel_line_to(canvas, rect.width - border * 2, -rect.height + border * 2);
         cairo_move_to(canvas, rect.x + 0.5 + border, rect.y + 0.5 + border);
@@ -212,14 +213,14 @@ void DefaultWebThemeEngine::paintRadio(WebCanvas* canvas, State state, const Web
 {
     cairo_save(canvas);
     setupBorder(canvas, state);
-    cairo_arc(canvas, rect.x + rect.width/2.0, rect.y + rect.height/2.0, rect.width/2.0, 0, 2 * M_PI);
+    cairo_arc(canvas, rect.x + rect.width / 2.0, rect.y + rect.height / 2.0, rect.width / 2.0, 0, 2 * M_PI);
     cairo_stroke_preserve(canvas);
 
     gradientFill(canvas, rect.y, rect.height);
 
     if (param.checked) {
-        cairo_set_source_rgb(canvas, CHECK_COLOR, CHECK_COLOR, CHECK_COLOR);
-        cairo_arc(canvas, rect.x + rect.width/2.0, rect.y + rect.height/2.0, rect.width/4.0, 0, 2 * M_PI);
+        cairo_set_source_rgb(canvas, CheckColor, CheckColor, CheckColor);
+        cairo_arc(canvas, rect.x + rect.width / 2.0, rect.y + rect.height / 2.0, rect.width / 4.0, 0, 2 * M_PI);
         cairo_fill(canvas);
     }
     cairo_restore(canvas);
@@ -227,10 +228,10 @@ void DefaultWebThemeEngine::paintRadio(WebCanvas* canvas, State state, const Web
 
 void DefaultWebThemeEngine::getMenuListPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const
 {
-    paddingTop = MENULIST_BORDER;
-    paddingLeft = MENULIST_BORDER;
-    paddingBottom = MENULIST_BORDER;
-    paddingRight = 2 * MENULIST_BORDER + MENULIST_ARROW_SIZE;
+    paddingTop = MenuListBorder;
+    paddingLeft = MenuListBorder;
+    paddingBottom = MenuListBorder;
+    paddingRight = 2 * MenuListBorder + MenuListArrowSize;
 }
 
 void DefaultWebThemeEngine::paintMenuList(WebCanvas* canvas, State state, const WebRect& rect) const
@@ -242,10 +243,10 @@ void DefaultWebThemeEngine::paintMenuList(WebCanvas* canvas, State state, const 
 
     gradientFill(canvas, rect.y, rect.height, state == StatePressed);
 
-    cairo_move_to(canvas, rect.x + rect.width - MENULIST_ARROW_SIZE - MENULIST_BORDER, rect.y + 1 + rect.height/2 - MENULIST_ARROW_SIZE/2);
-    cairo_set_source_rgb(canvas, CHECK_COLOR, CHECK_COLOR, CHECK_COLOR);
-    cairo_rel_line_to(canvas, MENULIST_ARROW_SIZE, 0);
-    cairo_rel_line_to(canvas, -MENULIST_ARROW_SIZE/2, MENULIST_ARROW_SIZE);
+    cairo_move_to(canvas, rect.x + rect.width - MenuListArrowSize - MenuListBorder, rect.y + 1 + rect.height / 2 - MenuListArrowSize / 2);
+    cairo_set_source_rgb(canvas, CheckColor, CheckColor, CheckColor);
+    cairo_rel_line_to(canvas, MenuListArrowSize, 0);
+    cairo_rel_line_to(canvas, -MenuListArrowSize / 2, MenuListArrowSize);
     cairo_close_path(canvas);
     cairo_fill(canvas);
 
@@ -294,10 +295,10 @@ double DefaultWebThemeEngine::getAnimationDurationForProgressBar() const
 
 void DefaultWebThemeEngine::getInnerSpinButtonPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const
 {
-    paddingTop = INNERSPINBUTTON_BORDER;
-    paddingLeft = INNERSPINBUTTON_BORDER;
-    paddingBottom = INNERSPINBUTTON_BORDER;
-    paddingRight = 2 * INNERSPINBUTTON_BORDER + INNERSPINBUTTON_ARROW_SIZE;
+    paddingTop = InnerSpinButtonBorder;
+    paddingLeft = InnerSpinButtonBorder;
+    paddingBottom = InnerSpinButtonBorder;
+    paddingRight = 2 * InnerSpinButtonBorder + InnerSpinButtonArrowSize;
 }
 
 void DefaultWebThemeEngine::paintInnerSpinButton(WebCanvas* canvas, State state, const WebRect& rect, const InnerSpinButtonExtraParams& param) const
@@ -317,16 +318,16 @@ void DefaultWebThemeEngine::paintInnerSpinButton(WebCanvas* canvas, State state,
 
     gradientFill(canvas, rect.y + rectHalfHeight, rectHalfHeight, state == StatePressed && !param.spinUp);
 
-    cairo_move_to(canvas, rect.x + rect.width - INNERSPINBUTTON_ARROW_SIZE - INNERSPINBUTTON_BORDER * 2, rect.y + rectHalfHeight + rect.height/4 - INNERSPINBUTTON_ARROW_SIZE + 1.5);
-    cairo_set_source_rgb(canvas, CHECK_COLOR, CHECK_COLOR, CHECK_COLOR);
-    cairo_rel_line_to(canvas, MENULIST_ARROW_SIZE, 0);
-    cairo_rel_line_to(canvas, -MENULIST_ARROW_SIZE / 2, MENULIST_ARROW_SIZE);
+    cairo_move_to(canvas, rect.x + rect.width - InnerSpinButtonArrowSize - InnerSpinButtonBorder * 2, rect.y + rectHalfHeight + rect.height / 4 - InnerSpinButtonArrowSize + 1.5);
+    cairo_set_source_rgb(canvas, CheckColor, CheckColor, CheckColor);
+    cairo_rel_line_to(canvas, MenuListArrowSize, 0);
+    cairo_rel_line_to(canvas, -MenuListArrowSize / 2, MenuListArrowSize);
     cairo_close_path(canvas);
 
-    cairo_move_to(canvas, rect.x + rect.width - INNERSPINBUTTON_ARROW_SIZE - INNERSPINBUTTON_BORDER * 2, rect.y + rect.height/4 + INNERSPINBUTTON_ARROW_SIZE);
-    cairo_set_source_rgb(canvas, CHECK_COLOR, CHECK_COLOR, CHECK_COLOR);
-    cairo_rel_line_to(canvas, MENULIST_ARROW_SIZE, 0);
-    cairo_rel_line_to(canvas, -MENULIST_ARROW_SIZE / 2, -MENULIST_ARROW_SIZE);
+    cairo_move_to(canvas, rect.x + rect.width - InnerSpinButtonArrowSize - InnerSpinButtonBorder * 2, rect.y + rect.height / 4 + InnerSpinButtonArrowSize);
+    cairo_set_source_rgb(canvas, CheckColor, CheckColor, CheckColor);
+    cairo_rel_line_to(canvas, MenuListArrowSize, 0);
+    cairo_rel_line_to(canvas, -MenuListArrowSize / 2, -MenuListArrowSize);
     cairo_close_path(canvas);
 
     cairo_fill(canvas);
@@ -347,12 +348,12 @@ void DefaultWebThemeEngine::paintMeter(WebCanvas* canvas, State state, const Web
     cairo_restore(canvas);
 }
 
-const int SLIDER_TRACK_HEIGHT = 6;
+const int SliderTrackHeight = 6;
 
 void DefaultWebThemeEngine::paintSliderTrack(WebCanvas* canvas, State, const WebRect& rect) const
 {
     cairo_save(canvas);
-    cairo_rectangle(canvas, rect.x, rect.y + (rect.height - SLIDER_TRACK_HEIGHT) / 2.0, rect.width, SLIDER_TRACK_HEIGHT);
+    cairo_rectangle(canvas, rect.x, rect.y + (rect.height - SliderTrackHeight) / 2.0, rect.width, SliderTrackHeight);
     gradientFill(canvas, rect.y, rect.height, true);
     cairo_restore(canvas);
 }

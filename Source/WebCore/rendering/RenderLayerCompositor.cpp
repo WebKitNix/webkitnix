@@ -61,8 +61,11 @@
 #include "TransformState.h"
 #include <wtf/CurrentTime.h>
 #include <wtf/TemporaryChange.h>
+#include <wtf/text/CString.h>
+#include <wtf/text/StringBuilder.h>
 
 #if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
+#include "HTMLAudioElement.h"
 #include "HTMLMediaElement.h"
 #endif
 
@@ -224,6 +227,9 @@ RenderLayerCompositor::RenderLayerCompositor(RenderView* renderView)
 
 RenderLayerCompositor::~RenderLayerCompositor()
 {
+    // Take care that the owned GraphicsLayers are deleted first as their destructors may call back here.
+    m_clipLayer = nullptr;
+    m_scrollLayer = nullptr;
     ASSERT(m_rootLayerAttachment == RootLayerUnattached);
 }
 
@@ -1840,14 +1846,11 @@ CompositingReasons RenderLayerCompositor::reasonsForCompositing(const RenderLaye
 
     if (requiresCompositingForVideo(renderer))
         reasons |= CompositingReasonVideo;
-
-    if (requiresCompositingForCanvas(renderer))
+    else if (requiresCompositingForCanvas(renderer))
         reasons |= CompositingReasonCanvas;
-
-    if (requiresCompositingForPlugin(renderer))
+    else if (requiresCompositingForPlugin(renderer))
         reasons |= CompositingReasonPlugin;
-
-    if (requiresCompositingForFrame(renderer))
+    else if (requiresCompositingForFrame(renderer))
         reasons |= CompositingReasonIFrame;
     
     if ((canRender3DTransforms() && renderer->style()->backfaceVisibility() == BackfaceVisibilityHidden))
@@ -1913,14 +1916,11 @@ const char* RenderLayerCompositor::logReasonsForCompositing(const RenderLayer* l
 
     if (reasons & CompositingReasonVideo)
         return "video";
-
-    if (reasons & CompositingReasonCanvas)
+    else if (reasons & CompositingReasonCanvas)
         return "canvas";
-
-    if (reasons & CompositingReasonPlugin)
+    else if (reasons & CompositingReasonPlugin)
         return "plugin";
-
-    if (reasons & CompositingReasonIFrame)
+    else if (reasons & CompositingReasonIFrame)
         return "iframe";
     
     if (reasons & CompositingReasonBackfaceVisibilityHidden)
@@ -2067,7 +2067,7 @@ bool RenderLayerCompositor::requiresCompositingForVideo(RenderObject* renderer) 
             return false;
 
         Node* node = renderer->node();
-        if (!node || (!node->hasTagName(HTMLNames::videoTag) && !node->hasTagName(HTMLNames::audioTag)))
+        if (!node || (!node->hasTagName(HTMLNames::videoTag) && !isHTMLAudioElement(node)))
             return false;
 
         HTMLMediaElement* mediaElement = toMediaElement(node);

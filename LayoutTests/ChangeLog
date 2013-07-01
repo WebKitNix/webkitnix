@@ -1,3 +1,430 @@
+2013-07-01  Gabor Abraham  <abrhm@inf.u-szeged.hu>
+
+        [Qt] Unreviewed gardening. Skipping unsupported tests.
+
+        * platform/qt/TestExpectations:
+
+2013-06-30  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening. Rebaselining whatever can be rebaselined and adding failure expectations for other current failures.
+
+        * platform/gtk-wk1/TestExpectations:
+        * platform/gtk/TestExpectations:
+        * platform/gtk/editing/selection/user-select-all-image-with-single-click-expected.txt: Added.
+        * platform/gtk/editing/selection/user-select-all-with-single-click-expected.txt: Added.
+        * platform/gtk/fast/events/ondragenter-expected.txt: Added.
+        * platform/gtk/fast/js/global-constructors-attributes-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug85016-expected.txt:
+
+2013-06-28  Ryosuke Niwa  <rniwa@webkit.org>
+
+        An element with -webkit-user-select: all should be selected on single click
+        https://bugs.webkit.org/show_bug.cgi?id=117864
+
+        Reviewed by Darin Adler.
+
+        Add tests for single clicking on an element with user-select: all.
+        We select the entire element regardless of whether the user had clicked on text or an image
+        to be consistent even though Firefox requires a double click on the latter case.
+
+        * editing/selection/user-select-all-with-image-single-click-expected.txt: Added.
+        * editing/selection/user-select-all-with-image-single-click.html: Added.
+        * editing/selection/user-select-all-with-single-click-expected.txt: Added.
+        * editing/selection/user-select-all-with-single-click.html: Added.
+
+2013-06-28  Ryosuke Niwa  <rniwa@webkit.org>
+
+        -webkit-line-break: after-white-space sometimes truncates DOM on copy & paste
+        https://bugs.webkit.org/show_bug.cgi?id=118164
+
+        Reviewed by Sam Weinig.
+
+        Add a regression test.
+
+        * editing/pasteboard/simplfiying-markup-should-not-strip-content-expected.txt: Added.
+        * editing/pasteboard/simplfiying-markup-should-not-strip-content.html: Added.
+
+2013-06-28  Jer Noble  <jer.noble@apple.com>
+
+        media/video-currentTime.html flakey
+        https://bugs.webkit.org/show_bug.cgi?id=118198
+
+        Reviewed by Jessie Berlin.
+
+        Update video-currentTime.html so that it listens for timeupdate events, and ends the test
+        after the first one with a >0 currentTime. Add a 3s watchdog for the failure case.
+
+        * media/video-currentTime-expected.txt:
+        * media/video-currentTime.html:
+
+2013-06-28  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        Update TestExpectations so new Shapes tests are skipped where the old ones were
+        https://bugs.webkit.org/show_bug.cgi?id=118192
+
+        Reviewed by Brent Fulgham.
+
+        Shapes still aren't enabled on some ports, so skip the tests there.
+        As part of this patch, it was discovered that they work on EFL, so the
+        skipping has been removed from there.
+
+        * platform/efl/TestExpectations:
+        * platform/win/TestExpectations:
+        * platform/wincairo/TestExpectations:
+
+2013-06-28  Morten Stenshorne  <mstensho@opera.com>
+
+        SVG relayout problem when displayed with different image box heights
+        https://bugs.webkit.org/show_bug.cgi?id=118140
+
+        Reviewed by Philip Rogers.
+
+        * svg/as-image/same-source-different-height-expected.html: Added.
+        * svg/as-image/same-source-different-height.html: Added.
+
+2013-06-28  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        accessibility/media-element.html does not support platforms without subroles
+        https://bugs.webkit.org/show_bug.cgi?id=118187
+
+        Reviewed by Chris Fleizach.
+
+        Update the test to be more friendly with platforms not supporting subroles.
+
+        * accessibility/media-element.html: Updated test.
+
+2013-06-28  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Introduce SVGGraphicsElement IDL interface
+        https://bugs.webkit.org/show_bug.cgi?id=118178
+
+        Reviewed by Kentaro Hara.
+
+        Rebaseline js/global-constructors-attributes.html test case now that
+        SVGGraphicsElement is exposed on the global Window object.
+
+        * fast/js/global-constructors-attributes-expected.txt:
+        * platform/efl/fast/js/global-constructors-attributes-expected.txt:
+        * platform/gtk/fast/js/global-constructors-attributes-expected.txt:
+        * platform/mac-lion/fast/js/global-constructors-attributes-expected.txt:
+        * platform/qt/fast/js/global-constructors-attributes-expected.txt:
+
+2013-06-28  Gabor Abraham  <abrhm@inf.u-szeged.hu>
+
+        [Qt] Unreviewed gardening. Skipping failing tests, and mathml tests because not yet supported.
+
+        * platform/qt-5.0-wk2/TestExpectations:
+        * platform/qt/TestExpectations:
+
+2013-06-28  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Add new schemes to content utils.
+        https://bugs.webkit.org/show_bug.cgi?id=118181
+
+        Reviewed by Christophe Dumez.
+
+        Add new schemes as well as change SYNTAX_ERR, SECURITY_ERR.
+
+        * fast/dom/register-protocol-handler-expected.txt:
+        * fast/dom/register-protocol-handler.html:
+        * fast/dom/unregister-protocol-handler-expected.txt:
+        * fast/dom/unregister-protocol-handler.html:
+        * platform/efl/fast/dom/register-protocol-handler-expected.txt:
+        * platform/efl/fast/dom/unregister-protocol-handler-expected.txt:
+
+2013-06-28  Simon Pena  <simon.pena@samsung.com>
+
+        [GTK] Unreviewed gardening. Unskip and reorganize tests no longer failing in GTK-WK and GTK-WK2
+        https://bugs.webkit.org/show_bug.cgi?id=118180
+
+        Unreviewed GTK gardening.
+
+        * platform/gtk-wk2/TestExpectations:
+        * platform/gtk/TestExpectations:
+
+2013-06-28  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed, EFL rebaseline.
+
+        SECURITY_ERR and SYNTAX_ERR have been changed with SecurityError and SyntaxError since r135162.
+
+        * platform/efl/fast/dom/register-protocol-handler-expected.txt:
+        * platform/efl/fast/dom/unregister-protocol-handler-expected.txt:
+
+2013-06-27  Frédéric Wang  <fred.wang@free.fr>
+
+        Implement parsing of MathML lengths.
+        https://bugs.webkit.org/show_bug.cgi?id=118053
+
+        Reviewed by Chris Fleizach.
+
+        Add some reftests for mfrac@linethickness. Better tests for the parsing
+        of MathML lengths will be provided when mspace is implemented
+        (bug 115610)
+
+        * mathml/presentation/mfrac-linethickness1-expected-mismatch.html: Added.
+        * mathml/presentation/mfrac-linethickness1.html: Added.
+        * mathml/presentation/mfrac-linethickness2-expected.html: Added.
+        * mathml/presentation/mfrac-linethickness2.html: Added.
+        * mathml/presentation/mfrac-linethickness3-expected-mismatch.html: Added.
+        * mathml/presentation/mfrac-linethickness3.html: Added.
+
+2013-06-27  Jessie Berlin  <jberlin@apple.com>
+
+        [Mac WK2] compositing/repaint/positioned-movement.html flaky, missing repaint
+        https://bugs.webkit.org/show_bug.cgi?id=118153
+
+        Update the expectation to reflect that the test is also flakey on release and other
+        platforms
+
+        * platform/mac-wk2/TestExpectations:
+
+2013-06-27  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        [CSS Shapes] New positioning model: basic support for rectangle shape-outside
+        https://bugs.webkit.org/show_bug.cgi?id=118080
+
+        Reviewed by David Hyatt.
+
+        Added new tests for the new model. These tests are also spec tests, so
+        their canonical location is now in the CSS WG's repository. They have
+        been imported to WebKit using the import-w3c-tests script, and that's
+        why they live under the csswg directory.
+
+        The new tests replace the shape-outside-floats-simple-rectangle.html
+        test, which was anything but simple.
+
+        Tests that have not been rewritten yet have been marked as skipped.
+        Tests for the old positioning behavior that are not applicable to the
+        new behavior have been deleted.
+
+        * TestExpectations: Skip all the tests that need to be rewritten.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-horizontal-rectangle-000-expected.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-horizontal-rectangle-000.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-horizontal-rectangle-001-expected.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-horizontal-rectangle-001.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-horizontal-rectangle-002-expected.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-horizontal-rectangle-002.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-square-000-expected.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-square-000.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-vertical-rectangle-000-expected.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-vertical-rectangle-000.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-vertical-rectangle-001-expected.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-vertical-rectangle-001.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-vertical-rectangle-002-expected.html: Added.
+        * csswg/submitted/shapes/shape-outside/shape-outside-floats-vertical-rectangle-002.html: Added.
+        * csswg/submitted/shapes/shape-outside/w3c-import.log: Added.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-margin-is-ignored-expected.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-margin-is-ignored.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-non-zero-y-expected.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-non-zero-y.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-overflow-hidden-expected.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-overflow-hidden.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-overhang-expected.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-overhang.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-positioning-expected.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-positioning.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-simple-rectangle-expected.html: Removed.
+        * fast/exclusions/shape-outside-floats/shape-outside-floats-simple-rectangle.html: Removed.
+
+2013-06-27  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: IOS: crash while navigating with SVG
+        https://bugs.webkit.org/show_bug.cgi?id=118101
+
+        Reviewed by Stephen Chenney.
+
+        * platform/iphone-simulator/accessibility/svg-path-crash-expected.txt: Added.
+        * platform/iphone-simulator/accessibility/svg-path-crash.html: Added.
+
+2013-06-27  Simon Pena  <simon.pena@samsung.com>
+
+        [GTK] Unreviewed gardening. Unskip tests no longer timing out.
+        https://bugs.webkit.org/show_bug.cgi?id=118135
+
+        Unreviewed GTK gardening.
+
+        * platform/gtk-wk1/TestExpectations:
+        * platform/gtk/TestExpectations:
+
+2013-06-27  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Remove [NoInterfaceObject] from WorkerGlobalScope
+        https://bugs.webkit.org/show_bug.cgi?id=118071
+
+        Reviewed by Kentaro Hara.
+
+        Split fast/js/global-constructors-attributes-worker.html test into 2 for both
+        shared and dedicated workers, as the output is now different.
+
+        * fast/js/global-constructors-attributes-dedicated-worker-expected.txt: Copied from LayoutTests/fast/js/global-constructors-attributes-worker-expected.txt.
+        * fast/js/global-constructors-attributes-dedicated-worker.html: Copied from LayoutTests/fast/js/global-constructors-attributes-worker.html.
+        * fast/js/global-constructors-attributes-shared-worker-expected.txt: Renamed from LayoutTests/fast/js/global-constructors-attributes-worker-expected.txt.
+        * fast/js/global-constructors-attributes-shared-worker.html: Renamed from LayoutTests/fast/js/global-constructors-attributes-worker.html.
+        * fast/js/script-tests/global-constructors-attributes.js:
+        (.self.postMessage):
+        (.self.onconnect.self.postMessage):
+        (.self.onconnect):
+        * platform/efl/fast/js/global-constructors-attributes-dedicated-worker-expected.txt: Copied from LayoutTests/platform/gtk/fast/js/global-constructors-attributes-worker-expected.txt.
+        * platform/efl/fast/js/global-constructors-attributes-shared-worker-expected.txt: Copied from LayoutTests/platform/gtk/fast/js/global-constructors-attributes-worker-expected.txt.
+        * platform/gtk/fast/js/global-constructors-attributes-dedicated-worker-expected.txt: Renamed from LayoutTests/platform/gtk/fast/js/global-constructors-attributes-worker-expected.txt.
+        * platform/gtk/fast/js/global-constructors-attributes-shared-worker-expected.txt: Renamed from LayoutTests/platform/efl/fast/js/global-constructors-attributes-worker-expected.txt.
+
+2013-06-27  Seokju Kwon  <seokju.kwon@gmail.com>
+
+        [Qt] Unreviewed gardening
+        https://bugs.webkit.org/show_bug.cgi?id=118100
+
+        Unreviewed Qt gardening.
+
+        Moved hover-display-block-none.html from fast/regions to fast/css.
+
+        * platform/qt/TestExpectations:
+
+2013-06-27  Gabor Abraham  <abrhm@inf.u-szeged.hu>
+
+        [Qt] Unreviewed gardening. Rebase the previous test.
+
+        * platform/qt/tables/mozilla_expected_failures/bugs/bug85016-expected.txt:
+
+2013-06-27  Gabor Abraham  <abrhm@inf.u-szeged.hu>
+
+        [Qt] Unreviewed gardening. Rebase and skipping failing tests.
+
+        * platform/qt-5.0-wk1/TestExpectations:
+        * platform/qt/TestExpectations:
+        * platform/qt/tables/mozilla_expected_failures/bugs/bug85016-expected.png:
+
+2013-06-27  Timothy Hatcher  <timothy@apple.com>
+
+        Notify the debugger about functions created from source code via new Function() or WebCore::JSLazyEventListener.
+
+        https://bugs.webkit.org/show_bug.cgi?id=118063
+
+        Reviewed by Geoffrey Garen.
+
+        * inspector/debugger/debugger-script-preprocessor-expected.txt: Updated.
+
+2013-06-27  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Unreviewed EFL gardening.
+
+        Rebaseline fast/js/global-constructors-attributes.html for EFL port
+        after r151914. WaveTable was renamed to PeriodicWave.
+
+        * platform/efl/fast/js/global-constructors-attributes-expected.txt:
+
+2013-06-27  Horia Iosif Olaru  <olaru@adobe.com>
+
+        Add an extra test to check if tiled background images get blended as expected. This test passed before this change. The tests for this change are the existing background-blend-mode tests.
+        
+        https://bugs.webkit.org/show_bug.cgi?id=117619
+
+        Reviewed by Dean Jackson.
+
+        * css3/compositing/effect-background-blend-mode-tiled-expected.txt: Added.
+        * css3/compositing/effect-background-blend-mode-tiled.html: Added.
+        * platform/mac/css3/compositing/effect-background-blend-mode-tiled-expected.png: Added.
+
+2013-06-26  Kihong Kwon  <kihong.kwon@samsung.com>
+
+        Vibration cannot be canceled during pattern vibration.
+        https://bugs.webkit.org/show_bug.cgi?id=117822
+
+        Reviewed by Gyuyoung Kim.
+
+        Add a test case for vibration cancelation during pattern vibration.
+        In addition, restore visibilityState before executing cancelVibration-after-pagevisibility-changed-to-hidden.html.
+
+        * vibration/cancelVibration-after-pagevisibility-changed-to-hidden.html:
+        * vibration/cancelVibration-during-pattern-vibrating-expected.txt: Added.
+        * vibration/cancelVibration-during-pattern-vibrating.html: Added.
+
+2013-06-26  Jer Noble  <jer.noble@apple.com>
+
+        Potential use-after-free after neutering AudioBuffer's underlying ArrayBuffer.
+        https://bugs.webkit.org/show_bug.cgi?id=118040
+
+        Reviewed by Filip Pizlo.
+
+        * webaudio/audiobuffer-neuter.html: Added.
+        * webaudio/audiobuffer-neuter-expected.txt: Added.
+
+2013-06-26  Yuki Sekiguchi  <yuki.sekiguchi@access-company.com>
+
+        getComputedStyle().width wrong after text changed
+        https://bugs.webkit.org/show_bug.cgi?id=106611
+
+        Reviewed by Dean Jackson.
+
+        * fast/dynamic/empty-absolute-innerhtml-transcoding-text-expected.html: Added.
+        * fast/dynamic/empty-absolute-innerhtml-transcoding-text.html: Added.
+
+2013-06-26  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Set Attr.ownerDocument in Element#setAttributeNode()
+        https://bugs.webkit.org/show_bug.cgi?id=118031
+
+        Reviewed by Andreas Kling.
+
+        Add a regression test.
+
+        * fast/dom/Attr/set-attribute-node-from-iframe-expected.txt: Added.
+        * fast/dom/Attr/set-attribute-node-from-iframe.html: Added.
+
+2013-06-25  David Hyatt  <hyatt@apple.com>
+
+        Flex boxes (both old and new) don't handle max-height images correctly.
+        https://bugs.webkit.org/show_bug.cgi?id=118000
+
+        Reviewed by Beth Dakin.
+
+        * css3/flexbox/image-percent-max-height-expected.html: Added.
+        * css3/flexbox/image-percent-max-height.html: Added.
+        * css3/flexbox/resources/hero.png: Added.
+        * fast/flexbox/image-percent-max-height-expected.html: Added.
+        * fast/flexbox/image-percent-max-height.html: Added.
+        * fast/flexbox/resources/hero.png: Added.
+
+2013-06-26  Ryosuke Niwa  <rniwa@webkit.org>
+
+        editing/selection/doubleclick-crash.html can be flaky
+        https://bugs.webkit.org/show_bug.cgi?id=118017
+
+        Reviewed by Jessie Berlin.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/45ac882064589ac41a63762905f0618fc035cd44.
+
+        * editing/selection/doubleclick-crash.html:
+
+2013-06-26  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Get rid of multiple inheritence for SVGViewElement interface
+        https://bugs.webkit.org/show_bug.cgi?id=118014
+
+        Reviewed by Kentaro Hara.
+
+        Update / Rebaseline several SVG test cases now that SVGZoomAndPan interface
+        is no longer exposed.
+
+        * fast/js/global-constructors-attributes-expected.txt:
+        * platform/efl/fast/js/global-constructors-attributes-expected.txt:
+        * platform/gtk/fast/js/global-constructors-attributes-expected.txt:
+        * platform/mac-lion/fast/js/global-constructors-attributes-expected.txt:
+        * platform/qt/fast/js/global-constructors-attributes-expected.txt:
+        * svg/custom/global-constructors-expected.txt:
+        * svg/custom/js-svg-constructors-expected.txt:
+        * svg/custom/js-svg-constructors.svg:
+        * svg/custom/script-tests/global-constructors.js:
+        * svg/dom/SVGViewSpec-defaults-expected.txt:
+        * svg/dom/SVGViewSpec-expected.txt:
+        * svg/dom/resources/viewspec-parser.js:
+        (zoomAndPanToString):
+        (viewSpecToString):
+        * svg/dom/script-tests/SVGViewSpec-defaults.js:
+        * svg/dom/script-tests/SVGViewSpec.js:
+        (continueTesting):
+
 2013-06-25  Krzysztof Czech  <k.czech@samsung.com>
 
         [AX][ATK] Update accessibility baselines after r151953

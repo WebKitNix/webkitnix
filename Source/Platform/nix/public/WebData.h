@@ -42,7 +42,7 @@ namespace WebKit {
 
 class WebDataPrivate;
 
-// A container for raw bytes.  It is inexpensive to copy a WebData object.
+// A container for raw bytes. It is inexpensive to copy a WebData object.
 //
 // WARNING: It is not safe to pass a WebData across threads!!!
 //
@@ -73,7 +73,7 @@ public:
 
     WEBKIT_EXPORT void reset();
     WEBKIT_EXPORT void assign(const WebData&);
-    WEBKIT_EXPORT void assign(const char* data, size_t size);
+    WEBKIT_EXPORT void assign(const char* data, size_t);
 
     WEBKIT_EXPORT size_t size() const;
     WEBKIT_EXPORT const char* data() const;

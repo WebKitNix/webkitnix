@@ -45,7 +45,7 @@ class WebAudioBusPrivate {
 public:
     WebAudioBusPrivate(PassRefPtr<WebCore::AudioBus> audioBus)
         : m_audioBus(audioBus)
-    {}
+    { }
 
     RefPtr<WebCore::AudioBus> m_audioBus;
 };

@@ -38,7 +38,7 @@ SOURCES += \
     Modules/webdatabase/DatabaseContext.cpp \
     Modules/webdatabase/DatabaseServer.cpp \
     Modules/webdatabase/DatabaseSync.cpp \
-    Modules/webdatabase/WorkerContextWebDatabase.cpp \
+    Modules/webdatabase/WorkerGlobalScopeWebDatabase.cpp \
     accessibility/AccessibilityImageMapLink.cpp \
     accessibility/AccessibilityMediaControls.cpp \
     accessibility/AccessibilityMenuList.cpp \
@@ -242,13 +242,13 @@ SOURCES += \
     Modules/filesystem/FileWriterBase.cpp \
     Modules/filesystem/FileWriterSync.cpp \
     Modules/filesystem/LocalFileSystem.cpp \
-    Modules/filesystem/WorkerContextFileSystem.cpp \
+    Modules/filesystem/WorkerGlobalScopeFileSystem.cpp \
     Modules/navigatorcontentutils/NavigatorContentUtils.cpp \
     Modules/notifications/DOMWindowNotifications.cpp \
     Modules/notifications/Notification.cpp \
     Modules/notifications/NotificationCenter.cpp \
     Modules/notifications/NotificationController.cpp \
-    Modules/notifications/WorkerContextNotifications.cpp \
+    Modules/notifications/WorkerGlobalScopeNotifications.cpp \
     Modules/proximity/DeviceProximityController.cpp \
     Modules/proximity/DeviceProximityEvent.cpp \
     css/BasicShapeFunctions.cpp \
@@ -1369,7 +1369,7 @@ HEADERS += \
     bindings/js/JSNodeCustom.h \
     bindings/js/JSNodeFilterCondition.h \
     bindings/js/JSPluginElementFunctions.h \
-    bindings/js/JSWorkerContextBase.h \
+    bindings/js/JSWorkerGlobalScopeBase.h \
     bindings/js/JavaScriptCallFrame.h \
     bindings/js/PageScriptDebugServer.h \
     bindings/js/ScheduledAction.h \
@@ -1428,7 +1428,7 @@ HEADERS += \
     Modules/notifications/NotificationCenter.h \
     Modules/notifications/NotificationClient.h \
     Modules/notifications/NotificationController.h \
-    Modules/notifications/WorkerContextNotifications.h \
+    Modules/notifications/WorkerGlobalScopeNotifications.h \
     \
     Modules/proximity/DeviceProximityClient.h \
     Modules/proximity/DeviceProximityController.h \
@@ -1472,7 +1472,7 @@ HEADERS += \
     Modules/webdatabase/SQLTransactionStateMachine.h \
     Modules/webdatabase/SQLTransactionSync.h \
     Modules/webdatabase/SQLTransactionSyncCallback.h \
-    Modules/webdatabase/WorkerContextWebDatabase.h \
+    Modules/webdatabase/WorkerGlobalScopeWebDatabase.h \
     \
     css/BasicShapeFunctions.h \
     css/CSSAspectRatioValue.h \
@@ -2728,6 +2728,7 @@ HEADERS += \
     svg/SVGGlyphElement.h \
     svg/SVGGlyphRefElement.h \
     svg/SVGGradientElement.h \
+    svg/SVGGraphicsElement.h \
     svg/SVGHKernElement.h \
     svg/SVGImageElement.h \
     svg/SVGImageLoader.h \
@@ -2780,7 +2781,6 @@ HEADERS += \
     svg/SVGStyleElement.h \
     svg/SVGStyledElement.h \
     svg/SVGStyledLocatableElement.h \
-    svg/SVGStyledTransformableElement.h \
     svg/SVGSVGElement.h \
     svg/SVGSwitchElement.h \
     svg/SVGSymbolElement.h \
@@ -2809,10 +2809,10 @@ HEADERS += \
     testing/MemoryInfo.h \
     testing/TypeConversions.h \
     workers/AbstractWorker.h \
-    workers/DedicatedWorkerContext.h \
+    workers/DedicatedWorkerGlobalScope.h \
     workers/DedicatedWorkerThread.h \
     workers/SharedWorker.h \
-    workers/WorkerContext.h \
+    workers/WorkerGlobalScope.h \
     workers/WorkerEventQueue.h \
     workers/Worker.h \
     workers/WorkerLocation.h \
@@ -2859,9 +2859,6 @@ SOURCES += \
     platform/graphics/qt/FloatPointQt.cpp \
     platform/graphics/qt/FloatRectQt.cpp \
     platform/graphics/qt/FloatSizeQt.cpp \
-    platform/graphics/qt/LayoutPointQt.cpp \
-    platform/graphics/qt/LayoutRectQt.cpp \
-    platform/graphics/qt/LayoutSizeQt.cpp \
     platform/graphics/qt/GradientQt.cpp \
     platform/graphics/qt/GraphicsContextQt.cpp \
     platform/graphics/qt/IconQt.cpp \
@@ -3102,7 +3099,7 @@ enable?(INDEXED_DATABASE) {
         Modules/indexeddb/IDBRequest.cpp \
         Modules/indexeddb/IDBTransaction.cpp \
         Modules/indexeddb/PageGroupIndexedDatabase.cpp \
-        Modules/indexeddb/WorkerContextIndexedDatabase.cpp
+        Modules/indexeddb/WorkerGlobalScopeIndexedDatabase.cpp
 }
 
 enable?(DATA_TRANSFER_ITEMS) {
@@ -3186,9 +3183,9 @@ enable?(ICONDATABASE) {
 
 enable?(WORKERS) {
     SOURCES += \
-        bindings/js/JSDedicatedWorkerContextCustom.cpp \
-        bindings/js/JSWorkerContextBase.cpp \
-        bindings/js/JSWorkerContextCustom.cpp \
+        bindings/js/JSDedicatedWorkerGlobalScopeCustom.cpp \
+        bindings/js/JSWorkerGlobalScopeBase.cpp \
+        bindings/js/JSWorkerGlobalScopeCustom.cpp \
         bindings/js/JSWorkerCustom.cpp \
         bindings/js/WorkerScriptController.cpp \
         bindings/js/WorkerScriptDebugServer.cpp
@@ -3197,10 +3194,10 @@ enable?(WORKERS) {
         loader/WorkerThreadableLoader.cpp \
         page/WorkerNavigator.cpp \
         workers/AbstractWorker.cpp \
-        workers/DedicatedWorkerContext.cpp \
+        workers/DedicatedWorkerGlobalScope.cpp \
         workers/DedicatedWorkerThread.cpp \
         workers/Worker.cpp \
-        workers/WorkerContext.cpp \
+        workers/WorkerGlobalScope.cpp \
         workers/WorkerEventQueue.cpp \
         workers/WorkerLocation.cpp \
         workers/WorkerMessagingProxy.cpp \
@@ -3216,7 +3213,7 @@ enable?(SHARED_WORKERS) {
     SOURCES += \
         workers/DefaultSharedWorkerRepository.cpp \
         workers/SharedWorker.cpp \
-        workers/SharedWorkerContext.cpp \
+        workers/SharedWorkerGlobalScope.cpp \
         workers/SharedWorkerRepository.cpp \
         workers/SharedWorkerThread.cpp
 }
@@ -3799,6 +3796,7 @@ enable?(SVG) {
         svg/SVGGlyphElement.cpp \
         svg/SVGGlyphRefElement.cpp \
         svg/SVGGradientElement.cpp \
+        svg/SVGGraphicsElement.cpp \
         svg/SVGHKernElement.cpp \
         svg/SVGImageElement.cpp \
         svg/SVGImageLoader.cpp \
@@ -3846,7 +3844,6 @@ enable?(SVG) {
         svg/SVGStyleElement.cpp \
         svg/SVGStyledElement.cpp \
         svg/SVGStyledLocatableElement.cpp \
-        svg/SVGStyledTransformableElement.cpp \
         svg/SVGSwitchElement.cpp \
         svg/SVGSymbolElement.cpp \
         svg/SVGTRefElement.cpp \
@@ -4091,6 +4088,7 @@ use?(3D_GRAPHICS) {
         platform/graphics/texmap/TextureMapperGL.h \
         platform/graphics/texmap/TextureMapperShaderProgram.h \
         platform/graphics/texmap/coordinated/AreaAllocator.h \
+        platform/graphics/texmap/coordinated/CompositingCoordinator.h \
         platform/graphics/texmap/coordinated/CoordinatedBackingStore.h \
         platform/graphics/texmap/coordinated/CoordinatedCustomFilterOperation.h \
         platform/graphics/texmap/coordinated/CoordinatedCustomFilterProgram.h \
@@ -4126,6 +4124,7 @@ use?(3D_GRAPHICS) {
         platform/graphics/texmap/TextureMapperGL.cpp \
         platform/graphics/texmap/TextureMapperShaderProgram.cpp \
         platform/graphics/texmap/coordinated/AreaAllocator.cpp \
+        platform/graphics/texmap/coordinated/CompositingCoordinator.cpp \
         platform/graphics/texmap/coordinated/CoordinatedBackingStore.cpp \
         platform/graphics/texmap/coordinated/CoordinatedGraphicsLayer.cpp \
         platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp \

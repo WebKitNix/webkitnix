@@ -1828,6 +1828,8 @@ http/tests/security/storage-blocking-strengthened-private-browsing-plugin.html [
 http/tests/security/text-track-crossorigin.html [ Skip ]
 http/tests/security/video-poster-cross-origin-crash.html [ Skip ]
 http/tests/security/video-poster-cross-origin-crash2.html [ Skip ]
+http/tests/security/webgl-remote-read-remote-image-allowed-with-credentials.html
+http/tests/security/webgl-remote-read-remote-image-allowed.html
 http/tests/security/xss-DENIED-xsl-document-redirect.xml [ Skip ]
 http/tests/security/xss-DENIED-xsl-external-entity-redirect.xml [ Skip ]
 http/tests/w3c/webperf/approved/navigation-timing/html/test_timing_xserver_redirect.html [ Skip ]
@@ -4242,6 +4244,11 @@ fast/replaced/width100percent-searchfield.html
 fast/replaced/width100percent-textfield.html
 fast/text/complex-first-glyph-with-initial-advance.html
 tables/mozilla/bugs/bug57828.html
+
+# Failing tests after merge 3b36608 6b70887
+# new vibration/cancelVibration-during-pattern-vibrating.html started to fail after r152070
+vibration/cancelVibration-during-pattern-vibrating.html
+editing/pasteboard/simplfiying-markup-should-not-strip-content.html
 
 # Flakey tests when running pixel tests.
 compositing/background-color/background-color-padding-change.html [ ImageOnlyFailure Pass ]
