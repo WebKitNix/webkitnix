@@ -1,3 +1,178 @@
+2013-07-03  Gabor Abraham  <abrhm@inf.u-szeged.hu>
+
+        [Qt] Unreviewed gardening. Skipping test to paint the debug bot green.
+
+        * platform/qt/TestExpectations:
+
+2013-07-02  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r152318.
+        http://trac.webkit.org/changeset/152318
+        https://bugs.webkit.org/show_bug.cgi?id=118333
+
+        This patch broke media/track/track-automatic-subtitles.html on
+        Mac (Requested by dfarler on #webkit).
+
+        * media/track/track-legacyapi-with-automatic-mode-expected.txt: Removed.
+        * media/track/track-legacyapi-with-automatic-mode.html: Removed.
+
+2013-07-02  Ruth Fong  <ruth_fong@apple.com>
+
+        Change event should not be dispatched by clicking a scrollbar of select listbox
+        https://bugs.webkit.org/show_bug.cgi?id=118019
+        <rdar://problem/14297760>
+
+        Reviewed by Dean Jackson.
+
+        Merge the following:
+        http://src.chromium.org/viewvc/blink?view=revision&revision=151689
+        https://chromium.googlesource.com/chromium/blink/+/492549b0fcaa58a85aa0797446b62985a263704f
+
+        * fast/forms/select/listbox-click-on-scrollbar-expected.txt: Added.
+        * fast/forms/select/listbox-click-on-scrollbar.html: Added.
+        Tests that an onChange() event is not fired when the scrollbar of a 
+        <select multiple> element is clicked.
+
+2013-07-02  David Farler  <dfarler@apple.com>
+
+        Unreviewed rebaseline of media/video-controls-captions-trackmenu-localized after r151697.
+
+        * platform/mac-lion/media/video-controls-captions-trackmenu-localized-expected.txt: Removed.
+        "Unknown SDH" -> "Unknown".
+
+2013-07-02  David Farler  <dfarler@apple.com>
+
+        Unreviewed rebaseline of Mac Lion fast/js/global-constructors-attributes after r151914.
+
+        * platform/mac-lion/fast/js/global-constructors-attributes-expected.txt:
+        WaveTable -> PeriodicWave
+
+2013-07-02  Radu Stavila  <stavila@adobe.com>
+
+        [CSS Regions] Improve implementation of elements in region being flowed to another flow thread
+        https://bugs.webkit.org/show_bug.cgi?id=118300
+
+        Reviewed by David Hyatt.
+
+        * fast/regions/flow-body-in-html.html:
+        * fast/regions/region-content-flown-into-region-expected.html:
+        * fast/regions/region-content-flown-into-region.html:
+        * fast/regions/universal-selector-children-to-the-same-region.html:
+
+2013-07-02  David Farler  <dfarler@apple.com>
+
+        Skip cache partitioning tests on Lion.
+
+        Rubber stamped by Jeffrey Pfau.
+
+        * platform/mac-lion/TestExpectations:
+        http/tests/cache/partitioned-cache.html
+        http/tests/cache/partitioned-cache-iframe.html
+
+2013-07-02  Eric Carlson  <eric.carlson@apple.com>
+
+        [Mac] .webkitClosedCaptionsVisible doesn't work with "Automatic" caption mode
+        https://bugs.webkit.org/show_bug.cgi?id=118319
+
+        Reviewed by Darin Adler.
+
+        * media/track/track-legacyapi-with-automatic-mode-expected.txt: Added.
+        * media/track/track-legacyapi-with-automatic-mode.html: Added.
+
+2013-06-26  Robert Hogan  <robert@webkit.org>
+
+        empty inlines should not affect line-wrapping
+        https://bugs.webkit.org/show_bug.cgi?id=25638
+
+        Reviewed by David Hyatt.
+
+        * fast/text/whitespace/inline-whitespace-wrapping-11-expected.html: Added.
+        * fast/text/whitespace/inline-whitespace-wrapping-11.html: Added.
+
+2013-07-02  Tim Horton  <timothy_horton@apple.com>
+
+        constrainScrollPositionForOverhang needs to handle scrollOrigin correctly
+        https://bugs.webkit.org/show_bug.cgi?id=118176
+        <rdar://problem/14301271>
+
+        Reviewed by Anders Carlsson.
+
+        Add a test that ensures that fixed position works with a scrollable document
+        and direction: rtl, which is one case where scrollOrigin is set.
+
+        Disable the test on Mac WebKit1 because of https://bugs.webkit.org/show_bug.cgi?id=118269.
+
+        * compositing/geometry/fixed-position-flipped-writing-mode-expected.txt: Added.
+        * compositing/geometry/fixed-position-flipped-writing-mode.html: Added.
+        * platform/mac/compositing/geometry/fixed-position-flipped-writing-mode-expected.png: Added.
+        * platform/mac/TestExpectations:
+        * platform/mac-wk2/TestExpectations:
+
+2013-07-02  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Unreviewed gardening. Added new common expectations for test after r151665.
+
+        * accessibility/box-styled-lists-expected.txt: Added shared expectation.
+        * platform/efl/TestExpectations: Removed failure expectation.
+        * platform/gtk/TestExpectations: Ditto.
+
+2013-07-02  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Unreviewed gardening. Added new baselines for GTK after revision r151841 and r151868.
+
+        * accessibility/listitem-title-expected.txt: Renamed from LayoutTests/platform/mac/accessibility/listitem-title-expected.txt.
+        * platform/gtk/accessibility/aria-tab-role-on-buttons-expected.txt: Added.
+
+2013-07-02  Mihai Tica  <mitica@adobe.com>
+
+        Unreviewed gardening. Rebaseline background blend mode default test result.
+
+        * platform/mac/css3/compositing/background-blend-mode-default-value-expected.png:
+
+2013-07-02  Andreas Kling  <akling@apple.com>
+
+        Skip fast/dom/timer-throttling-hidden-page.html after r152202.
+        <http://webkit.org/b/118301>
+
+        * TestExpectations:
+
+2013-07-02  Andreas Kling  <akling@apple.com>
+
+        Skip 3 MathML tests that are failing after r152235.
+        <http://webkit.org/b/118298>
+
+        * TestExpectations:
+
+2013-07-02  Catalin Badea  <badea@adobe.com>
+
+        [CSS-Regions] OverrideLogicalHeight used by both regions and flexbox
+        https://bugs.webkit.org/show_bug.cgi?id=118057
+
+        Reviewed by David Hyatt.
+
+        Add test for auto-height regions and flexbox containers.
+
+        * fast/regions/autoheight-flexbox-expected.html: Added.
+        * fast/regions/autoheight-flexbox.html: Added.
+
+2013-07-01  Frédéric Wang  <fred.wang@free.fr>
+
+        Add Support for mspace element
+        https://bugs.webkit.org/show_bug.cgi?id=115610
+
+        Reviewed by Chris Fleizach.
+
+        Add a reftest for the mspace element (width, height and depth) and
+        the parsing of MathML lengths. Import a reftest from Gecko to check
+        positive namedspace values.
+
+        * mathml/presentation/mspace-expected.html: Added.
+        * mathml/presentation/mspace-units-expected.html: Added.
+        * mathml/presentation/mspace-units.html: Added.
+        * mathml/presentation/mspace.html: Added.
+        * mathml/presentation/positive-namedspace-expected.html: Added.
+        * mathml/presentation/positive-namedspace.html: Added.
+
 2013-07-01  Gabor Abraham  <abrhm@inf.u-szeged.hu>
 
         [Qt] Unreviewed gardening. Skipping unsupported tests.

@@ -1,3 +1,139 @@
+2013-07-03  Jer Noble  <jer.noble@apple.com>
+
+        Xcode often gets in a state where the debugger is completely unresponsive
+        https://bugs.webkit.org/show_bug.cgi?id=118157
+
+        The GetPointeeData() operations we use to retrieve strings is extremely expensive.
+        Rather than pull the character data out of the debugger one byte at a time
+        through the GetPointeeData() API, retrieve the memory contents of the string through
+        the ReadMemory() API, and convert the retrieved memory into a python string.
+
+        Reviewed by Anders Carlsson.
+
+        * lldb/lldb_webkit.py:
+        (__lldb_init_module.lldb_webkit):
+        (guess_string_length):
+        (ustring_to_string):
+        (lstring_to_string):
+
+2013-07-03  Morten Stenshorne  <mstensho@opera.com>
+
+        [GTK] Let F5 refresh the page in MiniBrowser
+        https://bugs.webkit.org/show_bug.cgi?id=117638
+
+        Reviewed by Carlos Garcia Campos.
+
+        Also use the correct icon for the refresh button that was already there.
+
+        * MiniBrowser/gtk/BrowserWindow.c:
+        (browser_window_init):
+
+2013-07-02  Kondapally Kalyan  <kalyan.kondapally@intel.com>
+
+        Unreviewed. Add my email to a few watchlists.
+
+        * Scripts/webkitpy/common/config/watchlist:
+
+2013-07-02  David Farler  <dfarler@apple.com>
+
+        Unreviewed. Adding myself to contributors.json.
+
+        * Scripts/webkitpy/common/config/contributors.json:
+
+2013-07-02  Brian Holt  <brian.holt@samsung.com>
+
+        [ATK] Leak: leaks in AccessibilityUIElement
+        https://bugs.webkit.org/show_bug.cgi?id=118297
+
+        Fixed memory leak.
+
+        Reviewed by Christophe Dumez.
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::stringValue):
+
+2013-07-02  Byungwoo Lee  <bw80.lee@samsung.com>
+
+        Fix WebKitTestRunner crashes.
+        https://bugs.webkit.org/show_bug.cgi?id=117630
+
+        Reviewed by Darin Adler.
+
+        Create static function to dump for WebProcess unresponsiveness status,
+        and use it before calling TestController::runTest().
+
+        Accessing TestController::m_currentInvocation before calling
+        TestController::runTest() can make crash because the invocation
+        instance will be assigned at the function.
+
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::run):
+        * WebKitTestRunner/TestInvocation.cpp:
+        (WTR::TestInvocation::dumpWebProcessUnresponsiveness):
+        * WebKitTestRunner/TestInvocation.h:
+
+2013-07-02  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        [Qt][WK1] Support WebGL with EGL on Linux
+        https://bugs.webkit.org/show_bug.cgi?id=118251
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        * qmake/mkspecs/features/features.prf:
+
+2013-07-01  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [Efl][Gtk] Look at WEBKIT_OUTPUTDIR instead of WEBKITOUTPUTDIR in jhbuildrc
+        https://bugs.webkit.org/show_bug.cgi?id=118267
+
+        Reviewed by Gyuyoung Kim.
+
+        After r152226 (from https://bugs.webkit.org/show_bug.cgi?id=117249)
+        WEBKIT_OUTPUTDIR should be used instead of WEBKITOUPUTDIR. However
+        Efl's jhbuildrc is still using the WEBKITOUTPUTDIR environment variable.
+
+        * efl/jhbuildrc:
+        * gtk/jhbuildrc:
+
+2013-07-01  Gustavo Noronha Silva  <gustavo.noronha@collabora.com>
+
+        [GTK] Remove unsupported AC backends
+        https://bugs.webkit.org/show_bug.cgi?id=117362
+
+        Reviewed by Martin Robinson.
+
+        * gtk/jhbuild-optional.modules: no longer needs clutter-gtk, clutter
+        and cogl, so removed.
+
+2013-07-01  Timothy Hatcher  <timothy@apple.com>
+
+        Link to WebInspectorUI.framework at build time instead of soft linking.
+
+        https://bugs.webkit.org/show_bug.cgi?id=118261
+
+        Reviewed by Joseph Pecoraro.
+
+        * Scripts/build-webkit: Build WebInspectorUI before WebKit and WebKit2.
+
+2013-07-01  Tim Horton  <timothy_horton@apple.com>
+
+        Maximum scroll position can be negative in some cases
+        https://bugs.webkit.org/show_bug.cgi?id=118175
+        <rdar://problem/14301217>
+
+        Reviewed by Anders Carlsson.
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/WebKit2/ResizeReversePaginatedWebView.cpp: Added.
+        (TestWebKitAPI::didRunJavaScript):
+        (TestWebKitAPI::didLayout):
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/lots-of-text-vertical-lr.html: Added.
+        Add a test that loads a vertical-lr document, paginates it horizontally
+        from right to left, resizes the view to fit the entire document, and
+        verifies that the scroll position is negative, as it must be for the
+        document to be enclosed by the view.
+
 2013-07-01  Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
 
         [EFL][GTK] Migrate from WEBKITOUTPUTDIR to WEBKIT_OUTPUTDIR

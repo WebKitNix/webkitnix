@@ -1709,6 +1709,7 @@ dom_binding_idls += \
 	$(WebCore)/svg/SVGFETileElement.idl \
 	$(WebCore)/svg/SVGFETurbulenceElement.idl \
 	$(WebCore)/svg/SVGFilterElement.idl \
+	$(WebCore)/svg/SVGFilterPrimitiveStandardAttributes.idl \
 	$(WebCore)/svg/SVGFitToViewBox.idl \
 	$(WebCore)/svg/SVGFontElement.idl \
 	$(WebCore)/svg/SVGFontFaceElement.idl \
@@ -4609,6 +4610,8 @@ webcore_sources += \
 	Source/WebCore/rendering/mathml/RenderMathMLRoot.h \
 	Source/WebCore/rendering/mathml/RenderMathMLRow.cpp \
 	Source/WebCore/rendering/mathml/RenderMathMLRow.h \
+	Source/WebCore/rendering/mathml/RenderMathMLSpace.cpp \
+	Source/WebCore/rendering/mathml/RenderMathMLSpace.h \
 	Source/WebCore/rendering/mathml/RenderMathMLSquareRoot.cpp \
 	Source/WebCore/rendering/mathml/RenderMathMLSquareRoot.h \
 	Source/WebCore/rendering/mathml/RenderMathMLSubSup.cpp \
@@ -5303,8 +5306,6 @@ webcore_svg_sources += \
 	Source/WebCore/svg/SVGStyleElement.h \
 	Source/WebCore/svg/SVGStyledElement.cpp \
 	Source/WebCore/svg/SVGStyledElement.h \
-	Source/WebCore/svg/SVGStyledLocatableElement.cpp \
-	Source/WebCore/svg/SVGStyledLocatableElement.h \
 	Source/WebCore/svg/SVGSVGElement.cpp \
 	Source/WebCore/svg/SVGSVGElement.h \
 	Source/WebCore/svg/SVGSwitchElement.cpp \
@@ -5657,11 +5658,15 @@ platform_sources += \
 	Source/WebCore/platform/graphics/cairo/CairoUtilities.cpp \
 	Source/WebCore/platform/graphics/cairo/CairoUtilities.h \
 	Source/WebCore/platform/graphics/cairo/DrawErrorUnderline.h \
+	Source/WebCore/platform/graphics/cairo/DrawingBufferCairo.cpp \
 	Source/WebCore/platform/graphics/cairo/FloatRectCairo.cpp \
 	Source/WebCore/platform/graphics/cairo/FontCairo.cpp \
 	Source/WebCore/platform/graphics/cairo/FontCairoHarfbuzzNG.cpp \
 	Source/WebCore/platform/graphics/cairo/FontCustomPlatformData.h \
 	Source/WebCore/platform/graphics/cairo/GradientCairo.cpp \
+	Source/WebCore/platform/graphics/cairo/GraphicsContext3DCairo.cpp \
+	Source/WebCore/platform/graphics/cairo/GraphicsContext3DPrivate.cpp \
+	Source/WebCore/platform/graphics/cairo/GraphicsContext3DPrivate.h \
 	Source/WebCore/platform/graphics/cairo/ImageBufferCairo.cpp \
 	Source/WebCore/platform/graphics/cairo/ImageBufferDataCairo.h \
 	Source/WebCore/platform/graphics/cairo/ImageCairo.cpp \
@@ -6355,66 +6360,10 @@ platform_sources += \
 	Source/WebCore/platform/graphics/gstreamer/GStreamerVersioning.h
 endif
 
-if USE_CLUTTER
-webcore_sources += \
-	Source/WebCore/platform/graphics/clutter/DrawingBufferClutter.cpp \
-	Source/WebCore/platform/graphics/clutter/GraphicsContext3DClutter.cpp \
-	Source/WebCore/platform/graphics/clutter/GraphicsContext3DPrivate.cpp \
-	Source/WebCore/platform/graphics/clutter/GraphicsContext3DPrivate.h
-else
-webcore_sources += \
-	Source/WebCore/platform/graphics/cairo/DrawingBufferCairo.cpp \
-	Source/WebCore/platform/graphics/cairo/GraphicsContext3DCairo.cpp \
-	Source/WebCore/platform/graphics/cairo/GraphicsContext3DPrivate.cpp \
-	Source/WebCore/platform/graphics/cairo/GraphicsContext3DPrivate.h
-endif  # END USE_CLUTTER
-
 # ---
 # Accelerated compositing support
 # ---
 if USE_ACCELERATED_COMPOSITING
-if USE_CLUTTER
-webcore_sources += \
-	Source/WebCore/platform/graphics/clutter/GraphicsLayerActor.cpp \
-	Source/WebCore/platform/graphics/clutter/GraphicsLayerActor.h \
-	Source/WebCore/platform/graphics/clutter/GraphicsLayerClutter.cpp \
-	Source/WebCore/platform/graphics/clutter/GraphicsLayerClutter.h \
-	Source/WebCore/platform/graphics/clutter/PlatformClutterAnimation.cpp \
-	Source/WebCore/platform/graphics/clutter/PlatformClutterAnimation.h \
-	Source/WebCore/platform/graphics/clutter/TransformationMatrixClutter.cpp
-endif  # END USE_CLUTTER
-
-if USE_TEXTURE_MAPPER_CAIRO
-webcore_sources += \
-	Source/WebCore//platform/graphics/filters/texmap/CustomFilterValidatedProgramTextureMapper.cpp \
-	Source/WebCore//platform/graphics/filters/texmap/TextureMapperPlatformCompiledProgram.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperShaderProgram.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperShaderProgram.h \
-	Source/WebCore/platform/graphics/texmap/GraphicsLayerTextureMapper.cpp \
-	Source/WebCore/platform/graphics/texmap/GraphicsLayerTextureMapper.h \
-	Source/WebCore/platform/graphics/GraphicsLayerTransform.cpp \
-	Source/WebCore/platform/graphics/GraphicsLayerTransform.h \
-	Source/WebCore/platform/graphics/GraphicsLayerAnimation.cpp \
-	Source/WebCore/platform/graphics/GraphicsLayerAnimation.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperBackingStore.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperBackingStore.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapper.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapper.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperFPSCounter.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperFPSCounter.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperImageBuffer.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperImageBuffer.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperLayer.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperLayer.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperPlatformLayer.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperSurfaceBackingStore.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperSurfaceBackingStore.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperTile.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperTile.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperTiledBackingStore.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperTiledBackingStore.h
-endif  # END USE_TEXTURE_MAPPER_CAIRO
-
 if USE_TEXTURE_MAPPER_GL
 webcore_sources += \
 	Source/WebCore/platform/graphics/filters/texmap/CustomFilterValidatedProgramTextureMapper.cpp \

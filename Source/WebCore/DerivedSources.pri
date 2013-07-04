@@ -560,6 +560,7 @@ enable?(SVG) {
     $$PWD/svg/SVGFETileElement.idl \
     $$PWD/svg/SVGFETurbulenceElement.idl \
     $$PWD/svg/SVGFilterElement.idl \
+    $$PWD/svg/SVGFilterPrimitiveStandardAttributes.idl \
     $$PWD/svg/SVGFitToViewBox.idl \
     $$PWD/svg/SVGFontElement.idl \
     $$PWD/svg/SVGFontFaceElement.idl \

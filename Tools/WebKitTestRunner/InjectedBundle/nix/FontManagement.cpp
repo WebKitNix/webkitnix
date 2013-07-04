@@ -57,7 +57,7 @@ static Vector<String> getFontFiles()
 
 CString getCustomBuildDir()
 {
-    const char* webkitOutputDir = g_getenv("WEBKITOUTPUTDIR");
+    const char* webkitOutputDir = g_getenv("WEBKIT_OUTPUTDIR");
     if (webkitOutputDir)
         return webkitOutputDir;
 
@@ -75,7 +75,7 @@ static CString getFontsPath()
     if (g_file_test(fontsPath.get(), static_cast<GFileTest>(G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
         return fontsPath.get();
 
-    fprintf(stderr, "Could not locate tests fonts, try setting WEBKITOUTPUTDIR.\n");
+    fprintf(stderr, "Could not locate tests fonts, try setting WEBKIT_OUTPUTDIR.\n");
     return CString();
 }
 

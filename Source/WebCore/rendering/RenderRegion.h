@@ -106,6 +106,22 @@ public:
 
     bool hasAutoLogicalHeight() const { return m_hasAutoLogicalHeight; }
 
+    LayoutUnit computedAutoHeight() const { return m_computedAutoHeight; }
+
+    void setComputedAutoHeight(LayoutUnit computedAutoHeight)
+    {
+        m_hasComputedAutoHeight = true;
+        m_computedAutoHeight = computedAutoHeight;
+    }
+
+    void clearComputedAutoHeight()
+    {
+        m_hasComputedAutoHeight = false;
+        m_computedAutoHeight = 0;
+    }
+
+    bool hasComputedAutoHeight() const { return m_hasComputedAutoHeight; }
+
     virtual void updateLogicalHeight() OVERRIDE;
 
     // The top of the nearest page inside the region. For RenderRegions, this is just the logical top of the
@@ -139,7 +155,6 @@ private:
     virtual const char* renderName() const { return "RenderRegion"; }
 
     virtual bool canHaveChildren() const OVERRIDE { return false; }
-    virtual bool canDOMChildrenHaveRenderParent() const OVERRIDE { return true; }
     virtual bool canHaveGeneratedChildren() const OVERRIDE { return true; }
 
     virtual void insertedIntoTree() OVERRIDE;
@@ -193,6 +208,9 @@ private:
     bool m_isValid : 1;
     bool m_hasCustomRegionStyle : 1;
     bool m_hasAutoLogicalHeight : 1;
+    bool m_hasComputedAutoHeight : 1;
+
+    LayoutUnit m_computedAutoHeight;
 };
 
 inline RenderRegion* toRenderRegion(RenderObject* object)

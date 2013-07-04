@@ -37,9 +37,9 @@
 #include "SVGDocumentExtensions.h"
 #include "SVGElementInstance.h"
 #include "SVGElementRareData.h"
+#include "SVGGraphicsElement.h"
 #include "SVGNames.h"
 #include "SVGSVGElement.h"
-#include "SVGStyledLocatableElement.h"
 #include "SVGTextElement.h"
 #include "ScriptEventListener.h"
 #include "XMLNames.h"
@@ -255,8 +255,8 @@ const HashSet<SVGElementInstance*>& SVGElement::instancesForElement() const
 
 bool SVGElement::getBoundingBox(FloatRect& rect, SVGLocatable::StyleUpdateStrategy styleUpdateStrategy)
 {
-    if (isStyledLocatable()) {
-        rect = toSVGStyledLocatableElement(this)->getBBox(styleUpdateStrategy);
+    if (isSVGGraphicsElement()) {
+        rect = toSVGGraphicsElement(this)->getBBox(styleUpdateStrategy);
         return true;
     }
     if (hasTagName(SVGNames::textTag)) {
@@ -460,11 +460,13 @@ static bool hasLoadListener(Element* element)
     return false;
 }
 
-bool SVGElement::moveToFlowThreadIsNeeded(RefPtr<RenderStyle>& cachedStyle)
+#if ENABLE(CSS_REGIONS)
+bool SVGElement::shouldMoveToFlowThread(RenderStyle* styleToUse) const
 {
     // Allow only svg root elements to be directly collected by a render flow thread.
-    return parentNode() && !parentNode()->isSVGElement() && hasTagName(SVGNames::svgTag) && Element::moveToFlowThreadIsNeeded(cachedStyle);
+    return parentNode() && !parentNode()->isSVGElement() && hasTagName(SVGNames::svgTag) && Element::shouldMoveToFlowThread(styleToUse);
 }
+#endif
 
 void SVGElement::sendSVGLoadEventIfPossible(bool sendParentLoadEvents)
 {

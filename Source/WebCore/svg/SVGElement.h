@@ -60,7 +60,6 @@ public:
 
     virtual bool isSVGStyledElement() const { return false; }
     virtual bool isSVGGraphicsElement() const { return false; }
-    virtual bool isStyledLocatable() const { return false; }
     virtual bool isSVGSVGElement() const { return false; }
     virtual bool isFilterEffect() const { return false; }
     virtual bool isGradientStop() const { return false; }
@@ -121,7 +120,9 @@ public:
     virtual bool addEventListener(const AtomicString& eventType, PassRefPtr<EventListener>, bool useCapture) OVERRIDE;
     virtual bool removeEventListener(const AtomicString& eventType, EventListener*, bool useCapture) OVERRIDE;
 
-    virtual bool moveToFlowThreadIsNeeded(RefPtr<RenderStyle>& cachedStyle) OVERRIDE;
+#if ENABLE(CSS_REGIONS)
+    virtual bool shouldMoveToFlowThread(RenderStyle*) const OVERRIDE;
+#endif
 
 protected:
     SVGElement(const QualifiedName&, Document*, ConstructionType = CreateSVGElement);

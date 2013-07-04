@@ -677,6 +677,7 @@ set(WebCore_SVG_IDL_FILES
     svg/SVGFETileElement.idl
     svg/SVGFETurbulenceElement.idl
     svg/SVGFilterElement.idl
+    svg/SVGFilterPrimitiveStandardAttributes.idl
     svg/SVGFitToViewBox.idl
     svg/SVGFontElement.idl
     svg/SVGFontFaceElement.idl
@@ -2222,6 +2223,7 @@ set(WebCore_SOURCES
     rendering/mathml/RenderMathMLOperator.cpp
     rendering/mathml/RenderMathMLRoot.cpp
     rendering/mathml/RenderMathMLRow.cpp
+    rendering/mathml/RenderMathMLSpace.cpp
     rendering/mathml/RenderMathMLSquareRoot.cpp
     rendering/mathml/RenderMathMLSubSup.cpp
     rendering/mathml/RenderMathMLUnderOver.cpp
@@ -2465,7 +2467,6 @@ set(WebCore_SOURCES
     svg/SVGStringList.cpp
     svg/SVGStyleElement.cpp
     svg/SVGStyledElement.cpp
-    svg/SVGStyledLocatableElement.cpp
     svg/SVGSwitchElement.cpp
     svg/SVGSymbolElement.cpp
     svg/SVGTRefElement.cpp

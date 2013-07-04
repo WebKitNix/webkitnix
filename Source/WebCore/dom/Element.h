@@ -479,6 +479,9 @@ public:
     void setIsInCanvasSubtree(bool);
     bool isInCanvasSubtree() const;
 
+    void setIsInsideRegion(bool);
+    bool isInsideRegion() const;
+
     void setRegionOversetState(RegionOversetState);
     RegionOversetState regionOversetState() const;
 
@@ -632,8 +635,10 @@ public:
     PassRefPtr<RenderStyle> styleForRenderer();
 
     RenderRegion* renderRegion() const;
-    virtual bool moveToFlowThreadIsNeeded(RefPtr<RenderStyle>& cachedStyle);
+
 #if ENABLE(CSS_REGIONS)
+    virtual bool shouldMoveToFlowThread(RenderStyle*) const;
+    
     const AtomicString& webkitRegionOverset() const;
     Vector<RefPtr<Range> > webkitGetRegionFlowRanges() const;
 #endif

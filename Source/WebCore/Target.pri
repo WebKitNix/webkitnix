@@ -2414,6 +2414,7 @@ HEADERS += \
     rendering/mathml/RenderMathMLOperator.h \
     rendering/mathml/RenderMathMLRoot.h \
     rendering/mathml/RenderMathMLRow.h \
+    rendering/mathml/RenderMathMLSpace.h \
     rendering/mathml/RenderMathMLSquareRoot.h \
     rendering/mathml/RenderMathMLSubSup.h \
     rendering/mathml/RenderMathMLUnderOver.h \
@@ -2780,7 +2781,6 @@ HEADERS += \
     svg/SVGStringList.h \
     svg/SVGStyleElement.h \
     svg/SVGStyledElement.h \
-    svg/SVGStyledLocatableElement.h \
     svg/SVGSVGElement.h \
     svg/SVGSwitchElement.h \
     svg/SVGSymbolElement.h \
@@ -3609,6 +3609,7 @@ enable?(MATHML) {
         rendering/mathml/RenderMathMLOperator.cpp \
         rendering/mathml/RenderMathMLRoot.cpp \
         rendering/mathml/RenderMathMLRow.cpp \
+        rendering/mathml/RenderMathMLSpace.cpp \
         rendering/mathml/RenderMathMLSquareRoot.cpp \
         rendering/mathml/RenderMathMLSubSup.cpp \
         rendering/mathml/RenderMathMLUnderOver.cpp
@@ -3843,7 +3844,6 @@ enable?(SVG) {
         svg/SVGStringList.cpp \
         svg/SVGStyleElement.cpp \
         svg/SVGStyledElement.cpp \
-        svg/SVGStyledLocatableElement.cpp \
         svg/SVGSwitchElement.cpp \
         svg/SVGSymbolElement.cpp \
         svg/SVGTRefElement.cpp \
@@ -4249,7 +4249,7 @@ use?(GRAPHICS_SURFACE) {
     win32 {
         SOURCES += platform/graphics/surfaces/win/GraphicsSurfaceWin.cpp
     }
-    have?(XCOMPOSITE) {
+    use?(glx) {
         HEADERS += \
             platform/graphics/surfaces/glx/X11Helper.h \
             platform/graphics/surfaces/glx/GLXConfigSelector.h

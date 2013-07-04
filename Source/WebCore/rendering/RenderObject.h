@@ -252,7 +252,6 @@ public:
     // RenderObject tree manipulation
     //////////////////////////////////////////
     virtual bool canHaveChildren() const { return virtualChildren(); }
-    virtual bool canDOMChildrenHaveRenderParent() const { return false; } // Even if this render object can't have render children, the children in the DOM tree may have a render parent (that is different from this object).
     virtual bool canHaveGeneratedChildren() const;
     virtual bool isChildAllowed(RenderObject*, RenderStyle*) const { return true; }
     virtual void addChild(RenderObject* newChild, RenderObject* beforeChild = 0);
@@ -353,6 +352,7 @@ public:
     virtual bool isProgress() const { return false; }
 #endif
     virtual bool isRenderBlock() const { return false; }
+    virtual bool isRenderSVGBlock() const { return false; };
     virtual bool isRenderButton() const { return false; }
     virtual bool isRenderIFrame() const { return false; }
     virtual bool isRenderImage() const { return false; }

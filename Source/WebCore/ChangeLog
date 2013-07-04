@@ -1,3 +1,1018 @@
+2013-07-03  Jessie Berlin  <jberlin@apple.com>
+
+        Speculative build fix after r152340.
+
+        * WebCore.exp.in:
+
+2013-07-03  Kangil Han  <kangil.han@samsung.com>
+
+        Append overloading function for isFooElement
+        https://bugs.webkit.org/show_bug.cgi?id=118334
+
+        Reviewed by Antti Koivisto.
+
+        Node::hasTagName needs additional isElementNode() check when it is triggered.
+        So conversion from Element* to Node* in isFooElement should be avoided.
+        Therefore, to support both Node* and Element* as an argument of isFooElement,
+        this patch appends overloading inline function.
+
+        * css/CSSStyleSheet.cpp:
+        (WebCore::isAcceptableCSSStyleSheetParent):
+        * css/StyleScopeResolver.cpp:
+        (WebCore::StyleScopeResolver::scopeFor):
+        * dom/Node.cpp:
+        (WebCore::Node::numberOfScopedHTMLStyleChildren):
+        * html/HTMLAnchorElement.h:
+        (WebCore::isHTMLAnchorElement):
+        * html/HTMLAreaElement.h:
+        (WebCore::isHTMLAreaElement):
+        * html/HTMLAudioElement.h:
+        (WebCore::isHTMLAudioElement):
+        * html/HTMLFormElement.h:
+        (WebCore::isHTMLFormElement):
+        * html/HTMLImageElement.h:
+        (WebCore::isHTMLImageElement):
+        * html/HTMLInputElement.h:
+        (WebCore::isHTMLInputElement):
+        * html/HTMLLabelElement.h:
+        (WebCore::isHTMLLabelElement):
+        * html/HTMLOptGroupElement.h:
+        (WebCore::isHTMLOptGroupElement):
+        * html/HTMLOptionElement.h:
+        (WebCore::isHTMLOptionElement):
+        * html/HTMLStyleElement.h:
+        (WebCore::isHTMLStyleElement):
+        (WebCore::toHTMLStyleElement):
+        * html/HTMLTextAreaElement.h:
+        (WebCore::isHTMLTextAreaElement):
+
+2013-07-03  Balazs Kelemen  <b.kelemen@samsung.com>
+
+        Gif: zero filling should use memset instead of setRGBA for every pixel
+        https://bugs.webkit.org/show_bug.cgi?id=118350
+
+        Reviewed by Allan Sandfeld Jensen.
+
+        No new tests. Actually it is not covered by existing tests. Surprisingly we haven't got pixel
+        tests for animated images. Given that this patch is pretty trivial I don't think it's worth the
+        cost to start introducing such tests.
+        I added a manual test: animated-gif-dispose-background.html.
+
+        GIFImageDecoder::initializeFrameBuffer use a loop to fill a subrect with tranparent pixels.
+        This is extremely ineffecient. The use case for this code path is not frequent on the web
+        but it's still better to fix it.
+
+        * platform/image-decoders/ImageDecoder.cpp:
+        (WebCore::ImageFrame::zeroFillFrameRect):
+        * platform/image-decoders/ImageDecoder.h:
+        * platform/image-decoders/gif/GIFImageDecoder.cpp:
+        (WebCore::GIFImageDecoder::initFrameBuffer):
+        Fixed indentation in addition.
+
+2013-07-03  Przemyslaw Szymanski  <p.szymanski3@samsung.com>
+
+        TextureUnit code optimization
+        https://bugs.webkit.org/show_bug.cgi?id=117868
+
+        Reviewed by Noam Rosenthal.
+
+        According to OpenGL ES 2.0 specification it is not possible to use both
+        texture2D and textureCubeMap in one texture unit.
+        This patch reduces amount of code, slightly increases rendering performance
+        and makes WebKit more consistent with OpenGL.
+
+        No new tests. Covered by existing tests:
+        LayoutTests/webgl/conformance/textures/tex-image-webgl.html
+        LayoutTests/webgl/conformance/textures/texture-complete.html
+
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::~WebGLRenderingContext):
+        (WebCore::WebGLRenderingContext::reshape):
+        (WebCore::WebGLRenderingContext::bindTexture):
+        (WebCore::WebGLRenderingContext::deleteTexture):
+        (WebCore::WebGLRenderingContext::getParameter):
+        (WebCore::WebGLRenderingContext::handleNPOTTextures):
+        (WebCore::WebGLRenderingContext::validateTextureBinding):
+        (WebCore::WebGLRenderingContext::restoreCurrentTexture2D):
+        * html/canvas/WebGLRenderingContext.h:
+
+2013-07-03  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Stop inheriting SVGFilterPrimitiveStandardAttributes in SVG
+        https://bugs.webkit.org/show_bug.cgi?id=118305
+
+        Reviewed by Kentaro Hara.
+
+        Stop inheriting SVGFilterPrimitiveStandardAttributes in SVG and use
+        Web IDL implements instead to get rid of multiple inheritance and
+        follow the latest specification:
+        - http://www.w3.org/TR/filter-effects/#DOMInterfaces
+
+        No new tests, no behavior change.
+
+        * CMakeLists.txt:
+        * DerivedSources.pri:
+        * GNUmakefile.list.am:
+        * svg/SVGFEBlendElement.idl:
+        * svg/SVGFEColorMatrixElement.idl:
+        * svg/SVGFEComponentTransferElement.idl:
+        * svg/SVGFECompositeElement.idl:
+        * svg/SVGFEConvolveMatrixElement.idl:
+        * svg/SVGFEDiffuseLightingElement.idl:
+        * svg/SVGFEDisplacementMapElement.idl:
+        * svg/SVGFEDropShadowElement.idl:
+        * svg/SVGFEFloodElement.idl:
+        * svg/SVGFEGaussianBlurElement.idl:
+        * svg/SVGFEImageElement.idl:
+        * svg/SVGFEMergeElement.idl:
+        * svg/SVGFEMorphologyElement.idl:
+        * svg/SVGFEOffsetElement.idl:
+        * svg/SVGFESpecularLightingElement.idl:
+        * svg/SVGFETileElement.idl:
+        * svg/SVGFETurbulenceElement.idl:
+
+2013-07-03  Zalan Bujtas  <zalan@apple.com>
+
+        H&R Block 2010 Help window can not be reopened.
+        https://bugs.webkit.org/show_bug.cgi?id=118342
+
+        Reviewed by Antti Koivisto.
+
+        http://trac.webkit.org/changeset/118916 changed the window.focus() behaviour so that
+        only the opener can (re)focus() a particular window.
+        H&R Block app relies on the relaxed window.focus() rules.
+
+        * WebCore.exp.in:
+        * platform/RuntimeApplicationChecks.cpp:
+        (WebCore::applicationIsHRBlock):
+        * platform/RuntimeApplicationChecks.h:
+
+2013-07-03  Zan Dobersek  <zdobersek@igalia.com>
+
+        Further build fixing for build configurations that disable CSS regions support.
+
+        * dom/PseudoElement.h: Wrap shouldMoveToFlowThread override into the ENABLE(CSS_REGIONS) build guard.
+
+2013-07-03  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed build fix after r152320 and r152345 for build configurations that enable
+        SVG support but disable CSS regions support.
+
+        * svg/SVGElement.cpp: Wrap shouldMoveToFlowThread override into the ENABLE(CSS_REGIONS) build guard.
+        * svg/SVGElement.h: Ditto.
+
+2013-07-03  Radu Stavila  <stavila@adobe.com>
+
+        [CSS Regions] Improve implementation of elements in region being flowed to another flow thread
+        https://bugs.webkit.org/show_bug.cgi?id=118300
+
+        Based on patch by Zoltán Árvai <zarvai@inf.u-szeged.hu>
+
+        Reviewed by Csaba Osztrogonác.
+
+        Fixed CSS_REGIONS guard.
+
+        * dom/Element.h:
+        * dom/NodeRenderingContext.cpp:
+        (WebCore::NodeRenderingContext::elementInsideRegionNeedsRenderer):
+        (WebCore::NodeRenderingContext::moveToFlowThreadIfNeeded):
+
+2013-07-03  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Move SVGTests attributes parsing to SVGGraphicsElement
+        https://bugs.webkit.org/show_bug.cgi?id=118292
+
+        Reviewed by Darin Adler.
+
+        Move SVGTests attributes parsing to SVGGraphicsElement instead of doing
+        this in each of its subclasses. SVGGraphicsElement is now the one
+        subclassing SVGTests after r152167.
+
+        No new tests, no behavior change.
+
+        * svg/SVGAElement.cpp:
+        (WebCore::SVGAElement::isSupportedAttribute):
+        (WebCore::SVGAElement::parseAttribute):
+        * svg/SVGCircleElement.cpp:
+        (WebCore::SVGCircleElement::isSupportedAttribute):
+        (WebCore::SVGCircleElement::parseAttribute):
+        (WebCore::SVGCircleElement::svgAttributeChanged):
+        * svg/SVGClipPathElement.cpp:
+        (WebCore::SVGClipPathElement::isSupportedAttribute):
+        (WebCore::SVGClipPathElement::parseAttribute):
+        * svg/SVGEllipseElement.cpp:
+        (WebCore::SVGEllipseElement::isSupportedAttribute):
+        (WebCore::SVGEllipseElement::parseAttribute):
+        (WebCore::SVGEllipseElement::svgAttributeChanged):
+        * svg/SVGForeignObjectElement.cpp:
+        (WebCore::SVGForeignObjectElement::isSupportedAttribute):
+        (WebCore::SVGForeignObjectElement::parseAttribute):
+        (WebCore::SVGForeignObjectElement::svgAttributeChanged):
+        * svg/SVGGElement.cpp:
+        (WebCore::SVGGElement::isSupportedAttribute):
+        (WebCore::SVGGElement::parseAttribute):
+        (WebCore::SVGGElement::svgAttributeChanged):
+        * svg/SVGGraphicsElement.cpp:
+        (WebCore::SVGGraphicsElement::isSupportedAttribute):
+        (WebCore::SVGGraphicsElement::parseAttribute):
+        (WebCore::SVGGraphicsElement::svgAttributeChanged):
+        * svg/SVGImageElement.cpp:
+        (WebCore::SVGImageElement::isSupportedAttribute):
+        (WebCore::SVGImageElement::parseAttribute):
+        (WebCore::SVGImageElement::svgAttributeChanged):
+        * svg/SVGLineElement.cpp:
+        (WebCore::SVGLineElement::isSupportedAttribute):
+        (WebCore::SVGLineElement::parseAttribute):
+        (WebCore::SVGLineElement::svgAttributeChanged):
+        * svg/SVGPathElement.cpp:
+        (WebCore::SVGPathElement::isSupportedAttribute):
+        (WebCore::SVGPathElement::parseAttribute):
+        (WebCore::SVGPathElement::svgAttributeChanged):
+        * svg/SVGPolyElement.cpp:
+        (WebCore::SVGPolyElement::isSupportedAttribute):
+        (WebCore::SVGPolyElement::parseAttribute):
+        (WebCore::SVGPolyElement::svgAttributeChanged):
+        * svg/SVGRectElement.cpp:
+        (WebCore::SVGRectElement::isSupportedAttribute):
+        (WebCore::SVGRectElement::parseAttribute):
+        (WebCore::SVGRectElement::svgAttributeChanged):
+        * svg/SVGSVGElement.cpp:
+        (WebCore::SVGSVGElement::parseAttribute):
+        (WebCore::SVGSVGElement::svgAttributeChanged): Fall back to calling
+        SVGGraphicsElement::svgAttributeChanged() instead of
+        SVGStyledElement::svgAttributeChanged() as SVGGraphicsElement is the
+        parent class and it takes care of parsing SVGTests attributes now.
+        * svg/SVGUseElement.cpp:
+        (WebCore::SVGUseElement::isSupportedAttribute):
+        (WebCore::SVGUseElement::parseAttribute):
+        (WebCore::SVGUseElement::svgAttributeChanged):
+
+2013-07-02  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Modernize QualifiedName by wrapping gNameCache in a function and using more early exits
+        https://bugs.webkit.org/show_bug.cgi?id=118299
+
+        Reviewed by Andreas Kling.
+
+        Did cleanups.
+
+        * dom/QualifiedName.cpp:
+        (WebCore::qualifiedNameCache): Added to wrap gNameCache.
+        (WebCore::QualifiedName::QualifiedName):
+        (WebCore::QualifiedName::QualifiedNameImpl::~QualifiedNameImpl):
+        (WebCore::QualifiedName::toString): Use early exit and StringBuilder.
+        (WebCore::QualifiedName::init): Use early exit.
+
+2013-07-02  Simon Fraser  <simon.fraser@apple.com>
+
+        Don't set z-index: 0 on lots of elements with -webkit-overflow-scrolling: touch
+        https://bugs.webkit.org/show_bug.cgi?id=118337
+
+        Reviewed by Benjamin Poulain.
+
+        -webkit-overflow-scrolling: touch is an inherited property that, on iOS, controls
+        the behavior of overflow scrolling content, and causes overflow scrolling elements
+        to become CSS stacking contexts.
+         
+        However, the code was too aggressive in setting style->setZIndex(0), doing so
+        for any element with overflow != hidden. Since the default for overflow is visible,
+        that meant almost every element.
+        
+        Previously, this didn't really matter. However, since r125693, any renderer with non-auto
+        z-index gets a RenderLayer, and that RenderLayer will become a stacking context. The result
+        was too many RenderLayers and incorrect stacking context behavior.
+        
+        Fix by ensuring that -webkit-overflow-scrolling: touch  only affects elements which
+        are actually scrollable.
+        
+        Also move the code that does this to below the code that adjust overflow style
+        for different elements.
+
+        * css/StyleResolver.cpp:
+        (WebCore::isScrollableOverflow):
+        (WebCore::StyleResolver::adjustRenderStyle):
+
+2013-07-02  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r152318.
+        http://trac.webkit.org/changeset/152318
+        https://bugs.webkit.org/show_bug.cgi?id=118333
+
+        This patch broke media/track/track-automatic-subtitles.html on
+        Mac (Requested by dfarler on #webkit).
+
+        * page/CaptionUserPreferencesMediaAF.cpp:
+        (WebCore::CaptionUserPreferencesMediaAF::textTrackSelectionScore):
+
+2013-07-02  Ruth Fong  <ruth_fong@apple.com>
+
+        Change event should not be dispatched by clicking a scrollbar of select listbox
+        https://bugs.webkit.org/show_bug.cgi?id=118019
+        <rdar://problem/14297760>
+
+        Reviewed by Dean Jackson.
+
+        Test: fast/forms/select/listbox-click-on-scrollbar.html
+
+        Merge the following:
+        http://src.chromium.org/viewvc/blink?view=revision&revision=151689
+        https://chromium.googlesource.com/chromium/blink/+/492549b0fcaa58a85aa0797446b62985a263704f
+
+        Previously, a select element with the multiple attribute would dispatch
+        an onChanged event when the scrollbar is clicked. This patch corrects this
+        issue by only calling listBoxOnChange(), which fires the onChanged event, 
+        when an actual option is clicked.
+
+        * html/HTMLSelectElement.cpp:
+        (WebCore::HTMLSelectElement::childrenChanged): Updated to clear the list
+        of selected items when when an <option> element is added to/deleted from its <select> element.
+        (Without this addition, if a option was selected, and then JavaScript was used to modify 
+        the <select> element, and then the scrollbar was clicked, an onChanged event would fire 
+        because it remembers the previously selected option.)
+
+        (WebCore::HTMLSelectElement::listBoxOnChange):
+
+        (WebCore::HTMLSelectElement::listBoxDefaultEventHandler): Updated to
+        only call listBoxOnChange() if at least one option is selected. 
+
+2013-07-02  Alex Christensen  <achristensen@apple.com>
+
+        Preparing Windows WebGL build system.
+        https://bugs.webkit.org/show_bug.cgi?id=118325
+
+        Reviewed by Brent Fulgham.
+
+        * WebCore.vcxproj/WebCore.vcxproj: Added EGL files, removed unused GraphicsContext3DOpenGL.cpp.
+        * WebCore.vcxproj/WebCore.vcxproj.filters: Added EGL filter and files, removed unused GraphicsContext3DOpenGL.cpp.
+
+2013-07-02  Jessie Berlin  <jberlin@apple.com>
+
+        The callback for WKPageGetPlugInInformation needs info about whether or not there are any
+        non-playing instances of the plug-in on the page
+        https://bugs.webkit.org/show_bug.cgi?id=118330
+
+        Reviewed by Anders Carlsson.
+
+        * WebCore.exp.in:
+        Expose a symbol so it can be used in WebKit2.
+
+2013-07-02  Alex Christensen  <achristensen@apple.com>
+
+        Added getProcAddress implementation for Windows in OpenGLShims.
+        https://bugs.webkit.org/show_bug.cgi?id=118312
+
+        Reviewed by Brent Fulgham.
+
+        * platform/graphics/OpenGLShims.cpp:
+        (WebCore::getProcAddress): Added for Windows.
+
+2013-07-02  Jer Noble  <jer.noble@apple.com>
+
+        media/unsupported-rtsp.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=118327
+
+        Reviewed by Eric Carlson.
+
+        Fixes the media/unsupported-rtsp.html test.
+
+        Set the contentType field of contentInformationRequest in order to trigger AVFoundation to 
+        notice that loading failed and generate an error.
+
+        * platform/graphics/avfoundation/objc/WebCoreAVFResourceLoader.mm:
+        (WebCore::WebCoreAVFResourceLoader::notifyFinished):
+
+2013-07-02  Alex Christensen  <achristensen@apple.com>
+
+        Fixed compile error in non-X11 platforms using EGL.
+        https://bugs.webkit.org/show_bug.cgi?id=118323
+
+        Reviewed by Brent Fulgham.
+
+        * platform/graphics/egl/GLContextEGL.cpp:
+        (WebCore::GLContextEGL::createPixmapContext): Put all X11-specific code into #if PLATFORM(X11).
+
+2013-07-02  Radu Stavila  <stavila@adobe.com>
+
+        [CSS Regions] Improve implementation of elements in region being flowed to another flow thread
+        https://bugs.webkit.org/show_bug.cgi?id=118300
+
+        Reviewed by David Hyatt.
+
+        Methods that must be const have been turned back into const. Code has been better organized. 
+        Performance is better. Tests have been added to.
+
+        * dom/Element.cpp:
+        (WebCore::Element::detach):
+        (WebCore::Element::setIsInsideRegion):
+        (WebCore::Element::isInsideRegion):
+        (WebCore::Element::shouldMoveToFlowThread):
+        * dom/Element.h:
+        * dom/ElementRareData.h:
+        (WebCore::ElementRareData::isInsideRegion):
+        (WebCore::ElementRareData::setIsInsideRegion):
+        (WebCore::ElementRareData::ElementRareData):
+        * dom/Node.cpp:
+        (WebCore::Node::isRegisteredWithNamedFlow):
+        * dom/Node.h:
+        * dom/NodeRenderingContext.cpp:
+        (WebCore::NodeRenderingContext::parentRenderer):
+        (WebCore::NodeRenderingContext::shouldCreateRenderer):
+        (WebCore::NodeRenderingContext::elementInsideRegionNeedsRenderer):
+        (WebCore::NodeRenderingContext::moveToFlowThreadIfNeeded):
+        (WebCore::NodeRenderingContext::createRendererForElementIfNeeded):
+        * dom/NodeRenderingContext.h:
+        * dom/PseudoElement.h:
+        * dom/Text.cpp:
+        (WebCore::Text::textRendererIsNeeded):
+        * dom/Text.h:
+        * rendering/FlowThreadController.cpp:
+        (WebCore::FlowThreadController::unregisterNamedFlowContentNode):
+        (WebCore::FlowThreadController::isContentNodeRegisteredWithAnyNamedFlow):
+        * rendering/FlowThreadController.h:
+        * rendering/RenderObject.h:
+        * rendering/RenderRegion.h:
+        * svg/SVGElement.cpp:
+        (WebCore::SVGElement::shouldMoveToFlowThread):
+        * svg/SVGElement.h:
+
+2013-07-02  Eric Carlson  <eric.carlson@apple.com>
+
+        [Mac] .webkitClosedCaptionsVisible doesn't work with "Automatic" caption mode
+        https://bugs.webkit.org/show_bug.cgi?id=118319
+
+        Reviewed by Darin Adler.
+
+        Test: media/track/track-legacyapi-with-automatic-mode.html
+
+        * page/CaptionUserPreferencesMediaAF.cpp:
+        (WebCore::CaptionUserPreferencesMediaAF::textTrackSelectionScore): Don't apply "automatic"
+            logic when captions were enabled with .webkitClosedCaptionsVisible.
+
+2013-07-02  Anders Carlsson  <andersca@apple.com>
+
+        Always flip the coordinate system before drawing NSViews from Widget::paint
+        https://bugs.webkit.org/show_bug.cgi?id=118318
+        <rdar://problem/13895483>
+
+        Reviewed by Beth Dakin.
+
+        Undo the change that would not flip on 10.9; turns out the bug was in AppKit. Also remove the
+        _hasCanDrawSubviewsIntoLayerOrAncestor workaround since drawing works correctly now.
+
+        Also, pass flipped:NO when creating the NSGraphicsContext to indicate that the graphics context
+        is unflipped as far as AppKit knows (since we flipped it earlier).
+
+        * platform/mac/WidgetMac.mm:
+        (WebCore::Widget::paint):
+
+2013-06-26  Robert Hogan  <robert@webkit.org>
+
+        empty inlines should not affect line-wrapping
+        https://bugs.webkit.org/show_bug.cgi?id=25638
+
+        Reviewed by David Hyatt.
+
+        Don't break on empty inlines if we're in the middle of a word. I took this opportunity to
+        refactor the series of checks we perform to establish if we can break at the current position.
+
+        Test: fast/text/whitespace/inline-whitespace-wrapping-11.html
+
+        * rendering/RenderBlockLineLayout.cpp:
+        (WebCore::textBeginsWithBreakablePosition):
+        (WebCore::canBreakAtThisPosition):
+        (WebCore::RenderBlock::LineBreaker::nextSegmentBreak):
+
+2013-07-02  Jae Hyun Park  <jae.park@company100.net>
+
+        Implement CoordinatedSurface for Threaded Coordinated Graphics
+        https://bugs.webkit.org/show_bug.cgi?id=109661
+
+        Reviewed by Noam Rosenthal.
+
+        This is a preparation patch for Threaded Coordianted Graphics.
+
+        This patch implements ThreadSafeCoordinatedSurface using ImageBuffer as a
+        backend. Also, this patch moves common implementation to CoordinatedSurface to
+        prevent duplication of code.
+
+        * platform/graphics/texmap/coordinated/CoordinatedSurface.cpp:
+        (WebCore::CoordinatedSurface::CoordinatedSurface):
+        * platform/graphics/texmap/coordinated/CoordinatedSurface.h:
+        (WebCore::CoordinatedSurface::size):
+        (WebCore::CoordinatedSurface::flags):
+        * platform/graphics/texmap/coordinated/ThreadSafeCoordinatedSurface.cpp: Added.
+        (WebCore::ThreadSafeCoordinatedSurface::create):
+        (WebCore::ThreadSafeCoordinatedSurface::ThreadSafeCoordinatedSurface):
+        (WebCore::ThreadSafeCoordinatedSurface::~ThreadSafeCoordinatedSurface):
+        (WebCore::ThreadSafeCoordinatedSurface::paintToSurface):
+        (WebCore::ThreadSafeCoordinatedSurface::copyToTexture):
+        * platform/graphics/texmap/coordinated/ThreadSafeCoordinatedSurface.h: Added.
+
+2013-07-02  Geoffrey Garen  <ggaren@apple.com>
+
+        plainText() is O(N^2)
+        https://bugs.webkit.org/show_bug.cgi?id=118282
+        <rdar://problem/14284360>
+
+        Reviewed by Alexey Proskuryakov.
+
+        * editing/TextIterator.cpp:
+        (WebCore::plainText): Linear growth for a vector data type is O(N^2).
+        Don't do that. Luckily, StringBuilder does the right thing automatically,
+        so we can just delete code.
+
+2013-07-02  Tim Horton  <timothy_horton@apple.com>
+
+        constrainScrollPositionForOverhang needs to handle scrollOrigin correctly
+        https://bugs.webkit.org/show_bug.cgi?id=118176
+        <rdar://problem/14301271>
+
+        Reviewed by Anders Carlsson.
+
+        Test: compositing/geometry/fixed-position-flipped-writing-mode.html
+
+        WebCore makes use of constrainScrollPositionForOverhang not only for
+        constraining fixed- and sticky-positioned elements to the viewport, but
+        also for clamping the tile cache's visible rect.
+
+        Therefore, constrainScrollPositionForOverhang needs to correctly take
+        the scrollOrigin into account. The easiest way I saw to do this was to
+        reimplement the function in terms of a pair of rect intersections
+        between a virtual scrollable "viewport" and the document (with a bit
+        of complication from headers and footers).
+
+        The first intersection is performed, then if the viewport doesn't fit,
+        it is pushed down and to the right, from the origin. Next, we intersect
+        again, this time pushing the rect up by the amount it overflowed the document
+        rect from the bottom right. This performs effectively the same constraint
+        as previously, but handles the scrollOrigin correctly and is also somewhat
+        easier to read and understand (with pictures).
+
+        * page/scrolling/mac/ScrollingTreeScrollingNodeMac.mm:
+        (WebCore::ScrollingTreeScrollingNodeMac::setScrollLayerPosition):
+        Subtract the scrollOrigin out of the offset passed to scrollOffsetForFixedPosition,
+        it's expecting an offset without the origin included.
+
+        * platform/ScrollableArea.cpp:
+        (WebCore::ScrollableArea::constrainScrollPositionForOverhang):
+        Reimplement the function as described above.
+
+2013-07-02  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Remove SVGStyledLocatableElement class
+        https://bugs.webkit.org/show_bug.cgi?id=118283
+
+        Reviewed by Dirk Schulze.
+
+        Remove SVGStyledLocatableElement class and have SVGGraphicsElement
+        inherit SVGStyledElement directly instead. SVGStyledLocatableElement
+        is no longer needed and according to the specification, SVGGraphicsElement
+        should inherit SVGStyledElement (actually SVGElement once we merge
+        SVGStyledElement into SVGElement).
+
+        No new tests, no behavior change.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * Target.pri:
+        * WebCore.order:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GetGnuVTableOffsetForType):
+        * svg/SVGAllInOne.cpp:
+        * svg/SVGElement.cpp:
+        (WebCore::SVGElement::getBoundingBox):
+        * svg/SVGElement.h:
+        * svg/SVGGraphicsElement.cpp:
+        (WebCore::SVGGraphicsElement::SVGGraphicsElement):
+        (WebCore::SVGGraphicsElement::parseAttribute):
+        (WebCore::SVGGraphicsElement::svgAttributeChanged):
+        * svg/SVGGraphicsElement.h:
+        * svg/SVGLocatable.cpp:
+        (WebCore::SVGLocatable::getTransformToElement):
+        * svg/SVGStyledElement.cpp:
+        (WebCore::SVGStyledElement::localCoordinateSpaceTransform):
+        * svg/SVGStyledLocatableElement.cpp: Removed.
+        * svg/SVGStyledLocatableElement.h: Removed.
+
+2013-07-02  peavo@outlook.com  <peavo@outlook.com>
+
+        [Curl] Crash after download.
+        https://bugs.webkit.org/show_bug.cgi?id=118303
+
+        Reviewed by Brent Fulgham.
+
+        We need to make sure that the Curl easy handle is removed from the Curl multi handle before it's freed.
+
+        * platform/network/curl/CurlDownload.cpp:
+        (CurlDownloadManager::updateHandleList): Use addToCurl() and removeFromCurl() methods.
+        (CurlDownloadManager::addToCurl): Add method to add easy handle to multi handle.
+        (CurlDownloadManager::removeFromCurl): Add method to remove easy handle from multi handle, and then delete the handle.
+        (CurlDownloadManager::downloadThread): Use removeFromCurl() method.
+        (CurlDownload::~CurlDownload):
+        * platform/network/curl/CurlDownload.h: Avoid deleting Curl easy handle in destructor.
+
+2013-07-02  Radu Stavila  <stavila@adobe.com>
+
+        [CSSRegions] No other SVG elements except the SVGRoot must have RegionInfo objects attached
+        https://bugs.webkit.org/show_bug.cgi?id=118295
+
+        Reviewed by Antti Koivisto.
+
+        Only the SVGRoot element can be collected in a named flow. As such, no SVG element below the root should
+        be attached to a RenderBoxRegionInfo object.
+
+        A larger patch's test (https://bugs.webkit.org/show_bug.cgi?id=118300) is failing because of this.
+        This change will be covered by that test.
+
+        * rendering/RenderBoxModelObject.h:
+        (WebCore::RenderBoxModelObject::canHaveBoxInfoInRegion):
+        * rendering/RenderObject.h:
+        (WebCore::RenderObject::isRenderSVGBlock):
+        * rendering/svg/RenderSVGBlock.h:
+
+2013-07-02  Kangil Han  <kangil.han@samsung.com>
+
+        is/toHTMLStyleElement should use Element* for its argument
+        https://bugs.webkit.org/show_bug.cgi?id=118286
+
+        Reviewed by Andreas Kling.
+
+        To reduce unnecessary call of isElementNode(), this patch replaces argument
+        of is/toHTMLStyleElement from Node* to Element*. Plus, use Element::hasTagName
+        in collectActiveStyleSheets function for minor code refactoring since
+        its cost is cheaper than Node::hasTagName.
+
+        * css/CSSStyleSheet.cpp:
+        (WebCore::isAcceptableCSSStyleSheetParent):
+        * css/StyleScopeResolver.cpp:
+        (WebCore::StyleScopeResolver::scopeFor):
+        * dom/DocumentStyleSheetCollection.cpp:
+        (WebCore::DocumentStyleSheetCollection::collectActiveStyleSheets):
+        * dom/Node.cpp:
+        (WebCore::Node::numberOfScopedHTMLStyleChildren):
+        * html/HTMLStyleElement.h:
+        (WebCore::isHTMLStyleElement):
+        (WebCore::toHTMLStyleElement):
+
+2013-07-02  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Unexpose EditingPropertiesToInclude in EditingStyle.h after r151772
+        https://bugs.webkit.org/show_bug.cgi?id=118271
+
+        Reviewed by Andreas Kling.
+
+        Don't expose EditingPropertiesToInclude in EditingStyle.h and do other cleanups as described below.
+
+        No new tests since there should be no behavioral change.
+
+        * editing/EditingStyle.cpp:
+        (WebCore::copyEditingProperties): Use newly defined numAllEditingProperties and numInheritableEditingProperties
+        instead of a magic number of 2.
+        (WebCore::copyPropertiesFromComputedStyle): Renamed from editingStyleFromComputedStyle. It now takes ComputedStyleExtractor and
+        PropertiesToInclude instead of Node* and EditingPropertiesToInclude and handles AllProperties. Also added a helper that takes Node*.
+        (WebCore::EditingStyle::init): Calls copyPropertiesFromComputedStyle. Unfortunately, we need to special-case EditingPropertiesInEffect
+        and not set background-color and text-decoration. This is required probably due to a bug elsewhere.
+        (WebCore::EditingStyle::removeStyleAddedByNode):
+        (WebCore::EditingStyle::removeStyleConflictingWithStyleOfNode):
+        (WebCore::extractEditingProperties): Renamed from EditingStyle::removeAllButEditingProperties; takes PropertiesToInclude instead of
+        EditingPropertiesToInclude since the only caller of this function, EditingStyle::mergeInlineAndImplicitStyleOfElement, was converting
+        the type.
+        (WebCore::EditingStyle::mergeInlineAndImplicitStyleOfElement):
+        * editing/EditingStyle.h:
+
+2013-07-02  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Introduce toSVGInlineTextBox
+        https://bugs.webkit.org/show_bug.cgi?id=118289
+
+        Reviewed by Andreas Kling.
+
+        As a step to change static_cast with toXXX, static_cast<SVGInlineTextBox*> can
+        be changed with toSVGInlineTextBox().
+
+        Blink merge from https://src.chromium.org/viewvc/blink?view=rev&revision=153345
+
+        * rendering/svg/RenderSVGInlineText.cpp:
+        (WebCore::RenderSVGInlineText::positionForPoint):
+        * rendering/svg/SVGInlineFlowBox.cpp:
+        (WebCore::SVGInlineFlowBox::paintSelectionBackground):
+        (WebCore::SVGInlineFlowBox::paint):
+        (WebCore::SVGInlineFlowBox::computeTextMatchMarkerRectForRenderer):
+        * rendering/svg/SVGInlineTextBox.h:
+        (WebCore::toSVGInlineTextBox):
+        * rendering/svg/SVGRenderTreeAsText.cpp:
+        (WebCore::writeSVGInlineTextBoxes):
+        * rendering/svg/SVGRootInlineBox.cpp:
+        (WebCore::SVGRootInlineBox::paint):
+        (WebCore::SVGRootInlineBox::layoutCharactersInTextBoxes):
+        (WebCore::SVGRootInlineBox::layoutChildBoxes):
+        (WebCore::reverseInlineBoxRangeAndValueListsIfNeeded):
+        * rendering/svg/SVGTextQuery.cpp:
+        (WebCore::SVGTextQuery::collectTextBoxesInFlowBox):
+
+2013-07-02  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Simplify SVGTextContentElement::elementFromRenderer()
+        https://bugs.webkit.org/show_bug.cgi?id=118284
+
+        Reviewed by Andreas Kling.
+
+        Simplify SVGTextContentElement::elementFromRenderer() by leveraging
+        SVGElement::isTextContent() methods instead of explicitly checking
+        for tag names.
+
+        No new tests, no behavior change.
+
+        * svg/SVGTextContentElement.cpp:
+        (WebCore::SVGTextContentElement::elementFromRenderer):
+
+2013-07-02  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Fix cast-align warnings in WebCore/platform/graphics/texmap/TextureMapperGL.cpp
+        https://bugs.webkit.org/show_bug.cgi?id=118249
+
+        Reviewed by Allan Sandfeld Jensen.
+
+        * platform/graphics/texmap/TextureMapperGL.cpp:
+        (WebCore::BitmapTextureGL::updateContents):
+
+2013-07-02  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        [Qt][WK1] Support WebGL with EGL on Linux
+        https://bugs.webkit.org/show_bug.cgi?id=118251
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        Let GraphicsContext3D work without a GraphicsSurface.
+
+        * Target.pri:
+        * platform/graphics/OpenGLShims.cpp:
+        (WebCore::getProcAddress):
+        * platform/graphics/qt/GraphicsContext3DQt.cpp:
+        (WebCore::GraphicsContext3DPrivate::GraphicsContext3DPrivate):
+        (WebCore::GraphicsContext3DPrivate::paintToTextureMapper):
+
+2013-07-02  Catalin Badea  <badea@adobe.com>
+
+        [CSS-Regions] OverrideLogicalHeight used by both regions and flexbox
+        https://bugs.webkit.org/show_bug.cgi?id=118057
+
+        Reviewed by David Hyatt.
+
+        Remove the use of overrideLogicalContentHeight() from regions and
+        use a local variable instead. The change was needed to avoid
+        overlapping with flexbox containers.
+
+        Test: fast/regions/autoheight-flexbox.html
+
+        * rendering/RenderFlowThread.cpp:
+        (WebCore::RenderFlowThread::validateRegions):
+        (WebCore::RenderFlowThread::layout):
+        (WebCore::RenderFlowThread::applyBreakAfterContent):
+        (WebCore::RenderFlowThread::initializeRegionsComputedAutoHeight):
+        (WebCore::RenderFlowThread::updateRegionsFlowThreadPortionRect):
+        (WebCore::RenderFlowThread::addForcedRegionBreak):
+        * rendering/RenderFlowThread.h:
+        * rendering/RenderRegion.cpp:
+        (WebCore::RenderRegion::RenderRegion):
+        (WebCore::RenderRegion::pageLogicalHeight):
+        (WebCore::RenderRegion::logicalHeightOfAllFlowThreadContent):
+        (WebCore::RenderRegion::updateRegionHasAutoLogicalHeightFlag):
+        (WebCore::RenderRegion::layoutBlock):
+        (WebCore::RenderRegion::updateLogicalHeight):
+        * rendering/RenderRegion.h:
+        (WebCore::RenderRegion::computedAutoHeight):
+        (WebCore::RenderRegion::setComputedAutoHeight):
+        (WebCore::RenderRegion::clearComputedAutoHeight):
+        (WebCore::RenderRegion::hasComputedAutoHeight):
+        * rendering/RenderView.cpp:
+
+2013-07-01  Alex Christensen  <achristensen@apple.com>
+
+        Windows should be included in the list of platforms that can use OpenGL ES 2.
+        https://bugs.webkit.org/show_bug.cgi?id=118264
+
+        Reviewed by Dean Jackson.
+
+        * platform/graphics/GraphicsContext3D.h: Added PLATFORM(WIN) to platforms using OpenGL ES 2.
+
+2013-07-01  Gustavo Noronha Silva  <gustavo.noronha@collabora.com>
+
+        [GTK] Remove unsupported AC backends
+        https://bugs.webkit.org/show_bug.cgi?id=117362
+
+        Reviewed by Martin Robinson.
+
+        * GNUmakefile.am:
+        * GNUmakefile.list.am:
+        * Source/WebCore/platform/graphics/PlatformLayer.h: Removed mentions of clutter
+        and the texmap cairo backend.
+        * platform/graphics/clutter/DrawingBufferClutter.cpp: Removed.
+        * platform/graphics/clutter/GraphicsContext3DClutter.cpp: Removed.
+        * platform/graphics/clutter/GraphicsContext3DPrivate.cpp: Removed.
+        * platform/graphics/clutter/GraphicsContext3DPrivate.h: Removed.
+        * platform/graphics/clutter/GraphicsLayerActor.cpp: Removed.
+        * platform/graphics/clutter/GraphicsLayerActor.h: Removed.
+        * platform/graphics/clutter/GraphicsLayerClutter.cpp: Removed.
+        * platform/graphics/clutter/GraphicsLayerClutter.h: Removed.
+        * platform/graphics/clutter/PlatformClutterAnimation.cpp: Removed.
+        * platform/graphics/clutter/PlatformClutterAnimation.h: Removed.
+        * platform/graphics/clutter/PlatformClutterLayerClient.h: Removed.
+        * platform/graphics/clutter/TransformationMatrixClutter.cpp: Removed.
+        * Source/WebCore/platform/graphics/transforms/TransformationMatrix.h: Removed cogl
+        matrix type conversion.
+
+2013-07-01  Alex Christensen  <achristensen@apple.com>
+
+        DrawingBuffer constructor and destructor were not defined for Windows.
+        I moved duplicate code from Cairo and Qt to DrawingBuffer.cpp to be used by Qt, Cairo, and Windows.
+        https://bugs.webkit.org/show_bug.cgi?id=118262
+
+        Reviewed by Dean Jackson.
+
+        * platform/graphics/cairo/DrawingBufferCairo.cpp: Removed duplicate DrawingBuffer constructor and destructor.
+        * platform/graphics/gpu/DrawingBuffer.cpp:
+        (WebCore::DrawingBuffer::DrawingBuffer):
+        (WebCore::DrawingBuffer::~DrawingBuffer): Moved from Cairo and Qt implementation.
+        * platform/graphics/gpu/qt/DrawingBufferQt.cpp: Removed duplicate DrawingBuffer constructor and destructor.
+
+2013-07-01  Alex Christensen  <achristensen@apple.com>
+
+        Fixed unreachable return when GLX or EGL are used with WebGL.
+        https://bugs.webkit.org/show_bug.cgi?id=118263
+
+        Reviewed by Noam Rosenthal.
+
+        * platform/graphics/opengl/GLPlatformContext.cpp:
+        (WebCore::createOffScreenContext): Fixed unreachable return.
+
+2013-07-01  Tim Horton  <timothy_horton@apple.com>
+
+        Maximum scroll position can be negative in some cases
+        https://bugs.webkit.org/show_bug.cgi?id=118175
+        <rdar://problem/14301217>
+
+        Reviewed by Anders Carlsson.
+
+        Test (API): WebKit2.ResizeReversePaginatedWebView
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::maximumScrollPosition):
+        * page/FrameView.h:
+        Override maximumScrollPosition() in FrameView and don't clamp to zero if
+        a reverse pagination mode is enabled, as it is possible (and common) to
+        have a negative maximum scroll position with reverse pagination.
+
+        * platform/ScrollView.cpp:
+        (WebCore::ScrollView::updateScrollbars):
+        Drive-by adoption of toIntSize().
+
+2013-07-01  Alex Christensen  <achristensen@apple.com>
+
+        Removed all references to DrawingBuffer methods unused since the removal of Chromium:
+        DrawingBuffer::prepareBackBuffer,
+        DrawingBuffer::requiresCopyFromBackToFrontBuffer, and
+        DrawingBuffer::clearPlatformLayer.
+        https://bugs.webkit.org/show_bug.cgi?id=118257
+
+        Reviewed by Darin Adler.
+
+        * platform/graphics/blackberry/DrawingBufferBlackBerry.cpp:
+        (WebCore::DrawingBuffer::platformLayer):
+        * platform/graphics/cairo/DrawingBufferCairo.cpp:
+        (WebCore::DrawingBuffer::paintCompositedResultsToCanvas):
+        * platform/graphics/clutter/DrawingBufferClutter.cpp:
+        (WebCore::DrawingBuffer::paintCompositedResultsToCanvas):
+        * platform/graphics/gpu/DrawingBuffer.cpp:
+        (WebCore::DrawingBuffer::clear):
+        * platform/graphics/gpu/DrawingBuffer.h:
+        * platform/graphics/gpu/mac/DrawingBufferMac.mm:
+        (WebCore::DrawingBuffer::frontColorBuffer):
+        * platform/graphics/gpu/qt/DrawingBufferQt.cpp:
+        (WebCore::DrawingBuffer::paintCompositedResultsToCanvas):
+
+2013-07-01  Jochen Eisinger  <jochen@chromium.org>
+
+        Remove support for consumable user gestures
+        https://bugs.webkit.org/show_bug.cgi?id=118247
+
+        Reviewed by Geoffrey Garen.
+
+        The features was not enabled on any port, and is meanwhile broken, so we
+        should delete it.
+
+        No new tests, just deleting dead code.
+
+        * accessibility/AccessibilityNodeObject.cpp:
+        (WebCore::AccessibilityNodeObject::increment):
+        (WebCore::AccessibilityNodeObject::decrement):
+        * accessibility/AccessibilityObject.cpp:
+        (WebCore::AccessibilityObject::press):
+        * bindings/ScriptControllerBase.cpp:
+        (WebCore::ScriptController::executeScript):
+        * bindings/js/ScriptController.cpp:
+        (WebCore::ScriptController::executeScriptInWorld):
+        * dom/UserGestureIndicator.cpp:
+        (WebCore::isDefinite):
+        (WebCore::UserGestureIndicator::UserGestureIndicator):
+        (WebCore::UserGestureIndicator::~UserGestureIndicator):
+        * dom/UserGestureIndicator.h:
+        (WebCore::UserGestureIndicator::processingUserGesture):
+        * inspector/InspectorFrontendClientLocal.cpp:
+        (WebCore::InspectorFrontendClientLocal::openInNewTab):
+        * inspector/InspectorFrontendHost.cpp:
+        (WebCore::FrontendMenuProvider::contextMenuItemSelected):
+        * inspector/InspectorPageAgent.cpp:
+        (WebCore::InspectorPageAgent::navigate):
+        * loader/NavigationScheduler.cpp:
+        (WebCore::ScheduledURLNavigation::fire):
+        (WebCore::ScheduledURLNavigation::didStartTimer):
+        (WebCore::ScheduledRedirect::fire):
+        (WebCore::ScheduledRefresh::fire):
+        (WebCore::ScheduledHistoryNavigation::fire):
+        (WebCore::ScheduledFormSubmission::fire):
+        (WebCore::ScheduledFormSubmission::didStartTimer):
+        * page/DOMTimer.cpp:
+        (WebCore::DOMTimer::DOMTimer):
+        (WebCore::DOMTimer::fired):
+        * page/DOMTimer.h:
+        * page/DOMWindow.cpp:
+        (WebCore::DOMWindow::showModalDialog):
+        * page/EventHandler.cpp:
+        (WebCore::EventHandler::clear):
+        (WebCore::EventHandler::handleMousePressEvent):
+        (WebCore::EventHandler::handleMouseReleaseEvent):
+        * page/EventHandler.h:
+        * rendering/HitTestResult.cpp:
+        (WebCore::HitTestResult::toggleMediaFullscreenState):
+        (WebCore::HitTestResult::enterFullscreenForVideo):
+
+2013-07-01  Frédéric Wang  <fred.wang@free.fr>
+
+        Add Support for mspace element
+        https://bugs.webkit.org/show_bug.cgi?id=115610
+
+        Reviewed by Chris Fleizach.
+
+        This patch adds basic support for the MathML mspace element. This is
+        important to let people control spacing of mathematical formulas.
+        Attributes width, height and depth are implemented. For the moment,
+        only nonnegative width are accepted.
+
+        * CMakeLists.txt: add references to the RenderMathMLSpace files.
+        * GNUmakefile.list.am: ditto.
+        * Target.pri: ditto.
+        * WebCore.vcxproj/WebCore.vcxproj: ditto.
+        * WebCore.vcxproj/WebCore.vcxproj.filters: ditto.
+        * WebCore.xcodeproj/project.pbxproj: ditto.
+        * css/mathml.css:
+        (mtable[columnlines="dashed"] > mtr > mtd + mtd): remove the obsolete linebreaking rule.
+        * mathml/MathMLTextElement.cpp:
+        (WebCore::MathMLTextElement::createRenderer): map mspaceTag to RenderMathMLSpace.
+        * mathml/mathattrs.in: add width, height and depth attributes
+        * mathml/mathtags.in: add mspace element
+        * rendering/mathml/RenderMathMLBlock.cpp:
+        (WebCore::parseMathMLLength): fix int to float conversion.
+        * rendering/mathml/RenderMathMLBlock.h: declare isRenderMathMLSpace.
+        (WebCore::RenderMathMLBlock::isRenderMathMLSpace):
+        * rendering/mathml/RenderMathMLSpace.cpp: Added.
+        (WebCore::RenderMathMLSpace::RenderMathMLSpace):
+        (WebCore::RenderMathMLSpace::isChildAllowed):
+        (WebCore::RenderMathMLSpace::computePreferredLogicalWidths):
+        (WebCore::RenderMathMLSpace::updateFromElement):
+        (WebCore::RenderMathMLSpace::updateLogicalWidth):
+        (WebCore::RenderMathMLSpace::updateLogicalHeight):
+        (WebCore::RenderMathMLSpace::layout):
+        (WebCore::RenderMathMLSpace::styleDidChange):
+        (WebCore::RenderMathMLSpace::firstLineBoxBaseline):
+        * rendering/mathml/RenderMathMLSpace.h: Added.
+        (WebCore::RenderMathMLSpace::isRenderMathMLSpace):
+        (WebCore::RenderMathMLSpace::renderName):
+        (WebCore::toRenderMathMLSpace):
+
+2013-06-27  Jer Noble  <jer.noble@apple.com>
+
+        Audio in apps which embed WebViews is corrupted.
+        https://bugs.webkit.org/show_bug.cgi?id=118163
+
+        Reviewed by Maciej Stachowiak.
+
+        Add a preference, which defaults to off, which controls whether the
+        AudioSessionManager will switch to a large audio buffer setting for
+        power-savings during <video> playback.
+
+        * WebCore.exp.in:
+        * page/Settings.cpp:
+        (WebCore::Settings::setLowPowerVideoAudioBufferSizeEnabled): Added.  Simple setter.
+        * page/Settings.h:
+        (WebCore::Settings::lowPowerVideoAudioBufferSizeEnabled): Added.  Simple getter.
+        * platform/audio/mac/AudioSessionManagerMac.cpp:
+        (AudioSessionManager::updateSessionState): Only set the large audio buffer
+            size if lowPowerVideoAudioBufferSize is enabled.
+
 2013-07-01  Brian Holt  <brian.holt@samsung.com>
 
         [ATK] Leak: leaks in WebKitAccessibleInterfaceText

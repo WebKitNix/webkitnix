@@ -1,3 +1,298 @@
+2013-07-03  Sergio Villar Senin  <svillar@igalia.com>
+
+        [GTK][WK2] SIGSEV in WebKit::WebPageContextMenuClient::customContextMenuItemSelected
+        https://bugs.webkit.org/show_bug.cgi?id=116867
+
+        Reviewed by Anders Carlsson.
+
+        We did not reset the clients on WebPageProxy::close(), so right
+        clicking on a link after starting the navigation to some other
+        page was causing crashes because code was trying to access an
+        already freed m_contextMenuClient.
+
+        There were some other clients that could potentially trigger the
+        same issues. Reset them all to null to prevent this situation.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::close):
+
+2013-07-03  Simon Pena  <simon.pena@samsung.com>
+
+        Output arguments used in IPC calls should be returned initialised
+        https://bugs.webkit.org/show_bug.cgi?id=118354
+
+        Reviewed by Anders Carlsson.
+
+        When Download::shouldDecodeSourceDataOfMIMEType and Download::retrieveDestinationWithSuggestedFilename
+        call DownloadProxy::shouldDecodeSourceDataOfMIMEType and DownloadProxy::decideDestinationWithSuggestedFilename
+        through IPC, they assume the output arguments result and allowOverwrite have
+        been initialised.
+
+        This patch initialises these arguments also in the unlikely event that a
+        m_webContext is not available.
+
+        * UIProcess/Downloads/DownloadProxy.cpp:
+        (WebKit::DownloadProxy::shouldDecodeSourceDataOfMIMEType):
+        (WebKit::DownloadProxy::decideDestinationWithSuggestedFilename):
+
+2013-07-03  Sergio Villar Senin  <svillar@igalia.com>
+
+        [WK2][GTK] Invalid ASSERTs in WebResources loading code
+        https://bugs.webkit.org/show_bug.cgi?id=118352
+
+        Reviewed by Carlos Garcia Campos.
+
+        The WebKitWebView keeps track of the resources being loaded in a
+        map. A couple of ASSERTs verify that every loaded resource is
+        stored in that map.
+
+        The map that is cleared each time a new load starts so there is a
+        small chance that we get notifications for resources that
+        correspond to previous page loads
+        (and thus are not stored in the map). We should remove the ASSERT
+        which is not valid anymore.
+
+        * UIProcess/API/gtk/WebKitWebView.cpp:
+        (webkitWebViewGetLoadingWebResource):
+
+2013-07-03  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Migrate WebKitWebContext to GTask
+        https://bugs.webkit.org/show_bug.cgi?id=117153
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * UIProcess/API/gtk/WebKitWebContext.cpp:
+        (webkitWebContextGetPluginThread):
+        (webkit_web_context_get_plugins):
+        (webkit_web_context_get_plugins_finish):
+
+2013-07-02  Zan Dobersek  <zdobersek@igalia.com>
+
+        [WK2] Invalidate FontCache before purging MemoryCache upon WebProcess termination/closure
+        https://bugs.webkit.org/show_bug.cgi?id=118280
+
+        Reviewed by Darin Adler.
+
+        Invalidate the FontCache before disabling and purging the MemoryCache in WebProcess::didClose
+        and WebProcess::terminate. This frees up additional references to objects that were held
+        by the FontCache, reducing the amount of 'LEAK: *' output when exiting MiniBrowser or
+        WebKitTestRunner in debug builds.
+
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::terminate):
+        (WebKit::WebProcess::didClose):
+
+2013-07-02  Jessie Berlin  <jberlin@apple.com>
+
+        The callback for WKPageGetPlugInInformation needs info about whether or not there are any
+        non-playing instances of the plug-in on the page
+        https://bugs.webkit.org/show_bug.cgi?id=118330
+
+        Reviewed by Anders Carlsson.
+
+        Add another key value pair to the dictionary passed to the callback.
+
+        * Shared/API/c/WKPluginInformation.cpp:
+        (WKPlugInInformationPageContainsNonPlayingInstanceOfPlugInKey):
+        * Shared/API/c/WKPluginInformation.h:
+
+        * Shared/Plugins/Netscape/PluginInformation.cpp:
+        (WebKit::plugInInformationPageContainsNonPlayingInstanceOfPlugInKey):
+        (WebKit::createPlugInInformationDictionary):
+        Add the information about whether or not the page contains a non-playing instance of that
+        plug-in to the plug-in information dictionary.
+        * Shared/Plugins/Netscape/PluginInformation.h:
+
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebPageProxy.messages.in:
+        * UIProcess/mac/WebPageProxyMac.mm:
+        (WebKit::WebPageProxy::containsPlugInCallback):
+        Check if any of the MIME types of the plug-in instances that are present on the page but are
+        not playing match the instance of plug-in being searched for.
+        * WebProcess/WebPage/mac/WebPageMac.mm:
+        (WebKit::addPlugInMimeTypesFromNodeListForNonPlayingPlugIns):
+        Based roughly off of addPlugInsFromNodeListMatchingPlugInOrigin in
+        HTMLPlugInImageElement.cpp.
+        (WebKit::WebPage::containsPluginViewsWithPluginProcessToken):
+        Based roughly off of HTMLPlugInImageElement::restartSimilarPlugIns.
+
+2013-07-02  Alexey Proskuryakov  <ap@apple.com>
+
+        security/block-test.html fails when NetworkProcess is enabled
+        https://bugs.webkit.org/show_bug.cgi?id=118320
+        <rdar://problem/14309423>
+
+        Reviewed by Geoff Garen.
+
+        * NetworkProcess/NetworkResourceLoader.cpp:
+        (WebKit::NetworkResourceLoader::wasBlocked):
+        (WebKit::NetworkResourceLoader::cannotShowURL):
+        Implemented missing ResourceHandleClient functions.
+
+2013-07-02  Ada Chan  <adachan@apple.com>
+
+        Fix crash when PageBanner::detachFromPage() is called from WebPage::~WebPage().
+        https://bugs.webkit.org/show_bug.cgi?id=118268
+
+        Reviewed by Beth Dakin.
+
+        * WebProcess/WebPage/mac/PageBannerMac.mm:
+        (WebKit::PageBanner::detachFromPage): Add some null checks. m_webPage->corePage()
+        can be null if this method is called after the web page is closed.
+
+2013-07-02  Jae Hyun Park  <jae.park@company100.net>
+
+        Implement CoordinatedSurface for Threaded Coordinated Graphics
+        https://bugs.webkit.org/show_bug.cgi?id=109661
+
+        Reviewed by Noam Rosenthal.
+
+        This is a preparation patch for Threaded Coordianted Graphics.
+
+        This patch implements ThreadSafeCoordinatedSurface using ImageBuffer as a
+        backend. Also, this patch moves common implementation to CoordinatedSurface to
+        prevent duplication of code.
+
+        * Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp:
+        (WebKit::WebCoordinatedSurface::WebCoordinatedSurface):
+        * Shared/CoordinatedGraphics/WebCoordinatedSurface.h:
+
+2013-07-01  Alexey Proskuryakov  <ap@apple.com>
+
+        Clean up private browsing session tracking
+        https://bugs.webkit.org/show_bug.cgi?id=118266
+        <rdar://problem/13078036>
+
+        Reviewed by Brady Eidson.
+
+        Instead of counting API calls, we now watch actual WebPreferences objects.
+
+        * UIProcess/API/C/WKPreferences.cpp: (WKPreferencesSetPrivateBrowsingEnabled):
+        Removed code that used to notify WebContext. It's now done by WebPreferences.
+
+        * UIProcess/WebContext.h:
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::ensureNetworkProcess): Instead of counting the number of times
+        API was called, rely on WebPreferences tracking.
+        (WebKit::WebContext::willStartUsingPrivateBrowsing): Ditto. This function is
+        now only called when we detect a change in private browsing state.
+        (WebKit::WebContext::willStopUsingPrivateBrowsing): Ditto.
+        (WebKit::WebContext::createNewWebProcess): Tell the new process to create a private
+        browsing session if needed.
+
+        * UIProcess/WebPreferences.h:
+        * UIProcess/WebPreferences.cpp:
+        (WebKit::WebPreferences::addPageGroup): Count how many page groups use private
+        browsing, and notify WebContext when a session is needed. Note that we don't notify
+        WebContext about WebPreferences without any page groups, because it's likely
+        that preferences will be updated by the client before groups are associated.
+        (WebKit::WebPreferences::removePageGroup): Ditto.
+        (WebKit::WebPreferences::updateBoolValueForKey): Perform special handling for
+        private browsing mode changes.
+        (WebKit::WebPreferences::updatePrivateBrowsingValue): Notify WebContext when
+        it's time to create or destroy a private browsing session.
+        (WebKit::WebPreferences::anyPageGroupsAreUsingPrivateBrowsing): A getter for
+        WebContext to know when any page groups are in private browsing mode.
+
+        * WebProcess/WebPage/WebPage.cpp: (WebKit::WebPage::updatePreferences):
+        Don't create a private browsing session implicitly, UI process takes care of it.
+
+2013-07-01  Timothy Hatcher  <timothy@apple.com>
+
+        Link to WebInspectorUI.framework at build time instead of soft linking.
+
+        https://bugs.webkit.org/show_bug.cgi?id=118261
+
+        Reviewed by Joseph Pecoraro.
+
+        * Configurations/WebKit2.xcconfig:
+        * UIProcess/mac/WebInspectorProxyMac.mm:
+        (WebKit::inspectorReallyUsesWebKitUserInterface):
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/WebPage/mac/WebInspectorMac.mm:
+        (WebKit::inspectorReallyUsesWebKitUserInterface):
+
+2013-07-01  Tim Horton  <timothy_horton@apple.com>
+
+        [wk2] TiledCoreAnimationDrawingArea should support scrolling its exposed rect
+        https://bugs.webkit.org/show_bug.cgi?id=118173
+        <rdar://problem/14301166>
+
+        Reviewed by Anders Carlsson.
+
+        Offset the exposed rect passed from the WKView by the main frame's current scroll position
+        before sending it to our TiledBackings, so that it is in the same coordinate space as their
+        ordinary visibleRects.
+
+        This has the side effect of making clips-to-exposed-rect testable (though useless) in Safari.
+
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+        Add updateScrolledExposedRect() and m_scrolledExposedRect.
+
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::scroll):
+        Call updateScrolledExposedRect when the main frame scrolls.
+
+        (WebKit::TiledCoreAnimationDrawingArea::setExposedRect):
+        Remove a FIXME about this change.
+        Call updateScrolledExposedRect instead of passing down the unscrolled rect.
+
+        (WebKit::TiledCoreAnimationDrawingArea::setClipsToExposedRect):
+        Call updateScrolledExposedRect, because that method will short-circuit if
+        setClipsToExposedRect is false, so we need to update here for correctness
+        if we get a setExposedRect(), setClipsToExposedRect(true) pair.
+
+        (WebKit::TiledCoreAnimationDrawingArea::updateScrolledExposedRect):
+        Update m_scrolledExposedRect and propagate it to our TiledBackings.
+
+        (WebKit::TiledCoreAnimationDrawingArea::flushLayers):
+        (WebKit::TiledCoreAnimationDrawingArea::setRootCompositingLayer):
+        (WebKit::TiledCoreAnimationDrawingArea::createPageOverlayLayer):
+        (WebKit::TiledCoreAnimationDrawingArea::didCommitChangesForLayer):
+        Use the scrolled exposed rect.
+
+2013-07-01  Ada Chan  <adachan@apple.com>
+
+        Properly hide the header and footer banners if they are set to null.
+        https://bugs.webkit.org/show_bug.cgi?id=118219
+
+        Reviewed by Beth Dakin.
+        
+        Call Page::addFooterWithHeight(0) to remove the parent layer that hosts the banner when
+        the footer banner is detached. Similarly for the header banner.
+
+        * WebProcess/WebPage/mac/PageBannerMac.mm:
+        (WebKit::PageBanner::detachFromPage):
+
+2013-07-01  Jochen Eisinger  <jochen@chromium.org>
+
+        Remove support for consumable user gestures
+        https://bugs.webkit.org/show_bug.cgi?id=118247
+
+        Reviewed by Geoffrey Garen.
+
+        * WebProcess/Notifications/WebNotificationManager.cpp:
+        (WebKit::WebNotificationManager::didClickNotification):
+        * WebProcess/Plugins/PluginView.cpp:
+        (WebKit::PluginView::performFrameLoadURLRequest):
+        (WebKit::PluginView::evaluate):
+        * WebProcess/WebCoreSupport/WebContextMenuClient.cpp:
+        (WebKit::WebContextMenuClient::searchWithGoogle):
+
+2013-06-27  Jer Noble  <jer.noble@apple.com>
+
+        Audio in apps which embed WebViews is corrupted.
+        https://bugs.webkit.org/show_bug.cgi?id=118163
+
+        Reviewed by Maciej Stachowiak.
+
+        Expose the WebCore lowPowerVideoAudioBufferSizeEnabled setting to WebKit2 clients.
+
+        * Shared/WebPreferencesStore.h:
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::updatePreferences):
+
 2013-07-01  Sam Weinig  <sam@webkit.org>
 
         WKPageLoadDataWithUserData neglects to set the base URL that is passed in

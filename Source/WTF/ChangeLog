@@ -1,3 +1,81 @@
+2013-07-03  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r152356.
+        http://trac.webkit.org/changeset/152356
+        https://bugs.webkit.org/show_bug.cgi?id=118361
+
+        Broke JSCore tests (Requested by andersca on #webkit).
+
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::createUninitialized):
+        (WTF::StringImpl::reallocate):
+        (WTF::StringImpl::create):
+        * wtf/text/StringImpl.h:
+
+2013-07-03  Mikhail Pozdnyakov  <mikhail.pozdnyakov@intel.com>
+
+        Remove code duplication from StringImpl create()/reallocate() methods
+        https://bugs.webkit.org/show_bug.cgi?id=118355
+
+        Reviewed by Anders Carlsson.
+
+        StringImpl create()/reallocate() methods accepting LChar and UChar used to have
+        duplicated code. The code duplication is removed now via used templates.
+
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::constructInternal):
+        (WTF::LChar):
+        (WTF::StringImpl::createUninitializedInternal):
+        (WTF::StringImpl::createUninitialized):
+        (WTF::StringImpl::reallocateInternal):
+        (WTF::StringImpl::reallocate):
+        (WTF::StringImpl::createInternal):
+        (WTF::StringImpl::create):
+        * wtf/text/StringImpl.h:
+
+2013-07-03  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Fix cast-align warnings in FastMalloc.cpp
+        https://bugs.webkit.org/show_bug.cgi?id=117991
+
+        Reviewed by Mark Hahnenberg.
+
+        * wtf/FastMalloc.cpp:
+
+2013-07-02  Geoffrey Garen  <ggaren@apple.com>
+
+        plainText() is O(N^2)
+        https://bugs.webkit.org/show_bug.cgi?id=118282
+        <rdar://problem/14284360>
+
+        Reviewed by Alexey Proskuryakov.
+
+        * wtf/text/StringBuilder.cpp:
+        (WTF::expandCapacity): Factored out this helper function to simplify
+        some code that was duplicated in four places.
+
+        (WTF::StringBuilder::appendUninitializedSlow):
+        (WTF::StringBuilder::append): Use expandCapacity(). One of the cases
+        was not doing anything special, and so was O(N^2).
+
+        Also, always call expandCapacity() it in a standard way, calling
+        capacity() first, so it's easy to tell at a glance that you got it right.
+
+2013-07-02  Mikhail Pozdnyakov  <mikhail.pozdnyakov@intel.com>
+
+        Avoid code duplication inside String::append()
+        https://bugs.webkit.org/show_bug.cgi?id=118290
+
+        Reviewed by Anders Carlsson.
+
+        The implementation of 'append(UChar)' had been repeated inside 'append(LChar)',
+        this duplication is obviated now.
+
+        * wtf/text/WTFString.cpp:
+        (WTF::String::appendInternal):
+        (WTF::String::append):
+        * wtf/text/WTFString.h:
+
 2013-06-28  Anders Carlsson  <andersca@apple.com>
 
         Remove String::deprecatedCharactersWithNullTermination() and related code

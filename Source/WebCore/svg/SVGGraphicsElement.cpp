@@ -38,12 +38,12 @@ DEFINE_ANIMATED_TRANSFORM_LIST(SVGGraphicsElement, SVGNames::transformAttr, Tran
 
 BEGIN_REGISTER_ANIMATED_PROPERTIES(SVGGraphicsElement)
     REGISTER_LOCAL_ANIMATED_PROPERTY(transform)
-    REGISTER_PARENT_ANIMATED_PROPERTIES(SVGStyledLocatableElement)
+    REGISTER_PARENT_ANIMATED_PROPERTIES(SVGStyledElement)
     REGISTER_PARENT_ANIMATED_PROPERTIES(SVGTests)
 END_REGISTER_ANIMATED_PROPERTIES
 
 SVGGraphicsElement::SVGGraphicsElement(const QualifiedName& tagName, Document* document, ConstructionType constructionType)
-    : SVGStyledLocatableElement(tagName, document, constructionType)
+    : SVGStyledElement(tagName, document, constructionType)
 {
     registerAnimatedPropertiesForSVGGraphicsElement();
 }
@@ -94,15 +94,17 @@ AffineTransform* SVGGraphicsElement::supplementalTransform()
 bool SVGGraphicsElement::isSupportedAttribute(const QualifiedName& attrName)
 {
     DEFINE_STATIC_LOCAL(HashSet<QualifiedName>, supportedAttributes, ());
-    if (supportedAttributes.isEmpty())
+    if (supportedAttributes.isEmpty()) {
+        SVGTests::addSupportedAttributes(supportedAttributes);
         supportedAttributes.add(SVGNames::transformAttr);
+    }
     return supportedAttributes.contains<SVGAttributeHashTranslator>(attrName);
 }
 
 void SVGGraphicsElement::parseAttribute(const QualifiedName& name, const AtomicString& value)
 {
     if (!isSupportedAttribute(name)) {
-        SVGStyledLocatableElement::parseAttribute(name, value);
+        SVGStyledElement::parseAttribute(name, value);
         return;
     }
 
@@ -114,17 +116,23 @@ void SVGGraphicsElement::parseAttribute(const QualifiedName& name, const AtomicS
         return;
     }
 
+    if (SVGTests::parseAttribute(name, value))
+        return;
+
     ASSERT_NOT_REACHED();
 }
 
 void SVGGraphicsElement::svgAttributeChanged(const QualifiedName& attrName)
 {
     if (!isSupportedAttribute(attrName)) {
-        SVGStyledLocatableElement::svgAttributeChanged(attrName);
+        SVGStyledElement::svgAttributeChanged(attrName);
         return;
     }
 
     SVGElementInstance::InvalidationGuard invalidationGuard(this);
+
+    if (SVGTests::handleAttributeChange(this, attrName))
+        return;
 
     RenderObject* object = renderer();
     if (!object)

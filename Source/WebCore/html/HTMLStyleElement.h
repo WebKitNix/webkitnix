@@ -102,6 +102,11 @@ inline bool isHTMLStyleElement(Node* node)
     return node->hasTagName(HTMLNames::styleTag);
 }
 
+inline bool isHTMLStyleElement(Element* element)
+{
+    return element->hasTagName(HTMLNames::styleTag);
+}
+
 inline HTMLStyleElement* toHTMLStyleElement(Node* node)
 {
     ASSERT_WITH_SECURITY_IMPLICATION(!node || isHTMLStyleElement(node));

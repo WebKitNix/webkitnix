@@ -4373,6 +4373,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_WinCairo|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_WinCairo|Win32'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\platform\graphics\egl\GLContextEGL.cpp" />
     <ClCompile Include="..\platform\graphics\gpu\DrawingBuffer.cpp" />
     <ClCompile Include="..\platform\graphics\gpu\LoopBlinnClassifier.cpp" />
     <ClCompile Include="..\platform\graphics\gpu\LoopBlinnLocalTriangulator.cpp" />
@@ -4392,16 +4393,8 @@
     <ClCompile Include="..\platform\graphics\opengl\Extensions3DOpenGLES.cpp" />
     <ClCompile Include="..\platform\graphics\opengl\GLPlatformContext.cpp" />
     <ClCompile Include="..\platform\graphics\opengl\GLPlatformSurface.cpp" />
-    <ClCompile Include="..\platform\graphics\opengl\GraphicsContext3DOpenGL.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\platform\graphics\opengl\GraphicsContext3DOpenGLCommon.cpp" />
-    <ClCompile Include="..\platform\graphics\opengl\GraphicsContext3DOpenGLES.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_WinCairo|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_WinCairo|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\platform\graphics\opengl\GraphicsContext3DOpenGLES.cpp" />
     <ClCompile Include="..\platform\HistogramSupport.cpp" />
     <ClCompile Include="..\platform\KillRingNone.cpp" />
     <ClCompile Include="..\platform\KURL.cpp" />
@@ -6684,6 +6677,7 @@
     <ClCompile Include="..\rendering\mathml\RenderMathMLOperator.cpp" />
     <ClCompile Include="..\rendering\mathml\RenderMathMLRoot.cpp" />
     <ClCompile Include="..\rendering\mathml\RenderMathMLRow.cpp" />
+    <ClCompile Include="..\rendering\mathml\RenderMathMLSpace.cpp" />
     <ClCompile Include="..\rendering\mathml\RenderMathMLSquareRoot.cpp" />
     <ClCompile Include="..\rendering\mathml\RenderMathMLSubSup.cpp" />
     <ClCompile Include="..\rendering\mathml\RenderMathMLUnderOver.cpp" />
@@ -11885,6 +11879,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_WinCairo|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_WinCairo|Win32'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="..\platform\graphics\egl\GLContextEGL.h" />
     <ClInclude Include="..\platform\graphics\gpu\DrawingBuffer.h" />
     <ClInclude Include="..\platform\graphics\gpu\LoopBlinnClassifier.h" />
     <ClInclude Include="..\platform\graphics\gpu\LoopBlinnConstants.h" />
@@ -12661,6 +12656,7 @@
     <ClInclude Include="..\rendering\mathml\RenderMathMLOperator.h" />
     <ClInclude Include="..\rendering\mathml\RenderMathMLRoot.h" />
     <ClInclude Include="..\rendering\mathml\RenderMathMLRow.h" />
+    <ClInclude Include="..\rendering\mathml\RenderMathMLSpace.h" />
     <ClInclude Include="..\rendering\mathml\RenderMathMLSquareRoot.h" />
     <ClInclude Include="..\rendering\mathml\RenderMathMLSubSup.h" />
     <ClInclude Include="..\rendering\mathml\RenderMathMLUnderOver.h" />
@@ -13460,7 +13456,6 @@
     <ClInclude Include="..\svg\SVGStopElement.h" />
     <ClInclude Include="..\svg\SVGStringList.h" />
     <ClInclude Include="..\svg\SVGStyledElement.h" />
-    <ClInclude Include="..\svg\SVGStyledLocatableElement.h" />
     <ClInclude Include="..\svg\SVGGraphicsElement.h" />
     <ClInclude Include="..\svg\SVGStyleElement.h" />
     <ClInclude Include="..\svg\SVGSVGElement.h" />

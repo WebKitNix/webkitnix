@@ -44,7 +44,14 @@ OpenGLFunctionTable* openGLFunctionTable()
 #if PLATFORM(QT)
 static void* getProcAddress(const char* procName)
 {
-    return reinterpret_cast<void*>(QOpenGLContext::currentContext()->getProcAddress(procName));
+    if (QOpenGLContext* context = QOpenGLContext::currentContext())
+        return reinterpret_cast<void*>(context->getProcAddress(procName));
+    return 0;
+}
+#elif PLATFORM(WIN)
+static void* getProcAddress(const char* procName)
+{
+    return GetProcAddress(GetModuleHandleA("libGLESv2"), procName);
 }
 #elif PLATFORM(NIX) && USE(EGL)
 static void* getProcAddress(const char* procName)
