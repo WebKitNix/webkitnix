@@ -256,6 +256,26 @@ endif ()
 
 add_definitions(-DDATA_DIR="${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}")
 
+if (ENABLE_MEDIA_STREAM)
+    list(APPEND WebCore_INCLUDE_DIRECTORIES
+        Modules/mediastream
+        platform/audio
+        platform/mediastream
+    )
+    list(APPEND WebCore_SOURCES
+        platform/mediastream/nix/UserMediaClientNix.cpp
+        platform/nix/support/CStringNix.cpp
+        platform/nix/support/MediaConstraintsNix.cpp
+        platform/nix/support/MediaStreamNix.cpp
+        platform/nix/support/MediaStreamSourceNix.cpp
+        platform/nix/support/MediaStreamTrackNix.cpp
+        platform/nix/support/SecurityOriginNix.cpp
+        platform/nix/support/StringNix.cpp
+        platform/nix/support/URLNix.cpp
+        platform/nix/support/UserMediaRequestNix.cpp
+    )
+endif()
+
 if (ENABLE_WEB_AUDIO)
   list(APPEND WebCore_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/audio/nix"

@@ -185,6 +185,10 @@
 #include "WebPrintOperationGtk.h"
 #endif
 
+#if PLATFORM(NIX) && ENABLE(MEDIA_STREAM)
+#include "UserMediaClientNix.h"
+#endif
+
 #ifndef NDEBUG
 #include <wtf/RefCountedLeakCounter.h>
 #endif
@@ -337,6 +341,9 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
 #endif
 #if ENABLE(PROXIMITY_EVENTS)
     WebCore::provideDeviceProximityTo(m_page.get(), new WebDeviceProximityClient(this));
+#endif
+#if PLATFORM(NIX) && ENABLE(MEDIA_STREAM)
+    WebCore::provideUserMediaTo(m_page.get(), new UserMediaClientNix());
 #endif
 
     m_page->setCanStartMedia(false);

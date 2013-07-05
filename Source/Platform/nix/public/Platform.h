@@ -40,6 +40,7 @@ namespace Nix {
 class AudioBus;
 class FFTFrame;
 class ThemeEngine;
+class UserMediaClient;
 
 class WEBKIT_EXPORT Platform {
 public:
@@ -57,10 +58,11 @@ public:
     // Pass in (numberOfInputChannels > 0) if live/local audio input is desired.
     virtual AudioDevice* createAudioDevice(size_t /*bufferSize*/, unsigned /*numberOfInputChannels*/, unsigned /*numberOfChannels*/, double /*sampleRate*/, AudioDevice::RenderCallback*) { return 0; }
 
+    // WebRTC --------------------------------------------------------------
+    virtual UserMediaClient* createUserMediaClient() { return 0; }
 
     // Gamepad -------------------------------------------------------------
     virtual void sampleGamepads(Gamepads& into) { into.length = 0; }
-
 
     // FFTFrame
     virtual FFTFrame* createFFTFrame(unsigned /*fftsize*/) { return 0; }
