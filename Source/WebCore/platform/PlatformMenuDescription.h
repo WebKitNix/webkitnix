@@ -34,8 +34,6 @@ OBJC_CLASS NSMutableArray;
 #include <qlist.h>
 #elif PLATFORM(GTK)
 typedef struct _GtkMenu GtkMenu;
-#elif PLATFORM(NIX)
-#include <wtf/Vector.h>
 #endif
 
 namespace WebCore {

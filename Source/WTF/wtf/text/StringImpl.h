@@ -443,10 +443,7 @@ public:
         }
         output = reinterpret_cast<T*>(resultImpl + 1);
 
-        if (sizeof(T) == sizeof(char))
-            return adoptRef(new (NotNull, resultImpl) StringImpl(length, Force8BitConstructor));
-
-        return adoptRef(new (NotNull, resultImpl) StringImpl(length));
+        return constructInternal<T>(resultImpl, length);
     }
 
     static PassRefPtr<StringImpl> createEmptyUnique()
@@ -770,6 +767,10 @@ private:
     bool isStatic() const { return m_refCount & s_refCountFlagIsStaticString; }
     template <class UCharPredicate> PassRefPtr<StringImpl> stripMatchedCharacters(UCharPredicate);
     template <typename CharType, class UCharPredicate> PassRefPtr<StringImpl> simplifyMatchedCharactersToSpace(UCharPredicate);
+    template <typename CharType> static PassRefPtr<StringImpl> constructInternal(StringImpl*, unsigned);
+    template <typename CharType> static PassRefPtr<StringImpl> createUninitializedInternal(unsigned, CharType*&);
+    template <typename CharType> static PassRefPtr<StringImpl> reallocateInternal(PassRefPtr<StringImpl>, unsigned, CharType*&);
+    template <typename CharType> static PassRefPtr<StringImpl> createInternal(const CharType*, unsigned);
     WTF_EXPORT_STRING_API NEVER_INLINE const UChar* getData16SlowCase() const;
     WTF_EXPORT_PRIVATE NEVER_INLINE unsigned hashSlowCase() const;
 
@@ -849,6 +850,14 @@ ValueCheck<StringImpl*> {
 };
 #endif
 
+template <typename CharType>
+ALWAYS_INLINE PassRefPtr<StringImpl> StringImpl::constructInternal(StringImpl* impl, unsigned length)
+{
+    if (sizeof(CharType) == sizeof(char))
+        return adoptRef(new (NotNull, impl) StringImpl(length, Force8BitConstructor));
+    return adoptRef(new (NotNull, impl) StringImpl(length));
+}
+
 template <>
 ALWAYS_INLINE const LChar* StringImpl::getCharacters<LChar>() const { return characters8(); }
 
@@ -859,10 +868,10 @@ WTF_EXPORT_STRING_API bool equal(const StringImpl*, const StringImpl*);
 WTF_EXPORT_STRING_API bool equal(const StringImpl*, const LChar*);
 inline bool equal(const StringImpl* a, const char* b) { return equal(a, reinterpret_cast<const LChar*>(b)); }
 WTF_EXPORT_STRING_API bool equal(const StringImpl*, const LChar*, unsigned);
+WTF_EXPORT_STRING_API bool equal(const StringImpl*, const UChar*, unsigned);
 inline bool equal(const StringImpl* a, const char* b, unsigned length) { return equal(a, reinterpret_cast<const LChar*>(b), length); }
 inline bool equal(const LChar* a, StringImpl* b) { return equal(b, a); }
 inline bool equal(const char* a, StringImpl* b) { return equal(b, reinterpret_cast<const LChar*>(a)); }
-WTF_EXPORT_STRING_API bool equal(const StringImpl*, const UChar*, unsigned);
 WTF_EXPORT_STRING_API bool equalNonNull(const StringImpl* a, const StringImpl* b);
 
 // Do comparisons 8 or 4 bytes-at-a-time on architectures where it's safe.
@@ -1068,47 +1077,12 @@ ALWAYS_INLINE bool equal(const UChar* a, const UChar* b, unsigned length)
     return isEqual;
 }
 #else
-ALWAYS_INLINE bool equal(const LChar* a, const LChar* b, unsigned length)
-{
-    for (unsigned i = 0; i != length; ++i) {
-        if (a[i] != b[i])
-            return false;
-    }
-
-    return true;
-}
-
-ALWAYS_INLINE bool equal(const UChar* a, const UChar* b, unsigned length)
-{
-    for (unsigned i = 0; i != length; ++i) {
-        if (a[i] != b[i])
-            return false;
-    }
-
-    return true;
-}
+ALWAYS_INLINE bool equal(const LChar* a, const LChar* b, unsigned length) { return std::equal(a, a + length, b); }
+ALWAYS_INLINE bool equal(const UChar* a, const UChar* b, unsigned length) { return std::equal(a, a + length, b); }
 #endif
 
-ALWAYS_INLINE bool equal(const LChar* a, const UChar* b, unsigned length)
-{
-    for (unsigned i = 0; i != length; ++i) {
-        if (a[i] != b[i])
-            return false;
-    }
-
-    return true;
-}
-
-ALWAYS_INLINE bool equal(const UChar* a, const LChar* b, unsigned length)
-{
-    for (unsigned i = 0; i != length; ++i) {
-        if (a[i] != b[i])
-            return false;
-    }
-
-    return true;
-}
-
+ALWAYS_INLINE bool equal(const LChar* a, const UChar* b, unsigned length) { return std::equal(a, a + length, b); }
+ALWAYS_INLINE bool equal(const UChar* a, const LChar* b, unsigned length) { return std::equal(a, a + length, b); }
 WTF_EXPORT_STRING_API bool equalIgnoringCase(const StringImpl*, const StringImpl*);
 WTF_EXPORT_STRING_API bool equalIgnoringCase(const StringImpl*, const LChar*);
 inline bool equalIgnoringCase(const LChar* a, const StringImpl* b) { return equalIgnoringCase(b, a); }

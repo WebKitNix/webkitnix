@@ -1,3 +1,117 @@
+2013-07-05  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Unreviewed gardening. Updated TestExpectations file.
+
+        Added accessibility/listitem-list.html to the list of expected
+        failures, which will get fixed once bug 105214 is fixed.
+
+        * platform/gtk/TestExpectations: Added new test.
+
+2013-07-05  Simon Pena  <simon.pena@samsung.com>
+
+        [GTK] Update TestExpectations with crashing and failing tests
+        https://bugs.webkit.org/show_bug.cgi?id=118424
+
+        Unreviewed GTK gardening.
+
+        Updated TestExpectations with tests crashing and failing.
+
+        * platform/gtk/TestExpectations:
+
+2013-07-05  Mihai Maerean  <mmaerean@adobe.com>
+
+        [New multicol] Change test to follow the pattern of the other tests
+        https://bugs.webkit.org/show_bug.cgi?id=117698
+
+        Reviewed by Andreas Kling.
+
+        Test is a ref test against the old multicol code, like all the other tests in LayoutTests/fast/multicol/newmulticol/
+        This is a follow up of bug 116614, testing that flow threads don't end up being cloned in region based multi
+        columns with columns:1 where the only child has column-span:all.
+
+        * fast/multicol/newmulticol/direct-child-column-span-all-expected.html: Added.
+        * fast/multicol/newmulticol/direct-child-column-span-all-expected.txt: Removed.
+        * fast/multicol/newmulticol/direct-child-column-span-all.html:
+
+2013-07-05  Denis Nomiyama  <d.nomiyama@samsung.com>
+
+        [GTK] fast/text/font-kerning.html fails
+        https://bugs.webkit.org/show_bug.cgi?id=76048
+
+        Reviewed by Martin Robinson.
+
+        Added kerning to the list of features for hb_shade() according to FontDescription::kerning().
+        Removed font-kerning.html from gtk/TestExpectations, which was failing before this fix.
+
+        * platform/gtk/TestExpectations:
+
+2013-07-04  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Have SVGTextContentElement inherit SVGGraphicsElement
+        https://bugs.webkit.org/show_bug.cgi?id=118351
+
+        Reviewed by Dirk Schulze.
+
+        Fix conversion to absolute (user agent) coordinates in the svg/text
+        tests to use SVGGraphicsElement::getScreenCTM() instead of
+        SVGGraphicsElement::getTransformToElement(). The previous code was
+        working until now due to a bug in getTransformToElement(), which
+        was not taking into consideration the CTM of the SVGTextElement (as
+        it was not recognized as a "locatable" element). Now that
+        SVGTextElement inherits from SVGGraphicsElement, it is properly
+        recognized as a "locatable" element by getTransformToElement().
+
+        * svg/text/resources/SelectionTestCase.js:
+        (toAbsoluteCoordinates):
+        * svg/text/selection-doubleclick.svg:
+
+2013-07-04  KyungTae Kim  <ktf.kim@samsung.com>
+
+        [EFL] Gardening. Unskip tests related with editing
+        https://bugs.webkit.org/show_bug.cgi?id=118379
+
+        Unreviewed gardening.
+
+        * platform/efl-wk2/TestExpectations:
+          Unskip editing/selection/doubleclick-beside-cr-span.html and
+          editing/selection/doubleclick-whitespace.html, which are passed after r150289
+        * platform/efl/editing/style/5065910-expected.txt: Removed (wrong expected result).
+        * platform/efl/editing/style/5065910-expected.png: Removed (wrong expected result).
+
+2013-07-04  Balazs Kelemen  <b.kelemen@samsung.com>
+
+        [GStreamer] support preload="metadata"
+        https://bugs.webkit.org/show_bug.cgi?id=116817
+
+        Reviewed by Eric Carlson.
+
+        * media/video-load-preload-metadata.html: Added.
+
+2013-07-03  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: Items the img aria role aren't inserting an object replacement character
+        https://bugs.webkit.org/show_bug.cgi?id=118259
+
+        Reviewed by Reviewed by Tim Horton.
+
+        * accessibility/non-native-image-crash-expected.txt:
+        * platform/mac/accessibility/aria-image-emits-object-replacement-expected.txt: Added.
+        * platform/mac/accessibility/aria-image-emits-object-replacement.html: Added.
+        * platform/mac/accessibility/img-fallsback-to-title-expected.txt:
+             Update expected tests where role="img" now emits replacement character.
+
+2013-07-03  Simon Pena  <simon.pena@samsung.com>
+
+        WebTextCheckerClient doesn't initialize output arguments.
+        https://bugs.webkit.org/show_bug.cgi?id=83683
+
+        Reviewed by Martin Robinson.
+
+        Unskip editing/pasteboard/pasting-empty-html-falls-back-to-text.html, which no longer
+        crashes after the fix.
+
+        * platform/gtk-wk2/TestExpectations:
+
 2013-07-03  Gabor Abraham  <abrhm@inf.u-szeged.hu>
 
         [Qt] Unreviewed gardening. Skipping test to paint the debug bot green.

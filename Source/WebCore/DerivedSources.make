@@ -556,7 +556,6 @@ BINDING_IDLS = \
     $(WebCore)/svg/SVGLengthList.idl \
     $(WebCore)/svg/SVGLineElement.idl \
     $(WebCore)/svg/SVGLinearGradientElement.idl \
-    $(WebCore)/svg/SVGLocatable.idl \
     $(WebCore)/svg/SVGMPathElement.idl \
     $(WebCore)/svg/SVGMarkerElement.idl \
     $(WebCore)/svg/SVGMaskElement.idl \
@@ -617,7 +616,6 @@ BINDING_IDLS = \
     $(WebCore)/svg/SVGTitleElement.idl \
     $(WebCore)/svg/SVGTransform.idl \
     $(WebCore)/svg/SVGTransformList.idl \
-    $(WebCore)/svg/SVGTransformable.idl \
     $(WebCore)/svg/SVGURIReference.idl \
     $(WebCore)/svg/SVGUnitTypes.idl \
     $(WebCore)/svg/SVGUseElement.idl \
