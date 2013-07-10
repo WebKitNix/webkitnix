@@ -34,10 +34,10 @@ class ScrollbarThemeNix : public ScrollbarTheme {
 public:
     virtual ~ScrollbarThemeNix();
 
-    virtual int scrollbarThickness(ScrollbarControlSize = RegularScrollbar);
+    virtual int scrollbarThickness(ScrollbarControlSize = RegularScrollbar) OVERRIDE;
 
-    virtual void registerScrollbar(ScrollbarThemeClient*);
-    virtual void unregisterScrollbar(ScrollbarThemeClient*);
+    virtual void registerScrollbar(ScrollbarThemeClient*) OVERRIDE;
+    virtual void unregisterScrollbar(ScrollbarThemeClient*) OVERRIDE;
 };
 
 }

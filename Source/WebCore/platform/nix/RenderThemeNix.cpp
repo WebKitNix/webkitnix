@@ -155,7 +155,7 @@ Color RenderThemeNix::platformInactiveTextSearchHighlightColor() const
 
 Color RenderThemeNix::platformFocusRingColor() const
 {
-    return toColor(themeEngine()->focusRingColor());   
+    return toColor(themeEngine()->focusRingColor());
 }
 
 #if ENABLE(TOUCH_EVENTS)
@@ -273,7 +273,7 @@ void RenderThemeNix::adjustMenuListStyle(StyleResolver*, RenderStyle* style, Ele
 }
 
 #if ENABLE(PROGRESS_ELEMENT)
-void RenderThemeNix::adjustProgressBarStyle(StyleResolver*, RenderStyle* style, Element *) const
+void RenderThemeNix::adjustProgressBarStyle(StyleResolver*, RenderStyle* style, Element*) const
 {
     style->setBoxShadow(nullptr);
 }

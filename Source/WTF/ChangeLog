@@ -1,3 +1,89 @@
+2013-07-10  Michael Brüning  <michael.bruning@digia.com>
+
+        Workaround for x86 optimizer bug in MSVC 2012.
+        https://bugs.webkit.org/show_bug.cgi?id=118478
+
+        Reviewed by Benjamin Poulain.
+
+        This is a workaround for a bug in the x86 MSVC 2012 optimizer.
+
+        The problem is that the range comparison gets optimized out when
+        the templated inline function toASCIIUpper. Copying the methods 
+        content fixes the problem. 
+
+        This is unfortunately not the nicest fix, but the alternative would
+        be to turn off optimization for StringImpl::upper on the x86 MSVC 2012
+        build, which might impact overall performance negatively.
+
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::upper):
+
+2013-07-08  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Unreviewed. Fix make distcheck.
+
+        * GNUmakefile.list.am: Add missing header files.
+
+2013-07-08  Antti Koivisto  <antti@apple.com>
+
+        Add Deque::removeLast
+        https://bugs.webkit.org/show_bug.cgi?id=118466
+
+        Reviewed by Andreas Kling.
+        
+        Deque can remove both the first and the last element efficiently.
+        
+        Test: TestWebKitAPI/Tests/WTF/Deque.cpp
+
+        * wtf/Deque.h:
+        (WTF::::takeLast):
+        (WTF::::removeLast):
+
+2013-07-08  Zoltan Arvai  <zarvai@inf.u-szeged.hu>
+
+        [Qt][Windows] Buildfix after r152426.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * wtf/Platform.h: Do not include WTFHeaderDetection.h on Qt build.
+
+2013-07-06  Benjamin Poulain  <benjamin@webkit.org>
+
+        Fix the performance regressions introduced by r152418
+        https://bugs.webkit.org/show_bug.cgi?id=118438
+
+        Reviewed by Sam Weinig.
+
+        * wtf/text/StringImpl.h:
+        (WTF::equal):
+        Looping between two arbitrary pointers prevents important loop
+        optimizations.
+
+2013-07-05  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Unreviewed build correction.
+
+        * WTF.vcxproj/WTFGenerated.make: Avoid syntax error in generated
+        file in cases where Legible Output support is not present.
+
+2013-07-05  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Unreviewed build correction.
+
+        * WTF.vcxproj/WTFGenerated.make: Use space (rather than double
+        quotes) when handling the no-Legible-Output case.
+
+2013-07-05  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Identify OS-level at build-time.
+        https://bugs.webkit.org/show_bug.cgi?id=118428
+
+        Reviewed by Anders Carlsson.
+
+        * WTF.vcxproj/WTFGenerated.make: Check for Legible Output featurs
+        and set build environment as appropriate.
+        * wtf/Platform.h: Activate Legible Output features if present.
+
 2013-07-05  Mikhail Pozdnyakov  <mikhail.pozdnyakov@intel.com>
 
         A lot of code duplication within StringImpl 'equal' functions

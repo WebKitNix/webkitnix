@@ -32,19 +32,23 @@
 #include "Components/Button.h"
 #include "Components/UrlBar.h"
 #include "Components/WebView.h"
+#include "NIXEvents.h"
 #include "XlibEventSource.h"
 
-class WebViewClient {
+class BrowserControlClient {
 public:
-    virtual ~WebViewClient() { };
-    virtual void handleExposeEvent() = 0;
-    virtual void handleKeyPressEvent(const XKeyPressedEvent&) = 0;
-    virtual void handleKeyReleaseEvent(const XKeyReleasedEvent&) = 0;
-    virtual void handleButtonPressEvent(const XButtonPressedEvent&) = 0;
-    virtual void handleButtonReleaseEvent(const XButtonReleasedEvent&) = 0;
-    virtual void handlePointerMoveEvent(const XPointerMovedEvent&) = 0;
-    virtual void handleSizeChanged(int width, int height) = 0;
-    virtual void handleClosed() = 0;
+    virtual ~BrowserControlClient() { }
+
+    virtual void handleWindowExpose() = 0;
+    virtual void handleKeyPress(NIXKeyEvent*) = 0;
+    virtual void handleKeyRelease(NIXKeyEvent*) = 0;
+    virtual void handleMousePress(NIXMouseEvent*) = 0;
+    virtual void handleMouseRelease(NIXMouseEvent*) = 0;
+    virtual void handleMouseMove(NIXMouseEvent*) = 0;
+    virtual void handleMouseWheel(NIXWheelEvent*) = 0;
+
+    virtual void onWindowSizeChange(WKSize) = 0;
+    virtual void onWindowClose() = 0;
 
     virtual void pageGoBack() = 0;
     virtual void pageGoForward() = 0;
@@ -71,7 +75,7 @@ public:
     static const int minimumUrlBarWidth = 50;
     static const int urlBarRightOffset = urlBarX + 25;
 
-    BrowserControl(WebViewClient*, int width, int height, std::string url);
+    BrowserControl(BrowserControlClient*, int width, int height, std::string url);
     ~BrowserControl();
 
     void makeCurrent();
@@ -95,8 +99,8 @@ public:
     void setLoadProgress(double);
 
     void handleExposeEvent();
-    void handleKeyPressEvent(const XKeyPressedEvent&);
-    void handleKeyReleaseEvent(const XKeyReleasedEvent&);
+    void handleKeyPressEvent(const XEvent&);
+    void handleKeyReleaseEvent(const XEvent&);
     void handleButtonPressEvent(const XButtonPressedEvent&);
     void handleButtonReleaseEvent(const XButtonReleasedEvent&);
     void handlePointerMoveEvent(const XPointerMovedEvent&);
@@ -106,12 +110,19 @@ public:
 private:
     // XlibEventSource::Client.
     virtual void handleXEvent(const XEvent&);
+    void updateClickCount(const XButtonPressedEvent&);
 
-    WebViewClient* m_client;
+    BrowserControlClient* m_client;
 
     Display* m_display;
     XContext m_context;
     XlibEventSource* m_eventSource;
+
+    double m_lastClickTime;
+    int m_lastClickX;
+    int m_lastClickY;
+    WKEventMouseButton m_lastClickButton;
+    unsigned m_clickCount;
 
     // Visual components
     BrowserWindow* m_browserWindow;

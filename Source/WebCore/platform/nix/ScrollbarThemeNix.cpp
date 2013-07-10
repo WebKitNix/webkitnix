@@ -26,9 +26,6 @@
 #include "config.h"
 #include "ScrollbarThemeNix.h"
 
-#include "NotImplemented.h"
-#include <stdio.h>
-
 namespace WebCore {
 
 ScrollbarTheme* ScrollbarTheme::nativeTheme()
@@ -43,7 +40,7 @@ ScrollbarThemeNix::~ScrollbarThemeNix()
 
 int ScrollbarThemeNix::scrollbarThickness(ScrollbarControlSize)
 {
-    return 0; // we paint on top
+    return 0;
 }
 
 void ScrollbarThemeNix::registerScrollbar(ScrollbarThemeClient*)

@@ -4,12 +4,11 @@
 #include "GLUtilities.h"
 #include "TouchMocker.h"
 #include "WebKit2/WKArray.h"
+#include "WebKit2/WKFrame.h"
 #include "WebKit2/WKPreferences.h"
 #include "WebKit2/WKPreferencesPrivate.h"
 #include "WebKit2/WKString.h"
 #include "WKPageNix.h"
-
-#include "XlibEventUtils.h"
 
 #include <GL/gl.h>
 #include <cassert>
@@ -36,11 +35,6 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     , m_view(0)
     , m_mainLoop(mainLoop)
     , m_options(options)
-    , m_lastClickTime(0)
-    , m_lastClickX(0)
-    , m_lastClickY(0)
-    , m_lastClickButton(kWKEventMouseButtonNoButton)
-    , m_clickCount(0)
     , m_touchMocker(0)
     , m_displayUpdateScheduled(false)
     , m_gestureRecognizer(GestureRecognizer(this))
@@ -114,9 +108,6 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     if (!options.userAgent.empty())
         WKPageSetCustomUserAgent(pageRef(), WKStringCreateWithUTF8CString(options.userAgent.c_str()));
 
-    if (isMobileMode())
-        cout << "Use Control + mouse wheel to zoom in and out.\n";
-
     WKViewSetIsFocused(m_view, true);
     WKViewSetIsVisible(m_view, true);
 
@@ -153,6 +144,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     loadClient.didReceiveTitleForFrame = MiniBrowser::didReceiveTitleForFrame;
     loadClient.didStartProvisionalLoadForFrame = MiniBrowser::didStartProvisionalLoadForFrame;
     loadClient.didFinishDocumentLoadForFrame = MiniBrowser::didFinishDocumentLoadForFrame;
+    loadClient.didFailProvisionalLoadWithErrorForFrame = MiniBrowser::didFailProvisionalLoadWithErrorForFrame;
     WKPageSetPageLoaderClient(pageRef(), &loadClient);
 
     WKURLRef wkUrl = WKURLCreateWithUTF8CString(options.url.c_str());
@@ -179,84 +171,6 @@ void MiniBrowser::setTouchEmulationMode(bool enabled)
     }
 }
 
-
-enum NavigationCommand {
-    NoNavigation,
-    BackNavigation,
-    ForwardNavigation,
-    ReloadNavigation
-};
-
-static NavigationCommand checkNavigationCommand(const KeySym keySym, const unsigned state)
-{
-    if (keySym == XK_F5)
-        return ReloadNavigation;
-    if (!(state & Mod1Mask))
-        return NoNavigation;
-    if (keySym == XK_Left)
-        return BackNavigation;
-    if (keySym == XK_Right)
-        return ForwardNavigation;
-    return NoNavigation;
-}
-
-static inline bool isKeypadKeysym(const KeySym symbol)
-{
-    // Following keypad symbols are specified on Xlib Programming Manual (section: Keyboard Encoding).
-    return (symbol >= 0xFF80 && symbol <= 0xFFBD);
-}
-
-static KeySym chooseSymbolForXKeyEvent(const XKeyEvent& event, bool* useUpperCase)
-{
-    KeySym firstSymbol = XLookupKeysym(const_cast<XKeyEvent*>(&event), 0);
-    KeySym secondSymbol = XLookupKeysym(const_cast<XKeyEvent*>(&event), 1);
-    KeySym lowerCaseSymbol, upperCaseSymbol, chosenSymbol;
-    XConvertCase(firstSymbol, &lowerCaseSymbol, &upperCaseSymbol);
-    bool numLockModifier = event.state & Mod2Mask;
-    bool capsLockModifier = event.state & LockMask;
-    bool shiftModifier = event.state & ShiftMask;
-    if (numLockModifier && isKeypadKeysym(secondSymbol)) {
-        chosenSymbol = shiftModifier ? firstSymbol : secondSymbol;
-    } else if (lowerCaseSymbol == upperCaseSymbol) {
-        chosenSymbol = shiftModifier ? secondSymbol : firstSymbol;
-    } else if (shiftModifier == capsLockModifier)
-        chosenSymbol = firstSymbol;
-    else
-        chosenSymbol = secondSymbol;
-
-    *useUpperCase = (lowerCaseSymbol != upperCaseSymbol && chosenSymbol == upperCaseSymbol);
-    XConvertCase(chosenSymbol, &lowerCaseSymbol, &upperCaseSymbol);
-    return upperCaseSymbol;
-}
-
-static NIXKeyEvent convertXKeyEventToNixKeyEvent(const XKeyEvent& event, const KeySym& symbol, bool useUpperCase)
-{
-    NIXKeyEvent nixEvent;
-    nixEvent.type = (event.type == KeyPress) ? kNIXInputEventTypeKeyDown : kNIXInputEventTypeKeyUp;
-    nixEvent.modifiers = convertXEventModifiersToNativeModifiers(event.state);
-    nixEvent.timestamp = convertXEventTimeToNixTimestamp(event.time);
-    nixEvent.shouldUseUpperCase = useUpperCase;
-    nixEvent.isKeypad = isKeypadKeysym(symbol);
-    nixEvent.key = convertXKeySymToNativeKeycode(symbol);
-    return nixEvent;
-}
-
-static NIXMouseEvent convertXButtonEventToNixButtonEvent(WKViewRef view, const XButtonEvent& event, NIXInputEventType type, unsigned clickCount)
-{
-    NIXMouseEvent nixEvent;
-    nixEvent.type = type;
-    nixEvent.button = convertXEventButtonToNativeMouseButton(event.button);
-    WKPoint contentsPoint = WKViewUserViewportToContents(view, WKPointMake(event.x, event.y));
-    nixEvent.x = contentsPoint.x;
-    nixEvent.y = contentsPoint.y;
-    nixEvent.globalX = event.x_root;
-    nixEvent.globalY = event.y_root;
-    nixEvent.clickCount = clickCount;
-    nixEvent.modifiers = convertXEventModifiersToNativeModifiers(event.state);
-    nixEvent.timestamp = convertXEventTimeToNixTimestamp(event.time);
-    return nixEvent;
-}
-
 static NIXMouseEvent convertToRightButtonClick(double timestamp, const NIXTouchPoint& touch)
 {
     NIXMouseEvent nixEvent;
@@ -272,177 +186,89 @@ static NIXMouseEvent convertToRightButtonClick(double timestamp, const NIXTouchP
     return nixEvent;
 }
 
-void MiniBrowser::handleKeyPressEvent(const XKeyPressedEvent& event)
+void MiniBrowser::saveSnapshot(double timestamp)
+{
+    ostringstream snapshotFile;
+    snapshotFile << "webpage-snapshot-" << timestamp << ".png";
+    WKSize size = WKViewGetSize(m_view);
+    ToolsNix::dumpGLBufferToPng(snapshotFile.str().c_str(), size.width, size.height);
+    cout << "Web page snapshot saved to " << snapshotFile.str() << endl;
+}
+
+void MiniBrowser::handleKeyPress(NIXKeyEvent* event)
 {
     if (!m_view)
         return;
 
-    bool shouldUseUpperCase;
-    KeySym symbol = chooseSymbolForXKeyEvent(event, &shouldUseUpperCase);
-    if (event.state & ControlMask && (symbol == XK_p || symbol == XK_P)) {
-        ostringstream snapshotFile;
-        snapshotFile << "webpage-snapshot-" << event.time << ".png";
-        WKSize size = WKViewGetSize(m_view);
-        ToolsNix::dumpGLBufferToPng(snapshotFile.str().c_str(), size.width, size.height);
-        cout << "Web page snapshot saved to " << snapshotFile.str() << endl;
+    switch (event->key) {
+    case kNIXKeyEventKey_Print:
+        saveSnapshot(event->timestamp);
+        return;
+    case kNIXKeyEventKey_F5:
+        WKPageReload(pageRef());
         return;
     }
 
-    if (isMobileMode() && event.state & ControlMask) {
-        bool doScale = true;
-        double newScale = WKViewGetContentScaleFactor(m_view);
-        if (symbol == XK_0)
-            newScale = m_viewportInitScale;
-        else if (symbol == XK_KP_Add || symbol == XK_plus || symbol == XK_equal)
-            newScale = std::min(m_viewportMaxScale, float(newScale + 0.1));
-        else if ((symbol == XK_KP_Subtract || symbol == XK_minus || symbol == XK_underscore))
-            newScale = std::max(m_viewportMinScale, float(newScale - 0.1));
-        else
-            doScale = false;
-
-        if (doScale) {
-            if (newScale != WKViewGetContentScaleFactor(m_view)) {
-                WKViewSetContentScaleFactor(m_view, newScale);
-                adjustScrollPosition();
-            }
+    if (event->modifiers & kNIXInputEventModifiersControlKey) {
+        switch (event->key) {
+        case kNIXKeyEventKey_Left:
+            WKPageGoBack(pageRef());
+            return;
+        case kNIXKeyEventKey_Right:
+            WKPageGoForward(pageRef());
             return;
         }
     }
-
-    NavigationCommand command = checkNavigationCommand(symbol, event.state);
-    switch (command) {
-    case BackNavigation:
-        WKPageGoBack(pageRef());
-        return;
-    case ForwardNavigation:
-        WKPageGoForward(pageRef());
-        return;
-    case ReloadNavigation:
-        WKPageReload(pageRef());
-        return;
-    default:
-        NIXKeyEvent nixEvent = convertXKeyEventToNixKeyEvent(event, symbol, shouldUseUpperCase);
-        NIXViewSendKeyEvent(m_view, &nixEvent);
-    }
+    NIXViewSendKeyEvent(m_view, event);
 }
 
-void MiniBrowser::handleKeyReleaseEvent(const XKeyReleasedEvent& event)
+void MiniBrowser::handleKeyRelease(NIXKeyEvent* event)
 {
-    if (!m_view)
-        return;
-
-    bool shouldUseUpperCase;
-    KeySym symbol = chooseSymbolForXKeyEvent(event, &shouldUseUpperCase);
-    if (checkNavigationCommand(symbol, event.state) != NoNavigation)
-        return;
-    NIXKeyEvent nixEvent = convertXKeyEventToNixKeyEvent(event, symbol, shouldUseUpperCase);
-    if (m_touchMocker && m_touchMocker->handleKeyRelease(nixEvent)) {
+    if (m_touchMocker && m_touchMocker->handleKeyRelease(*event)) {
         scheduleUpdateDisplay();
         return;
     }
-    NIXViewSendKeyEvent(m_view, &nixEvent);
+    NIXViewSendKeyEvent(m_view, event);
 }
 
-void MiniBrowser::handleWheelEvent(const XButtonPressedEvent& event)
+void MiniBrowser::handleMousePress(NIXMouseEvent* event)
 {
-    WKPoint contentsPoint = WKViewUserViewportToContents(m_view, WKPointMake(event.x, event.y));
-
-    if (isMobileMode() && event.state & ControlMask) {
-        double newScale = WKViewGetContentScaleFactor(m_view) * (event.button == 4 ? 1.1 : 0.9);
-        scaleAtPoint(contentsPoint, newScale);
-        return;
-    }
-
-    // Same constant we use inside WebView to calculate the ticks. See also WebCore::Scrollbar::pixelsPerLineStep().
-    const float pixelsPerStep = 40.0f;
-
-    NIXWheelEvent nixEvent;
-    nixEvent.type = kNIXInputEventTypeWheel;
-    nixEvent.modifiers = convertXEventModifiersToNativeModifiers(event.state);
-    nixEvent.timestamp = convertXEventTimeToNixTimestamp(event.time);
-    nixEvent.x = contentsPoint.x;
-    nixEvent.y = contentsPoint.y;
-    nixEvent.globalX = event.x_root;
-    nixEvent.globalY = event.y_root;
-    nixEvent.delta = pixelsPerStep * (event.button == 4 ? 1 : -1);
-    nixEvent.orientation = event.state & ShiftMask ? kNIXWheelEventOrientationHorizontal : kNIXWheelEventOrientationVertical;
-    NIXViewSendWheelEvent(m_view, &nixEvent);
-}
-
-static const double doubleClickInterval = 300;
-static const double horizontalMarginForViewportAdjustment = 8.0;
-static const double scaleFactorForTextInputFocus = 2.0;
-
-void MiniBrowser::updateClickCount(const XButtonPressedEvent& event)
-{
-    if (m_lastClickX != event.x
-        || m_lastClickY != event.y
-        || m_lastClickButton != event.button
-        || event.time - m_lastClickTime >= doubleClickInterval)
-        m_clickCount = 1;
-    else
-        ++m_clickCount;
-
-    m_lastClickX = event.x;
-    m_lastClickY = event.y;
-    m_lastClickButton = convertXEventButtonToNativeMouseButton(event.button);
-    m_lastClickTime = event.time;
-}
-
-void MiniBrowser::handleButtonPressEvent(const XButtonPressedEvent& event)
-{
-    WKViewRef view = webViewAtX11Position(WKPointMake(event.x, event.y));
+    WKViewRef view = webViewAtX11Position(WKPointMake(event->x, event->y));
     if (!view)
         return;
 
-    if (event.button == 4 || event.button == 5) {
-        handleWheelEvent(event);
-        return;
-    }
-
-    updateClickCount(event);
-
-    NIXMouseEvent nixEvent = convertXButtonEventToNixButtonEvent(view, event, kNIXInputEventTypeMouseDown, m_clickCount);
-    if (m_touchMocker && m_touchMocker->handleMousePress(nixEvent, WKPointMake(event.x, event.y))) {
+    WKPoint windowPos = WKPointMake(event->x, event->y);
+    WKPoint p = WKViewUserViewportToContents(m_view, WKPointMake(event->x, event->y));
+    event->x = p.x;
+    event->y = p.y;
+    if (m_touchMocker && m_touchMocker->handleMousePress(*event, windowPos)) {
         scheduleUpdateDisplay();
         return;
     }
-    NIXViewSendMouseEvent(view, &nixEvent);
+    NIXViewSendMouseEvent(view, event);
 }
 
-void MiniBrowser::handleButtonReleaseEvent(const XButtonReleasedEvent& event)
+void MiniBrowser::handleMouseRelease(NIXMouseEvent* event)
 {
-    if (event.button == 4 || event.button == 5)
-        return;
-
-    NIXMouseEvent nixEvent = convertXButtonEventToNixButtonEvent(m_view, event, kNIXInputEventTypeMouseUp, 0);
-    if (m_touchMocker && m_touchMocker->handleMouseRelease(nixEvent)) {
-        scheduleUpdateDisplay();
-        return;
-    }
-
     // The mouse release event was allowed to be sent to the TouchMocker because it
     // may be tracking a button press that happened in a valid position.
-    WKViewRef view = webViewAtX11Position(WKPointMake(event.x, event.y));
+    WKViewRef view = webViewAtX11Position(WKPointMake(event->x, event->y));
     if (!view)
         return;
-    NIXViewSendMouseEvent(view, &nixEvent);
+
+    WKPoint p = WKViewUserViewportToContents(m_view, WKPointMake(event->x, event->y));
+    event->x = p.x;
+    event->y = p.y;
+    if (m_touchMocker && m_touchMocker->handleMouseRelease(*event)) {
+        scheduleUpdateDisplay();
+        return;
+    }
+    NIXViewSendMouseEvent(view, event);
 }
 
-void MiniBrowser::handlePointerMoveEvent(const XPointerMovedEvent& event)
+void MiniBrowser::handleMouseMove(NIXMouseEvent* event)
 {
-    NIXMouseEvent nixEvent;
-    nixEvent.type = kNIXInputEventTypeMouseMove;
-    nixEvent.button = kWKEventMouseButtonNoButton;
-    WKPoint contentsPoint = WKViewUserViewportToContents(m_view, WKPointMake(event.x, event.y));
-    nixEvent.x = contentsPoint.x;
-    nixEvent.y = contentsPoint.y;
-    nixEvent.globalX = event.x_root;
-    nixEvent.globalY = event.y_root;
-    nixEvent.clickCount = 0;
-    nixEvent.modifiers = convertXEventModifiersToNativeModifiers(event.state);
-    nixEvent.timestamp = convertXEventTimeToNixTimestamp(event.time);
-    if (m_touchMocker && m_touchMocker->handleMouseMove(nixEvent, WKPointMake(event.x, event.y))) {
+    if (m_touchMocker && m_touchMocker->handleMouseMove(*event, WKPointMake(event->x, event->y))) {
         scheduleUpdateDisplay();
         return;
     }
@@ -451,29 +277,37 @@ void MiniBrowser::handlePointerMoveEvent(const XPointerMovedEvent& event)
 
     // The mouse move event was allowed to be sent to the TouchMocker because it
     // may be tracking a button press that happened in a valid position.
-    WKViewRef view = webViewAtX11Position(WKPointMake(event.x, event.y));
+    WKViewRef view = webViewAtX11Position(WKPointMake(event->x, event->y));
     if (!view)
         return;
-    NIXViewSendMouseEvent(view, &nixEvent);
+    NIXViewSendMouseEvent(view, event);
 }
 
-void MiniBrowser::handleSizeChanged(int width, int height)
+void MiniBrowser::handleMouseWheel(NIXWheelEvent* event)
+{
+    NIXViewSendWheelEvent(m_view, event);
+}
+
+void MiniBrowser::onWindowSizeChange(WKSize size)
 {
     if (!m_view)
         return;
 
-    m_viewRect.size.width = width - m_viewRect.origin.x;
-    m_viewRect.size.height = height - m_viewRect.origin.y;
+    m_viewRect.size.width = size.width - m_viewRect.origin.x;
+    m_viewRect.size.height = size.height - m_viewRect.origin.y;
     WKViewSetSize(m_view, m_viewRect.size);
 
     if (isMobileMode())
         WKViewSetContentScaleFactor(m_view, scaleToFitContents());
 }
 
-void MiniBrowser::handleClosed()
+void MiniBrowser::onWindowClose()
 {
     g_main_loop_quit(m_mainLoop);
 }
+
+static const double horizontalMarginForViewportAdjustment = 8.0;
+static const double scaleFactorForTextInputFocus = 2.0;
 
 void MiniBrowser::updateDisplay()
 {
@@ -1035,6 +869,16 @@ void MiniBrowser::didFinishDocumentLoadForFrame(WKPageRef page, WKFrameRef, WKTy
 {
     MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
     mb->m_control->updateUrlText(mb->activeUrl().c_str());
+}
+
+void MiniBrowser::didFailProvisionalLoadWithErrorForFrame(WKPageRef page, WKFrameRef frame, WKErrorRef error, WKTypeRef, const void *)
+{
+    if (!WKFrameIsMainFrame(frame))
+        return;
+
+    WKStringRef wkErrorDescription = WKErrorCopyLocalizedDescription(error);
+    WKPageLoadPlainTextString(page, wkErrorDescription);
+    WKRelease(wkErrorDescription);
 }
 
 std::string MiniBrowser::activeUrl()

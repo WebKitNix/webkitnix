@@ -54,6 +54,7 @@
 #include "HTMLOptionElement.h"
 #include "HTMLOptionsCollection.h"
 #include "HTMLSelectElement.h"
+#include "HTMLTableElement.h"
 #include "HTMLTextAreaElement.h"
 #include "HitTestRequest.h"
 #include "HitTestResult.h"
@@ -851,12 +852,24 @@ bool AccessibilityRenderObject::supportsPath() const
     
     return false;
 }
-    
+
 Path AccessibilityRenderObject::elementPath() const
 {
 #if ENABLE(SVG)
-    if (m_renderer && m_renderer->isSVGShape() && toRenderSVGShape(m_renderer)->hasPath())
-        return toRenderSVGShape(m_renderer)->path();
+    if (m_renderer && m_renderer->isSVGShape() && toRenderSVGShape(m_renderer)->hasPath()) {
+        Path path = toRenderSVGShape(m_renderer)->path();
+        
+        // The SVG path is in terms of the parent's bounding box. The path needs to be offset to frame coordinates.
+        for (RenderObject* parent = m_renderer->parent(); parent; parent = parent->parent()) {
+            if (parent->isSVGRoot()) {
+                LayoutPoint parentOffset = axObjectCache()->getOrCreate(parent)->elementRect().location();
+                path.transform(AffineTransform().translate(parentOffset.x(), parentOffset.y()));
+                break;
+            }
+        }
+        
+        return path;
+    }
 #endif
     
     return Path();
@@ -2535,7 +2548,7 @@ AccessibilityRole AccessibilityRenderObject::determineAccessibilityRole()
     if (node && node->hasTagName(trTag))
         return RowRole;
 
-    if (node && node->hasTagName(tableTag))
+    if (node && isHTMLTableElement(node))
         return TableRole;
 #endif
 
@@ -2692,8 +2705,17 @@ bool AccessibilityRenderObject::canSetExpandedAttribute() const
 
 bool AccessibilityRenderObject::canSetValueAttribute() const
 {
+
+    // In the event of a (Boolean)@readonly and (True/False/Undefined)@aria-readonly
+    // value mismatch, the host language native attribute value wins.    
+    if (isNativeTextControl())
+        return !isReadOnly();
+
     if (equalIgnoringCase(getAttribute(aria_readonlyAttr), "true"))
         return false;
+    
+    if (equalIgnoringCase(getAttribute(aria_readonlyAttr), "false"))
+        return true;
 
     if (isProgressIndicator() || isSlider())
         return true;

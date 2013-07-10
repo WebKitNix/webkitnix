@@ -26,8 +26,9 @@
  */
 
 #include "BrowserControl.h"
+#include "XlibEventUtils.h"
 
-BrowserControl::BrowserControl(WebViewClient * client, int width, int height, std::string url)
+BrowserControl::BrowserControl(BrowserControlClient * client, int width, int height, std::string url)
     : m_client(client)
     , m_display(XOpenDisplay(0))
     , m_context(XUniqueContext())
@@ -159,38 +160,164 @@ void BrowserControl::setLoadProgress(double progress)
 
 void BrowserControl::handleExposeEvent()
 {
-    m_client->handleExposeEvent();
+    m_client->handleWindowExpose();
 }
 
-void BrowserControl::handleKeyPressEvent(const XKeyPressedEvent& keyEvent)
+static inline bool isKeypadKeysym(const KeySym symbol)
 {
-    if (!m_urlBar->focused())
-        m_client->handleKeyPressEvent(keyEvent);
+    // Following keypad symbols are specified on Xlib Programming Manual (section: Keyboard Encoding).
+    return (symbol >= 0xFF80 && symbol <= 0xFFBD);
 }
 
-void BrowserControl::handleKeyReleaseEvent(const XKeyReleasedEvent& keyEvent)
+static KeySym chooseSymbolForXKeyEvent(const XKeyEvent* event, bool* useUpperCase)
+{
+    KeySym firstSymbol = XLookupKeysym(const_cast<XKeyEvent*>(event), 0);
+    KeySym secondSymbol = XLookupKeysym(const_cast<XKeyEvent*>(event), 1);
+    KeySym lowerCaseSymbol, upperCaseSymbol, chosenSymbol;
+    XConvertCase(firstSymbol, &lowerCaseSymbol, &upperCaseSymbol);
+    bool numLockModifier = event->state & Mod2Mask;
+    bool capsLockModifier = event->state & LockMask;
+    bool shiftModifier = event->state & ShiftMask;
+    if (numLockModifier && isKeypadKeysym(secondSymbol)) {
+        chosenSymbol = shiftModifier ? firstSymbol : secondSymbol;
+    } else if (lowerCaseSymbol == upperCaseSymbol) {
+        chosenSymbol = shiftModifier ? secondSymbol : firstSymbol;
+    } else if (shiftModifier == capsLockModifier)
+        chosenSymbol = firstSymbol;
+    else
+        chosenSymbol = secondSymbol;
+
+    *useUpperCase = (lowerCaseSymbol != upperCaseSymbol && chosenSymbol == upperCaseSymbol);
+    XConvertCase(chosenSymbol, &lowerCaseSymbol, &upperCaseSymbol);
+    return upperCaseSymbol;
+}
+
+static NIXKeyEvent convertXKeyEventToNixKeyEvent(const XKeyEvent* event, const KeySym& symbol, bool useUpperCase)
+{
+    NIXKeyEvent nixEvent;
+    nixEvent.type = (event->type == KeyPress) ? kNIXInputEventTypeKeyDown : kNIXInputEventTypeKeyUp;
+    nixEvent.modifiers = convertXEventModifiersToNativeModifiers(event->state);
+    nixEvent.timestamp = convertXEventTimeToNixTimestamp(event->time);
+    nixEvent.shouldUseUpperCase = useUpperCase;
+    nixEvent.isKeypad = isKeypadKeysym(symbol);
+    nixEvent.key = convertXKeySymToNativeKeycode(symbol);
+    return nixEvent;
+}
+
+static void XEventToNix(const XEvent& event, NIXKeyEvent* nixEvent)
+{
+    bool shouldUseUpperCase;
+    const XKeyEvent* keyEvent = reinterpret_cast<const XKeyEvent*>(&event);
+    KeySym symbol = chooseSymbolForXKeyEvent(keyEvent, &shouldUseUpperCase);
+    *nixEvent = convertXKeyEventToNixKeyEvent(keyEvent, symbol, shouldUseUpperCase);
+}
+
+void BrowserControl::handleKeyPressEvent(const XEvent& event)
+{
+    if (!m_urlBar->focused()) {
+        NIXKeyEvent ev;
+        XEventToNix(event, &ev);
+        m_client->handleKeyPress(&ev);
+    }
+}
+
+void BrowserControl::handleKeyReleaseEvent(const XEvent& event)
 {
     if (m_urlBar->focused())
-        m_urlBar->handleKeyReleaseEvent(keyEvent);
+        m_urlBar->handleKeyReleaseEvent(reinterpret_cast<const XKeyReleasedEvent&>(event));
+    else {
+        NIXKeyEvent ev;
+        XEventToNix(event, &ev);
+        m_client->handleKeyRelease(&ev);
+    }
+}
+
+void BrowserControl::updateClickCount(const XButtonPressedEvent& event)
+{
+    static const double doubleClickInterval = 300;
+
+    if (m_lastClickX != event.x
+        || m_lastClickY != event.y
+        || m_lastClickButton != event.button
+        || event.time - m_lastClickTime >= doubleClickInterval)
+        m_clickCount = 1;
     else
-        m_client->handleKeyReleaseEvent(keyEvent);
+        ++m_clickCount;
+
+    m_lastClickX = event.x;
+    m_lastClickY = event.y;
+    m_lastClickButton = convertXEventButtonToNativeMouseButton(event.button);
+    m_lastClickTime = event.time;
 }
 
 void BrowserControl::handleButtonPressEvent(const XButtonPressedEvent& event)
 {
-    m_client->handleButtonPressEvent(event);
+    if (event.button == 4 || event.button == 5) {
+        const float pixelsPerStep = 40.0f;
+
+        NIXWheelEvent ev;
+        ev.type = kNIXInputEventTypeWheel;
+        ev.modifiers = convertXEventModifiersToNativeModifiers(event.state);
+        ev.timestamp = convertXEventTimeToNixTimestamp(event.time);
+        ev.x = event.x;
+        ev.y = event.y;
+        ev.globalX = event.x_root;
+        ev.globalY = event.y_root;
+        ev.delta = pixelsPerStep * (event.button == 4 ? 1 : -1);
+        ev.orientation = event.state & Mod1Mask ? kNIXWheelEventOrientationHorizontal : kNIXWheelEventOrientationVertical;
+        m_client->handleMouseWheel(&ev);
+        return;
+    }
+    updateClickCount(event);
+
+    NIXMouseEvent ev;
+    ev.type = kNIXInputEventTypeMouseDown;
+    ev.button = convertXEventButtonToNativeMouseButton(event.button);
+    ev.x = event.x;
+    ev.y = event.y;
+    ev.globalX = event.x_root;
+    ev.globalY = event.y_root;
+    ev.clickCount = m_clickCount;
+    ev.modifiers = convertXEventModifiersToNativeModifiers(event.state);
+    ev.timestamp = convertXEventTimeToNixTimestamp(event.time);
+    m_client->handleMousePress(&ev);
+
     passFocusToWebView();
 }
 
 void BrowserControl::handleButtonReleaseEvent(const XButtonReleasedEvent& event)
 {
-    m_client->handleButtonReleaseEvent(event);
+    if (event.button == 4 || event.button == 5)
+        return;
+
+    NIXMouseEvent ev;
+    ev.type = kNIXInputEventTypeMouseUp;
+    ev.button = convertXEventButtonToNativeMouseButton(event.button);
+    ev.x = event.x;
+    ev.y = event.y;
+    ev.globalX = event.x_root;
+    ev.globalY = event.y_root;
+    ev.clickCount = 0;
+    ev.modifiers = convertXEventModifiersToNativeModifiers(event.state);
+    ev.timestamp = convertXEventModifiersToNativeModifiers(event.state);
+
+    m_client->handleMouseRelease(&ev);
     passFocusToWebView();
 }
 
 void BrowserControl::handlePointerMoveEvent(const XPointerMovedEvent& event)
 {
-    m_client->handlePointerMoveEvent(event);
+    NIXMouseEvent ev;
+    ev.type = kNIXInputEventTypeMouseMove;
+    ev.button = kWKEventMouseButtonNoButton;
+    ev.x = event.x;
+    ev.y = event.y;
+    ev.globalX = event.x_root;
+    ev.globalY = event.y_root;
+    ev.clickCount = 0;
+    ev.modifiers = convertXEventModifiersToNativeModifiers(event.state);
+    ev.timestamp = convertXEventTimeToNixTimestamp(event.time);
+    m_client->handleMouseMove(&ev);
 }
 
 void BrowserControl::handleSizeChanged(int width, int height)
@@ -199,10 +326,10 @@ void BrowserControl::handleSizeChanged(int width, int height)
     m_toolBar->resize(width, toolBarHeight);
     m_webView->resize(width, height);
 
-    m_client->handleSizeChanged(width, height - toolBarHeight);
+    m_client->onWindowSizeChange(WKSizeMake(width, height - toolBarHeight));
 }
 
 void BrowserControl::handleClose()
 {
-    m_client->handleClosed();
+    m_client->onWindowClose();
 }

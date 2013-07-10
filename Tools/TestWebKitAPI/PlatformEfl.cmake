@@ -55,44 +55,56 @@ set(test_webcore_BINARIES
     KURL
 )
 
-set(webkit2TestList
-    WebKit2/AboutBlankLoad
-    WebKit2/CookieManager
-    WebKit2/DOMWindowExtensionNoCache
-    WebKit2/DocumentStartUserScriptAlertCrash
-    WebKit2/EvaluateJavaScript
-    WebKit2/FailedLoad
-    WebKit2/Find
-    WebKit2/ForceRepaint
-    WebKit2/FrameMIMETypeHTML
-    WebKit2/FrameMIMETypePNG
-    WebKit2/GetInjectedBundleInitializationUserDataCallback
-    WebKit2/HitTestResultNodeHandle
-    WebKit2/InjectedBundleBasic
-    WebKit2/InjectedBundleFrameHitTest
-    WebKit2/InjectedBundleInitializationUserDataCallbackWins
-    WebKit2/LoadAlternateHTMLStringWithNonDirectoryURL
-    WebKit2/LoadCanceledNoServerRedirectCallback
-    WebKit2/LoadPageOnCrash
-    WebKit2/MouseMoveAfterCrash
-    WebKit2/ReloadPageAfterCrash
-    WebKit2/ResizeWindowAfterCrash
-    WebKit2/NewFirstVisuallyNonEmptyLayout
-    WebKit2/NewFirstVisuallyNonEmptyLayoutFails
-    WebKit2/NewFirstVisuallyNonEmptyLayoutForImages
-    WebKit2/PageLoadBasic
-    WebKit2/PageLoadDidChangeLocationWithinPageForFrame
-    WebKit2/ParentFrame
-    WebKit2/PreventEmptyUserAgent
-    WebKit2/PrivateBrowsingPushStateNoHistoryCallback
-    WebKit2/UserMessage
-    WebKit2/WKConnection
-    WebKit2/WKPreferences
-    WebKit2/WKString
-    WebKit2/WKStringJSString
-    WebKit2/WKURL
-    WebKit2/WillSendSubmitEvent
-    WebKit2/efl/WKViewClientWebProcessCallbacks
+# In here we list the bundles that are used by our specific WK2 API Tests
+list(APPEND bundle_harness_SOURCES
+    ${TESTWEBKITAPI_DIR}/Tests/WebKit2/efl/WKViewClientWebProcessCallbacks_Bundle.cpp
+)
+
+set(test_webkit2_api_BINARIES
+    AboutBlankLoad
+    CloseThenTerminate
+    CookieManager
+    DidAssociateFormControls
+    DOMWindowExtensionNoCache
+    DocumentStartUserScriptAlertCrash
+    EvaluateJavaScript
+    FailedLoad
+    Find
+    ForceRepaint
+    FrameMIMETypeHTML
+    FrameMIMETypePNG
+    GetInjectedBundleInitializationUserDataCallback
+    HitTestResultNodeHandle
+    InjectedBundleBasic
+    InjectedBundleFrameHitTest
+    InjectedBundleInitializationUserDataCallbackWins
+    LoadAlternateHTMLStringWithNonDirectoryURL
+    LoadCanceledNoServerRedirectCallback
+    LoadPageOnCrash
+    MouseMoveAfterCrash
+    NewFirstVisuallyNonEmptyLayout
+    NewFirstVisuallyNonEmptyLayoutFails
+    NewFirstVisuallyNonEmptyLayoutForImages
+    PageLoadBasic
+    PageLoadDidChangeLocationWithinPageForFrame
+    PageVisibilityState
+    ParentFrame
+    PreventEmptyUserAgent
+    PrivateBrowsingPushStateNoHistoryCallback
+    ReloadPageAfterCrash
+    ResizeWindowAfterCrash
+    ResponsivenessTimerDoesntFireEarly
+    TerminateTwice
+    UserMessage
+    WKConnection
+    WKPreferences
+    WKString
+    WKStringJSString
+    WKURL
+    WillLoad
+    WillSendSubmitEvent
+    CoordinatedGraphics/WKViewUserViewportToContents
+    efl/WKViewClientWebProcessCallbacks
 )
 
 # Seccomp filters is an internal API and its symbols
@@ -104,17 +116,18 @@ if (ENABLE_SECCOMP_FILTERS AND SHARED_CORE)
     )
 endif ()
 
-set(webkit2FailTestList
-    WebKit2/CanHandleRequest
-    WebKit2/DOMWindowExtensionBasic
-    WebKit2/DownloadDecideDestinationCrash
-    WebKit2/NewFirstVisuallyNonEmptyLayoutFrames
-    WebKit2/RestoreSessionStateContainingFormData
-    WebKit2/ShouldGoToBackForwardListItem
-    WebKit2/WKPageGetScaleFactorNotZero
+set(test_webkit2_api_fail_BINARIES
+    CanHandleRequest
+    DOMWindowExtensionBasic
+    DownloadDecideDestinationCrash
+    NewFirstVisuallyNonEmptyLayoutFrames
+    ResizeReversePaginatedWebView
+    RestoreSessionStateContainingFormData
+    ScrollPinningBehaviors
+    ShouldGoToBackForwardListItem
+    WKPageGetScaleFactorNotZero
 )
 
 # Tests disabled because of missing features on the test harness:
 #
-#   WebKit2/ResponsivenessTimerDoesntFireEarly
-#   WebKit2/SpacebarScrolling
+#   SpacebarScrolling

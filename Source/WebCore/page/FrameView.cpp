@@ -202,6 +202,7 @@ FrameView::FrameView(Frame* frame)
     , m_hasSoftwareFilters(false)
 #endif
     , m_visualUpdatesAllowedByClient(true)
+    , m_scrollPinningBehavior(DoNotPin)
 {
     init();
 
@@ -1637,16 +1638,34 @@ IntSize FrameView::scrollOffsetForFixedPosition() const
     float frameScaleFactor = m_frame ? m_frame->frameScaleFactor() : 1;
     return scrollOffsetForFixedPosition(visibleContentRect, totalContentsSize, scrollPosition, scrollOrigin, frameScaleFactor, fixedElementsLayoutRelativeToFrame(), headerHeight(), footerHeight());
 }
+    
+IntPoint FrameView::minimumScrollPosition() const
+{
+    IntPoint minimumPosition(ScrollView::minimumScrollPosition());
+
+    if (!m_frame->page())
+        return minimumPosition;
+
+    if (m_frame == m_frame->page()->mainFrame() && m_scrollPinningBehavior == PinToBottom)
+        minimumPosition.setY(maximumScrollPosition().y());
+    
+    return minimumPosition;
+}
 
 IntPoint FrameView::maximumScrollPosition() const
 {
     IntPoint maximumOffset(contentsWidth() - visibleWidth() - scrollOrigin().x(), totalContentsSize().height() - visibleHeight() - scrollOrigin().y());
 
-    // With reverse pagination modes, we can have a negative maximum scroll position.
-    if (m_pagination.mode == Pagination::BottomToTopPaginated
-        || m_pagination.mode == Pagination::RightToLeftPaginated
+    if (!m_frame->page())
+        return maximumOffset;
+
+    // With pagination enabled, we can have a negative maximum scroll position.
+    if ((m_frame->page()->pagination().mode == Pagination::Unpaginated && m_pagination.mode == Pagination::Unpaginated)
         || scrollOrigin() == IntPoint::zero())
         maximumOffset.clampNegativeToZero();
+
+    if (m_frame == m_frame->page()->mainFrame() && m_scrollPinningBehavior == PinToTop)
+        maximumOffset.setY(minimumScrollPosition().y());
     
     return maximumOffset;
 }
@@ -4258,6 +4277,16 @@ void FrameView::setVisualUpdatesAllowedByClient(bool visualUpdatesAllowed)
     m_visualUpdatesAllowedByClient = visualUpdatesAllowed;
 
     m_frame->document()->setVisualUpdatesAllowedByClient(visualUpdatesAllowed);
+}
+    
+void FrameView::setScrollPinningBehavior(ScrollPinningBehavior pinning)
+{
+    m_scrollPinningBehavior = pinning;
+    
+    if (ScrollingCoordinator* scrollingCoordinator = m_frame->page()->scrollingCoordinator())
+        scrollingCoordinator->setScrollPinningBehavior(pinning);
+    
+    updateScrollbars(scrollOffset());
 }
 
 } // namespace WebCore

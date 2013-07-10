@@ -178,14 +178,6 @@ sub GetCallbackClassName
     return "JS$className";
 }
 
-sub IndexGetterReturnsStrings
-{
-    my $type = shift;
-
-    return 1 if $type eq "CSSStyleDeclaration" or $type eq "MediaList" or $type eq "DOMStringList" or $type eq "DOMTokenList" or $type eq "DOMSettableTokenList";
-    return 0;
-}
-
 sub AddIncludesForTypeInImpl
 {
     my $type = shift;
@@ -390,7 +382,7 @@ sub GenerateGetOwnPropertySlotBody
 
         # If the item function returns a string then we let the TreatReturnedNullStringAs handle the cases
         # where the index is out of range.
-        if (IndexGetterReturnsStrings($interfaceName)) {
+        if ($indexedGetterFunction->signature->type eq "DOMString") {
             push(@getOwnPropertySlotImpl, "    if (index != PropertyName::NotAnIndex) {\n");
         } else {
             push(@getOwnPropertySlotImpl, "    if (index != PropertyName::NotAnIndex && index < static_cast<$interfaceName*>(thisObject->impl())->length()) {\n");
@@ -1979,7 +1971,7 @@ sub GenerateImplementation
             };
 
             if ($indexedGetterFunction) {
-                if (IndexGetterReturnsStrings($interfaceName)) {
+                if ($indexedGetterFunction->signature->type eq "DOMString") {
                     push(@implContent, "    if (index <= MAX_ARRAY_INDEX) {\n");
                 } else {
                     push(@implContent, "    if (index < static_cast<$interfaceName*>(thisObject->impl())->length()) {\n");
@@ -2657,7 +2649,7 @@ sub GenerateImplementation
         push(@implContent, "{\n");
         push(@implContent, "    ${className}* thisObj = jsCast<$className*>(asObject(slotBase));\n");
         push(@implContent, "    ASSERT_GC_OBJECT_INHERITS(thisObj, &s_info);\n");
-        if (IndexGetterReturnsStrings($interfaceName)) {
+        if ($indexedGetterFunction->signature->type eq "DOMString") {
             $implIncludes{"KURL.h"} = 1;
             push(@implContent, "    return jsStringOrUndefined(exec, thisObj->impl()->item(index));\n");
         } else {
@@ -3254,17 +3246,10 @@ sub GenerateCallbackImplementation
 
             my @args = ();
             my @argsCheck = ();
-            my $thisType = $function->signature->extendedAttributes->{"PassThisToCallback"};
             foreach my $param (@params) {
                 my $paramName = $param->name;
                 AddIncludesForTypeInImpl($param->type, 1);
                 push(@args, GetNativeTypeForCallbacks($param->type) . " " . $paramName);
-                if ($thisType and $thisType eq $param->type) {
-                    push(@argsCheck, <<END);
-    ASSERT(${paramName});
-
-END
-                }
             }
             push(@implContent, join(", ", @args));
             push(@implContent, ")\n");
@@ -3294,20 +3279,7 @@ END
             }
 
             push(@implContent, "\n    bool raisedException = false;\n");
-            if ($thisType) {
-                foreach my $param (@params) {
-                    next if $param->type ne $thisType;
-                    my $paramName = $param->name;
-                    push(@implContent, <<END);
-    JSValue js${paramName} = toJS(exec, m_data->globalObject(), ${paramName});
-    m_data->invokeCallback(js${paramName}, args, &raisedException);
-
-END
-                    last;
-                }
-            } else {
-                push(@implContent, "    m_data->invokeCallback(args, &raisedException);\n");
-            }
+            push(@implContent, "    m_data->invokeCallback(args, &raisedException);\n");
             push(@implContent, "    return !raisedException;\n");
             push(@implContent, "}\n");
         }
@@ -3350,6 +3322,11 @@ sub GenerateImplementationFunctionCall()
         if ($codeGenerator->ExtendedAttributeContains($function->signature->extendedAttributes->{"CallWith"}, "ScriptState")) {
             push(@implContent, $indent . "if (exec->hadException())\n");
             push(@implContent, $indent . "    return JSValue::encode(jsUndefined());\n");
+        }
+
+        if ($function->signature->extendedAttributes->{"TreatReturnedNullObjectAs"} and $function->signature->extendedAttributes->{"TreatReturnedNullObjectAs"} eq "Undefined") {
+            push(@implContent, $indent . "if (result == jsNull())\n");
+            push(@implContent, $indent . "    result = jsUndefined();\n\n");
         }
 
         push(@implContent, $indent . "return JSValue::encode(result);\n");

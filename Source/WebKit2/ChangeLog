@@ -1,3 +1,128 @@
+2013-07-10  Sergio Correia  <sergio.correia@openbossa.org>
+
+        Remove the meshType from CoordinatedCustomFilterOperation
+        https://bugs.webkit.org/show_bug.cgi?id=118529
+
+        Reviewed by Noam Rosenthal.
+
+        Following the removal of the meshType from CustomFilterOperation in r149153,
+        remove also the meshType from CoordinatedCustomFilterOperation.
+
+        No new tests, no new functionality.
+
+        * Shared/CoordinatedGraphics/CoordinatedGraphicsArgumentCoders.cpp:
+        (CoreIPC::::encode): Remove dead comment.
+        (CoreIPC::::decode): Remove meshType from CoordinatedCustomFilterOperation
+        call.
+
+2013-07-09  Byungwoo Lee  <bw80.lee@samsung.com>
+
+        [EFL] tooltip callback doesn't work.
+        https://bugs.webkit.org/show_bug.cgi?id=118522
+
+        Reviewed by Christophe Dumez.
+
+        Add missing code to connect didChangeTooltip callback.
+
+        * UIProcess/efl/ViewClientEfl.cpp:
+        (WebKit::ViewClientEfl::ViewClientEfl):
+
+2013-07-09  Jer Noble  <jer.noble@apple.com>
+
+        Reviewed by Simon Fraser.
+
+        Remember the scroll position and restore after exiting full-screen mode.
+        https://bugs.webkit.org/show_bug.cgi?id=61956
+        <rdar://problem/9544461>
+
+        Call into the main FrameView to save the scroll position before swapping the
+        WebView into the full-screen window, and restore the scroll position after 
+        swapping the WebView back into the browser window.
+
+        * UIProcess/mac/WKFullScreenWindowController.mm:
+        (-[WKFullScreenWindowController finishedEnterFullScreenAnimation:]):
+        (-[WKFullScreenWindowController beganExitFullScreenAnimation]):
+
+        In WebKit2, this requires some communication between the WebProcess and the
+        UIProcess, so add two new messages to WebFullScreenManager to be called by
+        its proxy.
+
+        * UIProcess/WebFullScreenManagerProxy.h:
+        * UIProcess/WebFullScreenManagerProxy.cpp:
+        (WebKit::WebFullScreenManagerProxy::saveScrollPosition):
+        (WebKit::WebFullScreenManagerProxy::restoreScrollPosition):
+        * WebProcess/FullScreen/WebFullScreenManager.h:
+        * WebProcess/FullScreen/WebFullScreenManager.messages.in:
+        * WebProcess/FullScreen/WebFullScreenManager.cpp:
+        (WebKit::WebFullScreenManager::saveScrollPosition):
+        (WebKit::WebFullScreenManager::restoreScrollPosition):
+
+2013-07-07  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Runtime critical warning when unloading a module that failed to load
+        https://bugs.webkit.org/show_bug.cgi?id=118425
+
+        Reviewed by Martin Robinson.
+
+        * Platform/gtk/ModuleGtk.cpp:
+        (WebKit::Module::load): Show an error message when the module
+        fails to load.
+        (WebKit::Module::unload): Check module pointer before calling
+        unload method.
+
+2013-07-05  Tim Horton  <timothy_horton@apple.com>
+
+        [wk2] Add API to lock the scroll position at the top or bottom of the page
+        https://bugs.webkit.org/show_bug.cgi?id=118429
+        <rdar://problem/14120323>
+
+        Reviewed by Anders Carlsson.
+
+        * Shared/WebPageCreationParameters.cpp:
+        (WebKit::WebPageCreationParameters::encode):
+        (WebKit::WebPageCreationParameters::decode):
+        * Shared/WebPageCreationParameters.h:
+        Pass the current ScrollPinningBehavior across to the WebPage upon creation.
+
+        * UIProcess/API/C/WKPage.cpp:
+        (WKPageGetScrollPinningBehavior):
+        (WKPageSetScrollPinningBehavior):
+        * UIProcess/API/C/WKPagePrivate.h:
+        SPI to get/set the WebPageProxy's current ScrollPinningBehavior.
+        Convert between WK API type and WebCore enum.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::creationParameters):
+        Send ScrollPinningBehavior when creating a WebPage.
+
+        (WebKit::WebPageProxy::setScrollPinningBehavior):
+        Pass ScrollPinningBehavior changes across to the WebProcess (and save it
+        in WebPageProxy so it can be sent back across if the WebProcess crashes).
+
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::scrollPinningBehavior):
+        Getter/setter and storage for m_scrollPinningBehavior.
+
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::transitionToCommittedForNewPage):
+        Inform new FrameViews of the current ScrollPinningBehavior.
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        Set our ScrollPinningBehavior based on our creation parameters.
+
+        (WebKit::WebPage::setScrollPinningBehavior):
+        Inform the FrameView of ScrollPinningBehavior changes.
+
+        * WebProcess/WebPage/WebPage.h:
+        (WebKit::WebPage::scrollPinningBehavior): Added.
+        (WebKit::WebPage::setScrollPinningBehavior): Added.
+        Add storage for m_scrollPinningBehavior.
+
+        * WebProcess/WebPage/WebPage.messages.in:
+        Add SetScrollPinningBehavior message.
+
 2013-07-05  Krzysztof Wolanski  <k.wolanski@samsung.com>
 
         [EFL][WK2] Implement unit test callbacks: onWordLearn and onWordIgnore.

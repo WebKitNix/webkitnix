@@ -37,7 +37,7 @@
 
 namespace WebKit {
 
-String WebPageProxy::standardUserAgent(const String&)
+String WebPageProxy::standardUserAgent(const String& applicationName)
 {
     WTF::String platform;
     WTF::String version;
@@ -49,14 +49,14 @@ String WebPageProxy::standardUserAgent(const String&)
     platform = "Unknown";
 #endif
 
-    version = String::number(WEBKIT_MAJOR_VERSION) + '.' + String::number(WEBKIT_MINOR_VERSION) + '+';
+    version = String::number(WEBKIT_MAJOR_VERSION) + '.' + String::number(WEBKIT_MINOR_VERSION) + ' ';
     struct utsname name;
     if (uname(&name) != -1)
         osVersion = WTF::String(name.sysname) + " " + WTF::String(name.machine);
     else
         osVersion = "Unknown";
 
-    return "Mozilla/5.0 (" + platform + "; " + osVersion + ") AppleWebKit/" + version + " (KHTML, like Gecko) Version/5.0 Safari/" + version;
+    return "Mozilla/5.0 (" + platform + "; " + osVersion + ") AppleWebKit/" + version + " (KHTML, like Gecko) " + applicationName + " Safari/" + version;
 }
 
 void WebPageProxy::getEditorCommandsForKeyEvent(Vector<WTF::String>&)

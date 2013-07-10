@@ -58,10 +58,10 @@ void BrowserWindow::handleEvent(const XEvent& event)
 {
     switch (event.type) {
     case KeyPress:
-        m_control->handleKeyPressEvent(reinterpret_cast<const XKeyPressedEvent&>(event));
+        m_control->handleKeyPressEvent(event);
         break;
     case KeyRelease:
-        m_control->handleKeyReleaseEvent(reinterpret_cast<const XKeyReleasedEvent&>(event));
+        m_control->handleKeyReleaseEvent(event);
         break;
     case ConfigureNotify:
         updateSizeIfNeeded(event.xconfigure.width, event.xconfigure.height);

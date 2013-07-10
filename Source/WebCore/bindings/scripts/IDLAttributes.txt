@@ -91,7 +91,6 @@ ObjCLegacyUnnamedParameters
 ObjCPolymorphic
 ObjCProtocol
 PassContext
-PassThisToCallback=*
 RaisesException
 Reflect=*
 Replaceable
@@ -102,6 +101,7 @@ SkipVTableValidation
 StrictTypeChecking
 SuppressToJSObject
 TreatNullAs=NullString
+TreatReturnedNullObjectAs=Undefined
 TreatReturnedNullStringAs=Null|Undefined
 TreatUndefinedAs=NullString
 TypedArray=*

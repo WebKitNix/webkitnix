@@ -1,3 +1,796 @@
+2013-07-10  Sergio Correia  <sergio.correia@openbossa.org>
+
+        Remove the meshType from CoordinatedCustomFilterOperation
+        https://bugs.webkit.org/show_bug.cgi?id=118529
+
+        Reviewed by Noam Rosenthal.
+
+        Following the removal of the meshType from CustomFilterOperation in r149153,
+        remove also the meshType from CoordinatedCustomFilterOperation.
+
+        No new tests, no new functionality.
+
+        * platform/graphics/texmap/coordinated/CoordinatedCustomFilterOperation.h:
+        (WebCore::CoordinatedCustomFilterOperation::create): Remove unused meshType parameter.
+        (WebCore::CoordinatedCustomFilterOperation::CoordinatedCustomFilterOperation): Ditto.
+ Ditto.
+2013-07-10  James Craig  <james@cookiecrook.com>
+
+        AX: AccessibilityNodeObject::supportsRequiredAttribute() should switch on CellRole
+        https://bugs.webkit.org/show_bug.cgi?id=117817
+
+        Reviewed by Chris Fleizach.
+
+        CellRole supports the required attribute now for accessibility, according to ARIA spec. 
+        Updated existing test coverage.
+
+        * accessibility/AccessibilityNodeObject.cpp:
+        (WebCore::AccessibilityNodeObject::supportsRequiredAttribute):
+
+2013-07-10  Csaba Osztrogonác  <ossy@webkit.org>
+
+        REGRESSION(r151957): WebGL textures do not show
+        https://bugs.webkit.org/show_bug.cgi?id=118464
+
+        Reviewed by Christophe Dumez.
+
+        After r151957 decoder.frameIsCompleteAtIndex(0) doesn't trigger image decoding,
+        we have to call decoder.createFrameAtIndex(0) explicitly to ensure it.
+
+        * platform/graphics/cairo/GraphicsContext3DCairo.cpp:
+        (WebCore::GraphicsContext3D::ImageExtractor::extractImage):
+        * platform/graphics/efl/GraphicsContext3DEfl.cpp:
+        (WebCore::GraphicsContext3D::ImageExtractor::extractImage):
+
+2013-07-10  Karol Świniarski  <k.swiniarsk2@samsung.com>
+
+        Change recently ratified extensions prefixes from WEBKIT_WEBGL_ to WEBGL_
+        https://bugs.webkit.org/show_bug.cgi?id=117786
+
+        Reviewed by Dean Jackson.
+
+        According to WebGL's revision 10, extensions should be named: WEBGL_lose_context,
+        WEBGL_depth_texture, WEBGL_compressed_texture_s3tc.
+
+        No new tests. Covered by existing tests:
+        LayoutTests/webgl/conformance/extensions/get-extension.html
+        LayoutTests/webgl/conformance/context/context-lost.html
+        LayoutTests/webgl/conformance/extensions/webgl-depth-texture.html
+        LayoutTests/webgl/conformance/extensions/webgl-compressed-texture-s3tc.html
+
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::getExtension):
+        (WebCore::WebGLRenderingContext::getSupportedExtensions):
+
+2013-07-09  Byungwoo Lee  <bw80.lee@samsung.com>
+
+        Unreviewed build fix.
+
+        * svg/SVGImageElement.cpp:
+        (WebCore::SVGImageElement::SVGImageElement):
+
+2013-07-09  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Introduce isSVGFontElement() and isSVGImageElement(), use them
+        https://bugs.webkit.org/show_bug.cgi?id=118504
+
+        Reviewed by Benjamin Poulain.
+
+        Let's use isFoo() to enhance readibility in svg element classes along with html's.
+
+        No new tests, there is no behavior changes.
+
+        * loader/cache/CachedFont.cpp:
+        (WebCore::CachedFont::getSVGFontById):
+        * rendering/HitTestResult.cpp:
+        (WebCore::HitTestResult::absoluteImageURL):
+        * svg/SVGAnimateMotionElement.cpp:
+        (WebCore::SVGAnimateMotionElement::hasValidAttributeType):
+        * svg/SVGElement.cpp:
+        (WebCore::SVGElement::viewportElement):
+        * svg/SVGFontElement.cpp:
+        (WebCore::SVGFontElement::SVGFontElement):
+        * svg/SVGFontElement.h:
+        (WebCore::toSVGFontElement):
+        (WebCore::isSVGFontElement):
+        * svg/SVGFontFaceElement.cpp:
+        (WebCore::SVGFontFaceElement::associatedFontElement):
+        (WebCore::SVGFontFaceElement::rebuildFontFace):
+        * svg/SVGGlyphElement.cpp:
+        (WebCore::SVGGlyphElement::invalidateGlyphCache):
+        * svg/SVGHKernElement.cpp:
+        (WebCore::SVGHKernElement::insertedInto):
+        (WebCore::SVGHKernElement::removedFrom):
+        * svg/SVGImageElement.cpp:
+        (WebCore::SVGImageElement::SVGImageElement):
+        * svg/SVGImageElement.h:
+        (WebCore::toSVGImageElement):
+        (WebCore::isSVGImageElement):
+        * svg/SVGLocatable.cpp:
+        (WebCore::isViewportElement):
+        * svg/SVGVKernElement.cpp:
+        (WebCore::SVGVKernElement::insertedInto):
+        (WebCore::SVGVKernElement::removedFrom):
+
+2013-07-09  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Add ewk_view_device_pixel_ratio_set
+        https://bugs.webkit.org/show_bug.cgi?id=118521
+
+        Reviewed by Gyuyoung Kim.
+
+        No new tests, covered by existing tests.
+
+        * dom/ViewportArguments.cpp: Remove PLATFORM(EFL) not to use deprecatedTargetDPI
+        * dom/ViewportArguments.h: Ditto.
+        * platform/efl/EflScreenUtilities.cpp: Removed getDPI() which is not used anymore.
+        * platform/efl/EflScreenUtilities.h: Ditto.
+
+2013-07-09  James Craig  <james@cookiecrook.com>
+
+        @readonly and @aria-readonly="false" are not exposed correctly to accessibility
+        https://bugs.webkit.org/show_bug.cgi?id=118475
+
+        Reviewed by Chris Fleizach.
+
+        Account for implicit and explicit @readonly/@aria-readonly mismatches. Updated existing test coverage.
+
+        * accessibility/AccessibilityRenderObject.cpp:
+        (WebCore::AccessibilityRenderObject::canSetValueAttribute):
+
+2013-07-09  Jer Noble  <jer.noble@apple.com>
+
+        Reviewed by Simon Fraser.
+
+        Remember the scroll position and restore after exiting full-screen mode.
+        https://bugs.webkit.org/show_bug.cgi?id=61956
+
+        No new tests, adds a client callback used by WebKit and WebKit2 win.
+
+        * platform/graphics/win/FullScreenController.cpp:
+        (FullScreenController::enterFullScreen):
+        (FullScreenController::exitFullScreen):
+        * platform/graphics/win/FullScreenControllerClient.h:
+
+2013-07-09  Jeff Miller  <jeffm@apple.com>
+
+        AuthenticationMac.mm does not handle NSURLAuthenticationMethodNegotiate in WebCore::mac()
+        https://bugs.webkit.org/show_bug.cgi?id=118518
+
+        Reviewed by Alexey Proskuryakov.
+
+        * platform/network/mac/AuthenticationMac.mm:
+        (WebCore::mac):
+        Map ProtectionSpaceAuthenticationSchemeNegotiate to NSURLAuthenticationMethodNegotiate.
+
+2013-07-09  Jeff Miller  <jeffm@apple.com>
+
+        AuthenticationMac.mm does not handle NSURLAuthenticationMethodNegotiate
+        https://bugs.webkit.org/show_bug.cgi?id=118517
+
+        Reviewed by Brady Eidson.
+
+        * platform/network/mac/AuthenticationMac.mm:
+        (WebCore::core):
+        Map "NSURLAuthenticationMethodNegotiate" to ProtectionSpaceAuthenticationSchemeNegotiate.
+
+2013-07-09  peavo@outlook.com  <peavo@outlook.com>
+
+        [Windows] Compile fix.
+        https://bugs.webkit.org/show_bug.cgi?id=106558
+
+        Reviewed by Brent Fulgham.
+
+        On Windows, dispatch.h needs to be included before certain CFNetwork headers.
+
+        * WebCorePrefix.h: Include dispatch.h.
+
+2013-07-09  Mark Lam  <mark.lam@apple.com>
+
+        Fix 30% JSBench regression (caused by adding column numbers to stack traces).
+        https://bugs.webkit.org/show_bug.cgi?id=118481.
+
+        Reviewed by Mark Hahnenberg and Geoffrey Garen.
+
+        Test: fast/js/line-column-numbers.html
+
+        Updated the bindings to use StackFrame::computeLineAndColumn(). The old
+        StackFrame::line() and StackFrame::column() has been removed. The new
+        algorithm always computes the 2 values together anyway. Hence it is more
+        efficient to return them as a pair instead of doing the same computation
+        twice for each half of the result.
+
+        * bindings/js/ScriptCallStackFactory.cpp:
+        (WebCore::createScriptCallStack):
+        (WebCore::createScriptCallStackFromException):
+        * bindings/js/ScriptSourceCode.h:
+        (WebCore::ScriptSourceCode::ScriptSourceCode):
+
+2013-07-09  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Use toSVGFontElement() instead of static_cast<SVGFontElement*>
+        https://bugs.webkit.org/show_bug.cgi?id=118496
+
+        Reviewed by Andreas Kling.
+
+        As a step to change static_cast with toXXX, static_cast<SVGFontElement*> can
+        be changed with toSVGFontElement().
+
+        Blink merge from https://src.chromium.org/viewvc/blink?view=rev&revision=153761
+
+        * svg/SVGFontElement.h:
+        (WebCore::toSVGFontElement):
+        * svg/SVGFontFaceElement.cpp:
+        (WebCore::SVGFontFaceElement::rebuildFontFace):
+        * svg/SVGGlyphElement.cpp:
+        (WebCore::SVGGlyphElement::invalidateGlyphCache):
+        * svg/SVGHKernElement.cpp:
+        (WebCore::SVGHKernElement::insertedInto):
+        (WebCore::SVGHKernElement::removedFrom):
+        * svg/SVGVKernElement.cpp:
+        (WebCore::SVGVKernElement::insertedInto):
+        (WebCore::SVGVKernElement::removedFrom):
+
+2013-07-09  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Remove support for [PassThisToCallback] extended attribute
+        https://bugs.webkit.org/show_bug.cgi?id=118391
+
+        Reviewed by Kentaro Hara.
+
+        The [PassThisToCallback] Webkit-specific IDL extended attribute is supported
+        by the JSC bindings generator but is no longer used. The attribute is not
+        even documented.
+
+        We can therefore drop support for this from the generator to simplify the
+        code.
+
+        No new tests, no behavior change.
+
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateCallbackImplementation):
+        * bindings/scripts/IDLAttributes.txt:
+        * bindings/scripts/test/JS/JSTestCallback.cpp:
+        (WebCore::JSTestCallback::callbackRequiresThisToPass):
+        * bindings/scripts/test/TestCallback.idl:
+
+2013-07-09  Praveen R Jadhav  <praveen.j@samsung.com>
+
+        Update Exception handling in WebAudio.
+        https://bugs.webkit.org/show_bug.cgi?id=118405.
+
+        Reviewed by Chris Rogers.
+
+        AudioBufferSourceNode, OscillatorNode and AnalyserNode don't
+        propagate exception mentioned in WebAudio spec.
+        Code updated to throw DOM exception as expected.
+
+        Tests: webaudio/analyser-exception.html
+               webaudio/audiobuffersource-exception.html
+
+        * Modules/webaudio/AnalyserNode.cpp:
+        (WebCore::AnalyserNode::setFftSize):
+        (WebCore::AnalyserNode::setMinDecibels):
+        (WebCore::AnalyserNode::setMaxDecibels):
+        (WebCore::AnalyserNode::setSmoothingTimeConstant):
+        * Modules/webaudio/AnalyserNode.h:
+        * Modules/webaudio/AnalyserNode.idl:
+        * Modules/webaudio/AudioBufferSourceNode.cpp:
+        (WebCore::AudioBufferSourceNode::startGrain):
+        (WebCore::AudioBufferSourceNode::noteGrainOn):
+        * Modules/webaudio/AudioBufferSourceNode.h:
+        * Modules/webaudio/AudioBufferSourceNode.idl:
+        * Modules/webaudio/AudioContext.cpp:
+        (WebCore::AudioContext::createBuffer):
+        (WebCore::AudioContext::createScriptProcessor):
+        (WebCore::AudioContext::createPeriodicWave):
+        * Modules/webaudio/AudioScheduledSourceNode.cpp:
+        (WebCore::AudioScheduledSourceNode::start):
+        (WebCore::AudioScheduledSourceNode::stop):
+        (WebCore::AudioScheduledSourceNode::noteOn):
+        (WebCore::AudioScheduledSourceNode::noteOff):
+        * Modules/webaudio/AudioScheduledSourceNode.h:
+        * Modules/webaudio/OscillatorNode.idl:
+
+2013-07-08  Martin Robinson  <mrobinson@igalia.com>
+
+        [CSS Grid Layout] Rename grid-{rows|columns} to grid-definition-{rows|columns}
+        https://bugs.webkit.org/show_bug.cgi?id=103336
+
+        Reviewed by Tony Chang.
+
+        Rename -webkit-grid-{rows|columns} to -webkit-grid-definition-{rows|columns}.
+        The latest version of the spec has renamed these properties.
+
+        * css/CSSComputedStyleDeclaration.cpp:
+        (WebCore::CSSComputedStyleDeclaration::getPropertyCSSValue): Handle the new names.
+        * css/CSSParser.cpp:
+        (WebCore::CSSParser::parseValue): Ditto.
+        * css/CSSProperty.cpp:
+        (WebCore::CSSProperty::isInheritedProperty): Ditto.
+        * css/CSSPropertyNames.in: Add support for the new names.
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::applyProperty): Handle the new names.
+
+2013-07-08  Enrica Casucci  <enrica@apple.com>
+
+        DeleteSelectionCommand does not handle correctly deletion with two consecutive BR element.
+        https://bugs.webkit.org/show_bug.cgi?id=118457
+        <rdar://problem/14160912>
+
+        Reviewed by Simon Fraser.
+
+        In DeleteSelectionCommand::handleSpecialCareBRDelete we did not
+        handle correctly the case where we had <br><br> in the markup and
+        nothing was being deleted. We should consider this like
+        the case where the <br> is on the line by itself and remove it.
+
+        Test: editing/deleting/delete-image-followed-by-two-br.html
+
+        * editing/DeleteSelectionCommand.cpp:
+        (WebCore::DeleteSelectionCommand::handleSpecialCaseBRDelete):
+
+2013-07-08  Radu Stavila  <stavila@adobe.com>
+
+        NamedFlowCollection getters should return undefined when there's no NamedFlow
+        https://bugs.webkit.org/show_bug.cgi?id=118463
+
+        Reviewed by Christophe Dumez.
+
+        Added new TreatReturnedNullObjectAs attribute for generated methods and set it to Undefined
+        for the item and namedItem methods of DOMNamedFlowCollection.
+
+        Test: fast/regions/webkit-named-flow-collection-undefined.html
+
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateImplementationFunctionCall):
+        * bindings/scripts/IDLAttributes.txt:
+        * bindings/scripts/test/CPP/WebDOMTestObj.cpp:
+        (WebDOMTestObj::treatReturnedNullObjectAsUndefined):
+        * bindings/scripts/test/CPP/WebDOMTestObj.h:
+        * bindings/scripts/test/GObject/WebKitDOMTestObj.cpp:
+        (webkit_dom_test_obj_treat_returned_null_object_as_undefined):
+        * bindings/scripts/test/GObject/WebKitDOMTestObj.h:
+        * bindings/scripts/test/JS/JSTestObj.cpp:
+        (WebCore::jsTestObjPrototypeFunctionTreatReturnedNullObjectAsUndefined):
+        * bindings/scripts/test/JS/JSTestObj.h:
+        * bindings/scripts/test/ObjC/DOMTestObj.h:
+        * bindings/scripts/test/ObjC/DOMTestObj.mm:
+        (-[DOMTestObj treatReturnedNullObjectAsUndefined]):
+        * bindings/scripts/test/TestObj.idl:
+        * dom/DOMNamedFlowCollection.idl:
+
+2013-07-06 Changhun Kang <temoochin@company100.net>
+
+        Remove unused variables in FocusCandidate.
+        https://bugs.webkit.org/show_bug.cgi?id=118449
+
+        Reviewed by Antonio Gomes.
+
+        The variables for parent in FocusCandidate are not used anymore.
+
+        No new tests. No change in behavior.
+
+        * page/SpatialNavigation.cpp:
+        (WebCore::FocusCandidate::FocusCandidate):
+        * page/SpatialNavigation.h:
+        (WebCore::FocusCandidate::FocusCandidate):
+
+2013-07-08  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: iOS: SVG paths are not offset by the parent bounding box
+        https://bugs.webkit.org/show_bug.cgi?id=118433
+
+        The path for SVG shapes is in terms of its parent's view space. We need to offset
+        the path by that amount so that it's in the right location.
+
+        Reviewed by Tim Horton.
+
+        * accessibility/AccessibilityRenderObject.cpp:
+        (WebCore::AccessibilityRenderObject::elementPath):
+
+2013-07-08  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Unreviewed. Fix make distcheck.
+
+        * GNUmakefile.list.am: Add missing header files.
+
+2013-07-08  Ruth Fong  <ruth_fong@apple.com>
+
+        Fix TextTrackCue::cueIndex() to handle the null case of TextTrack::cues(() properly
+        https://bugs.webkit.org/show_bug.cgi?id=117815
+        <rdar://problem/14211041>
+
+        Reviewed by Eric Carlson.
+
+        Merge https://src.chromium.org/viewvc/blink?revision=153206&view=revision
+        
+        No new tests, only behavior change is preventing a crash in the release build.
+        cueIndex() is only used for sorting cues, so returning an invalidCueIndex in the case
+        where track()->cues() is null makes sense and won't modify behavior.
+
+        * html/track/TextTrackCue.cpp:
+        (WebCore::TextTrackCue::cueIndex):
+
+2013-07-08  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r152416.
+        http://trac.webkit.org/changeset/152416
+        https://bugs.webkit.org/show_bug.cgi?id=118476
+
+        Wrong fix for the bug (Requested by ap on #webkit).
+
+        * platform/text/TextEncodingRegistry.cpp:
+        (WebCore::newTextCodec):
+
+2013-07-08  Andreas Kling  <akling@apple.com>
+
+        REGRESSION(r125294): A style rule with more than 8192 selectors can cause style corruption.
+        <http://webkit.org/b/118369>
+        <rdar://problem/14291428>
+
+        Reviewed by Antti Koivisto.
+
+        Add a semi-hard cap of 8192 selectors per CSS rule. Rules with longer selector lists will be split into
+        multiple rules (with 8192 selectors per rule.) The style properties are shared behind the scenes
+        so it's all pretty efficient.
+
+        This does generate a different CSSOM for gigantic selector lists, I've added a test to document this.
+        Note that setting CSSStyleRule.selectorText with over 8192 selectors will now fail, the splitting into
+        multiple rules only happens when parsing full style sheets.
+
+        Test: fast/css/rule-selector-overflow.html
+
+        * css/CSSSelectorList.cpp:
+        (WebCore::CSSSelectorList::selectorCount):
+
+            Add a helper to count the number of selectors in a list (not the number of raw selector components.)
+
+        * css/RuleSet.h:
+        * css/CSSStyleRule.cpp:
+        (WebCore::CSSStyleRule::setSelectorText):
+
+            Add RuleData::maximumSelectorCount constant and cap CSSStyleRule.selectorText to that many selectors.
+
+        * css/CSSSelectorList.h:
+        (WebCore::CSSSelectorList::adoptSelectorArray):
+        * css/StyleRule.cpp:
+        (WebCore::StyleRule::create):
+        (WebCore::StyleRule::splitIntoMultipleRulesWithMaximumSelectorCount):
+        * css/StyleRule.h:
+        (WebCore::StyleRule::parserAdoptSelectorArray):
+        * css/StyleSheetContents.cpp:
+        (WebCore::StyleSheetContents::parserAppendRule):
+
+            The meat of this change. Split rules with >8K selectors into multiple rules with 8K selectors in each.
+
+        * css/StyleRule.h:
+        (WebCore::toStyleRule):
+
+            Added a toStyleRule() helper for good measure.
+
+2013-07-08  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Introduce DECLARE_FORWARDING_ATTRIBUTE_EVENT_LISTENER() macro
+        https://bugs.webkit.org/show_bug.cgi?id=118408
+
+        Reviewed by Philip Rogers.
+
+        Split DEFINE_FORWARDING_ATTRIBUTE_EVENT_LISTENER() macro into separate
+        DECLARE and DEFINE macros to reduce the number of header includes in
+        SVG.
+
+        No new tests, no behavior change.
+
+        * dom/EventTarget.h:
+        * svg/SVGElementInstance.cpp:
+        (WebCore::SVGElementInstance::create):
+        (WebCore::SVGElementInstance::toNode):
+        (WebCore::SVGElementInstance::ownerDocument):
+        * svg/SVGElementInstance.h:
+
+2013-07-08  Jae Hyun Park  <jae.park@company100.net>
+
+        [Coordinated Graphics] Rename variables in UpdateAtlas
+        https://bugs.webkit.org/show_bug.cgi?id=118403
+
+        Reviewed by Noam Rosenthal.
+
+        As of r149292, non-composited contents layer was removed from
+        CoordinatedGraphics. So, the variables should be renamed for
+        clarification.
+
+        * platform/graphics/texmap/coordinated/CompositingCoordinator.cpp:
+        (WebCore::CompositingCoordinator::releaseInactiveAtlasesTimerFired):
+
+2013-07-08  Ádám Kallai  <kadam@inf.u-szeged.hu>
+
+        [Qt] Incremental build fix after r145712.
+        https://bugs.webkit.org/show_bug.cgi?id=112576.
+
+        Reviewed by Jocelyn Turcotte.
+
+        * DerivedSources.pri: Added dependence to INSPECTOR_JSON.
+        * inspector/front-end/WebKit.qrc: Added missing JS file.
+
+2013-07-08  Kihong Kwon  <kihong.kwon@samsung.com>
+
+        vibrate function have to return boolean value.
+        https://bugs.webkit.org/show_bug.cgi?id=118288
+
+        Reviewed by Gyuyoung Kim.
+
+        According to latest Vibration API which is LC, vibrate() needs to return boolean value
+        and exception code is removed also. In addition, remove condition for canceling vibration
+        can be called when visibility state is hidden.
+        http://www.w3.org/TR/vibration/
+
+        No new tests. vibration/navigator-vibration.html is changed.
+
+        * Modules/vibration/NavigatorVibration.cpp:
+        (WebCore::NavigatorVibration::vibrate):
+        * Modules/vibration/NavigatorVibration.h:
+        * Modules/vibration/NavigatorVibration.idl:
+        * Modules/vibration/Vibration.cpp:
+        (WebCore::Vibration::vibrate):
+        * Modules/vibration/Vibration.h:
+
+2013-07-07  Kangil Han  <kangil.han@samsung.com>
+
+        Adopt is/toHTMLTableElement for code cleanup
+        https://bugs.webkit.org/show_bug.cgi?id=118393
+
+        Reviewed by Andreas Kling.
+
+        To enhance readability, this patch adopts is/toHTMLTableElement.
+        This also helps out to reduce duplicated use of static_cast.
+
+        * accessibility/AccessibilityRenderObject.cpp:
+        (WebCore::AccessibilityRenderObject::determineAccessibilityRole):
+        * accessibility/AccessibilityTable.cpp:
+        (WebCore::AccessibilityTable::isDataTable):
+        (WebCore::AccessibilityTable::isTableExposableThroughAccessibility):
+        (WebCore::AccessibilityTable::title):
+        * accessibility/atk/WebKitAccessibleInterfaceTable.cpp:
+        (webkitAccessibleTableGetCaption):
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (webkitAccessibleGetDescription):
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::adjustRenderStyle):
+        * dom/Position.cpp:
+        (WebCore::endsOfNodeAreVisuallyDistinctPositions):
+        * editing/DeleteSelectionCommand.cpp:
+        (WebCore::DeleteSelectionCommand::handleGeneralDelete):
+        * editing/InsertLineBreakCommand.cpp:
+        (WebCore::InsertLineBreakCommand::doApply):
+        * editing/htmlediting.cpp:
+        (WebCore::isNonTableCellHTMLBlockElement):
+        * editing/markup.cpp:
+        (WebCore::ancestorToRetainStructureAndAppearanceForBlock):
+        * html/FTPDirectoryDocument.cpp:
+        (WebCore::FTPDirectoryDocumentParser::loadDocumentTemplate):
+        (WebCore::FTPDirectoryDocumentParser::createBasicDocument):
+        * html/HTMLFormElement.cpp:
+        (WebCore::HTMLFormElement::rendererIsNeeded):
+        * html/HTMLTableElement.h:
+        (WebCore::isHTMLTableElement):
+        (WebCore::toHTMLTableElement):
+        * html/HTMLTablePartElement.cpp:
+        (WebCore::HTMLTablePartElement::findParentTable):
+        * html/HTMLTableRowElement.cpp:
+        (WebCore::HTMLTableRowElement::rowIndex):
+        * html/HTMLTableRowsCollection.cpp:
+        (WebCore::HTMLTableRowsCollection::HTMLTableRowsCollection):
+        (WebCore::HTMLTableRowsCollection::virtualItemAfter):
+        * html/parser/HTMLElementStack.cpp:
+        (WebCore::HTMLNames::isScopeMarker):
+        (WebCore::HTMLNames::isTableScopeMarker):
+        * html/parser/HTMLTreeBuilder.cpp:
+        (WebCore::HTMLTreeBuilder::resetInsertionModeAppropriately):
+        (WebCore::HTMLTreeBuilder::processCharacterBuffer):
+        * platform/mac/HTMLConverter.mm:
+        (-[WebHTMLConverter _computedStringForNode:property:]):
+        * rendering/RenderObject.cpp:
+        (WebCore::RenderObject::offsetParent):
+        * rendering/RenderTable.cpp:
+        (WebCore::RenderTable::convertStyleLogicalWidthToComputedWidth):
+        (WebCore::RenderTable::convertStyleLogicalHeightToComputedHeight):
+
+2013-07-06  Rob Buis  <rbuis@rim.com>
+
+        createElement("image") creates an HTMLImageElement, although this hack should exist in parser only
+        https://bugs.webkit.org/show_bug.cgi?id=88360
+
+        Reviewed by Sam Weinig.
+
+        Create a HTMLElement when using createElement('image'), but keep the HTML5 parser constructing HTMLImageelement for it.
+
+        * html/HTMLTagNames.in:
+
+2013-07-06  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Stop hardcoding interfaces that have indexed getters returning strings
+        https://bugs.webkit.org/show_bug.cgi?id=118414
+
+        Reviewed by Kentaro Hara.
+
+        Stop hardcoding the names of interfaces that have indexed getters returning
+        strings in the bindings generator. Now that we use the latest Web IDL indexed
+        getter, more information is provided in the IDL files and the generator is
+        able to figure out if the indexed getter is returning a DOMString on its own.
+
+        No new tests, no behavior change.
+
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateGetOwnPropertySlotBody):
+        (GenerateImplementation):
+
+2013-07-05  Tim Horton  <timothy_horton@apple.com>
+
+        Tons of crashes on bots after r152425
+        https://bugs.webkit.org/show_bug.cgi?id=118440
+        <rdar://problem/14366772>
+
+        Reviewed by Sam Weinig.
+
+        Null-check the frame's page and early return. It's OK to do this
+        because it only happens when we're being torn down.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::minimumScrollPosition):
+        (WebCore::FrameView::maximumScrollPosition):
+
+2013-07-05  Tim Horton  <timothy_horton@apple.com>
+
+        Fix r152265: FrameView's pagination mode is only one of two, and the logic was totally wrong
+        https://bugs.webkit.org/show_bug.cgi?id=118439
+        <rdar://problem/14366120>
+
+        Reviewed by Anders Carlsson.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::maximumScrollPosition):
+        - Test both Page and FrameView's pagination modes.
+        - *Don't* clamp negatives to zero if we are paginated with scroll offset set,
+            like the original changelog claimed, but the code did the opposite.
+        - Don't clamp in *all* pagination modes; with 'direction: RTL' it's still possible
+            to have a negative maximum position in LTR/TB pagination modes.
+
+2013-07-05  Sam Weinig  <sam@webkit.org>
+
+        WKPageFindStringMatches with kWKFindOptionsBackwards still doesn't work
+        <rdar://problem/13881024>
+        https://bugs.webkit.org/show_bug.cgi?id=118436
+
+        Reviewed by Tim Horton.
+
+        * page/Page.cpp:
+        (WebCore::Page::findStringMatchingRanges):
+        - When searching backwards, use END_TO_START rather than START_TO_END.
+        - If there is no selection and we are searching backwards, we now select the last item,
+          not the first.
+
+2013-07-05  Tullio Lucena  <tullio.lucena@openbossa.org>
+
+        Nix upstreaming - Adding Nix render theme files
+        https://bugs.webkit.org/show_bug.cgi?id=118368
+
+        Reviewed by Benjamin Poulain.
+
+        All files related to render theme stuff.
+
+        No new tests. They will be uploaded on another patch during the upstreaming process.
+
+        * platform/nix/RenderThemeNix.cpp: Added.
+        * platform/nix/RenderThemeNix.h: Added.
+        * platform/nix/ScrollbarThemeNix.cpp: Added.
+        * platform/nix/ScrollbarThemeNix.h: Added.
+
+2013-07-05  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Identify OS-level at build-time.
+        https://bugs.webkit.org/show_bug.cgi?id=118428
+
+        Reviewed by Anders Carlsson.
+
+        * DerivedSources.make: Activate legible output features if present.
+        * WebCorePrefix.h: Activate MSVC 2010 workarounds for CGFloat if
+        building with VS2010.
+        * config.h: Activate legible output features if present.
+
+2013-07-05  Tim Horton  <timothy_horton@apple.com>
+
+        [wk2] Add API to lock the scroll position at the top or bottom of the page
+        https://bugs.webkit.org/show_bug.cgi?id=118429
+        <rdar://problem/14120323>
+
+        Reviewed by Anders Carlsson.
+
+        Test (API): WebKit2.ScrollPinningBehaviors
+
+        * WebCore.exp.in:
+        Expose FrameView::setScrollPinningBehavior.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::FrameView):
+        Our pinning behavior should be DoNotPin by default.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::minimumScrollPosition):
+        (WebCore::FrameView::maximumScrollPosition):
+        * page/scrolling/mac/ScrollingTreeScrollingNodeMac.mm:
+        (WebCore::ScrollingTreeScrollingNodeMac::minimumScrollPosition):
+        (WebCore::ScrollingTreeScrollingNodeMac::maximumScrollPosition):
+        Fix the minimum scroll position's vertical location to the maximum if
+        we're pinned to the bottom, and vice-versa if we're pinned to the top.
+
+        (WebCore::FrameView::setScrollPinningBehavior): Added.
+        If scroll pinning behavior has changed, inform ScrollingCoordinator
+        and update scrollbars (which will also re-pin the scroll position).
+
+        * page/FrameView.h:
+        Override minimumScrollPosition, add setScrollPinningBehavior,
+        and storage for m_scrollPinningBehavior.
+
+        * page/scrolling/ScrollingCoordinator.h:
+        (WebCore::ScrollingCoordinator::setScrollPinningBehavior): Added.
+
+        * page/scrolling/ScrollingTree.cpp:
+        (WebCore::ScrollingTree::ScrollingTree):
+        Our pinning behavior should be DoNotPin by default.
+
+        (WebCore::ScrollingTree::setScrollPinningBehavior):
+        (WebCore::ScrollingTree::scrollPinningBehavior):
+        Getter/setter for m_scrollPinningBehavior, scrolling-thread-safe.
+
+        * page/scrolling/ScrollingTree.h:
+        * page/scrolling/mac/ScrollingCoordinatorMac.h:
+        * page/scrolling/mac/ScrollingCoordinatorMac.mm:
+        (WebCore::ScrollingCoordinatorMac::setScrollPinningBehavior):
+        Inform ScrollingTree of the scroll pinning behavior change.
+        
+        * platform/ScrollTypes.h:
+        Add ScrollPinningBehavior enum.
+
+2013-07-05  Zalan Bujtas  <zalan@apple.com>
+
+        iframe constrained by max-width in full screen
+        https://bugs.webkit.org/show_bug.cgi?id=118250
+
+        Reviewed by Antti Koivisto.
+
+        Ensure that contents inside iframe can go full screen properly.
+
+        Set max-width and max-height values to the default 'none', so that iframes are not
+        constrained when entering full screen.
+
+        Test: fullscreen/full-screen-iframe-with-max-width-height.html
+
+        * css/fullscreen.css:
+        (iframe:-webkit-full-screen):
+
+2013-07-05  Eric Carlson  <eric.carlson@apple.com>
+
+        [Mac] .webkitClosedCaptionsVisible doesn't work with "Automatic" caption mode
+        https://bugs.webkit.org/show_bug.cgi?id=118319
+
+        Reviewed by Jer Noble.
+
+        Track when captions are enabled with the old 'webkitClosedCaptionsVisible' attribute and
+        consider that when determining which track should be enabled.
+
+        Test: media/track/track-legacyapi-with-automatic-mode.html
+
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::HTMLMediaElement): Initialize m_webkitLegacyClosedCaptionOverride.
+        (WebCore::HTMLMediaElement::setWebkitClosedCaptionsVisible): Set m_webkitLegacyClosedCaptionOverride.
+        (WebCore::HTMLMediaElement::webkitClosedCaptionsVisible): Return m_webkitLegacyClosedCaptionOverride.
+        * html/HTMLMediaElement.h:
+
+        * page/CaptionUserPreferencesMediaAF.cpp:
+        (WebCore::CaptionUserPreferencesMediaAF::textTrackSelectionScore): Don't apply "automatic"
+            logic when captions were enabled with .webkitClosedCaptionsVisible.
+
 2013-07-05  Benjamin Dupont   <bdupont@nds.com>
 
         Segmentation fault occurred when ICU data library doesn't embed the expected encoding.

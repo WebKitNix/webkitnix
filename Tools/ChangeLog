@@ -1,3 +1,171 @@
+2013-07-10  Simon Pena  <simon.pena@samsung.com>
+
+        [GTK] WebKitTestRunner tries to remove an already deleted event in EventSenderProxy::replaySavedEvents
+        https://bugs.webkit.org/show_bug.cgi?id=118509
+
+        Reviewed by Martin Robinson.
+
+        In EventSenderProxy::replaySavedEvents WebKitTestRunner can crash
+        when trying to remove an event already removed, if another event is
+        processed in the middle. By using a Deque's takeFirst, we ensure the
+        element is removed before we dispatch it.
+
+        fast/events/mousedown-inside-dragstart-should-not-cause-crash.html no longer
+        crashes after this fix is added.
+
+        * WebKitTestRunner/EventSenderProxy.h: Use a Deque instead of Vector in GTK
+        * WebKitTestRunner/gtk/EventSenderProxyGtk.cpp:
+        (WTR::EventSenderProxy::replaySavedEvents): Use takeFirst to retrieve the event
+        from the queue.
+
+2013-07-09  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Add ewk_view_device_pixel_ratio_set
+        https://bugs.webkit.org/show_bug.cgi?id=118521
+
+        Reviewed by Gyuyoung Kim.
+
+        * EWebLauncher/main.c: Added new option(-r) to test device pixel ratio.
+        (windowCreate):
+        (parseUserArguments):
+
+2013-07-09  Bruno de Oliveira Abinader  <brunoabinader@gmail.com>
+
+        Unreviewed change of my email addresses.
+        https://bugs.webkit.org/show_bug.cgi?id=100122
+
+        * Scripts/webkitpy/common/config/contributors.json:
+
+2013-07-09  Anders Carlsson  <andersca@apple.com>
+
+        DumpRenderTree should stop sending unsupported URLs to NSWorkspace
+        https://bugs.webkit.org/show_bug.cgi?id=118514
+        <rdar://problem/13686836>
+
+        Reviewed by Sam Weinig.
+
+        Add a new default policy delegate and override decidePolicyForNavigationAction: to not pass unhandled URLs to NSWorkspace.
+
+        * DumpRenderTree/DefaultPolicyDelegate.h: Added.
+        * DumpRenderTree/DefaultPolicyDelegate.m: Added.
+        (-[DefaultPolicyDelegate webView:decidePolicyForNavigationAction:request:frame:decisionListener:]):
+        * DumpRenderTree/DumpRenderTree.xcodeproj/project.pbxproj:
+        Add DefaultPolicyDelegate.h and DefaultPolicyDelegate.m.
+
+        * DumpRenderTree/mac/DumpRenderTree.mm:
+        (allocateGlobalControllers):
+        Allocate a DefaultPolicyDelegate object.
+
+        (resetWebViewToConsistentStateBeforeTesting):
+        Set the policy delegate to the default policy delegate.
+
+        * DumpRenderTree/mac/DumpRenderTreeMac.h:
+        Declare the defaultPolicyDelegate object.
+
+        * DumpRenderTree/mac/TestRunnerMac.mm:
+        (TestRunner::setCustomPolicyDelegate):
+        Set the policy delegate to the default delegate if setDelegate is false.
+
+2013-07-08  Zan Dobersek  <zdobersek@igalia.com>
+
+        KURL unit test fixture class should have a meaningful name
+        https://bugs.webkit.org/show_bug.cgi?id=118467
+
+        Reviewed by Sam Weinig.
+
+        * TestWebKitAPI/Tests/WebCore/KURL.cpp:
+        (TestWebKitAPI::TEST_F): Use 'KURLTest' as the name for the KURL unit test's fixture class
+        instead of the generic and inappropriate 'WebCore' name.
+
+2013-07-08  Antti Koivisto  <antti@apple.com>
+
+        Add Deque::removeLast
+        https://bugs.webkit.org/show_bug.cgi?id=118466
+
+        Reviewed by Andreas Kling.
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/WTF/Deque.cpp: Added.
+        (TestWebKitAPI::TEST):
+
+2013-07-08  Brian Holt  <brian.holt@samsung.com>
+
+        [GTK] Leak: GFile* leaking in beginDragWithFilesCallback
+        https://bugs.webkit.org/show_bug.cgi?id=118412
+
+        Reviewed by Martin Robinson.
+
+        An adoptRef is required to balance ref and deref calls.
+
+        * DumpRenderTree/gtk/EventSender.cpp:
+        (beginDragWithFilesCallback):
+
+2013-07-06  Sergio Correia  <sergio.correia@openbossa.org>
+
+        Update list of EFL WK2 API tests
+        https://bugs.webkit.org/show_bug.cgi?id=118443
+
+        Reviewed by Christophe Dumez.
+
+        The following tests were included:
+
+        Passing:
+        - CloseThenTerminate
+        - DidAssociateFormControls
+        - PageVisibilityState
+        - ResponsivenessTimerDoesntFireEarly
+        - TerminateTwice
+        - WillLoad
+
+        Failing:
+        - ResizeReversePaginatedWebView
+        - ScrollPinningBehaviors
+
+        This patch also modified ``test_webkit2_api_BINARIES'' list so that it is in
+        alphabetical order.
+
+        * TestWebKitAPI/CMakeLists.txt: Added Bundles for included tests.
+        * TestWebKitAPI/PlatformEfl.cmake: Added a few tests.
+
+2013-07-05  Tim Horton  <timothy_horton@apple.com>
+
+        Fix r152265: FrameView's pagination mode is only one of two, and the logic was totally wrong
+        https://bugs.webkit.org/show_bug.cgi?id=118439
+        <rdar://problem/14366120>
+
+        Reviewed by Anders Carlsson.
+
+        * TestWebKitAPI/Tests/WebKit2/ResizeReversePaginatedWebView.cpp:
+        (TestWebKitAPI::didLayout):
+        (TestWebKitAPI::TEST):
+        - Make use of EXPECT_JS_EQ instead of manually doing JavaScript stuff.
+        - Assert that we got the right number of pages for sanity.
+        - Reduce the page gap size so that DrawingAreaImpl doesn't try to allocate
+            so much memory that SharedMemory asserts and makes the test time out.
+        - Use didFirstLayoutAfterSuppressedIncrementalRendering instead of Paint
+            because paint doesn't fire if the window is offscreen.
+
+2013-07-05  Tim Horton  <timothy_horton@apple.com>
+
+        [wk2] Add API to lock the scroll position at the top or bottom of the page
+        https://bugs.webkit.org/show_bug.cgi?id=118429
+        <rdar://problem/14120323>
+
+        Reviewed by Anders Carlsson.
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/WebKit2/ScrollPinningBehaviors.cpp: Added.
+        (TestWebKitAPI::didFinishDocumentLoadForFrame):
+        (TestWebKitAPI::TEST):
+        Add a test that ensures that the three pinning modes (DoNotPin, PinToTop, PinToBottom)
+        all work correctly in the face of resizing the view and scrolling from JS.
+
+2013-07-05  Michael Pruett  <michael@68k.org>
+
+        Unreviewed. Add myself as a committer.
+
+        * Scripts/webkitpy/common/config/contributors.json:
+
 2013-07-05  Xabier Rodriguez Calvar  <calvaris@igalia.com>
 
         [GTK] WebKit2 test TestWebKitFaviconDatabase times out with recent glib

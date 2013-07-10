@@ -392,8 +392,9 @@
       },
       "Bruno de Oliveira Abinader" : {
          "emails" : [
-            "brunoabinader@gmail.com",
-            "bruno.abinader@basyskom.com"
+            "bruno.d@partner.samsung.com",
+            "bruno.abinader@basyskom.com",
+            "brunoabinader@gmail.com"
          ],
          "expertise" : "The QtWebKit Port, CSS, Layout and Rendering",
          "nicks" : [
@@ -1609,6 +1610,14 @@
             "michaeln"
          ]
       },
+      "Michael Pruett" : {
+         "emails" : [
+            "michael@68k.org"
+         ],
+         "nicks" : [
+            "mpruett"
+         ]
+      },
       "Michelangelo De Simone" : {
          "emails" : [
             "michelangelo@webkit.org"
@@ -2724,14 +2733,6 @@
       "Lia Chen" : {
          "emails" : [
             "liachen@rim.com"
-         ]
-      },
-      "Michael Pruett" : {
-         "emails" : [
-            "michael@68k.org"
-         ],
-         "nicks" : [
-            "mpruett"
          ]
       },
       "Mihai Balan" : {

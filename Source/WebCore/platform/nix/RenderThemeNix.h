@@ -36,9 +36,9 @@ public:
 
     virtual ~RenderThemeNix();
 
-    virtual String extraDefaultStyleSheet();
-    virtual String extraQuirksStyleSheet();
-    virtual String extraPlugInsStyleSheet();
+    virtual String extraDefaultStyleSheet() OVERRIDE;
+    virtual String extraQuirksStyleSheet() OVERRIDE;
+    virtual String extraPlugInsStyleSheet() OVERRIDE;
 
     virtual void systemFont(WebCore::CSSValueID, FontDescription&) const OVERRIDE;
 
@@ -56,24 +56,24 @@ public:
 
 protected:
     // The platform selection color.
-    virtual Color platformActiveSelectionBackgroundColor() const;
-    virtual Color platformInactiveSelectionBackgroundColor() const;
-    virtual Color platformActiveSelectionForegroundColor() const;
-    virtual Color platformInactiveSelectionForegroundColor() const;
+    virtual Color platformActiveSelectionBackgroundColor() const OVERRIDE;
+    virtual Color platformInactiveSelectionBackgroundColor() const OVERRIDE;
+    virtual Color platformActiveSelectionForegroundColor() const OVERRIDE;
+    virtual Color platformInactiveSelectionForegroundColor() const OVERRIDE;
 
-    virtual Color platformActiveListBoxSelectionBackgroundColor() const;
-    virtual Color platformInactiveListBoxSelectionBackgroundColor() const;
-    virtual Color platformActiveListBoxSelectionForegroundColor() const;
-    virtual Color platformInactiveListBoxSelectionForegroundColor() const;
+    virtual Color platformActiveListBoxSelectionBackgroundColor() const OVERRIDE;
+    virtual Color platformInactiveListBoxSelectionBackgroundColor() const OVERRIDE;
+    virtual Color platformActiveListBoxSelectionForegroundColor() const OVERRIDE;
+    virtual Color platformInactiveListBoxSelectionForegroundColor() const OVERRIDE;
 
     // Highlighting colors for TextMatches.
-    virtual Color platformActiveTextSearchHighlightColor() const;
-    virtual Color platformInactiveTextSearchHighlightColor() const;
+    virtual Color platformActiveTextSearchHighlightColor() const OVERRIDE;
+    virtual Color platformInactiveTextSearchHighlightColor() const OVERRIDE;
 
-    virtual Color platformFocusRingColor() const;
+    virtual Color platformFocusRingColor() const OVERRIDE;
 
 #if ENABLE(TOUCH_EVENTS)
-    virtual Color platformTapHighlightColor() const;
+    virtual Color platformTapHighlightColor() const OVERRIDE;
 #endif
 
     virtual bool paintButton(RenderObject*, const PaintInfo&, const IntRect&) OVERRIDE;

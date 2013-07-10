@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "WebContext.h"
+#include "WebProcessCreationParameters.h"
 
 #include <WebCore/FileSystem.h>
 #include <WebCore/NotImplemented.h>
@@ -75,9 +76,11 @@ String WebContext::platformDefaultApplicationCacheDirectory() const
     return WebCore::filenameToString(cacheDirectory.get());
 }
 
-void WebContext::platformInitializeWebProcess(WebProcessCreationParameters&)
+void WebContext::platformInitializeWebProcess(WebProcessCreationParameters& parameters)
 {
     initInspectorServer();
+
+    parameters.ignoreTLSErrors = false;
 }
 
 void WebContext::platformInvalidateContext()
