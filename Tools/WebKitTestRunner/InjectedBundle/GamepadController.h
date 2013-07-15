@@ -32,7 +32,7 @@
 #include <wtf/RefPtr.h>
 
 #if PLATFORM(NIX)
-#include <public/WebGamepads.h>
+#include <public/Gamepads.h>
 #endif
 
 namespace WTR {
@@ -55,14 +55,14 @@ public:
     void setAxisData(int index, int button, float axisData);
 
 #if PLATFORM(NIX)
-    void sampleGamepads(WebKit::WebGamepads& into);
+    void sampleGamepads(Nix::Gamepads& into);
 #endif
 
 private:
     GamepadController();
 
 #if PLATFORM(NIX)
-    WebKit::WebGamepads m_gamepads;
+    Nix::Gamepads m_gamepads;
 #endif
 };
 

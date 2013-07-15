@@ -43,6 +43,12 @@ macro(WEBKIT_SET_EXTRA_COMPILER_FLAGS _target)
         # Enable errors on warning
         if (OPTION_ENABLE_WERROR)
             set(OLD_COMPILE_FLAGS "-Werror -Wno-error=unused-parameter ${OLD_COMPILE_FLAGS}")
+
+            # -Wno-error=maybe-uninitialized introduced in GCC 4.7, we shouldn't pass it for older compilers.
+            if(NOT ${COMPILER_VERSION} VERSION_LESS "4.7.0")
+                set(OLD_COMPILE_FLAGS "-Wno-error=maybe-uninitialized ${OLD_COMPILE_FLAGS}")
+            endif ()
+
         endif ()
 
         # Disable C++0x compat warnings for GCC >= 4.6.0 until we build

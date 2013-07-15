@@ -1,3 +1,66 @@
+2013-07-13  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r151978.
+        http://trac.webkit.org/changeset/151978
+        https://bugs.webkit.org/show_bug.cgi?id=118651
+
+        Caused regressions at least 3 websites (Requested by rniwa on
+        #webkit).
+
+        * runtime/JSCJSValue.h:
+        * runtime/JSString.h:
+
+2013-07-12  Chris Curtis    <chris_curtis@apple.com>
+
+        Optimize addStrackTraceIfNecessary to be faster in the case when it's not necessary
+        https://bugs.webkit.org/show_bug.cgi?id=118328
+
+        Reviewed by Geoffrey Garen.
+
+        Retrieving the stack is costly. We want to get it only once. By moving the check
+        for the .stack property above the code to retrieve the stack, we ensure this. 
+
+        * interpreter/Interpreter.cpp:
+        (JSC::Interpreter::addStackTraceIfNecessary):
+
+2013-07-12  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Build correction after r152573/r152577.
+        https://bugs.webkit.org/show_bug.cgi?id=118610
+
+        Reviewed by Oliver Hunt.
+
+        * jit/JITThunks.cpp:
+        (JSC::JITThunks::hostFunctionStub): Hand-feed MSVC++ the fact that we want the second
+        argument of the make_pair to be a function pointer.
+
+2013-07-11  Oliver Hunt  <oliver@apple.com>
+
+        Attempt to fix the windows build.
+
+        * jit/JITThunks.cpp:
+        (JSC::JITThunks::hostFunctionStub):
+        * jit/JITThunks.h:
+
+2013-07-10  Oliver Hunt  <oliver@apple.com>
+
+        NativeExecutable cache needs to use both call and construct functions for key
+        https://bugs.webkit.org/show_bug.cgi?id=118545
+
+        Reviewed by Geoffrey Garen.
+
+        Make the native executable cache make use a key pair so we don't decide to
+        treat all subsequent functions as not being constructors.
+
+        * jit/JITThunks.cpp:
+        (JSC::JITThunks::hostFunctionStub):
+        * jit/JITThunks.h:
+        * runtime/JSBoundFunction.cpp:
+        (JSC::JSBoundFunction::create):
+        * runtime/JSCell.cpp:
+        (JSC::JSCell::getCallData):
+        (JSC::JSCell::getConstructData):
+
 2013-07-09  Mark Lam  <mark.lam@apple.com>
 
         Gardening to unbreak builds on the Windows bot.

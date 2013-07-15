@@ -33,13 +33,13 @@
 
 namespace WTR {
 
-class PlatformClient : public WebKit::Platform {
+class PlatformClient : public Nix::Platform {
 public:
     static PlatformClient* current();
 
     PlatformClient();
 
-    virtual void sampleGamepads(WebKit::WebGamepads& into);
+    virtual void sampleGamepads(Nix::Gamepads& into);
     void registerGamepadController(GamepadController* controller);
 
 private:

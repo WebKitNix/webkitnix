@@ -220,11 +220,7 @@ sub AddIncludesForType
 
     # When we're finished with the one-file-per-class
     # reorganization, we won't need these special cases.
-    if ($type =~ /SVGPathSeg/) {
-        my $joinedName = $type;
-        $joinedName =~ s/Abs|Rel//;
-        $includesRef->{"${joinedName}.h"} = 1;
-    } elsif ($type eq "XPathNSResolver") {
+    if ($type eq "XPathNSResolver") {
         $includesRef->{"JSXPathNSResolver.h"} = 1;
         $includesRef->{"JSCustomXPathNSResolver.h"} = 1;
     } elsif ($isCallback && $codeGenerator->IsWrapperType($type)) {
@@ -3324,11 +3320,6 @@ sub GenerateImplementationFunctionCall()
             push(@implContent, $indent . "    return JSValue::encode(jsUndefined());\n");
         }
 
-        if ($function->signature->extendedAttributes->{"TreatReturnedNullObjectAs"} and $function->signature->extendedAttributes->{"TreatReturnedNullObjectAs"} eq "Undefined") {
-            push(@implContent, $indent . "if (result == jsNull())\n");
-            push(@implContent, $indent . "    result = jsUndefined();\n\n");
-        }
-
         push(@implContent, $indent . "return JSValue::encode(result);\n");
     }
 }
@@ -3341,11 +3332,6 @@ sub GetNativeTypeFromSignature
     if ($type eq "unsigned long" and $signature->extendedAttributes->{"IsIndex"}) {
         # Special-case index arguments because we need to check that they aren't < 0.
         return "int";
-    }
-
-    # FIXME: GetNativeType should support Atomic extension.
-    if ($type eq "DOMString" and ($signature->extendedAttributes->{"Atomic"} or $signature->extendedAttributes->{"Reflect"})) {
-        return "const AtomicString&";
     }
 
     return GetNativeType($type);
@@ -3487,22 +3473,11 @@ sub JSValueToNative
     if ($type eq "DOMString") {
         # FIXME: This implements [TreatNullAs=NullString] and [TreatUndefinedAs=NullString],
         # but the Web IDL spec requires [TreatNullAs=EmptyString] and [TreatUndefinedAs=EmptyString].
-        if (($signature->extendedAttributes->{"TreatNullAs"} and $signature->extendedAttributes->{"TreatNullAs"} eq "NullString")
-            and ($signature->extendedAttributes->{"TreatUndefinedAs"} and $signature->extendedAttributes->{"TreatUndefinedAs"} eq "NullString")) {
-            if ($signature->extendedAttributes->{"Atomic"}) {
-                return "valueToStringWithUndefinedOrNullCheck(exec, $value)";
-            } else {
-                return "valueToAtomicStringWithUndefinedOrNullCheck(exec, $value)";
-            }
+        if (($signature->extendedAttributes->{"TreatNullAs"} and $signature->extendedAttributes->{"TreatNullAs"} eq "NullString") and ($signature->extendedAttributes->{"TreatUndefinedAs"} and $signature->extendedAttributes->{"TreatUndefinedAs"} eq "NullString")) {
+            return "valueToStringWithUndefinedOrNullCheck(exec, $value)"
         }
-        if ($signature->extendedAttributes->{"Reflect"}) {
-            return "valueToAtomicStringWithNullCheck(exec, $value)";
-        }
-        if ($signature->extendedAttributes->{"TreatNullAs"} and $signature->extendedAttributes->{"TreatNullAs"} eq "NullString") {
-            return "valueToStringWithNullCheck(exec, $value)";
-        }
-        if ($signature->extendedAttributes->{"Atomic"}) {
-            return "$value.isEmpty() ? nullAtom : $value.toAtomicString(exec)";
+        if (($signature->extendedAttributes->{"TreatNullAs"} and $signature->extendedAttributes->{"TreatNullAs"} eq "NullString") or $signature->extendedAttributes->{"Reflect"}) {
+            return "valueToStringWithNullCheck(exec, $value)"
         }
         # FIXME: Add the case for 'if ($signature->extendedAttributes->{"TreatUndefinedAs"} and $signature->extendedAttributes->{"TreatUndefinedAs"} eq "NullString"))'.
         return "$value.isEmpty() ? String() : $value.toString(exec)->value(exec)";
@@ -3643,11 +3618,6 @@ sub NativeToJSValue
         } else {
             return "($value.hasNoValue() ? jsNull() : $value.jsValue())";
         }
-    } elsif ($type =~ /SVGPathSeg/) {
-        AddToImplIncludes("JS$type.h", $conditional);
-        my $joinedName = $type;
-        $joinedName =~ s/Abs|Rel//;
-        AddToImplIncludes("$joinedName.h", $conditional);
     } elsif ($type eq "SerializedScriptValue" or $type eq "any") {
         AddToImplIncludes("SerializedScriptValue.h", $conditional);
         return "$value ? $value->deserialize(exec, castedThis->globalObject(), 0) : jsNull()";

@@ -113,8 +113,8 @@ list(APPEND WebCore_SOURCES
     editing/SmartReplaceICU.cpp
     platform/text/LocaleNone.cpp
 
-    platform/nix/support/WebAudioBus.cpp
-    platform/nix/support/WebData.cpp
+    platform/nix/support/AudioBusNix.cpp
+    platform/nix/support/Data.cpp
 
     css/WebKitCSSArrayFunctionValue.cpp
     css/WebKitCSSMixFunctionValue.cpp

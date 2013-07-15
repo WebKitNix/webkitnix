@@ -34,7 +34,7 @@ namespace WTR {
 
 static bool isValidIndex(int index)
 {
-    return index >= 0 && index < WebKit::WebGamepads::itemsLengthCap;
+    return index >= 0 && index < Nix::Gamepads::itemsLengthCap;
 }
 
 GamepadController::GamepadController()
@@ -72,8 +72,8 @@ void GamepadController::setId(int index, JSStringRef id)
     if (!isValidIndex(index))
         return;
 
-    char buffer[WebKit::WebGamepad::idLengthCap];
-    size_t size = JSStringGetUTF8CString(id, reinterpret_cast<char*>(&buffer), WebKit::WebGamepad::idLengthCap);
+    char buffer[Nix::Gamepad::idLengthCap];
+    size_t size = JSStringGetUTF8CString(id, reinterpret_cast<char*>(&buffer), Nix::Gamepad::idLengthCap);
 
     for (unsigned i = 0; i <= size; ++i) {
         m_gamepads.items[index].id[i] = buffer[i];
@@ -124,9 +124,9 @@ void GamepadController::setAxisData(int index, int axis, float axisData)
     m_gamepads.items[index].axes[axis] = axisData;
 }
 
-void GamepadController::sampleGamepads(WebKit::WebGamepads& into)
+void GamepadController::sampleGamepads(Nix::Gamepads& into)
 {
-    for (unsigned i = 0; i < WebKit::WebGamepads::itemsLengthCap; ++i)
+    for (unsigned i = 0; i < Nix::Gamepads::itemsLengthCap; ++i)
         memcpy(&into.items[i], &m_gamepads.items[i], sizeof(m_gamepads.items[i]));
 
     into.length = m_gamepads.length;

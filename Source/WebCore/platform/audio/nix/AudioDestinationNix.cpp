@@ -59,14 +59,14 @@ AudioDestinationNix::AudioDestinationNix(AudioIOCallback& callback, const String
     , m_isPlaying(false)
 {
     // Use the optimal buffer size recommended by the audio backend.
-    m_callbackBufferSize = WebKit::Platform::current()->audioHardwareBufferSize();
+    m_callbackBufferSize = Nix::Platform::current()->audioHardwareBufferSize();
 
     // Quick exit if the requested size is too large.
     ASSERT(m_callbackBufferSize + renderBufferSize <= fifoSize);
     if (m_callbackBufferSize + renderBufferSize > fifoSize)
         return;
 
-    m_audioDevice = adoptPtr(WebKit::Platform::current()->createAudioDevice(m_callbackBufferSize, numberOfInputChannels, numberOfOutputChannels, sampleRate, this));
+    m_audioDevice = adoptPtr(Nix::Platform::current()->createAudioDevice(m_callbackBufferSize, numberOfInputChannels, numberOfOutputChannels, sampleRate, this));
     ASSERT(m_audioDevice);
 
     // Create a FIFO to handle the possibility of the callback size
@@ -111,15 +111,15 @@ void AudioDestinationNix::stop()
 
 float AudioDestination::hardwareSampleRate()
 {
-    return static_cast<float>(WebKit::Platform::current()->audioHardwareSampleRate());
+    return static_cast<float>(Nix::Platform::current()->audioHardwareSampleRate());
 }
 
 unsigned long AudioDestination::maxChannelCount()
 {
-    return static_cast<float>(WebKit::Platform::current()->audioHardwareOutputChannels());
+    return static_cast<float>(Nix::Platform::current()->audioHardwareOutputChannels());
 }
 
-void AudioDestinationNix::render(const WebKit::WebVector<float*>& sourceData, const WebKit::WebVector<float*>& audioData, size_t numberOfFrames)
+void AudioDestinationNix::render(const Nix::Vector<float*>& sourceData, const Nix::Vector<float*>& audioData, size_t numberOfFrames)
 {
     bool isNumberOfChannelsGood = audioData.size() == m_numberOfOutputChannels;
     if (!isNumberOfChannelsGood) {

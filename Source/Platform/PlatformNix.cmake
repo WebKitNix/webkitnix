@@ -6,19 +6,20 @@ set(Platform_INCLUDES
 )
 
 set(Platform_HEADERS
+    nix/public/AudioBus.h
+    nix/public/AudioDevice.h
+    nix/public/Canvas.h
+    nix/public/Color.h
+    nix/public/Common.h
+    nix/public/Data.h
+    nix/public/FFTFrame.h
+    nix/public/Gamepad.h
+    nix/public/Gamepads.h
     nix/public/Platform.h
-    nix/public/WebColor.h
-    nix/public/WebFFTFrame.h
-    nix/public/WebRect.h
-    nix/public/WebSize.h
-    nix/public/WebThemeEngine.h
-    nix/public/WebAudioBus.h
-    nix/public/WebAudioDevice.h
-    nix/public/WebCommon.h
-    nix/public/WebData.h
-    nix/public/WebGamepads.h
-    nix/public/WebGamepad.h
-    nix/public/WebVector.h
+    nix/public/Rect.h
+    nix/public/Size.h
+    nix/public/ThemeEngine.h
+    nix/public/Vector.h
 )
 
 set(Platform_SOURCES

@@ -1,3 +1,65 @@
+2013-07-12  Jessie Berlin  <jberlin@apple.com>
+
+        Remove some dead stores pointed out by the clang static analyzer.
+        https://bugs.webkit.org/show_bug.cgi?id=118608
+
+        Reviewed by Anders Carlsson.
+
+        * Plugins/Hosted/NetscapePluginHostManager.mm:
+        (WebKit::NetscapePluginHostManager::instantiatePlugin):
+        kr is never read after this point, so there is no reason to assign to it.
+
+        * Plugins/WebBasePluginPackage.mm:
+        (-[WebBasePluginPackage getPluginInfoFromPLists]):
+        The extensions array is only used in the while loop. Move the declaration to the first place
+        it is used in the while loop. Since it is always reassigned at that location, and since it
+        is never read after the subsequent for loop, the assignment to an array containing the empty
+        string is never used. Remove it.
+        Similarly, the value of the description is always overwritten before used to assign to
+        mimeClassInfo.desc or to pluginInfo.desc, so the code to assign it to the empty string is
+        never used. Remove it.
+
+        * WebView/WebTextCompletionController.mm:
+        (-[WebTextCompletionController _placePopupWindow:]):
+        maxWidth is never read (and never was since it was added in r7311) after it is used on the
+        line above to set windowFrame.size.width.
+
+2013-07-11  Dan Bernstein  <mitz@apple.com>
+
+        [mac] No API for getting the page visibility state of a WebView
+        https://bugs.webkit.org/show_bug.cgi?id=118578
+
+        Reviewed by Simon Fraser.
+
+        * WebView/WebView.mm:
+        (kit): Added. Converts from WebCore::PageVisibilityState to WebPageVisibilityState.
+        (-[WebView _visibilityState]): Added.
+        * WebView/WebViewPrivate.h: Declared -_visibilityState.
+
+2013-07-11  Timothy Hatcher  <timothy@apple.com>
+
+        Revert r152267 and soft link WebInspectorUI.framework again.
+
+        https://bugs.webkit.org/show_bug.cgi?id=118544
+
+        Reviewed by David Kilzer.
+
+        * Configurations/WebKit.xcconfig:
+        * WebCoreSupport/WebInspectorClient.mm:
+        (useWebKitWebInspector):
+
+2013-07-10  Jessie Berlin  <jberlin@apple.com>
+
+        Remove some dead code from WebNSURLExtras _web_hostString
+        https://bugs.webkit.org/show_bug.cgi?id=118519
+
+        Reviewed by Anders Carlsson.
+
+        * Misc/WebNSURLExtras.mm:
+        (-[NSURL _web_hostString]):
+        NSString initWithData:encoding: does not throw an exception when passing nil for the data, so
+        just delete the code that wasn't being run.
+
 2013-07-09  Jeremy Noble  <jer.noble@apple.com>
 
         Reviewed by Simon Fraser.

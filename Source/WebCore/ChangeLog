@@ -1,3 +1,892 @@
+2013-07-15  Brian Holt  <brian.holt@samsung.com>
+
+        [ATK] Leak: Leak in WebKitAccessibleTextGetText
+        https://bugs.webkit.org/show_bug.cgi?id=118596
+
+        Reviewed by Carlos Garcia Campos.
+
+        Fixed memory leak.
+
+        * accessibility/atk/WebKitAccessibleInterfaceText.cpp:
+        (getGailTextUtilForAtk):
+
+2013-07-14  Jon Lee  <jonlee@apple.com>
+
+        Origins with invalid ports are not marked as unique (118652)
+        https://bugs.webkit.org/show_bug.cgi?id=118652
+        <rdar://problem/14437753>
+
+        Reviewed by Sam Weinig.
+
+        * page/SecurityOrigin.cpp:
+        (WebCore::SecurityOrigin::create): Return a unique origin if the port is out of range.
+
+2013-07-14  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Another Qt build fix attempt after r152619.
+
+        * dom/QualifiedName.cpp:
+        (WebCore::QualifiedName::toString):
+
+2013-07-14  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Qt build fix attempt after r152619.
+
+        * dom/QualifiedName.cpp:
+        (WebCore::QualifiedName::toString):
+
+2013-07-14  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Mac build fix attempt after r152615.
+
+        * svg/SVGFilterElement.h:
+
+2013-07-14  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Modernize QualifiedName by wrapping gNameCache in a function and using more early exits
+        https://bugs.webkit.org/show_bug.cgi?id=118299
+
+        Reviewed by Andreas Kling.
+
+        Address Ben's review comment.
+
+        * dom/QualifiedName.cpp:
+        (WebCore::QualifiedName::toString):
+
+2013-07-14  Ryosuke Niwa  <rniwa@webkit.org>
+
+        HTMLTextFormControlElement::valueWithHardLineBreaks shouldn't upconvert 8-bit string
+        https://bugs.webkit.org/show_bug.cgi?id=118631
+
+        Reviewed by Andreas Kling.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/2c7c70a7bd3d61bfbf97de95c459ec9f40b46e31.
+
+        * html/HTMLTextFormControlElement.cpp:
+        (WebCore::HTMLTextFormControlElement::valueWithHardLineBreaks):
+
+2013-07-14  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Add toSVGFilterElement() and use it.
+        https://bugs.webkit.org/show_bug.cgi?id=118653
+
+        Reviewed by Ryosuke Niwa.
+
+        We can use toSVGFilterElement() instead of using static_cast<..> to improve readability.
+        Blink also uses it.
+
+        No new tests, no behavior change.
+
+        * rendering/svg/RenderSVGResourceFilter.cpp:
+        (WebCore::RenderSVGResourceFilter::buildPrimitives):
+        (WebCore::RenderSVGResourceFilter::applyResource):
+        (WebCore::RenderSVGResourceFilter::resourceBoundingBox):
+        * rendering/svg/RenderSVGResourceFilter.h:
+        (WebCore::RenderSVGResourceFilter::filterUnits):
+        (WebCore::RenderSVGResourceFilter::primitiveUnits):
+        * rendering/svg/SVGResources.cpp:
+        (WebCore::targetReferenceFromResource):
+        * svg/SVGFilterElement.h:
+        (WebCore::toSVGFilterElement):
+
+2013-07-14  Kangil Han  <kangil.han@samsung.com>
+
+        Introduce toHTMLVideoElement
+        https://bugs.webkit.org/show_bug.cgi?id=118582
+
+        Reviewed by Ryosuke Niwa.
+
+        To avoid direct use of static_cast, this patch introduces toHTMLVideoElement.
+
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::getPluginProxyParams):
+        * html/HTMLVideoElement.h:
+        (WebCore::toHTMLVideoElement):
+        * html/MediaDocument.cpp:
+        (WebCore::MediaDocumentParser::createDocumentStructure):
+        (WebCore::descendentVideoElement):
+        (WebCore::ancestorVideoElement):
+        * html/shadow/MediaControlElements.cpp:
+        (WebCore::MediaControlTextTrackContainerElement::updateDisplay):
+        * rendering/HitTestResult.cpp:
+        (WebCore::HitTestResult::enterFullscreenForVideo):
+        * rendering/RenderVideo.cpp:
+        (WebCore::RenderVideo::videoElement):
+
+2013-07-13  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r151978.
+        http://trac.webkit.org/changeset/151978
+        https://bugs.webkit.org/show_bug.cgi?id=118651
+
+        Caused regressions at least 3 websites (Requested by rniwa on
+        #webkit).
+
+        * bindings/js/JSDOMBinding.cpp:
+        * bindings/js/JSDOMBinding.h:
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GetNativeTypeFromSignature):
+        (JSValueToNative):
+        * bindings/scripts/IDLAttributes.txt:
+        * bindings/scripts/test/JS/JSTestObj.cpp:
+        (WebCore::setJSTestObjReflectedStringAttr):
+        (WebCore::setJSTestObjReflectedURLAttr):
+        (WebCore::setJSTestObjReflectedCustomURLAttr):
+        * dom/Document.idl:
+        * dom/Element.idl:
+        * dom/Node.idl:
+
+2013-07-13  Joone Hur  <joone.hur@intel.com>
+
+        Caret should respect text background color
+        https://bugs.webkit.org/show_bug.cgi?id=117493
+
+        Reviewed by Ryosuke Niwa.
+
+        This patch allows the caret to become visible in the black background
+        by getting the caret color from the color of the element containing
+        the text, not the parent element that has the contentEditable attribute.
+
+        Test: editing/caret/caret-color.html
+
+        * editing/FrameSelection.cpp:
+        (WebCore::CaretBase::paintCaret):
+
+2013-07-13  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Avoid upconverting strings in various places in WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=118632
+
+        Reviewed by Andreas Kling.
+
+        Avoid calling String::characters() in various places since it upconverts 8-bit strings to 16-bit strings.
+
+        Merge
+        https://chromium.googlesource.com/chromium/blink/+/a6162e2ad7c7870e22445d3c463d17e7ac871e80
+        https://chromium.googlesource.com/chromium/blink/+/18095209b3f467758b83894e7b14f813f6953f81
+        https://chromium.googlesource.com/chromium/blink/+/fefcf2b95d55f24c60fd2e95978cf4544f3c92ca
+        https://chromium.googlesource.com/chromium/blink/+/8e0527b0fb33998318aedfd74b3511025f7ff294
+        https://chromium.googlesource.com/chromium/blink/+/feaf798b04597b0849b4000fc305264895d3eac5
+        https://chromium.googlesource.com/chromium/blink/+/bd1a49103a6e07b1023d2c742d8217769efbffb4
+
+        * css/CSSParser.cpp:
+        (WebCore::CSSParser::setupParser):
+        (WebCore::CSSParser::parseImageSet):
+        (WebCore::CSSParser::rewriteSpecifiers):
+        * css/CSSParserValues.h:
+        (WebCore::CSSParserString::init):
+        (WebCore::CSSParserString::clear):
+        * dom/DatasetDOMStringMap.cpp:
+        (WebCore::isValidAttributeName):
+        (WebCore::convertAttributeNameToPropertyName):
+        (WebCore::propertyNameMatchesAttributeName):
+        (WebCore::isValidPropertyName):
+        (WebCore::convertPropertyNameToAttributeName):
+        * dom/Range.cpp:
+        (WebCore::Range::toString):
+        * dom/SecurityContext.cpp:
+        (WebCore::SecurityContext::parseSandboxPolicy):
+        * html/canvas/CanvasRenderingContext2D.cpp:
+        (WebCore::CanvasRenderingContext2D::measureText):
+        * html/track/TextTrackCue.cpp:
+        (WebCore::TextTrackCue::markFutureAndPastNodes):
+
+2013-07-13  Ryosuke Niwa  <rniwa@webkit.org>
+
+        parseHTMLInteger shouldn't upconvert 8-bit string
+        https://bugs.webkit.org/show_bug.cgi?id=118629
+
+        Reviewed by Sam Weinig.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/e0ebab23e0c16b49dc90c9c39b8bbbf4f243a01e.
+
+        * html/parser/HTMLParserIdioms.cpp:
+        (WebCore::parseHTMLInteger):
+
+2013-07-12  Eric Carlson  <eric.carlson@apple.com>
+
+        [iOS] TextTrackRepresentation not cleared when captions are disabled
+        https://bugs.webkit.org/show_bug.cgi?id=118623
+
+        Reviewed by Dean Jackson.
+
+        * html/shadow/MediaControlElements.cpp:
+        (WebCore::MediaControlTextTrackContainerElement::updateDisplay): Do not return immediately
+            when captions are disabled so the necessary cleanup happens.
+
+2013-07-12  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Attempt to satisfy the Open Source Windows bots.
+
+        * DerivedSources.make: Restore the HAVE_AVCF macro detection.
+        * config.h: Return to using HAVE_AVCF to activate AVFoundation code.
+
+2013-07-12  peavo@outlook.com  <peavo@outlook.com>
+
+        [WinCairo] Compile fix.
+        https://bugs.webkit.org/show_bug.cgi?id=118461
+
+        Reviewed by Brent Fulgham.
+
+        * config.h: Only enable AVFOUNDATION for Windows if CoreGraphics is used.
+
+2013-07-12  Oleg Beletski  <oleg.beletski@gmail.com>
+
+        [EFL] --minimal build fails while linking libwebcore_efl.so
+        https://bugs.webkit.org/show_bug.cgi?id=118549
+
+        Reviewed by Christophe Dumez.
+
+        * CMakeLists.txt:
+        Moving file plugins/PluginPackage.cpp to ENABLE_NETSCAPE_PLUGIN_API block.
+
+2013-07-12  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        Insufficient viewport repaints when FrameView::paintsEntireContents
+        https://bugs.webkit.org/show_bug.cgi?id=118562
+
+        Reviewed by Simon Fraser.
+
+        When the frameview paints entire content, the visualOverflowRect of RenderView
+        should be the same as the layoutOverflowRect.
+
+        This affects the requested repaints on resize of the frameview.
+
+        * rendering/RenderView.cpp:
+        (WebCore::RenderView::visualOverflowRect):
+        * rendering/RenderView.h:
+
+2013-07-10  Roger Fong  <roger_fong@apple.com>
+
+        Plugins that don't support snapshotting should not all autostart.
+        https://bugs.webkit.org/show_bug.cgi?id=118572
+        <rdar://problem/14324391>.
+
+        Reviewed by Dean Jackson.
+
+        Test: plugins/snapshotting/quicktime-plugin-snapshotted.html
+
+        * html/HTMLPlugInImageElement.cpp:
+        (WebCore::HTMLPlugInImageElement::didAddUserAgentShadowRoot): Pass in information about whether or not a snapshot exists
+        to the shadow dom.
+        * plugins/PluginViewBase.h:
+        (WebCore::PluginViewBase::shouldNotAddLayer): This method determines whether or not we should add the plugin's layer to the tree.
+        It should not be added if the plugin is in it's snapshotted state but does not actually support snapshotting.
+        * rendering/RenderLayerBacking.cpp:
+        (WebCore::RenderLayerBacking::updateGraphicsLayerConfiguration): We should only add the layer to the tree when the plugin
+        is actually playing. Otherwise we run into an issue where the contents of the layer initially appear on the screen briefly 
+        on page load before we display the substitute for a plugin that doesn't support snapshotting.
+
+2013-07-11  Dan Bernstein  <mitz@apple.com>
+
+        [mac] No API for getting the page visibility state of a WebView
+        https://bugs.webkit.org/show_bug.cgi?id=118578
+
+        Reviewed by Simon Fraser.
+
+        * WebCore.exp.in: Export WebCore::Page::visibilityState().
+
+2013-07-11  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [GTK] Layout Test accessibility/deleting-iframe-destroys-axcache.html, platform/gtk/accessibility/replaced-objects-in-anonymous-blocks.html are failing
+        https://bugs.webkit.org/show_bug.cgi?id=118552
+
+        Reviewed by Chris Fleizach.
+
+        Do not assume always that we have a RenderText renderer when
+        calling to toRenderText(), since we might be executing that part
+        of the code due to have requested to include all the children.
+
+        * accessibility/AccessibilityRenderObject.cpp:
+        (WebCore::AccessibilityRenderObject::textUnderElement): Add
+        missing guard for RenderText, needed after r152537.
+
+2013-07-11  Andrei Bucur  <abucur@adobe.com>
+
+        [CSS Regions] In a region chain with auto-height regions, lines get their length based only on the first region
+        https://bugs.webkit.org/show_bug.cgi?id=118531
+
+        Reviewed by Alexandru Chiculita.
+
+        When computing the height a flow thread it's possible to overflow the maximum LayoutUnit and obtain a negative value.
+        This leads to invalid results during layout when computing the region range and the RenderBoxRegion info for the
+        descendant boxes of the flow thread.
+    
+        This issue appears especially during the auto-height algorithm because it initializes the auto-height regions
+        height with the LayoutUnit::max() / 2 value. Summing two such regions overflows and results in a negative value.
+
+        The fix clamps the maximum height of the flow thread to LayoutUnit::max() / 2. This doesn't affect the auto-height
+        algorithm because regionAtBlockOffset() will still return the correct values as the auto-height regions content
+        is established and their height updated.
+
+        Tests: fast/regions/autoheight-correct-region-for-lines-2.html
+               fast/regions/autoheight-correct-region-for-lines.html
+
+        * rendering/RenderBlock.cpp:
+        (WebCore::RenderBlock::updateRegionsAndShapesBeforeChildLayout):
+        * rendering/RenderFlowThread.cpp:
+        (WebCore::RenderFlowThread::computeLogicalHeight):
+        (WebCore::RenderFlowThread::setRegionRangeForBox):
+        (WebCore::RenderFlowThread::updateRegionsFlowThreadPortionRect):
+        * rendering/RenderFlowThread.h:
+        * rendering/RenderRegion.cpp:
+        (WebCore::RenderRegion::maxPageLogicalHeight):
+
+2013-07-11  Timothy Hatcher  <timothy@apple.com>
+
+        Revert r152267 and soft link WebInspectorUI.framework again.
+
+        https://bugs.webkit.org/show_bug.cgi?id=118544
+
+        Reviewed by David Kilzer.
+
+        * platform/mac/SoftLinking.h: Rename SOFT_LINK_STAGED_FRAMEWORK_OPTIONAL
+        to SOFT_LINK_STAGED_FRAMEWORK and ASSERT since we don't want to silently
+        fail anymore when using this macro.
+
+2013-07-11  Jae Hyun Park  <jae.park@company100.net>
+
+        [Coordinated Graphics] Parameter of commitSceneState should be const
+        https://bugs.webkit.org/show_bug.cgi?id=118564
+
+        Reviewed by Noam Rosenthal.
+
+        Parameter of commitSceneState should be const as there should not be any
+        modifications to the passed CoordinatedGraphicsState.
+
+        * platform/graphics/texmap/coordinated/CompositingCoordinator.h:
+
+2013-07-11  Radu Stavila  <stavila@adobe.com>
+
+        NamedFlowCollection getters should follow the same pattern as HTMLCollection
+        https://bugs.webkit.org/show_bug.cgi?id=118561
+
+        Reviewed by Christophe Dumez.
+
+        Modified item and namedItem methods from DOMNamedFlowCollection to return null instead of undefined.
+        https://www.w3.org/Bugs/Public/show_bug.cgi?id=22617
+        Completely removed the TreatReturnedNullObjectAs attribute as it was only used by the DOMNamedFlowCollection interface.
+
+        Test: fast/regions/webkit-named-flow-collection-empty-getters.html
+
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateImplementationFunctionCall):
+        * bindings/scripts/IDLAttributes.txt:
+        * bindings/scripts/test/CPP/WebDOMTestObj.cpp:
+        (WebDOMTestObj::treatReturnedNullObjectAsUndefined):
+        * bindings/scripts/test/CPP/WebDOMTestObj.h:
+        * bindings/scripts/test/GObject/WebKitDOMTestObj.cpp:
+        (webkit_dom_test_obj_treat_returned_null_object_as_undefined):
+        * bindings/scripts/test/GObject/WebKitDOMTestObj.h:
+        * bindings/scripts/test/JS/JSTestObj.cpp:
+        (WebCore::jsTestObjPrototypeFunctionTreatReturnedNullObjectAsUndefined):
+        * bindings/scripts/test/JS/JSTestObj.h:
+        * bindings/scripts/test/ObjC/DOMTestObj.h:
+        * bindings/scripts/test/ObjC/DOMTestObj.mm:
+        (-[DOMTestObj treatReturnedNullObjectAsUndefined]):
+        * bindings/scripts/test/TestObj.idl:
+        * dom/DOMNamedFlowCollection.idl:
+
+2013-07-11  Andreas Kling  <akling@apple.com>
+
+        Revert r149313: Don't check for @media rules affected by viewport changes in every layout.
+        <rdar://problem/14277905>
+
+        Rubber-stamped by Antti Koivisto.
+
+        This changed caused more harm than good. setFrameRect() is not the only path in FrameView
+        that can cause media queries to need invalidation.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::setFrameRect):
+        (WebCore::FrameView::layout):
+
+2013-07-11  Kangil Han  <kangil.han@samsung.com>
+
+        Introduce isHTMLTitleElement and toHTMLTitleElement
+        https://bugs.webkit.org/show_bug.cgi?id=118558
+
+        Reviewed by Andreas Kling.
+
+        To enhance readability, this patch introduces isHTMLTitleElement and toHTMLTitleElement.
+        This also helps out to reduce duplicated use of static_cast.
+
+        * dom/Document.cpp:
+        (WebCore::Document::setTitle):
+        (WebCore::Document::removeTitle):
+        * editing/ReplaceSelectionCommand.cpp:
+        (WebCore::removeHeadContents):
+        * html/HTMLTitleElement.h:
+        (WebCore::isHTMLTitleElement):
+        (WebCore::toHTMLTitleElement):
+
+2013-07-11  Patrick Gansterer  <paroga@webkit.org>
+
+        Remove unused Windows CE files
+        https://bugs.webkit.org/show_bug.cgi?id=118557
+
+        Reviewed by Andreas Kling.
+
+        * platform/wince/CursorWinCE.cpp: Removed.
+        * platform/wince/PasteboardWinCE.cpp: Removed.
+        * platform/wince/SearchPopupMenuWinCE.cpp: Removed.
+
+2013-07-11  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Get rid of SVGPathSeg* special casing in the bindings generator
+        https://bugs.webkit.org/show_bug.cgi?id=118525
+
+        Reviewed by Kentaro Hara.
+
+        Have one header per SVGPathSeg* type so that we no longer need special casing
+        for them in the JSC bindings generator.
+
+        No new tests, no behavior change.
+
+        * GNUmakefile.list.am:
+        * Target.pri:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * bindings/js/JSSVGPathSegCustom.cpp:
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (AddIncludesForType):
+        (NativeToJSValue):
+        * svg/SVGPathElement.cpp:
+        * svg/SVGPathSegArc.h:
+        * svg/SVGPathSegArcAbs.h: Added.
+        (WebCore::SVGPathSegArcAbs::create):
+        (WebCore::SVGPathSegArcAbs::SVGPathSegArcAbs):
+        (WebCore::SVGPathSegArcAbs::pathSegType):
+        (WebCore::SVGPathSegArcAbs::pathSegTypeAsLetter):
+        * svg/SVGPathSegArcRel.h: Added.
+        (WebCore::SVGPathSegArcRel::create):
+        (WebCore::SVGPathSegArcRel::SVGPathSegArcRel):
+        (WebCore::SVGPathSegArcRel::pathSegType):
+        (WebCore::SVGPathSegArcRel::pathSegTypeAsLetter):
+        * svg/SVGPathSegCurvetoCubic.h:
+        * svg/SVGPathSegCurvetoCubicAbs.h: Added.
+        (WebCore::SVGPathSegCurvetoCubicAbs::create):
+        (WebCore::SVGPathSegCurvetoCubicAbs::SVGPathSegCurvetoCubicAbs):
+        (WebCore::SVGPathSegCurvetoCubicAbs::pathSegType):
+        (WebCore::SVGPathSegCurvetoCubicAbs::pathSegTypeAsLetter):
+        * svg/SVGPathSegCurvetoCubicRel.h: Added.
+        (WebCore::SVGPathSegCurvetoCubicRel::create):
+        (WebCore::SVGPathSegCurvetoCubicRel::SVGPathSegCurvetoCubicRel):
+        (WebCore::SVGPathSegCurvetoCubicRel::pathSegType):
+        (WebCore::SVGPathSegCurvetoCubicRel::pathSegTypeAsLetter):
+        * svg/SVGPathSegCurvetoCubicSmooth.h:
+        * svg/SVGPathSegCurvetoCubicSmoothAbs.h: Copied from Source/WebCore/svg/SVGPathSegCurvetoCubicSmooth.h.
+        (WebCore::SVGPathSegCurvetoCubicSmoothAbs::create):
+        (WebCore::SVGPathSegCurvetoCubicSmoothAbs::SVGPathSegCurvetoCubicSmoothAbs):
+        (WebCore::SVGPathSegCurvetoCubicSmoothAbs::pathSegType):
+        (WebCore::SVGPathSegCurvetoCubicSmoothAbs::pathSegTypeAsLetter):
+        * svg/SVGPathSegCurvetoCubicSmoothRel.h: Copied from Source/WebCore/svg/SVGPathSegCurvetoCubicSmooth.h.
+        (WebCore::SVGPathSegCurvetoCubicSmoothRel::create):
+        (WebCore::SVGPathSegCurvetoCubicSmoothRel::SVGPathSegCurvetoCubicSmoothRel):
+        (WebCore::SVGPathSegCurvetoCubicSmoothRel::pathSegType):
+        (WebCore::SVGPathSegCurvetoCubicSmoothRel::pathSegTypeAsLetter):
+        * svg/SVGPathSegCurvetoQuadratic.h:
+        * svg/SVGPathSegCurvetoQuadraticAbs.h: Copied from Source/WebCore/svg/SVGPathSegCurvetoQuadratic.h.
+        (WebCore::SVGPathSegCurvetoQuadraticAbs::create):
+        (WebCore::SVGPathSegCurvetoQuadraticAbs::SVGPathSegCurvetoQuadraticAbs):
+        (WebCore::SVGPathSegCurvetoQuadraticAbs::pathSegType):
+        (WebCore::SVGPathSegCurvetoQuadraticAbs::pathSegTypeAsLetter):
+        * svg/SVGPathSegCurvetoQuadraticRel.h: Copied from Source/WebCore/svg/SVGPathSegCurvetoQuadratic.h.
+        (WebCore::SVGPathSegCurvetoQuadraticRel::create):
+        (WebCore::SVGPathSegCurvetoQuadraticRel::SVGPathSegCurvetoQuadraticRel):
+        (WebCore::SVGPathSegCurvetoQuadraticRel::pathSegType):
+        (WebCore::SVGPathSegCurvetoQuadraticRel::pathSegTypeAsLetter):
+        * svg/SVGPathSegCurvetoQuadraticSmoothAbs.h: Copied from Source/WebCore/svg/SVGPathSegCurvetoQuadraticSmooth.h.
+        (WebCore::SVGPathSegCurvetoQuadraticSmoothAbs::create):
+        (WebCore::SVGPathSegCurvetoQuadraticSmoothAbs::SVGPathSegCurvetoQuadraticSmoothAbs):
+        (WebCore::SVGPathSegCurvetoQuadraticSmoothAbs::pathSegType):
+        (WebCore::SVGPathSegCurvetoQuadraticSmoothAbs::pathSegTypeAsLetter):
+        * svg/SVGPathSegCurvetoQuadraticSmoothRel.h: Renamed from Source/WebCore/svg/SVGPathSegCurvetoQuadraticSmooth.h.
+        (WebCore::SVGPathSegCurvetoQuadraticSmoothRel::create):
+        (WebCore::SVGPathSegCurvetoQuadraticSmoothRel::SVGPathSegCurvetoQuadraticSmoothRel):
+        (WebCore::SVGPathSegCurvetoQuadraticSmoothRel::pathSegType):
+        (WebCore::SVGPathSegCurvetoQuadraticSmoothRel::pathSegTypeAsLetter):
+        * svg/SVGPathSegLinetoAbs.h: Copied from Source/WebCore/svg/SVGPathSegLineto.h.
+        (WebCore::SVGPathSegLinetoAbs::create):
+        (WebCore::SVGPathSegLinetoAbs::SVGPathSegLinetoAbs):
+        (WebCore::SVGPathSegLinetoAbs::pathSegType):
+        (WebCore::SVGPathSegLinetoAbs::pathSegTypeAsLetter):
+        * svg/SVGPathSegLinetoHorizontal.h:
+        * svg/SVGPathSegLinetoHorizontalAbs.h: Copied from Source/WebCore/svg/SVGPathSegLinetoHorizontal.h.
+        (WebCore::SVGPathSegLinetoHorizontalAbs::create):
+        (WebCore::SVGPathSegLinetoHorizontalAbs::SVGPathSegLinetoHorizontalAbs):
+        (WebCore::SVGPathSegLinetoHorizontalAbs::pathSegType):
+        (WebCore::SVGPathSegLinetoHorizontalAbs::pathSegTypeAsLetter):
+        * svg/SVGPathSegLinetoHorizontalRel.h: Copied from Source/WebCore/svg/SVGPathSegLinetoHorizontal.h.
+        (WebCore::SVGPathSegLinetoHorizontalRel::create):
+        (WebCore::SVGPathSegLinetoHorizontalRel::SVGPathSegLinetoHorizontalRel):
+        (WebCore::SVGPathSegLinetoHorizontalRel::pathSegType):
+        (WebCore::SVGPathSegLinetoHorizontalRel::pathSegTypeAsLetter):
+        * svg/SVGPathSegLinetoRel.h: Renamed from Source/WebCore/svg/SVGPathSegLineto.h.
+        (WebCore::SVGPathSegLinetoRel::create):
+        (WebCore::SVGPathSegLinetoRel::SVGPathSegLinetoRel):
+        (WebCore::SVGPathSegLinetoRel::pathSegType):
+        (WebCore::SVGPathSegLinetoRel::pathSegTypeAsLetter):
+        * svg/SVGPathSegLinetoVertical.h:
+        * svg/SVGPathSegLinetoVerticalAbs.h: Copied from Source/WebCore/svg/SVGPathSegLinetoVertical.h.
+        (WebCore::SVGPathSegLinetoVerticalAbs::create):
+        (WebCore::SVGPathSegLinetoVerticalAbs::SVGPathSegLinetoVerticalAbs):
+        (WebCore::SVGPathSegLinetoVerticalAbs::pathSegType):
+        (WebCore::SVGPathSegLinetoVerticalAbs::pathSegTypeAsLetter):
+        * svg/SVGPathSegLinetoVerticalRel.h: Copied from Source/WebCore/svg/SVGPathSegLinetoVertical.h.
+        (WebCore::SVGPathSegLinetoVerticalRel::create):
+        (WebCore::SVGPathSegLinetoVerticalRel::SVGPathSegLinetoVerticalRel):
+        (WebCore::SVGPathSegLinetoVerticalRel::pathSegType):
+        (WebCore::SVGPathSegLinetoVerticalRel::pathSegTypeAsLetter):
+        * svg/SVGPathSegListBuilder.cpp:
+        * svg/SVGPathSegMovetoAbs.h: Copied from Source/WebCore/svg/SVGPathSegMoveto.h.
+        (WebCore::SVGPathSegMovetoAbs::create):
+        (WebCore::SVGPathSegMovetoAbs::SVGPathSegMovetoAbs):
+        (WebCore::SVGPathSegMovetoAbs::pathSegType):
+        (WebCore::SVGPathSegMovetoAbs::pathSegTypeAsLetter):
+        * svg/SVGPathSegMovetoRel.h: Renamed from Source/WebCore/svg/SVGPathSegMoveto.h.
+        (WebCore::SVGPathSegMovetoRel::create):
+        (WebCore::SVGPathSegMovetoRel::SVGPathSegMovetoRel):
+        (WebCore::SVGPathSegMovetoRel::pathSegType):
+        (WebCore::SVGPathSegMovetoRel::pathSegTypeAsLetter):
+
+2013-07-11  Patrick Gansterer  <paroga@webkit.org>
+
+        Build fix for WinCE after r152426.
+
+        * config.h:
+
+2013-07-11  Fabienne Semeria   <fsemeria@nds.com>
+
+        [Qt] memory leak in WebCore::FontCache::getLastResortFallbackFont
+        https://bugs.webkit.org/show_bug.cgi?id=118532
+
+        Reviewed by Allan Sandfeld Jensen.
+
+        * platform/graphics/qt/FontCacheQt.cpp:
+        (WebCore::FontCache::getLastResortFallbackFont):
+
+2013-07-11  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Refactor code for translating offsets between WebCore a11y and ATK
+        https://bugs.webkit.org/show_bug.cgi?id=118179
+
+        Reviewed by Chris Fleizach.
+
+        Encapsulate better and make more clear the translation of offsets
+        between our ATK implementation and WebCore's accessibility layer.
+
+        Values for offsets can differ sometimes between those two worlds
+        due to some extra flattening we need to do in ATK based ports to
+        properly expose the accessibility hierarchy to ATs, which
+        sometimes means adding extra text elements in the exposed text
+        through the AtkText interface (e.g. list items markers).
+
+        * accessibility/atk/WebKitAccessibleInterfaceText.cpp:
+        (offsetAdjustmentForListItem): Helper function to refactor code
+        needed to translate offsets from WebCore to ATK worlds. Currently
+        related to considering list item markers in LTR text only.
+        (webCoreOffsetToAtkOffset): Convenience function for code
+        readability purposes. It just calls offsetAdjustmentForListItem.
+        (atkOffsetToWebCoreOffset): Likewise.
+        (getSelectionOffsetsForObject): Use webCoreOffsetToAtkOffset.
+        (webkitAccessibleTextGetCaretOffset): Use webCoreOffsetToAtkOffset
+        to translate an offset from WebCore to ATK before returning it.
+        (webkitAccessibleTextSetSelection): Use atkOffsetToWebCoreOffset
+        to translate an offset from WebCore to ATK before using it.
+        (webkitAccessibleTextSetCaretOffset): Likewise.
+
+2013-07-10  Sam Weinig  <sam@webkit.org>
+
+        Range.getClientRects() not working correctly for partially contained vertically styled text nodes
+        <rdar://problem/14305675>
+        https://bugs.webkit.org/show_bug.cgi?id=118447
+
+        Reviewed by David Hyatt.
+
+        Original patch by Mac Murrett, tweaked by me.
+
+        Test: fast/dom/Range/getClientRects-vertical.html
+
+        * rendering/RenderText.cpp:
+        (WebCore::localQuadForTextBox):
+        Use the physical accessors rather than the logical ones to get the correct metrics.
+
+2013-07-10  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Reduce number of header includes in SVG
+        https://bugs.webkit.org/show_bug.cgi?id=118474
+
+        Reviewed by Rob Buis.
+
+        Reduce number of header includes in SVG. In particular, SVGAnimatedPropertyMacros.h
+        no longer brings SVGElement.h header include. This means that the SVGElement
+        class can now have animated properties.
+
+        This patch is a prerequirement to merge SVGStyledElement into SVGElement.
+
+        No new tests, no behavior change.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * Target.pri:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * svg/GradientAttributes.h:
+        * svg/SVGAllInOne.cpp:
+        * svg/SVGAnimateMotionElement.cpp:
+        * svg/SVGAnimateMotionElement.h:
+        * svg/SVGAnimatedTypeAnimator.cpp: Added.
+        (WebCore::SVGElementAnimatedProperties::SVGElementAnimatedProperties):
+        (WebCore::SVGAnimatedTypeAnimator::SVGAnimatedTypeAnimator):
+        (WebCore::SVGAnimatedTypeAnimator::~SVGAnimatedTypeAnimator):
+        (WebCore::SVGAnimatedTypeAnimator::calculateFromAndToValues):
+        (WebCore::SVGAnimatedTypeAnimator::calculateFromAndByValues):
+        (WebCore::SVGAnimatedTypeAnimator::findAnimatedPropertiesForAttributeName):
+        * svg/SVGAnimatedTypeAnimator.h:
+        * svg/SVGAnimationElement.h:
+        * svg/SVGCursorElement.cpp:
+        * svg/SVGDocumentExtensions.h:
+        * svg/SVGElement.cpp:
+        * svg/SVGElementInstanceList.cpp:
+        * svg/SVGElementInstanceList.h:
+        * svg/SVGElementRareData.h:
+        * svg/SVGFEImageElement.cpp:
+        * svg/SVGFilterElement.cpp:
+        * svg/SVGFitToViewBox.h:
+        * svg/SVGFontData.cpp:
+        * svg/SVGFontData.h:
+        * svg/SVGFontElement.h:
+        * svg/SVGForeignObjectElement.cpp:
+        * svg/SVGGlyphMap.h:
+        * svg/SVGGradientElement.cpp:
+        * svg/SVGMPathElement.cpp:
+        * svg/SVGMPathElement.h:
+        * svg/SVGPathBlender.cpp:
+        * svg/SVGPathBlender.h:
+        * svg/SVGPathBuilder.cpp:
+        * svg/SVGPathBuilder.h:
+        * svg/SVGPathParser.cpp:
+        * svg/SVGPathParser.h:
+        * svg/SVGPathSegListBuilder.h:
+        * svg/SVGPathTraversalStateBuilder.cpp:
+        * svg/SVGPathTraversalStateBuilder.h:
+        * svg/SVGPathUtilities.h:
+        * svg/SVGPatternElement.cpp:
+        * svg/SVGPointList.h:
+        * svg/SVGScriptElement.cpp:
+        * svg/SVGStyledElement.h:
+        * svg/SVGTests.h:
+        * svg/SVGTextElement.h:
+        * svg/SVGTextPathElement.cpp:
+        * svg/SVGTransformable.h:
+        * svg/SVGURIReference.cpp:
+        * svg/SVGURIReference.h:
+        * svg/SVGVKernElement.cpp:
+        * svg/SVGVKernElement.h:
+        * svg/SVGZoomAndPan.h:
+        * svg/properties/SVGAnimatedProperty.cpp: Added.
+        (WebCore::SVGAnimatedProperty::SVGAnimatedProperty):
+        (WebCore::SVGAnimatedProperty::~SVGAnimatedProperty):
+        (WebCore::SVGAnimatedProperty::commitChange):
+        (WebCore::SVGAnimatedProperty::animatedPropertyCache):
+        * svg/properties/SVGAnimatedProperty.h:
+        * svg/properties/SVGAnimatedPropertyMacros.h:
+        (WebCore::SVGSynchronizableAnimatedProperty::synchronize):
+        * svg/properties/SVGAnimatedStaticPropertyTearOff.h:
+        * svg/properties/SVGListProperty.h:
+
+2013-07-10  Dominique Leuenberger  <dimstar@opensuse.org>
+
+        Fix build against GTK+ 2.0
+        https://bugs.webkit.org/show_bug.cgi?id=117895
+
+        Reviewed by Martin Robinson.
+
+        GTK2 build fails for undefined GDK_IS_X11_DISPLAY
+        GTK 2.0 does define GDK_WINDOWING_X11,but GDK_IS_X11_DISPLAY is not
+        present in GTK+ 2.0. A dummy defines is sufficient, as GTK 2.0 is not
+        that multiple backend aware anyway...
+
+        * platform/gtk/GtkVersioning.h: Define GDK_IS_X11_DISPLAY for GTK+ 2.0
+          and compatibility for gtk_widget_get_preferred_size()
+        * plugins/gtk/gtk2xtbin.c: Include config.h
+
+2013-07-10  Tim Horton  <timothy_horton@apple.com>
+
+        Deferring layer flushes can cause painting without layout being done
+        https://bugs.webkit.org/show_bug.cgi?id=118493
+
+        Reviewed by Simon Fraser.
+
+        r147797 added a mechanism for the TileController to inform RenderLayerCompositor
+        that it had performed an action (setNeedsDisplay, etc.) that would cause CoreAnimation
+        to call back into us to paint in this runloop, and that it shouldn't throttle the next
+        layer flush.
+
+        However, if tiles were created and left unparented (because the TileController was
+        out-of-window), when they are later parented, we failed to inform RenderLayerCompositor
+        that they were about to call back for painting, and so it would happily throttle the
+        next layer flush, and layout would be out of date, and garbage and corruption could result.
+
+        To resolve this, rework the logic surrounding parenting existing-but-unparented tiles
+        to ensure that they get added to the TileController's dirtyRect.
+
+        No new tests; the bug only reproduces under specific timing circumstances, and
+        manifests itself as an assertion failure or garbage on the screen, so it's quite
+        hard to make a workable test.
+
+        * platform/graphics/ca/mac/TileController.mm:
+        (WebCore::TileController::revalidateTiles):
+        - Factor out the code to parent unparented tiles so that it is shared between the
+            created-new-tile and reparenting-existing-tile cases.
+        - Keep track of whether we updated the frame of a pre-existing tile.
+        - If the tile is dirty and needed to be parented (because either it's new
+            or hadn't been parented before), add it to the dirty rect list.
+        - If the tile changed size, add it to the dirty rect list.
+
+        (WebCore::TileController::ensureTilesForRect):
+        Ditto everything from revalidateTiles.
+
+        (WebCore::TileController::createTileLayer):
+        - Explicitly mark fresh tiles as needing display, so that we can depend on
+            [WebTileLayer needsDisplay] in revalidateTiles to tell us that it's dirty.
+
+2013-07-10  Eric Carlson  <eric.carlson@apple.com>
+
+        [Mac] every enabled text track should be listed in the track menu
+        https://bugs.webkit.org/show_bug.cgi?id=118477
+
+        Reviewed by Jer Noble.
+
+        Test: media/video-controls-captions-trackmenu-includes-enabled-track.html
+
+        * html/shadow/MediaControlElements.cpp:
+        (WebCore::MediaControlClosedCaptionsTrackListElement::updateDisplay): Don't select the
+            "Off" menu item if a track is enabled.
+
+        * page/CaptionUserPreferencesMediaAF.cpp:
+        (WebCore::CaptionUserPreferencesMediaAF::sortedTrackListForMenu): Always include a track
+            that is showing in the menu. Add more diagnostic logging.
+
+2013-07-10  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Remove ElementTimeControl and expose SVGAnimationElement
+        https://bugs.webkit.org/show_bug.cgi?id=118349
+
+        Reviewed by Rob Buis.
+
+        Remove ElementTimeControl IDL interface and move its attributes
+        to the SVGAnimationElement IDL interface as per the latest SVG2
+        specification:
+        https://svgwg.org/svg2-draft/animate.html#InterfaceSVGAnimationElement
+
+        Also remove [NoInterfaceObject] IDL extended attribute from
+        SVGAnimationElement as it is not present in the specification.
+
+        This is one step towards removing IDL multiple inheritance in SVG and
+        complying with the latest SVG2 specification.
+
+        No new tests, covered by existing test cases.
+
+        * DerivedSources.make:
+        * GNUmakefile.list.am:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * bindings/scripts/CodeGeneratorObjC.pm:
+        * svg/ElementTimeControl.h: Removed.
+        * svg/ElementTimeControl.idl: Removed.
+        * svg/SVGAnimationElement.h:
+        * svg/SVGAnimationElement.idl:
+
+2013-07-10  Arnaud Renevier  <a.renevier@sisa.samsung.com>
+
+        Web Inspector: "Always enable" profiling does not work
+        https://bugs.webkit.org/show_bug.cgi?id=118487
+
+        Enable profiler when loading panel if profiler is enabled in inspector
+        settings.
+
+        Reviewed by Timothy Hatcher.
+
+        * inspector/front-end/ProfilesPanel.js:
+
+2013-07-09  Roger Fong  <roger_fong@apple.com>
+
+        HTMLPluginElement's state should be Playing before firing mouse click event.
+        https://bugs.webkit.org/show_bug.cgi?id=118398.
+        <rdar://problem/14262126>
+
+        Reviewed by Dean Jackson.
+
+        Test: plugins/snapshotting/plugin-receives-click-event.html
+
+        * html/HTMLPlugInImageElement.cpp:
+        (WebCore::HTMLPlugInImageElement::simulatedMouseClickTimerFired):
+        The defaultEventHandler returns early if the state is not Playing.
+        This is because we only want the plugin to deal with user interaction normally if the
+        plugin is actually enabled (not being snapshotted).
+        When we click on the snapshotted plugin to start it, we mimic what would happen to the plugin
+        normally by dispatching another click event on top of where we just clicked.
+        However, we were sending the click event before setting the state to Playing which meant that our
+        simulated click was not being handled. 
+        We should be setting this state before sending the click, not after.
+
+2013-07-10  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Fix a bug in MediaStreamDescriptor::removeVideoComponent
+        https://bugs.webkit.org/show_bug.cgi?id=118446
+
+        Reviewed by Eric Carlson.
+
+        MediaStreamDescriptor::removeVideoComponent is currently trying to
+        remove the 'videoComponent' from the wrong vector.
+
+        * platform/mediastream/MediaStreamDescriptor.h:
+        (WebCore::MediaStreamDescriptor::removeVideoComponent):
+
+2013-07-10  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        AX: Allow requesting the full plain text for an object with textUnderElement()
+        https://bugs.webkit.org/show_bug.cgi?id=105214
+
+        Reviewed by Chris Fleizach.
+
+        Allow specifying different function modes for textUnderElement(),
+        so we can effectively ask for the "normal" result (e.g to retrieve
+        test to be exposed as the 'title') or for the full text under the
+        element (without omitting any child in the subtree). This is
+        needed for the implementation of atk_text_get_text() in GTK/EFL.
+
+        * accessibility/AccessibilityObject.h: Add new enumeration to
+        specify the different modes for textUnderElement().
+        (WebCore::AccessibilityObject::textUnderElement): Added parameter.
+
+        * accessibility/AccessibilityNodeObject.cpp:
+        (WebCore::shouldUseAccessiblityObjectInnerText): Always return
+        'true' when using the "include all children" mode.
+        (WebCore::AccessibilityNodeObject::textUnderElement): Updated call
+        to shouldUseAccessiblityObjectInnerText().
+        * accessibility/AccessibilityNodeObject.h:
+
+        * accessibility/AccessibilityRenderObject.cpp:
+        (WebCore::AccessibilityRenderObject::textUnderElement): Removed
+        GTK specific code and expand the usage of text iterators beyond
+        text render objects, using it also when in the "include all
+        children" mode.
+        * accessibility/AccessibilityRenderObject.h:
+
+        * accessibility/atk/AccessibilityObjectAtk.cpp:
+        (WebCore::AccessibilityObject::getLengthForTextRange): Updated
+        call to textUnderElement(), preserving the previous behavior.
+
+        * accessibility/atk/WebKitAccessibleInterfaceText.cpp:
+        (webkitAccessibleTextGetText): Updated call to textUnderElement(),
+        using the "include all children" mode.
+
 2013-07-10  Sergio Correia  <sergio.correia@openbossa.org>
 
         Remove the meshType from CoordinatedCustomFilterOperation

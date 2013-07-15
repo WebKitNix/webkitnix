@@ -817,7 +817,6 @@ void MediaControlClosedCaptionsTrackListElement::updateDisplay()
     if (!document()->page())
         return;
     CaptionUserPreferences::CaptionDisplayMode displayMode = document()->page()->group().captionPreferences()->captionDisplayMode();
-    bool trackIsSelected = displayMode != CaptionUserPreferences::Automatic && displayMode != CaptionUserPreferences::ForcedOnly;
 
     HTMLMediaElement* mediaElement = toParentMediaElement(this);
     if (!mediaElement)
@@ -828,6 +827,9 @@ void MediaControlClosedCaptionsTrackListElement::updateDisplay()
         return;
 
     rebuildTrackListMenu();
+
+    RefPtr<Element> offMenuItem;
+    bool trackMenuItemSelected = false;
 
     for (unsigned i = 0, length = m_menuItems.size(); i < length; ++i) {
         RefPtr<Element> trackItem = m_menuItems[i];
@@ -841,10 +843,7 @@ void MediaControlClosedCaptionsTrackListElement::updateDisplay()
             continue;
 
         if (textTrack == TextTrack::captionMenuOffItem()) {
-            if (displayMode == CaptionUserPreferences::ForcedOnly)
-                trackItem->classList()->add(selectedClassValue, ASSERT_NO_EXCEPTION);
-            else
-                trackItem->classList()->remove(selectedClassValue, ASSERT_NO_EXCEPTION);
+            offMenuItem = trackItem;
             continue;
         }
 
@@ -856,10 +855,18 @@ void MediaControlClosedCaptionsTrackListElement::updateDisplay()
             continue;
         }
 
-        if (trackIsSelected && textTrack->mode() == TextTrack::showingKeyword())
+        if (displayMode != CaptionUserPreferences::Automatic && textTrack->mode() == TextTrack::showingKeyword()) {
+            trackMenuItemSelected = true;
             trackItem->classList()->add(selectedClassValue, ASSERT_NO_EXCEPTION);
-        else
+        } else
             trackItem->classList()->remove(selectedClassValue, ASSERT_NO_EXCEPTION);
+    }
+
+    if (offMenuItem) {
+        if (displayMode == CaptionUserPreferences::ForcedOnly && !trackMenuItemSelected)
+            offMenuItem->classList()->add(selectedClassValue, ASSERT_NO_EXCEPTION);
+        else
+            offMenuItem->classList()->remove(selectedClassValue, ASSERT_NO_EXCEPTION);
     }
 #endif
 }
@@ -1220,10 +1227,8 @@ const AtomicString& MediaControlTextTrackContainerElement::shadowPseudoId() cons
 
 void MediaControlTextTrackContainerElement::updateDisplay()
 {
-    if (!mediaController()->closedCaptionsVisible()) {
+    if (!mediaController()->closedCaptionsVisible())
         removeChildren();
-        return;
-    }
 
     HTMLMediaElement* mediaElement = toParentMediaElement(this);
     // 1. If the media element is an audio element, or is another playback
@@ -1233,7 +1238,7 @@ void MediaControlTextTrackContainerElement::updateDisplay()
         return;
 
     // 2. Let video be the media element or other playback mechanism.
-    HTMLVideoElement* video = static_cast<HTMLVideoElement*>(mediaElement);
+    HTMLVideoElement* video = toHTMLVideoElement(mediaElement);
 
     // 3. Let output be an empty list of absolutely positioned CSS block boxes.
     Vector<RefPtr<HTMLDivElement> > output;

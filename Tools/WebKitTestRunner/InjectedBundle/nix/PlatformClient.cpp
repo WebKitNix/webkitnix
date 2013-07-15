@@ -38,14 +38,11 @@ PlatformClient::PlatformClient()
 
 PlatformClient* PlatformClient::current()
 {
-    return static_cast<PlatformClient*>(WebKit::Platform::current());
+    return static_cast<PlatformClient*>(Nix::Platform::current());
 }
 
-void PlatformClient::sampleGamepads(WebKit::WebGamepads& into)
+void PlatformClient::sampleGamepads(Nix::Gamepads& into)
 {
-    if (!WebKit::Platform::current())
-        return;
-
     if (!m_gamepadController)
         return;
 

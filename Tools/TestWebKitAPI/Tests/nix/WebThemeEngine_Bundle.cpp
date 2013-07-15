@@ -25,20 +25,20 @@
 
 #include "config.h"
 #include "InjectedBundleTest.h"
+#include <public/Color.h>
 #include <public/Platform.h>
-#include <public/WebColor.h>
-#include <public/WebRect.h>
-#include <public/WebSize.h>
-#include <public/WebThemeEngine.h>
+#include <public/Rect.h>
+#include <public/Size.h>
+#include <public/ThemeEngine.h>
 #include <WebKit2/WKRetainPtr.h>
 
 #include <cstdlib>
 
-using namespace WebKit;
+using namespace Nix;
 
 namespace TestWebKitAPI {
 
-static void fillRect(WebCanvas *canvas, const WebRect& rect, const WebColor& color)
+static void fillRect(Canvas *canvas, const Rect& rect, const Color& color)
 {
     cairo_save(canvas);
 
@@ -52,55 +52,55 @@ static void fillRect(WebCanvas *canvas, const WebRect& rect, const WebColor& col
     cairo_restore(canvas);
 }
 
-class TestThemeEngine : public WebThemeEngine {
-    WebColor activeSelectionBackgroundColor() const { return WebColor(); }
-    WebColor activeSelectionForegroundColor() const { return WebColor(); }
-    WebColor inactiveSelectionBackgroundColor() const { return WebColor(); }
-    WebColor inactiveSelectionForegroundColor() const { return WebColor(); }
+class TestThemeEngine : public ThemeEngine {
+    Color activeSelectionBackgroundColor() const { return Color(); }
+    Color activeSelectionForegroundColor() const { return Color(); }
+    Color inactiveSelectionBackgroundColor() const { return Color(); }
+    Color inactiveSelectionForegroundColor() const { return Color(); }
 
     // List box selection colors
-    WebColor activeListBoxSelectionBackgroundColor() const { return WebColor(); }
-    WebColor activeListBoxSelectionForegroundColor() const { return WebColor(); }
-    WebColor inactiveListBoxSelectionBackgroundColor() const { return WebColor(); }
-    WebColor inactiveListBoxSelectionForegroundColor() const { return WebColor(); }
+    Color activeListBoxSelectionBackgroundColor() const { return Color(); }
+    Color activeListBoxSelectionForegroundColor() const { return Color(); }
+    Color inactiveListBoxSelectionBackgroundColor() const { return Color(); }
+    Color inactiveListBoxSelectionForegroundColor() const { return Color(); }
 
-    WebColor activeTextSearchHighlightColor() const { return WebColor(); }
-    WebColor inactiveTextSearchHighlightColor() const { return WebColor(); }
+    Color activeTextSearchHighlightColor() const { return Color(); }
+    Color inactiveTextSearchHighlightColor() const { return Color(); }
 
-    WebColor focusRingColor() const { return WebColor(); }
+    Color focusRingColor() const { return Color(); }
 
-    WebColor tapHighlightColor() const { return WebColor(); }
+    Color tapHighlightColor() const { return Color(); }
 
-    void paintButton(WebCanvas* canvas, State, const WebRect& rect, const ButtonExtraParams&) const
+    void paintButton(Canvas* canvas, State, const Rect& rect, const ButtonExtraParams&) const
     {
-        WebColor red = 0xFFFF0000;
+        Color red = 0xFFFF0000;
         fillRect(canvas, rect, red);
     }
 
-    void paintTextField(WebCanvas*, State, const WebRect&) const
+    void paintTextField(Canvas*, State, const Rect&) const
     {
     }
 
-    WebSize getCheckboxSize() const
+    Size getCheckboxSize() const
     {
-        return WebSize();
+        return Size();
     }
-    void paintCheckbox(WebCanvas*, State, const WebRect&, const ButtonExtraParams&) const { }
-    WebSize getRadioSize() const
+    void paintCheckbox(Canvas*, State, const Rect&, const ButtonExtraParams&) const { }
+    Size getRadioSize() const
     {
-        return WebSize();
+        return Size();
     }
-    void paintRadio(WebCanvas*, State, const WebRect&, const ButtonExtraParams&) const { }
-    void paintTextArea(WebCanvas*, State, const WebRect&) const { }
+    void paintRadio(Canvas*, State, const Rect&, const ButtonExtraParams&) const { }
+    void paintTextArea(Canvas*, State, const Rect&) const { }
     void getMenuListPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const { }
-    void paintMenuList(WebCanvas*, State, const WebRect&) const { }
-    void paintProgressBar(WebCanvas* canvas, State, const WebRect& rect, const ProgressBarExtraParams& params) const
+    void paintMenuList(Canvas*, State, const Rect&) const { }
+    void paintProgressBar(Canvas* canvas, State, const Rect& rect, const ProgressBarExtraParams& params) const
     {
-        WebColor red = 0xFFFF0000;
+        Color red = 0xFFFF0000;
         fillRect(canvas, rect, red);
 
-        WebColor green = 0xFF00FF00;
-        WebRect progressRect = rect;
+        Color green = 0xFF00FF00;
+        Rect progressRect = rect;
         progressRect.width *= params.position;
         fillRect(canvas, progressRect, green);
     }
@@ -113,15 +113,16 @@ class TestThemeEngine : public WebThemeEngine {
         return 0;
     }
     void getInnerSpinButtonPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const { }
-    void paintInnerSpinButton(WebCanvas*, State, const WebRect&, const InnerSpinButtonExtraParams&) const { }
-    void paintMeter(WebCanvas*, State, const WebRect&, const MeterExtraParams&) const { }
-    void paintSliderTrack(WebCanvas*, State, const WebRect&) const { }
-    void paintSliderThumb(WebCanvas*, State, const WebRect&) const { }
+    void paintInnerSpinButton(Canvas*, State, const Rect&, const InnerSpinButtonExtraParams&) const { }
+    void paintMeter(Canvas*, State, const Rect&, const MeterExtraParams&) const { }
+    void paintSliderTrack(Canvas*, State, const Rect&) const { }
+    void paintSliderThumb(Canvas*, State, const Rect&) const { }
 };
 
 class TestThemeEnginePlatform : public Platform {
 public:
-    WebThemeEngine* themeEngine() {
+    ThemeEngine* themeEngine()
+    {
         static TestThemeEngine testTheme;
         return &testTheme;
     }

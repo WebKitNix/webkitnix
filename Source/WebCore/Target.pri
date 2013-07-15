@@ -2622,6 +2622,7 @@ HEADERS += \
     svg/graphics/SVGImage.h \
     svg/graphics/SVGImageCache.h \
     svg/graphics/SVGImageForContainer.h \
+    svg/properties/SVGAnimatedProperty.h \
     svg/properties/SVGAttributeToPropertyMap.h \
     svg/properties/SVGAnimatedEnumerationPropertyTearOff.h \
     svg/properties/SVGAnimatedListPropertyTearOff.h \
@@ -2755,17 +2756,32 @@ HEADERS += \
     svg/SVGPathElement.h \
     svg/SVGPathParser.h \
     svg/SVGPathSegArc.h \
+    svg/SVGPathSegArcAbs.h \
+    svg/SVGPathSegArcRel.h \
     svg/SVGPathSegClosePath.h \
     svg/SVGPathSegCurvetoCubic.h \
+    svg/SVGPathSegCurvetoCubicAbs.h \
+    svg/SVGPathSegCurvetoCubicRel.h \
     svg/SVGPathSegCurvetoCubicSmooth.h \
+    svg/SVGPathSegCurvetoCubicSmoothAbs.h \
+    svg/SVGPathSegCurvetoCubicSmoothRel.h \
     svg/SVGPathSegCurvetoQuadratic.h \
-    svg/SVGPathSegCurvetoQuadraticSmooth.h \
-    svg/SVGPathSegLineto.h \
+    svg/SVGPathSegCurvetoQuadraticAbs.h \
+    svg/SVGPathSegCurvetoQuadraticRel.h \
+    svg/SVGPathSegCurvetoQuadraticSmoothAbs.h \
+    svg/SVGPathSegCurvetoQuadraticSmoothRel.h \
+    svg/SVGPathSegLinetoAbs.h \
+    svg/SVGPathSegLinetoRel.h \
     svg/SVGPathSegLinetoHorizontal.h \
+    svg/SVGPathSegLinetoHorizontalAbs.h \
+    svg/SVGPathSegLinetoHorizontalRel.h \
     svg/SVGPathSegLinetoVertical.h \
+    svg/SVGPathSegLinetoVerticalAbs.h \
+    svg/SVGPathSegLinetoVerticalRel.h \
     svg/SVGPathSegList.h \
     svg/SVGPathSegListBuilder.h \
-    svg/SVGPathSegMoveto.h \
+    svg/SVGPathSegMovetoAbs.h \
+    svg/SVGPathSegMovetoRel.h \
     svg/SVGPatternElement.h \
     svg/SVGPointList.h \
     svg/SVGPolyElement.h \
@@ -3710,6 +3726,7 @@ enable?(SVG) {
         svg/graphics/SVGImage.cpp \
         svg/graphics/SVGImageCache.cpp \
         svg/graphics/SVGImageForContainer.cpp \
+        svg/properties/SVGAnimatedProperty.cpp \
         svg/properties/SVGAttributeToPropertyMap.cpp \
         svg/properties/SVGPathSegListPropertyTearOff.cpp \
         svg/SVGDocumentExtensions.cpp \
@@ -3738,6 +3755,7 @@ enable?(SVG) {
         svg/SVGAnimatedString.cpp \
         svg/SVGAnimatedTransformList.cpp \
         svg/SVGAnimatedType.cpp \
+        svg/SVGAnimatedTypeAnimator.cpp \
         svg/SVGAnimateElement.cpp \
         svg/SVGAnimateMotionElement.cpp \
         svg/SVGAnimateTransformElement.cpp \

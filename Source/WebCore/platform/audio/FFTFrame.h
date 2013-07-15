@@ -69,7 +69,7 @@ struct RDFTContext;
 
 #if PLATFORM(NIX)
 #include <cmath>
-#include <public/WebFFTFrame.h>
+#include <public/FFTFrame.h>
 #endif
 
 #include <wtf/Forward.h>
@@ -185,7 +185,7 @@ private:
 
 #if PLATFORM(NIX)
     void scalePlanarData(float scale);
-    OwnPtr<WebKit::WebFFTFrame> m_fftFrame;
+    OwnPtr<Nix::FFTFrame> m_fftFrame;
 #endif // PLATFORM(NIX)
 
 #if USE(WEBAUDIO_OPENMAX_DL_FFT)

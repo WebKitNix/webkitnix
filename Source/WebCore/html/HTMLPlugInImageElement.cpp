@@ -384,6 +384,10 @@ void HTMLPlugInImageElement::didAddUserAgentShadowRoot(ShadowRoot* root)
     argList.append(toJS(exec, globalObject, root));
     argList.append(jsString(exec, titleText(page, mimeType)));
     argList.append(jsString(exec, subtitleText(page, mimeType)));
+    
+    // This parameter determines whether or not the snapshot overlay should always be visible over the plugin snapshot.
+    // If no snapshot was found then we want the overlay to be visible.
+    argList.append(JSC::jsBoolean(!m_snapshotImage));
 
     // It is expected the JS file provides a createOverlay(shadowRoot, title, subtitle) function.
     JSC::JSObject* overlay = globalObject->get(exec, JSC::Identifier(exec, "createOverlay")).toObject(exec);
@@ -531,9 +535,9 @@ void HTMLPlugInImageElement::simulatedMouseClickTimerFired(DeferrableOneShotTime
     ASSERT(displayState() == RestartingWithPendingMouseClick);
     ASSERT(m_pendingClickEventFromSnapshot);
 
+    setDisplayState(Playing);
     dispatchSimulatedClick(m_pendingClickEventFromSnapshot.get(), SendMouseOverUpDownEvents, DoNotShowPressedLook);
 
-    setDisplayState(Playing);
     m_pendingClickEventFromSnapshot = nullptr;
 }
 

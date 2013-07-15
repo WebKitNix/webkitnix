@@ -45,7 +45,7 @@ void InjectedBundle::platformInitialize(WKTypeRef)
 
     if (!s_platformClient)
         s_platformClient = WTF::adoptPtr(new PlatformClient());
-    WebKit::Platform::initialize(s_platformClient.get());
+    Nix::Platform::initialize(s_platformClient.get());
 }
 
 }

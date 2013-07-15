@@ -66,10 +66,12 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
     RunLoop::initializeMainRunLoop();
 
 #ifdef WTF_USE_SOUP
+    SoupSession* session = WebCore::ResourceHandle::defaultSession();
+    g_object_set(G_OBJECT(session), "ssl-use-system-ca-file", true, NULL);
+
     const char* httpProxy = getenv("http_proxy");
     if (httpProxy) {
         const char* noProxy = getenv("no_proxy");
-        SoupSession* session = WebCore::ResourceHandle::defaultSession();
         SoupProxyURIResolver* resolverNix = soupProxyResolverWkNew(httpProxy, noProxy);
         soup_session_add_feature(session, SOUP_SESSION_FEATURE(resolverNix));
         g_object_unref(resolverNix);
@@ -86,7 +88,6 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
     RunLoop::run();
 
 #ifdef WTF_USE_SOUP
-    SoupSession* session = WebCore::ResourceHandle::defaultSession();
     if (SoupSessionFeature* soupCache = soup_session_get_feature(session, SOUP_TYPE_CACHE)) {
         soup_cache_flush(SOUP_CACHE(soupCache));
         soup_cache_dump(SOUP_CACHE(soupCache));

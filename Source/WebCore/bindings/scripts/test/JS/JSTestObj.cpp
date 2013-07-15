@@ -319,7 +319,6 @@ static const HashTableValue JSTestObjPrototypeTableValues[] =
 #if ENABLE(Condition1) || ENABLE(Condition2)
     { "conditionalMethod3", DontDelete | JSC::Function, (intptr_t)static_cast<NativeFunction>(jsTestObjPrototypeFunctionConditionalMethod3), (intptr_t)0, NoIntrinsic },
 #endif
-    { "treatReturnedNullObjectAsUndefined", DontDelete | JSC::Function, (intptr_t)static_cast<NativeFunction>(jsTestObjPrototypeFunctionTreatReturnedNullObjectAsUndefined), (intptr_t)0, NoIntrinsic },
     { "overloadedMethod", DontDelete | JSC::Function, (intptr_t)static_cast<NativeFunction>(jsTestObjPrototypeFunctionOverloadedMethod), (intptr_t)2, NoIntrinsic },
     { "classMethodWithClamp", DontDelete | JSC::Function, (intptr_t)static_cast<NativeFunction>(jsTestObjPrototypeFunctionClassMethodWithClamp), (intptr_t)2, NoIntrinsic },
     { "methodWithUnsignedLongSequence", DontDelete | JSC::Function, (intptr_t)static_cast<NativeFunction>(jsTestObjPrototypeFunctionMethodWithUnsignedLongSequence), (intptr_t)1, NoIntrinsic },
@@ -1279,7 +1278,7 @@ void setJSTestObjReflectedStringAttr(ExecState* exec, JSObject* thisObject, JSVa
     UNUSED_PARAM(exec);
     JSTestObj* castedThis = jsCast<JSTestObj*>(thisObject);
     TestObj* impl = static_cast<TestObj*>(castedThis->impl());
-    const AtomicString& nativeValue(valueToAtomicStringWithNullCheck(exec, value));
+    const String& nativeValue(valueToStringWithNullCheck(exec, value));
     if (exec->hadException())
         return;
     impl->setAttribute(WebCore::HTMLNames::reflectedstringattrAttr, nativeValue);
@@ -1327,7 +1326,7 @@ void setJSTestObjReflectedURLAttr(ExecState* exec, JSObject* thisObject, JSValue
     UNUSED_PARAM(exec);
     JSTestObj* castedThis = jsCast<JSTestObj*>(thisObject);
     TestObj* impl = static_cast<TestObj*>(castedThis->impl());
-    const AtomicString& nativeValue(valueToAtomicStringWithNullCheck(exec, value));
+    const String& nativeValue(valueToStringWithNullCheck(exec, value));
     if (exec->hadException())
         return;
     impl->setAttribute(WebCore::HTMLNames::reflectedurlattrAttr, nativeValue);
@@ -1339,7 +1338,7 @@ void setJSTestObjReflectedStringAttr(ExecState* exec, JSObject* thisObject, JSVa
     UNUSED_PARAM(exec);
     JSTestObj* castedThis = jsCast<JSTestObj*>(thisObject);
     TestObj* impl = static_cast<TestObj*>(castedThis->impl());
-    const AtomicString& nativeValue(valueToAtomicStringWithNullCheck(exec, value));
+    const String& nativeValue(valueToStringWithNullCheck(exec, value));
     if (exec->hadException())
         return;
     impl->setAttribute(WebCore::HTMLNames::customContentStringAttrAttr, nativeValue);
@@ -1375,7 +1374,7 @@ void setJSTestObjReflectedCustomURLAttr(ExecState* exec, JSObject* thisObject, J
     UNUSED_PARAM(exec);
     JSTestObj* castedThis = jsCast<JSTestObj*>(thisObject);
     TestObj* impl = static_cast<TestObj*>(castedThis->impl());
-    const AtomicString& nativeValue(valueToAtomicStringWithNullCheck(exec, value));
+    const String& nativeValue(valueToStringWithNullCheck(exec, value));
     if (exec->hadException())
         return;
     impl->setAttribute(WebCore::HTMLNames::customContentURLAttrAttr, nativeValue);
@@ -2504,22 +2503,6 @@ EncodedJSValue JSC_HOST_CALL jsTestObjPrototypeFunctionConditionalMethod3(ExecSt
 }
 
 #endif
-
-EncodedJSValue JSC_HOST_CALL jsTestObjPrototypeFunctionTreatReturnedNullObjectAsUndefined(ExecState* exec)
-{
-    JSValue thisValue = exec->hostThisValue();
-    if (!thisValue.inherits(&JSTestObj::s_info))
-        return throwVMTypeError(exec);
-    JSTestObj* castedThis = jsCast<JSTestObj*>(asObject(thisValue));
-    ASSERT_GC_OBJECT_INHERITS(castedThis, &JSTestObj::s_info);
-    TestObj* impl = static_cast<TestObj*>(castedThis->impl());
-
-    JSC::JSValue result = toJS(exec, castedThis->globalObject(), WTF::getPtr(impl->treatReturnedNullObjectAsUndefined()));
-    if (result == jsNull())
-        result = jsUndefined();
-
-    return JSValue::encode(result);
-}
 
 static EncodedJSValue JSC_HOST_CALL jsTestObjPrototypeFunctionOverloadedMethod1(ExecState* exec)
 {

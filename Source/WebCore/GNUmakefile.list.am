@@ -230,7 +230,6 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSDynamicsCompressorNode.cpp \
 	DerivedSources/WebCore/JSElement.cpp \
 	DerivedSources/WebCore/JSElement.h \
-	DerivedSources/WebCore/JSElementTimeControl.h \
 	DerivedSources/WebCore/JSEntity.cpp \
 	DerivedSources/WebCore/JSEntity.h \
 	DerivedSources/WebCore/JSEntityReference.cpp \
@@ -4981,7 +4980,6 @@ webcore_svg_sources += \
 	Source/WebCore/svg/animation/SVGSMILElement.h \
 	Source/WebCore/svg/ColorDistance.cpp \
 	Source/WebCore/svg/ColorDistance.h \
-	Source/WebCore/svg/ElementTimeControl.h \
 	Source/WebCore/svg/GradientAttributes.h \
 	Source/WebCore/svg/graphics/filters/SVGFEImage.cpp \
 	Source/WebCore/svg/graphics/filters/SVGFEImage.h \
@@ -5003,6 +5001,7 @@ webcore_svg_sources += \
 	Source/WebCore/svg/properties/SVGAnimatedEnumerationPropertyTearOff.h \
 	Source/WebCore/svg/properties/SVGAnimatedListPropertyTearOff.h \
 	Source/WebCore/svg/properties/SVGAnimatedPathSegListPropertyTearOff.h \
+	Source/WebCore/svg/properties/SVGAnimatedProperty.cpp \
 	Source/WebCore/svg/properties/SVGAnimatedProperty.h \
 	Source/WebCore/svg/properties/SVGAnimatedPropertyDescription.h \
 	Source/WebCore/svg/properties/SVGAnimatedPropertyMacros.h \
@@ -5070,6 +5069,7 @@ webcore_svg_sources += \
 	Source/WebCore/svg/SVGAnimatedTransformList.h \
 	Source/WebCore/svg/SVGAnimatedType.cpp \
 	Source/WebCore/svg/SVGAnimatedType.h \
+	Source/WebCore/svg/SVGAnimatedTypeAnimator.cpp \
 	Source/WebCore/svg/SVGAnimatedTypeAnimator.h \
 	Source/WebCore/svg/SVGAnimateElement.cpp \
 	Source/WebCore/svg/SVGAnimateElement.h \
@@ -5249,22 +5249,37 @@ webcore_svg_sources += \
 	Source/WebCore/svg/SVGPathParser.cpp \
 	Source/WebCore/svg/SVGPathParser.h \
 	Source/WebCore/svg/SVGPathSegArc.h \
+	Source/WebCore/svg/SVGPathSegArcAbs.h \
+	Source/WebCore/svg/SVGPathSegArcRel.h \
 	Source/WebCore/svg/SVGPathSegClosePath.h \
 	Source/WebCore/svg/SVGPathSegCurvetoCubic.h \
+	Source/WebCore/svg/SVGPathSegCurvetoCubicAbs.h \
+	Source/WebCore/svg/SVGPathSegCurvetoCubicRel.h \
 	Source/WebCore/svg/SVGPathSegCurvetoCubicSmooth.h \
+	Source/WebCore/svg/SVGPathSegCurvetoCubicSmoothAbs.h \
+	Source/WebCore/svg/SVGPathSegCurvetoCubicSmoothRel.h \
 	Source/WebCore/svg/SVGPathSegCurvetoQuadratic.h \
-	Source/WebCore/svg/SVGPathSegCurvetoQuadraticSmooth.h \
+	Source/WebCore/svg/SVGPathSegCurvetoQuadraticAbs.h \
+	Source/WebCore/svg/SVGPathSegCurvetoQuadraticRel.h \
+	Source/WebCore/svg/SVGPathSegCurvetoQuadraticSmoothAbs.h \
+	Source/WebCore/svg/SVGPathSegCurvetoQuadraticSmoothRel.h \
 	Source/WebCore/svg/SVGPathSeg.h \
-	Source/WebCore/svg/SVGPathSegLineto.h \
+	Source/WebCore/svg/SVGPathSegLinetoAbs.h \
+	Source/WebCore/svg/SVGPathSegLinetoRel.h \
 	Source/WebCore/svg/SVGPathSegLinetoHorizontal.h \
+	Source/WebCore/svg/SVGPathSegLinetoHorizontalAbs.h \
+	Source/WebCore/svg/SVGPathSegLinetoHorizontalRel.h \
 	Source/WebCore/svg/SVGPathSegLinetoVertical.h \
+	Source/WebCore/svg/SVGPathSegLinetoVerticalAbs.h \
+	Source/WebCore/svg/SVGPathSegLinetoVerticalRel.h \
 	Source/WebCore/svg/SVGPathSegListBuilder.cpp \
 	Source/WebCore/svg/SVGPathSegListBuilder.h \
 	Source/WebCore/svg/SVGPathSegList.cpp \
 	Source/WebCore/svg/SVGPathSegList.h \
 	Source/WebCore/svg/SVGPathSegListSource.cpp \
 	Source/WebCore/svg/SVGPathSegListSource.h \
-	Source/WebCore/svg/SVGPathSegMoveto.h \
+	Source/WebCore/svg/SVGPathSegMovetoAbs.h \
+	Source/WebCore/svg/SVGPathSegMovetoRel.h \
 	Source/WebCore/svg/SVGPathSegWithContext.h \
 	Source/WebCore/svg/SVGPathSource.h \
 	Source/WebCore/svg/SVGPathStringBuilder.cpp \

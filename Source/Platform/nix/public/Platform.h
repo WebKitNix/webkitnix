@@ -28,18 +28,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef Platform_h
-#define Platform_h
+#ifndef Nix_Platform_h
+#define Nix_Platform_h
 
-#include "WebAudioDevice.h"
-#include "WebData.h"
-#include "WebGamepads.h"
+#include "AudioDevice.h"
+#include "Data.h"
+#include "Gamepads.h"
 
-namespace WebKit {
+namespace Nix {
 
-class WebAudioBus;
-class WebFFTFrame;
-class WebThemeEngine;
+class AudioBus;
+class FFTFrame;
+class ThemeEngine;
 
 class WEBKIT_EXPORT Platform {
 public:
@@ -55,33 +55,33 @@ public:
 
     // Creates a device for audio I/O.
     // Pass in (numberOfInputChannels > 0) if live/local audio input is desired.
-    virtual WebAudioDevice* createAudioDevice(size_t /*bufferSize*/, unsigned /*numberOfInputChannels*/, unsigned /*numberOfChannels*/, double /*sampleRate*/, WebAudioDevice::RenderCallback*) { return 0; }
+    virtual AudioDevice* createAudioDevice(size_t /*bufferSize*/, unsigned /*numberOfInputChannels*/, unsigned /*numberOfChannels*/, double /*sampleRate*/, AudioDevice::RenderCallback*) { return 0; }
 
 
     // Gamepad -------------------------------------------------------------
-    virtual void sampleGamepads(WebGamepads& into) { into.length = 0; }
+    virtual void sampleGamepads(Gamepads& into) { into.length = 0; }
 
 
     // FFTFrame
-    virtual WebFFTFrame* createFFTFrame(unsigned /*fftsize*/) { return 0; }
-    virtual WebFFTFrame* createFFTFrame(const WebFFTFrame* /*frame*/) { return 0; }
+    virtual FFTFrame* createFFTFrame(unsigned /*fftsize*/) { return 0; }
+    virtual FFTFrame* createFFTFrame(const FFTFrame* /*frame*/) { return 0; }
 
     // Resources -----------------------------------------------------------
     // Returns a blob of data corresponding to the named resource.
-    virtual WebData loadResource(const char* /*name*/) { return WebData(); }
+    virtual Data loadResource(const char* /*name*/) { return Data(); }
 
     // Decodes the in-memory audio file data and returns the linear PCM audio data in the destinationBus.
     // A sample-rate conversion to sampleRate will occur if the file data is at a different sample-rate.
     // Returns true on success.
-    virtual bool loadAudioResource(WebAudioBus* /*destinationBus*/, const char* /*audioFileData*/, size_t /*dataSize*/, double /*sampleRate*/) { return false; }
+    virtual bool loadAudioResource(AudioBus* /*destinationBus*/, const char* /*audioFileData*/, size_t /*dataSize*/, double /*sampleRate*/) { return false; }
 
     // Theme engine
-    virtual WebThemeEngine* themeEngine();
+    virtual ThemeEngine* themeEngine();
 
 protected:
     virtual ~Platform() { }
 };
 
-} // namespace WebKit
+} // namespace Nix
 
 #endif

@@ -30,7 +30,7 @@
 
 #include "AudioFileReader.h"
 #include <public/Platform.h>
-#include <public/WebAudioBus.h>
+#include <public/AudioBus.h>
 #include <wtf/PassRefPtr.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/StringConcatenate.h>
@@ -39,16 +39,16 @@ namespace WebCore {
 
 PassRefPtr<AudioBus> decodeAudioFileData(const char* data, size_t size, double sampleRate)
 {
-    WebKit::WebAudioBus webAudioBus;
-    if (WebKit::Platform::current()->loadAudioResource(&webAudioBus, data, size, sampleRate))
-        return webAudioBus.audioBus();
+    Nix::AudioBus nixAudioBus;
+    if (Nix::Platform::current()->loadAudioResource(&nixAudioBus, data, size, sampleRate))
+        return nixAudioBus.audioBus();
     return PassRefPtr<AudioBus>();
 }
 
 PassRefPtr<AudioBus> AudioBus::loadPlatformResource(const char* name, float sampleRate)
 {
     String absoluteFilename(makeString(DATA_DIR, "/webaudio/resources/", name, ".wav"));
-    const WebKit::WebData& resource = WebKit::Platform::current()->loadResource(absoluteFilename.utf8().data());
+    const Nix::Data resource = Nix::Platform::current()->loadResource(absoluteFilename.utf8().data());
 
     if (resource.isEmpty())
         return PassRefPtr<AudioBus>();

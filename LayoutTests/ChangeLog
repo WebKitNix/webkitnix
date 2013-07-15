@@ -1,3 +1,248 @@
+2013-07-15  Zoltan Arvai  <zarvai@inf.u-szeged.hu>
+
+        [Qt][WK2] Unreviewed gardening. Skipping bad pixel results.
+
+        * platform/qt-5.0-wk2/TestExpectations:
+
+2013-07-15  Zoltan Arvai  <zarvai@inf.u-szeged.hu>
+
+        [Qt][WK2] Unreviewed gardening. Skipping bad pixel results.
+
+        * platform/qt-5.0-wk2/TestExpectations:
+
+2013-07-14  Ryosuke Niwa  <rniwa@webkit.org>
+
+        apply-style-command-crash.html is flaky
+        https://bugs.webkit.org/show_bug.cgi?id=118634
+
+        Reviewed by Andreas Kling.
+        
+        Merge https://chromium.googlesource.com/chromium/blink/+/a30dad44ded92d24ed56761434cf6041688659a0.
+
+        Also replace CRLF to LF and get rid of svn:executable.
+
+        * editing/execCommand/apply-style-command-crash.html:
+
+2013-07-14  Ryosuke Niwa  <rniwa@webkit.org>
+
+        apply-style-command-crash.html is flaky
+        https://bugs.webkit.org/show_bug.cgi?id=118634
+
+        Reviewed by Andreas Kling.
+        
+        Merge https://chromium.googlesource.com/chromium/blink/+/a30dad44ded92d24ed56761434cf6041688659a0.
+
+        * editing/execCommand/apply-style-command-crash.html:
+
+2013-07-14  Ryosuke Niwa  <rniwa@webkit.org>
+
+        apply-style-command-crash.html is flaky
+        https://bugs.webkit.org/show_bug.cgi?id=118634
+
+        Reviewed by Andreas Kling.
+        
+        Merge https://chromium.googlesource.com/chromium/blink/+/a30dad44ded92d24ed56761434cf6041688659a0.
+
+        * editing/execCommand/apply-style-command-crash.html:
+
+2013-07-13  Joone Hur  <joone.hur@intel.com>
+
+        Caret should respect text background color
+        https://bugs.webkit.org/show_bug.cgi?id=117493
+
+        Reviewed by Ryosuke Niwa.
+
+        This tests to make sure that the caret is visible in the black background 
+        by getting the caret color from the color of the element(span) containing 
+        the text, not the parent element(div) that has the contentEditable
+        attribute.
+
+        * editing/caret/caret-color-expected.txt: Added.
+        * editing/caret/caret-color.html: Added.
+        * platform/efl/editing/caret/caret-color-expected.png: Added.
+        * platform/mac/TestExpectations: Skip this test case.
+
+2013-07-12  Chris Curtis  <chris_curtis@apple.com>
+
+        By optimizing when the stack is added a two tests needed to be modifed to show correct results.
+        https://bugs.webkit.org/show_bug.cgi?id=118328
+
+        Reviewed by Geoffrey Garen.
+
+        * inspector/console/console-exception-stack-traces.html: This test compares the console's currect 
+        stack with the error object's stack. The test was failing on decodeURI() and eval() which create 
+        a new frame on the stack to execute. The console's stack was unaware of these calls and the size 
+        of the stacks would not match. I added a check to pass if it was the specific case with decodeURI
+        or eval.
+
+2013-07-12  Gabor Abraham  <abrhm@inf.u-szeged.hu>
+
+        [Qt] Unreviewed gardening. Skipping new failing test on Qt.
+        https://bugs.webkit.org/show_bug.cgi?id=118595
+
+        * platform/qt/TestExpectations:
+
+2013-07-12  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Unreviewed typo fix.
+
+        * fast/css-grid-layout/grid-element-change-columns-repaint-expected.txt:
+        * fast/css-grid-layout/grid-element-change-columns-repaint.html:
+        * platform/qt-5.0-wk2/fast/css-grid-layout/grid-element-change-columns-repaint-expected.txt:
+
+2013-07-11  Roger Fong  <roger_fong@apple.com>
+
+        Replace simple_blank.swf with lines.swf for snapshotting tests.
+        https://bugs.webkit.org/show_bug.cgi?id=118581.
+
+        Reviewed by Tim Horton.
+
+        * plugins/resources/lines.swf: Added.
+        * plugins/snapshotting/autoplay-dominant.html:
+        * plugins/snapshotting/autoplay-similar-to-dominant-after-delay.html:
+        * plugins/snapshotting/autoplay-similar-to-dominant.html:
+        * plugins/snapshotting/plugin-receives-click-event.html:
+        * plugins/snapshotting/restart.html:
+        * plugins/snapshotting/simple.html:
+
+2013-07-10  Roger Fong  <roger_fong@apple.com>
+
+        Plugins that don't support snapshotting should not all autostart.
+        https://bugs.webkit.org/show_bug.cgi?id=118572
+        <rdar://problem/14324391>.
+
+        Reviewed by Dean Jackson.
+
+        * platform/mac-wk2/plugins/snapshotting/quicktime-plugin-snapshotted-expected.txt: Added.
+        * plugins/snapshotting/quicktime-plugin-snapshotted.html: Added.
+
+2013-07-11  Mario Sanchez Prada  <mario@webkit.org>
+
+        [GTK] Unreviewed gardening. Added expected failures after r152574.
+
+        * platform/gtk/TestExpectations: Added test failures.
+
+2013-07-11  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [GTK] Layout Test accessibility/deleting-iframe-destroys-axcache.html, platform/gtk/accessibility/replaced-objects-in-anonymous-blocks.html are failing
+        https://bugs.webkit.org/show_bug.cgi?id=118552
+
+        Reviewed by Chris Fleizach.
+
+        Remove tests that are no longer expected to crash.
+
+        * platform/gtk/TestExpectations: Removed tests.
+
+2013-07-10  Oliver Hunt  <oliver@apple.com>
+
+        NativeExecutable cache needs to use both call and construct functions for key
+        https://bugs.webkit.org/show_bug.cgi?id=118545
+
+        Reviewed by Geoffrey Garen.
+
+        Make sure we don't decide that all bound functions aren't constructors.
+
+        * fast/js/function-bind-expected.txt:
+        * fast/js/script-tests/function-bind.js:
+
+2013-07-11  Andrei Bucur  <abucur@adobe.com>
+
+        [CSS Regions] In a region chain with auto-height regions, lines get their length based only on the first region
+        https://bugs.webkit.org/show_bug.cgi?id=118531
+
+        Reviewed by Alexandru Chiculita.
+
+        Add tests verifying the lines widths are correctly computed in auto-height regions with and without a max-height set.
+
+        * fast/regions/autoheight-correct-region-for-lines-2-expected.html: Added.
+        * fast/regions/autoheight-correct-region-for-lines-2.html: Added.
+        * fast/regions/autoheight-correct-region-for-lines-expected.html: Added.
+        * fast/regions/autoheight-correct-region-for-lines.html: Added.
+
+2013-07-11  Radu Stavila  <stavila@adobe.com>
+
+        NamedFlowCollection getters should follow the same pattern as HTMLCollection
+        https://bugs.webkit.org/show_bug.cgi?id=118561
+
+        Reviewed by Christophe Dumez.
+
+        Updated test for NamedFlowCollection getters when no named flows are created.
+
+        * fast/regions/webkit-named-flow-collection-empty-getters-expected.txt: Renamed from LayoutTests/fast/regions/webkit-named-flow-collection-undefined-expected.txt.
+        * fast/regions/webkit-named-flow-collection-empty-getters.html: Renamed from LayoutTests/fast/regions/webkit-named-flow-collection-undefined.html.
+
+2013-07-11  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [GTK] Unreviewed gardening. Added crash expectations in debug builds after r152537
+
+        * platform/gtk/TestExpectations: Added two crashing tests.
+
+2013-07-10  Sam Weinig  <sam@webkit.org>
+
+        Range.getClientRects() not working correctly for partially contained vertically styled text nodes
+        <rdar://problem/14305675>
+        https://bugs.webkit.org/show_bug.cgi?id=118447
+
+        Reviewed by David Hyatt.
+
+        * fast/dom/Range/getClientRects-vertical-expected.txt: Added.
+        * fast/dom/Range/getClientRects-vertical.html: Added.
+
+2013-07-10  Eric Carlson  <eric.carlson@apple.com>
+
+        [Mac] every enabled text track should be listed in the track menu
+        https://bugs.webkit.org/show_bug.cgi?id=118477
+
+        Reviewed by Jer Noble.
+
+        * media/trackmenu-test.js: Add some new utility functions.
+
+        * media/video-controls-captions-trackmenu-includes-enabled-track-expected.txt: Added.
+        * media/video-controls-captions-trackmenu-includes-enabled-track.html: Added.
+        * platform/efl/TestExpectations:
+        * platform/gtk/TestExpectations:
+        * platform/qt/TestExpectations:
+        * platform/win/TestExpectations:
+
+2013-07-10  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Remove ElementTimeControl and expose SVGAnimationElement
+        https://bugs.webkit.org/show_bug.cgi?id=118349
+
+        Reviewed by Rob Buis.
+
+        Rebaseline several test cases now that SVGAnimationElement is exposed
+        on the global Window object.
+
+        * fast/js/global-constructors-attributes-expected.txt:
+        * platform/efl/fast/js/global-constructors-attributes-expected.txt:
+        * platform/gtk/fast/js/global-constructors-attributes-expected.txt:
+        * platform/mac-lion/fast/js/global-constructors-attributes-expected.txt:
+        * platform/qt/fast/js/global-constructors-attributes-expected.txt:
+        * svg/custom/global-constructors-expected.txt:
+
+2013-07-09  Roger Fong  <roger_fong@apple.com>
+
+        HTMLPluginElement's state should be Playing before firing mouse click event.
+        https://bugs.webkit.org/show_bug.cgi?id=118398.
+        <rdar://problem/14262126>
+
+        Reviewed by Dean Jackson.
+
+        * platform/mac-wk2/plugins/snapshotting/plugin-receives-click-event-expected.txt: Added.
+        * plugins/snapshotting/plugin-receives-click-event.html: Added.
+
+2013-07-10  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        AX: Allow requesting the full plain text for an object with textUnderElement()
+        https://bugs.webkit.org/show_bug.cgi?id=105214
+
+        Reviewed by Chris Fleizach.
+
+        Removed tests that are not longer expected to fail.
+
+        * platform/gtk/TestExpectations: Removed tests.
+
 2013-07-10  Simon Pena  <simon.pena@samsung.com>
 
         [GTK] Unreviewed gardening. Update new baselines after r152494 and r152478

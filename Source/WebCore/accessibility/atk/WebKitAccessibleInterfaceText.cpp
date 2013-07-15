@@ -168,7 +168,8 @@ static gchar* webkitAccessibleTextGetText(AtkText*, gint startOffset, gint endOf
 static GailTextUtil* getGailTextUtilForAtk(AtkText* textObject)
 {
     GailTextUtil* gailTextUtil = gail_text_util_new();
-    gail_text_util_text_setup(gailTextUtil, webkitAccessibleTextGetText(textObject, 0, -1));
+    GOwnPtr<char> text(webkitAccessibleTextGetText(textObject, 0, -1));
+    gail_text_util_text_setup(gailTextUtil, text.get());
     return gailTextUtil;
 }
 
@@ -472,6 +473,34 @@ static IntRect textExtents(AtkText* text, gint startOffset, gint length, AtkCoor
     return extents;
 }
 
+static int offsetAdjustmentForListItem(const AccessibilityObject* object)
+{
+    // We need to adjust the offsets for the list item marker in
+    // Left-To-Right text, since we expose it together with the text.
+    RenderObject* renderer = object->renderer();
+    if (renderer && renderer->isListItem() && renderer->style()->direction() == LTR)
+        return toRenderListItem(renderer)->markerTextWithSuffix().length();
+
+    return 0;
+}
+
+static int webCoreOffsetToAtkOffset(const AccessibilityObject* object, int offset)
+{
+    if (!object->isListItem())
+        return offset;
+
+    return offset + offsetAdjustmentForListItem(object);
+}
+
+static int atkOffsetToWebCoreOffset(AtkText* text, int offset)
+{
+    AccessibilityObject* coreObject = core(text);
+    if (!coreObject || !coreObject->isListItem())
+        return offset;
+
+    return offset - offsetAdjustmentForListItem(coreObject);
+}
+
 static void getSelectionOffsetsForObject(AccessibilityObject* coreObject, VisibleSelection& selection, gint& startOffset, gint& endOffset)
 {
     if (!coreObject->isAccessibilityRenderObject())
@@ -513,15 +542,9 @@ static void getSelectionOffsetsForObject(AccessibilityObject* coreObject, Visibl
     Position parentFirstPosition = firstPositionInOrBeforeNode(node);
     RefPtr<Range> rangeInParent = Range::create(node->document(), parentFirstPosition, nodeRangeStart);
 
-    // Set values for start and end offsets.
-    startOffset = TextIterator::rangeLength(rangeInParent.get(), true);
 
-    // We need to adjust the offsets for the list item marker.
-    RenderObject* renderer = coreObject->renderer();
-    if (renderer && renderer->isListItem()) {
-        String markerText = toRenderListItem(renderer)->markerTextWithSuffix();
-        startOffset += markerText.length();
-    }
+    // Set values for start and end offsets.
+    startOffset = webCoreOffsetToAtkOffset(coreObject, TextIterator::rangeLength(rangeInParent.get(), true));
 
     RefPtr<Range> nodeRange = Range::create(node->document(), nodeRangeStart, nodeRangeEnd);
     endOffset = startOffset + TextIterator::rangeLength(nodeRange.get(), true);
@@ -535,7 +558,7 @@ static gchar* webkitAccessibleTextGetText(AtkText* text, gint startOffset, gint 
     if (endOffset == -1) {
         end = coreObject->stringValue().length();
         if (!end)
-            end = coreObject->textUnderElement().length();
+            end = coreObject->textUnderElement(TextUnderElementModeIncludeAllChildren).length();
     }
 
     String ret;
@@ -544,7 +567,7 @@ static gchar* webkitAccessibleTextGetText(AtkText* text, gint startOffset, gint 
     else {
         ret = coreObject->stringValue();
         if (!ret)
-            ret = coreObject->textUnderElement();
+            ret = coreObject->textUnderElement(TextUnderElementModeIncludeAllChildren);
     }
 
     if (!ret.length()) {
@@ -680,16 +703,7 @@ static gint webkitAccessibleTextGetCaretOffset(AtkText* text)
     if (!objectFocusedAndCaretOffsetUnignored(coreObject, offset))
         return 0;
 
-    RenderObject* renderer = coreObject->renderer();
-    if (renderer && renderer->isListItem()) {
-        String markerText = toRenderListItem(renderer)->markerTextWithSuffix();
-
-        // We need to adjust the offset for the list item marker.
-        offset += markerText.length();
-    }
-
-    // TODO: Verify this for RTL text.
-    return offset;
+    return webCoreOffsetToAtkOffset(coreObject, offset);
 }
 
 static AtkAttributeSet* webkitAccessibleTextGetRunAttributes(AtkText* text, gint offset, gint* startOffset, gint* endOffset)
@@ -821,15 +835,13 @@ static gboolean webkitAccessibleTextSetSelection(AtkText* text, gint selectionNu
         endOffset = textCount;
 
     // We need to adjust the offsets for the list item marker.
-    RenderObject* renderer = coreObject->renderer();
-    if (renderer && renderer->isListItem()) {
-        String markerText = toRenderListItem(renderer)->markerTextWithSuffix();
-        int markerLength = markerText.length();
-        if (startOffset < markerLength || endOffset < markerLength)
+    int offsetAdjustment = offsetAdjustmentForListItem(coreObject);
+    if (offsetAdjustment) {
+        if (startOffset < offsetAdjustment || endOffset < offsetAdjustment)
             return FALSE;
 
-        startOffset -= markerLength;
-        endOffset -= markerLength;
+        startOffset = atkOffsetToWebCoreOffset(text, startOffset);
+        endOffset = atkOffsetToWebCoreOffset(text, endOffset);
     }
 
     PlainTextRange textRange(startOffset, endOffset - startOffset);
@@ -864,15 +876,13 @@ static gboolean webkitAccessibleTextSetCaretOffset(AtkText* text, gint offset)
     if (!coreObject->isAccessibilityRenderObject())
         return FALSE;
 
-    RenderObject* renderer = coreObject->renderer();
-    if (renderer && renderer->isListItem()) {
-        String markerText = toRenderListItem(renderer)->markerTextWithSuffix();
-        int markerLength = markerText.length();
-        if (offset < markerLength)
+    // We need to adjust the offsets for the list item marker.
+    int offsetAdjustment = offsetAdjustmentForListItem(coreObject);
+    if (offsetAdjustment) {
+        if (offset < offsetAdjustment)
             return FALSE;
 
-        // We need to adjust the offset for list items.
-        offset -= markerLength;
+        offset = atkOffsetToWebCoreOffset(text, offset);
     }
 
     PlainTextRange textRange(offset, 0);

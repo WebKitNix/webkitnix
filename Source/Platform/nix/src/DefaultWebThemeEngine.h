@@ -1,49 +1,49 @@
 #ifndef DefaultWebThemeEngine_h
 #define DefaultWebThemeEngine_h
 
-#include "public/WebThemeEngine.h"
+#include "public/ThemeEngine.h"
 
-namespace WebKit {
+namespace Nix {
 
-class DefaultWebThemeEngine : public WebThemeEngine {
+class DefaultWebThemeEngine : public ThemeEngine {
 public:
     // Text selection colors.
-    virtual WebColor activeSelectionBackgroundColor() const;
-    virtual WebColor activeSelectionForegroundColor() const;
-    virtual WebColor inactiveSelectionBackgroundColor() const;
-    virtual WebColor inactiveSelectionForegroundColor() const;
+    virtual Color activeSelectionBackgroundColor() const;
+    virtual Color activeSelectionForegroundColor() const;
+    virtual Color inactiveSelectionBackgroundColor() const;
+    virtual Color inactiveSelectionForegroundColor() const;
 
     // List box selection colors
-    virtual WebColor activeListBoxSelectionBackgroundColor() const;
-    virtual WebColor activeListBoxSelectionForegroundColor() const;
-    virtual WebColor inactiveListBoxSelectionBackgroundColor() const;
-    virtual WebColor inactiveListBoxSelectionForegroundColor() const;
+    virtual Color activeListBoxSelectionBackgroundColor() const;
+    virtual Color activeListBoxSelectionForegroundColor() const;
+    virtual Color inactiveListBoxSelectionBackgroundColor() const;
+    virtual Color inactiveListBoxSelectionForegroundColor() const;
 
-    virtual WebColor activeTextSearchHighlightColor() const;
-    virtual WebColor inactiveTextSearchHighlightColor() const;
+    virtual Color activeTextSearchHighlightColor() const;
+    virtual Color inactiveTextSearchHighlightColor() const;
 
-    virtual WebColor focusRingColor() const;
+    virtual Color focusRingColor() const;
 
-    virtual WebColor tapHighlightColor() const;
+    virtual Color tapHighlightColor() const;
 
-    virtual void paintButton(WebCanvas*, State, const WebRect&, const ButtonExtraParams&) const;
-    virtual void paintTextField(WebCanvas*, State, const WebRect&) const;
-    virtual void paintTextArea(WebCanvas*, State, const WebRect&) const;
-    virtual WebSize getCheckboxSize() const;
-    virtual void paintCheckbox(WebCanvas*, State, const WebRect&, const ButtonExtraParams&) const;
-    virtual WebSize getRadioSize() const;
-    virtual void paintRadio(WebCanvas*, State, const WebRect&, const ButtonExtraParams&) const;
-    virtual void paintMenuList(WebCanvas *, State, const WebRect &) const;
+    virtual void paintButton(Canvas*, State, const Rect&, const ButtonExtraParams&) const;
+    virtual void paintTextField(Canvas*, State, const Rect&) const;
+    virtual void paintTextArea(Canvas*, State, const Rect&) const;
+    virtual Size getCheckboxSize() const;
+    virtual void paintCheckbox(Canvas*, State, const Rect&, const ButtonExtraParams&) const;
+    virtual Size getRadioSize() const;
+    virtual void paintRadio(Canvas*, State, const Rect&, const ButtonExtraParams&) const;
+    virtual void paintMenuList(Canvas *, State, const Rect &) const;
     virtual void getMenuListPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const;
-    virtual WebSize getProgressBarSize() const;
-    virtual void paintProgressBar(WebCanvas*, State, const WebRect&, const ProgressBarExtraParams&) const;
+    virtual Size getProgressBarSize() const;
+    virtual void paintProgressBar(Canvas*, State, const Rect&, const ProgressBarExtraParams&) const;
     virtual double getAnimationRepeatIntervalForProgressBar() const;
     virtual double getAnimationDurationForProgressBar() const;
-    virtual void paintInnerSpinButton(WebCanvas *, State, const WebRect &, const InnerSpinButtonExtraParams&) const;
+    virtual void paintInnerSpinButton(Canvas *, State, const Rect &, const InnerSpinButtonExtraParams&) const;
     virtual void getInnerSpinButtonPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const;
-    virtual void paintMeter(WebCanvas*, State, const WebRect&, const MeterExtraParams&) const;
-    virtual void paintSliderTrack(WebCanvas*, State, const WebRect&) const;
-    virtual void paintSliderThumb(WebCanvas*, State, const WebRect&) const;
+    virtual void paintMeter(Canvas*, State, const Rect&, const MeterExtraParams&) const;
+    virtual void paintSliderTrack(Canvas*, State, const Rect&) const;
+    virtual void paintSliderThumb(Canvas*, State, const Rect&) const;
 };
 
 }

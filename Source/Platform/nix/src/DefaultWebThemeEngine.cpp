@@ -27,9 +27,9 @@
 
 #include "DefaultWebThemeEngine.h"
 
-#include "public/WebColor.h"
-#include "public/WebRect.h"
-#include "public/WebSize.h"
+#include "public/Color.h"
+#include "public/Rect.h"
+#include "public/Size.h"
 #include <algorithm>
 #include <cairo/cairo.h>
 #include <cmath>
@@ -48,66 +48,66 @@ const int MenuListArrowSize = 6;
 const int InnerSpinButtonBorder = 3;
 const int InnerSpinButtonArrowSize = 2;
 
-const WebKit::RGBA32 TapHighLightColor = 0x66000000;
+const Nix::RGBA32 TapHighLightColor = 0x66000000;
 
-namespace WebKit {
+namespace Nix {
 
-WebColor DefaultWebThemeEngine::activeSelectionBackgroundColor() const
+Color DefaultWebThemeEngine::activeSelectionBackgroundColor() const
 {
-    return WebColor(0, 0, 255);
+    return Color(0, 0, 255);
 }
 
-WebColor DefaultWebThemeEngine::activeSelectionForegroundColor() const
+Color DefaultWebThemeEngine::activeSelectionForegroundColor() const
 {
-    return WebColor::white;
+    return Color::white;
 }
 
-WebColor DefaultWebThemeEngine::inactiveSelectionBackgroundColor() const
+Color DefaultWebThemeEngine::inactiveSelectionBackgroundColor() const
 {
-    return WebColor(176, 176, 176);
+    return Color(176, 176, 176);
 }
 
-WebColor DefaultWebThemeEngine::inactiveSelectionForegroundColor() const
+Color DefaultWebThemeEngine::inactiveSelectionForegroundColor() const
 {
-    return WebColor::black;
+    return Color::black;
 }
 
-WebColor DefaultWebThemeEngine::activeListBoxSelectionBackgroundColor() const
+Color DefaultWebThemeEngine::activeListBoxSelectionBackgroundColor() const
 {
     return activeSelectionBackgroundColor();
 }
 
-WebColor DefaultWebThemeEngine::activeListBoxSelectionForegroundColor() const
+Color DefaultWebThemeEngine::activeListBoxSelectionForegroundColor() const
 {
     return activeSelectionForegroundColor();
 }
 
-WebColor DefaultWebThemeEngine::inactiveListBoxSelectionBackgroundColor() const
+Color DefaultWebThemeEngine::inactiveListBoxSelectionBackgroundColor() const
 {
     return inactiveSelectionBackgroundColor();
 }
 
-WebColor DefaultWebThemeEngine::inactiveListBoxSelectionForegroundColor() const
+Color DefaultWebThemeEngine::inactiveListBoxSelectionForegroundColor() const
 {
     return inactiveSelectionForegroundColor();
 }
 
-WebColor DefaultWebThemeEngine::activeTextSearchHighlightColor() const
+Color DefaultWebThemeEngine::activeTextSearchHighlightColor() const
 {
-    return WebColor(255, 150, 50); // Orange.
+    return Color(255, 150, 50); // Orange.
 }
 
-WebColor DefaultWebThemeEngine::inactiveTextSearchHighlightColor() const
+Color DefaultWebThemeEngine::inactiveTextSearchHighlightColor() const
 {
-    return WebColor(255, 255, 0); // Yellow.
+    return Color(255, 255, 0); // Yellow.
 }
 
-WebColor DefaultWebThemeEngine::focusRingColor() const
+Color DefaultWebThemeEngine::focusRingColor() const
 {
-    return WebColor::black;
+    return Color::black;
 }
 
-WebColor DefaultWebThemeEngine::tapHighlightColor() const
+Color DefaultWebThemeEngine::tapHighlightColor() const
 {
     return TapHighLightColor;
 }
@@ -127,14 +127,14 @@ static void gradientFill(cairo_t* cairo, double yStart, double yLength, bool inv
     cairo_pattern_destroy(gradient);
 }
 
-static void setupBorder(cairo_t * cairo, WebThemeEngine::State state)
+static void setupBorder(cairo_t * cairo, ThemeEngine::State state)
 {
-    double borderColor = state == WebThemeEngine::StateHover ? BorderOnHoverColor : BorderColor;
+    double borderColor = state == ThemeEngine::StateHover ? BorderOnHoverColor : BorderColor;
     cairo_set_source_rgb(cairo, borderColor, borderColor, borderColor);
     cairo_set_line_width(cairo, 1);
 }
 
-void DefaultWebThemeEngine::paintButton(WebCanvas* canvas, State state, const WebRect& rect, const ButtonExtraParams&) const
+void DefaultWebThemeEngine::paintButton(Canvas* canvas, State state, const Rect& rect, const ButtonExtraParams&) const
 {
     cairo_save(canvas);
     setupBorder(canvas, state);
@@ -148,7 +148,7 @@ void DefaultWebThemeEngine::paintButton(WebCanvas* canvas, State state, const We
     cairo_restore(canvas);
 }
 
-void DefaultWebThemeEngine::paintTextField(WebCanvas* canvas, State, const WebRect& rect) const
+void DefaultWebThemeEngine::paintTextField(Canvas* canvas, State, const Rect& rect) const
 {
     cairo_save(canvas);
 
@@ -171,17 +171,17 @@ void DefaultWebThemeEngine::paintTextField(WebCanvas* canvas, State, const WebRe
     cairo_restore(canvas);
 }
 
-void DefaultWebThemeEngine::paintTextArea(WebCanvas* canvas, State state, const WebRect& rect) const
+void DefaultWebThemeEngine::paintTextArea(Canvas* canvas, State state, const Rect& rect) const
 {
     paintTextField(canvas, state, rect);
 }
 
-WebSize DefaultWebThemeEngine::getCheckboxSize() const
+Size DefaultWebThemeEngine::getCheckboxSize() const
 {
-    return WebSize(13, 13);
+    return Size(13, 13);
 }
 
-void DefaultWebThemeEngine::paintCheckbox(WebCanvas* canvas, State state, const WebRect& rect, const ButtonExtraParams& param) const
+void DefaultWebThemeEngine::paintCheckbox(Canvas* canvas, State state, const Rect& rect, const ButtonExtraParams& param) const
 {
     cairo_save(canvas);
     setupBorder(canvas, state);
@@ -204,12 +204,12 @@ void DefaultWebThemeEngine::paintCheckbox(WebCanvas* canvas, State state, const 
     cairo_restore(canvas);
 }
 
-WebSize DefaultWebThemeEngine::getRadioSize() const
+Size DefaultWebThemeEngine::getRadioSize() const
 {
-    return WebSize(13, 13);
+    return Size(13, 13);
 }
 
-void DefaultWebThemeEngine::paintRadio(WebCanvas* canvas, State state, const WebRect& rect, const ButtonExtraParams& param) const
+void DefaultWebThemeEngine::paintRadio(Canvas* canvas, State state, const Rect& rect, const ButtonExtraParams& param) const
 {
     cairo_save(canvas);
     setupBorder(canvas, state);
@@ -234,7 +234,7 @@ void DefaultWebThemeEngine::getMenuListPadding(int& paddingTop, int& paddingLeft
     paddingRight = 2 * MenuListBorder + MenuListArrowSize;
 }
 
-void DefaultWebThemeEngine::paintMenuList(WebCanvas* canvas, State state, const WebRect& rect) const
+void DefaultWebThemeEngine::paintMenuList(Canvas* canvas, State state, const Rect& rect) const
 {
     cairo_save(canvas);
     setupBorder(canvas, state);
@@ -253,12 +253,12 @@ void DefaultWebThemeEngine::paintMenuList(WebCanvas* canvas, State state, const 
     cairo_restore(canvas);
 }
 
-WebSize DefaultWebThemeEngine::getProgressBarSize() const
+Size DefaultWebThemeEngine::getProgressBarSize() const
 {
-    return WebSize(2000, 300);
+    return Size(2000, 300);
 }
 
-void DefaultWebThemeEngine::paintProgressBar(WebCanvas* canvas, State state, const WebRect& rect, const ProgressBarExtraParams& params) const
+void DefaultWebThemeEngine::paintProgressBar(Canvas* canvas, State state, const Rect& rect, const ProgressBarExtraParams& params) const
 {
     cairo_save(canvas);
 
@@ -301,7 +301,7 @@ void DefaultWebThemeEngine::getInnerSpinButtonPadding(int& paddingTop, int& padd
     paddingRight = 2 * InnerSpinButtonBorder + InnerSpinButtonArrowSize;
 }
 
-void DefaultWebThemeEngine::paintInnerSpinButton(WebCanvas* canvas, State state, const WebRect& rect, const InnerSpinButtonExtraParams& param) const
+void DefaultWebThemeEngine::paintInnerSpinButton(Canvas* canvas, State state, const Rect& rect, const InnerSpinButtonExtraParams& param) const
 {
     double rectHalfHeight = rect.height / 2;
 
@@ -333,7 +333,7 @@ void DefaultWebThemeEngine::paintInnerSpinButton(WebCanvas* canvas, State state,
     cairo_fill(canvas);
 }
 
-void DefaultWebThemeEngine::paintMeter(WebCanvas* canvas, State state, const WebRect& rect, const MeterExtraParams& params) const
+void DefaultWebThemeEngine::paintMeter(Canvas* canvas, State state, const Rect& rect, const MeterExtraParams& params) const
 {
     cairo_save(canvas);
 
@@ -350,7 +350,7 @@ void DefaultWebThemeEngine::paintMeter(WebCanvas* canvas, State state, const Web
 
 const int SliderTrackHeight = 6;
 
-void DefaultWebThemeEngine::paintSliderTrack(WebCanvas* canvas, State, const WebRect& rect) const
+void DefaultWebThemeEngine::paintSliderTrack(Canvas* canvas, State, const Rect& rect) const
 {
     cairo_save(canvas);
     cairo_rectangle(canvas, rect.x, rect.y + (rect.height - SliderTrackHeight) / 2.0, rect.width, SliderTrackHeight);
@@ -358,7 +358,7 @@ void DefaultWebThemeEngine::paintSliderTrack(WebCanvas* canvas, State, const Web
     cairo_restore(canvas);
 }
 
-void DefaultWebThemeEngine::paintSliderThumb(WebCanvas* canvas, State state, const WebRect& rect) const
+void DefaultWebThemeEngine::paintSliderThumb(Canvas* canvas, State state, const Rect& rect) const
 {
     cairo_save(canvas);
     setupBorder(canvas, state);
