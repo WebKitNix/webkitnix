@@ -42,14 +42,14 @@ WTFLogChannel LogNetwork           = { 0x00000080, "WebKit2LogLevel", WTFLogChan
 WTFLogChannel LogNetworkScheduling = { 0x00000100, "WebKit2LogLevel", WTFLogChannelOff };
 WTFLogChannel LogInspectorServer   = { 0x00000200, "WebKit2LogLevel", WTFLogChannelOff };
 
-#if !PLATFORM(MAC) && !PLATFORM(GTK) && !PLATFORM(QT) && !PLATFORM(EFL)
+#if !PLATFORM(MAC) && !PLATFORM(GTK) && !PLATFORM(QT) && !PLATFORM(EFL) && !PLATFORM(NIX)
 void initializeLogChannel(WTFLogChannel* channel)
 {
     // FIXME: Each platform will need to define their own initializeLogChannel().
 }
 #endif
 
-#if PLATFORM(GTK) || PLATFORM(QT) || PLATFORM(EFL)
+#if PLATFORM(GTK) || PLATFORM(QT) || PLATFORM(EFL) || PLATFORM(NIX)
 WTFLogChannel* getChannelFromName(const String& channelName)
 {
     if (!(channelName.length() >= 2))

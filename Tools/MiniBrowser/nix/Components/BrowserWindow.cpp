@@ -26,8 +26,9 @@
  */
 
 #include "BrowserWindow.h"
-
 #include "../BrowserControl.h"
+
+#include <string.h>
 
 Atom wmDeleteMessageAtom;
 
@@ -39,7 +40,11 @@ BrowserWindow::BrowserWindow(Display* display, Window parent, XContext context, 
 
 void BrowserWindow::setTitle(const char* title)
 {
-    XStoreName(m_display, m_window, title);
+    // Set _NET_WM_NAME, in UTF-8 encoding.
+    Atom utf8 = XInternAtom(m_display, "UTF8_STRING", False);
+    Atom netWmName = XInternAtom(m_display, "_NET_WM_NAME", False);
+
+    XChangeProperty(m_display, m_window, netWmName, utf8, 8, PropModeReplace, reinterpret_cast<const unsigned char*>(title), strlen(title));
 }
 
 void BrowserWindow::createXWindow(Window parent, XContext context)

@@ -1,3 +1,102 @@
+2013-07-17  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r152701, r152703, r152739, r152754,
+        and r152756.
+        http://trac.webkit.org/changeset/152701
+        http://trac.webkit.org/changeset/152703
+        http://trac.webkit.org/changeset/152739
+        http://trac.webkit.org/changeset/152754
+        http://trac.webkit.org/changeset/152756
+        https://bugs.webkit.org/show_bug.cgi?id=118821
+
+        this was a buggy fix and we're going to try something
+        different (Requested by thorton on #webkit).
+
+        * WebCoreSupport/WebChromeClient.h:
+        * WebCoreSupport/WebChromeClient.mm:
+        (WebChromeClient::shouldUnavailablePluginMessageBeButton):
+
+2013-07-17  Kangil Han  <kangil.han@samsung.com>
+
+        Use toHTMLMediaElement
+        https://bugs.webkit.org/show_bug.cgi?id=118727
+
+        Reviewed by Ryosuke Niwa.
+
+        To avoid direct use of static_cast, this patch uses toHTMLMediaElement for code cleanup.
+
+        * WebView/WebView.mm:
+        (-[WebView _enterFullscreenForNode:WebCore::]):
+
+2013-07-16  Simon Fraser  <simon.fraser@apple.com>
+
+        Protect against the LayerFlushController being deleted inside its flushLayers() callback
+        https://bugs.webkit.org/show_bug.cgi?id=118741
+        <rdar://problem/14402651>
+
+        Reviewed by Tim Horton.
+        
+        It's possible (especially on iOS) for the LayerFlushController to be destroyed
+        inside its callback, via -[WebView _close]. Protect against this by making
+        it refcounted, and holding a ref across the callback.
+        
+        Due to the odd relationship in which LayerFlushController owns its LayerFlushScheduler
+        by value, we achieve this by allowing subclasses of LayerFlushScheduler
+        to override runLoopObserverCallback(). WebViewLayerFlushScheduler uses the
+        override to protect the owner of the LayerFlushScheduler, which is the
+        LayerFlushController, when the callback is firing.
+
+        * WebView/WebView.mm:
+        (-[WebView _close]):
+        * WebView/WebViewData.h:
+        (WebViewLayerFlushScheduler::~WebViewLayerFlushScheduler):
+        (LayerFlushController::create):
+        * WebView/WebViewData.mm:
+        (LayerFlushController::invalidate):
+        (WebViewLayerFlushScheduler::WebViewLayerFlushScheduler):
+
+2013-07-16  Jessie Berlin  <jberlin@apple.com>
+
+        Fix some NSDictionary misuse pointed out by the clang static analyzer
+        https://bugs.webkit.org/show_bug.cgi?id=118736
+
+        Reviewed by Anders Carlsson.
+
+        * Plugins/Hosted/NetscapePluginHostManager.mm:
+        (WebKit::NetscapePluginHostManager::spawnPluginHost):
+        Explicitly cast the CFStringRef to an NSString *.
+        * WebCoreSupport/WebEditorClient.mm:
+        (WebEditorClient::documentFragmentFromAttributedString):
+        Do not put a key with a nil value pair into the NSDictionary.
+
+2013-07-15  Tim Horton  <timothy_horton@apple.com>
+
+        Update blocked/missing plug-in UI
+        https://bugs.webkit.org/show_bug.cgi?id=118347
+        <rdar://problem/14209318>
+
+        Reviewed by Sam Weinig.
+        Patch by Antoine Quint, Anders Carlsson, Sam Weinig, and myself.
+
+        * WebCoreSupport/WebChromeClient.h:
+        * WebCoreSupport/WebChromeClient.mm:
+        (WebChromeClient::shouldUnavailablePluginMessageIncludeButton):
+        Rename from shouldUnavailablePluginMessageBeButton to
+        shouldUnavailablePluginMessageIncludeButton for accuracy.
+
+2013-07-14  Jon Lee  <jonlee@apple.com>
+
+        [WK2] Calling Notification.requestPermission() without a callback crashes
+        https://bugs.webkit.org/show_bug.cgi?id=118654
+        <rdar://problem/14293352>
+
+        Reviewed by Alexey Proskuryakov.
+
+        * WebCoreSupport/WebNotificationClient.mm:
+        (-[WebNotificationPolicyListener initWithCallback:]): The callback can be NULL, so remove the ASSERT.
+        (-[WebNotificationPolicyListener allow]): Check for the callback before asking it to handle the event.
+        (-[WebNotificationPolicyListener deny]): Ditto.
+
 2013-07-12  Jessie Berlin  <jberlin@apple.com>
 
         Remove some dead stores pointed out by the clang static analyzer.

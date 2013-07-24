@@ -578,6 +578,7 @@ set(WebCore_IDL_FILES
     page/SpeechInputResult.idl
     page/SpeechInputResultList.idl
     page/WebKitPoint.idl
+    page/WindowBase64.idl
     page/WindowTimers.idl
     page/WorkerNavigator.idl
 
@@ -1873,6 +1874,7 @@ set(WebCore_SOURCES
     platform/audio/Cone.cpp
     platform/audio/DirectConvolver.cpp
     platform/audio/Distance.cpp
+    platform/audio/DownSampler.cpp
     platform/audio/DynamicsCompressor.cpp
     platform/audio/DynamicsCompressorKernel.cpp
     platform/audio/EqualPowerPanner.cpp
@@ -1891,6 +1893,7 @@ set(WebCore_SOURCES
     platform/audio/ReverbConvolverStage.cpp
     platform/audio/ReverbInputBuffer.cpp
     platform/audio/SincResampler.cpp
+    platform/audio/UpSampler.cpp
     platform/audio/VectorMath.cpp
     platform/audio/ZeroPole.cpp
 
@@ -2960,6 +2963,12 @@ set(WebCoreTestSupport_SOURCES
     platform/mock/PlatformSpeechSynthesizerMock.cpp
 )
 
+set(WebCoreTestSupport_LIBRARIES
+    JavaScriptCore
+    WTF
+    WebCore
+)
+
 # Modules that the bindings generator scripts may use
 set(SCRIPTS_RESOLVE_SUPPLEMENTAL
     ${WEBCORE_DIR}/bindings/scripts/IDLParser.pm
@@ -3212,14 +3221,12 @@ if (WebCore_OUTPUT_NAME)
 endif ()
 
 add_library(WebCoreTestSupport ${WebCoreTestSupport_LIBRARY_TYPE} ${WebCoreTestSupport_SOURCES})
+target_link_libraries(WebCoreTestSupport ${WebCoreTestSupport_LIBRARIES})
 set_target_properties(WebCoreTestSupport PROPERTIES FOLDER "WebCore")
 
 if (WebCoreTestSupport_OUTPUT_NAME)
     set_target_properties(WebCoreTestSupport PROPERTIES OUTPUT_NAME ${WebCoreTestSupport_OUTPUT_NAME})
 endif ()
-
-add_dependencies(WebCore JavaScriptCore)
-add_dependencies(WebCoreTestSupport WebCore)
 
 if (WTF_USE_LEVELDB)
     add_library(leveldb STATIC ${LEVELDB_SOURCES})

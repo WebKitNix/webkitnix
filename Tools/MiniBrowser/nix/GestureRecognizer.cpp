@@ -170,9 +170,8 @@ void GestureRecognizer::singleTapPressed(const NIXTouchEvent& event)
     const NIXTouchPoint& touchPoint = event.touchPoints[0];
     switch (event.type) {
     case kNIXInputEventTypeTouchMove:
-        if (exceedsPanThreshold(touchPoint, m_firstTouchPoint)) {
-            updatePanningData(event.timestamp, touchPoint);
-        }
+        if (exceedsPanThreshold(touchPoint, m_firstTouchPoint))
+            setupPanningData(event.timestamp, touchPoint);
         break;
     case kNIXInputEventTypeTouchEnd:
         m_state = &GestureRecognizer::waitForDoubleTap;
@@ -205,7 +204,7 @@ void GestureRecognizer::doubleTapPressed(const NIXTouchEvent& event)
     switch (event.type) {
     case kNIXInputEventTypeTouchMove:
         if (exceedsPanThreshold(touchPoint, m_firstTouchPoint))
-            updatePanningData(event.timestamp, touchPoint);
+            setupPanningData(event.timestamp, touchPoint);
         break;
     case kNIXInputEventTypeTouchEnd:
         m_state = &GestureRecognizer::noGesture;
@@ -219,12 +218,17 @@ void GestureRecognizer::doubleTapPressed(const NIXTouchEvent& event)
     }
 }
 
+void GestureRecognizer::setupPanningData(double timestamp, const NIXTouchPoint& current)
+{
+    m_client->handlePanningStarted(timestamp);
+    m_state = &GestureRecognizer::panningInProgress;
+    updatePanningData(timestamp, current);
+}
+
 void GestureRecognizer::updatePanningData(double timestamp, const NIXTouchPoint& current)
 {
     WKPoint delta = WKPointMake((current.globalX - m_previousTouchPoint.globalX) / m_client->scale(),
                                 (current.globalY - m_previousTouchPoint.globalY) / m_client->scale());
-
-    m_state = &GestureRecognizer::panningInProgress;
     m_client->handlePanning(timestamp, delta);
 }
 

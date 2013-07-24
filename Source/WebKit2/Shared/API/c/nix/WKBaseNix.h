@@ -37,4 +37,7 @@ typedef const struct OpaqueWKView* WKViewRef;
 typedef const struct OpaqueWKPopupItem* WKPopupItemRef;
 typedef const struct OpaqueWKPopupMenuListener* WKPopupMenuListenerRef;
 
+typedef const struct OpaqueWKTouchPoint* WKTouchPointRef;
+typedef const struct OpaqueWKTouchEvent* WKTouchEventRef;
+
 #endif /* WKBaseNix_h */

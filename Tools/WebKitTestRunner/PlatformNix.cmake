@@ -72,11 +72,8 @@ list(APPEND WebKitTestRunnerInjectedBundle_SOURCES
     ${WEBKIT_TESTRUNNER_INJECTEDBUNDLE_DIR}/nix/InjectedBundleNix.cpp
     ${WEBKIT_TESTRUNNER_INJECTEDBUNDLE_DIR}/nix/TestRunnerNix.cpp
     ${WEBKIT_TESTRUNNER_INJECTEDBUNDLE_DIR}/nix/PlatformClient.cpp
+    ${WEBKIT_TESTRUNNER_INJECTEDBUNDLE_DIR}/nix/GamepadControllerNix.cpp
 )
-
-if (ENABLE_GAMEPAD)
-    list(APPEND WebKitTestRunnerInjectedBundle_SOURCES ${WEBKIT_TESTRUNNER_INJECTEDBUNDLE_DIR}/nix/GamepadControllerNix.cpp)
-endif ()
 
 # FIXME: DOWNLOADED_FONTS_DIR should not hardcode the directory
 # structure. See <https://bugs.webkit.org/show_bug.cgi?id=81475>.

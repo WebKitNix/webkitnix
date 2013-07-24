@@ -314,6 +314,19 @@ void RenderView::layout()
         flowThreadController()->setCurrentRenderFlowThread(0);
 }
 
+LayoutUnit RenderView::pageOrViewLogicalHeight() const
+{
+    if (document()->printing())
+        return pageLogicalHeight();
+    
+    if (hasColumns() && !style()->hasInlineColumnAxis()) {
+        if (int pageLength = frameView()->pagination().pageLength)
+            return pageLength;
+    }
+
+    return viewLogicalHeight();
+}
+
 void RenderView::mapLocalToContainer(const RenderLayerModelObject* repaintContainer, TransformState& transformState, MapCoordinatesFlags mode, bool* wasFixed) const
 {
     // If a container was specified, and was not 0 or the RenderView,
@@ -398,7 +411,7 @@ void RenderView::paint(PaintInfo& paintInfo, const LayoutPoint& paintOffset)
     ASSERT(LayoutPoint(IntPoint(paintOffset.x(), paintOffset.y())) == paintOffset);
 
     // This avoids painting garbage between columns if there is a column gap.
-    if (m_frameView && m_frameView->pagination().mode != Pagination::Unpaginated)
+    if (m_frameView && m_frameView->pagination().mode != Pagination::Unpaginated && paintInfo.shouldPaintWithinRoot(this))
         paintInfo.context->fillRect(paintInfo.rect, m_frameView->baseBackgroundColor(), ColorSpaceDeviceRGB);
 
     paintObject(paintInfo, paintOffset);
@@ -1021,12 +1034,6 @@ int RenderView::viewWidth() const
 int RenderView::viewLogicalHeight() const
 {
     int height = style()->isHorizontalWritingMode() ? viewHeight() : viewWidth();
-
-    if (hasColumns() && !style()->hasInlineColumnAxis()) {
-        if (int pageLength = m_frameView->pagination().pageLength)
-            height = pageLength;
-    }
-
     return height;
 }
 

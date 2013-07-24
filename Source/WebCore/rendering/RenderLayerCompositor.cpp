@@ -119,12 +119,7 @@ public:
 
     bool overlapsLayers(const IntRect& bounds) const
     {
-        const RectList& layerRects = m_overlapStack.last();
-        for (unsigned i = 0; i < layerRects.size(); i++) {
-            if (layerRects[i].intersects(bounds))
-                return true;
-        }
-        return false;
+        return m_overlapStack.last().intersects(bounds);
     }
 
     bool isEmpty()
@@ -139,14 +134,42 @@ public:
 
     void popCompositingContainer()
     {
-        m_overlapStack[m_overlapStack.size() - 2].appendVector(m_overlapStack.last());
+        m_overlapStack[m_overlapStack.size() - 2].append(m_overlapStack.last());
         m_overlapStack.removeLast();
     }
 
     RenderGeometryMap& geometryMap() { return m_geometryMap; }
 
 private:
-    typedef Vector<IntRect> RectList;
+    struct RectList {
+        Vector<IntRect> rects;
+        IntRect boundingRect;
+        
+        void append(const IntRect& rect)
+        {
+            rects.append(rect);
+            boundingRect.unite(rect);
+        }
+
+        void append(const RectList& rectList)
+        {
+            rects.appendVector(rectList.rects);
+            boundingRect.unite(rectList.boundingRect);
+        }
+        
+        bool intersects(const IntRect& rect) const
+        {
+            if (!rects.size() || !boundingRect.intersects(rect))
+                return false;
+
+            for (unsigned i = 0; i < rects.size(); i++) {
+                if (rects[i].intersects(rect))
+                    return true;
+            }
+            return false;
+        }
+    };
+
     Vector<RectList> m_overlapStack;
     HashSet<const RenderLayer*> m_layers;
     RenderGeometryMap m_geometryMap;
@@ -2070,7 +2093,7 @@ bool RenderLayerCompositor::requiresCompositingForVideo(RenderObject* renderer) 
         if (!node || (!node->hasTagName(HTMLNames::videoTag) && !isHTMLAudioElement(node)))
             return false;
 
-        HTMLMediaElement* mediaElement = toMediaElement(node);
+        HTMLMediaElement* mediaElement = toHTMLMediaElement(node);
         return mediaElement->player() ? mediaElement->player()->supportsAcceleratedRendering() : false;
     }
 #endif // ENABLE(PLUGIN_PROXY_FOR_VIDEO)
@@ -2135,7 +2158,7 @@ bool RenderLayerCompositor::requiresCompositingForFrame(RenderObject* renderer) 
         return false;
 
     // If we can't reliably know the size of the iframe yet, don't change compositing state.
-    if (renderer->needsLayout())
+    if (!renderer->parent() || renderer->needsLayout())
         return frameRenderer->hasLayer() && frameRenderer->layer()->isComposited();
     
     // Don't go into compositing mode if height or width are zero.

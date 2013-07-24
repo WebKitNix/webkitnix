@@ -33,13 +33,12 @@
 #endif
 
 #include "WKBase.h"
+#include "WebKit2Initialize.h"
 #include <WebCore/CoordinatedGraphicsLayer.h>
 #include <WebCore/ResourceHandle.h>
 #include <WebCore/RunLoop.h>
 #include <WebKit2/WebProcess.h>
-#include <runtime/InitializeThreading.h>
 #include <unistd.h>
-#include <wtf/MainThread.h>
 #include <wtf/gobject/GOwnPtr.h>
 #include <wtf/gobject/GRefPtr.h>
 
@@ -60,10 +59,7 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
 #endif
 #endif
 
-    JSC::initializeThreading();
-    WTF::initializeMainThread();
-
-    RunLoop::initializeMainRunLoop();
+    InitializeWebKit2();
 
 #ifdef WTF_USE_SOUP
     SoupSession* session = WebCore::ResourceHandle::defaultSession();

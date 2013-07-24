@@ -80,7 +80,9 @@ void WebContext::platformInitializeWebProcess(WebProcessCreationParameters& para
 {
     initInspectorServer();
 
+#if USE(SOUP)
     parameters.ignoreTLSErrors = false;
+#endif
 }
 
 void WebContext::platformInvalidateContext()

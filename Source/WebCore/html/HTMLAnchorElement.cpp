@@ -310,10 +310,7 @@ bool HTMLAnchorElement::hasRel(uint32_t relation) const
 
 void HTMLAnchorElement::setRel(const String& value)
 {
-    m_linkRelations = 0;
-    SpaceSplitString newLinkRelations(value, true);
-    // FIXME: Add link relations as they are implemented
-    if (newLinkRelations.contains("noreferrer"))
+    if (SpaceSplitString::spaceSplitStringContainsValue(value, "noreferrer", true))
         m_linkRelations |= RelationNoReferrer;
 }
 
@@ -336,7 +333,9 @@ String HTMLAnchorElement::target() const
 String HTMLAnchorElement::hash() const
 {
     String fragmentIdentifier = href().fragmentIdentifier();
-    return fragmentIdentifier.isEmpty() ? emptyString() : "#" + fragmentIdentifier;
+    if (fragmentIdentifier.isEmpty())
+        return emptyString();
+    return AtomicString(String("#" + fragmentIdentifier));
 }
 
 void HTMLAnchorElement::setHash(const String& value)

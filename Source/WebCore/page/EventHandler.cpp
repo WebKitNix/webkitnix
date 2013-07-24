@@ -2003,7 +2003,7 @@ static bool targetIsFrame(Node* target, Frame*& frame)
     if (!target->hasTagName(frameTag) && !target->hasTagName(iframeTag))
         return false;
 
-    frame = static_cast<HTMLFrameElementBase*>(target)->contentFrame();
+    frame = toHTMLFrameElementBase(target)->contentFrame();
 
     return true;
 }
@@ -2182,7 +2182,7 @@ static inline SVGElementInstance* instanceAssociatedWithShadowTreeElement(Node* 
     if (!shadowTreeParentElement || !shadowTreeParentElement->hasTagName(useTag))
         return 0;
 
-    return static_cast<SVGUseElement*>(shadowTreeParentElement)->instanceForShadowTreeElement(referenceNode);
+    return toSVGUseElement(shadowTreeParentElement)->instanceForShadowTreeElement(referenceNode);
 }
 #endif
 

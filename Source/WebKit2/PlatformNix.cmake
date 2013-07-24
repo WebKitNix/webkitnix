@@ -4,6 +4,7 @@ list(APPEND WebKit2_LINK_FLAGS
 
 list(APPEND WebKit2_SOURCES
     Platform/gtk/ModuleGtk.cpp
+    Platform/gtk/LoggingGtk.cpp
     Platform/gtk/WorkQueueGtk.cpp
     Platform/unix/SharedMemoryUnix.cpp
 

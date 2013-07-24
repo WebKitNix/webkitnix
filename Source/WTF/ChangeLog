@@ -1,3 +1,122 @@
+2013-07-22  Benjamin Poulain  <benjamin@webkit.org>
+
+        String::lower() - Skip to slow path on the first failure
+        https://bugs.webkit.org/show_bug.cgi?id=118885
+
+        Reviewed by Andreas Kling.
+
+        In the 8 bits case, we don't need to know the state of the full string before changing characters
+        to their lowercase variant.
+        Just fail immediately and start transforming characters from the point of failure.
+
+        This avoid reading the string twice when the uppercase character is not at the end of the string.
+
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::lower):
+
+2013-07-22  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Unreviewed build fix.
+
+        * WTF.vcxproj/WTFGenerated.make: Stop triggering a "Build All" when things have not changed.
+
+2013-07-19  Alex Christensen  <achristensen@apple.com>
+
+        Added x64 configuration to Visual Studio build.
+        https://bugs.webkit.org/show_bug.cgi?id=118888
+
+        Reviewed by Brent Fulgham.
+
+        * WTF.vcxproj/WTF.vcxproj:
+        * WTF.vcxproj/WTF.vcxproj.filters:
+        * WTF.vcxproj/WTFGenerated.vcxproj:
+
+2013-07-18  Benjamin Poulain  <benjamin@webkit.org>
+
+        Fix the build after r152881
+
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::lower):
+
+2013-07-18  Benjamin Poulain  <benjamin@webkit.org>
+
+        Little cleaning of StringImpl::lower() and StringImpl::upper() for ARM
+        https://bugs.webkit.org/show_bug.cgi?id=118831
+
+        Reviewed by Gavin Barraclough.
+
+        Clean lower() and upper() before trying some optimizations:
+        -Prefix the code with the empty() case. Otherwise, each descending loop starts with
+         a check for length == 0.
+        -Change ored to a 32 bits registers. ARM only has 32 bits registers and access to full word.
+         To keep the value a UChar, the compiler is adding a bunch of useless value & 0xffff in the loops.
+        -Change the pointer based loops for index based loops. The compiler does a mighty job at optimizing
+         those for each architecture. No need to make the code more complex.
+        -Don't perform the check for int32 unless we need to. The only code limited to int is Unicode::toLower.
+
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::lower):
+        (WTF::StringImpl::upper):
+
+2013-07-18  Andreas Kling  <akling@apple.com>
+
+        CodeBlock::m_argumentValueProfiles wastes a lot of memory.
+        <http://webkit.org/b/118852>
+        <rdar://problem/14481659>
+
+        Reviewed by Anders Carlsson.
+
+        Add Vector::resizeToFit(size), like resize() but without growth padding.
+
+        * wtf/Vector.h:
+        (WTF::::resizeToFit):
+
+2013-07-17  Benjamin Poulain  <benjamin@webkit.org>
+
+        Add a thread safety assertion when creating an AtomicString from a StringImpl
+        https://bugs.webkit.org/show_bug.cgi?id=118637
+
+        Reviewed by Sam Weinig.
+
+        The goal is to prevent this kind of use:
+        -Someone create a String from a StringImpl.
+        -At some point, the string becomes atomic.
+        -Later, when the string only has one ref, its ownership is 'passed' to an other thread
+         without checking String::isSafeToSendToAnotherThread().
+        -In the thread B, an AtomicString is created from the String.
+        ->The AtomicString's StringImpl returned is not in the current thread string table.
+
+        * wtf/text/AtomicString.cpp:
+        (WTF::AtomicString::isInAtomicStringTable):
+        * wtf/text/AtomicString.h:
+        (WTF::AtomicString::add):
+
+2013-07-17  Benjamin Poulain  <benjamin@webkit.org>
+
+        Simplify AtomicString::lower()
+        https://bugs.webkit.org/show_bug.cgi?id=118719
+        <rdar://problem/14452883>
+
+        Reviewed by Gavin Barraclough.
+
+        * wtf/text/AtomicString.cpp:
+        (WTF::AtomicString::lower): Previously, the code was using a copy constructor for two path
+        and one regular construction in another path.
+        Just put the StringImpl where it needs to be instead.
+
+2013-07-15  Benjamin Poulain  <benjamin@webkit.org>
+
+        Add a threading assertion to AtomicString::remove
+        https://bugs.webkit.org/show_bug.cgi?id=118695
+
+        Reviewed by Sam Weinig.
+
+        * wtf/text/AtomicString.cpp:
+        (WTF::AtomicString::remove): The destructor of StringImpl remove
+        the string from the string table if it is atomic. This needs to be done
+        on the same thread as the one on which the string was added (otherwise the original
+        table would keep a dangling pointer to a dead string).
+
 2013-07-15  Benjamin Poulain  <benjamin@webkit.org>
 
         Minor cleaning of AtomicString::addSlowCase

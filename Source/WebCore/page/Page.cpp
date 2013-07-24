@@ -96,7 +96,7 @@ static HashSet<Page*>* allPages;
 
 DEFINE_DEBUG_ONLY_GLOBAL(WTF::RefCountedLeakCounter, pageCounter, ("Page"));
 
-static void networkStateChanged()
+static void networkStateChanged(bool isOnLine)
 {
     Vector<RefPtr<Frame> > frames;
     
@@ -108,7 +108,7 @@ static void networkStateChanged()
         InspectorInstrumentation::networkStateChanged(*it);
     }
 
-    AtomicString eventName = networkStateNotifier().onLine() ? eventNames().onlineEvent : eventNames().offlineEvent;
+    AtomicString eventName = isOnLine ? eventNames().onlineEvent : eventNames().offlineEvent;
     for (unsigned i = 0; i < frames.size(); i++)
         frames[i]->document()->dispatchWindowEvent(Event::create(eventName, false, false));
 }
@@ -187,13 +187,14 @@ Page::Page(PageClients& pageClients)
     , m_scriptedAnimationsSuspended(false)
     , m_pageThrottler(PageThrottler::create(this))
     , m_console(PageConsole::create(this))
+    , m_framesHandlingBeforeUnloadEvent(0)
 {
     ASSERT(m_editorClient);
 
     if (!allPages) {
         allPages = new HashSet<Page*>;
         
-        networkStateNotifier().setNetworkStateChangedFunction(networkStateChanged);
+        networkStateNotifier().addNetworkStateChangeListener(networkStateChanged);
     }
 
     ASSERT(!allPages->contains(this));
@@ -1568,6 +1569,22 @@ void Page::captionPreferencesChanged()
         frame->document()->captionPreferencesChanged();
 }
 #endif
+
+void Page::incrementFrameHandlingBeforeUnloadEventCount()
+{
+    ++m_framesHandlingBeforeUnloadEvent;
+}
+
+void Page::decrementFrameHandlingBeforeUnloadEventCount()
+{
+    ASSERT(m_framesHandlingBeforeUnloadEvent);
+    --m_framesHandlingBeforeUnloadEvent;
+}
+
+bool Page::isAnyFrameHandlingBeforeUnloadEvent()
+{
+    return m_framesHandlingBeforeUnloadEvent;
+}
 
 Page::PageClients::PageClients()
     : alternativeTextClient(0)

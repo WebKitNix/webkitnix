@@ -59,7 +59,7 @@ public:
     static PassRefPtr<SVGPathElement> create(const QualifiedName&, Document*);
     
     float getTotalLength();
-    FloatPoint getPointAtLength(float distance);
+    SVGPoint getPointAtLength(float distance);
     unsigned getPathSegAtLength(float distance);
 
     PassRefPtr<SVGPathSegClosePath> createSVGPathSegClosePath(SVGPathSegRole role = PathSegUndefinedRole);
@@ -131,7 +131,7 @@ private:
     bool m_isAnimValObserved;
 };
 
-inline SVGPathElement* toSVGPathElement(SVGElement* element)
+inline SVGPathElement* toSVGPathElement(Element* element)
 {
     ASSERT_WITH_SECURITY_IMPLICATION(!element || element->hasTagName(SVGNames::pathTag));
     return static_cast<SVGPathElement*>(element);

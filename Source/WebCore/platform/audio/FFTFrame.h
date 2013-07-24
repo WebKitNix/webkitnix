@@ -68,7 +68,6 @@ struct RDFTContext;
 #endif // USE(WEBAUDIO_IPP)
 
 #if PLATFORM(NIX)
-#include <cmath>
 #include <public/FFTFrame.h>
 #endif
 

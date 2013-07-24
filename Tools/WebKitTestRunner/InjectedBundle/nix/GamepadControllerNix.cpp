@@ -24,6 +24,8 @@
  */
 
 #include "config.h"
+
+#if ENABLE(GAMEPAD)
 #include "GamepadController.h"
 
 #include "PlatformClient.h"
@@ -133,3 +135,5 @@ void GamepadController::sampleGamepads(Nix::Gamepads& into)
 }
 
 } // namespace WTR
+
+#endif // ENABLE(GAMEPAD)

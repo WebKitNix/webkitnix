@@ -41,6 +41,7 @@ public:
     virtual void handleDoubleTap(double timestamp, const NIXTouchPoint&) { }
     virtual void handleLongTap(double timestamp, const NIXTouchPoint&) { }
 
+    virtual void handlePanningStarted(double timestamp) { }
     virtual void handlePanning(double timestamp, WKPoint delta) { }
     virtual void handlePanningFinished(double timestamp) { }
 
@@ -68,6 +69,7 @@ private:
     void panningInProgress(const NIXTouchEvent&);
     void pinchInProgress(const NIXTouchEvent&);
 
+    void setupPanningData(double, const NIXTouchPoint&);
     void updatePanningData(double, const NIXTouchPoint&);
     void setupPinchData(const NIXTouchEvent&);
     void updatePinchData(double, const NIXTouchEvent&);

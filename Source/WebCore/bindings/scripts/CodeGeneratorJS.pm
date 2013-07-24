@@ -167,8 +167,8 @@ sub GetParentClassName
     my $interface = shift;
 
     return $interface->extendedAttributes->{"JSLegacyParent"} if $interface->extendedAttributes->{"JSLegacyParent"};
-    return "JSDOMWrapper" if (@{$interface->parents} eq 0);
-    return "JS" . $interface->parents(0);
+    return "JSDOMWrapper" unless $interface->parent;
+    return "JS" . $interface->parent;
 }
 
 sub GetCallbackClassName
@@ -650,17 +650,10 @@ sub GenerateHeader
 
     my $interfaceName = $interface->name;
     my $className = "JS$interfaceName";
-    my @ancestorInterfaceNames = ();
     my %structureFlags = ();
 
-    # We only support multiple parents with SVG (for now).
-    if (@{$interface->parents} > 1) {
-        die "A class can't have more than one parent" unless $interfaceName =~ /SVG/;
-        $codeGenerator->AddMethodsConstantsAndAttributesFromParentInterfaces($interface, \@ancestorInterfaceNames);
-    }
-
     my $hasLegacyParent = $interface->extendedAttributes->{"JSLegacyParent"};
-    my $hasRealParent = @{$interface->parents} > 0;
+    my $hasRealParent = $interface->parent;
     my $hasParent = $hasLegacyParent || $hasRealParent;
     my $parentClassName = GetParentClassName($interface);
     my $needsMarkChildren = $interface->extendedAttributes->{"JSCustomMarkFunction"} || $interface->extendedAttributes->{"EventTarget"} || $interface->name eq "EventTarget";
@@ -1194,12 +1187,6 @@ sub GenerateHeader
     push(@headerContent, "\n} // namespace WebCore\n\n");
     push(@headerContent, "#endif // ${conditionalString}\n\n") if $conditionalString;
     push(@headerContent, "#endif\n");
-
-    # - Generate dependencies.
-    if ($writeDependencies && @ancestorInterfaceNames) {
-        push(@depsContent, "$className.h : ", join(" ", map { "$_.idl" } @ancestorInterfaceNames), "\n");
-        push(@depsContent, map { "$_.idl :\n" } @ancestorInterfaceNames); 
-    }
 }
 
 sub GenerateAttributesHashTable($$)
@@ -1584,7 +1571,7 @@ sub GenerateImplementation
     my $className = "JS$interfaceName";
 
     my $hasLegacyParent = $interface->extendedAttributes->{"JSLegacyParent"};
-    my $hasRealParent = @{$interface->parents} > 0;
+    my $hasRealParent = $interface->parent;
     my $hasParent = $hasLegacyParent || $hasRealParent;
     my $parentClassName = GetParentClassName($interface);
     my $visibleInterfaceName = $codeGenerator->GetVisibleInterfaceName($interface);
@@ -2007,7 +1994,7 @@ sub GenerateImplementation
                 my $isNullable = $attribute->signature->isNullable;
                 $codeGenerator->AssertNotSequenceType($type);
                 my $getFunctionName = GetAttributeGetterName($interfaceName, $className, $attribute);
-                my $implGetterFunctionName = $codeGenerator->WK_lcfirst($name);
+                my $implGetterFunctionName = $codeGenerator->WK_lcfirst($attribute->signature->extendedAttributes->{"ImplementedAs"} || $name);
 
                 my $attributeConditionalString = $codeGenerator->GenerateConditionalString($attribute->signature);
                 push(@implContent, "#if ${attributeConditionalString}\n") if $attributeConditionalString;
@@ -3654,12 +3641,6 @@ sub NativeToJSValue
                 AddToImplIncludes("SVGStaticPropertyWithParentTearOff.h", $conditional);
                 $tearOffType =~ s/SVGPropertyTearOff</SVGStaticPropertyWithParentTearOff<$interfaceName, /;
 
-                if ($value =~ /matrix/ and $interfaceName eq "SVGTransform") {
-                    # SVGTransform offers a matrix() method for internal usage that returns an AffineTransform
-                    # and a svgMatrix() method returning a SVGMatrix, used for the bindings.
-                    $value =~ s/matrix/svgMatrix/;
-                }
-
                 $value = "${tearOffType}::create(castedThis->impl(), $value, $updateMethod)";
             } else {
                 AddToImplIncludes("SVGStaticPropertyTearOff.h", $conditional);
@@ -4091,7 +4072,8 @@ bool fill${interfaceName}Init(${interfaceName}Init& eventInit, JSDictionary& dic
 {
 END
 
-            foreach my $interfaceBase (@{$interface->parents}) {
+            if ($interface->parent) {
+                my $interfaceBase = $interface->parent;
                 push(@implContent, <<END);
     if (!fill${interfaceBase}Init(eventInit, dictionary))
         return false;

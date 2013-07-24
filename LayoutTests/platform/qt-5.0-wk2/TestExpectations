@@ -172,6 +172,7 @@ compositing/geometry/tall-page-composited.html
 compositing/plugins
 compositing/video
 compositing/layers-inside-overflow-scroll.html
+compositing/iframes/iframe-position-absolute-with-padding-percentage-crash.html
 
 # [Qt][WK2] New compositing test are failing since added in r126663.
 # webkit.org/b/95076 
@@ -232,6 +233,18 @@ webkit.org/b/91610 editing/selection/14971.html
 
 # These tests always fail (with and without --singly). It needs investigation.
 editing/selection/caret-mode-paragraph-keys-navigation.html
+
+# [Qt][WK2] Editing/selection tests that has different results from xvfb with gpu
+# webkit.org/b/118903
+editing/selection/caret-rtl-2-left.html
+editing/selection/caret-rtl-2.html
+editing/selection/caret-rtl-right.html
+editing/selection/caret-rtl.html
+editing/selection/extend-selection-bidi.html
+editing/selection/vertical-rl-rtl-extend-line-backward-br.html
+editing/selection/vertical-rl-rtl-extend-line-backward-p.html
+editing/selection/vertical-rl-rtl-extend-line-forward-br.html
+editing/selection/vertical-rl-rtl-extend-line-forward-p.html
 
 # =========================================================================== #
 # Fast tests.                                                                 #
@@ -411,6 +424,58 @@ platform/qt/fast/spatial-navigation/snav-ensure-scrolls-with-scrollbars-disabled
 fast/dynamic/containing-block-change.html [ ImageOnlyFailure ]
 fast/frames/inline-object-inside-frameset.html [ ImageOnlyFailure ]
 fast/repaint/textarea-set-disabled.html [ ImageOnlyFailure ]
+
+
+# [Qt][WK2] Failing fast/repaint pixel tests
+# webkit.org/b/118674
+fast/repaint/absolute-position-moved.html
+fast/repaint/caret-outside-block.html
+fast/repaint/fixed-child-move-after-scroll.html
+fast/repaint/fixed-child-of-transformed-move-after-scroll.html
+fast/repaint/fixed-in-page-scale.html
+fast/repaint/fixed-move-after-scroll.html
+fast/repaint/fixed-scale.html
+fast/repaint/fixed-scroll-simple.html
+fast/repaint/fixed-table-cell.html
+fast/repaint/fixed-table-overflow-zindex.html
+fast/repaint/fixed-table-overflow.html
+fast/repaint/fixed-tranformed.html
+fast/repaint/intermediate-layout-position-clip.html
+fast/repaint/overflow-hide.html
+fast/repaint/overflow-show.html
+fast/repaint/repaint-during-scroll.html
+fast/repaint/scroll-absolute-layer-with-reflection.html
+fast/repaint/scroll-fixed-layer-with-no-visible-content.html
+fast/repaint/scroll-fixed-layer-with-reflection.html
+fast/repaint/scroll-in-clipped-layer.html
+fast/repaint/scroll-in-fixed-layer.html
+fast/repaint/selection-clear.html
+fast/repaint/table-cell-collapsed-border-scroll.html
+fast/repaint/transform-translate.html
+
+# [GTK][Qt] Regression: This test fails after r152701 changed how unavailable plugins are handled
+webkit.org/b/118730 fast/images/object-image.html [ Skip ]
+
+# [Qt][WK2] Some fast test has different result from xvfb with gpu
+# webkit.org/b/118901
+fast/animation/request-animation-frame-too-rapid.html
+fast/borders/rtl-border-05.html
+fast/dom/34176.html
+fast/dom/Window/window-resize-and-move-arguments.html
+fast/forms/HTMLOptionElement_label06.html
+fast/forms/HTMLOptionElement_label07.html
+fast/forms/form-element-geometry.html
+fast/forms/listbox-bidi-align.html
+fast/forms/menulist-separator-painting.html
+fast/forms/search-rtl.html
+fast/forms/select-baseline.html
+fast/forms/selectlist-minsize.html
+fast/inline/inline-box-background-long-image.html
+fast/inline/inline-box-background-repeat-x.html
+fast/inline/inline-box-background-repeat-y.html
+fast/inline/inline-box-background.html
+fast/text/international/bidi-ignored-for-first-child-inline.html
+fast/text/international/unicode-bidi-plaintext-in-textarea.html
 
 # =========================================================================== #
 # Fullscreen tests.                                                          #
@@ -848,12 +913,15 @@ compositing/geometry/fixed-position-iframe-composited-page-scale.html [ ImageOnl
 compositing/geometry/fixed-position-transform-composited-page-scale-down.html [ ImageOnlyFailure ]
 compositing/geometry/fixed-position-transform-composited-page-scale.html [ ImageOnlyFailure ]
 compositing/geometry/horizontal-scroll-composited.html [ ImageOnlyFailure ]
+compositing/geometry/layer-due-to-layer-children-deep.html [ ImageOnlyFailure ]
+compositing/geometry/repaint-foreground-layer.html [ ImageOnlyFailure ]
 compositing/geometry/vertical-scroll-composited.html [ ImageOnlyFailure ]
 compositing/images/direct-pdf-image.html [ ImageOnlyFailure ]
 compositing/layer-creation/fixed-position-and-transform.html [ ImageOnlyFailure ]
 compositing/layer-creation/fixed-position-scroll.html [ ImageOnlyFailure ]
 compositing/layer-creation/fixed-position-under-transform.html [ ImageOnlyFailure ]
 compositing/overflow/fixed-position-ancestor-clip.html [ ImageOnlyFailure ]
+compositing/reflections/compositing-change-inside-reflection.html [ ImageOnlyFailure ]
 compositing/reflections/masked-reflection-on-composited.html [ ImageOnlyFailure ]
 compositing/rtl/rtl-fixed-overflow-scrolled.html [ ImageOnlyFailure ]
 compositing/transitions/singular-scale-transition.html [ ImageOnlyFailure ]
@@ -903,6 +971,20 @@ plugins/mouse-click-iframe-to-plugin.html
 # Unexplained failures
 fast/table/giantCellspacing.html
 media/video-zoom-controls.html
+
+# [Qt][WK2] transforms/3d/point-mapping/3d-point-mapping pixel tests failing
+# webkit.org/b/118837
+transforms/3d/point-mapping/3d-point-mapping-2.html
+transforms/3d/point-mapping/3d-point-mapping-deep.html
+transforms/3d/point-mapping/3d-point-mapping-preserve-3d.html
+transforms/3d/point-mapping/3d-point-mapping.html
+
+# Failing pixel reftests
+fast/regions/region-style-image-background-color.html
+svg/animations/animateMotion-additive-2d.svg
+fast/regions/region-style-inline-background-color.html
+fast/regions/render-region-custom-style-mark.html
+svg/animations/animateMotion-additive-2c.svg
 
 # =========================================================================== #
 # Unsorted tests.                                                             #

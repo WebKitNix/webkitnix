@@ -32,7 +32,13 @@
 #include "DOMDefaultImpl.h"
 #include "PrintWebUIDelegate.h"
 #include <WebKit/WebKitCOMAPI.h>
+#include <wtf/Platform.h>
 
+#if USE(CF)
+#include <CoreFoundation/CFRunLoop.h>
+#endif
+
+#include <assert.h>
 #include <commctrl.h>
 #include <commdlg.h>
 #include <objbase.h>
@@ -259,6 +265,10 @@ BOOL WINAPI DllMain(HINSTANCE dllInstance, DWORD reason, LPVOID)
     return TRUE;
 }
 
+#if USE(CF)
+extern "C" void _CFRunLoopSetWindowsMessageQueueMask(CFRunLoopRef, uint32_t, CFStringRef);
+#endif
+
 extern "C" __declspec(dllexport) int WINAPI dllLauncherEntryPoint(HINSTANCE, HINSTANCE, LPTSTR, int nCmdShow)
 {
 #ifdef _CRTDBG_MAP_ALLOC
@@ -421,12 +431,17 @@ extern "C" __declspec(dllexport) int WINAPI dllLauncherEntryPoint(HINSTANCE, HIN
     }
 
     // Main message loop:
+#if USE(CF)
+    _CFRunLoopSetWindowsMessageQueueMask(CFRunLoopGetMain(), QS_ALLINPUT | QS_ALLPOSTMESSAGE, kCFRunLoopDefaultMode);
+    CFRunLoopRun();
+#else
     while (GetMessage(&msg, NULL, 0, 0)) {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
     }
+#endif
 
 exit:
     gPrintDelegate->Release();

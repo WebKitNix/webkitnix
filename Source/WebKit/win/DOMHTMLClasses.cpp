@@ -701,15 +701,13 @@ HRESULT STDMETHODCALLTYPE DOMHTMLSelectElement::options(
     if (!result)
         return E_POINTER;
 
-    *result = 0;
-
     ASSERT(m_element);
-    ASSERT(m_element->hasTagName(selectTag));
-    HTMLSelectElement* selectElement = static_cast<HTMLSelectElement*>(m_element);
+    HTMLSelectElement* selectElement = toHTMLSelectElement(m_element);
 
     if (!selectElement->options())
         return E_FAIL;
 
+    *result = 0;
     RefPtr<HTMLOptionsCollection> options = selectElement->options();
     *result = DOMHTMLOptionsCollection::createInstance(options.get());
     return S_OK;
@@ -806,8 +804,7 @@ HRESULT STDMETHODCALLTYPE DOMHTMLSelectElement::activateItemAtIndex(
     /* [in] */ int index)
 {
     ASSERT(m_element);
-    ASSERT(m_element->hasTagName(selectTag));
-    HTMLSelectElement* selectElement = static_cast<HTMLSelectElement*>(m_element);
+    HTMLSelectElement* selectElement = toHTMLSelectElement(m_element);
 
     if (index >= selectElement->length())
         return E_FAIL;
@@ -1610,8 +1607,8 @@ HRESULT STDMETHODCALLTYPE DOMHTMLIFrameElement::contentFrame(
     if (!result)
         return E_POINTER;
     *result = 0;
-    ASSERT(m_element && m_element->hasTagName(iframeTag));
-    HTMLIFrameElement* iFrameElement = static_cast<HTMLIFrameElement*>(m_element);
+    ASSERT(m_element);
+    HTMLIFrameElement* iFrameElement = toHTMLIFrameElement(m_element);
     COMPtr<IWebFrame> webFrame = kit(iFrameElement->contentFrame());
     if (!webFrame)
         return E_FAIL;

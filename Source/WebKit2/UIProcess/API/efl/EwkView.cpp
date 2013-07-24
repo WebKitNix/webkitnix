@@ -29,6 +29,7 @@
 #include "NativeWebKeyboardEvent.h"
 #include "NativeWebMouseEvent.h"
 #include "NativeWebWheelEvent.h"
+#include "NotImplemented.h"
 #include "PageLoadClientEfl.h"
 #include "PagePolicyClientEfl.h"
 #include "PageUIClientEfl.h"
@@ -73,6 +74,7 @@
 #endif
 #include <WebCore/CairoUtilitiesEfl.h>
 #include <WebCore/Cursor.h>
+#include <WebCore/NotImplemented.h>
 #include <WebCore/PlatformContextCairo.h>
 #include <WebKit2/WKImageCairo.h>
 #include <wtf/MathExtras.h>
@@ -790,6 +792,11 @@ void EwkView::setTouchEventsEnabled(bool enabled)
         evas_object_event_callback_del(m_evasObject, EVAS_CALLBACK_MULTI_MOVE, handleTouchMove);
     }
 }
+
+void EwkView::doneWithTouchEvent(WKTouchEventRef, bool /* wasEventHandled */)
+{
+    notImplemented();
+}
 #endif
 
 #if USE(ACCELERATED_COMPOSITING)
@@ -1372,6 +1379,11 @@ PassRefPtr<cairo_surface_t> EwkView::takeSnapshot()
     WKViewResumeActiveDOMObjectsAndAnimations(wkView());
 
     return snapshot.release();
+}
+
+void EwkView::didFindZoomableArea(const WKPoint& point, const WKRect& area)
+{
+    notImplemented();
 }
 
 Evas_Smart_Class EwkView::parentSmartClass = EVAS_SMART_CLASS_INIT_NULL;

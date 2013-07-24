@@ -116,6 +116,14 @@ WEB_PROCESS_CMD_PREFIX="/usr/bin/xterm -title WebProcess -e gdb --args" \
 WebKitBuild/Debug/bin/WebKitTestRunner --no-timeout-at-all \
                                          LayoutTests/TEST_OF_YOUR_CHOICE
 
+If you want to have detailed logs from LOG(...) functions you can enable
+logging for each log channel with WEBKIT_DEBUG environment variable:
+WEBKIT_DEBUG="WTFLogChannel1 WTFLogChannel2 ... WTFLogChannelN"
+
+You can find log channels in Source/WebCore/platform/Logging.cpp and
+Source/WebKit2/Platform/Logging.cpp. For example: Frames, Events, Network, ...
+
+
 Using the remote inspector
 ==========================
 

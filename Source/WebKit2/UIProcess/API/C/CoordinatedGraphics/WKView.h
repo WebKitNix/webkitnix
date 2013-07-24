@@ -25,6 +25,10 @@
 #include <WebKit2/WKGeometry.h>
 #include <WebKit2/WKCoordinatedScene.h>
 
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,6 +41,8 @@ typedef void (*WKViewPageDidChangeContentsPositionCallback)(WKViewRef view, WKPo
 typedef void (*WKViewPageDidRenderFrameCallback)(WKViewRef view, WKSize contentsSize, WKRect coveredRect, const void* clientInfo);
 typedef void (*WKViewPageDidChangeViewportAttributesCallback)(WKViewRef view, WKViewportAttributesRef, const void* clientInfo);
 typedef void (*WKViewPageDidChangeTooltipCallback)(WKViewRef view, WKStringRef newTooltip, const void* clientInfo);
+typedef void (*WKViewDidFindZoomableAreaCallback)(WKViewRef view, WKPoint point, WKRect area, const void* clientInfo);
+typedef void (*WKViewDoneWithTouchEventCallback)(WKViewRef view, WKTouchEventRef touchEvent, bool wasEventHandled, const void* clientInfo);
 
 struct WKViewClient {
     int                                              version;
@@ -52,6 +58,8 @@ struct WKViewClient {
     WKViewCallback                                   didCompletePageTransition;
     WKViewPageDidChangeViewportAttributesCallback    didChangeViewportAttributes;
     WKViewPageDidChangeTooltipCallback               didChangeTooltip;
+    WKViewDidFindZoomableAreaCallback                didFindZoomableArea;
+    WKViewDoneWithTouchEventCallback                 doneWithTouchEvent;
 };
 typedef struct WKViewClient WKViewClient;
 
@@ -103,6 +111,8 @@ WK_EXPORT bool WKViewExitFullScreen(WKViewRef);
 
 WK_EXPORT void WKViewSetOpacity(WKViewRef view, double opacity);
 WK_EXPORT double WKViewOpacity(WKViewRef view);
+
+WK_EXPORT void WKViewFindZoomableAreaForRect(WKViewRef, WKRect);
 
 WK_EXPORT WKCoordinatedScene WKViewGetCoordinatedScene(WKViewRef view);
 

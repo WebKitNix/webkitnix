@@ -111,12 +111,12 @@ void AudioDestinationNix::stop()
 
 float AudioDestination::hardwareSampleRate()
 {
-    return static_cast<float>(Nix::Platform::current()->audioHardwareSampleRate());
+    return Nix::Platform::current()->audioHardwareSampleRate();
 }
 
 unsigned long AudioDestination::maxChannelCount()
 {
-    return static_cast<float>(Nix::Platform::current()->audioHardwareOutputChannels());
+    return Nix::Platform::current()->audioHardwareOutputChannels();
 }
 
 void AudioDestinationNix::render(const Nix::Vector<float*>& sourceData, const Nix::Vector<float*>& audioData, size_t numberOfFrames)

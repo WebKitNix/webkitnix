@@ -90,19 +90,6 @@ void WebPageProxy::loadRecentSearches(const String&, Vector<String>&)
     notImplemented();
 }
 
-void WebPageProxy::didFindZoomableArea(const WebCore::IntPoint& target, const WebCore::IntRect& area)
-{
-    m_pageClient->didFindZoomableArea(target, area);
-}
-
-void WebPageProxy::findZoomableAreaForPoint(const WebCore::IntPoint& point, const WebCore::IntSize& area)
-{
-    if (!isValid())
-        return;
-
-    m_process->send(Messages::WebPage::FindZoomableAreaForPoint(point, area), m_pageID);
-}
-
 void WebPageProxy::initializeUIPopupMenuClient(const WKPageUIPopupMenuClient* client)
 {
     m_uiPopupMenuClient.initialize(client);

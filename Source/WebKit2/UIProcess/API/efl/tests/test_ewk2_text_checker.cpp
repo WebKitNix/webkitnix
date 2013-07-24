@@ -68,299 +68,345 @@ static struct {
     bool wordIgnore;
 } callbacksExecutionStats;
 
-static void resetCallbacksExecutionStats()
-{
-    callbacksExecutionStats.settingChange = false;
-    callbacksExecutionStats.spellDocumentTag = false;
-    callbacksExecutionStats.spellDocumentTagClose = false;
-    callbacksExecutionStats.spellingCheck = false;
-    callbacksExecutionStats.wordGuesses = false;
-    callbacksExecutionStats.wordLearn = false;
-    callbacksExecutionStats.wordIgnore = false;
-}
-
-/**
- * Handle the timeout, it may happen for the asynchronous tests.
- *
- * @internal
- *
- * @return the ECORE_CALLBACK_CANCEL flag to delete the timer automatically
- */
-static Eina_Bool onTimeout(void*)
-{
-    ecore_main_loop_quit();
-    return ECORE_CALLBACK_CANCEL;
-}
-
-/**
- * This callback tests whether the client's callback is called when the spell checking setting was changed.
- *
- * @internal
- *
- * Verify the new setting value (passes in the @a flag parameter) if it equals to the previously set.
- *
- * @internal
- *
- * @param flag the new setting value
- */
-static void onSettingChange(Eina_Bool flag)
-{
-    EXPECT_EQ(isSettingEnabled, flag);
-    callbacksExecutionStats.settingChange = true;
-}
-
-/**
- * Returns unique tag (an identifier).
- *
- * @internal
- *
- * It will be used for onSpellingCheck, onWordGuesses etc. to notify
- * the client on which object (associated to the tag) the spelling is being invoked.
- *
- * @param ewkView the view object to get unique tag
- *
- * @return unique tag for the given @a ewkView object
- */
-static uint64_t onSpellDocumentTag(const Evas_Object* ewkView)
-{
-    EXPECT_EQ(defaultView, ewkView);
-    callbacksExecutionStats.spellDocumentTag = true;
-
-    return defaultDocumentTag;
-}
-
-/**
- * The view which is associated to the @a tag has been destroyed.
- *
- * @internal
- *
- * @param tag the tag to be closed
- */
-static void onSpellDocumentTagClose(uint64_t tag)
-{
-    ASSERT_EQ(defaultDocumentTag, tag);
-    callbacksExecutionStats.spellDocumentTagClose = true;
-}
-
-/**
- * Checks spelling for the given @a text.
- *
- * @internal
- *
- * @param tag unique tag to notify the client on which object the spelling is being performed
- * @param text the text containing the words to spellcheck
- * @param misspelling_location a pointer to store the beginning of the misspelled @a text, @c -1 if the @a text is correct
- * @param misspelling_length a pointer to store the length of misspelled @a text, @c 0 if the @a text is correct
- */
-static void onSpellingCheck(uint64_t tag, const char* text, int32_t* misspellingLocation, int32_t* misspellingLength)
-{
-    ASSERT_EQ(defaultDocumentTag, tag);
-    ASSERT_STREQ(expectedMisspelledWord, text);
-
-    ASSERT_TRUE(misspellingLocation);
-    ASSERT_TRUE(misspellingLength);
-
-    // The client is able to show the misselled text through its location (the beginning of misspelling)
-    // and length (the end of misspelling).
-    *misspellingLocation = 0;
-    *misspellingLength = strlen(expectedMisspelledWord);
-
-    callbacksExecutionStats.spellingCheck = true;
-}
-
-/**
- * Checks spelling for the given @a text and compares it with the knownWord.
- *
- * @internal
- *
- * @param text the text containing the words to spellcheck
- * @param misspelling_location a pointer to store the beginning of the misspelled @a text, @c -1 if the @a text is correct
- * @param misspelling_length a pointer to store the length of misspelled @a text, @c 0 if the @a text is correct
- */
-static void onSpellingForKnownWord(uint64_t, const char* text, int32_t* misspellingLocation, int32_t* misspellingLength)
-{
-    ASSERT_STREQ(knownWord.utf8().data(), text);
-
-    ASSERT_TRUE(misspellingLocation);
-    ASSERT_TRUE(misspellingLength);
-
-    *misspellingLocation = -1;
-    *misspellingLength = 0;
-
-    callbacksExecutionStats.spellingCheck = true;
-}
-
-/**
- * Gets a list of suggested spellings for a misspelled @a word.
- *
- * @internal
- *
- * @param tag unique tag to notify the client on which object the spelling is being performed
- * @param word the word to get guesses
- * @return a list of dynamically allocated strings (as char*) and
- *         caller is responsible for destroying them.
- */
-static Eina_List* onWordGuesses(uint64_t tag, const char* word)
-{
-    EXPECT_EQ(defaultDocumentTag, tag);
-    EXPECT_STREQ(expectedMisspelledWord, word);
-
-    Eina_List* suggestionsForWord = 0;
-    size_t numberOfSuggestions = WTF_ARRAY_LENGTH(clientSuggestionsForWord);
-    for (size_t i = 0; i < numberOfSuggestions; ++i)
-        suggestionsForWord = eina_list_append(suggestionsForWord, strdup(clientSuggestionsForWord[i]));
-
-    callbacksExecutionStats.wordGuesses = true;
-    return suggestionsForWord;
-}
-
-/**
- * Adds the @a word to the spell checker dictionary.
- *
- * @internal
- *
- * @param tag unique tag to notify the client on which object the spelling is being performed
- * @param word the word to add
- */
-static void onWordLearn(uint64_t tag, const char* word)
-{
-    ASSERT_EQ(defaultDocumentTag, tag);
-    ASSERT_STREQ(expectedMisspelledWord, word);
-    knownWord = word;
-    callbacksExecutionStats.wordLearn = true;
-}
-
-/**
- * Tells the spell checker to ignore a given @a word.
- *
- * @internal
- *
- * @param tag unique tag to notify the client on which object the spelling is being performed
- * @param word the word to ignore
- */
-static void onWordIgnore(uint64_t tag, const char* word)
-{
-    ASSERT_EQ(defaultDocumentTag, tag);
-    ASSERT_STREQ(expectedMisspelledWord, word);
-    knownWord = word;
-    callbacksExecutionStats.wordIgnore = true;
-}
-
-/**
- * Helper, get required item from context menu.
- *
- * @param contextMenu the context menu object
- * @param itemAction action of item to get
- * @param itemType type of item to get
- *
- * @return required item
- */
-static Ewk_Context_Menu_Item* findContextMenuItem(const Ewk_Context_Menu* contextMenu, Ewk_Context_Menu_Item_Action itemAction, Ewk_Context_Menu_Item_Type itemType)
-{
-    const Eina_List* contextMenuItems = ewk_context_menu_items_get(contextMenu);
-
-    void* itemData;
-    const Eina_List* listIterator;
-    EINA_LIST_FOREACH(contextMenuItems, listIterator, itemData) {
-        Ewk_Context_Menu_Item* item = static_cast<Ewk_Context_Menu_Item*>(itemData);
-        if (ewk_context_menu_item_action_get(item) == itemAction
-            && ewk_context_menu_item_type_get(item) == itemType)
-            return item;
+class EWK2TextCheckerTest : public EWK2UnitTestBase {
+public:
+    static void resetCallbacksExecutionStats()
+    {
+        callbacksExecutionStats.settingChange = false;
+        callbacksExecutionStats.spellDocumentTag = false;
+        callbacksExecutionStats.spellDocumentTagClose = false;
+        callbacksExecutionStats.spellingCheck = false;
+        callbacksExecutionStats.wordGuesses = false;
+        callbacksExecutionStats.wordLearn = false;
+        callbacksExecutionStats.wordIgnore = false;
     }
 
-    ADD_FAILURE();
-    return 0;
-}
-
-static Eina_Bool checkCorrectnessOfSpellingItems(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
-{
-    const Eina_List* contextMenuItems = ewk_context_menu_items_get(contextMenu);
-
-    bool noGuessesAvailable = false;
-    bool isIgnoreSpellingAvailable = false;
-    bool isLearnSpellingAvailable = false;
-
-    const Eina_List* listIterator;
-    void* itemData;
-    EINA_LIST_FOREACH(contextMenuItems, listIterator, itemData) {
-        Ewk_Context_Menu_Item* item = static_cast<Ewk_Context_Menu_Item*>(itemData);
-        if (!strcmp(ewk_context_menu_item_title_get(item), noGuessesString))
-            noGuessesAvailable = true;
-        else if (!strcmp(ewk_context_menu_item_title_get(item), ignoreSpellingString))
-            isIgnoreSpellingAvailable = true;
-        else if (!strcmp(ewk_context_menu_item_title_get(item), learnSpellingString))
-            isLearnSpellingAvailable = true;
+    /**
+     * Handle the timeout, it may happen for the asynchronous tests.
+     *
+     * @internal
+     *
+     * @return the ECORE_CALLBACK_CANCEL flag to delete the timer automatically
+     */
+    static Eina_Bool onTimeout(void*)
+    {
+        ecore_main_loop_quit();
+        return ECORE_CALLBACK_CANCEL;
     }
 
-    EXPECT_FALSE(noGuessesAvailable);
-    EXPECT_TRUE(isIgnoreSpellingAvailable);
-    EXPECT_TRUE(isLearnSpellingAvailable);
+    /**
+     * This callback tests whether the client's callback is called when the spell checking setting was changed.
+     *
+     * @internal
+     *
+     * Verify the new setting value (passes in the @a flag parameter) if it equals to the previously set.
+     *
+     * @internal
+     *
+     * @param flag the new setting value
+     */
+    static void onSettingChange(Eina_Bool flag)
+    {
+        EXPECT_EQ(isSettingEnabled, flag);
+        callbacksExecutionStats.settingChange = true;
+    }
 
-    wasContextMenuShown = true;
-    return true;
-}
+    /**
+     * Returns unique tag (an identifier).
+     *
+     * @internal
+     *
+     * It will be used for onSpellingCheck, onWordGuesses etc. to notify
+     * the client on which object (associated to the tag) the spelling is being invoked.
+     *
+     * @param ewkView the view object to get unique tag
+     *
+     * @return unique tag for the given @a ewkView object
+     */
+    static uint64_t onSpellDocumentTag(const Evas_Object* ewkView)
+    {
+        EXPECT_EQ(defaultView, ewkView);
+        callbacksExecutionStats.spellDocumentTag = true;
 
-static Eina_Bool toogleCheckSpellingWhileTyping(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
-{
-    Ewk_Context_Menu_Item* spellingAndGrammarItem = findContextMenuItem(contextMenu, EWK_CONTEXT_MENU_ITEM_TAG_SPELLING_MENU, EWK_SUBMENU_TYPE);
-    Ewk_Context_Menu* spellingAndGrammarSubmenu = ewk_context_menu_item_submenu_get(spellingAndGrammarItem);
-    Ewk_Context_Menu_Item* checkSpellingWhileTypingItem = findContextMenuItem(spellingAndGrammarSubmenu, EWK_CONTEXT_MENU_ITEM_TAG_CHECK_SPELLING_WHILE_TYPING, EWK_CHECKABLE_ACTION_TYPE);
+        return defaultDocumentTag;
+    }
 
-    return ewk_context_menu_item_select(spellingAndGrammarSubmenu, checkSpellingWhileTypingItem);
-}
+    /**
+     * The view which is associated to the @a tag has been destroyed.
+     *
+     * @internal
+     *
+     * @param tag the tag to be closed
+     */
+    static void onSpellDocumentTagClose(uint64_t tag)
+    {
+        ASSERT_EQ(defaultDocumentTag, tag);
+        callbacksExecutionStats.spellDocumentTagClose = true;
+    }
 
-static Eina_Bool checkClientSuggestionsForWord(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
-{
-    const Eina_List* contextMenuItems = ewk_context_menu_items_get(contextMenu);
+    /**
+     * Checks spelling for the given @a text.
+     *
+     * @internal
+     *
+     * @param tag unique tag to notify the client on which object the spelling is being performed
+     * @param text the text containing the words to spellcheck
+     * @param misspelling_location a pointer to store the beginning of the misspelled @a text, @c -1 if the @a text is correct
+     * @param misspelling_length a pointer to store the length of misspelled @a text, @c 0 if the @a text is correct
+     */
+    static void onSpellingCheck(uint64_t tag, const char* text, int32_t* misspellingLocation, int32_t* misspellingLength)
+    {
+        ASSERT_EQ(defaultDocumentTag, tag);
+        ASSERT_STREQ(expectedMisspelledWord, text);
 
-    size_t numberOfSuggestions = WTF_ARRAY_LENGTH(clientSuggestionsForWord);
-    // contextMenuItems should contain suggestions and another options.
-    if (numberOfSuggestions > eina_list_count(contextMenuItems)) {
+        ASSERT_TRUE(misspellingLocation);
+        ASSERT_TRUE(misspellingLength);
+
+        // The client is able to show the misselled text through its location (the beginning of misspelling)
+        // and length (the end of misspelling).
+        *misspellingLocation = 0;
+        *misspellingLength = strlen(expectedMisspelledWord);
+
+        callbacksExecutionStats.spellingCheck = true;
+    }
+
+    /**
+     * Checks spelling for the given @a text and compares it with the knownWord.
+     *
+     * @internal
+     *
+     * @param text the text containing the words to spellcheck
+     * @param misspelling_location a pointer to store the beginning of the misspelled @a text, @c -1 if the @a text is correct
+     * @param misspelling_length a pointer to store the length of misspelled @a text, @c 0 if the @a text is correct
+     */
+    static void onSpellingForKnownWord(uint64_t, const char* text, int32_t* misspellingLocation, int32_t* misspellingLength)
+    {
+        ASSERT_STREQ(knownWord.utf8().data(), text);
+
+        ASSERT_TRUE(misspellingLocation);
+        ASSERT_TRUE(misspellingLength);
+
+        *misspellingLocation = -1;
+        *misspellingLength = 0;
+
+        callbacksExecutionStats.spellingCheck = true;
+    }
+
+    /**
+     * Gets a list of suggested spellings for a misspelled @a word.
+     *
+     * @internal
+     *
+     * @param tag unique tag to notify the client on which object the spelling is being performed
+     * @param word the word to get guesses
+     * @return a list of dynamically allocated strings (as char*) and
+     *         caller is responsible for destroying them.
+     */
+    static Eina_List* onWordGuesses(uint64_t tag, const char* word)
+    {
+        EXPECT_EQ(defaultDocumentTag, tag);
+        EXPECT_STREQ(expectedMisspelledWord, word);
+
+        Eina_List* suggestionsForWord = 0;
+        size_t numberOfSuggestions = WTF_ARRAY_LENGTH(clientSuggestionsForWord);
+        for (size_t i = 0; i < numberOfSuggestions; ++i)
+            suggestionsForWord = eina_list_append(suggestionsForWord, strdup(clientSuggestionsForWord[i]));
+
+        callbacksExecutionStats.wordGuesses = true;
+        return suggestionsForWord;
+    }
+
+    /**
+     * Adds the @a word to the spell checker dictionary.
+     *
+     * @internal
+     *
+     * @param tag unique tag to notify the client on which object the spelling is being performed
+     * @param word the word to add
+     */
+    static void onWordLearn(uint64_t tag, const char* word)
+    {
+        ASSERT_EQ(defaultDocumentTag, tag);
+        ASSERT_STREQ(expectedMisspelledWord, word);
+        knownWord = word;
+        callbacksExecutionStats.wordLearn = true;
+    }
+
+    /**
+     * Tells the spell checker to ignore a given @a word.
+     *
+     * @internal
+     *
+     * @param tag unique tag to notify the client on which object the spelling is being performed
+     * @param word the word to ignore
+     */
+    static void onWordIgnore(uint64_t tag, const char* word)
+    {
+        ASSERT_EQ(defaultDocumentTag, tag);
+        ASSERT_STREQ(expectedMisspelledWord, word);
+        knownWord = word;
+        callbacksExecutionStats.wordIgnore = true;
+    }
+
+    /**
+     * Helper, get required item from context menu.
+     *
+     * @param contextMenu the context menu object
+     * @param itemAction action of item to get
+     * @param itemType type of item to get
+     *
+     * @return required item
+     */
+    static Ewk_Context_Menu_Item* findContextMenuItem(const Ewk_Context_Menu* contextMenu, Ewk_Context_Menu_Item_Action itemAction, Ewk_Context_Menu_Item_Type itemType)
+    {
+        const Eina_List* contextMenuItems = ewk_context_menu_items_get(contextMenu);
+
+        void* itemData;
+        const Eina_List* listIterator;
+        EINA_LIST_FOREACH(contextMenuItems, listIterator, itemData) {
+            Ewk_Context_Menu_Item* item = static_cast<Ewk_Context_Menu_Item*>(itemData);
+            if (ewk_context_menu_item_action_get(item) == itemAction
+                && ewk_context_menu_item_type_get(item) == itemType)
+                return item;
+        }
+
         ADD_FAILURE();
+        return 0;
+    }
+
+    static Eina_Bool checkCorrectnessOfSpellingItems(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
+    {
+        const Eina_List* contextMenuItems = ewk_context_menu_items_get(contextMenu);
+
+        bool noGuessesAvailable = false;
+        bool isIgnoreSpellingAvailable = false;
+        bool isLearnSpellingAvailable = false;
+
+        const Eina_List* listIterator;
+        void* itemData;
+        EINA_LIST_FOREACH(contextMenuItems, listIterator, itemData) {
+            Ewk_Context_Menu_Item* item = static_cast<Ewk_Context_Menu_Item*>(itemData);
+            if (!strcmp(ewk_context_menu_item_title_get(item), noGuessesString))
+                noGuessesAvailable = true;
+            else if (!strcmp(ewk_context_menu_item_title_get(item), ignoreSpellingString))
+                isIgnoreSpellingAvailable = true;
+            else if (!strcmp(ewk_context_menu_item_title_get(item), learnSpellingString))
+                isLearnSpellingAvailable = true;
+        }
+
+        EXPECT_FALSE(noGuessesAvailable);
+        EXPECT_TRUE(isIgnoreSpellingAvailable);
+        EXPECT_TRUE(isLearnSpellingAvailable);
+
+        wasContextMenuShown = true;
         return true;
     }
-    // Verify suggestions from the top of context menu list.
-    for (size_t i = 0; i < numberOfSuggestions; ++i) {
-        Ewk_Context_Menu_Item* item = static_cast<Ewk_Context_Menu_Item*>(eina_list_data_get(contextMenuItems));
-        EXPECT_STREQ(clientSuggestionsForWord[i], ewk_context_menu_item_title_get(item));
-        contextMenuItems = eina_list_next(contextMenuItems);
+
+    static Eina_Bool toogleCheckSpellingWhileTyping(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
+    {
+        Ewk_Context_Menu_Item* spellingAndGrammarItem = findContextMenuItem(contextMenu, EWK_CONTEXT_MENU_ITEM_TAG_SPELLING_MENU, EWK_SUBMENU_TYPE);
+        Ewk_Context_Menu* spellingAndGrammarSubmenu = ewk_context_menu_item_submenu_get(spellingAndGrammarItem);
+        Ewk_Context_Menu_Item* checkSpellingWhileTypingItem = findContextMenuItem(spellingAndGrammarSubmenu, EWK_CONTEXT_MENU_ITEM_TAG_CHECK_SPELLING_WHILE_TYPING, EWK_CHECKABLE_ACTION_TYPE);
+
+        return ewk_context_menu_item_select(spellingAndGrammarSubmenu, checkSpellingWhileTypingItem);
     }
 
-    wasContextMenuShown = true;
-    return true;
-}
+    static Eina_Bool checkClientSuggestionsForWord(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
+    {
+        const Eina_List* contextMenuItems = ewk_context_menu_items_get(contextMenu);
 
-static Eina_Bool selectLearnSpelling(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
-{
-    return ewk_context_menu_item_select(contextMenu, findContextMenuItem(contextMenu, EWK_CONTEXT_MENU_ITEM_TAG_LEARN_SPELLING, EWK_ACTION_TYPE));
-}
+        size_t numberOfSuggestions = WTF_ARRAY_LENGTH(clientSuggestionsForWord);
+        // contextMenuItems should contain suggestions and another options.
+        if (numberOfSuggestions > eina_list_count(contextMenuItems)) {
+            ADD_FAILURE();
+            return true;
+        }
+        // Verify suggestions from the top of context menu list.
+        for (size_t i = 0; i < numberOfSuggestions; ++i) {
+            Ewk_Context_Menu_Item* item = static_cast<Ewk_Context_Menu_Item*>(eina_list_data_get(contextMenuItems));
+            EXPECT_STREQ(clientSuggestionsForWord[i], ewk_context_menu_item_title_get(item));
+            contextMenuItems = eina_list_next(contextMenuItems);
+        }
 
-static Eina_Bool selectIgnoreSpelling(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
-{
-    return ewk_context_menu_item_select(contextMenu, findContextMenuItem(contextMenu, EWK_CONTEXT_MENU_ITEM_TAG_IGNORE_SPELLING, EWK_ACTION_TYPE));
-}
+        wasContextMenuShown = true;
+        return true;
+    }
 
-/**
- * Count number of elements in context menu.
- */
-static Eina_Bool countContextMenuItems(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
-{
-    contextMenuItemsNumber = eina_list_count(ewk_context_menu_items_get(contextMenu));
-    wasContextMenuShown = true;
-    return true;
-}
+    static Eina_Bool selectLearnSpelling(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
+    {
+        return ewk_context_menu_item_select(contextMenu, findContextMenuItem(contextMenu, EWK_CONTEXT_MENU_ITEM_TAG_LEARN_SPELLING, EWK_ACTION_TYPE));
+    }
+
+    static Eina_Bool selectIgnoreSpelling(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
+    {
+        return ewk_context_menu_item_select(contextMenu, findContextMenuItem(contextMenu, EWK_CONTEXT_MENU_ITEM_TAG_IGNORE_SPELLING, EWK_ACTION_TYPE));
+    }
+
+    /**
+     * Count number of elements in context menu.
+     */
+    static Eina_Bool countContextMenuItems(Ewk_View_Smart_Data*, Evas_Coord, Evas_Coord, Ewk_Context_Menu* contextMenu)
+    {
+        contextMenuItemsNumber = eina_list_count(ewk_context_menu_items_get(contextMenu));
+        wasContextMenuShown = true;
+        return true;
+    }
+
+protected:
+    enum Line { FirstLine, SecondLine };
+    enum Button { SelectAllWordsWithSpellcheckButton, SelectAllWordsWithoutSpellcheckButton, SelectSubWordWithSpellcheckButton };
+
+    void clickButton(Button button)
+    {
+        switch (button) {
+        case SelectAllWordsWithSpellcheckButton:
+            mouseClick(60, 60);
+            break;
+        case SelectAllWordsWithoutSpellcheckButton:
+            mouseClick(500, 60);
+            break;
+        case SelectSubWordWithSpellcheckButton :
+            mouseClick(200, 60);
+            break;
+        }
+    }
+
+    void showContextMenu(Line line)
+    {
+        switch (line) {
+        case FirstLine:
+            mouseClick(10, 20, 3);
+            break;
+        case SecondLine:
+            mouseClick(35, 35, 3);
+            break;
+        }
+    }
+
+    void selectFirstWord(Line line)
+    {
+        switch (line) {
+        case FirstLine:
+            mouseDoubleClick(10, 20);
+            break;
+        case SecondLine:
+            mouseDoubleClick(35, 35);
+            break;
+        }
+    }
+};
 
 /**
  * Test whether there are spelling suggestions when misspelled word is directly context clicked.
  */
-TEST_F(EWK2UnitTestBase, spelling_suggestion_for_context_click)
+TEST_F(EWK2TextCheckerTest, spelling_suggestion_for_context_click)
 {
     wasContextMenuShown = false;
 
     // Checking number of context menu items when element has no spellcheck suggestions.
     ewkViewClass()->context_menu_show = countContextMenuItems;
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_selection_tests.html").data()));
-    mouseClick(10, 20, 3 /* Right button - invoke context menu */);
+    showContextMenu(FirstLine);
 
     ASSERT_TRUE(waitUntilTrue(wasContextMenuShown));
     unsigned numberItemsWithoutSpellCheck = contextMenuItemsNumber;
@@ -369,7 +415,7 @@ TEST_F(EWK2UnitTestBase, spelling_suggestion_for_context_click)
 
     // Testing how many items are in context menu when spellcheck is enabled.
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_selection_tests.html").data()));
-    mouseClick(35, 35, 3 /* Right button - invoke context menu */);
+    showContextMenu(SecondLine);
 
     ASSERT_TRUE(waitUntilTrue(wasContextMenuShown));
 
@@ -379,15 +425,15 @@ TEST_F(EWK2UnitTestBase, spelling_suggestion_for_context_click)
 /**
  * Test whether there are no spelling suggestions when multiple words are selected (that are not a single misspelling).
  */
-TEST_F(EWK2UnitTestBase, no_spelling_suggestion_for_multiword_selection)
+TEST_F(EWK2TextCheckerTest, no_spelling_suggestion_for_multiword_selection)
 {
     wasContextMenuShown = false;
 
     // Checking number of context menu items when element has no spellcheck suggestions.
     ewkViewClass()->context_menu_show = countContextMenuItems;
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_selection_tests.html").data()));
-    mouseClick(500, 60, 1 /* Left button - select all words in field without spellcheck */);
-    mouseClick(10, 20, 3 /* Right button - invoke context menu */);
+    clickButton(SelectAllWordsWithoutSpellcheckButton);
+    showContextMenu(FirstLine);
 
     ASSERT_TRUE(waitUntilTrue(wasContextMenuShown));
     unsigned numberItemsWithoutSpellCheck = contextMenuItemsNumber;
@@ -396,8 +442,8 @@ TEST_F(EWK2UnitTestBase, no_spelling_suggestion_for_multiword_selection)
 
     // Testing how many items are in context menu when multiple words are selected.
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_selection_tests.html").data()));
-    mouseClick(60, 60, 1 /* Left button - select all words in field with spellcheck */);
-    mouseClick(35, 35, 3 /* Right button - invoke context menu */);
+    clickButton(SelectAllWordsWithSpellcheckButton);
+    showContextMenu(SecondLine);
 
     ASSERT_TRUE(waitUntilTrue(wasContextMenuShown));
 
@@ -407,15 +453,15 @@ TEST_F(EWK2UnitTestBase, no_spelling_suggestion_for_multiword_selection)
 /**
  * Test whether there are no spelling suggestions when part of misspelled word are selected.
  */
-TEST_F(EWK2UnitTestBase, no_spelling_suggestion_for_subword_selection)
+TEST_F(EWK2TextCheckerTest, no_spelling_suggestion_for_subword_selection)
 {
     wasContextMenuShown = false;
 
     // Checking number of context menu items when element has no spellcheck suggestions.
     ewkViewClass()->context_menu_show = countContextMenuItems;
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_selection_tests.html").data()));
-    mouseClick(500, 60, 1 /* Left button - select all words in field without spellcheck */);
-    mouseClick(10, 20, 3 /* Right button - invoke context menu */);
+    clickButton(SelectAllWordsWithoutSpellcheckButton);
+    showContextMenu(FirstLine);
 
     ASSERT_TRUE(waitUntilTrue(wasContextMenuShown));
     unsigned numberItemsWithoutSpellCheck = contextMenuItemsNumber;
@@ -424,8 +470,8 @@ TEST_F(EWK2UnitTestBase, no_spelling_suggestion_for_subword_selection)
 
     // Testing how many items are in context menu when part of word is selected.
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_selection_tests.html").data()));
-    mouseClick(200, 60, 1 /* Left button - select part of word in field with spellcheck */);
-    mouseClick(35, 35, 3 /* Right button - invoke context menu */);
+    clickButton(SelectSubWordWithSpellcheckButton);
+    showContextMenu(SecondLine);
 
     ASSERT_TRUE(waitUntilTrue(wasContextMenuShown));
 
@@ -435,15 +481,15 @@ TEST_F(EWK2UnitTestBase, no_spelling_suggestion_for_subword_selection)
 /**
  * Test whether context menu spelling items are available when misspelled word has selection as the double click.
  */
-TEST_F(EWK2UnitTestBase, spelling_suggestion_for_double_clicked_word)
+TEST_F(EWK2TextCheckerTest, spelling_suggestion_for_double_clicked_word)
 {
     wasContextMenuShown = false;
 
     // Checking number of context menu items when element has no spell check suggestions.
     ewkViewClass()->context_menu_show = countContextMenuItems;
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_selection_tests.html").data()));
-    mouseClick(500, 60, 1 /* Left button - select all words in field without spellcheck */);
-    mouseClick(10, 20, 3 /* Right button - invoke context menu */);
+    clickButton(SelectAllWordsWithoutSpellcheckButton);
+    showContextMenu(FirstLine);
 
     ASSERT_TRUE(waitUntilTrue(wasContextMenuShown));
     unsigned numberItemsWithoutSpellCheck = contextMenuItemsNumber;
@@ -452,9 +498,8 @@ TEST_F(EWK2UnitTestBase, spelling_suggestion_for_double_clicked_word)
 
     // Making double click on misspelled word to select it, and checking are there context menu spell check suggestions.
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_selection_tests.html").data()));
-    mouseClick(35, 35, 1 /* Left button - 1st click of doubleclick */);
-    mouseClick(35, 35, 1 /* Left button - 2nd click of doubleclick */);
-    mouseClick(35, 35, 3 /* Right button - invoke context menu */);
+    selectFirstWord(SecondLine);
+    showContextMenu(SecondLine);
 
     ASSERT_TRUE(waitUntilTrue(wasContextMenuShown));
 
@@ -465,7 +510,7 @@ TEST_F(EWK2UnitTestBase, spelling_suggestion_for_double_clicked_word)
  * Test whether the default language is loaded independently of
  * continuous spell checking setting.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_spell_checking_languages_get)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_spell_checking_languages_get)
 {
     ewk_text_checker_continuous_spell_checking_enabled_set(false);
     // The language is being loaded on the idler, wait for it.
@@ -502,13 +547,13 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_spell_checking_languages_get)
  * Test whether the context menu spelling items (suggestions, learn and ignore spelling)
  * are available when continuous spell checking is off.
  */
-TEST_F(EWK2UnitTestBase, context_menu_spelling_items_availability)
+TEST_F(EWK2TextCheckerTest, context_menu_spelling_items_availability)
 {
     ewk_text_checker_continuous_spell_checking_enabled_set(false);
     ewkViewClass()->context_menu_show = checkCorrectnessOfSpellingItems;
 
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_test.html").data()));
-    mouseClick(10, 20, 3 /* Right button */);
+    showContextMenu(FirstLine);
 
     while (!wasContextMenuShown)
         ecore_main_loop_iterate();
@@ -519,7 +564,7 @@ TEST_F(EWK2UnitTestBase, context_menu_spelling_items_availability)
  *  - ewk_text_checker_continuous_spell_checking_enabled_get
  *  - ewk_text_checker_continuous_spell_checking_enabled_set
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_continuous_spell_checking_enabled)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_continuous_spell_checking_enabled)
 {
     ewk_text_checker_continuous_spell_checking_enabled_set(true);
 #if ENABLE(SPELLCHECK)
@@ -538,7 +583,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_continuous_spell_checking_enabled)
  *  - "Check Spelling While Typing" is enabled,
  *  - "Check Spelling While Typing" is disabled.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_check_spelling_while_typing_toggle)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_check_spelling_while_typing_toggle)
 {
     resetCallbacksExecutionStats();
     ewkViewClass()->context_menu_show = toogleCheckSpellingWhileTyping;
@@ -548,7 +593,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_check_spelling_while_typing_toggle)
 
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_test.html").data()));
 
-    EWK2UnitTestBase::mouseClick(10, 20, /*Right button*/ 3);
+    showContextMenu(FirstLine);
     ASSERT_TRUE(waitUntilTrue(callbacksExecutionStats.settingChange));
 
     resetCallbacksExecutionStats();
@@ -556,7 +601,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_check_spelling_while_typing_toggle)
     // Test case, when "Check Spelling While Typing" is in reverse to the previous one.
     isSettingEnabled = !isSettingEnabled;
 
-    EWK2UnitTestBase::mouseClick(10, 20, /*Right button*/ 3);
+    showContextMenu(FirstLine);
     ASSERT_TRUE(waitUntilTrue(callbacksExecutionStats.settingChange));
 
     ewk_text_checker_continuous_spell_checking_change_cb_set(0);
@@ -565,7 +610,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_check_spelling_while_typing_toggle)
 /**
  * Test whether the onSettingChange callback is not called when the spell checking setting was changed by client.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_continuous_spell_checking_change_cb_set)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_continuous_spell_checking_change_cb_set)
 {
     resetCallbacksExecutionStats();
 
@@ -587,14 +632,14 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_continuous_spell_checking_change_cb_se
  * Test whether the onSettingChange callback is not called, if the client does not set it.
  * "Check Spelling While Typing" option is toggled in context menu.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_continuous_spell_checking_change_cb_unset)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_continuous_spell_checking_change_cb_unset)
 {
     resetCallbacksExecutionStats();
     ewkViewClass()->context_menu_show = toogleCheckSpellingWhileTyping;
 
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_test.html").data()));
 
-    EWK2UnitTestBase::mouseClick(10, 20, /*Right button*/ 3);
+    showContextMenu(FirstLine);
     ASSERT_FALSE(waitUntilTrue(callbacksExecutionStats.settingChange, /*Timeout*/ 0));
 }
 
@@ -603,7 +648,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_continuous_spell_checking_change_cb_un
  * if they are in use.
  * All the dictionaries from the list can be set to perform spellchecking.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_spell_checking_available_languages_get)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_spell_checking_available_languages_get)
 {
     Eina_List* availableLanguages = ewk_text_checker_spell_checking_available_languages_get();
     // No dictionary is available/installed or the SPELLCHECK macro is disabled.
@@ -655,7 +700,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_spell_checking_available_languages_get
  *  - setting the default language,
  *  - if two arbitrarily selected dictionaries are set correctly.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_spell_checking_languages)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_spell_checking_languages)
 {
     // Set the default language.
     ewk_text_checker_spell_checking_languages_set(0);
@@ -716,7 +761,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_spell_checking_languages)
 /**
  * Test whether the client's callbacks aren't called (if not specified).
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker)
 {
     resetCallbacksExecutionStats();
     ewk_text_checker_continuous_spell_checking_enabled_set(true);
@@ -737,7 +782,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker)
 /**
  * Test whether the client's callbacks (onSpellDocumentTag, onSpellDocumentTagClose) are called.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_unique_spell_document_tag)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_unique_spell_document_tag)
 {
     resetCallbacksExecutionStats();
     defaultView = webView();
@@ -759,7 +804,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_unique_spell_document_tag)
  * Test whether the client's callback (onSpellingCheck) is called when
  * the word to input field was put.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_string_spelling_check_cb_set)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_string_spelling_check_cb_set)
 {
     resetCallbacksExecutionStats();
     defaultView = webView();
@@ -777,7 +822,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_string_spelling_check_cb_set)
  * Test whether the client's callback (onWordGuesses) is called when
  * the context menu was shown on the misspelled word.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_word_guesses_get_cb_set)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_word_guesses_get_cb_set)
 {
     resetCallbacksExecutionStats();
     wasContextMenuShown = false;
@@ -787,7 +832,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_word_guesses_get_cb_set)
 
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_test.html").data()));
 
-    EWK2UnitTestBase::mouseClick(10, 20, /*Right button*/ 3);
+    showContextMenu(FirstLine);
     ASSERT_TRUE(waitUntilTrue(wasContextMenuShown));
 
     // Check whether the callback is called.
@@ -801,7 +846,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_word_guesses_get_cb_set)
  * the context menu option "Learn spelling" was chosen. In the next step,
  * check whether the learned word is treated as spelled correctly while spell checking.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_word_learn_cb_set)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_word_learn_cb_set)
 {
     resetCallbacksExecutionStats();
     knownWord = emptyString();
@@ -810,8 +855,8 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_word_learn_cb_set)
     ewkViewClass()->context_menu_show = selectLearnSpelling;
 
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_test.html").data()));
-    mouseDoubleClick(10, 20);
-    mouseClick(10, 20, 3 /* Right button - invoke context menu */);
+    selectFirstWord(FirstLine);
+    showContextMenu(FirstLine);
 
     ASSERT_TRUE(waitUntilTrue(callbacksExecutionStats.wordLearn));
 
@@ -833,7 +878,7 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_word_learn_cb_set)
  * the context menu option "Ignore spelling" was chosen. In the next step,
  * check whether the ignored word is treated as spelled correctly while spell checking.
  */
-TEST_F(EWK2UnitTestBase, ewk_text_checker_word_ignore_cb_set)
+TEST_F(EWK2TextCheckerTest, ewk_text_checker_word_ignore_cb_set)
 {
     resetCallbacksExecutionStats();
     knownWord = emptyString();
@@ -842,8 +887,8 @@ TEST_F(EWK2UnitTestBase, ewk_text_checker_word_ignore_cb_set)
     ewkViewClass()->context_menu_show = selectIgnoreSpelling;
 
     ASSERT_TRUE(loadUrlSync(environment->urlForResource("spelling_test.html").data()));
-    mouseDoubleClick(10, 20);
-    mouseClick(10, 20, 3 /* Right button - invoke context menu */);
+    selectFirstWord(FirstLine);
+    showContextMenu(FirstLine);
 
     ASSERT_TRUE(waitUntilTrue(callbacksExecutionStats.wordIgnore));
 

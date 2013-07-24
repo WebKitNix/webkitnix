@@ -421,10 +421,14 @@ AtomicStringImpl* AtomicString::find(const StringImpl* stringImpl)
     return static_cast<AtomicStringImpl*>(*iterator);
 }
 
-void AtomicString::remove(StringImpl* r)
+void AtomicString::remove(StringImpl* string)
 {
+    ASSERT(string->isAtomic());
     AtomicStringTableLocker locker;
-    stringTable().remove(r);
+    HashSet<StringImpl*>& atomicStringTable = stringTable();
+    HashSet<StringImpl*>::iterator iterator = atomicStringTable.find(string);
+    ASSERT_WITH_MESSAGE(iterator != atomicStringTable.end(), "The string being removed is atomic in the string table of an other thread!");
+    atomicStringTable.remove(iterator);
 }
 
 AtomicString AtomicString::lower() const
@@ -432,11 +436,15 @@ AtomicString AtomicString::lower() const
     // Note: This is a hot function in the Dromaeo benchmark.
     StringImpl* impl = this->impl();
     if (UNLIKELY(!impl))
-        return *this;
-    RefPtr<StringImpl> newImpl = impl->lower();
-    if (LIKELY(newImpl == impl))
-        return *this;
-    return AtomicString(newImpl);
+        return AtomicString();
+
+    RefPtr<StringImpl> lowerImpl = impl->lower();
+    AtomicString returnValue;
+    if (LIKELY(lowerImpl == impl))
+        returnValue.m_string = lowerImpl.release();
+    else
+        returnValue.m_string = addSlowCase(lowerImpl.get());
+    return returnValue;
 }
 
 AtomicString AtomicString::fromUTF8Internal(const char* charactersStart, const char* charactersEnd)
@@ -452,6 +460,14 @@ AtomicString AtomicString::fromUTF8Internal(const char* charactersStart, const c
     atomicString.m_string = addToStringTable<HashAndUTF8Characters, HashAndUTF8CharactersTranslator>(buffer);
     return atomicString;
 }
+
+#if !ASSERT_DISABLED
+bool AtomicString::isInAtomicStringTable(StringImpl* string)
+{
+    AtomicStringTableLocker locker;
+    return stringTable().contains(string);
+}
+#endif
 
 #ifndef NDEBUG
 void AtomicString::show() const

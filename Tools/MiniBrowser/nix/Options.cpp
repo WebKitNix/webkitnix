@@ -28,6 +28,8 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <functional>
+#include <list>
 
 Options::Options()
     : width(0)
@@ -36,6 +38,8 @@ Options::Options()
     , viewportVerticalDisplacement(0)
     , desktopModeEnabled(false)
     , forceTouchEmulationEnabled(false)
+    , devicePixelRatio(1.0)
+    , helpRequested(false)
 {
 }
 
@@ -53,51 +57,147 @@ struct Device {
     const char* userAgent;
 };
 
-Device deviceList[] = {
-    { 1024, 768, "" },
-    { 854, 480, "Mozilla/5.0 (MeeGo; NokiaN9) AppleWebKit/534.13 (KHTML, like Gecko) NokiaBrowser/8.5.0 Mobile Safari/534.13" },
-    { 1024, 768, "Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3" },
-    { 960, 640, "Mozilla/5.0 (iPhone; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3" },
-    { 800, 480, "Mozilla/5.0 (Linux; U; Android 4.0.2; en-us; Galaxy Nexus Build/ICL53F) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30" }
+class Option {
+public:
+    Option(const char* name, const char* helpMessage, bool* variable)
+        : m_name(name)
+        , m_valueName("")
+        , m_helpMessage(helpMessage)
+    {
+        m_assigner = [=](const char*)
+        {
+            *variable = true;
+            return 0;
+        };
+    }
+
+    template<typename T>
+    Option(const char* name, const char* valueName, const char* helpMessage, const char* format, T* variable)
+        : m_name(name)
+        , m_valueName(valueName)
+        , m_helpMessage(helpMessage)
+    {
+        m_assigner = [=](const char* arg)
+        {
+            if (!arg || sscanf(arg, format, variable) != 1)
+                return -1;
+            return 1;
+        };
+    }
+
+    template<typename T1, typename T2>
+    Option(const char* name, const char* valueName, const char* helpMessage, const char* format, T1* variable1, T2* variable2)
+        : m_name(name)
+        , m_valueName(valueName)
+        , m_helpMessage(helpMessage)
+    {
+        m_assigner = [=](const char* arg)
+        {
+            if (!arg || sscanf(arg, format, variable1, variable2) != 2)
+                return -1;
+            return 1;
+        };
+    }
+
+    template<typename T>
+    Option(const char* name, const char* helpMessage, T* variable, T value)
+        : m_name(name)
+        , m_valueName("")
+        , m_helpMessage(helpMessage)
+    {
+        m_assigner = [=](const char*)
+        {
+            *variable = value;
+            return 0;
+        };
+    }
+
+    bool match(const char* arg) const
+    {
+        return !strcmp(m_name, arg);
+    }
+
+    bool process(std::list<const char*>& args)
+    {
+        int assignResult = m_assigner(args.empty() ? 0 : args.front());
+        if (assignResult < 0)
+            return false;
+        if (assignResult > 0)
+            args.pop_front();
+
+        return true;
+    }
+
+    const char* m_name;
+    const char* m_valueName;
+    const char* m_helpMessage;
+    // Should return -1 on error, 0 sucess, 1 success and should pop an argument.
+    std::function<int(const char*)> m_assigner;
 };
 
-bool Options::parse(int argc, char* argv[])
+static void showHelp(const std::list<Option>& options)
 {
-    Device::Type device = Device::Default;
+    printf("Use MiniBrowser [options] [url]\n\n");
+    for (const Option& option : options) {
+        std::string arg(option.m_name);
+        arg += ' ';
+        arg += option.m_valueName;
+        printf("  %-28s %s\n", arg.c_str(), option.m_helpMessage);
+    }
+}
 
-    for (int i = 1; i < argc; ++i) {
-        if (!strcmp(argv[i], "--desktop"))
-            desktopModeEnabled = true;
-        else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--touch-emulation"))
-            forceTouchEmulationEnabled = true;
-        else if (!strcmp(argv[i], "--window-size")) {
-            if (i + 1 == argc) {
-                fprintf(stderr, "--window-size requires an argument.\n");
+bool Options::parse(int argc, const char* argv[])
+{
+    Device deviceList[] = {
+        { 1024, 768, "" },
+        { 854, 480, "Mozilla/5.0 (MeeGo; NokiaN9) AppleWebKit/534.13 (KHTML, like Gecko) NokiaBrowser/8.5.0 Mobile Safari/534.13" },
+        { 1024, 768, "Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3" },
+        { 960, 640, "Mozilla/5.0 (iPhone; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3" },
+        { 800, 480, "Mozilla/5.0 (Linux; U; Android 4.0.2; en-us; Galaxy Nexus Build/ICL53F) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30" }
+    };
+
+    Device::Type device = Device::Default;
+    char injectedBundle[256];
+    injectedBundle[0] = 0;
+
+    std::list<Option> options = {
+        Option("--desktop", "Enable desktop mode.", &desktopModeEnabled),
+        Option("--touch-emulation", "Force touch emulation.", &forceTouchEmulationEnabled),
+        Option("-t", "Alias for --touch-emulation.", &forceTouchEmulationEnabled),
+        Option("--window-size", "WxH", "Set the window size.", "%dx%d", &width, &height),
+        Option("--viewport-displacement", "HxV", "Set the horizontal and vertical viewport displacement.", "%dx%d", &viewportHorizontalDisplacement, &viewportVerticalDisplacement),
+        Option("--injected-bundle", "path", "Use a custom injected bundle.", "%255s", &injectedBundle),
+        Option("--dpr", "value", "Set the device pixel ratio.", "%f", &devicePixelRatio),
+        Option("--n9", "Use n9 user agent.", &device, Device::N9),
+        Option("--ipad", "Use iPad user agent.", &device, Device::IPad),
+        Option("--iphone", "Use iPhone user agent.", &device, Device::IPhone),
+        Option("--android", "Use iPhone user agent.", &device, Device::Android)
+    };
+
+    std::list<const char*> args(&argv[1], &argv[argc]);
+
+    while (!args.empty()) {
+        const char* arg = args.front();
+        args.pop_front();
+
+        if (!strcmp("--help", arg)) {
+            helpRequested = true;
+            showHelp(options);
+            return true;
+        }
+
+        bool argMatches = false;
+        for (Option option : options) {
+            argMatches = option.match(arg);
+            if (argMatches) {
+                if (option.process(args))
+                    break;
+                showHelp(options);
                 return false;
             }
-            if (sscanf(argv[++i], "%dx%d", &width, &height) != 2) {
-                fprintf(stderr, "--window-size format is WIDTHxHEIGHT.\n");
-                return false;
-            }
-        } else if (!strcmp(argv[i], "--viewport-displacement")) {
-            if (i + 1 == argc) {
-                fprintf(stderr, "--viewport-displacement requires an argument.\n");
-                return false;
-            }
-            if (sscanf(argv[++i], "%dx%d", &viewportHorizontalDisplacement, &viewportVerticalDisplacement) != 2) {
-                fprintf(stderr, "--viewport-displacement format is HORIZDISPLACEMENTxVERTDISPLACEMENT.\n");
-                return false;
-            }
-        } else if (!strcmp(argv[i], "--n9"))
-            device = Device::N9;
-        else if (!strcmp(argv[i], "--ipad"))
-            device = Device::IPad;
-        else if (!strcmp(argv[i], "--iphone"))
-            device = Device::IPhone;
-        else if (!strcmp(argv[i], "--android"))
-            device = Device::Android;
-        else
-            url = argv[i];
+        }
+        if (!argMatches)
+            url = arg;
     }
 
     if (width == 0)
@@ -114,6 +214,9 @@ bool Options::parse(int argc, char* argv[])
         std::ifstream localFile(url.c_str());
         url.insert(0, localFile ? "file://" : "http://");
     }
+
+    if (injectedBundle[0])
+        Options::injectedBundle = injectedBundle;
 
     return true;
 }

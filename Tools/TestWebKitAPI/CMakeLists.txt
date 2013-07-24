@@ -65,11 +65,17 @@ set(TestWebKitAPIInjectedBundle_SOURCES
     ${TESTWEBKITAPI_DIR}/Tests/WebKit2/WillSendSubmitEvent_Bundle.cpp
 )
 
+set(TestWebKitAPI_LIBRARIES
+    WTF
+    WebKit2
+)
+
 WEBKIT_INCLUDE_CONFIG_FILES_IF_EXISTS()
 
 add_library(TestWebKitAPIInjectedBundle SHARED ${TestWebKitAPIInjectedBundle_SOURCES})
-target_link_libraries(TestWebKitAPIInjectedBundle WTF)
-add_dependencies(TestWebKitAPIInjectedBundle WebKit2 ${ForwardingHeadersForTestWebKitAPI_NAME} ${ForwardingNetworkHeadersForTestWebKitAPI_NAME})
+
+target_link_libraries(TestWebKitAPIInjectedBundle ${TestWebKitAPI_LIBRARIES})
+add_dependencies(TestWebKitAPIInjectedBundle ${ForwardingHeadersForTestWebKitAPI_NAME} ${ForwardingNetworkHeadersForTestWebKitAPI_NAME})
 
 get_property(TestWebKitAPIInjectedBundle_PATH TARGET TestWebKitAPIInjectedBundle PROPERTY LOCATION)
 

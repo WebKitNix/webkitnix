@@ -23,15 +23,12 @@
 #define YELLOW  "\e[38;05;10m"
 #define GREEN   "\e[38;05;11m"
 
-
 extern void glUseProgram(GLuint);
 
 using namespace std;
 
 MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
-    : m_context(AdoptWK, WKContextCreateWithInjectedBundlePath(WKStringCreateWithUTF8CString(MINIBROWSER_INJECTEDBUNDLE_DIR "libMiniBrowserInjectedBundle.so")))
-    , m_pageGroup(AdoptWK, (WKPageGroupCreateWithIdentifier(WKStringCreateWithUTF8CString("MiniBrowser"))))
-    , m_control(new BrowserControl(this, options.width, options.height, options.url))
+    : m_control(new BrowserControl(this, options.width, options.height, options.url))
     , m_view(0)
     , m_mainLoop(mainLoop)
     , m_options(options)
@@ -46,23 +43,22 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     , m_viewportUserScalable(true)
     , m_viewportInitScale(1)
 {
+    WKStringRef bundlePath = WKStringCreateWithUTF8CString(options.injectedBundle.empty() ? MINIBROWSER_INJECTEDBUNDLE_DIR "libMiniBrowserInjectedBundle.so" : options.injectedBundle.c_str());
+    m_context = adoptWK(WKContextCreateWithInjectedBundlePath(bundlePath));
+    WKRelease(bundlePath);
+
+    WKStringRef groupIdentifier = WKStringCreateWithUTF8CString("MiniBrowser");
+    m_pageGroup = adoptWK(WKPageGroupCreateWithIdentifier(groupIdentifier));
+    WKRelease(groupIdentifier);
+
     m_control->setWindowTitle("MiniBrowser");
     g_main_loop_ref(m_mainLoop);
 
     WKPreferencesRef preferences = WKPageGroupGetPreferences(m_pageGroup.get());
-    WKPreferencesSetAcceleratedCompositingEnabled(preferences, true);
     WKPreferencesSetFrameFlatteningEnabled(preferences, true);
     WKPreferencesSetDeveloperExtrasEnabled(preferences, true);
     WKPreferencesSetWebGLEnabled(preferences, true);
     WKPreferencesSetOfflineWebApplicationCacheEnabled(preferences, true);
-
-    char* debugVisualsEnvironment = getenv("WEBKIT_SHOW_COMPOSITING_DEBUG_VISUALS");
-    bool showDebugVisuals = debugVisualsEnvironment && !strcmp(debugVisualsEnvironment, "1");
-    if (showDebugVisuals) {
-        cout << "Showing debug visuals...\n";
-        WKPreferencesSetCompositingBordersVisible(preferences, true);
-        WKPreferencesSetCompositingRepaintCountersVisible(preferences, true);
-    }
 
     m_view = WKViewCreate(m_context.get(), m_pageGroup.get());
 
@@ -368,7 +364,7 @@ WKPoint MiniBrowser::adjustScrollPositionToBoundaries(WKPoint position)
 
 double MiniBrowser::scaleToFitContents()
 {
-    return WKViewGetSize(m_view).width / m_contentsSize.width;
+    return m_options.devicePixelRatio * WKViewGetSize(m_view).width / m_contentsSize.width;
 }
 
 void MiniBrowser::adjustScrollPosition()
@@ -548,17 +544,27 @@ void MiniBrowser::handleLongTap(double timestamp, const NIXTouchPoint& touch)
     NIXViewSendMouseEvent(m_view, &event);
 }
 
+void MiniBrowser::handlePanningStarted(double)
+{
+    NIXViewViewportInteractionStart(m_view);
+}
+
 void MiniBrowser::handlePanning(double timestamp, WKPoint delta)
 {
     // When the user is panning around the contents we don't force the page scroll position
     // to respect any boundaries other than the physical constraints of the device from where
     // the user input came. This will be adjusted after the user interaction ends.
-    NIXViewViewportInteractionStart(m_view);
     WKPoint position = WKViewGetContentPosition(m_view);
     if ((m_contentsSize.width - NIXViewVisibleContentsSize(m_view).width) > 0)
         position.x -= delta.x;
     position.y -= delta.y;
     WKViewSetContentPosition(m_view, position);
+}
+
+void MiniBrowser::handlePinchStarted(double)
+{
+    if (m_viewportUserScalable)
+        NIXViewViewportInteractionStart(m_view);
 }
 
 void MiniBrowser::handlePanningFinished(double timestamp)
@@ -576,29 +582,29 @@ void MiniBrowser::handlePinch(double timestamp, WKPoint delta, double scale, WKP
     // Scrolling: If the center of the pinch initially was position (120,120) in content
     //            coordinates, them during the page must be scrolled to keep the pinch center
     //            at the same coordinates.
-    NIXViewViewportInteractionStart(m_view);
     WKPoint position = WKPointMake(WKViewGetContentPosition(m_view).x - delta.x, WKViewGetContentPosition(m_view).y - delta.y);
 
     WKViewSetContentPosition(m_view, position);
     scaleAtPoint(contentCenter, scale, LowerMinimumScale);
 }
 
-void MiniBrowser::handlePinchFinished(double timestamp)
+void MiniBrowser::handlePinchFinished(double)
 {
+    if (!m_viewportUserScalable)
+        return;
+
     double scale = WKViewGetContentScaleFactor(m_view);
-    bool needsScale = false;
     double minimumScale = double(WKViewGetSize(m_view).width) / m_contentsSize.width;
 
-    if (scale > m_viewportMaxScale) {
+    bool needsScale = true;
+    if (scale > m_viewportMaxScale)
         scale = m_viewportMaxScale;
-        needsScale = true;
-    } else if (scale < m_viewportMinScale) {
+    else if (scale < m_viewportMinScale)
         scale = m_viewportMinScale;
-        needsScale = true;
-    } else if (scale < minimumScale) {
+    else if (scale < minimumScale)
         scale = minimumScale;
-        needsScale = true;
-    }
+    else
+        needsScale = false;
 
     if (needsScale)
         WKViewSetContentScaleFactor(m_view, scale);
@@ -852,23 +858,35 @@ void MiniBrowser::didChangeProgress(WKPageRef page, const void* clientInfo)
     mb->m_control->setLoadProgress(WKPageGetEstimatedProgress(page));
 }
 
-void MiniBrowser::didReceiveTitleForFrame(WKPageRef, WKStringRef title, WKFrameRef, WKTypeRef, const void* clientInfo)
+void MiniBrowser::didReceiveTitleForFrame(WKPageRef, WKStringRef title, WKFrameRef frame, WKTypeRef, const void* clientInfo)
 {
+    if (!WKFrameIsMainFrame(frame))
+        return;
+
     MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
     std::string titleStr = createStdStringFromWKString(title) + " - MiniBrowser";
     mb->m_control->setWindowTitle(titleStr.c_str());
 }
 
+void MiniBrowser::updateActiveUrlText()
+{
+    std::string url = activeUrl();
+    if (m_activeUrlText != url) {
+        m_activeUrlText = url;
+        m_control->updateUrlText(m_activeUrlText.c_str());
+    }
+}
+
 void MiniBrowser::didStartProvisionalLoadForFrame(WKPageRef page, WKFrameRef, WKTypeRef, const void* clientInfo)
 {
     MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
-    mb->m_control->updateUrlText(mb->activeUrl().c_str());
+    mb->updateActiveUrlText();
 }
 
 void MiniBrowser::didFinishDocumentLoadForFrame(WKPageRef page, WKFrameRef, WKTypeRef, const void* clientInfo)
 {
     MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
-    mb->m_control->updateUrlText(mb->activeUrl().c_str());
+    mb->updateActiveUrlText();
 }
 
 void MiniBrowser::didFailProvisionalLoadWithErrorForFrame(WKPageRef page, WKFrameRef frame, WKErrorRef error, WKTypeRef, const void *)

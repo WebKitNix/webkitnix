@@ -50,7 +50,7 @@ extern WTFLogChannel LogNetworkScheduling;
 
 void initializeLogChannel(WTFLogChannel*);
 void initializeLogChannelsIfNecessary(void);
-#if PLATFORM(GTK) || PLATFORM(QT) || PLATFORM(EFL)
+#if PLATFORM(GTK) || PLATFORM(QT) || PLATFORM(EFL) || PLATFORM(NIX)
 WTFLogChannel* getChannelFromName(const String& channelName);
 #endif
 

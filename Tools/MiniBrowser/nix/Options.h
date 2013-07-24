@@ -31,7 +31,7 @@
 struct Options {
     Options();
 
-    bool parse(int argc, char* argv[]);
+    bool parse(int argc, const char* argv[]);
 
     int width;
     int height;
@@ -39,8 +39,11 @@ struct Options {
     int viewportVerticalDisplacement;
     bool desktopModeEnabled;
     bool forceTouchEmulationEnabled;
+    float devicePixelRatio;
     std::string userAgent;
     std::string url;
+    std::string injectedBundle;
+    bool helpRequested;
 };
 
 #endif // Options_h

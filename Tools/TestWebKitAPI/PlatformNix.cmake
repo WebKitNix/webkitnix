@@ -64,6 +64,10 @@ set(webkit2Test_LIBRARIES
     ${PNG_LIBRARY}
 )
 
+list (APPEND TestWebKitAPI_LIBRARIES
+    ${CAIRO_LIBRARIES}
+)
+
 if (WTF_USE_OPENGL_ES_2)
     list(APPEND webkit2Test_LIBRARIES ${OPENGLES2_LIBRARIES})
     include_directories(${OPENGLES2_INCLUDE_DIRS})

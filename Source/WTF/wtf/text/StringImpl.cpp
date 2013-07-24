@@ -389,67 +389,64 @@ PassRefPtr<StringImpl> StringImpl::lower()
 {
     // Note: This is a hot function in the Dromaeo benchmark, specifically the
     // no-op code path up through the first 'return' statement.
-    
+
     // First scan the string for uppercase and non-ASCII characters:
     bool noUpper = true;
-    UChar ored = 0;
     if (is8Bit()) {
-        const LChar* end = m_data8 + m_length;
-        for (const LChar* chp = m_data8; chp != end; ++chp) {
-            if (UNLIKELY(isASCIIUpper(*chp)))
-                noUpper = false;
-            ored |= *chp;
+        unsigned failingIndex;
+        for (unsigned i = 0; i < m_length; ++i) {
+            LChar character = m_data8[i];
+            if (UNLIKELY((character & ~0x7F) || isASCIIUpper(character))) {
+                failingIndex = i;
+                goto SlowPath8bitLower;
+            }
         }
-        // Nothing to do if the string is all ASCII with no uppercase.
-        if (noUpper && !(ored & ~0x7F))
-            return this;
+        return this;
 
-        if (m_length > static_cast<unsigned>(numeric_limits<int32_t>::max()))
-            CRASH();
-        int32_t length = m_length;
-
+SlowPath8bitLower:
         LChar* data8;
-        RefPtr<StringImpl> newImpl = createUninitialized(length, data8);
+        RefPtr<StringImpl> newImpl = createUninitialized(m_length, data8);
 
-        if (!(ored & ~0x7F)) {
-            for (int32_t i = 0; i < length; ++i)
-                data8[i] = toASCIILower(m_data8[i]);
+        for (unsigned i = 0; i < failingIndex; ++i)
+            data8[i] = m_data8[i];
 
-            return newImpl.release();
+        for (unsigned i = failingIndex; i < m_length; ++i) {
+            LChar character = m_data8[i];
+            if (!(character & ~0x7F))
+                data8[i] = toASCIILower(character);
+            else
+                data8[i] = static_cast<LChar>(Unicode::toLower(character));
         }
-
-        // Do a slower implementation for cases that include non-ASCII Latin-1 characters.
-        for (int32_t i = 0; i < length; ++i)
-            data8[i] = static_cast<LChar>(Unicode::toLower(m_data8[i]));
 
         return newImpl.release();
     }
+    unsigned ored = 0;
 
-    const UChar *end = m_data16 + m_length;
-    for (const UChar* chp = m_data16; chp != end; ++chp) {
-        if (UNLIKELY(isASCIIUpper(*chp)))
+    for (unsigned i = 0; i < m_length; ++i) {
+        UChar character = m_data16[i];
+        if (UNLIKELY(isASCIIUpper(character)))
             noUpper = false;
-        ored |= *chp;
+        ored |= character;
     }
     // Nothing to do if the string is all ASCII with no uppercase.
     if (noUpper && !(ored & ~0x7F))
         return this;
 
-    if (m_length > static_cast<unsigned>(numeric_limits<int32_t>::max()))
-        CRASH();
-    int32_t length = m_length;
-
     if (!(ored & ~0x7F)) {
         UChar* data16;
         RefPtr<StringImpl> newImpl = createUninitialized(m_length, data16);
         
-        for (int32_t i = 0; i < length; ++i) {
+        for (unsigned i = 0; i < m_length; ++i) {
             UChar c = m_data16[i];
             data16[i] = toASCIILower(c);
         }
         return newImpl.release();
     }
-    
+
+    if (m_length > static_cast<unsigned>(numeric_limits<int32_t>::max()))
+        CRASH();
+    int32_t length = m_length;
+
     // Do a slower implementation for cases that include non-ASCII characters.
     UChar* data16;
     RefPtr<StringImpl> newImpl = createUninitialized(m_length, data16);
@@ -481,7 +478,7 @@ PassRefPtr<StringImpl> StringImpl::upper()
         RefPtr<StringImpl> newImpl = createUninitialized(m_length, data8);
         
         // Do a faster loop for the case where all the characters are ASCII.
-        LChar ored = 0;
+        unsigned ored = 0;
         for (int i = 0; i < length; ++i) {
             LChar c = m_data8[i];
             ored |= c;
@@ -542,7 +539,7 @@ upconvert:
     RefPtr<StringImpl> newImpl = createUninitialized(m_length, data16);
     
     // Do a faster loop for the case where all the characters are ASCII.
-    UChar ored = 0;
+    unsigned ored = 0;
     for (int i = 0; i < length; ++i) {
         UChar c = source16[i];
         ored |= c;

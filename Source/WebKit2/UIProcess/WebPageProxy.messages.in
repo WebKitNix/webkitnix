@@ -77,7 +77,7 @@ messages -> WebPageProxy {
     PageDidRequestScroll(WebCore::IntPoint point)
     PageTransitionViewportReady()
 #endif
-#if PLATFORM(QT) || PLATFORM(NIX)
+#if USE(COORDINATED_GRAPHICS)
     DidFindZoomableArea(WebCore::IntPoint target, WebCore::IntRect area)
 #endif
 #if PLATFORM(QT)
@@ -116,7 +116,7 @@ messages -> WebPageProxy {
     DidCreateSubframe(uint64_t frameID)
 
     # Frame load messages
-    DidCommitLoadForFrame(uint64_t frameID, WTF::String mimeType, bool hasCustomRepresentation, uint32_t loadType, WebKit::PlatformCertificateInfo certificateInfo, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
+    DidCommitLoadForFrame(uint64_t frameID, WTF::String mimeType, uint32_t loadType, WebKit::PlatformCertificateInfo certificateInfo, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidFailLoadForFrame(uint64_t frameID, WebCore::ResourceError error, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidFailProvisionalLoadForFrame(uint64_t frameID, WebCore::ResourceError error, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidFinishDocumentLoadForFrame(uint64_t frameID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
@@ -139,9 +139,6 @@ messages -> WebPageProxy {
 #if PLATFORM(QT)
     ResolveApplicationSchemeRequest(WebKit::QtNetworkRequestData request)
 #endif
-
-    # Custom representations
-    DidFinishLoadingDataForCustomRepresentation(WTF::String suggestedFilename, CoreIPC::DataReference data)
 
     # Forms messages
     WillSubmitForm(uint64_t frameID, uint64_t sourceFrameID, WTF::Vector<std::pair<WTF::String, WTF::String>> textFieldValues, uint64_t listenerID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
@@ -321,7 +318,7 @@ messages -> WebPageProxy {
 #endif
 
 #if ENABLE(NETSCAPE_PLUGIN_API)
-    FindPlugin(WTF::String mimeType, uint32_t processType, WTF::String urlString, WTF::String frameURLString, WTF::String pageURLString, bool allowOnlyApplicationPlugins) -> (uint64_t pluginProcessToken, WTF::String newMIMEType, uint32_t pluginLoadPolicy)
+    FindPlugin(WTF::String mimeType, uint32_t processType, WTF::String urlString, WTF::String frameURLString, WTF::String pageURLString, bool allowOnlyApplicationPlugins) -> (uint64_t pluginProcessToken, WTF::String newMIMEType, uint32_t pluginLoadPolicy, WTF::String unavailabilityDescription)
 #endif
 
     DidUpdateInWindowState()

@@ -347,7 +347,7 @@ void FrameView::init()
     // Propagate the marginwidth/height and scrolling modes to the view.
     Element* ownerElement = m_frame ? m_frame->ownerElement() : 0;
     if (ownerElement && (ownerElement->hasTagName(frameTag) || ownerElement->hasTagName(iframeTag))) {
-        HTMLFrameElementBase* frameElt = static_cast<HTMLFrameElementBase*>(ownerElement);
+        HTMLFrameElementBase* frameElt = toHTMLFrameElementBase(ownerElement);
         if (frameElt->scrollingMode() == ScrollbarAlwaysOff)
             setCanHaveScrollbars(false);
         LayoutUnit marginWidth = frameElt->marginWidth();
@@ -1652,10 +1652,7 @@ IntPoint FrameView::maximumScrollPosition() const
     if (!m_frame->page())
         return maximumOffset;
 
-    // With pagination enabled, we can have a negative maximum scroll position.
-    if ((m_frame->page()->pagination().mode == Pagination::Unpaginated && m_pagination.mode == Pagination::Unpaginated)
-        || scrollOrigin() == IntPoint::zero())
-        maximumOffset.clampNegativeToZero();
+    maximumOffset.clampNegativeToZero();
 
     if (m_frame == m_frame->page()->mainFrame() && m_scrollPinningBehavior == PinToTop)
         maximumOffset.setY(minimumScrollPosition().y());
@@ -2665,7 +2662,7 @@ void FrameView::updateWidget(RenderObject* object)
     if (object->isEmbeddedObject()) {
         RenderEmbeddedObject* embeddedObject = static_cast<RenderEmbeddedObject*>(object);
         // No need to update if it's already crashed or known to be missing.
-        if (embeddedObject->showsUnavailablePluginIndicator())
+        if (embeddedObject->isPluginUnavailable())
             return;
 
         if (object->isSnapshottedPlugIn()) {
@@ -2690,7 +2687,7 @@ void FrameView::updateWidget(RenderObject* object)
         // FIXME: It is not clear that Media elements need or want this updateWidget() call.
 #if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
         else if (ownerElement->isMediaElement())
-            static_cast<HTMLMediaElement*>(ownerElement)->updateWidget(CreateAnyWidgetType);
+            toHTMLMediaElement(ownerElement)->updateWidget(CreateAnyWidgetType);
 #endif
         else
             ASSERT_NOT_REACHED();

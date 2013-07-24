@@ -50,7 +50,7 @@ public:
     WEBKIT_EXPORT static Platform* current();
 
     // Audio --------------------------------------------------------------
-    virtual double audioHardwareSampleRate() { return 0; }
+    virtual float audioHardwareSampleRate() { return 0; }
     virtual size_t audioHardwareBufferSize() { return 0; }
     virtual unsigned audioHardwareOutputChannels() { return 0; }
 

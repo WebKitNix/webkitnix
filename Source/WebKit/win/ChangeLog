@@ -1,3 +1,78 @@
+2013-07-22  peavo@outlook.com  <peavo@outlook.com>
+
+        [Curl] Download fails for certain urls.
+        https://bugs.webkit.org/show_bug.cgi?id=118468
+
+        Reviewed by Brent Fulgham.
+
+        Initialize download from provided resource handle, request, and response object.
+
+        * WebDownload.h: Use WebCore namespace for Curl download class.
+        * WebDownloadCurl.cpp:
+        (WebDownload::init): Initialize download from provided resource handle, request, and response object.
+
+2013-07-19  peavo@outlook.com  <peavo@outlook.com>
+
+        [Curl] Http response code 401 (Authentication required) is not handled.
+        https://bugs.webkit.org/show_bug.cgi?id=118849
+
+        Reviewed by Brent Fulgham.
+
+        The current Curl implementation does not handle a 401 response.
+        When receiving http code 401, we need to give a notification that authorization is required, by calling the appropriate notification method.
+        This gives a WebKit client the possibility to present a password dialog to the user.
+        In response to this, we should provide Curl with the given username and password, so another request can be sent with the given credentials.
+
+        * WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebFrameLoaderClient::dispatchDidReceiveAuthenticationChallenge):
+            Implement empty method; use the same implementation as the CFNetwork version does,
+            notify delegate when authorization is required. 
+        * WebURLAuthenticationChallengeSenderCurl.cpp:
+        (WebURLAuthenticationChallengeSender::cancelAuthenticationChallenge):
+            Implement empty method; use the same implementation as the CFNetwork version does.
+        (WebURLAuthenticationChallengeSender::continueWithoutCredentialForAuthenticationChallenge):
+            Implement empty method; use the same implementation as the CFNetwork version does.
+        (WebURLAuthenticationChallengeSender::useCredential):
+            Implement empty method; use the same implementation as the CFNetwork version does.
+
+2013-07-17  Kangil Han  <kangil.han@samsung.com>
+
+        Use toHTMLMediaElement
+        https://bugs.webkit.org/show_bug.cgi?id=118727
+
+        Reviewed by Ryosuke Niwa.
+
+        To avoid direct use of static_cast, this patch uses toHTMLMediaElement for code cleanup.
+
+        * WebView.cpp:
+        (WebView::enterFullscreenForNode):
+
+2013-07-16  Kangil Han  <kangil.han@samsung.com>
+
+        Use toHTMLSelectElement and dismiss isHTMLSelectElement
+        https://bugs.webkit.org/show_bug.cgi?id=118714
+
+        Reviewed by Ryosuke Niwa.
+
+        To avoid direct use of static_cast, this patch introduces toHTMLIFrameElement for code cleanup.
+        Additionally, this patch removes isHTMLSelectElement because not all element subclasses can be checked by a combination of tag names.
+
+        * DOMHTMLClasses.cpp:
+        (DOMHTMLSelectElement::options):
+        (DOMHTMLSelectElement::activateItemAtIndex):
+
+2013-07-15  Kangil Han  <kangil.han@samsung.com>
+
+        Introduce toHTMLIFrameElement
+        https://bugs.webkit.org/show_bug.cgi?id=118672
+
+        Reviewed by Ryosuke Niwa.
+
+        To avoid direct use of static_cast, this patch introduces toHTMLIFrameElement for code cleanup.
+
+        * DOMHTMLClasses.cpp:
+        (DOMHTMLIFrameElement::contentFrame):
+
 2013-07-09  Jer Noble  <jer.noble@apple.com>
 
         Reviewed by Simon Fraser.

@@ -26,6 +26,7 @@ list(APPEND WebCore_SOURCES
     platform/nix/ErrorsNix.cpp
     platform/gtk/EventLoopGtk.cpp
     platform/nix/FileSystemNix.cpp
+    platform/nix/GamepadsNix.cpp
     platform/nix/LanguageNix.cpp
     platform/nix/LocalizedStringsNix.cpp
     platform/gtk/LoggingGtk.cpp
@@ -291,12 +292,6 @@ if (ENABLE_WEB_AUDIO)
   add_definitions(-DUNINSTALLED_AUDIO_RESOURCES_DIR="${WEBCORE_DIR}/platform/audio/resources")
 endif ()
 
-if (ENABLE_GAMEPAD)
-    list(APPEND WebCore_SOURCES
-        platform/nix/GamepadsNix.cpp
-    )
-endif ()
-
 if (WTF_USE_CURL)
     list(APPEND WebCore_INCLUDE_DIRECTORIES
         "${WEBCORE_DIR}/platform/network/curl"
@@ -320,6 +315,8 @@ if (WTF_USE_CURL)
     )
 else ()
     list(APPEND WebCore_SOURCES
+        loader/soup/CachedRawResourceSoup.cpp
+        loader/soup/SubresourceLoaderSoup.cpp
         platform/network/soup/AuthenticationChallengeSoup.cpp
         platform/network/soup/CookieJarSoup.cpp
         platform/network/soup/CookieStorageSoup.cpp
