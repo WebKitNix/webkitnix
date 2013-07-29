@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2012 Apple Inc. All rights reserved.
+ * Copyright (C) 2008, 2012, 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,6 +28,8 @@
 
 
 #if ENABLE(JIT)
+
+#include "CallFrameInlines.h"
 
 namespace JSC {
 
@@ -179,13 +181,13 @@ ALWAYS_INLINE void JIT::endUninterruptedSequence(int insnSpace, int constSpace, 
 ALWAYS_INLINE void JIT::updateTopCallFrame()
 {
     ASSERT(static_cast<int>(m_bytecodeOffset) >= 0);
-    if (m_bytecodeOffset) {
 #if USE(JSVALUE32_64)
-        storePtr(TrustedImmPtr(m_codeBlock->instructions().begin() + m_bytecodeOffset + 1), intTagFor(JSStack::ArgumentCount));
+    Instruction* instruction = m_codeBlock->instructions().begin() + m_bytecodeOffset + 1; 
+    uint32_t locationBits = CallFrame::Location::encodeAsBytecodeInstruction(instruction);
 #else
-        store32(TrustedImm32(m_bytecodeOffset + 1), intTagFor(JSStack::ArgumentCount));
+    uint32_t locationBits = CallFrame::Location::encodeAsBytecodeOffset(m_bytecodeOffset + 1);
 #endif
-    }
+    store32(TrustedImm32(locationBits), intTagFor(JSStack::ArgumentCount));
     storePtr(callFrameRegister, &m_vm->topCallFrame);
 }
 
@@ -333,7 +335,7 @@ inline void JIT::emitAllocateJSObject(RegisterID allocator, StructureType struct
 }
 
 #if ENABLE(VALUE_PROFILER)
-inline void JIT::emitValueProfilingSite(ValueProfile* valueProfile)
+inline void JIT::emitValueProfilingSite(ValueProfile* valueProfile, RegisterID bucketCounterRegister)
 {
     ASSERT(shouldEmitProfiling());
     ASSERT(valueProfile);
@@ -371,16 +373,16 @@ inline void JIT::emitValueProfilingSite(ValueProfile* valueProfile)
 #endif
 }
 
-inline void JIT::emitValueProfilingSite(unsigned bytecodeOffset)
+inline void JIT::emitValueProfilingSite(unsigned bytecodeOffset, RegisterID bucketCounterRegister)
 {
     if (!shouldEmitProfiling())
         return;
-    emitValueProfilingSite(m_codeBlock->valueProfileForBytecodeOffset(bytecodeOffset));
+    emitValueProfilingSite(m_codeBlock->valueProfileForBytecodeOffset(bytecodeOffset), bucketCounterRegister);
 }
 
-inline void JIT::emitValueProfilingSite()
+inline void JIT::emitValueProfilingSite(RegisterID bucketCounterRegister)
 {
-    emitValueProfilingSite(m_bytecodeOffset);
+    emitValueProfilingSite(m_bytecodeOffset, bucketCounterRegister);
 }
 #endif // ENABLE(VALUE_PROFILER)
 
@@ -438,9 +440,10 @@ static inline bool arrayProfileSaw(ArrayModes arrayModes, IndexingType capabilit
 
 inline JITArrayMode JIT::chooseArrayMode(ArrayProfile* profile)
 {
-#if ENABLE(VALUE_PROFILER)        
-    profile->computeUpdatedPrediction(m_codeBlock);
-    ArrayModes arrayModes = profile->observedArrayModes();
+#if ENABLE(VALUE_PROFILER)
+    ConcurrentJITLocker locker(m_codeBlock->m_lock);
+    profile->computeUpdatedPrediction(locker, m_codeBlock);
+    ArrayModes arrayModes = profile->observedArrayModes(locker);
     if (arrayProfileSaw(arrayModes, DoubleShape))
         return JITDouble;
     if (arrayProfileSaw(arrayModes, Int32Shape))

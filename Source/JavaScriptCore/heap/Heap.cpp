@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2011 Apple Inc. All rights reserved.
+ *  Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2011, 2013 Apple Inc. All rights reserved.
  *  Copyright (C) 2007 Eric Seidel <eric@webkit.org>
  *
  *  This library is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@
 #include "CopiedSpace.h"
 #include "CopiedSpaceInlines.h"
 #include "CopyVisitorInlines.h"
+#include "DFGWorklist.h"
 #include "GCActivityCallback.h"
 #include "HeapRootVisitor.h"
 #include "HeapStatistics.h"
@@ -166,7 +167,7 @@ static inline size_t proportionalHeapSize(size_t heapSize, size_t ramSize)
 
 static inline bool isValidSharedInstanceThreadState(VM* vm)
 {
-    return vm->apiLock().currentThreadIsHoldingLock();
+    return vm->currentThreadIsHoldingAPILock();
 }
 
 static inline bool isValidThreadState(VM* vm)
@@ -253,6 +254,7 @@ Heap::Heap(VM* vm, HeapType heapType)
     , m_blockAllocator()
     , m_objectSpace(this)
     , m_storageSpace(this)
+    , m_extraMemoryUsage(0)
     , m_machineThreads(this)
     , m_sharedData(vm)
     , m_slotVisitor(m_sharedData)
@@ -264,6 +266,7 @@ Heap::Heap(VM* vm, HeapType heapType)
     , m_lastCodeDiscardTime(WTF::currentTime())
     , m_activityCallback(DefaultGCActivityCallback::create(this))
     , m_sweeper(IncrementalSweeper::create(this))
+    , m_deferralDepth(0)
 {
     m_storageSpace.init();
 }
@@ -306,8 +309,7 @@ void Heap::reportExtraMemoryCostSlowCase(size_t cost)
     // collecting more frequently as long as it stays alive.
 
     didAllocate(cost);
-    if (shouldCollect())
-        collect(DoNotSweep);
+    collectIfNecessaryOrDefer();
 }
 
 void Heap::reportAbandonedObjectGraph()
@@ -332,7 +334,7 @@ void Heap::didAbandon(size_t bytes)
 void Heap::protect(JSValue k)
 {
     ASSERT(k);
-    ASSERT(m_vm->apiLock().currentThreadIsHoldingLock());
+    ASSERT(m_vm->currentThreadIsHoldingAPILock());
 
     if (!k.isCell())
         return;
@@ -343,7 +345,7 @@ void Heap::protect(JSValue k)
 bool Heap::unprotect(JSValue k)
 {
     ASSERT(k);
-    ASSERT(m_vm->apiLock().currentThreadIsHoldingLock());
+    ASSERT(m_vm->currentThreadIsHoldingAPILock());
 
     if (!k.isCell())
         return false;
@@ -351,7 +353,7 @@ bool Heap::unprotect(JSValue k)
     return m_protectedValues.remove(k.asCell());
 }
 
-void Heap::jettisonDFGCodeBlock(PassOwnPtr<CodeBlock> codeBlock)
+void Heap::jettisonDFGCodeBlock(PassRefPtr<CodeBlock> codeBlock)
 {
     m_dfgCodeBlocks.jettison(codeBlock);
 }
@@ -621,7 +623,7 @@ size_t Heap::objectCount()
 
 size_t Heap::size()
 {
-    return m_objectSpace.size() + m_storageSpace.size();
+    return m_objectSpace.size() + m_storageSpace.size() + m_extraMemoryUsage;
 }
 
 size_t Heap::capacity()
@@ -693,7 +695,7 @@ void Heap::collectAllGarbage()
 {
     if (!m_isSafeToCollect)
         return;
-
+    
     collect(DoSweep);
 }
 
@@ -701,15 +703,26 @@ static double minute = 60.0;
 
 void Heap::collect(SweepToggle sweepToggle)
 {
+#if ENABLE(ALLOCATION_LOGGING)
+    dataLogF("JSC GC starting collection.\n");
+#endif
+    
     SamplingRegion samplingRegion("Garbage Collection");
     
+    RELEASE_ASSERT(!m_deferralDepth);
     GCPHASE(Collect);
-    ASSERT(vm()->apiLock().currentThreadIsHoldingLock());
+    ASSERT(vm()->currentThreadIsHoldingAPILock());
     RELEASE_ASSERT(vm()->identifierTable == wtfThreadData().currentIdentifierTable());
     ASSERT(m_isSafeToCollect);
     JAVASCRIPTCORE_GC_BEGIN();
     RELEASE_ASSERT(m_operationInProgress == NoOperation);
+    
+    m_deferralDepth++; // Make sure that we don't GC in this call.
+    m_vm->prepareToDiscardCode();
+    m_deferralDepth--; // Decrement deferal manually, so we don't GC when we do so, since we are already GCing!.
+    
     m_operationInProgress = Collection;
+    m_extraMemoryUsage = 0;
 
     m_activityCallback->willCollect();
 
@@ -744,11 +757,6 @@ void Heap::collect(SweepToggle sweepToggle)
     {
         GCPHASE(FinalizeUnconditionalFinalizers);
         finalizeUnconditionalFinalizers();
-    }
-
-    {
-        GCPHASE(finalizeSmallStrings);
-        m_vm->smallStrings.finalizeSmallStrings();
     }
 
     {
@@ -807,6 +815,22 @@ void Heap::collect(SweepToggle sweepToggle)
 
     if (Options::showObjectStatistics())
         HeapStatistics::showObjectStatistics(this);
+
+#if ENABLE(ALLOCATION_LOGGING)
+    dataLogF("JSC GC finishing collection.\n");
+#endif
+}
+
+bool Heap::collectIfNecessaryOrDefer()
+{
+    if (m_deferralDepth)
+        return false;
+    
+    if (!shouldCollect())
+        return false;
+    
+    collect(DoNotSweep);
+    return true;
 }
 
 void Heap::markDeadObjects()
@@ -891,6 +915,22 @@ void Heap::zombifyDeadObjects()
     // Sweep now because destructors will crash once we're zombified.
     m_objectSpace.sweep();
     m_objectSpace.forEachDeadCell<Zombify>();
+}
+
+void Heap::incrementDeferralDepth()
+{
+    RELEASE_ASSERT(m_deferralDepth < 100); // Sanity check to make sure this doesn't get ridiculous.
+    
+    m_deferralDepth++;
+}
+
+void Heap::decrementDeferralDepthAndGCIfNeeded()
+{
+    RELEASE_ASSERT(m_deferralDepth >= 1);
+    
+    m_deferralDepth--;
+    
+    collectIfNecessaryOrDefer();
 }
 
 } // namespace JSC

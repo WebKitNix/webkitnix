@@ -1,3 +1,630 @@
+2013-07-25  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Unreviewed build fix.
+
+        * WTF.vcxproj/WTF.vcxproj: Add missing SixCharacterHash.h,.cpp files.
+        * WTF.vcxproj/WTF.vcxproj.filters: Ditto.
+        * wtf/NumberOfCores.h: Add export macro to numberOfProcessorCores.
+        * wtf/PrintStream.h: Add export macro to dumpCharacter.
+        * wtf/SixCharacterHash.h: Add export macro to sixCharacterHashStringToInteger
+        and integerToSixCharacterHashString.
+        * wtf/text/CString.h: Add export macro to hash and equal methods.
+        (WTF::CStringHash::hash): Add export macro.
+
+2013-07-25  peavo@outlook.com  <peavo@outlook.com>
+
+        [Windows] Provide ASM implemenation of 8-bit compare-and-swap
+        https://bugs.webkit.org/show_bug.cgi?id=119084
+
+        Reviewed by Brent Fulgham.
+
+        * wtf/Atomics.h:
+        (WTF::weakCompareAndSwap): Add a 32-bit X86 Assembly path for
+        Windows build.
+
+2013-07-25  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Unreviewed build fix.
+
+        * WTF.vcxproj/WTF.vcxproj: Add missing CompilationThread.h,.cpp
+        * WTF.vcxproj/WTF.vcxproj.filters: Ditto.
+
+2013-07-25  Michael Brüning  <michael.bruning@digia.com>
+
+        Fix Windows build after r153134.
+        https://bugs.webkit.org/show_bug.cgi?id=119090
+
+        Reviewed by Oliver Hunt.
+
+        Add USE(PTHREADS) guards around pthread specific code
+        for now. This will cause isCompilationThread to always
+        return false on non pthread platforms such as Windows.
+
+        We might be able to use the Windows one-time initialization
+        for this, but this is only available from Windows Vista on.
+
+        * wtf/CompilationThread.cpp:
+        (WTF::initializeCompilationThreads):
+
+2013-07-25  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        Fix windows build after FTL upstream
+
+        Unreviewed build fix.
+
+        * wtf/Atomics.h:
+        (WTF::weakCompareAndSwap):
+
+2013-07-25  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Unreviewed, build fix on the EFL port.
+
+        * wtf/CMakeLists.txt: Added SixCharacterHash.cpp
+
+2013-07-25  Gabor Rapcsanyi  <rgabor@webkit.org>
+
+        Unreviewed, build fix on the Qt port.
+
+        * WTF.pro: Add additional build files for the FTL.
+
+2013-07-25  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed, further GTK build fixing.
+
+        * GNUmakefile.am: Make libWTF.la depend on any changes made to the build targets list.
+        * GNUmakefile.list.am: Add SixCharacterHash source files to the build.
+
+2013-07-25  Csaba Osztrogonác  <ossy@webkit.org>
+
+        [GTK] Similar fix to r153304.
+
+        * GNUmakefile.list.am:
+
+2013-07-25  Grzegorz Czajkowski  <g.czajkowski@samsung.com>
+
+        Build break in debug after r153134: StringImpl.h:640: undefined reference to `WTF::isCompilationThread()
+        https://bugs.webkit.org/show_bug.cgi?id=119077
+
+        Reviewed by Christophe Dumez.
+
+        * wtf/CMakeLists.txt:
+        Added CompilationThread.{h/cpp}.
+
+2013-07-24  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: DFG IR dumps should be easier to read
+        https://bugs.webkit.org/show_bug.cgi?id=119050
+
+        Reviewed by Mark Hahnenberg.
+        
+        Added support for dumping values within a context. By default, if you say
+        print(inContext(value, context)) it calls value.dumpInContext(out, context)
+        instead of value.dump(out).
+        
+        Hoisted the support for six-character hashes out of JSC::CodeBlockHash into
+        WTF, in the form of SixCharacterHash.h.
+        
+        Added a helper for creating dump contexts where the inContext() dump will
+        just use a short string hash to "name" the object being dumped, and then
+        will print out the full dumps in an endnote to your dump.
+        
+        Added support for using CString as a hashtable key.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/PrintStream.h:
+        (WTF):
+        (ValueInContext):
+        (WTF::ValueInContext::ValueInContext):
+        (WTF::ValueInContext::dump):
+        (WTF::inContext):
+        * wtf/SixCharacterHash.cpp: Added.
+        (WTF):
+        (WTF::sixCharacterHashStringToInteger):
+        (WTF::integerToSixCharacterHashString):
+        * wtf/SixCharacterHash.h: Added.
+        (WTF):
+        * wtf/StringHashDumpContext.h: Added.
+        (WTF):
+        (StringHashDumpContext):
+        (WTF::StringHashDumpContext::StringHashDumpContext):
+        (WTF::StringHashDumpContext::getID):
+        (WTF::StringHashDumpContext::dumpBrief):
+        (WTF::StringHashDumpContext::brief):
+        (WTF::StringHashDumpContext::isEmpty):
+        (WTF::StringHashDumpContext::dump):
+        * wtf/text/CString.cpp:
+        (WTF::CString::hash):
+        (WTF):
+        (WTF::operator<):
+        (WTF::CStringHash::equal):
+        * wtf/text/CString.h:
+        (WTF::CString::CString):
+        (CString):
+        (WTF::CString::isHashTableDeletedValue):
+        (WTF):
+        (WTF::CStringHash::hash):
+        (CStringHash):
+
+2013-07-21  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: DFG Nodes should be able to abstractly tell you what they read and what they write
+        https://bugs.webkit.org/show_bug.cgi?id=118910
+
+        Reviewed by Sam Weinig.
+        
+        Fix compile goof in sortedListDump().
+
+        * wtf/ListDump.h:
+        (WTF::sortedListDump):
+
+2013-07-16  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: NaturalLoops should be able to quickly answer questions like "what loops own this basic block"
+        https://bugs.webkit.org/show_bug.cgi?id=118750
+
+        Reviewed by Mark Hahnenberg.
+        
+        Add a utility function for inserting an element into a vector that has bounded size,
+        and where the insertion causes things to drop off the end.
+
+        * wtf/StdLibExtras.h:
+        (WTF):
+        (WTF::insertIntoBoundedVector):
+
+2013-07-12  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: DFG should have an SSA form for use by FTL
+        https://bugs.webkit.org/show_bug.cgi?id=118338
+
+        Reviewed by Mark Hahnenberg.
+        
+        - Extend variadicity of PrintStream and dataLog.
+        
+        - Give HashSet the ability to add a span of things.
+        
+        - Give HashSet the ability to == another HashSet.
+        
+        - Note FIXME's in HashTable concerning copying performance, that affects
+          the way that the DFG now uses HashSets and HashMaps.
+        
+        - Factor out the bulk-insertion logic of JSC::DFG::InsertionSet into
+          WTF::Insertion, so that it can be used in more places.
+        
+        - Create a dumper for lists and maps.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/DataLog.h:
+        (WTF):
+        (WTF::dataLog):
+        * wtf/HashSet.h:
+        (HashSet):
+        (WTF):
+        (WTF::::add):
+        (WTF::=):
+        * wtf/HashTable.h:
+        (WTF::::HashTable):
+        (WTF::=):
+        * wtf/Insertion.h: Added.
+        (WTF):
+        (Insertion):
+        (WTF::Insertion::Insertion):
+        (WTF::Insertion::index):
+        (WTF::Insertion::element):
+        (WTF::Insertion::operator<):
+        (WTF::executeInsertions):
+        * wtf/ListDump.h: Added.
+        (WTF):
+        (ListDump):
+        (WTF::ListDump::ListDump):
+        (WTF::ListDump::dump):
+        (MapDump):
+        (WTF::MapDump::MapDump):
+        (WTF::MapDump::dump):
+        (WTF::listDump):
+        (WTF::sortedListDump):
+        (WTF::lessThan):
+        (WTF::mapDump):
+        (WTF::sortedMapDump):
+        * wtf/PrintStream.h:
+        (PrintStream):
+        (WTF::PrintStream::print):
+
+2013-07-02  Filip Pizlo  <fpizlo@apple.com>
+
+        Unreviewed, fix 32-bit build.
+
+        * wtf/Platform.h:
+
+2013-07-02  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: FTL should use the equivalent of llvm opt -O2 by default
+        https://bugs.webkit.org/show_bug.cgi?id=118311
+
+        Reviewed by Mark Hahnenberg.
+        
+        * wtf/LLVMHeaders.h:
+
+2013-06-27  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: JSC's disassembly infrastructure should be able to disassemble the code that LLVM generates
+        https://bugs.webkit.org/show_bug.cgi?id=118148
+
+        Reviewed by Anders Carlsson.
+        
+        We now use LLVM for two things: disassembler and FTL. Separate out the question
+        of whether we have LLVM (HAVE(LLVM)) from whether we want to use the LLVM
+        disassembler (USE(LLVM_DISASSEMBLER)) and whether we enable the FTL
+        (ENABLE(FTL_JIT)).
+        
+        Also move the cruft for including LLVM headers into WTF since now we use it in
+        a bunch of places, not all related to FTL. There's no obvious place to put that
+        file in JSC so I put it in WTF.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/LLVMHeaders.h: Copied from Source/JavaScriptCore/ftl/FTLLLVMHeaders.h.
+        * wtf/Platform.h:
+
+2013-06-25  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: DFG should support switch_string
+        https://bugs.webkit.org/show_bug.cgi?id=117967
+
+        Reviewed by Sam Weinig.
+        
+        Make it possible to compare a RefPtr<StringImpl> and a StringImpl* without
+        having to ref the StringImpl.
+
+        * wtf/text/StringHash.h:
+        (WTF::StringHash::equal):
+
+2013-06-24  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: Count external memory usage towards heap footprint
+        https://bugs.webkit.org/show_bug.cgi?id=117948
+
+        Reviewed by Geoffrey Garen.
+
+        Expose some functionality needed for properly measuring StringImpl footprint.
+
+        * wtf/Atomics.h:
+        (WTF::weakCompareAndSwapSize):
+        (WTF):
+        * wtf/MathExtras.h:
+        (divideRoundedUp):
+        * wtf/text/StringImpl.h:
+        (WTF::StringImpl::cost):
+        (StringImpl):
+        (WTF::StringImpl::costDuringGC):
+        (WTF::StringImpl::refCount):
+
+2013-06-23  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: DFG should optimize identifier string equality
+        https://bugs.webkit.org/show_bug.cgi?id=117920
+
+        Reviewed by Sam Weinig.
+
+        Note that this ChangeLog was supposed to be committed in r151890.
+        
+        Expose the IsIdentifier bit to the JIT.
+        
+        * wtf/text/StringImpl.h:
+        (WTF::StringImpl::flagIsIdentifier):
+
+2013-06-18  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: DFG should have switch_char
+        https://bugs.webkit.org/show_bug.cgi?id=117710
+
+        Reviewed by Michael Saboff.
+        
+        I wanted to be able to say stringImpl->at(index), and now I can!
+
+        Also made it possible to convert a UChar to a utf8 CString without
+        allocating a StringImpl.
+
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::utf8Impl):
+        (WTF):
+        (WTF::StringImpl::utf8ForCharacters):
+        (WTF::StringImpl::utf8ForRange):
+        * wtf/text/StringImpl.h:
+        (StringImpl):
+        (WTF::StringImpl::at):
+        (WTF::StringImpl::operator[]):
+
+2013-06-15  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: Add CFG simplification for Switch
+        https://bugs.webkit.org/show_bug.cgi?id=117677
+
+        Reviewed by Mark Hahnenberg.
+
+        * wtf/TriState.h:
+        * wtf/text/StringImpl.h:
+
+2013-06-15  Filip Pizlo  <fpizlo@apple.com>
+
+        Printing a StringImpl* should really guard against NULL
+        https://bugs.webkit.org/show_bug.cgi?id=117675
+
+        Reviewed by Mark Hahnenberg.
+
+        * wtf/PrintStream.cpp:
+        (WTF::printInternal):
+
+2013-06-11  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: DFG should support op_in and it should use patching to make it fast
+        https://bugs.webkit.org/show_bug.cgi?id=117385
+
+        Reviewed by Geoffrey Garen.
+        
+        Now if you pass a null StringImpl* then something will still get printed instead
+        of crashing. I figure that this is broadly useful for debug code, and I make use
+        of it in the JSC portion of this patch.
+
+        * wtf/PrintStream.cpp:
+        (WTF::printInternal):
+
+2013-06-09  Filip Pizlo  <fpizlo@apple.com>
+
+        Unreviewed, fix build. On some compilers the automatic coercion from WTF::String to NSString*
+        causes operator[] to appear ambiguous. One way around this is to make WTF::String behave like
+        most of our other classes: at(unsigned) is always a valid synonym for operator[](unsigned).
+
+        * wtf/text/WTFString.h:
+        (WTF::String::at):
+        (WTF::String::operator[]):
+
+2013-06-08  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: Recursive deadlock in DFG::ByteCodeParser
+        https://bugs.webkit.org/show_bug.cgi?id=117376
+
+        Reviewed by Mark Hahnenberg.
+        
+        I've often wanted to leave a lock early. Now I have that power!
+
+        * wtf/Locker.h:
+        (WTF::Locker::Locker):
+        (WTF::Locker::~Locker):
+        (Locker):
+        (WTF::Locker::unlockEarly):
+        (WTF::Locker::lock):
+
+2013-05-27  Filip Pizlo  <fpizlo@apple.com>
+
+        It should be possible to record heap operations (both FastMalloc and JSC GC)
+        https://bugs.webkit.org/show_bug.cgi?id=116848
+
+        Reviewed by Mark Hahnenberg.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/DataLog.cpp:
+        (WTF):
+        (WTF::initializeLogFileOnce):
+        * wtf/FastMalloc.cpp:
+        (WTF::TCMalloc_ThreadCache::CreateCacheIfNecessary):
+        * wtf/Platform.h:
+
+2013-05-21  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: DFG should be able to run on a separate thread
+        https://bugs.webkit.org/show_bug.cgi?id=112839
+
+        Reviewed by Geoffrey Garen.
+        
+        * wtf/ByteSpinLock.h:
+        Make it non-copyable. We previously had bugs where we used ByteSpinLock as a locker.
+        Clearly that's bad.
+
+        * wtf/MetaAllocatorHandle.h:
+        Make it thread-safe ref-counted, since we may now be passing them between the
+        concurrent JIT thread and the main thread.
+
+        * wtf/Vector.h:
+        (WTF::Vector::takeLast):
+        I've wanted this method for ages, and now I finally added.
+
+2013-04-30  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: DFG tries to ref/deref StringImpls in a ton of places
+        https://bugs.webkit.org/show_bug.cgi?id=115300
+
+        Reviewed by Geoffrey Garen.
+        
+        Make it possible to do more things directly to StringImpl*'s, including being
+        able to directly do utf8 conversion on a substring without creating the
+        substring first.
+        
+        Add assertions to StringImpl that it isn't being ref/deref'd from the
+        compilation thread.
+
+        * wtf/PrintStream.cpp:
+        (WTF::printInternal):
+        (WTF):
+        * wtf/PrintStream.h:
+        (WTF):
+        (WTF::printInternal):
+        * wtf/StringPrintStream.h:
+        (WTF):
+        (WTF::toCString):
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::utf8ForRange):
+        (WTF::StringImpl::utf8):
+        (WTF):
+        * wtf/text/StringImpl.h:
+        (StringImpl):
+        (WTF::StringImpl::hasAtLeastOneRef):
+        (WTF::StringImpl::ref):
+        (WTF::StringImpl::deref):
+
+2013-04-29  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: String::utf8() should also be available as StringImpl::utf8() so that you don't have to ref() a StringImpl just to get its utf8()
+        https://bugs.webkit.org/show_bug.cgi?id=115393
+
+        Reviewed by Geoffrey Garen.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/text/ConversionMode.h: Added.
+        (WTF):
+        * wtf/text/StringImpl.cpp:
+        (WTF):
+        (WTF::putUTF8Triple):
+        (WTF::StringImpl::utf8):
+        * wtf/text/StringImpl.h:
+        (StringImpl):
+        * wtf/text/WTFString.cpp:
+        (WTF):
+        (WTF::String::utf8):
+        * wtf/text/WTFString.h:
+        (String):
+
+2013-07-16  Oliver Hunt <oliver@apple.com>
+
+        Merge dfgFourthTier r149301
+
+    2013-04-28  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: ASSERT that commonly used not-thread-safe methods in the runtime are not being called during compilation
+        https://bugs.webkit.org/show_bug.cgi?id=115297
+
+        Reviewed by Geoffrey Garen.
+        
+        Taught WTF the notion of compilation threads. This allows all parts of our stack
+        to assert that we're not being called from a JSC compilation thread. This is in
+        WTF because it will probably end up being used in StringImpl and WTFString.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/CompilationThread.cpp: Added.
+        (WTF):
+        (WTF::initializeCompilationThreadsOnce):
+        (WTF::initializeCompilationThreads):
+        (WTF::isCompilationThread):
+        (WTF::exchangeIsCompilationThread):
+        * wtf/CompilationThread.h: Added.
+        (WTF):
+        (CompilationScope):
+        (WTF::CompilationScope::CompilationScope):
+        (WTF::CompilationScope::~CompilationScope):
+        (WTF::CompilationScope::leaveEarly):
+
+2013-07-16  Oliver Hunt <oliver@apple.com>
+
+        Merge dfgFourthTier r148836
+
+    2013-04-21  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: It should be possible to query WatchpointSets, and add Watchpoints, even if the compiler is running in another thread
+        https://bugs.webkit.org/show_bug.cgi?id=114909
+
+        Reviewed by Oliver Hunt.
+        
+        Harden our notions of memory fences, now that we're doing racy algorithms.
+
+        * wtf/Atomics.h:
+        (WTF):
+        (WTF::compilerFence):
+        (WTF::armV7_dmb):
+        (WTF::armV7_dmb_st):
+        (WTF::loadLoadFence):
+        (WTF::loadStoreFence):
+        (WTF::storeLoadFence):
+        (WTF::storeStoreFence):
+        (WTF::memoryBarrierAfterLock):
+        (WTF::memoryBarrierBeforeUnlock):
+        (WTF::x86_mfence):
+
+2013-07-16  Oliver Hunt <oliver@apple.com>
+
+        Merge dfgFourthTier r148804
+
+    2013-04-20  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: value profiles and array profiles should be thread-safe enough to be accessible in a concurrent compilation thread
+        https://bugs.webkit.org/show_bug.cgi?id=114906
+
+        Reviewed by Oliver Hunt.
+        
+        Add ability to abstract whether or not the CodeBlock requires locking at all,
+        since some platforms may not support the byte spin-locking and/or may not want
+        to, if they turn off concurrent JIT.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/ByteSpinLock.h:
+        * wtf/NoLock.h: Added.
+        (WTF):
+        (NoLock):
+        (WTF::NoLock::lock):
+        (WTF::NoLock::unlock):
+        (WTF::NoLock::isHeld):
+        * wtf/Platform.h:
+
+2013-04-17  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: all inline caches should thread-safe enough to allow a concurrent compilation thread to read them safely
+        https://bugs.webkit.org/show_bug.cgi?id=114762
+
+        Reviewed by Mark Hahnenberg.
+        
+        Implemented a new spinlock that is optimized for compactness, by using just a byte.
+        This will be useful as we start using fine-grained locking on a bunch of places.
+        
+        At some point I'll make these byte-sized spinlocks into adaptive mutexes, but for
+        now I think it's fine to do the evil thing and use spinning particularly since we
+        only use them for short critical sections.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/Atomics.h:
+        (WTF):
+        (WTF::weakCompareAndSwap):
+        * wtf/ByteSpinLock.h: Added.
+        (WTF):
+        (ByteSpinLock):
+        (WTF::ByteSpinLock::ByteSpinLock):
+        (WTF::ByteSpinLock::lock):
+        (WTF::ByteSpinLock::unlock):
+        (WTF::ByteSpinLock::isHeld):
+        * wtf/ThreadingPrimitives.h:
+        (WTF::pauseBriefly):
+        (WTF):
+
+2013-04-12  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: FTL should have OSR exit
+        https://bugs.webkit.org/show_bug.cgi?id=113623
+
+        Reviewed by Oliver Hunt.
+        
+        Finally make toCString() somewhat variadic.
+
+        * wtf/StringPrintStream.h:
+        (WTF):
+        (WTF::toCString):
+
+2013-03-31  Filip Pizlo  <fpizlo@apple.com>
+
+        https://bugs.webkit.org/show_bug.cgi?id=113656
+        Fix Sam's nits.
+
+        Unreviewed.
+        
+        Forgot to land these as part of http://trac.webkit.org/changeset/147299.
+
+        * wtf/MathExtras.h:
+        (isGreaterThanNonZeroPowerOfTwo):
+
+2013-03-29  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: FTL JIT should be able run some simple function
+        https://bugs.webkit.org/show_bug.cgi?id=113481
+
+        Reviewed by Geoffrey Garen.
+
+        * wtf/Platform.h:
+
 2013-07-22  Benjamin Poulain  <benjamin@webkit.org>
 
         String::lower() - Skip to slow path on the first failure

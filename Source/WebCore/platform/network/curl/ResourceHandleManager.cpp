@@ -35,6 +35,7 @@
 #include "config.h"
 #include "ResourceHandleManager.h"
 
+#include "CookieManager.h"
 #include "CredentialStorage.h"
 #include "DataURL.h"
 #include "HTTPParsers.h"
@@ -86,23 +87,11 @@ static CString certificatePath()
     return CString();
 }
 
-static char* cookieJarPath()
-{
-    char* cookieJarPath = getenv("CURL_COOKIE_JAR_PATH");
-    if (cookieJarPath)
-        return fastStrDup(cookieJarPath);
-
-    return fastStrDup("cookies.dat");
-}
-
 static Mutex* sharedResourceMutex(curl_lock_data data) {
-    DEFINE_STATIC_LOCAL(Mutex, cookieMutex, ());
     DEFINE_STATIC_LOCAL(Mutex, dnsMutex, ());
     DEFINE_STATIC_LOCAL(Mutex, shareMutex, ());
 
     switch (data) {
-        case CURL_LOCK_DATA_COOKIE:
-            return &cookieMutex;
         case CURL_LOCK_DATA_DNS:
             return &dnsMutex;
         case CURL_LOCK_DATA_SHARE:
@@ -114,8 +103,7 @@ static Mutex* sharedResourceMutex(curl_lock_data data) {
 }
 
 // libcurl does not implement its own thread synchronization primitives.
-// these two functions provide mutexes for cookies, and for the global DNS
-// cache.
+// these two functions provide mutexes for the global DNS cache
 static void curl_lock_callback(CURL* /* handle */, curl_lock_data data, curl_lock_access /* access */, void* /* userPtr */)
 {
     if (Mutex* mutex = sharedResourceMutex(data))
@@ -145,27 +133,21 @@ inline static bool isHttpAuthentication(int statusCode)
 
 ResourceHandleManager::ResourceHandleManager()
     : m_downloadTimer(this, &ResourceHandleManager::downloadTimerCallback)
-    , m_cookieJarFileName(cookieJarPath())
     , m_certificatePath (certificatePath())
     , m_runningJobs(0)
 {
     curl_global_init(CURL_GLOBAL_ALL);
     m_curlMultiHandle = curl_multi_init();
     m_curlShareHandle = curl_share_init();
-    curl_share_setopt(m_curlShareHandle, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
     curl_share_setopt(m_curlShareHandle, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
     curl_share_setopt(m_curlShareHandle, CURLSHOPT_LOCKFUNC, curl_lock_callback);
     curl_share_setopt(m_curlShareHandle, CURLSHOPT_UNLOCKFUNC, curl_unlock_callback);
-
-    initCookieSession();
 }
 
 ResourceHandleManager::~ResourceHandleManager()
 {
     curl_multi_cleanup(m_curlMultiHandle);
     curl_share_cleanup(m_curlShareHandle);
-    if (m_cookieJarFileName)
-        fastFree(m_cookieJarFileName);
     curl_global_cleanup();
 }
 
@@ -337,6 +319,26 @@ static bool getProtectionSpace(CURL* h, const ResourceResponse& response, Protec
     return true;
 }
 
+static void handleSetCookie(ResourceHandle* job, const String& value)
+{
+    CookieManager& manager = CookieManager::getInstance();
+    ResourceHandleInternal* d = job->getInternal();
+    const char* hdr;
+    CURLcode error = curl_easy_getinfo(d->m_handle, CURLINFO_EFFECTIVE_URL, &hdr);
+
+    if (error != CURLE_OK)
+        return;
+
+    KURL url(ParsedURLString, hdr);
+    const KURL firstPartyUrl = job->firstRequest().firstPartyForCookies();
+
+    if ((manager.cookieAcceptPolicy() == OnlyFromMainDocumentDomain)
+        && (firstPartyUrl.host() != url.host()))
+        return;
+
+    manager.setCookie(url, value, WithHttpOnlyCookies);
+}
+
 /*
  * This is being called for each HTTP header in the response. This includes '\r\n'
  * for the last line of the header.
@@ -434,6 +436,9 @@ static size_t headerCallback(char* ptr, size_t size, size_t nmemb, void* data)
                 d->m_response.addHTTPHeaderField(key, value);
             else
                 d->m_response.setHTTPHeaderField(key, value);
+
+            if (equalIgnoringCase(key, "set-cookie"))
+                handleSetCookie(job, value);
         } else if (header.startsWith("HTTP", false)) {
             // This is the first line of the response.
             // Extract the http status text from this.
@@ -921,9 +926,6 @@ void ResourceHandleManager::initializeHandle(ResourceHandle* job)
     d->m_url = fastStrDup(url.latin1().data());
     curl_easy_setopt(d->m_handle, CURLOPT_URL, d->m_url);
 
-    if (m_cookieJarFileName)
-        curl_easy_setopt(d->m_handle, CURLOPT_COOKIEJAR, m_cookieJarFileName);
-
     struct curl_slist* headers = 0;
     if (job->firstRequest().httpHeaderFields().size() > 0) {
         HTTPHeaderMap customHeaders = job->firstRequest().httpHeaderFields();
@@ -942,6 +944,13 @@ void ResourceHandleManager::initializeHandle(ResourceHandle* job)
             CString headerLatin1 = headerString.latin1();
             headers = curl_slist_append(headers, headerLatin1.data());
         }
+    }
+
+    String cookies = CookieManager::getInstance().cookiesForSession(KURL(ParsedURLString, d->m_url), WithHttpOnlyCookies);
+    if (!cookies.isEmpty()) {
+        String header("Cookie: ");
+        header.append(cookies);
+        headers = curl_slist_append(headers, header.latin1().data());
     }
 
     String method = job->firstRequest().httpMethod();
@@ -970,28 +979,6 @@ void ResourceHandleManager::initializeHandle(ResourceHandle* job)
         curl_easy_setopt(d->m_handle, CURLOPT_PROXY, m_proxy.utf8().data());
         curl_easy_setopt(d->m_handle, CURLOPT_PROXYTYPE, m_proxyType);
     }
-}
-
-void ResourceHandleManager::initCookieSession()
-{
-    // Curl saves both persistent cookies, and session cookies to the cookie file.
-    // The session cookies should be deleted before starting a new session.
-
-    CURL* curl = curl_easy_init();
-
-    if (!curl)
-        return;
-
-    curl_easy_setopt(curl, CURLOPT_SHARE, m_curlShareHandle);
-
-    if (m_cookieJarFileName) {
-        curl_easy_setopt(curl, CURLOPT_COOKIEFILE, m_cookieJarFileName);
-        curl_easy_setopt(curl, CURLOPT_COOKIEJAR, m_cookieJarFileName);
-    }
-
-    curl_easy_setopt(curl, CURLOPT_COOKIESESSION, 1);
-
-    curl_easy_cleanup(curl);
 }
 
 void ResourceHandleManager::cancel(ResourceHandle* job)

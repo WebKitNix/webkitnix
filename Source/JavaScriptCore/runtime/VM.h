@@ -96,6 +96,7 @@ namespace JSC {
 #if ENABLE(DFG_JIT)
     namespace DFG {
     class LongLivedState;
+    class Worklist;
     }
 #endif // ENABLE(DFG_JIT)
 
@@ -208,7 +209,8 @@ namespace JSC {
         Heap heap;
         
 #if ENABLE(DFG_JIT)
-        OwnPtr<DFG::LongLivedState> m_dfgState;
+        OwnPtr<DFG::LongLivedState> dfgState;
+        RefPtr<DFG::Worklist> worklist;
 #endif // ENABLE(DFG_JIT)
 
         VMType vmType;
@@ -224,7 +226,6 @@ namespace JSC {
         const HashTable* errorPrototypeTable;
         const HashTable* globalObjectTable;
         const HashTable* jsonTable;
-        const HashTable* mathTable;
         const HashTable* numberConstructorTable;
         const HashTable* numberPrototypeTable;
         const HashTable* objectConstructorTable;
@@ -388,9 +389,7 @@ namespace JSC {
         RTTraceList* m_rtTraceList;
 #endif
 
-#ifndef NDEBUG
         ThreadIdentifier exclusiveThread;
-#endif
 
         CachedTranscendentalFunction<std::sin> cachedSin;
 
@@ -469,9 +468,16 @@ namespace JSC {
             }
         }
 
+        bool currentThreadIsHoldingAPILock() const
+        {
+            return m_apiLock->currentThreadIsHoldingLock() || exclusiveThread == currentThread();
+        }
+
         JSLock& apiLock() { return *m_apiLock; }
         CodeCache* codeCache() { return m_codeCache.get(); }
 
+        void prepareToDiscardCode();
+        
         JS_EXPORT_PRIVATE void discardAllCode();
 
     private:
@@ -493,7 +499,7 @@ namespace JSC {
         const ClassInfo* m_initializingObjectClass;
 #endif
         bool m_inDefineOwnProperty;
-        RefPtr<CodeCache> m_codeCache;
+        OwnPtr<CodeCache> m_codeCache;
         RefCountedArray<StackFrame> m_exceptionStack;
 
         TypedArrayDescriptor m_int8ArrayDescriptor;

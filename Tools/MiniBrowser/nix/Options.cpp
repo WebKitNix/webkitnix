@@ -39,6 +39,7 @@ Options::Options()
     , desktopModeEnabled(false)
     , forceTouchEmulationEnabled(false)
     , devicePixelRatio(1.0)
+    , dumpFrames(false)
     , helpRequested(false)
 {
 }
@@ -168,6 +169,7 @@ bool Options::parse(int argc, const char* argv[])
         Option("--viewport-displacement", "HxV", "Set the horizontal and vertical viewport displacement.", "%dx%d", &viewportHorizontalDisplacement, &viewportVerticalDisplacement),
         Option("--injected-bundle", "path", "Use a custom injected bundle.", "%255s", &injectedBundle),
         Option("--dpr", "value", "Set the device pixel ratio.", "%f", &devicePixelRatio),
+        Option("--dump-frames", "Dump all rendered frames to PNG files.", &dumpFrames),
         Option("--n9", "Use n9 user agent.", &device, Device::N9),
         Option("--ipad", "Use iPad user agent.", &device, Device::IPad),
         Option("--iphone", "Use iPhone user agent.", &device, Device::IPhone),

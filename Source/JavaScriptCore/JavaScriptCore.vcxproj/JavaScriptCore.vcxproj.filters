@@ -288,6 +288,9 @@
     <ClCompile Include="..\interpreter\JSStack.cpp">
       <Filter>interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="..\interpreter\StackIterator.cpp">
+      <Filter>interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="..\interpreter\VMInspector.cpp">
       <Filter>interpreter</Filter>
     </ClCompile>
@@ -555,9 +558,6 @@
     <ClCompile Include="..\runtime\JSFunction.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
-    <ClCompile Include="..\runtime\VM.cpp">
-      <Filter>runtime</Filter>
-    </ClCompile>
     <ClCompile Include="..\runtime\JSGlobalObject.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
@@ -759,8 +759,29 @@
     <ClCompile Include="..\runtime\PropertyTable.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
+    <ClCompile Include="..\runtime\VM.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\parser\SourceCode.cpp">
+      <Filter>parser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\runtime\IntendedStructureChain.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\runtime\CommonSlowPathsExceptions.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\runtime\CommonSlowPaths.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\API\JSCTestRunnerUtils.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\API\APICallbackFunction.h">
+      <Filter>API</Filter>
+    </ClInclude>
     <ClInclude Include="..\API\APICast.h">
       <Filter>API</Filter>
     </ClInclude>
@@ -927,9 +948,6 @@
       <Filter>bytecode</Filter>
     </ClInclude>
     <ClInclude Include="..\bytecode\GetByIdStatus.h">
-      <Filter>bytecode</Filter>
-    </ClInclude>
-    <ClInclude Include="..\bytecode\GlobalResolveInfo.h">
       <Filter>bytecode</Filter>
     </ClInclude>
     <ClInclude Include="..\bytecode\HandlerInfo.h">
@@ -1208,6 +1226,9 @@
     <ClInclude Include="..\interpreter\CallFrame.h">
       <Filter>interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="..\interpreter\CallFrameInlines.h">
+      <Filter>interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="..\interpreter\CallFrameClosure.h">
       <Filter>interpreter</Filter>
     </ClInclude>
@@ -1221,6 +1242,12 @@
       <Filter>interpreter</Filter>
     </ClInclude>
     <ClInclude Include="..\interpreter\Register.h">
+      <Filter>interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interpreter\StackIterator.h">
+      <Filter>interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interpreter\StackIteratorPrivate.h">
       <Filter>interpreter</Filter>
     </ClInclude>
     <ClInclude Include="..\interpreter\VMInspector.h">
@@ -1269,6 +1296,15 @@
       <Filter>jit</Filter>
     </ClInclude>
     <ClInclude Include="..\jit\JITStubs.h">
+      <Filter>jit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\jit\JITStubsX86.h">
+      <Filter>jit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\jit\JITStubsX86Common.h">
+      <Filter>jit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\jit\JITStubsX86_64.h">
       <Filter>jit</Filter>
     </ClInclude>
     <ClInclude Include="..\jit\JITThunks.h">
@@ -1584,9 +1620,6 @@
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\JSFunction.h">
-      <Filter>runtime</Filter>
-    </ClInclude>
-    <ClInclude Include="..\runtime\VM.h">
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\JSGlobalObject.h">
@@ -1925,6 +1958,21 @@
     </ClInclude>
     <ClInclude Include="$(ConfigurationBuildDir)\obj32\$(ProjectName)\DerivedSources\ArrayPrototype.lut.h">
       <Filter>Derived Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\VM.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\assembler\MacroAssemblerX86Common.cpp">
+      <Filter>assembler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\IntendedStructureChain.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\CommonSlowPathsExceptions.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\API\JSCTestRunnerUtils.h">
+      <Filter>API</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

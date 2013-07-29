@@ -87,7 +87,7 @@ CallLinkStatus CallLinkStatus::computeFromLLInt(CodeBlock* profiledBlock, unsign
     UNUSED_PARAM(bytecodeIndex);
 #if ENABLE(LLINT)
     Instruction* instruction = profiledBlock->instructions().begin() + bytecodeIndex;
-    LLIntCallLinkInfo* callLinkInfo = instruction[4].u.callLinkInfo;
+    LLIntCallLinkInfo* callLinkInfo = instruction[5].u.callLinkInfo;
     
     return CallLinkStatus(callLinkInfo->lastSeenCallee.get());
 #else
@@ -97,10 +97,12 @@ CallLinkStatus CallLinkStatus::computeFromLLInt(CodeBlock* profiledBlock, unsign
 
 CallLinkStatus CallLinkStatus::computeFor(CodeBlock* profiledBlock, unsigned bytecodeIndex)
 {
+    ConcurrentJITLocker locker(profiledBlock->m_lock);
+    
     UNUSED_PARAM(profiledBlock);
     UNUSED_PARAM(bytecodeIndex);
 #if ENABLE(JIT) && ENABLE(VALUE_PROFILER)
-    if (!profiledBlock->numberOfCallLinkInfos())
+    if (!profiledBlock->hasBaselineJITProfiling())
         return computeFromLLInt(profiledBlock, bytecodeIndex);
     
     if (profiledBlock->couldTakeSlowCase(bytecodeIndex))

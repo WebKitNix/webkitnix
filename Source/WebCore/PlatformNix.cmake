@@ -299,11 +299,15 @@ if (WTF_USE_CURL)
 
     list(APPEND WebCore_SOURCES
         platform/network/NetworkStorageSessionStub.cpp
+        platform/network/curl/CookieDatabaseBackingStore.cpp
         platform/network/curl/CookieJarCurl.cpp
+        platform/network/curl/CookieManager.cpp
+        platform/network/curl/CookieNode.cpp
         platform/network/curl/CookieStorageCurl.cpp
         platform/network/curl/CredentialStorageCurl.cpp
         platform/network/curl/DNSCurl.cpp
         platform/network/curl/FormDataStreamCurl.cpp
+        platform/network/curl/ParsedCookie.cpp
         platform/network/curl/ProxyServerCurl.cpp
         platform/network/curl/ResourceHandleCurl.cpp
         platform/network/curl/ResourceHandleManager.cpp

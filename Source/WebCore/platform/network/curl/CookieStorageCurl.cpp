@@ -19,18 +19,18 @@
 #include "config.h"
 #include "CookieStorage.h"
 
-#include "NotImplemented.h"
+#include "CookieManager.h"
 
 namespace WebCore {
 
-void startObservingCookieChanges(CookieChangeCallbackPtr)
+void startObservingCookieChanges(CookieChangeCallbackPtr ptr)
 {
-    notImplemented();
+    CookieManager::getInstance().setCookieChangeCallback(ptr);
 }
 
 void stopObservingCookieChanges()
 {
-    notImplemented();
+    CookieManager::getInstance().setCookieChangeCallback(0);
 }
 
 }

@@ -56,8 +56,25 @@ inline Structure* Structure::create(VM& vm, const Structure* structure)
     return newStructure;
 }
 
+inline JSObject* Structure::storedPrototypeObject() const
+{
+    JSValue value = m_prototype.get();
+    if (value.isNull())
+        return 0;
+    return asObject(value);
+}
+
+inline Structure* Structure::storedPrototypeStructure() const
+{
+    JSObject* object = storedPrototypeObject();
+    if (!object)
+        return 0;
+    return object->structure();
+}
+
 inline PropertyOffset Structure::get(VM& vm, PropertyName propertyName)
 {
+    ASSERT(!isCompilationThread());
     ASSERT(structure()->classInfo() == &s_info);
     materializePropertyMapIfNecessary(vm);
     if (!propertyTable())
@@ -69,6 +86,7 @@ inline PropertyOffset Structure::get(VM& vm, PropertyName propertyName)
 
 inline PropertyOffset Structure::get(VM& vm, const WTF::String& name)
 {
+    ASSERT(!isCompilationThread());
     ASSERT(structure()->classInfo() == &s_info);
     materializePropertyMapIfNecessary(vm);
     if (!propertyTable())
@@ -78,30 +96,17 @@ inline PropertyOffset Structure::get(VM& vm, const WTF::String& name)
     return entry ? entry->offset : invalidOffset;
 }
     
+inline PropertyOffset Structure::getConcurrently(VM& vm, StringImpl* uid)
+{
+    unsigned attributesIgnored;
+    JSCell* specificValueIgnored;
+    return getConcurrently(
+        vm, uid, attributesIgnored, specificValueIgnored);
+}
+
 inline bool Structure::masqueradesAsUndefined(JSGlobalObject* lexicalGlobalObject)
 {
     return typeInfo().masqueradesAsUndefined() && globalObject() == lexicalGlobalObject;
-}
-
-ALWAYS_INLINE void SlotVisitor::internalAppend(JSCell* cell)
-{
-    ASSERT(!m_isCheckingForDefaultMarkViolation);
-    if (!cell)
-        return;
-#if ENABLE(GC_VALIDATION)
-    validate(cell);
-#endif
-    if (Heap::testAndSetMarked(cell) || !cell->structure())
-        return;
-
-    m_visitCount++;
-        
-    MARK_LOG_CHILD(*this, cell);
-
-    // Should never attempt to mark something that is zapped.
-    ASSERT(!cell->isZapped());
-        
-    m_stack.append(cell);
 }
 
 inline bool Structure::transitivelyTransitionedFrom(Structure* structureToFind)
@@ -200,7 +205,7 @@ inline bool Structure::putWillGrowOutOfLineStorage()
 
 ALWAYS_INLINE WriteBarrier<PropertyTable>& Structure::propertyTable()
 {
-    ASSERT(!globalObject() || !globalObject()->vm().heap.isBusy());
+    ASSERT(!globalObject() || !globalObject()->vm().heap.isCollecting());
     return m_propertyTableUnsafe;
 }
 

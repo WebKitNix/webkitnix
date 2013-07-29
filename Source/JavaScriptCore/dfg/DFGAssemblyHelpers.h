@@ -33,6 +33,7 @@
 #include "CodeBlock.h"
 #include "DFGFPRInfo.h"
 #include "DFGGPRInfo.h"
+#include "DFGJITCode.h"
 #include "DFGNode.h"
 #include "VM.h"
 #include "MacroAssembler.h"
@@ -51,7 +52,7 @@ public:
         if (m_codeBlock) {
             ASSERT(m_baselineCodeBlock);
             ASSERT(!m_baselineCodeBlock->alternative());
-            ASSERT(m_baselineCodeBlock->getJITType() == JITCode::BaselineJIT);
+            ASSERT(m_baselineCodeBlock->jitType() == JITCode::BaselineJIT);
         }
     }
     

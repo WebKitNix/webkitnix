@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -122,7 +122,7 @@ public:
 
     void clear() { m_cell = 0; }
     
-    JSCell** slot() { return &m_cell; }
+    T** slot() { return reinterpret_cast<T**>(&m_cell); }
     
     typedef T* (WriteBarrierBase::*UnspecifiedBoolType);
     operator UnspecifiedBoolType*() const { return m_cell ? reinterpret_cast<UnspecifiedBoolType*>(1) : 0; }
@@ -225,18 +225,6 @@ public:
 template <typename U, typename V> inline bool operator==(const WriteBarrierBase<U>& lhs, const WriteBarrierBase<V>& rhs)
 {
     return lhs.get() == rhs.get();
-}
-
-// SlotVisitor functions
-
-template<typename T> inline void SlotVisitor::append(WriteBarrierBase<T>* slot)
-{
-    internalAppend(*slot->slot());
-}
-
-ALWAYS_INLINE void SlotVisitor::appendValues(WriteBarrierBase<Unknown>* barriers, size_t count)
-{
-    append(barriers->slot(), count);
 }
 
 } // namespace JSC

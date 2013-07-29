@@ -39,7 +39,7 @@
 #include "ShareableBitmap.h"
 #include "WKBase.h"
 #include "WKPagePrivate.h"
-#include "WebColorChooserProxy.h"
+#include "WebColorPicker.h"
 #include "WebContextMenuItemData.h"
 #include "WebCoreArgumentCoders.h"
 #include "WebFindClient.h"
@@ -171,7 +171,6 @@ class WebGestureEvent;
 class WebVibrationProxy;
 #endif
 
-typedef GenericCallback<WKDictionaryRef> DictionaryCallback;
 typedef GenericCallback<WKStringRef, StringImpl*> StringCallback;
 typedef GenericCallback<WKSerializedScriptValueRef, WebSerializedScriptValue*> ScriptValueCallback;
 
@@ -238,7 +237,7 @@ private:
 class WebPageProxy
     : public TypedAPIObject<APIObject::TypePage>
 #if ENABLE(INPUT_TYPE_COLOR)
-    , public WebColorChooserProxy::Client
+    , public WebColorPicker::Client
 #endif
     , public WebPopupMenuProxy::Client
     , public CoreIPC::MessageReceiver {
@@ -542,9 +541,6 @@ public:
     void makeFirstResponder();
 
     ColorSpaceData colorSpace();
-
-    void getPlugInInformation(pid_t plugInProcessID, PassRefPtr<DictionaryCallback>);
-    void containsPlugInCallback(bool containsPlugIn, const Vector<String>& nonPlayingPlugInInstanceMimeTypes, uint64_t plugInToken, uint64_t callbackID);
 #endif
 
     void pageScaleFactorDidChange(double);
@@ -642,7 +638,7 @@ public:
 
     WebPageGroup* pageGroup() const { return m_pageGroup.get(); }
 
-    bool isValid();
+    bool isValid() const;
 
     PassRefPtr<ImmutableArray> relatedPages() const;
 
@@ -1108,9 +1104,6 @@ private:
 #if PLATFORM(GTK)
     HashMap<uint64_t, RefPtr<PrintFinishedCallback>> m_printFinishedCallbacks;
 #endif
-#if PLATFORM(MAC)
-    HashMap<uint64_t, RefPtr<DictionaryCallback>> m_plugInInformationCallbacks;
-#endif
 
     HashSet<WebEditCommandProxy*> m_editCommandSet;
 
@@ -1211,7 +1204,7 @@ private:
     Deque<QueuedTouchEvents> m_touchEventQueue;
 #endif
 #if ENABLE(INPUT_TYPE_COLOR)
-    RefPtr<WebColorChooserProxy> m_colorChooser;
+    RefPtr<WebColorPicker> m_colorPicker;
     RefPtr<WebColorPickerResultListenerProxy> m_colorPickerResultListener;
 #endif
 

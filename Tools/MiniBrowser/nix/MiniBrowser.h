@@ -106,6 +106,7 @@ public:
     static void didStartProvisionalLoadForFrame(WKPageRef, WKFrameRef, WKTypeRef, const void*);
     static void didFinishDocumentLoadForFrame(WKPageRef, WKFrameRef, WKTypeRef, const void*);
     static void didFailProvisionalLoadWithErrorForFrame(WKPageRef, WKFrameRef, WKErrorRef, WKTypeRef, const void*);
+    static void didFirstLayoutForFrame(WKPageRef, WKFrameRef, WKTypeRef, const void*);
 
     virtual double scale();
 

@@ -36,7 +36,7 @@
 namespace JSC { namespace DFG {
 
 typedef MacroAssembler::RegisterID GPRReg;
-#define InvalidGPRReg ((GPRReg)-1)
+#define InvalidGPRReg ((::JSC::DFG::GPRReg)-1)
 
 #if USE(JSVALUE64)
 class JSValueRegs {
@@ -51,9 +51,15 @@ public:
     {
     }
     
+    static JSValueRegs payloadOnly(GPRReg gpr)
+    {
+        return JSValueRegs(gpr);
+    }
+    
     bool operator!() const { return m_gpr == InvalidGPRReg; }
     
     GPRReg gpr() const { return m_gpr; }
+    GPRReg payloadGPR() const { return m_gpr; }
     
 private:
     GPRReg m_gpr;
@@ -137,10 +143,18 @@ public:
         : m_tagGPR(tagGPR)
         , m_payloadGPR(payloadGPR)
     {
-        ASSERT((static_cast<GPRReg>(m_tagGPR) == InvalidGPRReg) == (static_cast<GPRReg>(payloadGPR) == InvalidGPRReg));
     }
     
-    bool operator!() const { return static_cast<GPRReg>(m_tagGPR) == InvalidGPRReg; }
+    static JSValueRegs payloadOnly(GPRReg gpr)
+    {
+        return JSValueRegs(InvalidGPRReg, gpr);
+    }
+    
+    bool operator!() const
+    {
+        return static_cast<GPRReg>(m_tagGPR) == InvalidGPRReg
+            && static_cast<GPRReg>(m_payloadGPR) == InvalidGPRReg;
+    }
     
     GPRReg tagGPR() const { return static_cast<GPRReg>(m_tagGPR); }
     GPRReg payloadGPR() const { return static_cast<GPRReg>(m_payloadGPR); }
@@ -196,7 +210,11 @@ public:
         return result;
     }
     
-    bool operator!() const { return static_cast<GPRReg>(m_baseOrTag) == InvalidGPRReg && static_cast<GPRReg>(m_payload) == InvalidGPRReg; }
+    bool operator!() const
+    {
+        return static_cast<GPRReg>(m_baseOrTag) == InvalidGPRReg
+            && static_cast<GPRReg>(m_payload) == InvalidGPRReg;
+    }
     
     bool isAddress() const
     {
@@ -259,6 +277,7 @@ class GPRInfo {
 public:
     typedef GPRReg RegisterType;
     static const unsigned numberOfRegisters = 5;
+    static const unsigned numberOfArgumentRegisters = NUMBER_OF_ARGUMENT_REGISTERS;
 
     // Temporary registers.
     static const GPRReg regT0 = X86Registers::eax;
@@ -321,6 +340,7 @@ class GPRInfo {
 public:
     typedef GPRReg RegisterType;
     static const unsigned numberOfRegisters = 9;
+    static const unsigned numberOfArgumentRegisters = NUMBER_OF_ARGUMENT_REGISTERS;
 
     // These registers match the baseline JIT.
     static const GPRReg cachedResultRegister = X86Registers::eax;
@@ -357,7 +377,14 @@ public:
         static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regT8 };
         return registerForIndex[index];
     }
-
+    
+    static GPRReg toArgumentRegister(unsigned index)
+    {
+        ASSERT(index < numberOfArgumentRegisters);
+        static const GPRReg registerForIndex[numberOfArgumentRegisters] = { argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3, argumentGPR4, argumentGPR5 };
+        return registerForIndex[index];
+    }
+    
     static unsigned toIndex(GPRReg reg)
     {
         ASSERT(reg != InvalidGPRReg);
@@ -394,6 +421,7 @@ class GPRInfo {
 public:
     typedef GPRReg RegisterType;
     static const unsigned numberOfRegisters = 8;
+    static const unsigned numberOfArgumentRegisters = NUMBER_OF_ARGUMENT_REGISTERS;
 
     // Temporary registers.
     static const GPRReg regT0 = ARMRegisters::r0;
@@ -467,6 +495,7 @@ class GPRInfo {
 public:
     typedef GPRReg RegisterType;
     static const unsigned numberOfRegisters = 6;
+    static const unsigned numberOfArgumentRegisters = NUMBER_OF_ARGUMENT_REGISTERS;
 
     // Temporary registers.
     static const GPRReg regT0 = MIPSRegisters::v0;

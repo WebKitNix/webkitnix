@@ -25,10 +25,13 @@
 
 #include <limits.h>
 #include <wtf/ASCIICType.h>
+#include <wtf/CompilationThread.h>
 #include <wtf/Forward.h>
+#include <wtf/MathExtras.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/StringHasher.h>
 #include <wtf/Vector.h>
+#include <wtf/text/ConversionMode.h>
 #include <wtf/unicode/Unicode.h>
 
 #if PLATFORM(QT)
@@ -459,6 +462,7 @@ public:
 
     static unsigned flagsOffset() { return OBJECT_OFFSETOF(StringImpl, m_hashAndFlags); }
     static unsigned flagIs8Bit() { return s_hashFlag8BitBuffer; }
+    static unsigned flagIsIdentifier() { return s_hashFlagIsIdentifier; }
     static unsigned dataOffset() { return OBJECT_OFFSETOF(StringImpl, m_data8); }
 
     template<typename CharType, size_t inlineCapacity, typename OverflowHandler>
@@ -507,7 +511,21 @@ public:
             return 0;
 
         m_hashAndFlags |= s_hashFlagDidReportCost;
-        return m_length;
+        size_t result = m_length;
+        if (!is8Bit())
+            result <<= 1;
+        return result;
+    }
+    
+    size_t costDuringGC()
+    {
+        if (bufferOwnership() == BufferSubstring)
+            return divideRoundedUp(m_substringBuffer->costDuringGC(), refCount());
+        
+        size_t result = m_length;
+        if (!is8Bit())
+            result <<= 1;
+        return divideRoundedUp(result, refCount());
     }
 
     WTF_EXPORT_STRING_API size_t sizeInBytes() const;
@@ -546,8 +564,14 @@ public:
 #if PLATFORM(QT)
     QStringData* qStringData() { return bufferOwnership() == BufferAdoptedQString ? m_qStringData : 0; }
 #endif
+    
+    static WTF_EXPORT_STRING_API CString utf8ForCharacters(const UChar* characters, unsigned length, ConversionMode = LenientConversion);
+    WTF_EXPORT_STRING_API CString utf8ForRange(unsigned offset, unsigned length, ConversionMode = LenientConversion) const;
+    WTF_EXPORT_STRING_API CString utf8(ConversionMode = LenientConversion) const;
 
 private:
+    static WTF_EXPORT_STRING_API bool utf8Impl(const UChar* characters, unsigned length, char*& buffer, size_t bufferSize, ConversionMode);
+    
     // The high bits of 'hash' are always empty, but we prefer to store our flags
     // in the low bits because it makes them slightly more efficient to access.
     // So, we shift left and right when setting and getting our hash code.
@@ -588,19 +612,32 @@ public:
             return existingHash();
         return hashSlowCase();
     }
-
+    
+    inline size_t refCount() const
+    {
+        return m_refCount / s_refCountIncrement;
+    }
+    
     inline bool hasOneRef() const
     {
         return m_refCount == s_refCountIncrement;
     }
+    
+    // This method is useful for assertions.
+    inline bool hasAtLeastOneRef() const
+    {
+        return !!m_refCount;
+    }
 
     inline void ref()
     {
+        ASSERT(!isCompilationThread());
         m_refCount += s_refCountIncrement;
     }
 
     inline void deref()
     {
+        ASSERT(!isCompilationThread());        
         unsigned tempRefCount = m_refCount - s_refCountIncrement;
         if (!tempRefCount) {
             StringImpl::destroy(this);
@@ -652,13 +689,14 @@ public:
 
     WTF_EXPORT_STRING_API PassRefPtr<StringImpl> substring(unsigned pos, unsigned len = UINT_MAX);
 
-    UChar operator[](unsigned i) const
+    UChar at(unsigned i) const
     {
         ASSERT_WITH_SECURITY_IMPLICATION(i < m_length);
         if (is8Bit())
             return m_data8[i];
         return m_data16[i];
     }
+    UChar operator[](unsigned i) const { return at(i); }
     WTF_EXPORT_STRING_API UChar32 characterStartingAt(unsigned);
 
     WTF_EXPORT_STRING_API bool containsOnlyWhitespace();
@@ -1350,7 +1388,7 @@ template<> struct DefaultHash<RefPtr<StringImpl> > {
     typedef StringHash Hash;
 };
 
-}
+} // namespace WTF
 
 using WTF::StringImpl;
 using WTF::equal;

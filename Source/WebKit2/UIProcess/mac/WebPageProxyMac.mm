@@ -35,12 +35,8 @@
 #import "PluginComplexTextInputState.h"
 #import "PageClient.h"
 #import "PageClientImpl.h"
-#import "PluginInformation.h"
-#import "PluginProcessManager.h"
-#import "PluginProcessProxy.h"
 #import "StringUtilities.h"
 #import "TextChecker.h"
-#import "WebContext.h"
 #import "WebPageMessages.h"
 #import "WebProcessProxy.h"
 #import <WebCore/DictationAlternative.h>
@@ -462,58 +458,6 @@ void WebPageProxy::setPluginComplexTextInputState(uint64_t pluginComplexTextInpu
     MESSAGE_CHECK(isValidPluginComplexTextInputState(pluginComplexTextInputState));
 
     m_pageClient->setPluginComplexTextInputState(pluginComplexTextInputIdentifier, static_cast<PluginComplexTextInputState>(pluginComplexTextInputState));
-}
-
-void WebPageProxy::getPlugInInformation(pid_t plugInProcessID, PassRefPtr<DictionaryCallback> prpCallback)
-{
-    RefPtr<DictionaryCallback> callback = prpCallback;
-    if (!isValid()) {
-        callback->invalidate();
-        return;
-    }
-
-    PluginProcessProxy* plugInProcessProxy = PluginProcessManager::shared().findPlugInProcessByID(plugInProcessID);
-    if (!plugInProcessProxy) {
-        callback->performCallbackWithReturnValue(0);
-        return;
-    }
-
-    uint64_t callbackID = callback->callbackID();
-    m_plugInInformationCallbacks.set(callbackID, callback.release());
-    m_process->send(Messages::WebPage::ContainsPluginViewsWithPluginProcessToken(plugInProcessProxy->pluginProcessToken(), callbackID), m_pageID);
-}
-
-void WebPageProxy::containsPlugInCallback(bool containsPlugIn, const Vector<String>& nonPlayingPlugInInstanceMimeTypes, uint64_t plugInToken, uint64_t callbackID)
-{
-    RefPtr<DictionaryCallback> callback = m_plugInInformationCallbacks.take(callbackID);
-    if (!callback) {
-        // FIXME: Log error or assert.
-        return;
-    }
-
-    if (!containsPlugIn) {
-        callback->performCallbackWithReturnValue(0);
-        return;
-    }
-
-    PluginProcessProxy* plugInProcessProxy = PluginProcessManager::shared().findPlugInProcessByToken(plugInToken);
-    ASSERT(plugInProcessProxy);
-
-    String plugInBundleIdentifier = plugInProcessProxy->pluginProcessAttributes().moduleInfo.bundleIdentifier;
-    bool containsNonPlayingInstanceOfPlugIn = false;
-
-    for (const String& plugInMimeType: nonPlayingPlugInInstanceMimeTypes) {
-        String mimeType = plugInMimeType;
-        PluginModuleInfo plugInInfo = m_process->context()->pluginInfoStore().findPlugin(mimeType, KURL());
-        if (plugInInfo.bundleIdentifier == plugInBundleIdentifier) {
-            containsNonPlayingInstanceOfPlugIn = true;
-            break;
-        }
-    }
-
-    RefPtr<ImmutableDictionary> plugInInformation = createPlugInInformationDictionary(plugInProcessProxy->pluginProcessAttributes().moduleInfo, containsNonPlayingInstanceOfPlugIn);
-
-    callback->performCallbackWithReturnValue(plugInInformation.get());
 }
 
 void WebPageProxy::executeSavedCommandBySelector(const String& selector, bool& handled)

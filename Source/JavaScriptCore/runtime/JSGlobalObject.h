@@ -173,6 +173,7 @@ protected:
 
     RefPtr<WatchpointSet> m_masqueradesAsUndefinedWatchpoint;
     RefPtr<WatchpointSet> m_havingABadTimeWatchpoint;
+    RefPtr<WatchpointSet> m_varInjectionWatchpoint;
 
     OwnPtr<JSGlobalObjectRareData> m_rareData;
 
@@ -338,6 +339,7 @@ public:
 
     WatchpointSet* masqueradesAsUndefinedWatchpoint() { return m_masqueradesAsUndefinedWatchpoint.get(); }
     WatchpointSet* havingABadTimeWatchpoint() { return m_havingABadTimeWatchpoint.get(); }
+    WatchpointSet* varInjectionWatchpoint() { return m_varInjectionWatchpoint.get(); }
         
     bool isHavingABadTime() const
     {
@@ -346,7 +348,9 @@ public:
         
     void haveABadTime(VM&);
         
+    bool objectPrototypeIsSane();
     bool arrayPrototypeChainIsSane();
+    bool stringPrototypeChainIsSane();
 
     void setProfileGroup(unsigned value) { createRareDataIfNeeded(); m_rareData->profileGroup = value; }
     unsigned profileGroup() const
@@ -370,8 +374,6 @@ public:
     static bool shouldInterruptScript(const JSGlobalObject*) { return true; }
     static bool javaScriptExperimentsEnabled(const JSGlobalObject*) { return false; }
 
-    bool isDynamicScope(bool& requiresDynamicChecks) const;
-
     bool evalEnabled() const { return m_evalEnabled; }
     const String& evalDisabledErrorMessage() const { return m_evalDisabledErrorMessage; }
     void setEvalEnabled(bool enabled, const String& errorMessage = String())
@@ -384,6 +386,7 @@ public:
 
     VM& vm() const { return *Heap::heap(this)->vm(); }
     JSObject* globalThis() const;
+    JS_EXPORT_PRIVATE void setGlobalThis(VM&, JSObject* globalThis);
 
     static Structure* createStructure(VM& vm, JSValue prototype)
     {
@@ -412,7 +415,7 @@ public:
     unsigned weakRandomInteger() { return m_weakRandom.getUint32(); }
 
     UnlinkedProgramCodeBlock* createProgramCodeBlock(CallFrame*, ProgramExecutable*, JSObject** exception);
-    UnlinkedEvalCodeBlock* createEvalCodeBlock(CodeCache*, CallFrame*, JSScope*, EvalExecutable*, JSObject** exception);
+    UnlinkedEvalCodeBlock* createEvalCodeBlock(CallFrame*, EvalExecutable*);
 
 protected:
 
@@ -432,9 +435,7 @@ protected:
     };
     JS_EXPORT_PRIVATE void addStaticGlobals(GlobalPropertyInfo*, int count);
 
-    JS_EXPORT_PRIVATE static JSC::JSObject* toThisObject(JSC::JSCell*, JSC::ExecState*);
-
-    JS_EXPORT_PRIVATE void setGlobalThis(VM&, JSObject* globalThis);
+    JS_EXPORT_PRIVATE static JSC::JSValue toThis(JSC::JSCell*, JSC::ExecState*, ECMAMode);
 
 private:
     friend class LLIntOffsetsExtractor;
@@ -526,11 +527,6 @@ private:
     JSGlobalObject*& m_dynamicGlobalObjectSlot;
     JSGlobalObject* m_savedDynamicGlobalObject;
 };
-
-inline bool JSGlobalObject::isDynamicScope(bool&) const
-{
-    return true;
-}
 
 inline JSObject* JSScope::globalThis()
 { 

@@ -33,6 +33,7 @@
 #include "CodeCache.h"
 #include "CommonIdentifiers.h"
 #include "DFGLongLivedState.h"
+#include "DFGWorklist.h"
 #include "DebuggerActivation.h"
 #include "FunctionConstructor.h"
 #include "GCActivityCallback.h"
@@ -90,7 +91,6 @@ extern const HashTable dateTable;
 extern const HashTable dateConstructorTable;
 extern const HashTable errorPrototypeTable;
 extern const HashTable globalObjectTable;
-extern const HashTable mathTable;
 extern const HashTable numberConstructorTable;
 extern const HashTable numberPrototypeTable;
 JS_EXPORTDATA extern const HashTable objectConstructorTable;
@@ -150,7 +150,6 @@ VM::VM(VMType vmType, HeapType heapType)
     , errorPrototypeTable(fastNew<HashTable>(JSC::errorPrototypeTable))
     , globalObjectTable(fastNew<HashTable>(JSC::globalObjectTable))
     , jsonTable(fastNew<HashTable>(JSC::jsonTable))
-    , mathTable(fastNew<HashTable>(JSC::mathTable))
     , numberConstructorTable(fastNew<HashTable>(JSC::numberConstructorTable))
     , numberPrototypeTable(fastNew<HashTable>(JSC::numberPrototypeTable))
     , objectConstructorTable(fastNew<HashTable>(JSC::objectConstructorTable))
@@ -176,9 +175,7 @@ VM::VM(VMType vmType, HeapType heapType)
 #if ENABLE(REGEXP_TRACING)
     , m_rtTraceList(new RTTraceList())
 #endif
-#ifndef NDEBUG
     , exclusiveThread(0)
-#endif
     , m_newStringsSinceLastHashCons(0)
 #if ENABLE(ASSEMBLER)
     , m_canUseAssembler(enableAssembler(executableAllocator))
@@ -193,7 +190,7 @@ VM::VM(VMType vmType, HeapType heapType)
     , m_initializingObjectClass(0)
 #endif
     , m_inDefineOwnProperty(false)
-    , m_codeCache(CodeCache::create(CodeCache::GlobalCodeCache))
+    , m_codeCache(CodeCache::create())
 {
     interpreter = new Interpreter(*this);
 
@@ -259,12 +256,24 @@ VM::VM(VMType vmType, HeapType heapType)
 
 #if ENABLE(DFG_JIT)
     if (canUseJIT())
-        m_dfgState = adoptPtr(new DFG::LongLivedState());
+        dfgState = adoptPtr(new DFG::LongLivedState());
 #endif
 }
 
 VM::~VM()
 {
+    // Never GC, ever again.
+    heap.incrementDeferralDepth();
+    
+#if ENABLE(DFG_JIT)
+    // Make sure concurrent compilations are done, but don't install them, since there is
+    // no point to doing so.
+    if (worklist) {
+        worklist->waitUntilAllPlansForVMAreReady(*this);
+        worklist->removeAllReadyPlansForVM(*this);
+    }
+#endif // ENABLE(DFG_JIT)
+    
     // Clear this first to ensure that nobody tries to remove themselves from it.
     m_perBytecodeProfiler.clear();
     
@@ -285,7 +294,6 @@ VM::~VM()
     errorPrototypeTable->deleteTable();
     globalObjectTable->deleteTable();
     jsonTable->deleteTable();
-    mathTable->deleteTable();
     numberConstructorTable->deleteTable();
     numberPrototypeTable->deleteTable();
     objectConstructorTable->deleteTable();
@@ -303,7 +311,6 @@ VM::~VM()
     fastDelete(const_cast<HashTable*>(errorPrototypeTable));
     fastDelete(const_cast<HashTable*>(globalObjectTable));
     fastDelete(const_cast<HashTable*>(jsonTable));
-    fastDelete(const_cast<HashTable*>(mathTable));
     fastDelete(const_cast<HashTable*>(numberConstructorTable));
     fastDelete(const_cast<HashTable*>(numberPrototypeTable));
     fastDelete(const_cast<HashTable*>(objectConstructorTable));
@@ -440,8 +447,19 @@ void VM::stopSampling()
     interpreter->stopSampling();
 }
 
+void VM::prepareToDiscardCode()
+{
+#if ENABLE(DFG_JIT)
+    if (!worklist)
+        return;
+    
+    worklist->completeAllPlansForVM(*this);
+#endif
+}
+
 void VM::discardAllCode()
 {
+    prepareToDiscardCode();
     m_codeCache->clear();
     heap.deleteAllCompiledCode();
     heap.reportAbandonedObjectGraph();
@@ -483,6 +501,8 @@ struct StackPreservingRecompiler : public MarkedBlock::VoidFunctor {
 
 void VM::releaseExecutableMemory()
 {
+    prepareToDiscardCode();
+    
     if (dynamicGlobalObject) {
         StackPreservingRecompiler recompiler;
         HashSet<JSCell*> roots;

@@ -714,6 +714,17 @@
 #define ENABLE_JIT 1
 #endif
 
+/* Do we have LLVM? */
+#if !defined(HAVE_LLVM) && PLATFORM(MAC) && ENABLE(FTL_JIT) && CPU(X86_64)
+#define HAVE_LLVM 1
+#endif
+
+/* If possible, try to enable the LLVM disassembler. This is optional and we can
+   fall back on UDis86 if necessary. */
+#if !defined(WTF_USE_LLVM_DISASSEMBLER) && HAVE(LLVM) && (CPU(X86_64) || CPU(X86))
+#define WTF_USE_LLVM_DISASSEMBLER 1
+#endif
+
 /* If possible, try to enable a disassembler. This is optional. We proceed in two
    steps: first we try to find some disassembler that we can use, and then we
    decide if the high-level disassembler API can be enabled. */
@@ -722,8 +733,8 @@
 #define WTF_USE_UDIS86 1
 #endif
 
-#if !defined(WTF_USE_ARMV7_DISASSEMBLER) && ENABLE(JIT) && PLATFORM(IOS) && CPU(ARM_THUMB2)
-#define WTF_USE_ARMV7_DISASSEMBLER 1
+#if !defined(ENABLE_DISASSEMBLER) && (USE(UDIS86) || USE(LLVM_DISASSEMBLER))
+#define ENABLE_DISASSEMBLER 1
 #endif
 
 #if !defined(ENABLE_DISASSEMBLER) && (USE(UDIS86) || USE(ARMV7_DISASSEMBLER))
@@ -757,6 +768,14 @@
 #if CPU(MIPS)
 #define ENABLE_DFG_JIT 1
 #endif
+#endif
+
+/* Concurrent JIT only works on 64-bit platforms because it requires that
+   values get stored to atomically. This is trivially true on 64-bit platforms,
+   but not true at all on 32-bit platforms where values are composed of two
+   separate sub-values. */
+#if PLATFORM(MAC) && ENABLE(DFG_JIT) && USE(JSVALUE64)
+#define ENABLE_CONCURRENT_JIT 1
 #endif
 
 /* If the jit is not available, enable the LLInt C Loop: */
@@ -795,6 +814,16 @@
    set ENABLE_SAMPLING_COUNTERS to 1. */
 #if !defined(ENABLE_WRITE_BARRIER_PROFILING)
 #define ENABLE_WRITE_BARRIER_PROFILING 0
+#endif
+
+/* Logs all allocation-related activity that goes through fastMalloc or the
+   JSC GC (both cells and butterflies). Also logs marking. Note that this
+   isn't a completely accurate view of the heap since it doesn't include all
+   butterfly resize operations, doesn't tell you what is going on with weak
+   references (other than to tell you when they're marked), and doesn't
+   track direct mmap() allocations or things like JIT allocation. */
+#if !defined(ENABLE_ALLOCATION_LOGGING)
+#define ENABLE_ALLOCATION_LOGGING 0
 #endif
 
 /* Enable verification that that register allocations are not made within generated control flow.

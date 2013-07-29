@@ -1,7 +1,7 @@
 /*
  *  Copyright (C) 1999-2000 Harri Porten (porten@kde.org)
  *  Copyright (C) 2001 Peter Kelly (pmk@post.com)
- *  Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009 Apple Inc. All rights reserved.
+ *  Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2013 Apple Inc. All rights reserved.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -110,6 +110,8 @@ namespace JSC {
 
         JS_EXPORT_PRIVATE IncrementalSweeper* sweeper();
 
+        // true if collection is in progress
+        inline bool isCollecting();
         // true if an allocation or collection is in progress
         inline bool isBusy();
         
@@ -117,8 +119,9 @@ namespace JSC {
         MarkedAllocator& allocatorForObjectWithNormalDestructor(size_t bytes) { return m_objectSpace.normalDestructorAllocatorFor(bytes); }
         MarkedAllocator& allocatorForObjectWithImmortalStructureDestructor(size_t bytes) { return m_objectSpace.immortalStructureDestructorAllocatorFor(bytes); }
         CopiedAllocator& storageAllocator() { return m_storageSpace.allocator(); }
-        CheckedBoolean tryAllocateStorage(size_t, void**);
-        CheckedBoolean tryReallocateStorage(void**, size_t, size_t);
+        CheckedBoolean tryAllocateStorage(JSCell* intendedOwner, size_t, void**);
+        CheckedBoolean tryReallocateStorage(JSCell* intendedOwner, void**, size_t, size_t);
+        void ascribeOwner(JSCell* intendedOwner, void*);
 
         typedef void (*Finalizer)(JSCell*);
         JS_EXPORT_PRIVATE void addFinalizer(JSCell*, Finalizer);
@@ -131,6 +134,7 @@ namespace JSC {
         enum SweepToggle { DoNotSweep, DoSweep };
         bool shouldCollect();
         void collect(SweepToggle);
+        bool collectIfNecessaryOrDefer(); // Returns true if it did collect.
 
         void reportExtraMemoryCost(size_t cost);
         JS_EXPORT_PRIVATE void reportAbandonedObjectGraph();
@@ -138,7 +142,7 @@ namespace JSC {
         JS_EXPORT_PRIVATE void protect(JSValue);
         JS_EXPORT_PRIVATE bool unprotect(JSValue); // True when the protect count drops to 0.
         
-        void jettisonDFGCodeBlock(PassOwnPtr<CodeBlock>);
+        void jettisonDFGCodeBlock(PassRefPtr<CodeBlock>);
 
         JS_EXPORT_PRIVATE size_t size();
         JS_EXPORT_PRIVATE size_t capacity();
@@ -179,6 +183,7 @@ namespace JSC {
     private:
         friend class CodeBlock;
         friend class CopiedBlock;
+        friend class DeferGC;
         friend class GCAwareJITStubRoutine;
         friend class HandleSet;
         friend class JITStubRoutine;
@@ -192,6 +197,7 @@ namespace JSC {
         friend class SuperRegion;
         friend class IncrementalSweeper;
         friend class HeapStatistics;
+        friend class VM;
         friend class WeakSet;
         template<typename T> friend void* allocateCell(Heap&);
         template<typename T> friend void* allocateCell(Heap&, size_t);
@@ -222,6 +228,9 @@ namespace JSC {
 
         JSStack& stack();
         BlockAllocator& blockAllocator();
+        
+        void incrementDeferralDepth();
+        void decrementDeferralDepthAndGCIfNeeded();
 
         const HeapType m_heapType;
         const size_t m_ramSize;
@@ -236,6 +245,7 @@ namespace JSC {
         BlockAllocator m_blockAllocator;
         MarkedSpace m_objectSpace;
         CopiedSpace m_storageSpace;
+        size_t m_extraMemoryUsage;
 
 #if ENABLE(SIMPLE_HEAP_PROFILING)
         VTableSpectrum m_destroyedTypeCounts;
@@ -268,6 +278,8 @@ namespace JSC {
         OwnPtr<GCActivityCallback> m_activityCallback;
         OwnPtr<IncrementalSweeper> m_sweeper;
         Vector<MarkedBlock*> m_blockSnapshot;
+        
+        unsigned m_deferralDepth;
     };
 
     struct MarkedBlockSnapshotFunctor : public MarkedBlock::VoidFunctor {
@@ -293,6 +305,11 @@ namespace JSC {
     bool Heap::isBusy()
     {
         return m_operationInProgress != NoOperation;
+    }
+
+    bool Heap::isCollecting()
+    {
+        return m_operationInProgress == Collection;
     }
 
     inline Heap* Heap::heap(const JSCell* cell)
@@ -370,30 +387,64 @@ namespace JSC {
 
     inline void* Heap::allocateWithNormalDestructor(size_t bytes)
     {
+#if ENABLE(ALLOCATION_LOGGING)
+        dataLogF("JSC GC allocating %lu bytes with normal destructor.\n", bytes);
+#endif
         ASSERT(isValidAllocation(bytes));
         return m_objectSpace.allocateWithNormalDestructor(bytes);
     }
     
     inline void* Heap::allocateWithImmortalStructureDestructor(size_t bytes)
     {
+#if ENABLE(ALLOCATION_LOGGING)
+        dataLogF("JSC GC allocating %lu bytes with immortal structure destructor.\n", bytes);
+#endif
         ASSERT(isValidAllocation(bytes));
         return m_objectSpace.allocateWithImmortalStructureDestructor(bytes);
     }
     
     inline void* Heap::allocateWithoutDestructor(size_t bytes)
     {
+#if ENABLE(ALLOCATION_LOGGING)
+        dataLogF("JSC GC allocating %lu bytes without destructor.\n", bytes);
+#endif
         ASSERT(isValidAllocation(bytes));
         return m_objectSpace.allocateWithoutDestructor(bytes);
     }
    
-    inline CheckedBoolean Heap::tryAllocateStorage(size_t bytes, void** outPtr)
+    inline CheckedBoolean Heap::tryAllocateStorage(JSCell* intendedOwner, size_t bytes, void** outPtr)
     {
-        return m_storageSpace.tryAllocate(bytes, outPtr);
+        CheckedBoolean result = m_storageSpace.tryAllocate(bytes, outPtr);
+#if ENABLE(ALLOCATION_LOGGING)
+        dataLogF("JSC GC allocating %lu bytes of storage for %p: %p.\n", bytes, intendedOwner, *outPtr);
+#else
+        UNUSED_PARAM(intendedOwner);
+#endif
+        return result;
     }
     
-    inline CheckedBoolean Heap::tryReallocateStorage(void** ptr, size_t oldSize, size_t newSize)
+    inline CheckedBoolean Heap::tryReallocateStorage(JSCell* intendedOwner, void** ptr, size_t oldSize, size_t newSize)
     {
-        return m_storageSpace.tryReallocate(ptr, oldSize, newSize);
+#if ENABLE(ALLOCATION_LOGGING)
+        void* oldPtr = *ptr;
+#endif
+        CheckedBoolean result = m_storageSpace.tryReallocate(ptr, oldSize, newSize);
+#if ENABLE(ALLOCATION_LOGGING)
+        dataLogF("JSC GC reallocating %lu -> %lu bytes of storage for %p: %p -> %p.\n", oldSize, newSize, intendedOwner, oldPtr, *ptr);
+#else
+        UNUSED_PARAM(intendedOwner);
+#endif
+        return result;
+    }
+
+    inline void Heap::ascribeOwner(JSCell* intendedOwner, void* storage)
+    {
+#if ENABLE(ALLOCATION_LOGGING)
+        dataLogF("JSC GC ascribing %p as owner of storage %p.\n", intendedOwner, storage);
+#else
+        UNUSED_PARAM(intendedOwner);
+        UNUSED_PARAM(storage);
+#endif
     }
 
     inline BlockAllocator& Heap::blockAllocator()

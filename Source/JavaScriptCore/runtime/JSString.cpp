@@ -71,6 +71,11 @@ void JSString::visitChildren(JSCell* cell, SlotVisitor& visitor)
 
     if (thisObject->isRope())
         static_cast<JSRopeString*>(thisObject)->visitFibers(visitor);
+    else {
+        StringImpl* impl = thisObject->m_value.impl();
+        ASSERT(impl);
+        visitor.reportExtraMemoryUsage(impl->costDuringGC());
+    }
 }
 
 void JSRopeString::visitFibers(SlotVisitor& visitor)
@@ -271,8 +276,10 @@ JSObject* JSString::toObject(ExecState* exec, JSGlobalObject* globalObject) cons
     return StringObject::create(exec, globalObject, const_cast<JSString*>(this));
 }
 
-JSObject* JSString::toThisObject(JSCell* cell, ExecState* exec)
+JSValue JSString::toThis(JSCell* cell, ExecState* exec, ECMAMode ecmaMode)
 {
+    if (ecmaMode == StrictMode)
+        return cell;
     return StringObject::create(exec, exec->lexicalGlobalObject(), jsCast<JSString*>(cell));
 }
 

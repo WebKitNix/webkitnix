@@ -382,22 +382,7 @@ void JSObject::put(JSCell* cell, ExecState* exec, PropertyName propertyName, JSV
 
             JSValue gs = obj->getDirect(offset);
             if (gs.isGetterSetter()) {
-                ASSERT(attributes & Accessor);
-                ASSERT(thisObject->structure()->prototypeChainMayInterceptStoreTo(exec->vm(), propertyName) || obj == thisObject);
-                JSObject* setterFunc = asGetterSetter(gs)->setter();        
-                if (!setterFunc) {
-                    if (slot.isStrictMode())
-                        throwError(exec, createTypeError(exec, ASCIILiteral("setting a property that has only a getter")));
-                    return;
-                }
-                
-                CallData callData;
-                CallType callType = setterFunc->methodTable()->getCallData(setterFunc, callData);
-                MarkedArgumentBuffer args;
-                args.append(value);
-
-                // If this is WebCore's global object then we need to substitute the shell.
-                call(exec, setterFunc, callType, callData, thisObject->methodTable()->toThisObject(thisObject, exec), args);
+                callSetter(exec, cell, gs, value, slot.isStrictMode() ? StrictMode : NotStrictMode);
                 return;
             } else
                 ASSERT(!(attributes & Accessor));
@@ -558,7 +543,7 @@ ArrayStorage* JSObject::enterDictionaryIndexingModeWhenArrayStorageAlreadyExists
             map->add(this, i).iterator->value.set(vm, this, value);
     }
 
-    Butterfly* newButterfly = storage->butterfly()->resizeArray(vm, structure(), 0, ArrayStorage::sizeFor(0));
+    Butterfly* newButterfly = storage->butterfly()->resizeArray(vm, this, structure(), 0, ArrayStorage::sizeFor(0));
     RELEASE_ASSERT(newButterfly);
     
     m_butterfly = newButterfly;
@@ -611,8 +596,8 @@ Butterfly* JSObject::createInitialIndexedStorage(VM& vm, unsigned length, size_t
     ASSERT(!structure()->needsSlowPutIndexing());
     ASSERT(!indexingShouldBeSparse());
     unsigned vectorLength = std::max(length, BASE_VECTOR_LEN);
-    Butterfly* newButterfly = Butterfly::createOrGrowArrayRight(m_butterfly, 
-        vm, structure(), structure()->outOfLineCapacity(), false, 0,
+    Butterfly* newButterfly = Butterfly::createOrGrowArrayRight(
+        m_butterfly, vm, this, structure(), structure()->outOfLineCapacity(), false, 0,
         elementSize * vectorLength);
     newButterfly->setPublicLength(length);
     newButterfly->setVectorLength(vectorLength);
@@ -657,8 +642,8 @@ ArrayStorage* JSObject::createArrayStorage(VM& vm, unsigned length, unsigned vec
 {
     IndexingType oldType = structure()->indexingType();
     ASSERT_UNUSED(oldType, !hasIndexedProperties(oldType));
-    Butterfly* newButterfly = Butterfly::createOrGrowArrayRight(m_butterfly, 
-        vm, structure(), structure()->outOfLineCapacity(), false, 0,
+    Butterfly* newButterfly = Butterfly::createOrGrowArrayRight(
+        m_butterfly, vm, this, structure(), structure()->outOfLineCapacity(), false, 0,
         ArrayStorage::sizeFor(vectorLength));
     RELEASE_ASSERT(newButterfly);
 
@@ -710,7 +695,7 @@ ArrayStorage* JSObject::constructConvertedArrayStorageWithoutCopyingElements(VM&
     unsigned propertySize = structure()->outOfLineSize();
     
     Butterfly* newButterfly = Butterfly::createUninitialized(
-        vm, 0, propertyCapacity, true, ArrayStorage::sizeFor(neededLength));
+        vm, this, 0, propertyCapacity, true, ArrayStorage::sizeFor(neededLength));
     
     memcpy(
         newButterfly->propertyStorage() - propertySize,
@@ -1172,19 +1157,16 @@ void JSObject::setPrototype(VM& vm, JSValue prototype)
     switchToSlowPutArrayStorage(vm);
 }
 
-bool JSObject::setPrototypeWithCycleCheck(VM& vm, JSValue prototype)
+bool JSObject::setPrototypeWithCycleCheck(ExecState* exec, JSValue prototype)
 {
-    JSValue checkFor = this;
-    if (this->isGlobalObject())
-        checkFor = jsCast<JSGlobalObject*>(this)->globalExec()->thisValue();
-
+    ASSERT(methodTable()->toThis(this, exec, NotStrictMode) == this);
     JSValue nextPrototype = prototype;
     while (nextPrototype && nextPrototype.isObject()) {
-        if (nextPrototype == checkFor)
+        if (nextPrototype == this)
             return false;
         nextPrototype = asObject(nextPrototype)->prototype();
     }
-    setPrototype(vm, prototype);
+    setPrototype(exec->vm(), prototype);
     return true;
 }
 
@@ -1560,7 +1542,7 @@ JSString* JSObject::toString(ExecState* exec) const
     return primitive.toString(exec);
 }
 
-JSObject* JSObject::toThisObject(JSCell* cell, ExecState*)
+JSValue JSObject::toThis(JSCell* cell, ExecState*, ECMAMode)
 {
     return jsCast<JSObject*>(cell);
 }
@@ -1640,15 +1622,14 @@ bool JSObject::removeDirect(VM& vm, PropertyName propertyName)
     return true;
 }
 
-NEVER_INLINE void JSObject::fillGetterPropertySlot(PropertySlot& slot, PropertyOffset offset)
+NEVER_INLINE void JSObject::fillGetterPropertySlot(PropertySlot& slot, JSValue getterSetter, PropertyOffset offset)
 {
-    if (JSObject* getterFunction = asGetterSetter(getDirect(offset))->getter()) {
-        if (!structure()->isDictionary())
-            slot.setCacheableGetterSlot(this, getterFunction, offset);
-        else
-            slot.setGetterSlot(getterFunction);
-    } else
-        slot.setUndefined();
+    if (structure()->isDictionary()) {
+        slot.setGetterSlot(jsCast<GetterSetter*>(getterSetter));
+        return;
+    }
+
+    slot.setCacheableGetterSlot(this, jsCast<GetterSetter*>(getterSetter), offset);
 }
 
 void JSObject::putIndexedDescriptor(ExecState* exec, SparseArrayEntry* entryInMap, PropertyDescriptor& descriptor, PropertyDescriptor& oldDescriptor)
@@ -1872,7 +1853,8 @@ void JSObject::putByIndexBeyondVectorLengthWithoutAttributes(ExecState* exec, un
     
     if (i >= MAX_ARRAY_INDEX - 1
         || (i >= MIN_SPARSE_ARRAY_INDEX
-            && !isDenseEnoughForVector(i, countElements<indexingShape>(m_butterfly)))) {
+            && !isDenseEnoughForVector(i, countElements<indexingShape>(m_butterfly)))
+        || indexIsSufficientlyBeyondLengthForSparseMap(i, m_butterfly->vectorLength())) {
         ASSERT(i <= MAX_ARRAY_INDEX);
         ensureArrayStorageSlow(vm);
         SparseArrayValueMap* map = allocateSparseIndexMap(vm);
@@ -1920,7 +1902,7 @@ void JSObject::putByIndexBeyondVectorLengthWithArrayStorage(ExecState* exec, uns
     
     // First, handle cases where we don't currently have a sparse map.
     if (LIKELY(!map)) {
-        // If the array is not extensible, we should have entered dictionary mode, and created the spare map.
+        // If the array is not extensible, we should have entered dictionary mode, and created the sparse map.
         ASSERT(isExtensible());
     
         // Update m_length if necessary.
@@ -1928,7 +1910,9 @@ void JSObject::putByIndexBeyondVectorLengthWithArrayStorage(ExecState* exec, uns
             storage->setLength(i + 1);
 
         // Check that it is sensible to still be using a vector, and then try to grow the vector.
-        if (LIKELY((isDenseEnoughForVector(i, storage->m_numValuesInVector)) && increaseVectorLength(vm, i + 1))) {
+        if (LIKELY(!indexIsSufficientlyBeyondLengthForSparseMap(i, storage->vectorLength()) 
+            && isDenseEnoughForVector(i, storage->m_numValuesInVector)
+            && increaseVectorLength(vm, i + 1))) {
             // success! - reread m_storage since it has likely been reallocated, and store to the vector.
             storage = arrayStorage();
             storage->m_vector[i].set(vm, this, value);
@@ -1995,7 +1979,7 @@ void JSObject::putByIndexBeyondVectorLength(ExecState* exec, unsigned i, JSValue
                 ensureArrayStorageExistsAndEnterDictionaryIndexingMode(vm));
             break;
         }
-        if (i >= MIN_SPARSE_ARRAY_INDEX) {
+        if (indexIsSufficientlyBeyondLengthForSparseMap(i, 0) || i >= MIN_SPARSE_ARRAY_INDEX) {
             putByIndexBeyondVectorLengthWithArrayStorage(
                 exec, i, value, shouldThrow, createArrayStorage(vm, 0, 0));
             break;
@@ -2075,7 +2059,8 @@ bool JSObject::putDirectIndexBeyondVectorLengthWithArrayStorage(ExecState* exec,
         if (LIKELY(
                 !attributes
                 && (isDenseEnoughForVector(i, storage->m_numValuesInVector))
-                && increaseVectorLength(vm, i + 1))) {
+                && increaseVectorLength(vm, i + 1)
+                && !indexIsSufficientlyBeyondLengthForSparseMap(i, storage->vectorLength()))) {
             // success! - reread m_storage since it has likely been reallocated, and store to the vector.
             storage = arrayStorage();
             storage->m_vector[i].set(vm, this, value);
@@ -2218,9 +2203,17 @@ void JSObject::putDirectNativeFunction(ExecState* exec, JSGlobalObject* globalOb
     StringImpl* name = propertyName.publicName();
     ASSERT(name);
     
-    JSFunction* function =
-        JSFunction::create(exec, globalObject, functionLength, name, nativeFunction, intrinsic);
+    JSFunction* function = JSFunction::create(exec, globalObject, functionLength, name, nativeFunction, intrinsic);
     putDirect(exec->vm(), propertyName, function, attributes);
+}
+
+void JSObject::putDirectNativeFunctionWithoutTransition(ExecState* exec, JSGlobalObject* globalObject, const PropertyName& propertyName, unsigned functionLength, NativeFunction nativeFunction, Intrinsic intrinsic, unsigned attributes)
+{
+    StringImpl* name = propertyName.publicName();
+    ASSERT(name);
+    
+    JSFunction* function = JSFunction::create(exec, globalObject, functionLength, name, nativeFunction, intrinsic);
+    putDirectWithoutTransition(exec->vm(), propertyName, function, attributes);
 }
 
 ALWAYS_INLINE unsigned JSObject::getNewVectorLength(unsigned currentVectorLength, unsigned currentLength, unsigned desiredLength)
@@ -2329,7 +2322,9 @@ bool JSObject::increaseVectorLength(VM& vm, unsigned newLength)
 
     // Fast case - there is no precapacity. In these cases a realloc makes sense.
     if (LIKELY(!indexBias)) {
-        Butterfly* newButterfly = storage->butterfly()->growArrayRight(vm, structure(), structure()->outOfLineCapacity(), true, ArrayStorage::sizeFor(vectorLength), ArrayStorage::sizeFor(newVectorLength));
+        Butterfly* newButterfly = storage->butterfly()->growArrayRight(
+            vm, this, structure(), structure()->outOfLineCapacity(), true,
+            ArrayStorage::sizeFor(vectorLength), ArrayStorage::sizeFor(newVectorLength));
         if (!newButterfly)
             return false;
         m_butterfly = newButterfly;
@@ -2340,7 +2335,7 @@ bool JSObject::increaseVectorLength(VM& vm, unsigned newLength)
     // Remove some, but not all of the precapacity. Atomic decay, & capped to not overflow array length.
     unsigned newIndexBias = std::min(indexBias >> 1, MAX_STORAGE_VECTOR_LENGTH - newVectorLength);
     Butterfly* newButterfly = storage->butterfly()->resizeArray(
-        vm,
+        vm, this,
         structure()->outOfLineCapacity(), true, ArrayStorage::sizeFor(vectorLength),
         newIndexBias, true, ArrayStorage::sizeFor(newVectorLength));
     if (!newButterfly)
@@ -2363,7 +2358,7 @@ void JSObject::ensureLengthSlow(VM& vm, unsigned length)
         MAX_STORAGE_VECTOR_LENGTH);
     unsigned oldVectorLength = m_butterfly->vectorLength();
     m_butterfly = m_butterfly->growArrayRight(
-        vm, structure(), structure()->outOfLineCapacity(), true,
+        vm, this, structure(), structure()->outOfLineCapacity(), true,
         oldVectorLength * sizeof(EncodedJSValue),
         newVectorLength * sizeof(EncodedJSValue));
     if (hasDouble(structure()->indexingType())) {
@@ -2380,7 +2375,7 @@ Butterfly* JSObject::growOutOfLineStorage(VM& vm, size_t oldSize, size_t newSize
     // It's important that this function not rely on structure(), for the property
     // capacity, since we might have already mutated the structure in-place.
     
-    return m_butterfly->growPropertyStorage(vm, structure(), oldSize, newSize);
+    return m_butterfly->growPropertyStorage(vm, this, structure(), oldSize, newSize);
 }
 
 bool JSObject::getOwnPropertyDescriptor(JSObject* object, ExecState* exec, PropertyName propertyName, PropertyDescriptor& descriptor)

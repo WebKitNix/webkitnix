@@ -1,3 +1,584 @@
+2013-07-26  Brent Fulgham  <bfulgham@apple.com>
+
+        [Windows] Unreviewed gardening.
+
+        * WebCore.vcxproj/WebCore.vcxproj: Add missing header file to ease code viewing.
+        * WebCore.vcxproj/WebCore.vcxproj.filters: Ditto.
+
+2013-07-26  Arvid Nilsson  <anilsson@rim.com>
+
+        [BlackBerry] LayerTiler fails to render layer after waking up
+        https://bugs.webkit.org/show_bug.cgi?id=119146
+
+        Reviewed by George Staikos.
+
+        When the application is backgrounded, all tiles are freed up to
+        release memory back to the system. We also mark the contents as dirty
+        in LayerTiler::deleteTextures() so tiles will be repopulated when
+        waking up again.
+
+        The problem was caused by an optimization to avoid re-rendering tiles
+        repeatedly until the UI thread catches up with the fact that we have
+        indeed rendered those tiles (which will happen when the UI thread next
+        composites a frame).
+
+        When contents are dirty, we're not supposed to perform this
+        optimization (i.e. we're not supposed to skip rendering) because the
+        appearance of the layer has changed, so we do need to render those
+        tiles. Unfortunately, the code that was supposed to forget the list of
+        tiles rendered was in a conditional, "if (frontVisibility)", which
+        happened to be false sometimes when the app woke up again. So we ended
+        up perpetually skipping those render jobs, and the UI thread kept
+        yelling at us to render them.
+
+        Fixed by unconditionally dropping the list of tiles rendered when
+        contents are dirty.
+
+        This can't be detected without pixel tests, which BB DRT currently
+        doesn't support.
+
+        JIRA 452460
+
+        * platform/graphics/blackberry/LayerTiler.cpp:
+        (WebCore::LayerVisibility::clearTilesRendered):
+        (WebCore::LayerTiler::updateTextureContentsIfNeeded):
+
+2013-07-25  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Remove unused HTMLTextFormControlElement::textRendererAfterUpdateLayout
+        https://bugs.webkit.org/show_bug.cgi?id=119121
+
+        Reviewed by Andreas Kling.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/3255ce725711707fe1fd18be91a6d06789517220.
+
+        * html/HTMLTextFormControlElement.cpp:
+        * html/HTMLTextFormControlElement.h:
+
+2013-07-25  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Fix document leak when selection is created inside the document
+        https://bugs.webkit.org/show_bug.cgi?id=119122
+
+        Reviewed by Andreas Kling.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/b908cb4c8da93316d787de31c93f2a43de332a10
+
+        The bug was caused by FrameSelection::m_previousCaretNode holding onto a Node, leaking its document.
+        Fixed the bug by explicitly clearing it in FrameSelection::prepareForDestruction.
+
+        Test: editing/selection/leak-document-with-selection-inside.html
+
+        * editing/FrameSelection.cpp:
+        (WebCore::FrameSelection::prepareForDestruction):
+
+2013-07-25  Andreas Kling  <akling@apple.com>
+
+        ChromeClient::focusedNodeChanged() should be focusedElementChanged().
+        <http://webkit.org/b/119110>
+
+        Reviewed by Anders Carlsson.
+
+        Because only Elements can be focused.
+
+        * dom/Document.cpp:
+        (WebCore::Document::setFocusedElement):
+        * loader/EmptyClients.h:
+        (WebCore::EmptyChromeClient::focusedElementChanged):
+        * page/Chrome.cpp:
+        (WebCore::Chrome::focusedElementChanged):
+        * page/Chrome.h:
+        * page/ChromeClient.h:
+
+2013-07-25  Kwang Yul Seo  <skyul@company100.net>
+
+        [WK2][Soup] Add private browsing support
+        https://bugs.webkit.org/show_bug.cgi?id=118657
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Support private browsing by adding a method to create a private
+        browsing soup session. This private browsing session uses a
+        non-persistent cookie jar and does not use the disk cache feature.
+
+        No new tests. Covered by existing private browsing tests.
+
+        * platform/network/NetworkStorageSession.h:
+        (WebCore::NetworkStorageSession::isPrivateBrowsingSession):
+        Add USE(SOUP) guard to isPrivateBrowsingSession() and m_isPrivate.
+
+        * platform/network/ResourceHandle.h:
+        Add a factory method to create a private browsing session for soup.
+
+        * platform/network/soup/CookieJarSoup.cpp:
+        (WebCore::createPrivateBrowsingCookieJar):
+        * platform/network/soup/CookieJarSoup.h:
+        Add a method to create a non-persistent cookie jar for private browsing.
+
+        * platform/network/soup/NetworkStorageSessionSoup.cpp:
+        (WebCore::NetworkStorageSession::NetworkStorageSession):
+        Initialize m_isPrivate to false.
+        (WebCore::NetworkStorageSession::createPrivateBrowsingSession):
+        Implement the method by invoking ResourceHandle::createPrivateBrowsingSession.
+
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::createSoupSession):
+        Extract common soup session creation code so that both defaultSession
+        and createPrivateBrowsingSession can use this function to create a soup
+        session.
+        (WebCore::ResourceHandle::defaultSession):
+        Change to use createSoupSession.
+        (WebCore::ResourceHandle::createPrivateBrowsingSession):
+        Create a session which uses a non-persistent cookie jar.
+
+2013-07-25  Tim Horton  <timothy_horton@apple.com>
+
+        Null check m_frame in maximum and minimumScrollPosition
+        https://bugs.webkit.org/show_bug.cgi?id=119109
+        <rdar://problem/14545393>
+
+        Reviewed by Darin Adler.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::minimumScrollPosition):
+        (WebCore::FrameView::maximumScrollPosition):
+        Null-check m_frame (and move the early-return after the clamp-to-0
+        as the revert in r152911 should have).
+
+2013-07-25  Anders Carlsson  <andersca@apple.com>
+
+        Localizable.strings generated by extract-localizable-strings should be UTF-8
+        https://bugs.webkit.org/show_bug.cgi?id=119106
+
+        Reviewed by Mark Rowe.
+
+        * English.lproj/Localizable.strings:
+        Re-encode this as UTF-8 and remove the BOM.
+
+        * WebCore.xcodeproj/project.pbxproj:
+        Set the file encoding of Localizable.strings to UTF-8.
+
+2013-07-25  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Don't force layout when querying a fixed or non-box margin/padding property
+        https://bugs.webkit.org/show_bug.cgi?id=118032
+
+        Reviewed by David Hyatt.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/66427d0825fcc2975bd50220cdcaa2504d6f36e5.
+
+        This patch avoids layout in ComputedStyleExtractor::propertyValue for margin and padding properties
+        when they are of fixed length. According to the Blink patch's author, this improves the page load
+        time of economist.com by 27%.
+
+        The actual code change is significantly different from the original Blink patch since we've done
+        some refactorins in r152938 and r153067 to make this change more self-contained.
+
+        Test: fast/css/computed-width-without-renderer.html
+
+        * css/CSSComputedStyleDeclaration.cpp:
+        (WebCore::zoomAdjustedPaddingOrMarginPixelValue):
+        (WebCore::paddingOrMarginIsRendererDependent):
+        (WebCore::isLayoutDependent):
+        (WebCore::ComputedStyleExtractor::propertyValue):
+
+2013-07-25  Sam Weinig  <sam@webkit.org>
+
+        -[WebHTMLView attributedSubstringForProposedRange:actualRange:] does not include strikethrough attribute in the returned attributed string
+        https://bugs.webkit.org/show_bug.cgi?id=119099
+        <rdar://problem/13439291>
+
+        Reviewed by Enrica Casucci.
+
+        Tests:
+            API Test: AttributedStringTest_Strikethrough
+
+        * platform/mac/HTMLConverter.mm:
+        (+[WebHTMLConverter editingAttributedStringFromRange:]):
+        Set the NSStrikethroughStyleAttributeName attribute when text-decoration: line-through is seen.
+
+2013-07-25  Pratik Solanki  <psolanki@apple.com>
+
+        Unreviewed build fix after r153333.
+
+        * platform/network/cf/ResourceResponseCFNet.cpp: Remove toTimeT since it is no longer called.
+
+2013-07-25  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Unreviewed EFL build fix after r153315.
+
+        Fix build error after we started compiling with c++0x support
+        in r153315.
+
+        * platform/efl/RenderThemeEfl.cpp:
+        (WebCore::toEdjeGroup):
+
+2013-07-25  Anders Carlsson  <andersca@apple.com>
+
+        Remove lastModifiedDate from ResourceResponse
+        https://bugs.webkit.org/show_bug.cgi?id=119092
+
+        Reviewed by Andreas Kling.
+
+        Computing m_lastResponseDate is costly on some platforms and we already have a better way to
+        get the last response time, so convert the two call sites that used to call ResourceresponseBase::lastModifiedDate()
+        over to using lastModified() instead.
+
+        * platform/network/ResourceResponseBase.cpp:
+        (WebCore::ResourceResponseBase::ResourceResponseBase):
+        (WebCore::ResourceResponseBase::adopt):
+        (WebCore::ResourceResponseBase::copyData):
+        * platform/network/ResourceResponseBase.h:
+        * platform/network/cf/ResourceResponseCFNet.cpp:
+        (WebCore::ResourceResponse::platformLazyInit):
+        * plugins/PluginStream.cpp:
+        (WebCore::lastModifiedDate):
+        (WebCore::PluginStream::startStream):
+
+2013-07-25  Yi Shen  <max.hong.shen@gmail.com>
+
+        Optimize the thread locks for API Shims
+        https://bugs.webkit.org/show_bug.cgi?id=118573
+
+        Reviewed by Geoffrey Garen.
+
+        Remove the thread lock from API Shims if the VM has an exclusive thread (e.g. the VM 
+        only used by WebCore's main thread).
+
+        No new tests required since no functionality changed.
+
+        * bindings/js/JSDOMWindowBase.cpp:
+        (WebCore::JSDOMWindowBase::commonVM):
+
+2013-07-25  Bear Travis  <betravis@adobe.com>
+
+        [CSS Shapes] Shape methods and member variables should be guarded with the CSS_SHAPES flag
+        https://bugs.webkit.org/show_bug.cgi?id=117277
+
+        Reviewed by Alexandru Chiculita.
+
+        This patch adds some compile guards that were missing from the RenderStyle and
+        StyleRareNonInheritedData files. When the compile guard caused parameters to
+        not be used, the parameters were marked using UNUSED_PARAM.
+
+        * css/CSSPropertyNames.in: Inserting a line to trigger build.
+        * rendering/RenderBlock.cpp:
+        (WebCore::shapeInfoRequiresRelayout):
+        (WebCore::RenderBlock::updateRegionsAndShapesBeforeChildLayout):
+        (WebCore::RenderBlock::logicalRightFloatOffsetForLine):
+        * rendering/RenderBox.cpp:
+        (WebCore::isCandidateForOpaquenessTest):
+        * rendering/RenderBox.h:
+        * rendering/RenderObject.h:
+        * rendering/style/RenderStyle.cpp:
+        (WebCore::RenderStyle::changeRequiresLayout):
+        (WebCore::RenderStyle::changeRequiresRepaint):
+        * rendering/style/RenderStyle.h:
+        * rendering/style/StyleRareNonInheritedData.cpp:
+        (WebCore::StyleRareNonInheritedData::StyleRareNonInheritedData):
+        (WebCore::StyleRareNonInheritedData::operator==):
+        * rendering/style/StyleRareNonInheritedData.h:
+
+2013-07-24  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Introduce toSVGPatternElement(), use it
+        https://bugs.webkit.org/show_bug.cgi?id=119013
+
+        Reviewed by Andreas Kling.
+
+        As a step to change static_cast with toSVGXXX, static_cast<SVGPatternElement*> can
+        be changed with toSVGPatternElement().
+
+        Merge from https://src.chromium.org/viewvc/blink?view=rev&revision=154734
+
+        * rendering/svg/RenderSVGResourcePattern.cpp:
+        (WebCore::RenderSVGResourcePattern::buildPattern):
+        * rendering/svg/SVGRenderTreeAsText.cpp:
+        (WebCore::writeSVGResourceContainer):
+        * rendering/svg/SVGResources.cpp:
+        (WebCore::targetReferenceFromResource):
+        * svg/SVGPatternElement.h:
+        (WebCore::toSVGPatternElement):
+
+2013-06-21  Mark Lam  <mark.lam@apple.com>
+
+        Fixed broken build: updated to match SmallStrings changes in r151864.
+
+        Not reviewed.
+
+        No new tests.
+
+        * bindings/js/JSDOMBinding.h:
+        (WebCore::jsStringWithCache):
+
+2013-06-15  Filip Pizlo  <fpizlo@apple.com>
+
+        Concurrent JIT shouldn't try to recompute the CodeBlockHash as part of debug dumps, since doing so may fail if dealing with a CachedScript that doesn't have its script string handy
+        https://bugs.webkit.org/show_bug.cgi?id=117676
+
+        Reviewed by Sam Weinig.
+
+        Remove the broken hack for the concurrent JIT, since now the concurrent JIT won't use this code anymore.
+
+        No new tests because no new behavior.
+
+        * loader/cache/CachedScript.cpp:
+        (WebCore::CachedScript::script):
+
+2013-06-10  Mark Lam  <mark.lam@apple.com>
+
+        Introducing the StackIterator class.
+        https://bugs.webkit.org/show_bug.cgi?id=117390.
+
+        Reviewed by Geoffrey Garen.
+
+        No new tests.
+
+        * ForwardingHeaders/interpreter/StackIterator.h: Added.
+        * bindings/js/JSXMLHttpRequestCustom.cpp:
+        (WebCore::JSXMLHttpRequest::send):
+        * bindings/js/ScriptCallStackFactory.cpp:
+        (WebCore::createScriptCallStack):
+
+2013-06-09  Filip Pizlo  <fpizlo@apple.com>
+
+        Unreviewed, fix build. Use at() instead of operator[] because of ambiguity on some compilers.
+
+        * page/CaptionUserPreferencesMac.mm:
+        (WebCore::languageIdentifier):
+
+2013-05-27  Filip Pizlo  <fpizlo@apple.com>
+
+        testRunner should be able to tell you if a function is DFG compiled
+        https://bugs.webkit.org/show_bug.cgi?id=116847
+
+        Reviewed by Mark Hahnenberg.
+
+        Bail early if we're in the compilation thread. This is only relevant for
+        debug dumps.
+
+        No new tests becase no new behavior.
+
+        * loader/cache/CachedScript.cpp:
+        (WebCore::CachedScript::script):
+
+2013-05-25  Mark Lam  <mark.lam@apple.com>
+
+        Remove Interpreter::retrieveLastCaller().
+        https://bugs.webkit.org/show_bug.cgi?id=116753.
+
+        Reviewed by Geoffrey Garen.
+
+        This is part of the refactoring effort to get rid of functions walking
+        the JS stack in their own way.
+
+        No new tests.
+
+        * bindings/js/JSXMLHttpRequestCustom.cpp:
+        (WebCore::JSXMLHttpRequest::send):
+        * bindings/js/ScriptCallStackFactory.cpp:
+        (WebCore::createScriptCallStack):
+
+2013-05-05  Geoffrey Garen  <ggaren@apple.com>
+
+        Rolled back in r149527 with crash fixed.
+
+        Reviewed by Oliver Hunt.
+
+            Rationalized 'this' value conversion
+            https://bugs.webkit.org/show_bug.cgi?id=115542
+
+2013-04-29  Filip Pizlo  <fpizlo@apple.com>
+
+        fourthTier: String::utf8() should also be available as StringImpl::utf8() so that you don't have to ref() a StringImpl just to get its utf8()
+        https://bugs.webkit.org/show_bug.cgi?id=115393
+
+        Reviewed by Geoffrey Garen.
+
+        No new tests because no new behavior.
+
+        * Modules/websockets/WebSocket.cpp:
+        (WebCore::WebSocket::close):
+        * Modules/websockets/WebSocketChannel.cpp:
+        (WebCore::WebSocketChannel::send):
+        * html/MediaFragmentURIParser.cpp:
+        (WebCore::MediaFragmentURIParser::parseFragments):
+
+2013-07-24  Simon Fraser  <simon.fraser@apple.com>
+
+        [iOS] Captions are clipped in documents using pagination
+        https://bugs.webkit.org/show_bug.cgi?id=119072
+
+        Reviewed by Beth Dakin.
+
+        MediaControlTextTrackContainerElement::createTextTrackRepresentationImage() is called
+        to paint captions into a layer used for fullscreen video. It did the painting using
+        a subtree paint, but starting at the root RenderView's layer. This is problematic,
+        because the caption painting is subject to clipping for columns, and any enclosing
+        overflow:hidden container.
+        
+        Fix this by starting the paint at the MediaControlTextTrackContainerElement's
+        renderer's layer. By doing this we don't have to worry about an offset, so no
+        translation is required.
+        
+        Also make sure we update layer before grabbing the renderer (in case layout
+        destroys it).
+
+        * html/shadow/MediaControlElements.cpp:
+        (WebCore::MediaControlTextTrackContainerElement::createTextTrackRepresentationImage):
+
+2013-07-24  Simon Fraser  <simon.fraser@apple.com>
+
+        REGRESSION (r152335): Mac Pro title occluded in MobileSafari; can't scroll page
+        https://bugs.webkit.org/show_bug.cgi?id=119066
+        <rdar://problem/14499184>
+
+        Reviewed by Daniel Bates.
+
+        Following <http://trac.webkit.org/changeset/152335> (bug #118337) we set
+        the z-index to 0 on every element with CSS "overflow: scroll" and
+        "-webkit-overflow-scrolling: touch" regardless of whether the element has
+        non-auto z-index. Instead we should only set the z-index to 0 for such elements
+        that have an auto z-index.
+
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::adjustRenderStyle):
+
+2013-07-24  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Use-after-free in ApplyStyleCommand::removeInlineStyle
+        https://bugs.webkit.org/show_bug.cgi?id=118627
+
+        Reviewed by Oliver Hunt.
+        
+        Merge https://chromium.googlesource.com/chromium/blink/+/b6471d077e012b05ccba14d0ce8e6d616106c8e6
+
+        Unfortunately, there is no test case for this bug.
+
+        * editing/ApplyStyleCommand.cpp:
+        (WebCore::ApplyStyleCommand::removeInlineStyle):
+
+2013-07-24  Zan Dobersek  <zdobersek@igalia.com>
+
+        Remove CheckedInt, use Checked<T, RecordOverflow> instead
+        https://bugs.webkit.org/show_bug.cgi?id=119022
+
+        Reviewed by Oliver Hunt.
+
+        Following the cleanup in r153062, the CheckedInt uses are replaced with
+        using the Checked<T, RecordOverflow> class. The CheckedInt header is not
+        used anywhere anymore and is thus removed.
+
+        * GNUmakefile.list.am:
+        * WebCore.xcodeproj/project.pbxproj:
+        * html/canvas/CheckedInt.h: Removed.
+        * html/canvas/DataView.cpp:
+        (WebCore::DataView::create):
+        * html/canvas/WebGLBuffer.cpp:
+        (WebCore::WebGLBuffer::associateBufferSubDataImpl):
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::drawArrays):
+
+2013-07-24  Andreas Kling  <akling@apple.com>
+
+        RenderMenuList computes the width of its longest option twice.
+        <http://webkit.org/b/119046>
+        <rdar://problem/14534679>
+
+        Reviewed by Darin Adler.
+
+        Rename the RenderMenuList::m_optionsChanged flag to m_needsOptionsWidthUpdate,
+        and make sure it gets cleared after we do a width computation in response to font changes.
+
+        * rendering/RenderMenuList.cpp:
+        (WebCore::RenderMenuList::styleDidChange):
+
+2013-07-24  Zan Dobersek  <zdobersek@igalia.com>
+
+        Make KURL::hasPath private
+        https://bugs.webkit.org/show_bug.cgi?id=118279
+
+        Reviewed by Darin Adler.
+
+        * platform/KURL.h: The KURL::hasPath method is not used outside of the KURL class, so it is made private.
+
+2013-07-24  Jessie Berlin  <jberlin@apple.com>
+
+        Remove WKPageGetPlugInInformation - it is not used anymore
+        https://bugs.webkit.org/show_bug.cgi?id=119047
+
+        Rubber-stamped by Alexey Proskuryakov.
+
+        Revert r152328, which added a key used only in the callback info for
+        WKPageGetPlugInInformation.
+
+        * WebCore.exp.in:
+
+2013-07-24  Robert Hogan  <robert@webkit.org>
+
+        Border drawing incorrect when using both border-collapse: collapse and overflow: hidden on a table
+        https://bugs.webkit.org/show_bug.cgi?id=18305
+
+        Reviewed by David Hyatt.
+
+        overflowClipRect() clips out the table's half of a collapsed border when there is an overflow clip
+        on the table. This prevents the table's half of the border ever getting painted. 
+
+        To fix this, clip to the border box of tables when we're in the paint phase that gets the sections to draw the collapsed borders
+        or when we're self painting. This will allow the table's half of the border to get painted. In the case where the table is self
+        painting we ensure that content gets clipped to cell's side of the collapsed border by ensuring the clip passed to child layers
+        from the table clips to the inside of the collapsed border. 
+
+        It's worth noting that a table's collapsed borders are painted by the table's layer using functions in 
+        RenderTableSection and RenderTableCell. So if a table section has a self-painting layer this patch still works, because
+        the borders aren't painted by the section's layer.
+
+        Tests: fast/table/overflow-table-collapsed-borders-cell-painting-table-self-painting-layer.html
+               fast/table/overflow-table-collapsed-borders-cell-painting.html
+               fast/table/overflow-table-collapsed-borders-section-layer-painting.html
+               fast/table/overflow-table-collapsed-borders-section-layer-table-self-painting-layer.html
+               fast/table/overflow-table-collapsed-borders-section-self-painting-layer-painting.html
+               fast/table/overflow-table-collapsed-borders-section-self-painting-layer-table-self-painting-layer.html
+               fast/table/table-overflow.html
+
+        * rendering/RenderBox.cpp:
+        (WebCore::RenderBox::pushContentsClip):
+        (WebCore::RenderBox::overflowClipRect):
+        * rendering/RenderBox.h:
+        (WebCore::RenderBox::overflowClipRectForChildLayers):
+        * rendering/RenderLayer.cpp:
+        (WebCore::RenderLayer::calculateClipRects):
+        * rendering/RenderTable.cpp:
+        (WebCore::RenderTable::overflowClipRect):
+        * rendering/RenderTable.h:
+        (WebCore::RenderTable::overflowClipRectForChildLayers):
+
+2013-07-24  Frédéric Wang  <fred.wang@free.fr>
+
+        Graphical elements inside mphantom should not be visible.
+        https://bugs.webkit.org/show_bug.cgi?id=116600.
+
+        Reviewed by Chris Fleizach.
+
+        Test: mathml/presentation/phantom.html
+
+        * rendering/mathml/RenderMathMLFraction.cpp:
+        (WebCore::RenderMathMLFraction::paint): don't paint the fraction bar when the visibility is not "visible"
+        * rendering/mathml/RenderMathMLRoot.cpp:
+        (WebCore::RenderMathMLRoot::paint): don't paint the radical symbol when the visibility is not "visible"
+
+2013-07-24  Brendan Long  <b.long@cablelabs.com>
+
+        WebVTTParser's identifier buffering can ignore subsequent lines
+        https://bugs.webkit.org/show_bug.cgi?id=118483
+
+        Reviewed by Eric Carlson.
+
+        No new tests since this bug can't be reproduced in layout tests.
+
+        * html/track/WebVTTParser.cpp:
+        (WebCore::WebVTTParser::parseBytes): Only buffer the identifier if we haven't read an entire line.
+
 2013-07-23  Andreas Kling  <akling@apple.com>
 
         REGRESSION(r150867): FrameView auto-sizing + delegate denied image load may cause StyleResolver to re-enter itself.

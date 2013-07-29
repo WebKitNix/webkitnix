@@ -26,6 +26,7 @@
 #include "JSGlobalObjectFunctions.h"
 
 #include "CallFrame.h"
+#include "CallFrameInlines.h"
 #include "Interpreter.h"
 #include "JSFunction.h"
 #include "JSGlobalObject.h"
@@ -36,6 +37,7 @@
 #include "Nodes.h"
 #include "Operations.h"
 #include "Parser.h"
+#include "StackIterator.h"
 #include <wtf/dtoa.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +55,7 @@ namespace JSC {
 
 static JSValue encode(ExecState* exec, const char* doNotEscape)
 {
-    CString cstr = exec->argument(0).toString(exec)->value(exec).utf8(String::StrictConversion);
+    CString cstr = exec->argument(0).toString(exec)->value(exec).utf8(StrictConversion);
     if (!cstr.data())
         return throwError(exec, createURIError(exec, ASCIILiteral("String contained an illegal UTF-16 sequence.")));
 
@@ -515,10 +517,9 @@ EncodedJSValue JSC_HOST_CALL globalFuncEval(ExecState* exec)
     }
 
     JSGlobalObject* calleeGlobalObject = exec->callee()->globalObject();
-    EvalExecutable* eval = EvalExecutable::create(exec, exec->vm().codeCache(), makeSource(s), false);
-    JSObject* error = eval->compile(exec, calleeGlobalObject);
-    if (error)
-        return throwVMError(exec, error);
+    EvalExecutable* eval = EvalExecutable::create(exec, makeSource(s), false);
+    if (!eval)
+        return jsUndefined();
 
     return JSValue::encode(exec->interpreter()->execute(eval, exec, calleeGlobalObject->globalThis(), calleeGlobalObject));
 }
@@ -707,11 +708,14 @@ EncodedJSValue JSC_HOST_CALL globalFuncThrowTypeError(ExecState* exec)
 
 EncodedJSValue JSC_HOST_CALL globalFuncProtoGetter(ExecState* exec)
 {
-    if (!exec->thisValue().isObject())
+    JSObject* thisObject = jsDynamicCast<JSObject*>(exec->thisValue().toThis(exec, NotStrictMode));
+
+    if (!thisObject)
         return JSValue::encode(exec->thisValue().synthesizePrototype(exec));
 
-    JSObject* thisObject = asObject(exec->thisValue());
-    if (!thisObject->allowsAccessFrom(exec->trueCallerFrame()))
+    StackIterator iter = exec->begin();
+    ++iter;
+    if ((iter == exec->end()) || !thisObject->allowsAccessFrom(iter->callFrame()))
         return JSValue::encode(jsUndefined());
 
     return JSValue::encode(thisObject->prototype());
@@ -721,12 +725,15 @@ EncodedJSValue JSC_HOST_CALL globalFuncProtoSetter(ExecState* exec)
 {
     JSValue value = exec->argument(0);
 
+    JSObject* thisObject = jsDynamicCast<JSObject*>(exec->thisValue().toThis(exec, NotStrictMode));
+
     // Setting __proto__ of a primitive should have no effect.
-    if (!exec->thisValue().isObject())
+    if (!thisObject)
         return JSValue::encode(jsUndefined());
 
-    JSObject* thisObject = asObject(exec->thisValue());
-    if (!thisObject->allowsAccessFrom(exec->trueCallerFrame()))
+    StackIterator iter = exec->begin();
+    ++iter;
+    if ((iter == exec->end()) || !thisObject->allowsAccessFrom(iter->callFrame()))
         return JSValue::encode(jsUndefined());
 
     // Setting __proto__ to a non-object, non-null value is silently ignored to match Mozilla.
@@ -736,7 +743,7 @@ EncodedJSValue JSC_HOST_CALL globalFuncProtoSetter(ExecState* exec)
     if (!thisObject->isExtensible())
         return throwVMError(exec, createTypeError(exec, StrictModeReadonlyPropertyWriteError));
 
-    if (!thisObject->setPrototypeWithCycleCheck(exec->vm(), value))
+    if (!thisObject->setPrototypeWithCycleCheck(exec, value))
         throwError(exec, createError(exec, "cyclic __proto__ value"));
     return JSValue::encode(jsUndefined());
 }

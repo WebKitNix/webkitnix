@@ -614,9 +614,9 @@ inline bool JSValue::inherits(const ClassInfo* classInfo) const
     return isCell() && asCell()->inherits(classInfo);
 }
 
-inline JSObject* JSValue::toThisObject(ExecState* exec) const
+inline JSValue JSValue::toThis(ExecState* exec, ECMAMode ecmaMode) const
 {
-    return isCell() ? asCell()->methodTable()->toThisObject(asCell(), exec) : toThisObjectSlowCase(exec);
+    return isCell() ? asCell()->methodTable()->toThis(asCell(), exec, ecmaMode) : toThisSlowCase(exec, ecmaMode);
 }
 
 inline JSValue JSValue::get(ExecState* exec, PropertyName propertyName) const
@@ -791,6 +791,28 @@ inline bool JSValue::strictEqual(ExecState* exec, JSValue v1, JSValue v2)
         return v1 == v2;
 
     return strictEqualSlowCaseInline(exec, v1, v2);
+}
+
+inline TriState JSValue::pureStrictEqual(JSValue v1, JSValue v2)
+{
+    if (v1.isInt32() && v2.isInt32())
+        return triState(v1 == v2);
+
+    if (v1.isNumber() && v2.isNumber())
+        return triState(v1.asNumber() == v2.asNumber());
+
+    if (!v1.isCell() || !v2.isCell())
+        return triState(v1 == v2);
+    
+    if (v1.asCell()->isString() && v2.asCell()->isString()) {
+        const StringImpl* v1String = asString(v1)->tryGetValueImpl();
+        const StringImpl* v2String = asString(v2)->tryGetValueImpl();
+        if (!v1String || !v2String)
+            return MixedTriState;
+        return triState(WTF::equal(v1String, v2String));
+    }
+    
+    return triState(v1 == v2);
 }
 
 inline TriState JSValue::pureToBoolean() const

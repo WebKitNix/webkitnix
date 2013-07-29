@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, 2012 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2012, 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -109,8 +109,34 @@ typedef OptionRange optionRange;
     v(bool, printEachOSRExit, false) \
     v(bool, validateGraph, false) \
     v(bool, validateGraphAtEachPhase, false) \
+    v(bool, verboseOSR, false) \
+    v(bool, verboseCallLink, false) \
+    v(bool, verboseCompilationQueue, false) \
+    v(bool, reportCompileTimes, false) \
+    v(bool, verboseCFA, false) \
+    \
+    v(bool, enableOSREntryInLoops, true) \
+    \
+    v(bool, useExperimentalFTL, false) \
+    v(bool, useFTLTBAA, true) \
+    v(bool, enableLLVMFastISel, false) \
+    v(bool, useLLVMSmallCodeModel, false) \
+    v(bool, ftlTrapsOnOSRExit, false) \
+    v(bool, ftlOSRExitOmitsMarshalling, false) \
+    v(bool, useLLVMOSRExitIntrinsic, false) \
+    v(bool, dumpLLVMIR, false) \
+    v(bool, llvmAlwaysFails, false) \
+    v(unsigned, llvmBackendOptimizationLevel, 2) \
+    v(unsigned, llvmOptimizationLevel, 2) \
+    v(unsigned, llvmSizeLevel, 0) \
+    \
+    v(bool, enableConcurrentJIT, true) \
+    v(unsigned, numberOfCompilerThreads, computeNumberOfWorkerThreads(2) - 1) \
     \
     v(bool, enableProfiler, false) \
+    \
+    v(bool, forceUDis86Disassembler, false) \
+    v(bool, forceLLVMDisassembler, false) \
     \
     v(unsigned, maximumOptimizationCandidateInstructionCount, 10000) \
     \
@@ -120,6 +146,9 @@ typedef OptionRange optionRange;
     \
     /* Depth of inline stack, so 1 = no inlining, 2 = one level, etc. */ \
     v(unsigned, maximumInliningDepth, 5) \
+    \
+    v(unsigned, maximumBinaryStringSwitchCaseLength, 50) \
+    v(unsigned, maximumBinaryStringSwitchTotalLength, 2000) \
     \
     v(int32, thresholdForJITAfterWarmUp, 100) \
     v(int32, thresholdForJITSoon, 100) \
@@ -152,6 +181,7 @@ typedef OptionRange optionRange;
     \
     v(double, doubleVoteRatioForDoubleFormat, 2) \
     v(double, structureCheckVoteRatioForHoisting, 1) \
+    v(double, checkArrayVoteRatioForHoisting, 1) \
     \
     v(unsigned, minimumNumberOfScansBetweenRebalance, 100) \
     v(unsigned, numberOfGCMarkers, computeNumberOfGCMarkers(7)) \

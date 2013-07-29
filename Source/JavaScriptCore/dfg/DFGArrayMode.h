@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Apple Inc. All rights reserved.
+ * Copyright (C) 2012, 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -150,27 +150,27 @@ public:
         return ArrayMode(word);
     }
     
-    static ArrayMode fromObserved(ArrayProfile*, Array::Action, bool makeSafe);
+    static ArrayMode fromObserved(const ConcurrentJITLocker&, ArrayProfile*, Array::Action, bool makeSafe);
     
     ArrayMode withSpeculation(Array::Speculation speculation) const
     {
         return ArrayMode(type(), arrayClass(), speculation, conversion());
     }
     
-    ArrayMode withProfile(ArrayProfile* profile, bool makeSafe) const
+    ArrayMode withProfile(const ConcurrentJITLocker& locker, ArrayProfile* profile, bool makeSafe) const
     {
         Array::Speculation mySpeculation;
         Array::Class myArrayClass;
         
         if (makeSafe)
             mySpeculation = Array::OutOfBounds;
-        else if (profile->mayStoreToHole())
+        else if (profile->mayStoreToHole(locker))
             mySpeculation = Array::ToHole;
         else
             mySpeculation = Array::InBounds;
         
         if (isJSArray()) {
-            if (profile->usesOriginalArrayStructures() && benefitsFromOriginalArray())
+            if (profile->usesOriginalArrayStructures(locker) && benefitsFromOriginalArray())
                 myArrayClass = Array::OriginalArray;
             else
                 myArrayClass = Array::Array;
@@ -345,27 +345,14 @@ public:
     Structure* originalArrayStructure(Graph&, const CodeOrigin&) const;
     Structure* originalArrayStructure(Graph&, Node*) const;
     
-    bool benefitsFromStructureCheck() const
-    {
-        switch (type()) {
-        case Array::SelectUsingPredictions:
-            // It might benefit from structure checks! If it ends up not benefiting, we can just
-            // remove it. The FixupPhase does this: if it finds a CheckStructure just before an
-            // array op and it had turned that array op into either generic or conversion mode,
-            // it will remove the CheckStructure.
-            return true;
-        case Array::Unprofiled:
-        case Array::ForceExit:
-        case Array::Generic:
-            return false;
-        default:
-            return conversion() == Array::AsIs;
-        }
-    }
-    
     bool doesConversion() const
     {
         return conversion() != Array::AsIs;
+    }
+
+    bool structureWouldPassArrayModeFiltering(Structure* structure)
+    {
+        return arrayModesAlreadyChecked(arrayModeFromStructure(structure), arrayModesThatPassFiltering());
     }
     
     ArrayModes arrayModesThatPassFiltering() const

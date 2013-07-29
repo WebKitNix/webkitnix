@@ -12,6 +12,7 @@
 
 #include <GL/gl.h>
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <glib.h>
 #include <iostream>
@@ -24,6 +25,8 @@
 #define GREEN   "\e[38;05;11m"
 
 extern void glUseProgram(GLuint);
+
+const double EPSILON = 1e-4;
 
 using namespace std;
 
@@ -85,6 +88,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     WKViewSetViewClient(m_view, &viewClient);
 
     WKViewInitialize(m_view);
+    WKPageSetCustomBackingScaleFactor(pageRef(), options.devicePixelRatio);
 
     if (isMobileMode())
         WKPageSetUseFixedLayout(pageRef(), true);
@@ -141,6 +145,8 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     loadClient.didStartProvisionalLoadForFrame = MiniBrowser::didStartProvisionalLoadForFrame;
     loadClient.didFinishDocumentLoadForFrame = MiniBrowser::didFinishDocumentLoadForFrame;
     loadClient.didFailProvisionalLoadWithErrorForFrame = MiniBrowser::didFailProvisionalLoadWithErrorForFrame;
+    loadClient.didFirstLayoutForFrame = MiniBrowser::didFirstLayoutForFrame;
+
     WKPageSetPageLoaderClient(pageRef(), &loadClient);
 
     WKURLRef wkUrl = WKURLCreateWithUTF8CString(options.url.c_str());
@@ -322,6 +328,11 @@ void MiniBrowser::updateDisplay()
         m_touchMocker->paintTouchPoints(size);
 
     m_control->swapBuffers();
+
+    if (m_options.dumpFrames) {
+        static int i = 1;
+        saveSnapshot(i++);
+    }
 }
 
 gboolean MiniBrowser::callUpdateDisplay(gpointer data)
@@ -437,20 +448,6 @@ void MiniBrowser::didChangeViewportAttributes(WKViewRef view, WKViewportAttribut
     mb->m_viewportMaxScale = NIXViewportAttributesGetMaximumScale(attributes);
     mb->m_viewportInitScale = NIXViewportAttributesGetInitialScale(attributes);
     mb->m_viewportUserScalable = NIXViewportAttributesGetIsUserScalable(attributes);
-
-    if (mb->m_viewportInitScale < 0) {
-        double scale = mb->scaleToFitContents();
-        if (scale < mb->m_viewportMinScale)
-            scale = mb->m_viewportMinScale;
-        else if (scale > mb->m_viewportMaxScale)
-            scale = mb->m_viewportMaxScale;
-        mb->m_viewportInitScale = scale;
-    }
-
-    if (!mb->m_viewportUserScalable)
-        mb->m_viewportMaxScale = mb->m_viewportMinScale = mb->m_viewportInitScale;
-
-    WKViewSetContentScaleFactor(mb->m_view, mb->m_viewportInitScale);
 }
 
 void MiniBrowser::didFindZoomableArea(WKViewRef, WKPoint target, WKRect area, const void* clientInfo)
@@ -465,7 +462,7 @@ void MiniBrowser::didFindZoomableArea(WKViewRef, WKPoint target, WKRect area, co
     double scale = WKViewGetSize(mb->m_view).width / (area.size.width + horizontalMarginForViewportAdjustment * 2.0);
 
     // Trying to zoom to an area with the same scale factor causes a zoom out.
-    if (scale == WKViewGetContentScaleFactor(mb->m_view))
+    if (std::fabs(scale - WKViewGetContentScaleFactor(mb->m_view)) < EPSILON)
         scale = mb->scaleToFitContents();
     else {
         // We want the zoomed content area to fit horizontally in the WebView,
@@ -556,8 +553,8 @@ void MiniBrowser::handlePanning(double timestamp, WKPoint delta)
     // the user input came. This will be adjusted after the user interaction ends.
     WKPoint position = WKViewGetContentPosition(m_view);
     if ((m_contentsSize.width - NIXViewVisibleContentsSize(m_view).width) > 0)
-        position.x -= delta.x;
-    position.y -= delta.y;
+        position.x -= delta.x / m_options.devicePixelRatio;
+    position.y -= delta.y / m_options.devicePixelRatio;
     WKViewSetContentPosition(m_view, position);
 }
 
@@ -897,6 +894,26 @@ void MiniBrowser::didFailProvisionalLoadWithErrorForFrame(WKPageRef page, WKFram
     WKStringRef wkErrorDescription = WKErrorCopyLocalizedDescription(error);
     WKPageLoadPlainTextString(page, wkErrorDescription);
     WKRelease(wkErrorDescription);
+}
+
+void MiniBrowser::didFirstLayoutForFrame(WKPageRef, WKFrameRef frame, WKTypeRef, const void* clientInfo)
+{
+    if (!WKFrameIsMainFrame(frame))
+        return;
+
+    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+
+    double scale = mb->scaleToFitContents();
+    if (scale < mb->m_viewportMinScale)
+        scale = mb->m_viewportMinScale;
+    else if (scale > mb->m_viewportMaxScale)
+        scale = mb->m_viewportMaxScale;
+    mb->m_viewportInitScale = scale;
+
+    if (!mb->m_viewportUserScalable)
+        mb->m_viewportMaxScale = mb->m_viewportMinScale = scale;
+
+    WKViewSetContentScaleFactor(mb->m_view, scale);
 }
 
 std::string MiniBrowser::activeUrl()

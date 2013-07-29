@@ -43,6 +43,7 @@ struct Options {
     std::string userAgent;
     std::string url;
     std::string injectedBundle;
+    bool dumpFrames;
     bool helpRequested;
 };
 
