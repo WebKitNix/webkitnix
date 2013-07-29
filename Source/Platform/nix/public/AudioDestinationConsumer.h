@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Google Inc. All rights reserved.
+ * Copyright (C) 2012 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -22,43 +22,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "MediaStreamRegistry.h"
+#ifndef Nix_AudioDestinationConsumer_h
+#define Nix_AudioDestinationConsumer_h
 
-#if ENABLE(MEDIA_STREAM)
+#include "Vector.h"
 
-#include "KURL.h"
-#include "MediaStream.h"
-#include <wtf/MainThread.h>
+namespace Nix {
 
-namespace WebCore {
+class AudioDestinationConsumer {
+public:
+    virtual ~AudioDestinationConsumer() { }
 
-MediaStreamRegistry& MediaStreamRegistry::registry()
-{
-    // Since WebWorkers cannot obtain MediaSource objects, we should be on the main thread.
-    ASSERT(isMainThread());
-    DEFINE_STATIC_LOCAL(MediaStreamRegistry, instance, ());
-    return instance;
-}
+    virtual void setFormat(size_t numberOfChannels, float sampleRate) = 0;
 
-void MediaStreamRegistry::registerMediaStreamURL(const KURL& url, PassRefPtr<MediaStream> stream)
-{
-    ASSERT(isMainThread());
-    m_streamDescriptors.set(url.string(), stream->descriptor());
-}
+    // The size of the vector is the number of audio channels, and numberOfFrames is the
+    // number of audio frames in the (possibly multi-channel) buffer in a planar format.
+    virtual void consumeAudio(const Vector<const float*>&, size_t numberOfFrames) = 0;
+};
 
-void MediaStreamRegistry::unregisterMediaStreamURL(const KURL& url)
-{
-    ASSERT(isMainThread());
-    m_streamDescriptors.remove(url.string());
-}
+} // namespace Nix
 
-MediaStreamDescriptor* MediaStreamRegistry::lookupMediaStreamDescriptor(const String& url)
-{
-    ASSERT(isMainThread());
-    return m_streamDescriptors.get(url);
-}
-
-} // namespace WebCore
-
-#endif // ENABLE(MEDIA_STREAM)
+#endif // Nix_AudioDestinationConsumer_h

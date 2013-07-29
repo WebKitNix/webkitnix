@@ -457,7 +457,7 @@ sub GenerateGetOwnPropertyDescriptorBody
     my $manualLookupGetterGeneration = sub {
         my $requiresManualLookup = ($indexedGetterFunction && !$hasNumericIndexedGetter) || $namedGetterFunction;
         if ($requiresManualLookup) {
-            push(@getOwnPropertyDescriptorImpl, "    const ${namespaceMaybe}HashEntry* entry = ${className}Table.entry(exec, propertyName);\n");
+            push(@getOwnPropertyDescriptorImpl, "    const ${namespaceMaybe}HashEntry* entry = getStaticValueSlotEntryWithoutCaching<$className>(exec, propertyName);\n");
             push(@getOwnPropertyDescriptorImpl, "    if (entry) {\n");
             push(@getOwnPropertyDescriptorImpl, "        PropertySlot slot;\n");
             push(@getOwnPropertyDescriptorImpl, "        slot.setCustom(thisObject, entry->propertyGetter());\n");

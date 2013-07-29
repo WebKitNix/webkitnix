@@ -123,6 +123,15 @@ if (ENABLE_INSPECTOR_SERVER)
     )
 endif ()
 
+if (ENABLE_MEDIA_STREAM)
+    list(APPEND WebKit2_INCLUDE_DIRECTORIES
+        "${WEBCORE_DIR}/Modules/mediastream"
+        "${WEBCORE_DIR}/platform/audio"
+        "${WEBCORE_DIR}/platform/mediastream"
+        "${WEBCORE_DIR}/platform/mediastream/nix"
+    )
+endif()
+
 list(APPEND WebKit2_LIBRARIES
     WebCoreTestSupport
     ${CAIRO_LIBRARIES}

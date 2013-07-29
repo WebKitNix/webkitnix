@@ -130,7 +130,7 @@ void MediaConstraintsImpl::getMandatoryConstraints(Vector<MediaConstraint>& cons
 void MediaConstraintsImpl::getOptionalConstraints(Vector<MediaConstraint>& constraints) const
 {
     constraints.clear();
-    constraints.append(m_optionalConstraints);
+    constraints.appendVector(m_optionalConstraints);
 }
 
 bool MediaConstraintsImpl::getMandatoryConstraintValue(const String& name, String& value) const

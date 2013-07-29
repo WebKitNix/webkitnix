@@ -163,6 +163,7 @@ IDL_BINDINGS += \
     $$PWD/Modules/webaudio/DynamicsCompressorNode.idl \
     $$PWD/Modules/webaudio/ScriptProcessorNode.idl \
     $$PWD/Modules/webaudio/MediaElementAudioSourceNode.idl \
+    $$PWD/Modules/webaudio/MediaStreamAudioDestinationNode.idl \
     $$PWD/Modules/webaudio/MediaStreamAudioSourceNode.idl \
     $$PWD/Modules/webaudio/OfflineAudioContext.idl \
     $$PWD/Modules/webaudio/OfflineAudioCompletionEvent.idl \

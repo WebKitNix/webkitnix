@@ -42,9 +42,9 @@ namespace Nix {
 //
 // Sample usage:
 //
-//   void Foo(WebVector<int>& result)
+//   void Foo(Vector<int>& result)
 //   {
-//       WebVector<int> data(10);
+//       Vector<int> data(10);
 //       for (size_t i = 0; i < data.size(); ++i)
 //           data[i] = ...
 //       result.swap(data);
@@ -55,7 +55,7 @@ namespace Nix {
 //
 //   void Foo(const std::vector<std::string>& input)
 //   {
-//       WebVector<WebCString> cstrings = input;
+//       Vector<CString> cstrings = input;
 //       ...
 //   }
 //

@@ -152,6 +152,7 @@ BINDING_IDLS = \
     $(WebCore)/Modules/webaudio/DynamicsCompressorNode.idl \
     $(WebCore)/Modules/webaudio/ScriptProcessorNode.idl \
     $(WebCore)/Modules/webaudio/MediaElementAudioSourceNode.idl \
+    $(WebCore)/Modules/webaudio/MediaStreamAudioDestinationNode.idl \
     $(WebCore)/Modules/webaudio/MediaStreamAudioSourceNode.idl \
     $(WebCore)/Modules/webaudio/OscillatorNode.idl \
     $(WebCore)/Modules/webaudio/OfflineAudioContext.idl \

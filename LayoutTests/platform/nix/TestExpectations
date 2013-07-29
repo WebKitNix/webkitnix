@@ -3354,7 +3354,6 @@ compositing/geometry/fixed-position-iframe-composited-page-scale-down.html [ Mis
 accessibility [ Skip ]
 batterystatus [ Skip ]
 fast/filesystem [ Skip ]
-fast/mediastream [ Skip ]
 fast/notifications [ Skip ]
 fullscreen [ Skip ]
 java [ Skip ]
@@ -4036,3 +4035,10 @@ compositing/background-color/background-color-change-to-text.html [ Crash Pass ]
 
 # Make WTR use its own temporary directory for application cache
 webkit.org/b/117143 http/tests/appcache [ Skip ]
+
+################################################################################
+
+# Enable media stream
+fast/mediastream [ Skip ]
+fast/mediastream/enabled.html [ Pass ]
+fast/mediastream/no-interface-object.html [ Pass ]

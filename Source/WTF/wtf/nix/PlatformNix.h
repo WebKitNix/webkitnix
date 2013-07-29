@@ -28,6 +28,7 @@
 
 #define WTF_PLATFORM_NIX 1
 #define ENABLE_GLOBAL_FASTMALLOC_NEW 0
+#define ENABLE_MEDIA_STREAM 1
 
 // Some bits can't be changed at all
 #define WTF_USE_3D_GRAPHICS 1

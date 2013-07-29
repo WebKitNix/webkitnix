@@ -519,6 +519,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSMediaSource.h \
 	DerivedSources/WebCore/JSMediaStream.cpp \
 	DerivedSources/WebCore/JSMediaStream.h \
+	DerivedSources/WebCore/JSMediaStreamAudioDestinationNode.cpp \
+	DerivedSources/WebCore/JSMediaStreamAudioDestinationNode.h \
 	DerivedSources/WebCore/JSMediaStreamAudioSourceNode.cpp \
 	DerivedSources/WebCore/JSMediaStreamAudioSourceNode.h \
 	DerivedSources/WebCore/JSMediaStreamEvent.cpp \
@@ -1320,6 +1322,7 @@ dom_binding_idls += \
 	$(WebCore)/Modules/webaudio/DelayNode.idl \
 	$(WebCore)/Modules/webaudio/DynamicsCompressorNode.idl \
 	$(WebCore)/Modules/webaudio/ScriptProcessorNode.idl \
+    $(WebCore)/Modules/webaudio/MediaElementAudioDestinationNode.idl \
 	$(WebCore)/Modules/webaudio/MediaElementAudioSourceNode.idl \
 	$(WebCore)/Modules/webaudio/MediaStreamAudioSourceNode.idl \
 	$(WebCore)/Modules/webaudio/OfflineAudioContext.idl \
@@ -2131,6 +2134,8 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/webaudio/DynamicsCompressorNode.h \
 	Source/WebCore/Modules/webaudio/ScriptProcessorNode.cpp \
 	Source/WebCore/Modules/webaudio/ScriptProcessorNode.h \
+	Source/WebCore/Modules/webaudio/MediaElementAudioDestinationNode.cpp \
+	Source/WebCore/Modules/webaudio/MediaElementAudioDestinationNode.h \
 	Source/WebCore/Modules/webaudio/MediaElementAudioSourceNode.cpp \
 	Source/WebCore/Modules/webaudio/MediaElementAudioSourceNode.h \
 	Source/WebCore/Modules/webaudio/MediaStreamAudioSourceNode.cpp \
