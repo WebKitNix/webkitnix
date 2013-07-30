@@ -42,8 +42,8 @@ public:
     virtual ~UserMediaClient() { }
 
     virtual void pageDestroyed() = 0;
-    virtual void requestUserMedia(const UserMediaRequest&, const Vector<MediaStreamSource>& audioSources, const Vector<MediaStreamSource>& videoSources) = 0;
-    virtual void cancelUserMediaRequest(const UserMediaRequest&) = 0;
+    virtual void requestUserMedia(UserMediaRequest&, const Vector<MediaStreamSource>& audioSources, const Vector<MediaStreamSource>& videoSources) = 0;
+    virtual void cancelUserMediaRequest(UserMediaRequest&) = 0;
 };
 
 } // namespace Nix

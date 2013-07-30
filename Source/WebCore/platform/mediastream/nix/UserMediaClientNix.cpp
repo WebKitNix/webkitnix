@@ -67,9 +67,10 @@ void UserMediaClientNix::requestUserMedia(PassRefPtr<WebCore::UserMediaRequest> 
 {
     RefPtr<WebCore::UserMediaRequest> request = prpRequest;
     if (m_client) {
-        Nix::Vector<Nix::MediaStreamSource> nixAudioSources = toNixMediaStreamSourceVector(audioSources);
-        Nix::Vector<Nix::MediaStreamSource> nixVideoSources = toNixMediaStreamSourceVector(videoSources);
-        m_client->requestUserMedia(request.get(), nixAudioSources, nixVideoSources);
+        const Nix::Vector<Nix::MediaStreamSource> nixAudioSources = toNixMediaStreamSourceVector(audioSources);
+        const Nix::Vector<Nix::MediaStreamSource> nixVideoSources = toNixMediaStreamSourceVector(videoSources);
+        Nix::UserMediaRequest nixUserMediaRequest = Nix::UserMediaRequest(request.get());
+        m_client->requestUserMedia(nixUserMediaRequest, nixAudioSources, nixVideoSources);
     }
     request->succeed(audioSources, videoSources);
 }
@@ -77,8 +78,10 @@ void UserMediaClientNix::requestUserMedia(PassRefPtr<WebCore::UserMediaRequest> 
 
 void UserMediaClientNix::cancelUserMediaRequest(WebCore::UserMediaRequest* request)
 {
-    if (m_client)
-        m_client->cancelUserMediaRequest(Nix::UserMediaRequest(request));
+    if (m_client) {
+        Nix::UserMediaRequest nixUserMediaRequest = Nix::UserMediaRequest(request);
+        m_client->cancelUserMediaRequest(nixUserMediaRequest);
+    }
 }
 
 } // namespace WebKit

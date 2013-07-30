@@ -33,9 +33,14 @@
 
 #include "Common.h"
 
+#ifndef BASE_STRING__
+#define BASE_STRING__ 0
+#endif
+
+
 #if BUILDING_NIX__
 #include <wtf/Forward.h>
-#else
+#elif BASE_STRING__
 #include <base/nullable_string16.h>
 #include <base/string16.h>
 #endif
@@ -106,8 +111,7 @@ public:
     String(const WTF::AtomicString&);
     Nix::String& operator=(const WTF::AtomicString&);
     operator WTF::AtomicString() const;
-#else
-
+#elif BASE_STRING__
     String(const string16& s) : m_private(0)
     {
         assign(s.data(), s.length());
