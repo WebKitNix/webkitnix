@@ -46,6 +46,10 @@ set(bundle_harness_SOURCES
     ${TESTWEBKITAPI_DIR}/Tests/WebKit2/CoordinatedGraphics/WebViewWebProcessCrashed_Bundle.cpp
 )
 
+if (ENABLE_MEDIA_STREAM)
+    list(APPEND bundle_harness_SOURCES ${TESTWEBKITAPI_DIR}/Tests/nix/MediaStreamAudio_Bundle.cpp)
+endif ()
+
 set(webkit2_api_harness_SOURCES
     ${test_main_SOURCES}
     ${TESTWEBKITAPI_DIR}/JavaScriptTest.cpp
@@ -148,6 +152,10 @@ set(test_webkit2_api_BINARIES
     ../nix/WebViewViewport
     ../nix/WKCoordinatedSceneLockState
 )
+
+if (ENABLE_MEDIA_STREAM)
+    list(APPEND test_webkit2_api_BINARIES ../nix/MediaStreamAudio)
+endif ()
 
 set(test_webkit2_api_fail_BINARIES
     CanHandleRequest

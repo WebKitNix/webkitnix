@@ -37,6 +37,8 @@
 
 namespace TestWebKitAPI {
 
+namespace TestWebAudioAPI {
+
 class MockAudioOutputDevice : public Nix::AudioDevice {
 public:
     MockAudioOutputDevice(size_t bufferSize, unsigned, unsigned, double sampleRate, Nix::AudioDevice::RenderCallback* renderCallback)
@@ -92,12 +94,14 @@ public:
     }
 };
 
+} // namespace TestWebAudioAPI
+
 class WebAudioTest : public InjectedBundleTest {
 public:
     WebAudioTest(const std::string& identifier)
         : InjectedBundleTest(identifier)
     {
-        static TestWebAudioPlatform platform;
+        static TestWebAudioAPI::TestWebAudioPlatform platform;
         Nix::Platform::initialize(&platform);
     }
 };

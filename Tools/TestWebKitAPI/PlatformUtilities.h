@@ -78,6 +78,9 @@ static inline ::testing::AssertionResult assertWKStringEqual(const char* expecte
 #define EXPECT_WK_STREQ(expected, actual) \
     EXPECT_PRED_FORMAT2(TestWebKitAPI::Util::assertWKStringEqual, expected, actual)
 
+
+bool fuzzyCompare(float a, float b, float epsilon = 0.0001);
+
 } // namespace Util
 } // namespace TestWebKitAPI
 

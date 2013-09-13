@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+    <body>
+        <script>
+        navigator.webkitGetUserMedia({ 'audio': true, 'video': false }, successCallback, errorCallback);
+
+        function successCallback(stream) {
+            document.title = "MediaStreamRequestSuccess";
+            var track = stream.getAudioTracks()[0];
+            var audioContext = new webkitAudioContext();
+            var mediaStreamSource = audioContext.createMediaStreamSource(stream);
+            mediaStreamSource.connect(audioContext.destination);
+        }
+
+        function errorCallback(error) {
+            document.title = "MediaStreamRequestFail";
+        }
+        </script>
+    </body>
+</html>

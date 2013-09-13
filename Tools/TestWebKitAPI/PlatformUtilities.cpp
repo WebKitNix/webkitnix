@@ -86,5 +86,10 @@ WKRetainPtr<WKStringRef> toWK(const char* utf8String)
     return WKRetainPtr<WKStringRef>(AdoptWK, WKStringCreateWithUTF8CString(utf8String));
 }
 
+bool fuzzyCompare(float a, float b, float epsilon)
+{
+    return std::abs(a-b) < epsilon;
+}
+
 } // namespace Util
 } // namespace TestWebKitAPI
