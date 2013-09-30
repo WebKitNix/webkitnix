@@ -135,7 +135,9 @@ if (ENABLE_MEDIA_STREAM)
         ${WEBRTCLIB_INCLUDE_DIRS}
     )
     list(APPEND WebCore_SOURCES
+        platform/mediastream/webrtc/MediaConstraintsWebRTC.cpp
         platform/mediastream/webrtc/RTCPeerConnectionHandlerWebRTC.cpp
+        platform/mediastream/webrtc/WebRTCUtils.cpp
     )
 endif ()
 
