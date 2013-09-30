@@ -34,6 +34,7 @@
 #include "RTCConfiguration.h"
 #include "RTCDTMFSenderHandler.h"
 #include "RTCDataChannelHandler.h"
+#include "RTCIceCandidateDescriptor.h"
 #include "RTCSessionDescriptionRequest.h"
 #include "RTCVoidRequest.h"
 #include "WebRTCUtils.h"
@@ -136,16 +137,32 @@ PassRefPtr<RTCSessionDescriptionDescriptor> RTCPeerConnectionHandlerWebRTC::remo
     return m_remoteSessionDescription;
 }
 
-bool RTCPeerConnectionHandlerWebRTC::updateIce(PassRefPtr<RTCConfiguration>, PassRefPtr<MediaConstraints>)
+bool RTCPeerConnectionHandlerWebRTC::updateIce(PassRefPtr<RTCConfiguration> configuration, PassRefPtr<MediaConstraints> constraints)
 {
-    notImplemented();
-    return false;
+    webrtc::PeerConnectionInterface::IceServers servers;
+    WebRTCUtils::toWebRTCIceServers(configuration, &servers);
+    MediaConstraintsWebRTC mediaConstraints(constraints);
+
+    return m_webRTCPeerConnection->UpdateIce(servers, &mediaConstraints);
 }
 
-bool RTCPeerConnectionHandlerWebRTC::addIceCandidate(PassRefPtr<RTCVoidRequest>, PassRefPtr<RTCIceCandidateDescriptor>)
+bool RTCPeerConnectionHandlerWebRTC::addIceCandidate(PassRefPtr<RTCVoidRequest> request, PassRefPtr<RTCIceCandidateDescriptor> iceDescriptor)
 {
-    notImplemented();
-    return false;
+    webrtc::IceCandidateInterface *ice = webrtc::CreateIceCandidate(iceDescriptor->sdpMid().utf8().data(), iceDescriptor->sdpMLineIndex(), iceDescriptor->candidate().utf8().data());
+    talk_base::scoped_ptr<webrtc::IceCandidateInterface> webRTCCandidate(ice);
+
+    if (!webRTCCandidate) {
+        request->requestFailed("Invalid ICE candidate");
+        return false;
+    }
+
+    bool iceAdded = m_webRTCPeerConnection->AddIceCandidate(webRTCCandidate.get());
+    if (iceAdded)
+        request->requestSucceeded();
+    else
+        request->requestFailed("Could not add ICE candidate");
+
+    return iceAdded;
 }
 
 bool RTCPeerConnectionHandlerWebRTC::addStream(PassRefPtr<MediaStreamDescriptor> streamDescriptor, PassRefPtr<MediaConstraints> constraints)
