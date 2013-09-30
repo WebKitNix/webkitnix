@@ -136,6 +136,9 @@ if (ENABLE_MEDIA_STREAM)
     )
     list(APPEND WebCore_SOURCES
         platform/mediastream/webrtc/MediaConstraintsWebRTC.cpp
+
+        platform/mediastream/webrtc/observers/RTCPeerConnectionObserver.cpp
+
         platform/mediastream/webrtc/RTCPeerConnectionHandlerWebRTC.cpp
         platform/mediastream/webrtc/WebRTCUtils.cpp
     )

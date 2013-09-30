@@ -23,32 +23,42 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef WebRTCUtils_h
-#define WebRTCUtils_h
+#ifndef RTCPeerConnectionObserver_h
+#define RTCPeerConnectionObserver_h
 
 #if ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#include "MediaConstraints.h"
-#include "RTCPeerConnectionHandlerClient.h"
 #include "WebRTCDefinitions.h"
-#include "talk/app/webrtc/mediaconstraintsinterface.h"
 #include "talk/app/webrtc/peerconnectioninterface.h"
-#include <wtf/Vector.h>
+#include <wtf/PassRefPtr.h>
 
 namespace WebCore {
 
-class RTCConfiguration;
+class MediaStreamDescriptor;
+class RTCPeerConnectionHandlerClient;
 
-class WebRTCUtils {
+class RTCPeerConnectionObserver : public webrtc::PeerConnectionObserver {
 public:
-    static void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>, webrtc::MediaConstraintsInterface::Constraints*);
-    static void toWebRTCIceServers(PassRefPtr<RTCConfiguration>, webrtc::PeerConnectionInterface::IceServers*);
-    static RTCPeerConnectionHandlerClient::SignalingState toWebKitSignalingState(webrtc::PeerConnectionInterface::SignalingState);
-    static RTCPeerConnectionHandlerClient::IceGatheringState toWebKitIceGatheringState(webrtc::PeerConnectionInterface::IceGatheringState);
-    static RTCPeerConnectionHandlerClient::IceConnectionState toWebKitIceConnectionState(webrtc::PeerConnectionInterface::IceConnectionState);
+    RTCPeerConnectionObserver(RTCPeerConnectionHandlerClient*);
+
+    virtual void OnError();
+    virtual void OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState);
+    virtual void OnStateChange(webrtc::PeerConnectionObserver::StateType);
+    virtual void OnAddStream(webrtc::MediaStreamInterface*);
+    virtual void OnRemoveStream(webrtc::MediaStreamInterface*);
+    virtual void OnRenegotiationNeeded();
+    virtual void OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState);
+    virtual void OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState);
+    virtual void OnIceChange();
+    virtual void OnIceCandidate(const webrtc::IceCandidateInterface*);
+
+private:
+    PassRefPtr<MediaStreamDescriptor> mediaStreamDescriptorFromMediaStreamInterface(webrtc::MediaStreamInterface*);
+    RTCPeerConnectionHandlerClient* m_client;
 };
 
 } // namespace WebCore
+
 #endif // ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#endif // WebRTCUtils_h
+#endif // RTCPeerConnectionObserver_h

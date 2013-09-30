@@ -29,6 +29,7 @@
 
 #include "WebRTCUtils.h"
 
+#include "RTCConfiguration.h"
 #include <wtf/text/CString.h>
 
 namespace WebCore {
@@ -45,6 +46,80 @@ void WebRTCUtils::toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint> co
             continue;
 
         webRTCConstraints->push_back(newConstraint);
+    }
+}
+
+void WebRTCUtils::toWebRTCIceServers(PassRefPtr<RTCConfiguration> configuration, webrtc::PeerConnectionInterface::IceServers* servers)
+{
+    if (!configuration.get() || !servers)
+        return;
+
+    for (size_t i = 0; i < configuration->numberOfServers(); ++i) {
+        webrtc::PeerConnectionInterface::IceServer webRTCServer;
+        RTCIceServer* iceServer = configuration->server(i);
+        webRTCServer.username = iceServer->username().utf8().data();
+        webRTCServer.password = iceServer->credential().utf8().data();
+        webRTCServer.uri = iceServer->uri().string().utf8().data();
+        servers->push_back(webRTCServer);
+    }
+}
+
+RTCPeerConnectionHandlerClient::SignalingState WebRTCUtils::toWebKitSignalingState(webrtc::PeerConnectionInterface::SignalingState state)
+{
+    switch (state) {
+    case webrtc::PeerConnectionInterface::kStable:
+        return RTCPeerConnectionHandlerClient::SignalingStateStable;
+    case webrtc::PeerConnectionInterface::kHaveLocalOffer:
+        return RTCPeerConnectionHandlerClient::SignalingStateHaveLocalOffer;
+    case webrtc::PeerConnectionInterface::kHaveRemoteOffer:
+        return RTCPeerConnectionHandlerClient::SignalingStateHaveRemoteOffer;
+    case webrtc::PeerConnectionInterface::kHaveLocalPrAnswer:
+        return RTCPeerConnectionHandlerClient::SignalingStateHaveLocalPrAnswer;
+    case webrtc::PeerConnectionInterface::kHaveRemotePrAnswer:
+        return RTCPeerConnectionHandlerClient::SignalingStateHaveRemotePrAnswer;
+    case webrtc::PeerConnectionInterface::kClosed:
+        return RTCPeerConnectionHandlerClient::SignalingStateClosed;
+    default:
+        ASSERT_NOT_REACHED();
+        return RTCPeerConnectionHandlerClient::SignalingStateClosed;
+    }
+}
+
+RTCPeerConnectionHandlerClient::IceGatheringState WebRTCUtils::toWebKitIceGatheringState(webrtc::PeerConnectionInterface::IceGatheringState state)
+{
+    switch (state) {
+    case webrtc::PeerConnectionInterface::kIceGatheringNew:
+        return RTCPeerConnectionHandlerClient::IceGatheringStateNew;
+    case webrtc::PeerConnectionInterface::kIceGatheringGathering:
+        return RTCPeerConnectionHandlerClient::IceGatheringStateGathering;
+    case webrtc::PeerConnectionInterface::kIceGatheringComplete:
+        return RTCPeerConnectionHandlerClient::IceGatheringStateComplete;
+    default:
+        ASSERT_NOT_REACHED();
+        return RTCPeerConnectionHandlerClient::IceGatheringStateNew;
+    }
+}
+
+RTCPeerConnectionHandlerClient::IceConnectionState WebRTCUtils::toWebKitIceConnectionState(webrtc::PeerConnectionInterface::IceConnectionState iceState)
+{
+    switch (iceState) {
+    case webrtc::PeerConnectionInterface::kIceConnectionNew:
+        return RTCPeerConnectionHandlerClient::IceConnectionStateNew;
+    case webrtc::PeerConnectionInterface::kIceConnectionChecking:
+        return RTCPeerConnectionHandlerClient::IceConnectionStateChecking;
+    case webrtc::PeerConnectionInterface::kIceConnectionConnected:
+        return RTCPeerConnectionHandlerClient::IceConnectionStateConnected;
+    case webrtc::PeerConnectionInterface::kIceConnectionCompleted:
+        return RTCPeerConnectionHandlerClient::IceConnectionStateCompleted;
+    case webrtc::PeerConnectionInterface::kIceConnectionFailed:
+        return RTCPeerConnectionHandlerClient::IceConnectionStateFailed;
+    case webrtc::PeerConnectionInterface::kIceConnectionDisconnected:
+        return RTCPeerConnectionHandlerClient::IceConnectionStateDisconnected;
+    case webrtc::PeerConnectionInterface::kIceConnectionClosed:
+        return RTCPeerConnectionHandlerClient::IceConnectionStateClosed;
+    default:
+        ASSERT_NOT_REACHED();
+        return RTCPeerConnectionHandlerClient::IceConnectionStateClosed;
     }
 }
 

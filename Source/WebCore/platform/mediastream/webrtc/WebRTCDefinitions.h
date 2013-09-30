@@ -23,32 +23,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef WebRTCUtils_h
-#define WebRTCUtils_h
+#ifndef WebRTCDefinitions_h
+#define WebRTCDefinitions_h
 
 #if ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#include "MediaConstraints.h"
-#include "RTCPeerConnectionHandlerClient.h"
-#include "WebRTCDefinitions.h"
-#include "talk/app/webrtc/mediaconstraintsinterface.h"
-#include "talk/app/webrtc/peerconnectioninterface.h"
-#include <wtf/Vector.h>
+#ifndef _DEBUG
+#define _DEBUG 0
+#endif
 
-namespace WebCore {
+#ifndef POSIX
+#define POSIX 1
+#endif
 
-class RTCConfiguration;
+#ifndef LOGGING
+#define LOGGING 0
+#endif
 
-class WebRTCUtils {
-public:
-    static void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>, webrtc::MediaConstraintsInterface::Constraints*);
-    static void toWebRTCIceServers(PassRefPtr<RTCConfiguration>, webrtc::PeerConnectionInterface::IceServers*);
-    static RTCPeerConnectionHandlerClient::SignalingState toWebKitSignalingState(webrtc::PeerConnectionInterface::SignalingState);
-    static RTCPeerConnectionHandlerClient::IceGatheringState toWebKitIceGatheringState(webrtc::PeerConnectionInterface::IceGatheringState);
-    static RTCPeerConnectionHandlerClient::IceConnectionState toWebKitIceConnectionState(webrtc::PeerConnectionInterface::IceConnectionState);
-};
+// Macros already defined in webrtc library.
+#undef OVERRIDE
+#undef LOG
 
-} // namespace WebCore
 #endif // ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
-
-#endif // WebRTCUtils_h
+#endif // WebRTCDefinitions_h

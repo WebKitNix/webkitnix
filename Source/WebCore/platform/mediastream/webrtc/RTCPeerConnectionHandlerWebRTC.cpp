@@ -29,21 +29,40 @@
 
 #include "RTCPeerConnectionHandlerWebRTC.h"
 
+#include "MediaConstraintsWebRTC.h"
 #include "NotImplemented.h"
+#include "RTCConfiguration.h"
 #include "RTCDTMFSenderHandler.h"
 #include "RTCDataChannelHandler.h"
+#include "WebRTCUtils.h"
+#include "talk/app/webrtc/peerconnectionfactory.h"
 
 namespace WebCore {
 
-RTCPeerConnectionHandlerWebRTC::RTCPeerConnectionHandlerWebRTC()
+RTCPeerConnectionHandlerWebRTC::RTCPeerConnectionHandlerWebRTC(RTCPeerConnectionHandlerClient* client)
     : RTCPeerConnectionHandler()
+    , m_connectionObserver(client)
 {
 }
 
-bool RTCPeerConnectionHandlerWebRTC::initialize(PassRefPtr<RTCConfiguration>, PassRefPtr<MediaConstraints>)
+bool RTCPeerConnectionHandlerWebRTC::initialize(PassRefPtr<RTCConfiguration> configuration, PassRefPtr<MediaConstraints> constraints)
 {
-    notImplemented();
-    return false;
+    MediaConstraintsWebRTC mediaConstraints(constraints);
+    webrtc::PeerConnectionInterface::IceServers servers;
+    WebRTCUtils::toWebRTCIceServers(configuration, &servers);
+
+    return createPeerConnection(servers, mediaConstraints);
+}
+
+bool RTCPeerConnectionHandlerWebRTC::createPeerConnection(const webrtc::PeerConnectionInterface::IceServers& servers, const webrtc::MediaConstraintsInterface& constraints)
+{
+
+    m_pcFactory = webrtc::CreatePeerConnectionFactory();
+    m_webRTCPeerConnection = m_pcFactory->CreatePeerConnection(servers, &constraints, 0, &m_connectionObserver);
+    if (!m_webRTCPeerConnection.get())
+        return false;
+
+    return true;
 }
 
 void RTCPeerConnectionHandlerWebRTC::createOffer(PassRefPtr<RTCSessionDescriptionRequest>, PassRefPtr<MediaConstraints>)
@@ -120,7 +139,7 @@ PassOwnPtr<RTCDTMFSenderHandler> RTCPeerConnectionHandlerWebRTC::createDTMFSende
 
 void RTCPeerConnectionHandlerWebRTC::stop()
 {
-    notImplemented();
+    m_webRTCPeerConnection->Close();
 }
 
 } // namespace WebCore
