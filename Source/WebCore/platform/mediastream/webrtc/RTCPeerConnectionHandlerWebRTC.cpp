@@ -35,6 +35,7 @@
 #include "RTCDTMFSenderHandler.h"
 #include "RTCDataChannelHandler.h"
 #include "RTCSessionDescriptionRequest.h"
+#include "RTCVoidRequest.h"
 #include "WebRTCUtils.h"
 #include "talk/app/webrtc/peerconnectionfactory.h"
 #include <wtf/text/CString.h>
@@ -45,6 +46,7 @@ RTCPeerConnectionHandlerWebRTC::RTCPeerConnectionHandlerWebRTC(RTCPeerConnection
     : RTCPeerConnectionHandler()
     , m_connectionObserver(client)
     , m_createSessionObserver(new talk_base::RefCountedObject<CreateSessionDescriptionObserver>())
+    , m_setSessionObserver(new talk_base::RefCountedObject<SetSessionDescriptionObserver>())
 {
 }
 
@@ -82,26 +84,56 @@ void RTCPeerConnectionHandlerWebRTC::createAnswer(PassRefPtr<RTCSessionDescripti
     m_webRTCPeerConnection->CreateAnswer(m_createSessionObserver.get(), &mediaConstraints);
 }
 
-void RTCPeerConnectionHandlerWebRTC::setLocalDescription(PassRefPtr<RTCVoidRequest>, PassRefPtr<RTCSessionDescriptionDescriptor>)
+void RTCPeerConnectionHandlerWebRTC::setLocalDescription(PassRefPtr<RTCVoidRequest> request, PassRefPtr<RTCSessionDescriptionDescriptor> description)
 {
-    notImplemented();
+    RefPtr<RTCVoidRequest> voidRequest = request;
+    webrtc::SessionDescriptionInterface* webRTCDescription = getWebRTCSessionDescription(voidRequest, description);
+    if (!webRTCDescription)
+        return;
+
+    m_setSessionObserver->setWebKitRequest(voidRequest);
+    m_webRTCPeerConnection->SetLocalDescription(m_setSessionObserver.get(), webRTCDescription);
+    m_localSessionDescription = description;
 }
 
-void RTCPeerConnectionHandlerWebRTC::setRemoteDescription(PassRefPtr<RTCVoidRequest>, PassRefPtr<RTCSessionDescriptionDescriptor>)
+void RTCPeerConnectionHandlerWebRTC::setRemoteDescription(PassRefPtr<RTCVoidRequest> request, PassRefPtr<RTCSessionDescriptionDescriptor> description)
 {
-    notImplemented();
+    RefPtr<RTCVoidRequest> voidRequest = request;
+    webrtc::SessionDescriptionInterface* webRTCDescription = getWebRTCSessionDescription(voidRequest, description);
+    if (!webRTCDescription)
+        return;
+
+    m_setSessionObserver->setWebKitRequest(voidRequest);
+    m_webRTCPeerConnection->SetRemoteDescription(m_setSessionObserver.get(), webRTCDescription);
+    m_remoteSessionDescription = description;
+}
+
+webrtc::SessionDescriptionInterface* RTCPeerConnectionHandlerWebRTC::getWebRTCSessionDescription(PassRefPtr<RTCVoidRequest> request, PassRefPtr<RTCSessionDescriptionDescriptor> description)
+{
+    std::string sdp = description->sdp().utf8().data();
+    std::string type = description->type().utf8().data();
+    webrtc::SdpParseError error;
+    webrtc::SessionDescriptionInterface* webRTCDescription = webrtc::CreateSessionDescription(type, sdp, &error);
+    if (!webRTCDescription) {
+        std::string reasonStr = "Failed to parse SessionDescription. ";
+        reasonStr.append(error.line);
+        reasonStr.append(" ");
+        reasonStr.append(error.description);
+        request->requestFailed(WTF::String(reasonStr.c_str()));
+        return 0;
+    }
+
+    return webRTCDescription;
 }
 
 PassRefPtr<RTCSessionDescriptionDescriptor> RTCPeerConnectionHandlerWebRTC::localDescription()
 {
-    notImplemented();
-    return 0;
+    return m_localSessionDescription;
 }
 
 PassRefPtr<RTCSessionDescriptionDescriptor> RTCPeerConnectionHandlerWebRTC::remoteDescription()
 {
-    notImplemented();
-    return 0;
+    return m_remoteSessionDescription;
 }
 
 bool RTCPeerConnectionHandlerWebRTC::updateIce(PassRefPtr<RTCConfiguration>, PassRefPtr<MediaConstraints>)
