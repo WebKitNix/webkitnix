@@ -134,6 +134,9 @@ if (ENABLE_MEDIA_STREAM)
         "${WEBCORE_DIR}/platform/mediastream/webrtc"
         ${WEBRTCLIB_INCLUDE_DIRS}
     )
+    list(APPEND WebCore_SOURCES
+        platform/mediastream/webrtc/RTCPeerConnectionHandlerWebRTC.cpp
+    )
 endif ()
 
 if (WTF_USE_OPENGL_ES_2)
