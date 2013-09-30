@@ -30,12 +30,14 @@
 #include "RTCPeerConnectionHandlerWebRTC.h"
 
 #include "MediaConstraintsWebRTC.h"
+#include "MediaStreamTrack.h"
 #include "NotImplemented.h"
 #include "RTCConfiguration.h"
 #include "RTCDTMFSenderHandler.h"
 #include "RTCDataChannelHandler.h"
 #include "RTCIceCandidateDescriptor.h"
 #include "RTCSessionDescriptionRequest.h"
+#include "RTCStatsRequest.h"
 #include "RTCVoidRequest.h"
 #include "WebRTCUtils.h"
 #include "talk/app/webrtc/peerconnectionfactory.h"
@@ -48,6 +50,7 @@ RTCPeerConnectionHandlerWebRTC::RTCPeerConnectionHandlerWebRTC(RTCPeerConnection
     , m_connectionObserver(client)
     , m_createSessionObserver(new talk_base::RefCountedObject<CreateSessionDescriptionObserver>())
     , m_setSessionObserver(new talk_base::RefCountedObject<SetSessionDescriptionObserver>())
+    , m_getStatsObserver(new talk_base::RefCountedObject<GetStatsObserver>())
 {
 }
 
@@ -211,9 +214,38 @@ webrtc::MediaStreamInterface* RTCPeerConnectionHandlerWebRTC::getWebRTCMediaStre
     return streamCollection->find(label);
 }
 
-void RTCPeerConnectionHandlerWebRTC::getStats(PassRefPtr<RTCStatsRequest>)
+webrtc::MediaStreamTrackInterface* RTCPeerConnectionHandlerWebRTC::getWebRTCMediaStreamTrack(PassRefPtr<RTCStatsRequest> request)
 {
-    notImplemented();
+    talk_base::scoped_refptr<webrtc::StreamCollectionInterface> streamCollection = m_webRTCPeerConnection->local_streams();
+    if (!streamCollection.get())
+        return 0;
+
+    std::string trackId = request->track()->id().utf8().data();
+    if (request->track()->source()->type() == MediaStreamSource::Audio)
+        return streamCollection->FindAudioTrack(trackId);
+
+    if (request->track()->source()->type() == MediaStreamSource::Video)
+        return streamCollection->FindVideoTrack(trackId);
+
+    return 0;
+}
+
+void RTCPeerConnectionHandlerWebRTC::getStats(PassRefPtr<RTCStatsRequest> request)
+{
+    webrtc::MediaStreamTrackInterface* track = 0;
+    if (request->hasSelector()) {
+        track = getWebRTCMediaStreamTrack(request);
+
+        if (!track) {
+            m_getStatsObserver->OnComplete();
+            return;
+        }
+    }
+    m_getStatsObserver->setWebKitRequest(request);
+    if (!m_webRTCPeerConnection->GetStats(m_getStatsObserver, track)) {
+        m_getStatsObserver->OnComplete();
+        return;
+    }
 }
 
 PassOwnPtr<RTCDataChannelHandler> RTCPeerConnectionHandlerWebRTC::createDataChannel(const String&, const RTCDataChannelInit&)

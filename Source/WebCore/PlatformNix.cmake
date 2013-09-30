@@ -138,6 +138,7 @@ if (ENABLE_MEDIA_STREAM)
         platform/mediastream/webrtc/MediaConstraintsWebRTC.cpp
 
         platform/mediastream/webrtc/observers/CreateSessionDescriptionObserver.cpp
+        platform/mediastream/webrtc/observers/GetStatsObserver.cpp
         platform/mediastream/webrtc/observers/RTCPeerConnectionObserver.cpp
         platform/mediastream/webrtc/observers/SetSessionDescriptionObserver.cpp
 
