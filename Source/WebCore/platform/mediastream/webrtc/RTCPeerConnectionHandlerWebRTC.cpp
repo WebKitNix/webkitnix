@@ -34,6 +34,7 @@
 #include "RTCConfiguration.h"
 #include "RTCDTMFSenderHandler.h"
 #include "RTCDataChannelHandler.h"
+#include "RTCSessionDescriptionRequest.h"
 #include "WebRTCUtils.h"
 #include "talk/app/webrtc/peerconnectionfactory.h"
 #include <wtf/text/CString.h>
@@ -43,6 +44,7 @@ namespace WebCore {
 RTCPeerConnectionHandlerWebRTC::RTCPeerConnectionHandlerWebRTC(RTCPeerConnectionHandlerClient* client)
     : RTCPeerConnectionHandler()
     , m_connectionObserver(client)
+    , m_createSessionObserver(new talk_base::RefCountedObject<CreateSessionDescriptionObserver>())
 {
 }
 
@@ -66,14 +68,18 @@ bool RTCPeerConnectionHandlerWebRTC::createPeerConnection(const webrtc::PeerConn
     return true;
 }
 
-void RTCPeerConnectionHandlerWebRTC::createOffer(PassRefPtr<RTCSessionDescriptionRequest>, PassRefPtr<MediaConstraints>)
+void RTCPeerConnectionHandlerWebRTC::createOffer(PassRefPtr<RTCSessionDescriptionRequest> request, PassRefPtr<MediaConstraints> constraints)
 {
-    notImplemented();
+    m_createSessionObserver->setWebKitRequest(request);
+    MediaConstraintsWebRTC mediaConstraints(constraints);
+    m_webRTCPeerConnection->CreateOffer(m_createSessionObserver.get(), &mediaConstraints);
 }
 
-void RTCPeerConnectionHandlerWebRTC::createAnswer(PassRefPtr<RTCSessionDescriptionRequest>, PassRefPtr<MediaConstraints>)
+void RTCPeerConnectionHandlerWebRTC::createAnswer(PassRefPtr<RTCSessionDescriptionRequest> request, PassRefPtr<MediaConstraints> constraints)
 {
-    notImplemented();
+    m_createSessionObserver->setWebKitRequest(request);
+    MediaConstraintsWebRTC mediaConstraints(constraints);
+    m_webRTCPeerConnection->CreateAnswer(m_createSessionObserver.get(), &mediaConstraints);
 }
 
 void RTCPeerConnectionHandlerWebRTC::setLocalDescription(PassRefPtr<RTCVoidRequest>, PassRefPtr<RTCSessionDescriptionDescriptor>)
