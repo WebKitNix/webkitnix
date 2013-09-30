@@ -36,6 +36,7 @@
 #include "RTCDataChannelHandler.h"
 #include "WebRTCUtils.h"
 #include "talk/app/webrtc/peerconnectionfactory.h"
+#include <wtf/text/CString.h>
 
 namespace WebCore {
 
@@ -109,15 +110,50 @@ bool RTCPeerConnectionHandlerWebRTC::addIceCandidate(PassRefPtr<RTCVoidRequest>,
     return false;
 }
 
-bool RTCPeerConnectionHandlerWebRTC::addStream(PassRefPtr<MediaStreamDescriptor>, PassRefPtr<MediaConstraints>)
+bool RTCPeerConnectionHandlerWebRTC::addStream(PassRefPtr<MediaStreamDescriptor> streamDescriptor, PassRefPtr<MediaConstraints> constraints)
 {
-    notImplemented();
-    return false;
+    talk_base::scoped_refptr<webrtc::MediaStreamInterface> stream = m_pcFactory->CreateLocalMediaStream(streamDescriptor->id().utf8().data());
+    MediaConstraintsWebRTC mediaConstraints(constraints);
+
+    unsigned numberOfSources = streamDescriptor->numberOfAudioStreams();
+    for (unsigned i = 0; i < numberOfSources; i++)
+        addWebRTCStream(stream.get(), streamDescriptor->audioStreams(i));
+
+    numberOfSources = streamDescriptor->numberOfVideoStreams();
+    for (unsigned i = 0; i < numberOfSources; i++)
+        addWebRTCStream(stream.get(), streamDescriptor->videoStreams(i));
+
+    return m_webRTCPeerConnection->AddStream(stream.get(), &mediaConstraints);
 }
 
-void RTCPeerConnectionHandlerWebRTC::removeStream(PassRefPtr<MediaStreamDescriptor>)
+void RTCPeerConnectionHandlerWebRTC::addWebRTCStream(webrtc::MediaStreamInterface* mediaStreamInterface, MediaStreamSource* source)
 {
-    notImplemented();
+    std::string trackId = source->id().utf8().data();
+    if (source->type() == MediaStreamSource::Audio) {
+        talk_base::scoped_refptr<webrtc::AudioTrackInterface> audioTrack(
+            m_pcFactory->CreateAudioTrack(trackId, m_pcFactory->CreateAudioSource(0)));
+        audioTrack->set_enabled(source->enabled());
+        audioTrack->set_state(WebRTCUtils::toWebRTCTrackState(source->readyState()));
+        mediaStreamInterface->AddTrack(audioTrack.get());
+    } // TODO: video.
+}
+
+void RTCPeerConnectionHandlerWebRTC::removeStream(PassRefPtr<MediaStreamDescriptor> streamDescriptor)
+{
+    webrtc::MediaStreamInterface* media = getWebRTCMediaStream(streamDescriptor->id().utf8().data());
+    if (!media)
+        return;
+
+    m_webRTCPeerConnection->RemoveStream(media);
+}
+
+webrtc::MediaStreamInterface* RTCPeerConnectionHandlerWebRTC::getWebRTCMediaStream(const std::string& label)
+{
+    talk_base::scoped_refptr<webrtc::StreamCollectionInterface> streamCollection = m_webRTCPeerConnection->local_streams();
+    if (!streamCollection.get())
+        return 0;
+
+    return streamCollection->find(label);
 }
 
 void RTCPeerConnectionHandlerWebRTC::getStats(PassRefPtr<RTCStatsRequest>)

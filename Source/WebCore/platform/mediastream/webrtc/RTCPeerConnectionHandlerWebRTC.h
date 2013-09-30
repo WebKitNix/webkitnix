@@ -59,10 +59,12 @@ public:
     ~RTCPeerConnectionHandlerWebRTC() { }
 private:
     bool createPeerConnection(const webrtc::PeerConnectionInterface::IceServers&, const webrtc::MediaConstraintsInterface&);
+    void addWebRTCStream(webrtc::MediaStreamInterface*, MediaStreamSource*);
+    webrtc::MediaStreamInterface* getWebRTCMediaStream(const std::string&);
 
+    RTCPeerConnectionObserver m_connectionObserver;
     talk_base::scoped_refptr<webrtc::PeerConnectionInterface> m_webRTCPeerConnection;
     talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> m_pcFactory;
-    RTCPeerConnectionObserver m_connectionObserver;
 };
 
 } // namespace WebCore

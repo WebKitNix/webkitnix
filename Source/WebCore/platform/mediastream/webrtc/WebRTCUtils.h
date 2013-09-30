@@ -29,6 +29,7 @@
 #if ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
 #include "MediaConstraints.h"
+#include "MediaStreamSource.h"
 #include "RTCPeerConnectionHandlerClient.h"
 #include "WebRTCDefinitions.h"
 #include "talk/app/webrtc/mediaconstraintsinterface.h"
@@ -46,6 +47,7 @@ public:
     static RTCPeerConnectionHandlerClient::SignalingState toWebKitSignalingState(webrtc::PeerConnectionInterface::SignalingState);
     static RTCPeerConnectionHandlerClient::IceGatheringState toWebKitIceGatheringState(webrtc::PeerConnectionInterface::IceGatheringState);
     static RTCPeerConnectionHandlerClient::IceConnectionState toWebKitIceConnectionState(webrtc::PeerConnectionInterface::IceConnectionState);
+    static webrtc::MediaStreamTrackInterface::TrackState toWebRTCTrackState(MediaStreamSource::ReadyState);
 };
 
 } // namespace WebCore
