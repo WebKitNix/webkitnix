@@ -138,6 +138,23 @@ webrtc::MediaStreamTrackInterface::TrackState WebRTCUtils::toWebRTCTrackState(Me
     }
 }
 
+RTCDataChannelHandlerClient::ReadyState WebRTCUtils::toWebKitDataChannelReadyState(webrtc::DataChannelInterface::DataState state)
+{
+    switch (state) {
+    case webrtc::DataChannelInterface::kConnecting:
+        return RTCDataChannelHandlerClient::ReadyStateConnecting;
+    case webrtc::DataChannelInterface::kOpen:
+        return RTCDataChannelHandlerClient::ReadyStateOpen;
+    case webrtc::DataChannelInterface::kClosing:
+        return RTCDataChannelHandlerClient::ReadyStateClosing;
+    case webrtc::DataChannelInterface::kClosed:
+        return RTCDataChannelHandlerClient::ReadyStateClosed;
+    default:
+        ASSERT_NOT_REACHED();
+        return RTCDataChannelHandlerClient::ReadyStateClosed;
+    }
+}
+
 } // namespace WebCore
 
 #endif // ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)

@@ -23,36 +23,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef WebRTCUtils_h
-#define WebRTCUtils_h
+#ifndef RTCDataChannelHandlerWebRTC_h
+#define RTCDataChannelHandlerWebRTC_h
 
 #if ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#include "MediaConstraints.h"
-#include "MediaStreamSource.h"
-#include "RTCDataChannelHandlerClient.h"
-#include "RTCPeerConnectionHandlerClient.h"
+#include "RTCDataChannelHandler.h"
+
 #include "WebRTCDefinitions.h"
-#include "talk/app/webrtc/mediaconstraintsinterface.h"
-#include "talk/app/webrtc/peerconnectioninterface.h"
-#include <wtf/Vector.h>
+#include "observers/RTCDataChannelObserver.h"
+#include "talk/app/webrtc/datachannelinterface.h"
+#include "talk/base/scoped_ref_ptr.h"
 
 namespace WebCore {
 
-class RTCConfiguration;
-
-class WebRTCUtils {
+class RTCDataChannelHandlerWebRTC : public RTCDataChannelHandler {
 public:
-    static void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>, webrtc::MediaConstraintsInterface::Constraints*);
-    static void toWebRTCIceServers(PassRefPtr<RTCConfiguration>, webrtc::PeerConnectionInterface::IceServers*);
-    static RTCDataChannelHandlerClient::ReadyState toWebKitDataChannelReadyState(webrtc::DataChannelInterface::DataState);
-    static RTCPeerConnectionHandlerClient::SignalingState toWebKitSignalingState(webrtc::PeerConnectionInterface::SignalingState);
-    static RTCPeerConnectionHandlerClient::IceGatheringState toWebKitIceGatheringState(webrtc::PeerConnectionInterface::IceGatheringState);
-    static RTCPeerConnectionHandlerClient::IceConnectionState toWebKitIceConnectionState(webrtc::PeerConnectionInterface::IceConnectionState);
-    static webrtc::MediaStreamTrackInterface::TrackState toWebRTCTrackState(MediaStreamSource::ReadyState);
+    RTCDataChannelHandlerWebRTC(webrtc::DataChannelInterface*);
+    virtual void setClient(RTCDataChannelHandlerClient*);
+
+    virtual String label();
+    virtual bool ordered();
+    virtual unsigned short maxRetransmitTime();
+    virtual unsigned short maxRetransmits();
+    virtual String protocol();
+    virtual bool negotiated();
+    virtual unsigned short id();
+    virtual unsigned long bufferedAmount();
+
+    virtual bool sendStringData(const String&);
+    virtual bool sendRawData(const char*, size_t);
+    virtual void close();
+
+private:
+    RTCDataChannelHandlerClient* m_client;
+    RTCDataChannelObserver m_observer;
+    talk_base::scoped_refptr<webrtc::DataChannelInterface> m_webRTCDataChannel;
 };
 
 } // namespace WebCore
+
 #endif // ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#endif // WebRTCUtils_h
+#endif // RTCDataChannelHandlerWebRTC_h

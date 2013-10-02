@@ -136,12 +136,12 @@ if (ENABLE_MEDIA_STREAM)
     )
     list(APPEND WebCore_SOURCES
         platform/mediastream/webrtc/MediaConstraintsWebRTC.cpp
-
+        platform/mediastream/webrtc/RTCDataChannelHandlerWebRTC.cpp
         platform/mediastream/webrtc/observers/CreateSessionDescriptionObserver.cpp
         platform/mediastream/webrtc/observers/GetStatsObserver.cpp
+        platform/mediastream/webrtc/observers/RTCDataChannelObserver.cpp
         platform/mediastream/webrtc/observers/RTCPeerConnectionObserver.cpp
         platform/mediastream/webrtc/observers/SetSessionDescriptionObserver.cpp
-
         platform/mediastream/webrtc/RTCPeerConnectionHandlerWebRTC.cpp
         platform/mediastream/webrtc/WebRTCUtils.cpp
     )

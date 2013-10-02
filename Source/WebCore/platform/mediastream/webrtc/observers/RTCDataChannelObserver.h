@@ -23,36 +23,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef WebRTCUtils_h
-#define WebRTCUtils_h
+#ifndef RTCDataChannelObserver_h
+#define RTCDataChannelObserver_h
 
 #if ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#include "MediaConstraints.h"
-#include "MediaStreamSource.h"
-#include "RTCDataChannelHandlerClient.h"
-#include "RTCPeerConnectionHandlerClient.h"
 #include "WebRTCDefinitions.h"
-#include "talk/app/webrtc/mediaconstraintsinterface.h"
-#include "talk/app/webrtc/peerconnectioninterface.h"
-#include <wtf/Vector.h>
+#include "talk/app/webrtc/datachannelinterface.h"
+#include "talk/base/scoped_ref_ptr.h"
 
 namespace WebCore {
 
-class RTCConfiguration;
+class RTCDataChannelHandlerClient;
 
-class WebRTCUtils {
+class RTCDataChannelObserver : public webrtc::DataChannelObserver {
 public:
-    static void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>, webrtc::MediaConstraintsInterface::Constraints*);
-    static void toWebRTCIceServers(PassRefPtr<RTCConfiguration>, webrtc::PeerConnectionInterface::IceServers*);
-    static RTCDataChannelHandlerClient::ReadyState toWebKitDataChannelReadyState(webrtc::DataChannelInterface::DataState);
-    static RTCPeerConnectionHandlerClient::SignalingState toWebKitSignalingState(webrtc::PeerConnectionInterface::SignalingState);
-    static RTCPeerConnectionHandlerClient::IceGatheringState toWebKitIceGatheringState(webrtc::PeerConnectionInterface::IceGatheringState);
-    static RTCPeerConnectionHandlerClient::IceConnectionState toWebKitIceConnectionState(webrtc::PeerConnectionInterface::IceConnectionState);
-    static webrtc::MediaStreamTrackInterface::TrackState toWebRTCTrackState(MediaStreamSource::ReadyState);
+    RTCDataChannelObserver(webrtc::DataChannelInterface*);
+
+    void setClient(RTCDataChannelHandlerClient*);
+    virtual void OnStateChange() OVERRIDE;
+    virtual void OnMessage(const webrtc::DataBuffer&) OVERRIDE;
+
+private:
+    RTCDataChannelHandlerClient* m_client;
+    talk_base::scoped_refptr<webrtc::DataChannelInterface> m_channel;
 };
 
 } // namespace WebCore
+
 #endif // ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#endif // WebRTCUtils_h
+#endif // RTCDataChannelObserver_h
