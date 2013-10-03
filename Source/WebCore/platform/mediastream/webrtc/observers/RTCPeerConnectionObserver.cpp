@@ -31,10 +31,12 @@
 
 #include "MediaStreamDescriptor.h"
 #include "NotImplemented.h"
+#include "RTCDataChannelHandlerWebRTC.h"
 #include "RTCIceCandidateDescriptor.h"
 #include "WebRTCUtils.h"
 #include <wtf/Functional.h>
 #include <wtf/MainThread.h>
+#include <wtf/PassOwnPtr.h>
 
 namespace WebCore {
 
@@ -120,6 +122,11 @@ void RTCPeerConnectionObserver::OnIceCandidate(const webrtc::IceCandidateInterfa
     candidate->ToString(&out);
     RefPtr<RTCIceCandidateDescriptor> ice = RTCIceCandidateDescriptor::create(out.c_str(), candidate->sdp_mid().c_str(), candidate->sdp_mline_index());
     callOnMainThread(bind(&RTCPeerConnectionHandlerClient::didGenerateIceCandidate, m_client, ice.release()));
+}
+
+void RTCPeerConnectionObserver::OnDataChannel(webrtc::DataChannelInterface* dataChannel)
+{
+    callOnMainThread(bind(&RTCPeerConnectionHandlerClient::didAddRemoteDataChannel, m_client, adoptPtr(new RTCDataChannelHandlerWebRTC(dataChannel))));
 }
 
 } // namespace WebCore

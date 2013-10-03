@@ -51,6 +51,7 @@ public:
     virtual void OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState);
     virtual void OnIceChange();
     virtual void OnIceCandidate(const webrtc::IceCandidateInterface*);
+    virtual void OnDataChannel(webrtc::DataChannelInterface*);
 
 private:
     PassRefPtr<MediaStreamDescriptor> mediaStreamDescriptorFromMediaStreamInterface(webrtc::MediaStreamInterface*);
