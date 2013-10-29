@@ -37,6 +37,7 @@ static bool audioRenderingDone;
 static bool correctDeviceId;
 static bool titleChanged;
 static bool requestSucceeded;
+static bool mediaStreamAttributesOk;
 
 static void didFinishLoadForFrame(WKPageRef, WKFrameRef, WKTypeRef, const void*)
 {
@@ -49,6 +50,8 @@ static void didReceiveMessageFromInjectedBundle(WKContextRef, WKStringRef messag
         audioRenderingDone = true;
     else if (WKStringIsEqualToUTF8CString(messageName, "DummyAudioDeviceId#0"))
         correctDeviceId = true;
+    else if (WKStringIsEqualToUTF8CString(messageName, "MediaStreamAttributesOk"))
+        mediaStreamAttributesOk = true;
 }
 
 static void didReceiveTitleForFrame(WKPageRef, WKStringRef title, WKFrameRef, WKTypeRef, const void *)
@@ -89,6 +92,7 @@ TEST(WebKitNix, MediaStreamAudio)
 
     Util::run(&loadDone);
     Util::run(&correctDeviceId);
+    Util::run(&mediaStreamAttributesOk);
     Util::run(&audioRenderingDone);
     Util::run(&titleChanged);
     ASSERT_TRUE(requestSucceeded);

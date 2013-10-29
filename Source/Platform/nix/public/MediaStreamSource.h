@@ -77,6 +77,15 @@ public:
     NIX_EXPORT void setReadyState(ReadyState);
     NIX_EXPORT ReadyState readyState() const;
 
+    NIX_EXPORT bool enabled() const;
+    NIX_EXPORT void setEnabled(bool);
+
+    NIX_EXPORT bool muted() const;
+    NIX_EXPORT void setMuted(bool);
+
+    NIX_EXPORT bool readonly() const;
+    NIX_EXPORT void setReadonly(bool);
+
     // FIXME Add support for capabilites.
 
 #if BUILDING_NIX__
@@ -86,7 +95,7 @@ public:
     operator WebCore::MediaStreamSource*() const;
 #endif
 
-private:
+protected:
     PrivatePtr<WebCore::MediaStreamSource> m_private;
 };
 

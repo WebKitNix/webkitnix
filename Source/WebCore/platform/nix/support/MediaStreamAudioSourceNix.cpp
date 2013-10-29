@@ -47,12 +47,12 @@
 namespace Nix {
 
 MediaStreamAudioSource::MediaStreamAudioSource()
-    : m_private(WebCore::MediaStreamAudioSource::create().release().leakRef())
+    : MediaStreamSource(WebCore::MediaStreamAudioSource::create().release().leakRef())
 {
 }
 
 MediaStreamAudioSource::MediaStreamAudioSource(const PassRefPtr<WebCore::MediaStreamAudioSource>& MediaStreamAudioSource)
-    : m_private(MediaStreamAudioSource)
+    : MediaStreamSource(MediaStreamAudioSource)
 {
 }
 
@@ -74,24 +74,29 @@ void MediaStreamAudioSource::reset()
 
 MediaStreamAudioSource::operator PassRefPtr<WebCore::MediaStreamAudioSource>() const
 {
-    return m_private.get();
+    return toWebCoreAudioSource();
 }
 
 MediaStreamAudioSource::operator WebCore::MediaStreamAudioSource*() const
 {
-    return m_private.get();
+    return toWebCoreAudioSource();
+}
+
+WebCore::MediaStreamAudioSource* MediaStreamAudioSource::toWebCoreAudioSource() const
+{
+    return dynamic_cast<WebCore::MediaStreamAudioSource*>(m_private.get());
 }
 
 const char* MediaStreamAudioSource::deviceId() const
 {
     ASSERT(!m_private.isNull());
-    return m_private->deviceId().utf8().data();
+    return toWebCoreAudioSource()->deviceId().utf8().data();
 }
 
 void MediaStreamAudioSource::setDeviceId(const char* deviceId)
 {
     ASSERT(!m_private.isNull());
-    m_private->setDeviceId(deviceId);
+    toWebCoreAudioSource()->setDeviceId(deviceId);
 }
 
 class ConsumerWrapper : public WebCore::AudioDestinationConsumer {
@@ -137,7 +142,7 @@ void MediaStreamAudioSource::addAudioConsumer(AudioDestinationConsumer* consumer
     ASSERT(isMainThread());
     ASSERT(!m_private.isNull() && consumer);
 
-    m_private->addAudioConsumer(ConsumerWrapper::create(consumer));
+    toWebCoreAudioSource()->addAudioConsumer(ConsumerWrapper::create(consumer));
 }
 
 bool MediaStreamAudioSource::removeAudioConsumer(AudioDestinationConsumer* consumer)
@@ -145,11 +150,11 @@ bool MediaStreamAudioSource::removeAudioConsumer(AudioDestinationConsumer* consu
     ASSERT(isMainThread());
     ASSERT(!m_private.isNull() && consumer);
 
-    const WTF::Vector<RefPtr<WebCore::AudioDestinationConsumer> >& consumers = m_private->audioConsumers();
+    const WTF::Vector<RefPtr<WebCore::AudioDestinationConsumer> >& consumers = toWebCoreAudioSource()->audioConsumers();
     for (WTF::Vector<RefPtr<WebCore::AudioDestinationConsumer> >::const_iterator it = consumers.begin(); it != consumers.end(); ++it) {
         ConsumerWrapper* wrapper = static_cast<ConsumerWrapper*>((*it).get());
         if (wrapper->consumer() == consumer) {
-            m_private->removeAudioConsumer(wrapper);
+            toWebCoreAudioSource()->removeAudioConsumer(wrapper);
             return true;
         }
     }

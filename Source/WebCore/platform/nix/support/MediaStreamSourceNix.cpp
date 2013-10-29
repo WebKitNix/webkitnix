@@ -102,6 +102,42 @@ MediaStreamSource::ReadyState MediaStreamSource::readyState() const
     return static_cast<ReadyState>(m_private->readyState());
 }
 
+void MediaStreamSource::setEnabled(bool enabled)
+{
+    ASSERT(!m_private.isNull());
+    m_private->setEnabled(enabled);
+}
+
+bool MediaStreamSource::enabled() const
+{
+    ASSERT(!m_private.isNull());
+    return m_private->enabled();
+}
+
+void MediaStreamSource::setMuted(bool muted)
+{
+    ASSERT(!m_private.isNull());
+    m_private->setMuted(muted);
+}
+
+bool MediaStreamSource::muted() const
+{
+    ASSERT(!m_private.isNull());
+    return m_private->muted();
+}
+
+void MediaStreamSource::setReadonly(bool readonly)
+{
+    ASSERT(!m_private.isNull());
+    m_private->setReadonly(readonly);
+}
+
+bool MediaStreamSource::readonly() const
+{
+    ASSERT(!m_private.isNull());
+    return m_private->readonly();
+}
+
 } // namespace Nix
 
 #endif // ENABLE(MEDIA_STREAM)

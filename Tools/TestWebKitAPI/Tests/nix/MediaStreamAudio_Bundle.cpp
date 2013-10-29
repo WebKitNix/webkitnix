@@ -128,6 +128,45 @@ private:
     Nix::AudioDevice::RenderCallback* m_renderCallback;
 };
 
+static void testMediaStreamAttributes(Nix::MediaStreamSource *source)
+{
+    bool orig_enabled = source->enabled();
+    bool orig_muted = source->muted();
+    bool orig_readonly = source->readonly();
+    bool failed = false;
+
+    source->setEnabled(true);
+    if (!source->enabled())
+        failed = true;
+
+    source->setEnabled(false);
+    if (source->enabled())
+        failed = true;
+
+    source->setMuted(true);
+    if (!source->muted())
+        failed = true;
+
+    source->setMuted(false);
+    if (source->muted())
+        failed = true;
+
+    source->setReadonly(true);
+    if (!source->readonly())
+        failed = true;
+
+    source->setReadonly(false);
+    if (source->readonly())
+        failed = true;
+
+    if (!failed)
+        WKBundlePostMessage(InjectedBundleController::shared().bundle(), Util::toWK("MediaStreamAttributesOk").get(), 0);
+
+    source->setEnabled(orig_enabled);
+    source->setMuted(orig_muted);
+    source->setReadonly(orig_readonly);
+}
+
 class MockMediaStreamCenter : public Nix::MediaStreamCenter {
 public:
     virtual const char* validateRequestConstraints(Nix::MediaConstraints& audioConstraints, Nix::MediaConstraints& videoConstraints) OVERRIDE
@@ -155,6 +194,8 @@ public:
             tmp = new Nix::MediaStreamAudioSource();
             tmp->setDeviceId("DummyAudioDeviceId#2");
             audioSources[2] = tmp;
+
+            testMediaStreamAttributes(tmp);
         }
 
         Nix::MediaStream mediaStream;

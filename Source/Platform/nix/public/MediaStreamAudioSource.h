@@ -33,7 +33,6 @@
 
 #include "Common.h"
 #include "MediaStreamSource.h"
-#include "PrivatePtr.h"
 
 namespace WebCore {
 class MediaStreamAudioSource;
@@ -72,10 +71,10 @@ public:
     MediaStreamAudioSource& operator=(WebCore::MediaStreamAudioSource*);
     operator WTF::PassRefPtr<WebCore::MediaStreamAudioSource>() const;
     operator WebCore::MediaStreamAudioSource*() const;
+private:
+    WebCore::MediaStreamAudioSource* toWebCoreAudioSource() const;
 #endif
 
-private:
-    PrivatePtr<WebCore::MediaStreamAudioSource> m_private;
 };
 
 } // namespace Nix
