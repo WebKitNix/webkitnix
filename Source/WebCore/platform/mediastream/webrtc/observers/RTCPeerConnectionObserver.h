@@ -57,7 +57,7 @@ public:
     virtual void OnDataChannel(webrtc::DataChannelInterface*) OVERRIDE;
 
 private:
-    void processTrack(webrtc::MediaStreamTrackInterface*, Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&, Vector<RefPtr<MediaStreamSource>>&);
+    void processTrack(webrtc::MediaStreamTrackInterface*, Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&, Vector<RefPtr<MediaStreamTrackPrivate>>&);
     PassRefPtr<MediaStreamDescriptor> mediaStreamDescriptorFromMediaStreamInterface(webrtc::MediaStreamInterface*);
     RTCPeerConnectionHandlerClient* m_client;
 

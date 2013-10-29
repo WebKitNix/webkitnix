@@ -28,7 +28,7 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#include "MediaStreamSource.h"
+#include "MediaStreamTrackPrivate.h"
 #include "WebRTCUtils.h"
 #include "libwebrtc.h"
 #include <wtf/RefCounted.h>
@@ -37,9 +37,9 @@ namespace WebCore {
 
 class MediaStreamTrackWebRTCObserver : public RefCounted<MediaStreamTrackWebRTCObserver>, public webrtc::ObserverInterface {
 public:
-    MediaStreamTrackWebRTCObserver(webrtc::MediaStreamTrackInterface* track, MediaStreamSource* source)
-        : m_track(track)
-        , m_source(source)
+    MediaStreamTrackWebRTCObserver(webrtc::MediaStreamTrackInterface* webRTCTrack, PassRefPtr<MediaStreamTrackPrivate> track)
+        : m_webRTCTrack(webRTCTrack)
+        , m_track(track)
     { }
 
     virtual ~MediaStreamTrackWebRTCObserver() { }
@@ -47,16 +47,16 @@ public:
     void OnChanged()
     {
         // The only properties that can change in a track in webrtc library are those below.
-        m_source->setEnabled(m_track->enabled());
-        m_source->setReadyState(WebRTCUtils::toWebKitReadyState(m_track->state()));
+        m_track->setEnabled(m_webRTCTrack->enabled());
+        m_track->setReadyState(WebRTCUtils::toWebKitReadyState(m_webRTCTrack->state()));
     };
 
-    webrtc::MediaStreamTrackInterface* webRTCTrack() { return m_track.get(); }
-    MediaStreamSource* source() { return m_source; }
+    webrtc::MediaStreamTrackInterface* webRTCTrack() { return m_webRTCTrack.get(); }
+    MediaStreamTrackPrivate* track() { return m_track.get(); }
 
 private:
-    talk_base::scoped_refptr<webrtc::MediaStreamTrackInterface> m_track;
-    MediaStreamSource* m_source;
+    talk_base::scoped_refptr<webrtc::MediaStreamTrackInterface> m_webRTCTrack;
+    RefPtr<MediaStreamTrackPrivate> m_track;
 };
 
 } // namespace WebCore

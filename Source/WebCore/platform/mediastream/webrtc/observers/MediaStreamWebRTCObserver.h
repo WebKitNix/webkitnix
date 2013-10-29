@@ -35,7 +35,6 @@
 namespace WebCore {
 
 class MediaStreamDescriptor;
-class MediaStreamTrackWebRTCObserver;
 
 class MediaStreamWebRTCObserver : public RefCounted<MediaStreamWebRTCObserver>, public webrtc::ObserverInterface {
 public:

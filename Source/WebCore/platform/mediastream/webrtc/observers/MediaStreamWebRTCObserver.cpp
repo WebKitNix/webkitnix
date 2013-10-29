@@ -52,36 +52,28 @@ void MediaStreamWebRTCObserver::OnChanged()
 
     // The only changes in MediaStreamInterface that can fire events are in adding or removing tracks
     const webrtc::AudioTrackVector& audioTracks = m_stream->GetAudioTracks();
-    const webrtc::VideoTrackVector& videoTracks = m_stream->GetVideoTracks();
-    // For each remote track that is added we create a new MediaStreamSource, so we
-    // can compare the number of sources against the number of tracks safely
-    if (m_descriptor->numberOfAudioSources() < audioTracks.size())
+    if (m_descriptor->numberOfAudioTracks() < audioTracks.size())
         findAndAddTrack(audioTracks, m_audioTrackObservers);
-    else if (m_descriptor->numberOfAudioSources() > audioTracks.size())
+    else if (m_descriptor->numberOfAudioTracks() > audioTracks.size())
         findAndRemoveTrack(m_audioTrackObservers);
 
-    if (m_descriptor->numberOfVideoSources() < videoTracks.size())
-        findAndAddTrack(videoTracks, m_videoTrackObservers);
-    else if (m_descriptor->numberOfVideoSources() > videoTracks.size())
-        findAndRemoveTrack(m_audioTrackObservers);
+    // FIXME: Handle video.
 }
 
 template<typename T>
 void MediaStreamWebRTCObserver::findAndAddTrack(const T& tracks, Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& observers)
 {
-    for (const auto& track : tracks) {
-        if (haveTrackObserver(track->id(), observers))
+    for (const auto& webRTCTrack : tracks) {
+        // FIXME: Handle video.
+        if (webRTCTrack->kind() != "audio" || haveTrackObserver(webRTCTrack->id(), observers))
             continue;
 
-        RefPtr<MediaStreamSource> source;
-        if (track->kind() == "audio")
-            source = MediaStreamAudioSource::create();
+        RefPtr<MediaStreamTrackPrivate> track = MediaStreamTrackPrivate::create(MediaStreamAudioSource::create());
 
-        // FIXME: Handle video.
-        RefPtr<MediaStreamTrackWebRTCObserver> trackObserver = adoptRef(new MediaStreamTrackWebRTCObserver(track, source.get()));
-        track->RegisterObserver(trackObserver.get());
+        RefPtr<MediaStreamTrackWebRTCObserver> trackObserver = adoptRef(new MediaStreamTrackWebRTCObserver(webRTCTrack, track));
+        webRTCTrack->RegisterObserver(trackObserver.get());
         observers.append(trackObserver);
-        m_descriptor->addRemoteSource(source.get());
+        m_descriptor->addRemoteTrack(track.get());
         return;
     }
 }
@@ -90,14 +82,14 @@ void MediaStreamWebRTCObserver::findAndRemoveTrack(Vector<RefPtr<MediaStreamTrac
 {
     for (unsigned i = 0; i < observers.size(); i++) {
         const std::string id = observers[i]->webRTCTrack()->id();
-        MediaStreamSource* source = observers[i]->source();
-        if (source->type() == MediaStreamSource::Audio && m_stream->FindAudioTrack(id))
+        MediaStreamTrackPrivate* track = observers[i]->track();
+        if (track->type() == MediaStreamSource::Audio && m_stream->FindAudioTrack(id))
             continue;
-        if (source->type() == MediaStreamSource::Video && m_stream->FindVideoTrack(id))
+        if (track->type() == MediaStreamSource::Video && m_stream->FindVideoTrack(id))
             continue;
 
         observers.remove(i);
-        m_descriptor->removeRemoteSource(source);
+        m_descriptor->removeRemoteTrack(track);
         return;
     }
 }

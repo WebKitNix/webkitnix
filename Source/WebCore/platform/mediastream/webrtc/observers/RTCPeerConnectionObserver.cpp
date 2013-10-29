@@ -31,7 +31,7 @@
 
 #include "MediaStreamAudioSource.h"
 #include "MediaStreamDescriptor.h"
-#include "MediaStreamSource.h"
+#include "MediaStreamTrackPrivate.h"
 #include "MediaStreamTrackWebRTCObserver.h"
 #include "NotImplemented.h"
 #include "RTCDataChannelHandlerWebRTC.h"
@@ -63,34 +63,34 @@ void RTCPeerConnectionObserver::OnStateChange(webrtc::PeerConnectionObserver::St
     notImplemented();
 }
 
-void RTCPeerConnectionObserver::processTrack(webrtc::MediaStreamTrackInterface* track, Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& trackObservers, Vector<RefPtr<MediaStreamSource>>& sourceVector)
+void RTCPeerConnectionObserver::processTrack(webrtc::MediaStreamTrackInterface* webRTCTrack, Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& trackObservers, Vector<RefPtr<MediaStreamTrackPrivate>>& trackVector)
 {
-    RefPtr<MediaStreamSource> source;
-    if (track->kind() == "audio")
-        source = MediaStreamAudioSource::create();
+    RefPtr<MediaStreamTrackPrivate> track;
+    if (webRTCTrack->kind() == "audio")
+        track = MediaStreamTrackPrivate::create(MediaStreamAudioSource::create());
 
     // FIXME: Handle video.
 
-    RefPtr<MediaStreamTrackWebRTCObserver> trackObserver = adoptRef(new MediaStreamTrackWebRTCObserver(track, source.get()));
-    track->RegisterObserver(trackObserver.get());
-    sourceVector.append(source);
+    RefPtr<MediaStreamTrackWebRTCObserver> trackObserver = adoptRef(new MediaStreamTrackWebRTCObserver(webRTCTrack, track));
+    webRTCTrack->RegisterObserver(trackObserver.get());
+    trackVector.append(track);
     trackObservers.append(trackObserver);
 }
 
 PassRefPtr<MediaStreamDescriptor> RTCPeerConnectionObserver::mediaStreamDescriptorFromMediaStreamInterface(webrtc::MediaStreamInterface* stream)
 {
-    Vector<RefPtr<MediaStreamSource>> audioSourceVector;
-    Vector<RefPtr<MediaStreamSource>> videoSourceVector;
+    Vector<RefPtr<MediaStreamTrackPrivate>> audioTrackVector;
+    Vector<RefPtr<MediaStreamTrackPrivate>> videoTrackVector;
     Vector<RefPtr<MediaStreamTrackWebRTCObserver>> audioTrackObservers;
     Vector<RefPtr<MediaStreamTrackWebRTCObserver>> videoTrackObservers;
     webrtc::AudioTrackVector audioTracks = stream->GetAudioTracks();
     webrtc::VideoTrackVector videoTracks = stream->GetVideoTracks();
     for (unsigned i = 0; i < audioTracks.size(); i++)
-        processTrack(audioTracks.at(i), audioTrackObservers, audioSourceVector);
+        processTrack(audioTracks.at(i), audioTrackObservers, audioTrackVector);
 
     // FIXME: Handle video.
 
-    RefPtr<MediaStreamDescriptor> descriptor = MediaStreamDescriptor::create(audioSourceVector, videoSourceVector);
+    RefPtr<MediaStreamDescriptor> descriptor = MediaStreamDescriptor::create(audioTrackVector, videoTrackVector);
 
     RefPtr<MediaStreamWebRTCObserver> streamObserver = adoptRef(new MediaStreamWebRTCObserver(stream, descriptor.get(), audioTrackObservers, videoTrackObservers));
     stream->RegisterObserver(streamObserver.get());
