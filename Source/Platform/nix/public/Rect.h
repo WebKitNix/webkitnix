@@ -42,14 +42,6 @@ public:
         , height(height)
     {
     }
-
-    Rect(const Rect& r)
-        : x(r.x)
-        , y(r.y)
-        , width(r.width)
-        , height(r.height)
-    {
-    }
 };
 
 } // namespace Nix
