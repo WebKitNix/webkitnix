@@ -67,54 +67,10 @@ COMPILE_ASSERT(sizeof(InlineTextBox) == sizeof(SameSizeAsInlineTextBox), InlineT
 typedef WTF::HashMap<const InlineTextBox*, LayoutRect> InlineTextBoxOverflowMap;
 static InlineTextBoxOverflowMap* gTextBoxesWithOverflow;
 
-static FloatRect computeBoundsForUnderline(GraphicsContext& context, const FloatPoint& topleft, float length, bool printing, bool& shouldAntialias)
-{
-    float thickness = std::max(context.strokeThickness(), 0.5f);
-    
-    FloatRect bounds(topleft, FloatSize(length, thickness));
-
-    shouldAntialias = true;
-    
-    if (printing || context.paintingDisabled() || !context.getCTM(GraphicsContext::DefinitelyIncludeDeviceScale).preservesAxisAlignment())
-        return bounds;
-
-    // On screen, use a minimum thickness of 1.0 in user space (later rounded to an integral number in device space).
-    FloatRect adjustedBounds = bounds;
-    adjustedBounds.setHeight(std::max(thickness, 1.0f));
-
-    // FIXME: This should be done a better way.
-    // We try to round all parameters to integer boundaries in device space. If rounding pixels in device space
-    // makes our thickness more than double, then there must be a shrinking-scale factor and rounding to pixels
-    // in device space will make the underlines too thick.
-    FloatRect lineRect = context.roundToDevicePixels(adjustedBounds, GraphicsContext::RoundAllSides);
-    if (lineRect.height() < thickness * 2.0) {
-        shouldAntialias = false;
-        return lineRect;
-    }
-
-    return bounds;
-}
-
-static void drawLineForText(GraphicsContext& context, const FloatPoint& topleft, float width, bool printing)
-{
-    if (width <= 0)
-        return;
-    
-    bool shouldAntialias;
-    
-    FloatRect underlineBounds = computeBoundsForUnderline(context, topleft, width, printing, shouldAntialias);
-    
-    bool wasAntialiasing = context.shouldAntialias();
-    context.setShouldAntialias(shouldAntialias);
-    context.drawLineForText(underlineBounds, printing);
-    context.setShouldAntialias(wasAntialiasing);
-}
-
-void InlineTextBox::destroy(RenderArena& arena)
+InlineTextBox::~InlineTextBox()
 {
     if (!knownToHaveNoOverflow() && gTextBoxesWithOverflow)
         gTextBoxesWithOverflow->remove(this);
-    InlineBox::destroy(arena);
 }
 
 void InlineTextBox::markDirty(bool dirty)
@@ -285,10 +241,10 @@ LayoutRect InlineTextBox::localSelectionRect(int startPos, int endPos) const
     return LayoutRect(topPoint, LayoutSize(width, height));
 }
 
-void InlineTextBox::deleteLine(RenderArena& arena)
+void InlineTextBox::deleteLine()
 {
     renderer().removeTextBox(*this);
-    destroy(arena);
+    delete this;
 }
 
 void InlineTextBox::extractLine()
@@ -788,7 +744,7 @@ static StrokeStyle textDecorationStyleToStrokeStyle(TextDecorationStyle decorati
     case TextDecorationStyleSolid:
         strokeStyle = SolidStroke;
         break;
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
     case TextDecorationStyleDouble:
         strokeStyle = DoubleStroke;
         break;
@@ -801,13 +757,13 @@ static StrokeStyle textDecorationStyleToStrokeStyle(TextDecorationStyle decorati
     case TextDecorationStyleWavy:
         strokeStyle = WavyStroke;
         break;
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
     }
 
     return strokeStyle;
 }
 
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
 static int computeUnderlineOffset(const TextUnderlinePosition underlinePosition, const FontMetrics& fontMetrics, const InlineTextBox* inlineTextBox, const int textDecorationThickness)
 {
     // Compute the gap between the font and the underline. Use at least one
@@ -832,9 +788,7 @@ static int computeUnderlineOffset(const TextUnderlinePosition underlinePosition,
     ASSERT_NOT_REACHED();
     return fontMetrics.ascent() + gap;
 }
-#endif // CSS3_TEXT
 
-#if ENABLE(CSS3_TEXT)
 static void adjustStepToDecorationLength(float& step, float& controlPointDistance, float length)
 {
     ASSERT(step > 0);
@@ -956,7 +910,7 @@ static void strokeWavyTextDecoration(GraphicsContext* context, FloatPoint& p1, F
     context->setShouldAntialias(true);
     context->strokePath(path);
 }
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
 
 void InlineTextBox::paintDecoration(GraphicsContext* context, const FloatPoint& boxOrigin, TextDecoration deco, TextDecorationStyle decorationStyle, const ShadowData* shadow)
 {
@@ -1028,14 +982,14 @@ void InlineTextBox::paintDecoration(GraphicsContext* context, const FloatPoint& 
             shadow = shadow->next();
         }
 
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
         // Offset between lines - always non-zero, so lines never cross each other.
         float doubleOffset = textDecorationThickness + 1.f;
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
         context->setStrokeStyle(textDecorationStyleToStrokeStyle(decorationStyle));
         if (deco & TextDecorationUnderline) {
             context->setStrokeColor(underline, colorSpace);
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
             TextUnderlinePosition underlinePosition = lineStyle.textUnderlinePosition();
             const int underlineOffset = computeUnderlineOffset(underlinePosition, lineStyle.fontMetrics(), this, textDecorationThickness);
 
@@ -1047,19 +1001,19 @@ void InlineTextBox::paintDecoration(GraphicsContext* context, const FloatPoint& 
                 break;
             }
             default:
-                drawLineForText(*context, FloatPoint(localOrigin.x(), localOrigin.y() + underlineOffset), width, isPrinting);
+                context->drawLineForText(FloatPoint(localOrigin.x(), localOrigin.y() + underlineOffset), width, isPrinting);
 
                 if (decorationStyle == TextDecorationStyleDouble)
-                    drawLineForText(*context, FloatPoint(localOrigin.x(), localOrigin.y() + underlineOffset + doubleOffset), width, isPrinting);
+                    context->drawLineForText(FloatPoint(localOrigin.x(), localOrigin.y() + underlineOffset + doubleOffset), width, isPrinting);
             }
 #else
             // Leave one pixel of white between the baseline and the underline.
-            drawLineForText(*context, FloatPoint(localOrigin.x(), localOrigin.y() + baseline + 1), width, isPrinting);
-#endif // CSS3_TEXT
+            context->drawLineForText(FloatPoint(localOrigin.x(), localOrigin.y() + baseline + 1), width, isPrinting);
+#endif // CSS3_TEXT_DECORATION
         }
         if (deco & TextDecorationOverline) {
             context->setStrokeColor(overline, colorSpace);
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
             switch (decorationStyle) {
             case TextDecorationStyleWavy: {
                 FloatPoint start(localOrigin.x(), localOrigin.y() - doubleOffset);
@@ -1068,17 +1022,17 @@ void InlineTextBox::paintDecoration(GraphicsContext* context, const FloatPoint& 
                 break;
             }
             default:
-#endif // CSS3_TEXT
-                drawLineForText(*context, localOrigin, width, isPrinting);
-#if ENABLE(CSS3_TEXT)
+#endif // CSS3_TEXT_DECORATION
+                context->drawLineForText(localOrigin, width, isPrinting);
+#if ENABLE(CSS3_TEXT_DECORATION)
                 if (decorationStyle == TextDecorationStyleDouble)
-                    drawLineForText(*context, FloatPoint(localOrigin.x(), localOrigin.y() - doubleOffset), width, isPrinting);
+                    context->drawLineForText(FloatPoint(localOrigin.x(), localOrigin.y() - doubleOffset), width, isPrinting);
             }
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
         }
         if (deco & TextDecorationLineThrough) {
             context->setStrokeColor(linethrough, colorSpace);
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
             switch (decorationStyle) {
             case TextDecorationStyleWavy: {
                 FloatPoint start(localOrigin.x(), localOrigin.y() + 2 * baseline / 3);
@@ -1087,13 +1041,13 @@ void InlineTextBox::paintDecoration(GraphicsContext* context, const FloatPoint& 
                 break;
             }
             default:
-#endif // CSS3_TEXT
-                drawLineForText(*context, FloatPoint(localOrigin.x(), localOrigin.y() + 2 * baseline / 3), width, isPrinting);
-#if ENABLE(CSS3_TEXT)
+#endif // CSS3_TEXT_DECORATION
+                context->drawLineForText(FloatPoint(localOrigin.x(), localOrigin.y() + 2 * baseline / 3), width, isPrinting);
+#if ENABLE(CSS3_TEXT_DECORATION)
                 if (decorationStyle == TextDecorationStyleDouble)
-                    drawLineForText(*context, FloatPoint(localOrigin.x(), localOrigin.y() + doubleOffset + 2 * baseline / 3), width, isPrinting);
+                    context->drawLineForText(FloatPoint(localOrigin.x(), localOrigin.y() + doubleOffset + 2 * baseline / 3), width, isPrinting);
             }
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
         }
     } while (shadow);
 
@@ -1339,7 +1293,7 @@ void InlineTextBox::paintCompositionUnderline(GraphicsContext* ctx, const FloatP
 
     ctx->setStrokeColor(underline.color, renderer().style().colorSpace());
     ctx->setStrokeThickness(lineThickness);
-    drawLineForText(*ctx, FloatPoint(boxOrigin.x() + start, boxOrigin.y() + logicalHeight() - lineThickness), width, renderer().document().printing());
+    ctx->drawLineForText(FloatPoint(boxOrigin.x() + start, boxOrigin.y() + logicalHeight() - lineThickness), width, renderer().document().printing());
 }
 
 int InlineTextBox::caretMinOffset() const

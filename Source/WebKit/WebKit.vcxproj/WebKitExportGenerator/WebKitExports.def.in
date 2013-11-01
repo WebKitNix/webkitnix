@@ -11,7 +11,6 @@ EXPORTS
         WebLocalizedStringUTF8
         WebLocalizedLPCTSTRUTF8
 #if USE(CG)
-        WebDrawText
         FontMetrics
         TextFloatWidth
         CenterTruncateStringToWidth
@@ -233,7 +232,6 @@ EXPORTS
         symbolWithPointer(?windowObjectCleared@InspectorFrontendClientLocal@WebCore@@UAEXXZ, ?windowObjectCleared@InspectorFrontendClientLocal@WebCore@@UEAAXXZ)
         symbolWithPointer(?setResourcesDataSizeLimitsFromInternals@InspectorController@WebCore@@QAEXHH@Z, ?setResourcesDataSizeLimitsFromInternals@InspectorController@WebCore@@QEAAXHH@Z)
         symbolWithPointer(?pathByAppendingComponent@WebCore@@YA?AVString@WTF@@ABV23@0@Z, ?pathByAppendingComponent@WebCore@@YA?AVString@WTF@@AEBV23@0@Z)
-        symbolWithPointer(?profilerEnabled@InspectorController@WebCore@@QAE_NXZ, ?profilerEnabled@InspectorController@WebCore@@QEAA_NXZ)
         symbolWithPointer(?setProfilerEnabled@InspectorController@WebCore@@QAEX_N@Z, ?setProfilerEnabled@InspectorController@WebCore@@QEAAX_N@Z)
         symbolWithPointer(?disconnectFrontend@InspectorController@WebCore@@QAEXXZ, ?disconnectFrontend@InspectorController@WebCore@@QEAAXXZ)
 #endif
@@ -274,7 +272,7 @@ EXPORTS
         symbolWithPointer(?setDOMException@WebCore@@YAXPAVExecState@JSC@@H@Z, ?setDOMException@WebCore@@YAXPEAVExecState@JSC@@H@Z)
         symbolWithPointer(?setFantasyFontFamily@Settings@WebCore@@QAEXABVAtomicString@WTF@@W4UScriptCode@@@Z, ?setFantasyFontFamily@Settings@WebCore@@QEAAXAEBVAtomicString@WTF@@W4UScriptCode@@@Z)
         symbolWithPointer(?setFixedFontFamily@Settings@WebCore@@QAEXABVAtomicString@WTF@@W4UScriptCode@@@Z, ?setFixedFontFamily@Settings@WebCore@@QEAAXAEBVAtomicString@WTF@@W4UScriptCode@@@Z)
-        symbolWithPointer(?setFontFallbackPrefersPictographs@Settings@WebCore@@QAEX_N@Z)
+        symbolWithPointer(?setFontFallbackPrefersPictographs@Settings@WebCore@@QAEX_N@Z, ?setFontFallbackPrefersPictographs@Settings@WebCore@@QEAAX_N@Z)
         symbolWithPointer(?setFooterHeight@FrameView@WebCore@@QAEXH@Z, ?setFooterHeight@FrameView@WebCore@@QEAAXH@Z)
         symbolWithPointer(?setHeaderHeight@FrameView@WebCore@@QAEXH@Z, ?setHeaderHeight@FrameView@WebCore@@QEAAXH@Z)
         symbolWithPointer(?setImagesEnabled@Settings@WebCore@@QAEX_N@Z, ?setImagesEnabled@Settings@WebCore@@QEAAX_N@Z)
@@ -457,3 +455,5 @@ EXPORTS
         symbolWithPointer(?fixedFontFamily@Settings@WebCore@@QBEABVAtomicString@WTF@@W4UScriptCode@@@Z, ?fixedFontFamily@Settings@WebCore@@QEBAAEBVAtomicString@WTF@@W4UScriptCode@@@Z)
         symbolWithPointer(?fantasyFontFamily@Settings@WebCore@@QBEABVAtomicString@WTF@@W4UScriptCode@@@Z, ?fantasyFontFamily@Settings@WebCore@@QEBAAEBVAtomicString@WTF@@W4UScriptCode@@@Z)
         symbolWithPointer(?cursiveFontFamily@Settings@WebCore@@QBEABVAtomicString@WTF@@W4UScriptCode@@@Z, ?cursiveFontFamily@Settings@WebCore@@QEBAAEBVAtomicString@WTF@@W4UScriptCode@@@Z)
+        symbolWithPointer(?setSimpleLineLayoutEnabled@Settings@WebCore@@QAEX_N@Z, ?setSimpleLineLayoutEnabled@Settings@WebCore@@QEAAX_N@Z)
+        symbolWithPointer(?setSimpleLineLayoutDebugBordersEnabled@Settings@WebCore@@QAEX_N@Z, ?setSimpleLineLayoutDebugBordersEnabled@Settings@WebCore@@QEAAX_N@Z)

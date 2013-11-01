@@ -63,7 +63,6 @@ inline bool isX86()
 #endif
 }
 
-class JumpReplacementWatchpoint;
 class LinkBuffer;
 class RepatchBuffer;
 class Watchpoint;
@@ -342,7 +341,6 @@ public:
         friend class AbstractMacroAssembler;
         friend struct DFG::OSRExit;
         friend class Jump;
-        friend class JumpReplacementWatchpoint;
         friend class MacroAssemblerCodeRef;
         friend class LinkBuffer;
         friend class Watchpoint;
@@ -771,7 +769,7 @@ public:
         {
         }
 
-        void check(unsigned low, unsigned high)
+        void checkOffsets(unsigned low, unsigned high)
         {
             RELEASE_ASSERT_WITH_MESSAGE(!(low <= m_offset && m_offset <= high), "Unsafe branch over register allocation at instruction offset %u in jump offset range %u..%u", m_offset, low, high);
         }
@@ -797,7 +795,7 @@ public:
 
         size_t size = m_registerAllocationForOffsets.size();
         for (size_t i = 0; i < size; ++i)
-            m_registerAllocationForOffsets[i].check(offset1, offset2);
+            m_registerAllocationForOffsets[i].checkOffsets(offset1, offset2);
     }
 #endif
 

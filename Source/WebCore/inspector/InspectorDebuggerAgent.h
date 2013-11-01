@@ -52,7 +52,6 @@ class InjectedScriptManager;
 class InspectorFrontend;
 class InspectorArray;
 class InspectorObject;
-class InspectorState;
 class InspectorValue;
 class InstrumentingAgents;
 class ScriptDebugServer;
@@ -73,7 +72,6 @@ public:
 
     virtual void setFrontend(InspectorFrontend*);
     virtual void clearFrontend();
-    virtual void restore();
 
     bool isPaused();
     bool runningNestedMessageLoop();
@@ -131,7 +129,7 @@ public:
     virtual ScriptDebugServer& scriptDebugServer() = 0;
 
 protected:
-    InspectorDebuggerAgent(InstrumentingAgents*, InspectorCompositeState*, InjectedScriptManager*);
+    InspectorDebuggerAgent(InstrumentingAgents*, InjectedScriptManager*);
 
     virtual void startListeningScriptDebugServer() = 0;
     virtual void stopListeningScriptDebugServer() = 0;
@@ -147,7 +145,7 @@ protected:
     void reset();
 
 private:
-    bool enabled();
+    bool enabled() const { return m_enabled; };
 
     PassRefPtr<TypeBuilder::Array<TypeBuilder::Debugger::CallFrame>> currentCallFrames();
 
@@ -165,6 +163,7 @@ private:
 
     typedef HashMap<String, Script> ScriptsMap;
     typedef HashMap<String, Vector<String>> BreakpointIdToDebugServerBreakpointIdsMap;
+    typedef HashMap<String, RefPtr<InspectorObject>> BreakpointIdToBreakpointMap;
 
     InjectedScriptManager* m_injectedScriptManager;
     InspectorFrontend::Debugger* m_frontend;
@@ -172,9 +171,11 @@ private:
     ScriptValue m_currentCallStack;
     ScriptsMap m_scripts;
     BreakpointIdToDebugServerBreakpointIdsMap m_breakpointIdToDebugServerBreakpointIds;
+    BreakpointIdToBreakpointMap m_javaScriptBreakpoints;
     String m_continueToLocationBreakpointId;
     InspectorFrontend::Debugger::Reason::Enum m_breakReason;
     RefPtr<InspectorObject> m_breakAuxData;
+    bool m_enabled;
     bool m_javaScriptPauseScheduled;
     Listener* m_listener;
 };

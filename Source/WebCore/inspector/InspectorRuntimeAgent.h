@@ -57,7 +57,7 @@ class InspectorRuntimeAgent : public InspectorBaseAgent<InspectorRuntimeAgent>, 
 public:
     virtual ~InspectorRuntimeAgent();
 
-    bool enabled() { return m_enabled; }
+    bool enabled() const { return m_enabled; }
     // Part of the protocol.
     virtual void enable(ErrorString*) { m_enabled = true; }
     virtual void disable(ErrorString*) { m_enabled = false; }
@@ -91,7 +91,7 @@ public:
 #endif
 
 protected:
-    InspectorRuntimeAgent(InstrumentingAgents*, InspectorCompositeState*, InjectedScriptManager*);
+    InspectorRuntimeAgent(InstrumentingAgents*, InjectedScriptManager*);
     virtual InjectedScript injectedScriptForEval(ErrorString*, const int* executionContextId) = 0;
 
     virtual void muteConsole() = 0;

@@ -354,10 +354,10 @@ static PassOwnPtr<HPEN> createPen(const Color& col, double fWidth, StrokeStyle s
     int penStyle = PS_NULL;
     switch (style) {
         case SolidStroke:
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
         case DoubleStroke:
         case WavyStroke: // FIXME: https://bugs.webkit.org/show_bug.cgi?id=94114 - Needs platform support.
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
             penStyle = PS_SOLID;
             break;
         case DottedStroke:  // not supported on Windows CE
@@ -950,14 +950,19 @@ void GraphicsContext::drawFocusRing(const Vector<IntRect>& rects, int width, int
     DrawFocusRect(dc, &rect);
 }
 
-void GraphicsContext::drawLineForText(const FloatRect& bounds, bool)
+FloatRect GraphicsContext::computeLineBoundsForText(const FloatPoint& origin, float width, bool printing)
+{
+    return FloatRect(origin, FloatSize(width, strokeThickness()));
+}
+
+void GraphicsContext::drawLineForText(const FloatPoint& origin, float width, bool printing)
 {
     if (paintingDisabled())
         return;
 
     StrokeStyle oldStyle = strokeStyle();
     setStrokeStyle(SolidStroke);
-    drawLine(roundedIntPoint(bounds.location()), roundedIntPoint(bounds.location() + FloatSize(bounds.width(), 0)));
+    drawLine(roundedIntPoint(origin), roundedIntPoint(origin + FloatSize(width, 0)));
     setStrokeStyle(oldStyle);
 }
 

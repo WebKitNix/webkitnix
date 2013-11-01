@@ -44,11 +44,6 @@ class MediaStreamAudioSource;
 class MediaStream {
 public:
 
-    enum EndedAtCreation {
-        IsNotEnded,
-        IsEnded
-    };
-
     MediaStream() { }
     MediaStream(const MediaStream& other) { assign(other); }
     ~MediaStream() { reset(); }
@@ -62,7 +57,7 @@ public:
     NIX_EXPORT void assign(const MediaStream&);
 
     // Takes ownership of the MediaStreamSource* pointers, deleting them.
-    NIX_EXPORT void initialize(std::vector<MediaStreamSource*>& audioTracks, std::vector<MediaStreamSource*>& videoTracks, EndedAtCreation isEnded);
+    NIX_EXPORT void initialize(std::vector<MediaStreamSource*>& audioTracks, std::vector<MediaStreamSource*>& videoTracks);
 
     NIX_EXPORT void reset();
     NIX_EXPORT bool isNull() const;

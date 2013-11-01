@@ -614,7 +614,12 @@ void GraphicsContext::drawFocusRing(const Vector<IntRect>& rects, int width, int
     cairo_restore(cr);
 }
 
-void GraphicsContext::drawLineForText(const FloatRect& bounds, bool)
+FloatRect GraphicsContext::computeLineBoundsForText(const FloatPoint& origin, float width, bool)
+{
+    return FloatRect(origin, FloatSize(width, strokeThickness()));
+}
+
+void GraphicsContext::drawLineForText(const FloatPoint& origin, float width, bool printing)
 {
     if (paintingDisabled())
         return;
@@ -623,16 +628,16 @@ void GraphicsContext::drawLineForText(const FloatRect& bounds, bool)
     cairo_save(cairoContext);
 
     // This bumping of <1 stroke thicknesses matches the one in drawLineOnCairoContext.
-    FloatPoint endPoint(bounds.location() + IntSize(bounds.width(), 0));
-    FloatRect lineExtents(bounds.location(), FloatSize(bounds.width(), strokeThickness()));
+    FloatPoint endPoint(origin + IntSize(width, 0));
+    FloatRect lineExtents = computeLineBoundsForText(origin, width, printing);
 
     ShadowBlur& shadow = platformContext()->shadowBlur();
     if (GraphicsContext* shadowContext = shadow.beginShadowLayer(this, lineExtents)) {
-        drawLineOnCairoContext(this, shadowContext->platformContext()->cr(), bounds.location(), endPoint);
+        drawLineOnCairoContext(this, shadowContext->platformContext()->cr(), origin, endPoint);
         shadow.endShadowLayer(this);
     }
 
-    drawLineOnCairoContext(this, cairoContext, bounds.location(), endPoint);
+    drawLineOnCairoContext(this, cairoContext, origin, endPoint);
     cairo_restore(cairoContext);
 }
 
@@ -747,10 +752,10 @@ void GraphicsContext::setPlatformStrokeStyle(StrokeStyle strokeStyle)
         cairo_set_line_width(platformContext()->cr(), 0);
         break;
     case SolidStroke:
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
     case DoubleStroke:
     case WavyStroke: // FIXME: https://bugs.webkit.org/show_bug.cgi?id=94110 - Needs platform support.
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
         cairo_set_dash(platformContext()->cr(), 0, 0, 0);
         break;
     case DottedStroke:

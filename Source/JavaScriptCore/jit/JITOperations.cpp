@@ -1105,7 +1105,7 @@ char* JIT_OPERATION operationOptimize(ExecState* exec, int32_t bytecodeIndex)
                     "Triggering reoptimization of ", *codeBlock,
                     "(", *codeBlock->replacement(), ") (in loop).\n");
             }
-            codeBlock->reoptimize();
+            codeBlock->replacement()->jettison(CountReoptimization);
             return 0;
         }
     } else {
@@ -1190,7 +1190,7 @@ char* JIT_OPERATION operationOptimize(ExecState* exec, int32_t bytecodeIndex)
                 "Triggering reoptimization of ", *codeBlock, " -> ",
                 *codeBlock->replacement(), " (after OSR fail).\n");
         }
-        codeBlock->reoptimize();
+        optimizedCodeBlock->jettison(CountReoptimization);
         return 0;
     }
 
@@ -1717,7 +1717,7 @@ asm (
 ".globl " SYMBOL_STRING(getHostCallReturnValue) "\n"
 HIDE_SYMBOL(getHostCallReturnValue) "\n"
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
-    "mov 32(%r13), %r13\n"
+    "mov 0(%r13), %r13\n" // CallerFrameAndPC::callerFrame
     "mov %r13, %rdi\n"
     "jmp " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
@@ -1728,7 +1728,7 @@ asm (
 ".globl " SYMBOL_STRING(getHostCallReturnValue) "\n"
 HIDE_SYMBOL(getHostCallReturnValue) "\n"
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
-    "mov 32(%edi), %edi\n"
+    "mov 0(%edi), %edi\n" // CallerFrameAndPC::callerFrame
     "mov %edi, 4(%esp)\n"
     "jmp " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
@@ -1742,7 +1742,7 @@ HIDE_SYMBOL(getHostCallReturnValue) "\n"
 ".thumb" "\n"
 ".thumb_func " THUMB_FUNC_PARAM(getHostCallReturnValue) "\n"
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
-    "ldr r5, [r5, #32]" "\n"
+    "ldr r5, [r5, #0]" "\n" // CallerFrameAndPC::callerFrame
     "mov r0, r5" "\n"
     "b " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
@@ -1754,7 +1754,7 @@ asm (
 HIDE_SYMBOL(getHostCallReturnValue) "\n"
 INLINE_ARM_FUNCTION(getHostCallReturnValue)
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
-    "ldr r5, [r5, #32]" "\n"
+    "ldr r5, [r5, #0]" "\n" // CallerFrameAndPC::callerFrame
     "mov r0, r5" "\n"
     "b " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
@@ -1778,7 +1778,7 @@ asm (
 HIDE_SYMBOL(getHostCallReturnValue) "\n"
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
     LOAD_FUNCTION_TO_T9(getHostCallReturnValueWithExecState)
-    "lw $s0, 32($s0)" "\n"
+    "lw $s0, 0($s0)" "\n" // CallerFrameAndPC::callerFrame
     "move $a0, $s0" "\n"
     "b " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
@@ -1789,8 +1789,7 @@ asm (
 ".globl " SYMBOL_STRING(getHostCallReturnValue) "\n"
 HIDE_SYMBOL(getHostCallReturnValue) "\n"
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
-    "add #32, r14" "\n"
-    "mov.l @r14, r14" "\n"
+    "mov.l @r14, r14" "\n" // CallerFrameAndPC::callerFrame
     "mov r14, r4" "\n"
     "mov.l 2f, " SH4_SCRATCH_REGISTER "\n"
     "braf " SH4_SCRATCH_REGISTER "\n"
@@ -1804,7 +1803,7 @@ extern "C" {
     __declspec(naked) EncodedJSValue HOST_CALL_RETURN_VALUE_OPTION getHostCallReturnValue()
     {
         __asm {
-            mov edi, [edi + 32];
+            mov edi, [edi + 0]; // CallerFrameAndPC::callerFrame
             mov [esp + 4], edi;
             jmp getHostCallReturnValueWithExecState
         }

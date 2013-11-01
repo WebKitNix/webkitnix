@@ -61,7 +61,6 @@
 #include "InjectedScript.h"
 #include "InspectorFrontend.h"
 #include "InspectorPageAgent.h"
-#include "InspectorState.h"
 #include "InspectorValues.h"
 #include "InstrumentingAgents.h"
 #include "SecurityOrigin.h"
@@ -84,10 +83,6 @@ typedef WebCore::InspectorBackendDispatcher::CallbackBase RequestCallback;
 typedef WebCore::InspectorBackendDispatcher::IndexedDBCommandHandler::ClearObjectStoreCallback ClearObjectStoreCallback;
 
 namespace WebCore {
-
-namespace IndexedDBAgentState {
-static const char indexedDBAgentEnabled[] = "indexedDBAgentEnabled";
-};
 
 namespace {
 
@@ -561,8 +556,8 @@ public:
 
 } // namespace
 
-InspectorIndexedDBAgent::InspectorIndexedDBAgent(InstrumentingAgents* instrumentingAgents, InspectorCompositeState* state, InjectedScriptManager* injectedScriptManager, InspectorPageAgent* pageAgent)
-    : InspectorBaseAgent<InspectorIndexedDBAgent>("IndexedDB", instrumentingAgents, state)
+InspectorIndexedDBAgent::InspectorIndexedDBAgent(InstrumentingAgents* instrumentingAgents, InjectedScriptManager* injectedScriptManager, InspectorPageAgent* pageAgent)
+    : InspectorBaseAgent<InspectorIndexedDBAgent>("IndexedDB", instrumentingAgents)
     , m_injectedScriptManager(injectedScriptManager)
     , m_pageAgent(pageAgent)
 {
@@ -577,22 +572,12 @@ void InspectorIndexedDBAgent::clearFrontend()
     disable(0);
 }
 
-void InspectorIndexedDBAgent::restore()
-{
-    if (m_state->getBoolean(IndexedDBAgentState::indexedDBAgentEnabled)) {
-        ErrorString error;
-        enable(&error);
-    }
-}
-
 void InspectorIndexedDBAgent::enable(ErrorString*)
 {
-    m_state->setBoolean(IndexedDBAgentState::indexedDBAgentEnabled, true);
 }
 
 void InspectorIndexedDBAgent::disable(ErrorString*)
 {
-    m_state->setBoolean(IndexedDBAgentState::indexedDBAgentEnabled, false);
 }
 
 static Document* assertDocument(ErrorString* errorString, Frame* frame)

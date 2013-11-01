@@ -66,11 +66,11 @@ void JITCompiler::linkOSRExits()
         for (unsigned i = 0; i < m_jitCode->osrExit.size(); ++i) {
             OSRExitCompilationInfo& info = m_exitCompilationInfo[i];
             Vector<Label> labels;
-            if (info.m_watchpointIndex == std::numeric_limits<unsigned>::max()) {
+            if (!info.m_failureJumps.empty()) {
                 for (unsigned j = 0; j < info.m_failureJumps.jumps().size(); ++j)
                     labels.append(info.m_failureJumps.jumps()[j].label());
             } else
-                labels.append(m_jitCode->watchpoints[info.m_watchpointIndex].sourceLabel());
+                labels.append(info.m_replacementSource);
             m_exitSiteLabels.append(labels);
         }
     }
@@ -79,11 +79,10 @@ void JITCompiler::linkOSRExits()
         OSRExit& exit = m_jitCode->osrExit[i];
         OSRExitCompilationInfo& info = m_exitCompilationInfo[i];
         JumpList& failureJumps = info.m_failureJumps;
-        ASSERT(failureJumps.empty() == (info.m_watchpointIndex != std::numeric_limits<unsigned>::max()));
-        if (info.m_watchpointIndex == std::numeric_limits<unsigned>::max())
+        if (!failureJumps.empty())
             failureJumps.link(this);
         else
-            m_jitCode->watchpoints[info.m_watchpointIndex].setDestination(label());
+            info.m_replacementDestination = label();
         jitAssertHasValidCallFrame();
         store32(TrustedImm32(i), &vm()->osrExitIndex);
         exit.setPatchableCodeOffset(patchableJump());
@@ -100,7 +99,7 @@ void JITCompiler::compileEntry()
     // check) which will be dependent on stack layout. (We'd need to account for this in
     // both normal return code and when jumping to an exception handler).
     preserveReturnAddressAfterCall(GPRInfo::regT2);
-    emitPutToCallFrameHeader(GPRInfo::regT2, JSStack::ReturnPC);
+    emitPutReturnPCToCallFrameHeader(GPRInfo::regT2);
     emitPutImmediateToCallFrameHeader(m_codeBlock, JSStack::CodeBlock);
 }
 
@@ -128,7 +127,7 @@ void JITCompiler::compileExceptionHandlers()
     if (!m_exceptionChecksWithCallFrameRollback.empty()) {
         // Remove hostCallFrameFlag from caller.
         m_exceptionChecksWithCallFrameRollback.link(this);
-        emitGetFromCallFrameHeaderPtr(JSStack::CallerFrame, GPRInfo::argumentGPR0);
+        emitGetCallerFrameFromCallFrameHeaderPtr(GPRInfo::argumentGPR0);
         andPtr(TrustedImm32(safeCast<int32_t>(~CallFrame::hostCallFrameFlag())), GPRInfo::argumentGPR0);
         doLookup = jump();
     }
@@ -257,8 +256,11 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
         OSRExitCompilationInfo& info = m_exitCompilationInfo[i];
         linkBuffer.link(exit.getPatchableCodeOffsetAsJump(), target);
         exit.correctJump(linkBuffer);
-        if (info.m_watchpointIndex != std::numeric_limits<unsigned>::max())
-            m_jitCode->watchpoints[info.m_watchpointIndex].correctLabels(linkBuffer);
+        if (info.m_replacementSource.isSet()) {
+            m_jitCode->common.jumpReplacements.append(JumpReplacement(
+                linkBuffer.locationOf(info.m_replacementSource),
+                linkBuffer.locationOf(info.m_replacementDestination)));
+        }
     }
     
     if (m_graph.compilation()) {

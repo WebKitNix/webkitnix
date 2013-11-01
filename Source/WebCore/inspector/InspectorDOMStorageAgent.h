@@ -41,7 +41,6 @@ class Frame;
 class InspectorArray;
 class InspectorFrontend;
 class InspectorPageAgent;
-class InspectorState;
 class InstrumentingAgents;
 class Page;
 class SecurityOrigin;
@@ -52,9 +51,9 @@ typedef String ErrorString;
 
 class InspectorDOMStorageAgent : public InspectorBaseAgent<InspectorDOMStorageAgent>, public InspectorBackendDispatcher::DOMStorageCommandHandler {
 public:
-    static PassOwnPtr<InspectorDOMStorageAgent> create(InstrumentingAgents* instrumentingAgents, InspectorPageAgent* pageAgent, InspectorCompositeState* state)
+    static PassOwnPtr<InspectorDOMStorageAgent> create(InstrumentingAgents* instrumentingAgents, InspectorPageAgent* pageAgent)
     {
-        return adoptPtr(new InspectorDOMStorageAgent(instrumentingAgents, pageAgent, state));
+        return adoptPtr(new InspectorDOMStorageAgent(instrumentingAgents, pageAgent));
     }
     ~InspectorDOMStorageAgent();
 
@@ -77,13 +76,13 @@ public:
 
 private:
 
-    InspectorDOMStorageAgent(InstrumentingAgents*, InspectorPageAgent*, InspectorCompositeState*);
+    InspectorDOMStorageAgent(InstrumentingAgents*, InspectorPageAgent*);
 
-    bool isEnabled() const;
     PassRefPtr<StorageArea> findStorageArea(ErrorString*, const RefPtr<InspectorObject>&, Frame*&);
 
     InspectorPageAgent* m_pageAgent;
     InspectorFrontend* m_frontend;
+    bool m_enabled;
 };
 
 } // namespace WebCore

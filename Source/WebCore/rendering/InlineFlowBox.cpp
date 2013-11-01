@@ -202,7 +202,7 @@ void InlineFlowBox::removeChild(InlineBox* child)
     checkConsistency();
 }
 
-void InlineFlowBox::deleteLine(RenderArena& arena)
+void InlineFlowBox::deleteLine()
 {
     InlineBox* child = firstChild();
     InlineBox* next = 0;
@@ -212,7 +212,7 @@ void InlineFlowBox::deleteLine(RenderArena& arena)
 #ifndef NDEBUG
         child->setParent(0);
 #endif
-        child->deleteLine(arena);
+        child->deleteLine();
         child = next;
     }
 #ifndef NDEBUG
@@ -221,7 +221,7 @@ void InlineFlowBox::deleteLine(RenderArena& arena)
 #endif
 
     removeLineBoxFromRenderObject();
-    destroy(arena);
+    delete this;
 }
 
 void InlineFlowBox::removeLineBoxFromRenderObject()
@@ -750,7 +750,7 @@ void InlineFlowBox::placeBoxesInBlockDirection(LayoutUnit top, LayoutUnit maxHei
     }
 }
 
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
 void InlineFlowBox::computeMaxLogicalTop(float& maxLogicalTop) const
 {
     for (InlineBox* curr = firstChild(); curr; curr = curr->nextOnLine()) {
@@ -767,7 +767,7 @@ void InlineFlowBox::computeMaxLogicalTop(float& maxLogicalTop) const
         maxLogicalTop = max<float>(maxLogicalTop, localMaxLogicalTop);
     }
 }
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
 
 void InlineFlowBox::flipLinesInBlockDirection(LayoutUnit lineTop, LayoutUnit lineBottom)
 {

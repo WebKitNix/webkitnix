@@ -150,6 +150,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSCSSValue.h \
 	DerivedSources/WebCore/JSCSSValueList.cpp \
 	DerivedSources/WebCore/JSCSSValueList.h \
+	DerivedSources/WebCore/JSCryptoKey.cpp \
+	DerivedSources/WebCore/JSCryptoKey.h \
 	DerivedSources/WebCore/JSCustomEvent.cpp \
 	DerivedSources/WebCore/JSCustomEvent.h \
 	DerivedSources/WebCore/JSDatabase.cpp \
@@ -465,8 +467,6 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSMediaList.h \
 	DerivedSources/WebCore/JSMediaSource.cpp \
 	DerivedSources/WebCore/JSMediaSource.h \
-	DerivedSources/WebCore/JSWebKitMediaSource.cpp \
-	DerivedSources/WebCore/JSWebKitMediaSource.h \
 	DerivedSources/WebCore/JSMediaSourceStates.cpp \
 	DerivedSources/WebCore/JSMediaSourceStates.h \
 	DerivedSources/WebCore/JSMediaStream.cpp \
@@ -643,10 +643,6 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSSourceBufferList.h \
 	DerivedSources/WebCore/JSSourceInfo.cpp \
 	DerivedSources/WebCore/JSSourceInfo.h \
-	DerivedSources/WebCore/JSWebKitSourceBuffer.cpp \
-	DerivedSources/WebCore/JSWebKitSourceBuffer.h \
-	DerivedSources/WebCore/JSWebKitSourceBufferList.cpp \
-	DerivedSources/WebCore/JSWebKitSourceBufferList.h \
 	DerivedSources/WebCore/JSSpeechInputEvent.cpp \
 	DerivedSources/WebCore/JSSpeechInputEvent.h \
 	DerivedSources/WebCore/JSSpeechInputResult.cpp \
@@ -1200,9 +1196,6 @@ dom_binding_idls += \
 	$(WebCore)/Modules/mediasource/MediaSource.idl \
 	$(WebCore)/Modules/mediasource/SourceBuffer.idl \
 	$(WebCore)/Modules/mediasource/SourceBufferList.idl \
-	$(WebCore)/Modules/mediasource/WebKitMediaSource.idl \
-	$(WebCore)/Modules/mediasource/WebKitSourceBuffer.idl \
-	$(WebCore)/Modules/mediasource/WebKitSourceBufferList.idl \
 	$(WebCore)/Modules/mediastream/AllVideoCapabilities.idl \
 	$(WebCore)/Modules/mediastream/AllAudioCapabilities.idl \
 	$(WebCore)/Modules/mediastream/AudioStreamTrack.idl \
@@ -1795,8 +1788,8 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.cpp \
 	Source/WebCore/Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.h \
 	Source/WebCore/Modules/indexeddb/IDBCallbacks.h \
-	Source/WebCore/Modules/indexeddb/leveldb/IDBCursorBackendLevelDB.cpp \
-	Source/WebCore/Modules/indexeddb/leveldb/IDBCursorBackendLevelDB.h \
+	Source/WebCore/Modules/indexeddb/IDBCursorBackendImpl.cpp \
+	Source/WebCore/Modules/indexeddb/IDBCursorBackendImpl.h \
 	Source/WebCore/Modules/indexeddb/IDBCursorBackendInterface.h \
 	Source/WebCore/Modules/indexeddb/IDBCursor.cpp \
 	Source/WebCore/Modules/indexeddb/IDBCursor.h \
@@ -1840,6 +1833,7 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/indexeddb/IDBOpenDBRequest.cpp \
 	Source/WebCore/Modules/indexeddb/IDBOpenDBRequest.h \
 	Source/WebCore/Modules/indexeddb/IDBOperation.h \
+	Source/WebCore/Modules/indexeddb/IDBPendingDeleteCall.h \
 	Source/WebCore/Modules/indexeddb/IDBPendingOpenCall.h \
 	Source/WebCore/Modules/indexeddb/IDBPendingTransactionMonitor.cpp \
 	Source/WebCore/Modules/indexeddb/IDBPendingTransactionMonitor.h \
@@ -1874,12 +1868,6 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/mediasource/SourceBufferList.h \
 	Source/WebCore/Modules/mediasource/DOMURLMediaSource.cpp \
 	Source/WebCore/Modules/mediasource/DOMURLMediaSource.h \
-	Source/WebCore/Modules/mediasource/WebKitMediaSource.cpp \
-	Source/WebCore/Modules/mediasource/WebKitMediaSource.h \
-	Source/WebCore/Modules/mediasource/WebKitSourceBuffer.cpp \
-	Source/WebCore/Modules/mediasource/WebKitSourceBuffer.h \
-	Source/WebCore/Modules/mediasource/WebKitSourceBufferList.cpp \
-	Source/WebCore/Modules/mediasource/WebKitSourceBufferList.h \
 	Source/WebCore/Modules/mediastream/AllAudioCapabilities.h \
 	Source/WebCore/Modules/mediastream/AllVideoCapabilities.h \
 	Source/WebCore/Modules/mediastream/AudioStreamTrack.cpp \
@@ -2300,6 +2288,8 @@ webcore_sources += \
 	Source/WebCore/bindings/js/JSDOMMimeTypeArrayCustom.cpp \
 	Source/WebCore/bindings/js/JSDOMPluginArrayCustom.cpp \
 	Source/WebCore/bindings/js/JSDOMPluginCustom.cpp \
+	Source/WebCore/bindings/js/JSDOMPromise.cpp \
+	Source/WebCore/bindings/js/JSDOMPromise.h \
 	Source/WebCore/bindings/js/JSDOMStringListCustom.cpp \
 	Source/WebCore/bindings/js/JSDOMStringMapCustom.cpp \
 	Source/WebCore/bindings/js/JSDOMWindowBase.cpp \
@@ -3824,9 +3814,6 @@ webcore_sources += \
 	Source/WebCore/inspector/InspectorResourceAgent.h \
 	Source/WebCore/inspector/InspectorRuntimeAgent.cpp \
 	Source/WebCore/inspector/InspectorRuntimeAgent.h \
-	Source/WebCore/inspector/InspectorState.cpp \
-	Source/WebCore/inspector/InspectorState.h \
-	Source/WebCore/inspector/InspectorStateClient.h \
 	Source/WebCore/inspector/InspectorStyleSheet.cpp \
 	Source/WebCore/inspector/InspectorStyleSheet.h \
 	Source/WebCore/inspector/InspectorStyleTextEditor.cpp \
@@ -6295,19 +6282,24 @@ endif # END USE_GLES2
 
 if USE_GSTREAMER
 platform_sources += \
+	Source/WebCore/platform/graphics/gstreamer/AudioTrackPrivateGStreamer.cpp \
+	Source/WebCore/platform/graphics/gstreamer/AudioTrackPrivateGStreamer.h \
 	Source/WebCore/platform/graphics/gstreamer/GRefPtrGStreamer.cpp \
 	Source/WebCore/platform/graphics/gstreamer/GRefPtrGStreamer.h \
 	Source/WebCore/platform/graphics/gstreamer/GStreamerUtilities.cpp \
 	Source/WebCore/platform/graphics/gstreamer/GStreamerUtilities.h \
 	Source/WebCore/platform/graphics/gstreamer/GStreamerVersioning.cpp \
 	Source/WebCore/platform/graphics/gstreamer/GStreamerVersioning.h \
+	Source/WebCore/platform/graphics/gstreamer/InbandTextTrackPrivateGStreamer.cpp \
+	Source/WebCore/platform/graphics/gstreamer/InbandTextTrackPrivateGStreamer.h \
 	Source/WebCore/platform/graphics/gstreamer/TextCombinerGStreamer.cpp \
 	Source/WebCore/platform/graphics/gstreamer/TextCombinerGStreamer.h \
 	Source/WebCore/platform/graphics/gstreamer/TextSinkGStreamer.cpp \
-	Source/WebCore/platform/graphics/gstreamer/TextSinkGStreamer.h
-webcore_platform_sources += \
-	Source/WebCore/platform/graphics/gstreamer/InbandTextTrackPrivateGStreamer.cpp \
-	Source/WebCore/platform/graphics/gstreamer/InbandTextTrackPrivateGStreamer.h
+	Source/WebCore/platform/graphics/gstreamer/TextSinkGStreamer.h \
+	Source/WebCore/platform/graphics/gstreamer/TrackPrivateBaseGStreamer.cpp \
+	Source/WebCore/platform/graphics/gstreamer/TrackPrivateBaseGStreamer.h \
+	Source/WebCore/platform/graphics/gstreamer/VideoTrackPrivateGStreamer.cpp \
+	Source/WebCore/platform/graphics/gstreamer/VideoTrackPrivateGStreamer.h
 endif
 
 # ---

@@ -113,9 +113,6 @@ void RenderBlockFlow::willBeDestroyed()
     // Mark as being destroyed to avoid trouble with merges in removeChild().
     m_beingDestroyed = true;
 
-    if (lineGridBox())
-        lineGridBox()->destroy(renderArena());
-
     if (renderNamedFlowFragment())
         setRenderNamedFlowFragment(0);
 
@@ -159,7 +156,7 @@ void RenderBlockFlow::willBeDestroyed()
             parent()->dirtyLinesFromChangedChild(this);
     }
 
-    m_lineBoxes.deleteLineBoxes(renderArena());
+    m_lineBoxes.deleteLineBoxes();
 
     removeFromDelayedUpdateScrollInfoSet();
 
@@ -1706,15 +1703,15 @@ void RenderBlockFlow::layoutLineGridBox()
     
     setLineGridBox(0);
 
-    RootInlineBox* lineGridBox = new (renderArena()) RootInlineBox(*this);
+    auto lineGridBox = std::make_unique<RootInlineBox>(*this);
     lineGridBox->setHasTextChildren(); // Needed to make the line ascent/descent actually be honored in quirks mode.
     lineGridBox->setConstructed();
     GlyphOverflowAndFallbackFontsMap textBoxDataMap;
     VerticalPositionCache verticalPositionCache;
     lineGridBox->alignBoxesInBlockDirection(logicalHeight(), textBoxDataMap, verticalPositionCache);
     
-    setLineGridBox(lineGridBox);
-    
+    setLineGridBox(std::move(lineGridBox));
+
     // FIXME: If any of the characteristics of the box change compared to the old one, then we need to do a deep dirtying
     // (similar to what happens when the page height changes). Ideally, though, we only do this if someone is actually snapping
     // to this grid.
@@ -1788,7 +1785,7 @@ void RenderBlockFlow::deleteLines()
         ASSERT(!m_lineBoxes.firstLineBox());
         m_simpleLineLayout = nullptr;
     } else
-        m_lineBoxes.deleteLineBoxTree(renderArena());
+        m_lineBoxes.deleteLineBoxTree();
 
     RenderBlock::deleteLines();
 }
@@ -3148,7 +3145,7 @@ bool RenderBlockFlow::hasLines() const
     ASSERT(childrenInline());
 
     if (m_simpleLineLayout)
-        return m_simpleLineLayout->lineCount;
+        return m_simpleLineLayout->lineCount();
 
     return lineBoxes().firstLineBox();
 }
@@ -3171,7 +3168,7 @@ void RenderBlockFlow::layoutSimpleLines(LayoutUnit& repaintLogicalTop, LayoutUni
 void RenderBlockFlow::deleteLineBoxesBeforeSimpleLineLayout()
 {
     ASSERT(m_lineLayoutPath == SimpleLinesPath);
-    lineBoxes().deleteLineBoxes(renderArena());
+    lineBoxes().deleteLineBoxes();
     toRenderText(firstChild())->deleteLineBoxesBeforeSimpleLineLayout();
 }
 

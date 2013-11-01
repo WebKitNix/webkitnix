@@ -1,3 +1,566 @@
+2013-11-01  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        [css shapes] Pull in upstream fixes to shape-outside margin and clipping tests
+        https://bugs.webkit.org/show_bug.cgi?id=123588
+
+        Reviewed by Alexandru Chiculita.
+
+        Fix some typos in the tests, add better explanation, and generally
+        make the tests clearer.
+
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/resources/w3c-import.log:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-clipped-001-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-clipped-001.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-clipped-003-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-clipped-003.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-clipped-004.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-clipped-005.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-clipped-006.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-000-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-000.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-001-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-001.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-002-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-002.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-003-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-003.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-004-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-004.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-005-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-005.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-006-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-006.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-007-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-007.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-008-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-008.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-009-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-009.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-010-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-010.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-011-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-011.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-012-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-012.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-013-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-013.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-014-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-014.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-015-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-015.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-016-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-016.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-017-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-017.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-018-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-018.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-019-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-019.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-020-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-020.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-021-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-021.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/w3c-import.log:
+
+2013-11-01  Brendan Long  <b.long@cablelabs.com>
+
+        [GStreamer] Support audio and video tracks
+        https://bugs.webkit.org/show_bug.cgi?id=117039
+
+        Reviewed by Philippe Normand.
+
+        * media/content/two-audio-and-video-tracks.mkv: Added.
+        * media/in-band-tracks.js: Renamed from LayoutTests/media/in-band-cues.js.
+        (testAddTrack): Tests addtrack events.
+        (testAttribute): Added "type" parameter so we can use this for audio and video tracks.
+        (testTextTrackMode): Renamed to make it clear that this only applies to text tracks.
+        (testCueStyle): Same.
+        (testTextTrackOrder): Same.
+        * media/track/audio/audio-track-mkv-vorbis-addtrack-expected.txt: Added.
+        * media/track/audio/audio-track-mkv-vorbis-addtrack.html: Copied from LayoutTests/media/track/in-band/track-in-band-srt-mkv-track-order.html.
+        * media/track/audio/audio-track-mkv-vorbis-enabled-expected.txt: Added.
+        * media/track/audio/audio-track-mkv-vorbis-enabled.html: Added.
+        * media/track/audio/audio-track-mkv-vorbis-language-expected.txt: Added.
+        * media/track/audio/audio-track-mkv-vorbis-language.html: Copied from LayoutTests/media/track/in-band/track-in-band-kate-ogg-track-order.html.
+        * media/track/in-band/track-in-band-kate-ogg-addtrack-expected.txt: Added.
+        * media/track/in-band/track-in-band-kate-ogg-addtrack.html: Copied from LayoutTests/media/track/in-band/track-in-band-srt-mkv-track-order.html.
+        * media/track/in-band/track-in-band-kate-ogg-cues-added-once.html: Added.
+        * media/track/in-band/track-in-band-kate-ogg-kind.html: Added.
+        * media/track/in-band/track-in-band-kate-ogg-language.html: Added.
+        * media/track/in-band/track-in-band-kate-ogg-mode.html: Added.
+        * media/track/in-band/track-in-band-kate-ogg-style.html: Added.
+        * media/track/in-band/track-in-band-kate-ogg-track-order.html: Added.
+        * media/track/in-band/track-in-band-srt-mkv-addtrack-expected.txt: Added.
+        * media/track/in-band/track-in-band-srt-mkv-addtrack.html: Copied from LayoutTests/media/track/in-band/track-in-band-srt-mkv-track-order.html.
+        * media/track/in-band/track-in-band-srt-mkv-cues-added-once.html: Added.
+        * media/track/in-band/track-in-band-srt-mkv-kind.html: Added.
+        * media/track/in-band/track-in-band-srt-mkv-language.html: Added.
+        * media/track/in-band/track-in-band-srt-mkv-mode.html: Added.
+        * media/track/in-band/track-in-band-srt-mkv-style.html: Added.
+        * media/track/in-band/track-in-band-srt-mkv-track-order.html: Added.
+        * media/track/video/video-track-mkv-theora-addtrack-expected.txt: Added.
+        * media/track/video/video-track-mkv-theora-addtrack.html: Copied from LayoutTests/media/track/in-band/track-in-band-srt-mkv-track-order.html.
+        * media/track/video/video-track-mkv-theora-language-expected.txt: Added.
+        * media/track/video/video-track-mkv-theora-language.html: Copied from LayoutTests/media/track/in-band/track-in-band-kate-ogg-track-order.html.
+        * media/track/video/video-track-mkv-theora-selected-expected.txt: Added.
+        * media/track/video/video-track-mkv-theora-selected.html: Added.
+        * platform/mac/TestExpectations: Ignore audio and video track tests on mac.
+
+2013-11-01  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed, EFL gardening. Skip webgl tests because EFL port doesn't fully support webgl yet. 
+
+        * platform/efl/TestExpectations:
+
+2013-11-01  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed, EFL gardening. css3 text tests are failing since r158389
+
+        * platform/efl/TestExpectations: Add failure tests.
+
+2013-11-01  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Unreviewed GTK gardening. Tests passing after r158273 and r158352
+        and rebaseline needed after r158195.
+
+        * platform/gtk/TestExpectations: Removed tests now passing.
+        * platform/gtk/accessibility/media-element-expected.txt: Rebaseline.
+
+2013-11-01  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Avoid explicit traversal of text controls and the render tree in AtkText implementation
+        https://bugs.webkit.org/show_bug.cgi?id=123153
+
+        Reviewed by Chris Fleizach.
+
+        Updated test expectations to properly reflect the new reality when it
+        comes to exposing replaced objects and anymous blocks.
+
+        * platform/gtk/accessibility/table-with-rules-expected.txt: Updated to
+        print <\n> explicitly for the two instances of <BR> that are present in the
+        test, that will be included as part of an anonymous block.
+        * platform/efl/accessibility/table-with-rules-expected.txt: Ditto.
+        * platform/efl-wk2/accessibility/table-with-rules-expected.txt: Ditto.
+
+        * platform/efl/accessibility/deleting-iframe-destroys-axcache-expected.txt: Updated
+        expectations not to expect the text of a button to be shown.
+        * platform/gtk/accessibility/deleting-iframe-destroys-axcache-expected.txt: Ditto.
+        * platform/gtk/accessibility/replaced-objects-in-anonymous-blocks-expected.txt: Ditto.
+
+        * platform/gtk/TestExpectations: Removed replaced-objects-in-anonymous-blocks.html
+        from the list of expected failures, as it's now being properly exposed.
+
+2013-11-01  Alexey Proskuryakov  <ap@apple.com>
+
+        Add a Mac WebCrypto implementation of HMAC importKey/sign/verify
+        https://bugs.webkit.org/show_bug.cgi?id=123598
+
+        Reviewed by Anders Carlsson.
+
+        * crypto/subtle/hmac-sign-verify-expected.txt: Added.
+        * crypto/subtle/hmac-sign-verify.html: Added.
+
+2013-10-31  Oliver Hunt  <oliver@apple.com>
+
+        JavaScript parser bug
+        https://bugs.webkit.org/show_bug.cgi?id=123506
+
+        Reviewed by Mark Lam.
+
+        Update and add tests
+
+        * js/dom/assign-expected.txt:
+        * js/function-toString-parentheses-expected.txt:
+        * js/parser-syntax-check-expected.txt:
+        * js/script-tests/parser-syntax-check.js:
+
+2013-10-31  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Update the test expectations for the bug 121452.
+
+        fast/frames/lots-of-objects.html and lots-of-iframes.html are timing out everywhere on Mac.
+
+        * platform/mac-wk2/TestExpectations:
+        * platform/mac/TestExpectations:
+
+2013-10-31  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Update the Mac test expectation for the mac-future.
+
+        * platform/mac/TestExpectations:
+
+2013-10-31  Youenn Fablet  <youennf@gmail.com>
+
+        Correct the elapsedTime calculation in SVG animations
+        https://bugs.webkit.org/show_bug.cgi?id=119289
+
+        Reviewed by Brent Fulgham.
+
+        Merged from Blink: https://chromium.googlesource.com/chromium/blink/+/338f9badca7fb7880abdb0cecd5f02493c1f7d2e
+
+        * svg/animations/getCurrentTime-pause-unpause-expected.txt: Added.
+        * svg/animations/getCurrentTime-pause-unpause.html: Added.
+
+2013-10-30  Oliver Hunt  <oliver@apple.com>
+
+        Implement ES6 Math functions
+        https://bugs.webkit.org/show_bug.cgi?id=123536
+
+        Reviewed by Michael Saboff.
+
+        Add tests for new math functions
+
+        * js/Object-getOwnPropertyNames-expected.txt:
+        * js/math-expected.txt:
+        * js/script-tests/Object-getOwnPropertyNames.js:
+        * js/script-tests/math.js:
+
+2013-10-31  Alexey Proskuryakov  <ap@apple.com>
+
+        Enable WebCrypto on Mac
+        https://bugs.webkit.org/show_bug.cgi?id=123587
+
+        Reviewed by Anders Carlsson.
+
+        * TestExpectations:
+        * platform/efl/TestExpectations:
+        * platform/gtk/TestExpectations:
+        * platform/win/TestExpectations:
+        * platform/wincairo/TestExpectations:
+        Only skipping on specific platforms now.
+
+        * crypto: Added.
+        * crypto/crypto-gc-expected.txt: Copied from LayoutTests/security/crypto-gc-expected.txt.
+        * crypto/crypto-gc.html: Copied from LayoutTests/security/crypto-gc.html.
+        * crypto/crypto-random-values-expected.txt: Copied from LayoutTests/security/crypto-random-values-expected.txt.
+        * crypto/crypto-random-values-limits-expected.txt: Copied from LayoutTests/security/crypto-random-values-limits-expected.txt.
+        * crypto/crypto-random-values-limits.html: Copied from LayoutTests/security/crypto-random-values-limits.html.
+        * crypto/crypto-random-values-types-expected.txt: Copied from LayoutTests/security/crypto-random-values-types-expected.txt.
+        * crypto/crypto-random-values-types.html: Copied from LayoutTests/security/crypto-random-values-types.html.
+        * crypto/crypto-random-values.html: Copied from LayoutTests/security/crypto-random-values.html.
+        * crypto/subtle: Added.
+        * crypto/subtle/argument-conversion-expected.txt: Copied from LayoutTests/security/crypto-subtle-arguments-expected.txt.
+        * crypto/subtle/argument-conversion.html: Copied from LayoutTests/security/crypto-subtle-arguments.html.
+        * crypto/subtle/gc-2-expected.txt: Copied from LayoutTests/security/crypto-subtle-gc-2-expected.txt.
+        * crypto/subtle/gc-2.html: Copied from LayoutTests/security/crypto-subtle-gc-2.html.
+        * crypto/subtle/gc-3-expected.txt: Copied from LayoutTests/security/crypto-subtle-gc-3-expected.txt.
+        * crypto/subtle/gc-3.html: Copied from LayoutTests/security/crypto-subtle-gc-3.html.
+        * crypto/subtle/gc-expected.txt: Copied from LayoutTests/security/crypto-subtle-gc-expected.txt.
+        * crypto/subtle/gc.html: Copied from LayoutTests/security/crypto-subtle-gc.html.
+        * crypto/subtle/resources: Added.
+        * crypto/subtle/resources/common.js: Copied from LayoutTests/security/resources/common.js.
+        * crypto/subtle/sha-1-expected.txt: Copied from LayoutTests/security/crypto-subtle-sha1-expected.txt.
+        * crypto/subtle/sha-1.html: Copied from LayoutTests/security/crypto-subtle-sha1.html.
+        * security/crypto-gc-expected.txt: Removed.
+        * security/crypto-gc.html: Removed.
+        * security/crypto-random-values-expected.txt: Removed.
+        * security/crypto-random-values-limits-expected.txt: Removed.
+        * security/crypto-random-values-limits.html: Removed.
+        * security/crypto-random-values-types-expected.txt: Removed.
+        * security/crypto-random-values-types.html: Removed.
+        * security/crypto-random-values.html: Removed.
+        * security/crypto-subtle-arguments-expected.txt: Removed.
+        * security/crypto-subtle-arguments.html: Removed.
+        * security/crypto-subtle-gc-2-expected.txt: Removed.
+        * security/crypto-subtle-gc-2.html: Removed.
+        * security/crypto-subtle-gc-3-expected.txt: Removed.
+        * security/crypto-subtle-gc-3.html: Removed.
+        * security/crypto-subtle-gc-expected.txt: Removed.
+        * security/crypto-subtle-gc.html: Removed.
+        * security/crypto-subtle-sha1-expected.txt: Removed.
+        * security/crypto-subtle-sha1.html: Removed.
+        * security/resources/common.js: Removed.
+        Moved tests from security/ to crypto/.
+
+2013-10-31  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Move CSS3 text decoration implementation behind ENABLE(CSS3_TEXT_DECORATION)
+        https://bugs.webkit.org/show_bug.cgi?id=123541
+
+        Reviewed by Tim Horton.
+
+        * platform/mac/TestExpectations: Enable CSS3 text decoration tests
+        (since CSS3_TEXT_DECORATION is enabled by default)
+
+2013-10-31  Alexey Proskuryakov  <ap@apple.com>
+
+        [WebCrypto] Add SHA-1
+        https://bugs.webkit.org/show_bug.cgi?id=123582
+
+        Reviewed by Anders Carlsson.
+
+        * security/resources/common.js: Added from Blink.
+        (importTestKeys):
+        (asciiToArrayBuffer):
+        (printRejectedResult):
+        (printAcceptedResult):
+        (failAndFinishJSTest):
+
+        * security/crypto-subtle-arguments-expected.txt: Added.
+        * security/crypto-subtle-arguments.html: Added.
+        Added tests for how bindings treat crazy arguments. Heavily based on a test from Blink.
+
+        * security/crypto-subtle-sha1-expected.txt: Added.
+        * security/crypto-subtle-sha1.html: Added.
+        Test that SHA-1 works.
+
+        * TestExpectations: Skip these tests everywhere for now.
+
+2013-10-31  Filip Pizlo  <fpizlo@apple.com>
+
+        Remove CachedTranscendentalFunction because caching math functions is an ugly idea
+        https://bugs.webkit.org/show_bug.cgi?id=123574
+
+        Reviewed by Mark Hahnenberg.
+
+        * js/dfg-cos-constant-expected.txt: Added.
+        * js/dfg-cos-constant.html: Added.
+        * js/dfg-sin-constant-expected.txt: Added.
+        * js/dfg-sin-constant.html: Added.
+        * js/script-tests/dfg-cos-constant.js: Added.
+        (foo):
+        * js/script-tests/dfg-sin-constant.js: Added.
+        (foo):
+
+2013-10-30  Gavin Barraclough  <barraclough@apple.com>
+
+        WebPageCreationParameters should be consistent in Window.open
+        https://bugs.webkit.org/show_bug.cgi?id=123557
+
+        Reviewed by Sam Weinig.
+
+        When Window.open in called in WebKit2 the WebProcess sends a synchronous request to open
+        a page (WebPageProxy::createNewPage). The UIProcess creates a WebpageProxy, and responds
+        with instructions to the WebProcess to create the WebPage. The initial creation state of
+        the WebPage is communicated to the WebProcess via two routes (firstly an asynchronous
+        WebProcess::CreateWebPage message, and secondly in the synchronous response from
+        WebPageProxy::createNewPage). Unfortunately these responses are inconsistent with each
+        other. The creationParameters() for the page are calculated twice, and since the WKView
+        will be added to a window between the async message being sent and the synchronous reply
+        being returned the visibility state of the page can change.
+
+        To fix the inconsistency we can set the creation parameters at the point that the
+        WebPageProxy is instantiated. This will result in a functional change that is web
+        visible, since the page will initially be opened in a hidden/blurred state, and may
+        later become visible/focussed. This change is consistent with the direction we want to
+        evolve in. Whilst we will still probably require a synchronous message from the
+        WebProcess to the UIProcess on Window.open, we'll probably make this return much earlier
+        – having just created the WebPageProxy, but avoiding blocking the WebProcess over the
+        client delegate callback that opens the new window.
+
+        This fix results in a layout test result change, due to the change in behavior (page is
+        created blurred, and becomes focussed, resulting in a focus event being fired – rather
+        than the window opening directly into a focussed state). This is reported as a
+        progression (test is broken in WebKit1, fixed in WebKit2 after this change). In reality
+        the test is actually slightly broken in DRT/test-runner – the test runs differently than
+        in browser, since there is is no visible main window. In-browser this patch results in
+        no change in behavior on dom/Window/mozilla-focus-blur.html (the affected test).
+
+        * platform/mac-wk2/fast/dom/Window: Added.
+        * platform/mac-wk2/fast/dom/Window/mozilla-focus-blur-expected.txt: Added.
+            - This test now reports a pass on WebKit2
+
+2013-10-31  Alexey Proskuryakov  <ap@apple.com>
+
+        REGRESSION(r158333): http/tests/xmlhttprequest/response-encoding.html and xmlhttprequest-overridemimetype-content-type-header.html are failing
+        https://bugs.webkit.org/show_bug.cgi?id=123548
+
+        Reviewed by Brady Eidson.
+
+        * TestExpectations: Unskip tests that used to be affected by response-empty-arraybuffer.html
+
+        * http/tests/xmlhttprequest/response-empty-arraybuffer-expected.txt:
+        * http/tests/xmlhttprequest/response-empty-arraybuffer.html:
+        Fix a stupid typo. This test actually fully passes.
+
+2013-10-31  Krzysztof Wolanski  <k.wolanski@samsung.com>
+
+        [EFL] Rebaselining after r158186
+        https://bugs.webkit.org/show_bug.cgi?id=123571
+
+        Unreviewed gardening.
+
+        * platform/efl/editing/deleting/smart-delete-003-expected.txt: Rebaselining after r158186.
+        * platform/efl/editing/deleting/smart-delete-004-expected.txt: Rebaselining after r158186.
+        * platform/efl/editing/selection/after-line-wrap-expected.txt: Rebaselining after r157851.
+
+2013-10-31  Grzegorz Czajkowski  <g.czajkowski@samsung.com>
+
+        [EFL] Add baselines for spelling tests added in r157900.
+
+        Unreviewed gardening.
+
+        * platform/efl/editing/spelling/centering-misspelling-dots-expected.png: Added.
+        * platform/efl/editing/spelling/centering-misspelling-dots-expected.txt: Added.
+        * platform/efl/editing/spelling/misspelling-dots-dont-extend-beyond-words-expected.png: Added.
+        * platform/efl/editing/spelling/misspelling-dots-dont-extend-beyond-words-expected.txt: Added.
+
+2013-10-31  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed EFL gardening. Add 5 printing tests to EFL TestExpectations.
+        EFL port doesn't fully support printing functionality yet.
+
+        * platform/efl/TestExpectations:
+
+2013-10-31  Robert Plociennik  <r.plociennik@samsung.com>
+
+        [EFL] accessibility/textbox-role-reports-selection.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=112017
+
+        Reviewed by Mario Sanchez Prada.
+
+        Removed failure expectations.
+
+        * platform/efl-wk1/TestExpectations: The test is no longer failing.
+        * platform/efl-wk2/TestExpectations: The test is no longer failing.
+
+2013-10-30  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Add two crash expectations per bug 123555.
+
+        * TestExpectations:
+
+2013-10-30  Ryosuke Niwa  <rniwa@webkit.org>
+
+        REGRESSION(r158333): http/tests/xmlhttprequest/response-encoding.html and
+        xmlhttprequest-overridemimetype-content-type-header.html are failing
+        https://bugs.webkit.org/show_bug.cgi?id=123548
+
+        Add the failing test expectation.
+
+        * TestExpectations:
+
+2013-10-30  Alexey Proskuryakov  <ap@apple.com>
+
+        XHR.response is null when requesting empty file as arraybuffer
+        https://bugs.webkit.org/show_bug.cgi?id=123457
+
+        Based on a Blink test by yusukesuzuki@chromium.org.
+
+        Reviewed by Sam Weinig.
+
+        Failures in expected results appear to mean that Blink caches XHR responses in more
+        cases. It's not directly related to the patch.
+
+        * http/tests/xmlhttprequest/response-empty-arraybuffer-expected.txt: Added.
+        * http/tests/xmlhttprequest/response-empty-arraybuffer.html: Added.
+
+2013-10-30  Samuel White  <samuel_white@apple.com>
+
+        AX: AXFocused not exposed on ARIA menuitems
+        https://bugs.webkit.org/show_bug.cgi?id=123494
+
+        Reviewed by Chris Fleizach.
+
+        Adding test to make sure ARIA menuitems expose each piece of their focus state correctly.
+
+        * platform/mac/accessibility/aria-menuitem-focus-expected.txt: Added.
+        * platform/mac/accessibility/aria-menuitem-focus.html: Added.
+
+2013-10-30  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Delete the expected results for Lion.
+
+        Rubber-stamped by Anders Carlsson.
+
+        * platform/mac-lion: Removed.
+
+2013-10-30  Jer Noble  <jer.noble@apple.com>
+
+        REGRESSION(r158288): media/media-can-play-mpeg4-video.html fails
+        https://bugs.webkit.org/show_bug.cgi?id=123530
+
+        Reviewed by Eric Carlson.
+
+        * TestExpectations:
+
+2013-10-30  Santosh Mahto  <santosh.ma@samsung.com>
+
+        contentEditable deleting lists when list items are block level
+        https://bugs.webkit.org/show_bug.cgi?id=122602
+
+        Reviewed by Ryosuke Niwa.
+
+        Testcase: When listitem is styled with display:block then inserting
+        paragraph twice at the end of listitem should not remove entire list.
+
+        * editing/execCommand/hit-enter-twice-atendof-block-styled-listitem-expected.txt: Added.
+        * editing/execCommand/hit-enter-twice-atendof-block-styled-listitem.html: Added.
+
+        TestCase: When listitem is made of custom tag(<item>) and css(display:list-item) 
+        then inserting paragraph twice at the end of listitem should not remove entire list.
+
+        * editing/execCommand/hit-enter-twice-atendof-custom-listitem-expected.txt: Added.
+        * editing/execCommand/hit-enter-twice-atendof-custom-listitem.html: Added.
+2013-10-30  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Add a failing test expectation on media/media-can-play-mpeg4-video.html after r158288.
+        The failure is tracked by the bug 123530.
+
+        Also rebaseline Mountain Lion results.
+
+        * TestExpectations:
+        * platform/mac-mountainlion/js/dom/global-constructors-attributes-expected.txt:
+
+2013-10-30  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Add a flaky test expectation to media/track/track-in-band-legacy-api.html
+        The failure is tracked by the bug 123522.
+
+        * platform/mac/TestExpectations:
+
+2013-10-29  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Remove legacy Media Source APIs (WebKitMediaSource, WebKitSourceBuffer, WebKitSourceBufferList)
+        https://bugs.webkit.org/show_bug.cgi?id=123463
+
+        Reviewed by Eric Carlson.
+
+        * platform/mac/js/dom/global-constructors-attributes-expected.txt:
+
+2013-10-29  Simon Fraser  <simon.fraser@apple.com>
+
+        A WebGL test times out sometimes.
+
+        * platform/mac/TestExpectations:
+
+2013-10-30  Robert Plociennik  <r.plociennik@samsung.com>
+
+        [EFL] accessibility/textarea-selected-text-range.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=112016
+
+        Reviewed by Mario Sanchez Prada.
+
+        Removed failure expectations.
+
+        * platform/efl-wk1/TestExpectations: The test is no longer failing.
+        * platform/efl-wk2/TestExpectations: The test is no longer failing.
+
+2013-10-30  Robert Plociennik  <r.plociennik@samsung.com>
+
+        [EFL] accessibility/svg-remote-element.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=112013
+
+        Unreviewed EFL gardening. Passes after r158267.
+
+        * platform/efl-wk1/TestExpectations: The test is no longer failing.
+        * platform/efl-wk2/TestExpectations: The test is no longer failing.
+        * platform/efl/accessibility/svg-remote-element-expected.txt: Added.
+
+2013-10-30  Robert Plociennik  <r.plociennik@samsung.com>
+
+        [GTK] accessibility/svg-remote-element.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=101185
+
+        Reviewed by Chris Fleizach.
+
+        Provided new test expectations since resulting discrepancies are believed to be
+        platform related.
+
+        * platform/gtk-wk2/TestExpectations: The test is no longer failing.
+        * platform/gtk/accessibility/svg-remote-element-expected.txt: Added.
+        * platform/gtk/TestExpectations: The test is no longer failing.
+
 2013-10-30  Krzysztof Czech  <k.czech@samsung.com>
 
         [EFL] Remove efl/accessibility/image-map1-expected.txt after r158104

@@ -97,6 +97,8 @@ void clobberize(Graph& graph, Node* node, ReadFunctor& read, WriteFunctor& write
     case ArithMin:
     case ArithMax:
     case ArithSqrt:
+    case ArithSin:
+    case ArithCos:
     case GetScope:
     case SkipScope:
     case CheckFunction:
@@ -137,6 +139,7 @@ void clobberize(Graph& graph, Node* node, ReadFunctor& read, WriteFunctor& write
     case CheckTierUpAtReturn:
     case CheckTierUpAndOSREnter:
     case LoopHint:
+    case InvalidationPoint:
         write(SideState);
         return;
 
@@ -668,6 +671,30 @@ private:
 };
 
 bool doesWrites(Graph&, Node*);
+
+class AbstractHeapOverlaps {
+public:
+    AbstractHeapOverlaps(AbstractHeap heap)
+        : m_heap(heap)
+        , m_result(false)
+    {
+    }
+    
+    void operator()(AbstractHeap otherHeap)
+    {
+        if (m_result)
+            return;
+        m_result = m_heap.overlaps(otherHeap);
+    }
+    
+    bool result() const { return m_result; }
+
+private:
+    AbstractHeap m_heap;
+    bool m_result;
+};
+
+bool writesOverlap(Graph&, Node*, AbstractHeap);
 
 } } // namespace JSC::DFG
 
