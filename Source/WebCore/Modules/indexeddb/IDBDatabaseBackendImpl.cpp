@@ -391,8 +391,7 @@ size_t IDBDatabaseBackendImpl::connectionCount()
 void IDBDatabaseBackendImpl::processPendingCalls()
 {
     if (m_pendingSecondHalfOpen) {
-        // FIXME: Database versions are now of type uint64_t, but this code expected int64_t.
-        ASSERT(m_pendingSecondHalfOpen->version() == (int64_t)m_metadata.version);
+        ASSERT(m_pendingSecondHalfOpen->version() == m_metadata.version);
         ASSERT(m_metadata.id != InvalidId);
         m_pendingSecondHalfOpen->callbacks()->onSuccess(this, this->metadata());
         m_pendingSecondHalfOpen.release();
@@ -408,7 +407,7 @@ void IDBDatabaseBackendImpl::processPendingCalls()
     if (!m_pendingDeleteCalls.isEmpty() && isDeleteDatabaseBlocked())
         return;
     while (!m_pendingDeleteCalls.isEmpty()) {
-        OwnPtr<PendingDeleteCall> pendingDeleteCall = m_pendingDeleteCalls.takeFirst();
+        OwnPtr<IDBPendingDeleteCall> pendingDeleteCall = m_pendingDeleteCalls.takeFirst();
         deleteDatabaseFinal(pendingDeleteCall->callbacks());
     }
     // deleteDatabaseFinal should never re-queue calls.
@@ -439,7 +438,7 @@ void IDBDatabaseBackendImpl::createTransaction(int64_t transactionId, PassRefPtr
     m_transactions.add(transactionId, transaction.get());
 }
 
-void IDBDatabaseBackendImpl::openConnection(PassRefPtr<IDBCallbacks> prpCallbacks, PassRefPtr<IDBDatabaseCallbacks> prpDatabaseCallbacks, int64_t transactionId, int64_t version)
+void IDBDatabaseBackendImpl::openConnection(PassRefPtr<IDBCallbacks> prpCallbacks, PassRefPtr<IDBDatabaseCallbacks> prpDatabaseCallbacks, int64_t transactionId, uint64_t version)
 {
     ASSERT(m_backingStore.get());
     RefPtr<IDBCallbacks> callbacks = prpCallbacks;
@@ -460,7 +459,7 @@ void IDBDatabaseBackendImpl::openConnection(PassRefPtr<IDBCallbacks> prpCallback
             if (version == IDBDatabaseMetadata::NoIntVersion)
                 message = "Internal error opening database with no version specified.";
             else
-                message = String::format("Internal error opening database with version %lld", static_cast<long long>(version));
+                message = String::format("Internal error opening database with version %llu", static_cast<unsigned long long>(version));
             callbacks->onError(IDBDatabaseError::create(IDBDatabaseException::UnknownError, message));
             return;
         }
@@ -488,20 +487,17 @@ void IDBDatabaseBackendImpl::openConnection(PassRefPtr<IDBCallbacks> prpCallback
         version = 1;
     }
 
-    // FIXME: Database versions are now of type uint64_t, but this code expected int64_t.
-    if (version > (int64_t)m_metadata.version) {
+    if (version > m_metadata.version) {
         runIntVersionChangeTransaction(callbacks, databaseCallbacks, transactionId, version);
         return;
     }
 
-    // FIXME: Database versions are now of type uint64_t, but this code expected int64_t.
-    if (version < (int64_t)m_metadata.version) {
-        callbacks->onError(IDBDatabaseError::create(IDBDatabaseException::VersionError, String::format("The requested version (%lld) is less than the existing version (%lld).", static_cast<long long>(version), static_cast<long long>(m_metadata.version))));
+    if (version < m_metadata.version) {
+        callbacks->onError(IDBDatabaseError::create(IDBDatabaseException::VersionError, String::format("The requested version (%llu) is less than the existing version (%llu).", static_cast<unsigned long long>(version), static_cast<unsigned long long>(m_metadata.version))));
         return;
     }
 
-    // FIXME: Database versions are now of type uint64_t, but this code expected int64_t.
-    ASSERT(version == (int64_t)m_metadata.version);
+    ASSERT(version == m_metadata.version);
     m_databaseCallbacksSet.add(databaseCallbacks);
     callbacks->onSuccess(this, this->metadata());
 }
@@ -553,7 +549,7 @@ void IDBDatabaseBackendImpl::deleteDatabase(PassRefPtr<IDBCallbacks> prpCallback
         // VersionChangeEvents are received, not just set up to fire.
         // https://bugs.webkit.org/show_bug.cgi?id=71130
         callbacks->onBlocked(m_metadata.version);
-        m_pendingDeleteCalls.append(PendingDeleteCall::create(callbacks.release()));
+        m_pendingDeleteCalls.append(IDBPendingDeleteCall::create(callbacks.release()));
         return;
     }
     deleteDatabaseFinal(callbacks.release());

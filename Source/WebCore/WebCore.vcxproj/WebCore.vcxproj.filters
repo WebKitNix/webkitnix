@@ -4365,6 +4365,9 @@
     <ClCompile Include="..\bindings\js\JSDOMPluginCustom.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
+    <ClCompile Include="..\bindings\js\JSDOMPromise.cpp">
+      <Filter>bindings\js</Filter>
+    </ClCompile>
     <ClCompile Include="..\bindings\js\JSDOMStringListCustom.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
@@ -4900,9 +4903,6 @@
       <Filter>inspector</Filter>
     </ClCompile>
     <ClCompile Include="..\inspector\InspectorRuntimeAgent.cpp">
-      <Filter>inspector</Filter>
-    </ClCompile>
-    <ClCompile Include="..\inspector\InspectorState.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
     <ClCompile Include="..\inspector\InspectorStyleSheet.cpp">
@@ -11389,6 +11389,9 @@
     <ClInclude Include="..\bindings\js\JSDOMGlobalObjectTask.h">
       <Filter>bindings\js</Filter>
     </ClInclude>
+    <ClInclude Include="..\bindings\js\JSDOMPromise.h">
+      <Filter>bindings\js</Filter>
+    </ClInclude>
     <ClInclude Include="..\bindings\js\JSErrorHandler.h">
       <Filter>bindings\js</Filter>
     </ClInclude>
@@ -12416,12 +12419,6 @@
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\InspectorRuntimeAgent.h">
-      <Filter>inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inspector\InspectorState.h">
-      <Filter>inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inspector\InspectorStateClient.h">
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\InspectorStyleSheet.h">

@@ -90,6 +90,7 @@ public:
     DEFINE_ATTRIBUTE_EVENT_LISTENER(overconstrained);
 
     MediaStreamSource* source() const { return m_privateTrack->source(); }
+    MediaStreamTrackPrivate& privateTrack() { return m_privateTrack.get(); }
 
     bool ended() const;
 
@@ -104,10 +105,9 @@ public:
     using RefCounted<MediaStreamTrack>::deref;
 
 protected:
-    explicit MediaStreamTrack(MediaStreamTrack*);
-    MediaStreamTrack(ScriptExecutionContext*, MediaStreamTrackPrivate&, const Dictionary*);
+    explicit MediaStreamTrack(MediaStreamTrack&);
+    MediaStreamTrack(ScriptExecutionContext&, MediaStreamTrackPrivate&, const Dictionary*);
 
-    MediaStreamTrackPrivate& privateTrack() { return m_privateTrack.get(); }
     void setSource(PassRefPtr<MediaStreamSource>);
 
 private:

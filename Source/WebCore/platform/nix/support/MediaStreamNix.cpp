@@ -106,7 +106,7 @@ MediaStream::operator WebCore::MediaStreamDescriptor*() const
     return m_private.get();
 }
 
-void MediaStream::initialize(std::vector<MediaStreamSource*>& audioSources, std::vector<MediaStreamSource*>& videoSources, EndedAtCreation ended)
+void MediaStream::initialize(std::vector<MediaStreamSource*>& audioSources, std::vector<MediaStreamSource*>& videoSources)
 {
     WebCore::MediaStreamSourceVector audio, video;
     for (size_t i = 0; i < audioSources.size(); ++i) {
@@ -120,7 +120,7 @@ void MediaStream::initialize(std::vector<MediaStreamSource*>& audioSources, std:
         video.append(source);
         delete videoSources[i];
     }
-    m_private = WebCore::MediaStreamDescriptor::create(audio, video, static_cast<WebCore::MediaStreamDescriptor::EndedAtCreationFlag>(ended));
+    m_private = WebCore::MediaStreamDescriptor::create(audio, video);
 }
 
 void MediaStream::assign(const MediaStream& other)

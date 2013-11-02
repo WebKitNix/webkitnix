@@ -762,7 +762,17 @@ HTMLMediaElement::NetworkState HTMLMediaElement::networkState() const
 
 String HTMLMediaElement::canPlayType(const String& mimeType, const String& keySystem, const URL& url) const
 {
-    MediaPlayer::SupportsType support = MediaPlayer::supportsType(ContentType(mimeType), keySystem, url, this);
+    MediaEngineSupportParameters parameters;
+    ContentType contentType(mimeType);
+    parameters.type = contentType.type().lower();
+    parameters.codecs = contentType.parameter(ASCIILiteral("codecs"));
+    parameters.url = url;
+#if ENABLE(ENCRYPTED_MEDIA)
+    parameters.keySystem = keySystem;
+#else
+    UNUSED_PARAM(keySystem);
+#endif
+    MediaPlayer::SupportsType support = MediaPlayer::supportsType(parameters, this);
     String canPlay;
 
     // 4.8.10.3
@@ -1114,7 +1124,7 @@ void HTMLMediaElement::loadResource(const URL& initialURL, ContentType& contentT
 
     if (m_mediaSource) {
         if (m_mediaSource->attachToElement())
-            m_player->load(url, m_mediaSource);
+            m_player->load(url, contentType, m_mediaSource);
         else {
             // Forget our reference to the MediaSource, so we leave it alone
             // while processing remainder of load failure.
@@ -1431,9 +1441,12 @@ void HTMLMediaElement::textTrackReadyStateChanged(TextTrack* track)
     }
 }
 
-void HTMLMediaElement::audioTrackEnabledChanged(AudioTrack*)
+void HTMLMediaElement::audioTrackEnabledChanged(AudioTrack* track)
 {
-    // We will want to change the media controls here once they exist
+    if (!RuntimeEnabledFeatures::sharedFeatures().webkitVideoTrackEnabled())
+        return;
+    ASSERT_UNUSED(track, m_audioTracks->contains(track));
+    m_audioTracks->scheduleChangeEvent();
 }
 
 void HTMLMediaElement::textTrackModeChanged(TextTrack* track)
@@ -1469,9 +1482,12 @@ void HTMLMediaElement::textTrackModeChanged(TextTrack* track)
     configureTextTrackDisplay(AssumeTextTrackVisibilityChanged);
 }
 
-void HTMLMediaElement::videoTrackSelectedChanged(VideoTrack*)
+void HTMLMediaElement::videoTrackSelectedChanged(VideoTrack* track)
 {
-    // We will want to change the media controls here once they exist
+    if (!RuntimeEnabledFeatures::sharedFeatures().webkitVideoTrackEnabled())
+        return;
+    ASSERT_UNUSED(track, m_videoTracks->contains(track));
+    m_videoTracks->scheduleChangeEvent();
 }
 
 void HTMLMediaElement::textTrackKindChanged(TextTrack* track)
@@ -3521,7 +3537,15 @@ URL HTMLMediaElement::selectNextSourceChild(ContentType* contentType, String* ke
             if (shouldLog)
                 LOG(Media, "HTMLMediaElement::selectNextSourceChild - 'type' is '%s' - key system is '%s'", type.utf8().data(), system.utf8().data());
 #endif
-            if (!MediaPlayer::supportsType(ContentType(type), system, mediaURL, this))
+            MediaEngineSupportParameters parameters;
+            ContentType contentType(type);
+            parameters.type = contentType.type().lower();
+            parameters.codecs = contentType.parameter(ASCIILiteral("codecs"));
+            parameters.url = mediaURL;
+#if ENABLE(ENCRYPTED_MEDIA)
+            parameters.keySystem = system;
+#endif
+            if (!MediaPlayer::supportsType(parameters, this))
                 goto check_again;
         }
 
@@ -4918,7 +4942,7 @@ void HTMLMediaElement::setMediaGroup(const String& group)
     }
 
     // Otherwise, let controller be a newly created MediaController.
-    setController(MediaController::create(Node::scriptExecutionContext()));
+    setController(MediaController::create(document()));
 }
 
 MediaController* HTMLMediaElement::controller() const

@@ -199,7 +199,7 @@ public:
         }
 
         Nix::MediaStream mediaStream;
-        mediaStream.initialize(audioSources, videoSources, Nix::MediaStream::IsNotEnded);
+        mediaStream.initialize(audioSources, videoSources);
         return mediaStream;
     }
 };

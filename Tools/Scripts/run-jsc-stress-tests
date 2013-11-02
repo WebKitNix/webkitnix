@@ -186,7 +186,8 @@ def diffErrorHandler(expectedFilename)
         outp.puts "then"
         outp.puts "    (cat #{outputFilename} && echo ERROR: Unexpected exit code: `cat #{plan.failFile}`) | " + prefixCommand(plan.name)
         outp.puts "    " + plan.failCommand
-        outp.puts "else"
+        outp.puts "elif test -e #{Shellwords.shellescape(expectedFilename)}"
+        outp.puts "then"
         outp.puts "    diff -u #{Shellwords.shellescape(expectedFilename)} #{outputFilename} > #{diffFilename}"
         outp.puts "    if [ $? -eq 0 ]"
         outp.puts "    then"
@@ -195,6 +196,9 @@ def diffErrorHandler(expectedFilename)
         outp.puts "        (echo \"DIFF FAILURE!\" && cat #{diffFilename}) | " + prefixCommand(plan.name)
         outp.puts "        " + plan.failCommand
         outp.puts "    fi"
+        outp.puts "else"
+        outp.puts "    (echo \"NO EXPECTATION!\" && cat #{outputFilename}) | " + prefixCommand(plan.name)
+        outp.puts "    " + plan.failCommand
         outp.puts "fi"
     }
 end
@@ -362,7 +366,6 @@ end
 # returns false, in which case you're supposed to add your own run commands.
 def parseRunCommands
     didRun = false
-    $runCommandOptions = {}
     File.open($benchmarkDirectory + $benchmark) {
         | inp |
         inp.each_line {
@@ -442,6 +445,16 @@ def defaultRun
         runFTLNoCJIT
         runFTLEager
         runFTLEagerNoCJIT
+    end
+end
+
+def defaultQuickRun
+    if $enableFTL
+        runDefaultFTL
+        runFTLNoCJIT
+    else
+        runDefault
+        runNoCJIT
     end
 end
 
@@ -614,6 +627,10 @@ def handleCollectionFile(collection)
             next
         end
         
+        if Pathname.new(entry["path"]).absolute?
+            raise "Absolute path: " + entry["path"] + " in #{collection}"
+        end
+        
         if paths[entry["path"]]
             raise "Duplicate path: " + entry["path"] + " in #{collection}"
         end
@@ -627,7 +644,13 @@ def handleCollectionFile(collection)
         end
         
         $collection = subCollection
-        $collectionName = (Pathname.new(collectionName) + subCollectionName).to_s
+        $collectionName = Pathname.new(collectionName)
+        Pathname.new(subCollectionName).each_filename {
+            | filename |
+            next if filename =~ /^\./
+            $collectionName += filename
+        }
+        $collectionName = $collectionName.to_s
         
         prepareCollection($collectionName)
         
@@ -639,6 +662,7 @@ def handleCollectionFile(collection)
             $benchmark = path.basename
             $benchmarkDirectory = path.dirname
             
+            $runCommandOptions = {}
             eval entry["cmd"]
         }
     }
@@ -662,6 +686,7 @@ def handleCollectionDirectory(collection)
         
         $benchmark = path.basename
         
+        $runCommandOptions = {}
         defaultRun unless parseRunCommands
     }
 end
@@ -773,7 +798,6 @@ File.open(parallelDir + "Makefile", "w") {
         plan = $runlist[index]
         outp.puts "test_done_#{index}:"
         outp.puts "\tsh test_script_#{plan.index}"
-        outp.puts "\ttouch test_done_#{index}"
     }
 }
 

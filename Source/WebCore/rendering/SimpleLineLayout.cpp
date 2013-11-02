@@ -27,6 +27,7 @@
 #include "SimpleLineLayout.h"
 
 #include "FontCache.h"
+#include "Frame.h"
 #include "GraphicsContext.h"
 #include "HitTestLocation.h"
 #include "HitTestRequest.h"
@@ -38,6 +39,7 @@
 #include "RenderStyle.h"
 #include "RenderText.h"
 #include "RenderView.h"
+#include "Settings.h"
 #include "SimpleLineLayoutResolver.h"
 #include "Text.h"
 #include "TextPaintStyle.h"
@@ -59,6 +61,8 @@ bool canUseFor(const RenderBlockFlow& flow)
     // https://bugs.webkit.org/show_bug.cgi?id=123338
     return false;
 #endif
+    if (!flow.frame().settings().simpleLineLayoutEnabled())
+        return false;
     if (!flow.firstChild())
         return false;
     // This currently covers <blockflow>#text</blockflow> case.
@@ -90,6 +94,8 @@ bool canUseFor(const RenderBlockFlow& flow)
             return false;
     }
     const RenderStyle& style = flow.style();
+    if (style.textDecorationsInEffect() != TextDecorationNone)
+        return false;
     if (style.textAlign() == JUSTIFY)
         return false;
     // Non-visible overflow should be pretty easy to support.
@@ -334,10 +340,10 @@ std::unique_ptr<Layout> Layout::create(const RunVector& runVector, unsigned line
 }
 
 Layout::Layout(const RunVector& runVector, unsigned lineCount)
-    : runCount(runVector.size())
-    , lineCount(lineCount)
+    : m_lineCount(lineCount)
+    , m_runCount(runVector.size())
 {
-    memcpy(runs, runVector.data(), runCount * sizeof(Run));
+    memcpy(m_runs, runVector.data(), m_runCount * sizeof(Run));
 }
 
 }

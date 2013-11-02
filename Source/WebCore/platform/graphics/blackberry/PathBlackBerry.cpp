@@ -263,12 +263,17 @@ void GraphicsContext::drawLineForDocumentMarker(const FloatPoint& pt, float widt
     platformContext()->addDrawLineForDocumentMarker(pt, width, (BlackBerry::Platform::Graphics::DocumentMarkerLineStyle)style);
 }
 
-void GraphicsContext::drawLineForText(const FloatRect& bounds, bool printing)
+FloatRect GraphicsContext::computeLineBoundsForText(const FloatPoint& pt, float width, bool printing)
+{
+    return FloatRect(pt, FloatSize(width, strokeThickness()));
+}
+
+void GraphicsContext::drawLineForText(const FloatPoint& pt, float width, bool printing)
 {
     if (paintingDisabled())
         return;
 
-    platformContext()->addDrawLineForText(bounds.location, bounds.width(), printing);
+    platformContext()->addDrawLineForText(pt, width, printing);
 }
 
 // FIXME: don't ignore the winding rule. https://bugs.webkit.org/show_bug.cgi?id=107064

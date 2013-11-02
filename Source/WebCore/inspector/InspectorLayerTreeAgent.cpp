@@ -38,7 +38,6 @@
 #include "IdentifiersFactory.h"
 #include "InspectorDOMAgent.h"
 #include "InspectorFrontend.h"
-#include "InspectorState.h"
 #include "InstrumentingAgents.h"
 #include "IntRect.h"
 #include "PseudoElement.h"
@@ -49,12 +48,8 @@
 
 namespace WebCore {
 
-namespace LayerTreeAgentState {
-static const char layerTreeAgentEnabled[] = "layerTreeAgentEnabled";
-};
-
-InspectorLayerTreeAgent::InspectorLayerTreeAgent(InstrumentingAgents* instrumentingAgents, InspectorCompositeState* state)
-    : InspectorBaseAgent<InspectorLayerTreeAgent>("LayerTree", instrumentingAgents, state)
+InspectorLayerTreeAgent::InspectorLayerTreeAgent(InstrumentingAgents* instrumentingAgents)
+    : InspectorBaseAgent<InspectorLayerTreeAgent>("LayerTree", instrumentingAgents)
     , m_frontend(0)
 {
 }
@@ -75,12 +70,6 @@ void InspectorLayerTreeAgent::clearFrontend()
     disable(0);
 }
 
-void InspectorLayerTreeAgent::restore()
-{
-    if (m_state->getBoolean(LayerTreeAgentState::layerTreeAgentEnabled))
-        enable(0);
-}
-
 void InspectorLayerTreeAgent::reset()
 {
     m_documentLayerToIdMap.clear();
@@ -91,15 +80,11 @@ void InspectorLayerTreeAgent::reset()
 
 void InspectorLayerTreeAgent::enable(ErrorString*)
 {
-    m_state->setBoolean(LayerTreeAgentState::layerTreeAgentEnabled, true);
     m_instrumentingAgents->setInspectorLayerTreeAgent(this);
 }
 
 void InspectorLayerTreeAgent::disable(ErrorString*)
 {
-    if (!m_state->getBoolean(LayerTreeAgentState::layerTreeAgentEnabled))
-        return;
-    m_state->setBoolean(LayerTreeAgentState::layerTreeAgentEnabled, false);
     m_instrumentingAgents->setInspectorLayerTreeAgent(0);
 }
 

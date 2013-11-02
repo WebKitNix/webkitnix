@@ -285,6 +285,7 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     , m_maximumRenderingSuppressionToken(0)
     , m_scrollPinningBehavior(DoNotPin)
     , m_useThreadedScrolling(false)
+    , m_viewState(parameters.viewState)
 {
     ASSERT(m_pageID);
     // FIXME: This is a non-ideal location for this Setting and
@@ -371,16 +372,17 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
 
     setMemoryCacheMessagesEnabled(parameters.areMemoryCacheClientCallsEnabled);
 
-    setActive(parameters.isActive);
-    setFocused(parameters.isFocused);
+    setActive(parameters.viewState & ViewState::WindowIsActive);
+    setFocused(parameters.viewState & ViewState::IsFocused);
 
     // Page defaults to in-window, but setIsInWindow depends on it being a valid indicator of actually having been put into a window.
-    if (!parameters.isInWindow)
+    bool isInWindow = parameters.viewState & ViewState::IsInWindow;
+    if (!isInWindow)
         m_page->setIsInWindow(false);
     else
         WebProcess::shared().pageDidEnterWindow(m_pageID);
 
-    setIsInWindow(parameters.isInWindow);
+    setIsInWindow(isInWindow);
 
     setMinimumLayoutSize(parameters.minimumLayoutSize);
     setAutoSizingShouldExpandToViewHeight(parameters.autoSizingShouldExpandToViewHeight);
@@ -697,7 +699,7 @@ uint64_t WebPage::renderTreeSize() const
 {
     if (!m_page)
         return 0;
-    return m_page->renderTreeSize().treeSize;
+    return m_page->renderTreeSize();
 }
 
 void WebPage::setTracksRepaints(bool trackRepaints)
@@ -2056,7 +2058,7 @@ inline bool WebPage::canHandleUserEvents() const
     return true;
 }
 
-void WebPage::setIsInWindow(bool isInWindow, bool wantsDidUpdateViewInWindowState)
+void WebPage::setIsInWindow(bool isInWindow)
 {
     bool pageWasInWindow = m_page->isInWindow();
     
@@ -2084,8 +2086,30 @@ void WebPage::setIsInWindow(bool isInWindow, bool wantsDidUpdateViewInWindowStat
 
     if (isInWindow)
         layoutIfNeeded();
+}
 
-    if (wantsDidUpdateViewInWindowState)
+void WebPage::setViewState(ViewState::Flags viewState, bool wantsDidUpdateInWindowState)
+{
+    ViewState::Flags changed = m_viewState ^ viewState;
+
+    // We want to make sure to update the active state while hidden, so if the view is hidden then update the active state
+    // early (in case it becomes visible), and if the view was visible then update active state later (in case it hides).
+    if (changed & ViewState::WindowIsVisible)
+        setWindowIsVisible(viewState & ViewState::WindowIsVisible);
+    if (changed & ViewState::IsFocused)
+        setFocused(viewState & ViewState::IsFocused);
+    if (changed & ViewState::WindowIsActive && !(m_viewState & ViewState::IsVisible))
+        setActive(viewState & ViewState::WindowIsActive);
+    if (changed & ViewState::IsVisible)
+        setViewIsVisible(viewState & ViewState::IsVisible);
+    if (changed & ViewState::WindowIsActive && m_viewState & ViewState::IsVisible)
+        setActive(viewState & ViewState::WindowIsActive);
+    if (changed & ViewState::IsInWindow)
+        setIsInWindow(viewState & ViewState::IsInWindow);
+
+    m_viewState = viewState;
+
+    if (wantsDidUpdateInWindowState)
         m_sendDidUpdateInWindowStateTimer.startOneShot(0);
 }
 
@@ -2476,6 +2500,10 @@ void WebPage::updatePreferences(const WebPreferencesStore& store)
     settings.setWebAudioEnabled(store.getBoolValueForKey(WebPreferencesKey::webAudioEnabledKey()));
 #endif
 
+#if ENABLE(MEDIA_STREAM)
+    settings.setMediaStreamEnabled(store.getBoolValueForKey(WebPreferencesKey::mediaStreamEnabledKey()));
+#endif
+
     settings.setApplicationChromeMode(store.getBoolValueForKey(WebPreferencesKey::applicationChromeModeKey()));
     settings.setSuppressesIncrementalRendering(store.getBoolValueForKey(WebPreferencesKey::suppressesIncrementalRenderingKey()));
     settings.setIncrementalRenderingSuppressionTimeoutInSeconds(store.getDoubleValueForKey(WebPreferencesKey::incrementalRenderingSuppressionTimeoutKey()));
@@ -2526,6 +2554,8 @@ void WebPage::updatePreferences(const WebPreferencesStore& store)
 #endif
 
     settings.setLowPowerVideoAudioBufferSizeEnabled(store.getBoolValueForKey(WebPreferencesKey::lowPowerVideoAudioBufferSizeEnabledKey()));
+    settings.setSimpleLineLayoutEnabled(store.getBoolValueForKey(WebPreferencesKey::simpleLineLayoutEnabledKey()));
+    settings.setSimpleLineLayoutDebugBordersEnabled(store.getBoolValueForKey(WebPreferencesKey::simpleLineLayoutDebugBordersEnabledKey()));
 
     platformPreferencesDidChange(store);
 

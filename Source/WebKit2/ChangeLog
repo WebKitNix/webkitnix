@@ -1,3 +1,605 @@
+2013-11-01  Brian Holt  <brian.holt@samsung.com>
+
+        [GTK] [WK2] Crash in webkitWebViewLoadFailedWithTLSErrors
+        https://bugs.webkit.org/show_bug.cgi?id=123618
+
+        Reviewed by Mario Sanchez Prada.
+
+        The GOwnPtrSoup header was not included which meant that the
+        specialization for GOwnPtr<SoupURI> was not used and instead the
+        default freeOwnedGPtr which calls g_free is used and crashes.
+
+        * UIProcess/API/gtk/WebKitWebView.cpp:
+
+2013-10-31  Tim Horton  <timothy_horton@apple.com>
+
+        Fix a typo/review comment from Dan, in http://trac.webkit.org/changeset/158413
+
+        * Shared/API/Cocoa/WKRemoteObjectCoder.mm:
+
+2013-10-31  Tim Horton  <timothy_horton@apple.com>
+
+        Remote Layer Tree: Vend layer contents via IOSurfaces
+        https://bugs.webkit.org/show_bug.cgi?id=123600
+
+        Reviewed by Anders Carlsson.
+
+        * Configurations/WebKit2.xcconfig:
+        Link WebKit2 against IOSurface.
+
+        * Shared/mac/RemoteLayerTreeTransaction.mm:
+        (WebKit::dumpChangedLayers):
+        Dump the size of the backing store instead of the pointer of its
+        SharedBitmap, because that's slightly more useful.
+
+        * UIProcess/mac/RemoteLayerTreeHost.mm:
+        (WebKit::RemoteLayerTreeHost::commit):
+        If a layer's backing store uses accelerated drawing, hand the IOSurface
+        to the CALayer for display.
+
+        * WebProcess/WebPage/mac/PlatformCALayerRemote.cpp:
+        (PlatformCALayerRemote::PlatformCALayerRemote):
+        Initialize contentsScale to 1 to match CA. Other properties will follow.
+
+        (PlatformCALayerRemote::ensureBackingStore):
+        Instead of replacing the RemoteLayerBackingStore when its properties
+        change, allow it to update them on the fly. Replacing them caused
+        us to throw away repaint rects when the accelerated drawing
+        flag was flipped.
+
+        (PlatformCALayerRemote::acceleratesDrawing):
+        (PlatformCALayerRemote::setAcceleratesDrawing):
+        Store the accelerated drawing flag and mark it dirty when it changes.
+
+        * WebProcess/WebPage/mac/PlatformCALayerRemote.h:
+        * WebProcess/WebPage/mac/RemoteLayerBackingStore.h:
+        (WebKit::RemoteLayerBackingStore::image):
+        Rename bitmap() to image() and have it create a CGImageRef from
+        the ShareableBitmap, ready for direct application to a CALayer.
+
+        (WebKit::RemoteLayerBackingStore::surface):
+        Return a IOSurface ready for direct application to a CALayer.
+
+        (WebKit::RemoteLayerBackingStore::acceleratesDrawing):
+        (WebKit::RemoteLayerBackingStore::hasFrontBuffer):
+        Return whether or not we have a front buffer/surface.
+
+        * WebProcess/WebPage/mac/RemoteLayerBackingStore.mm:
+        Forward-declare some CGIOSurface SPI.
+
+        (RemoteLayerBackingStore::RemoteLayerBackingStore):
+        (RemoteLayerBackingStore::ensureBackingStore):
+        Throw away our front image and reset flags if needed.
+
+        (RemoteLayerBackingStore::encode):
+        (RemoteLayerBackingStore::decode):
+        En/decode the front surface instead of the ShareableBitmap if needed,
+        using CoreIPC::MachPort. Destroy the port on receipt.
+
+        (createIOSurfaceContext):
+        Create a CGIOSurfaceContext from an IOSurface.
+
+        (createIOSurface):
+        Create an IOSurface of the given size.
+
+        (RemoteLayerBackingStore::image):
+        Return a CGImageRef, if we're not using accelerated drawing.
+        Moved from the header.
+
+        (RemoteLayerBackingStore::display):
+        (RemoteLayerBackingStore::drawInContext):
+        If using accelerated drawing, create and paint into an IOSurface.
+        Reorganize some code to make the copying-from-the-front-image code
+        work for both software and IOSurfaces.
+        Flush the context when completed, to ensure that any asynchronous
+        painting is complete before we vend the surface to the UI process.
+
+2013-10-31  Anders Carlsson  <andersca@apple.com>
+
+        Begin stubbing out the WKRemoteObjectCoder NSCoder subclass
+        https://bugs.webkit.org/show_bug.cgi?id=123596
+
+        Reviewed by Tim Horton.
+
+        * Shared/API/Cocoa/WKRemoteObject.mm:
+        (-[WKRemoteObject forwardInvocation:]):
+        Call through to the WKRemoteObjectRegistry.
+
+        * Shared/API/Cocoa/WKRemoteObjectCoder.h: Added.
+        * Shared/API/Cocoa/WKRemoteObjectCoder.mm: Added.
+        (-[WKRemoteObjectEncoder init]):
+        Create a root WKDictionary.
+
+        (-[WKRemoteObjectEncoder dealloc]):
+        Assert that the current dictionary is the root dictionary; that we're back where we started.
+
+        (-[WKRemoteObjectEncoder allowsKeyedCoding]):
+        Return YES.
+
+        (-[WKRemoteObjectEncoder encodeObject:forKey:]):
+        Check that the object is valid and then encode it.
+
+        (-[WKRemoteObjectEncoder _encodeInvocation:forKey:]):
+        Encode the method type string and invocation selector.
+
+        (-[WKRemoteObjectEncoder encodeBytes:length:forKey:]):
+        Create a WKDataRef and add it to the dictionary.
+
+        (-[WKRemoteObjectEncoder _encodeObjectForKey:usingBlock:]):
+        Create a new dictionary and call the block.
+
+        * Shared/API/Cocoa/WKRemoteObjectRegistry.mm:
+        (-[WKRemoteObjectRegistry _sendInvocation:interface:]):
+        Create an encoder and encode the invocation and interface.
+
+        * Shared/API/Cocoa/WKRemoteObjectRegistryInternal.h: Added.
+        Add IPI header.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+        Add new files.
+
+2013-10-31  Anders Carlsson  <andersca@apple.com>
+
+        Address review comments.
+
+        * Shared/API/Cocoa/WKRemoteObject.h:
+        * Shared/API/Cocoa/WKRemoteObject.mm:
+        (-[WKRemoteObject conformsToProtocol:]):
+
+2013-10-31  Anders Carlsson  <andersca@apple.com>
+
+        Add a WKRemoteObject class
+        https://bugs.webkit.org/show_bug.cgi?id=123586
+
+        Reviewed by Dan Bernstein.
+
+        * Shared/API/Cocoa/WKRemoteObject.h: Added.
+        * Shared/API/Cocoa/WKRemoteObject.mm: Added.
+        (-[WKRemoteObject _initWithObjectRegistry:interface:]):
+        Add designated initializer.
+
+        (-[WKRemoteObject conformsToProtocol:]):
+        Check if the interface protocol conforms to our protocol.
+
+        (methodArgumentTypeEncodingForSelector):
+        Helper function that looks up a method in a given protocol and returns its type encoding.
+
+        (-[WKRemoteObject methodSignatureForSelector:]):
+        Try to find the method argument type encoding for the given selector and return its NSMethodSignature.
+
+        (-[WKRemoteObject forwardInvocation:]):
+        Add stub.
+
+        * Shared/API/Cocoa/WKRemoteObjectInterface.mm:
+        Remove a newline.
+
+        * Shared/API/Cocoa/WKRemoteObjectRegistry.mm:
+        (-[WKRemoteObjectRegistry remoteObjectProxyWithInterface:]):
+        Establish a mapping between interface identifiers and remote object proxies.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-10-31  Alexey Proskuryakov  <ap@apple.com>
+
+        Enable WebCrypto on Mac
+        https://bugs.webkit.org/show_bug.cgi?id=123587
+
+        Reviewed by Anders Carlsson.
+
+        * Configurations/FeatureDefines.xcconfig: Do it.
+
+2013-10-31  Sergio Correia  <sergio.correia@openbossa.org>
+
+        [WK2] Convert SeccompFilters to using unique_ptr instead of OwnPtr/PassOwnPtr
+        https://bugs.webkit.org/show_bug.cgi?id=122883
+
+        Reviewed by Darin Adler.
+
+        * Shared/linux/SeccompFilters/OpenSyscall.cpp:
+        (WebKit::OpenSyscall::createFromOpenatContext):
+        (WebKit::OpenSyscall::createFromCreatContext):
+        (WebKit::OpenSyscall::execute):
+        * Shared/linux/SeccompFilters/OpenSyscall.h:
+        * Shared/linux/SeccompFilters/SeccompBroker.cpp:
+        (WebKit::SIGSYSHandler):
+        (WebKit::SeccompBrokerClient::dispatch):
+        (WebKit::SeccompBroker::runLoop):
+        * Shared/linux/SeccompFilters/SigactionSyscall.cpp:
+        (WebKit::SigactionSyscall::createFromContext):
+        * Shared/linux/SeccompFilters/SigactionSyscall.h:
+        * Shared/linux/SeccompFilters/SigprocmaskSyscall.cpp:
+        (WebKit::SigprocmaskSyscall::createFromContext):
+        * Shared/linux/SeccompFilters/SigprocmaskSyscall.h:
+        * Shared/linux/SeccompFilters/Syscall.cpp:
+        (WebKit::Syscall::createFromContext):
+        (WebKit::Syscall::createFromDecoder):
+        (WebKit::SyscallResult::createFromDecoder):
+        * Shared/linux/SeccompFilters/Syscall.h:
+        * Shared/linux/SeccompFilters/SyscallPolicy.cpp:
+
+2013-10-31  Gavin Barraclough  <barraclough@apple.com>
+
+        Change WebPage, WebPageProxy, WebPageCreationParameters to use ViewState
+        https://bugs.webkit.org/show_bug.cgi?id=123379
+
+        Reviewed by Darin Adler.
+
+        Visibility state of the Page should be stored and communicated consistently.
+
+        Remove individual visibility flags from WebPageProxy, WebPageCreationParameters,
+        and replace them with a ViewState, and add a ViewState member to WebPage.
+        Merge together all messages that convey and individual aspect of the ViewState.
+
+        Restructure WebPageProxy::viewStateDidChange to break the operation down into
+        three steps: 1) update m_viewState, 2) send the new ViewState to the WebProcess,
+        and 3) perform any further work necessary in the UIProcess.
+
+        This patch fixes a problem that if the web process crashes m_isVisible &
+        m_isInWindow in WebPageProxy were not updated, and could have held stale values
+        on reattach.
+
+        In WebPage, add a new message to update the entire ViewState - diff the prior
+        value against the new one to detect changes, call existing methods accordingly.
+
+        * Shared/ViewState.h:
+            - Add constants 'Reset', 'AllFlags'
+        * Shared/WebPageCreationParameters.cpp:
+        (WebKit::WebPageCreationParameters::encode):
+        (WebKit::WebPageCreationParameters::decode):
+        * Shared/WebPageCreationParameters.h:
+            - Removed boolean visibility flags, added viewState.
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+            - Constructor calls updateViewState to initialize m_viewState.
+        (WebKit::WebPageProxy::reattachToWebProcess):
+            - ViewStaet is not updated while detatched; recalculate.
+        (WebKit::WebPageProxy::initializeWebPage):
+            - m_isVisible -> isViewVisible()
+        (WebKit::WebPageProxy::updateViewState):
+            - Added, update m_viewState by querying the page client.
+        (WebKit::WebPageProxy::viewStateDidChange):
+            - Restructured to use m_viewState, reordered to combine messages.
+        (WebKit::WebPageProxy::creationParameters):
+            - Removed boolean visibility flags, added viewState.
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::isInWindow):
+        (WebKit::WebPageProxy::isViewVisible):
+            - Removed boolean visibility flags, added viewState.
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+            - initial state now passed as a ViewState.
+        (WebKit::WebPage::setIsInWindow):
+            - Remove code to send reply (this is handled by setViewState).
+        (WebKit::WebPage::setViewState):
+            - Set m_viewState - diff from prior & call methods to update.
+        * WebProcess/WebPage/WebPage.h:
+            - Added setViewState, m_viewState.
+        * WebProcess/WebPage/WebPage.messages.in:
+            - Add SetViewState, remove individual messages.
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::TiledCoreAnimationDrawingArea):
+            - initial state now passed as a ViewState.
+
+2013-10-30  Gavin Barraclough  <barraclough@apple.com>
+
+        WebPageCreationParameters should be consistent in Window.open
+        https://bugs.webkit.org/show_bug.cgi?id=123557
+
+        Reviewed by Sam Weinig.
+
+        When Window.open in called in WebKit2 the WebProcess sends a synchronous request to open
+        a page (WebPageProxy::createNewPage). The UIProcess creates a WebpageProxy, and responds
+        with instructions to the WebProcess to create the WebPage. The initial creation state of
+        the WebPage is communicated to the WebProcess via two routes (firstly an asynchronous
+        WebProcess::CreateWebPage message, and secondly in the synchronous response from
+        WebPageProxy::createNewPage). Unfortunately these responses are inconsistent with each
+        other. The creationParameters() for the page are calculated twice, and since the WKView
+        will be added to a window between the async message being sent and the synchronous reply
+        being returned the visibility state of the page can change.
+
+        To fix the inconsistency we can set the creation parameters at the point that the
+        WebPageProxy is instantiated. This will result in a functional change that is web
+        visible, since the page will initially be opened in a hidden/blurred state, and may
+        later become visible/focussed. This change is consistent with the direction we want to
+        evolve in. Whilst we will still probably require a synchronous message from the
+        WebProcess to the UIProcess on Window.open, we'll probably make this return much earlier
+        – having just created the WebPageProxy, but avoiding blocking the WebProcess over the
+        client delegate callback that opens the new window.
+
+        This fix results in a layout test result change, due to the change in behavior (page is
+        created blurred, and becomes focussed, resulting in a focus event being fired – rather
+        than the window opening directly into a focussed state). This is reported as a
+        progression (test is broken in WebKit1, fixed in WebKit2 after this change). In reality
+        the test is actually slightly broken in DRT/test-runner – the test runs differently than
+        in browser, since there is is no visible main window. In-browser this patch results in
+        no change in behavior on dom/Window/mozilla-focus-blur.html (the affected test).
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::initializeWebPage):
+            - call initializeCreationParameters
+        (WebKit::WebPageProxy::initializeCreationParameters):
+            - calculate m_creationParameters
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::creationParameters):
+            - Added m_creationParameters, initializeCreationParameters,
+              creationParameters returns m_creationParameters
+
+2013-10-31  Philippe Normand  <pnormand@igalia.com>
+
+        [WK2][GTK] enable-media-stream Setting
+        https://bugs.webkit.org/show_bug.cgi?id=123145
+
+        Reviewed by Anders Carlsson.
+
+        * Shared/WebPreferencesStore.h: New MediaStreamEnabled boolean preference.
+        * UIProcess/API/C/WKPreferences.cpp: MediaStreamEnabled getter and
+        setter functions.
+        (WKPreferencesSetMediaStreamEnabled):
+        (WKPreferencesGetMediaStreamEnabled):
+        * UIProcess/API/C/WKPreferences.h:
+        * UIProcess/API/gtk/WebKitSettings.cpp: Add a enable-media-stream
+        property to the GTK WebKitSettings class. It will act as a facade
+        to the MediaStreamEnabled preference.
+        (webKitSettingsSetProperty):
+        (webKitSettingsGetProperty):
+        (webkit_settings_class_init):
+        (webkit_settings_get_enable_media_stream):
+        (webkit_settings_set_enable_media_stream):
+        * UIProcess/API/gtk/WebKitSettings.h:
+        * UIProcess/API/gtk/docs/webkit2gtk-sections.txt:
+        * UIProcess/API/gtk/tests/TestWebKitSettings.cpp:
+        (testWebKitSettings): Test enable-media-stream websetting.
+        * WebProcess/InjectedBundle/InjectedBundle.cpp:
+        (WebKit::InjectedBundle::overrideBoolPreferenceForTestRunner):
+        Allow WKTR to override the MediaStreamEnabled preference.
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::updatePreferences): Update MediaStreamEnabled
+        along with the other settings.
+
+2013-10-30  Brady Eidson  <beidson@apple.com>
+
+        IDB Database versions are uint64_t, not int64_t
+        https://bugs.webkit.org/show_bug.cgi?id=123556
+
+        Reviewed by Alexey Proskuryakov.
+
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.cpp:
+        (WebKit::WebIDBFactoryBackend::open):
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.h:
+
+        * WebProcess/Databases/IndexedDB/WebProcessIDBDatabaseBackend.cpp:
+        (WebKit::WebProcessIDBDatabaseBackend::openConnection):
+        * WebProcess/Databases/IndexedDB/WebProcessIDBDatabaseBackend.h:
+
+2013-10-30  Dan Bernstein  <mitz@apple.com>
+
+        Fixed a potential race condition around the initializtion of WKObject’s target.
+
+        Reviewed by Mark Rowe.
+
+        * Shared/Cocoa/WKObject.mm:
+        (initializeTargetIfNeeded): Removed the early return if _target is non-nil. As Mark pointed
+        out, when stores are reordered relative to other stores, it is possible for the early return
+        to occur while the object _target is pointing to is not yet valid.
+
+2013-10-30  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Remove code for Mac Lion
+        https://bugs.webkit.org/show_bug.cgi?id=123542
+
+        Reviewed by Anders Carlsson.
+
+
+        * NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in:
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView viewWillMoveToWindow:]):
+        * WebProcess/com.apple.WebProcess.sb.in:
+
+2013-10-30  Dan Bernstein  <mitz@apple.com>
+
+        Try to fix the !WK_API_ENABLED Mac build.
+
+        * Shared/Cocoa/APIObject.mm:
+
+2013-10-30  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Make all API objects have Cocoa wrappers, and delegate refcounting to those wrappers
+        https://bugs.webkit.org/show_bug.cgi?id=123394
+
+        Reviewed by Darin Adler.
+
+        All wrappers conform to a new WKObject protocol and contain the wrapped object inline.
+        APIObject-derived classes override operator new to call newObject, which allocates the
+        wrapper and returns a pointer to the inline API object.
+
+        There are three kinds of wrapper classes: (a) classes that inherit directly from NSObject
+        and implement their API by calling the wrapped object (example: WKBackForwardList),
+        (b) internal classes that inherit from a class cluster, and implement the primitive methods
+        of the class cluster by calling the wrapped object (example: WKNSArray), and (c) internal
+        classes that inerit from the new WKObject class, and proxy to an object of some public type,
+        which is created from the wrapped object (example: WKNSURL).
+
+        * Shared/APIObject.h:
+        (WebKit::APIObject::wrapper): Added this getter.
+        (WebKit::TypedAPIObject::operator new): Added override that calls newObject.
+        * Shared/Cocoa/APIObject.mm: Added.
+        (WebKit::APIObject::ref): Retains the wrapper.
+        (WebKit::APIObject::deref): Releases the wrapper. When the wrapper is deallocated, it calls
+        the API object destructor.
+        (WebKit::APIObject::newObject): Allocates the wrapper and returns a pointer to the API
+        object inside the wrapper.
+
+        * Shared/Cocoa/WKNSArray.h:
+        (WebKit::wrapper): Added. Returns an ImmutableArray’s wrapper as an NSArray.
+        Replaced the RefPtr<ImmutableArray> ivar with space for an ImmutableArray to live inside
+        the wrapper.
+        (-[WKNSArray dealloc]): Calls the ImmutableArray destructor.
+        (-[WKNSArray count]): Updated for ivar change.
+        (-[WKNSArray objectAtIndex:]): Ditto.
+        (-[WKNSArray _apiObject]): Returns the wrapped ImmutableArray.
+
+        * Shared/Cocoa/WKNSObjectExtras.h: Removed.
+        * Shared/Cocoa/WKNSObjectExtras.mm: Removed.
+
+        * Shared/Cocoa/WKNSString.h: Added.
+        * Shared/Cocoa/WKNSString.mm: Added.
+        (-[WKNSString _web_createTarget]): Override this WKObject method to create an NSString from
+        the WebString.
+        (-[WKNSString copyWithZone:]): Retains self.
+
+        * Shared/Cocoa/WKNSURL.h: Added.
+        * Shared/Cocoa/WKNSURL.mm: Added.
+        (-[WKNSURL _web_createTarget]): Override this WKObject method to create an NSURL from
+        the WebURL.
+        (-[WKNSURL copyWithZone:]): Retains self.
+
+        * Shared/Cocoa/WKObject.h: Added.
+        * Shared/Cocoa/WKObject.mm: Added.
+        (-[WKObject dealloc]): Calls the destructor of the wrapped object and releases the target
+        object.
+        (initializeTargetIfNeeded): Helper function. Tries to create the target exactly once.
+        (-[WKObject isEqual:]): NSObject override that creates and compares to the target
+        object if necessary.
+        (-[WKObject hash]): NSObject override that creates and hashes the target object if
+        there is one.
+        (-[WKObject isKindOfClass:]): NSObject override that delegates to the target object.
+        (-[WKObject isMemberOfClass:]): Ditto.
+        (-[WKObject respondsToSelector:]): NSObject override that creates the target object if
+        necessary and returns whether it or self responds to the selector.
+        (-[WKObject conformsToProtocol:]): Similarly for protocols.
+        (-[WKObject forwardingTargetForSelector:]): NSObject override that creates the target object
+        if necessary and returns it as the target.
+        (-[WKObject description]): NSObject override that creates the target object if necessary and
+        forwards to it.
+        (-[WKObject _web_createTarget]): Added. The base implementation returns nil.
+        (-[WKObject _apiObject]): Returns the wrapped object.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController backForwardList]): Changed to return the existing wrapper.
+        (didChangeBackForwardList): Changed to use existing wrappers.
+
+        Replaced the RefPtr<WebBackForwardList> ivar with space for a WebBackForwardList to live
+        inside the wrapper.
+        (-[WKBackForwardList dealloc]): Call the WebBackForwardList destructor.
+        (toWKBackForwardListItem): Changed to us the existing wrapper.
+        (-[WKBackForwardList currentItem]): Updated for ivar change.
+        (-[WKBackForwardList backItem]): Ditto.
+        (-[WKBackForwardList forwardItem]): Ditto.
+        (-[WKBackForwardList itemAtIndex:]): Ditto.
+        (-[WKBackForwardList backListCount]): Ditto.
+        (-[WKBackForwardList forwardListCount]): Ditto,
+        (-[WKBackForwardList backListWithLimit:]): Ditto, and also changed to use the
+        ImmutableArray’s existing wrapper.
+        (-[WKBackForwardList forwardListWithLimit:]): Ditto.
+        (-[WKBackForwardList _apiObject]): Returns the WebBackForwardListItem.
+        * UIProcess/Cocoa/WKBackForwardListInternal.h:
+        (WebKit::wrapper): Added. Returns a WebBackForwardList’s wrapper as a WKBackForwardList.
+
+        * UIProcess/Cocoa/WKBackForwardListItem.mm:
+        Replaced the RefPtr<WebBackForwardListItem> ivar with space for a WebBackForwardListItem to
+        live inside the wrapper.
+        (-[WKBackForwardListItem dealloc]): Call the WebBackForwardListItem destructor.
+        (-[WKBackForwardListItem URL]): Updated for ivar change, and changed to make an NSURL
+        directly instead of going through a wrapper.
+        (-[WKBackForwardListItem title]): Updated for ivar change, and changed to use
+        String’s operator NSString*.
+        (-[WKBackForwardListItem originalURL]): Updated for ivar change, and changed to make an
+        NSURL directly instead of going through a wrapper.
+        (-[WKBackForwardListItem _apiObject]): Returns the WebBackForwardListItem.
+        (-[WKBackForwardListItem _item]): Ditto.
+        * UIProcess/Cocoa/WKBackForwardListItemInternal.h:
+        (WebKit::wrapper): Added. Returns a WebBackForwardListItem’s wrapper as a
+        WKBackForwardListItem.
+
+        * UIProcess/WebColorPickerResultListenerProxy.h: Changed into a TypedAPIObject.
+
+        * UIProcess/WebFormSubmissionListenerProxy.h:
+        (WebKit::WebFormSubmissionListenerProxy::operator new): Override to call newObject.
+
+        * UIProcess/WebFramePolicyListenerProxy.h:
+        (WebKit::WebFramePolicyListenerProxy::operator new): Ditto.
+
+        * WebKit2.xcodeproj/project.pbxproj: Updated for file additions and removals.
+
+2013-10-30  Anders Carlsson  <andersca@apple.com>
+
+        Begin fleshing out an API test for WKRemoteObjectRegistry
+        https://bugs.webkit.org/show_bug.cgi?id=123531
+
+        Reviewed by Andreas Kling.
+
+        * Shared/API/Cocoa/WKRemoteObjectInterface.h:
+        Add WK_API_CLASS annotation.
+
+        * Shared/API/Cocoa/WKRemoteObjectRegistry.h:
+        Add WK_API_CLASS annotation.
+
+        * Shared/API/Cocoa/WKRemoteObjectRegistry.mm:
+        Add a WebConnection ivar.
+
+        (-[WKRemoteObjectRegistry _initWithConnectionRef:]):
+        Add SPI to create an WKRemoteObjectRegistry object with an existing WKConnectionRef.
+
+        (-[WKRemoteObjectRegistry _handleMessageWithName:body:]):
+        Add SPI that will be used to process incoming messages from an existing WKConnectionRef.
+
+        * Shared/API/Cocoa/WKRemoteObjectRegistryPrivate.h: Added.
+        Add SPI header.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+        Add new files.
+
+2013-10-30  Tim Horton  <timothy_horton@apple.com>
+
+        Remote Layer Tree: Lots of ASSERT(m_children.isEmpty()); on Poster Circle
+        https://bugs.webkit.org/show_bug.cgi?id=123517
+
+        Reviewed by Simon Fraser.
+
+        * WebProcess/WebPage/mac/PlatformCALayerRemote.cpp:
+        (PlatformCALayerRemote::setSublayers):
+        When setting our list of sublayers, remove all of the new layers from
+        their parents first.
+
+2013-10-30  Antti Koivisto  <antti@apple.com>
+
+        Add debug settings for simple line layout
+        https://bugs.webkit.org/show_bug.cgi?id=123514
+
+        Reviewed by Andreas Kling.
+        
+        Expose debug settings.
+
+        * Shared/WebPreferencesStore.h:
+        * UIProcess/API/C/WKPreferences.cpp:
+        (WKPreferencesSetSimpleLineLayoutEnabled):
+        (WKPreferencesGetSimpleLineLayoutEnabled):
+        (WKPreferencesSetSimpleLineLayoutDebugBordersEnabled):
+        (WKPreferencesGetSimpleLineLayoutDebugBordersEnabled):
+        * UIProcess/API/C/WKPreferencesPrivate.h:
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::updatePreferences):
+
+2013-10-30  Anders Carlsson  <andersca@apple.com>
+
+        Add stubbed out WKRemoteObjectRegistry class
+        https://bugs.webkit.org/show_bug.cgi?id=123512
+
+        Reviewed by Andreas Kling.
+
+        Also add a WKRemoteObjectInterface class that represents a remote object interface.
+
+        * Shared/API/Cocoa/WKRemoteObjectInterface.h: Added.
+        * Shared/API/Cocoa/WKRemoteObjectInterface.mm: Added.
+        (-[WKRemoteObjectInterface initWithProtocol:identifier:]):
+        (+[WKRemoteObjectInterface remoteObjectInterfaceWithProtocol:]):
+        * Shared/API/Cocoa/WKRemoteObjectRegistry.h: Added.
+        * Shared/API/Cocoa/WKRemoteObjectRegistry.mm: Added.
+        (-[WKRemoteObjectRegistry registerExportedObject:interface:]):
+        (-[WKRemoteObjectRegistry unregisterExportedObject:interface:]):
+        (-[WKRemoteObjectRegistry remoteObjectProxyWithInterface:]):
+        * WebKit2.xcodeproj/project.pbxproj:
+
 2013-10-30  Carlos Garcia Campos  <cgarcia@igalia.com>
 
         [GTK] webkit_web_context_allow_tls_certificate_for_host doc is missing Since tag

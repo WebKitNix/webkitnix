@@ -43,8 +43,7 @@ RenderLineBreak::RenderLineBreak(HTMLElement& element, PassRef<RenderStyle> styl
 
 RenderLineBreak::~RenderLineBreak()
 {
-    if (m_inlineBoxWrapper)
-        m_inlineBoxWrapper->destroy(renderArena());
+    delete m_inlineBoxWrapper;
 }
 
 LayoutUnit RenderLineBreak::lineHeight(bool firstLine, LineDirectionMode /*direction*/, LinePositionMode /*linePositionMode*/) const
@@ -70,7 +69,7 @@ int RenderLineBreak::baselinePosition(FontBaseline baselineType, bool firstLine,
 
 InlineBox* RenderLineBreak::createInlineBox()
 {
-    return new (renderArena()) InlineBox(*this);
+    return new InlineBox(*this);
 }
 
 void RenderLineBreak::setInlineBoxWrapper(InlineBox* inlineBox)
@@ -91,7 +90,7 @@ void RenderLineBreak::deleteInlineBoxWrapper()
         return;
     if (!documentBeingDestroyed())
         m_inlineBoxWrapper->removeFromParent();
-    m_inlineBoxWrapper->destroy(renderArena());
+    delete m_inlineBoxWrapper;
     m_inlineBoxWrapper = nullptr;
 }
 
@@ -100,7 +99,7 @@ void RenderLineBreak::dirtyLineBoxes(bool fullLayout)
     if (!m_inlineBoxWrapper)
         return;
     if (fullLayout) {
-        m_inlineBoxWrapper->destroy(renderArena());
+        delete m_inlineBoxWrapper;
         m_inlineBoxWrapper = nullptr;
         return;
     }

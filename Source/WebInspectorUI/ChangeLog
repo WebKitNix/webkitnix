@@ -1,3 +1,68 @@
+2013-11-01  Antoine Quint  <graouts@apple.com>
+
+        Remove custom Function.prototype.bind() in favor of native version
+        https://bugs.webkit.org/show_bug.cgi?id=123608
+
+        Reviewed by Joseph Pecoraro.
+
+        * UserInterface/Utilities.js:
+
+2013-11-01  Antoine Quint  <graouts@apple.com>
+
+        Error trying to serialize a color created without an alpha component to RGBA or HSLA
+        https://bugs.webkit.org/show_bug.cgi?id=123623
+
+        Reviewed by Joseph Pecoraro.
+
+        Check whether we have .rgba and .hsla ivars before trying to retrieve them to serialize
+        the color to RGBA or HSLA format.
+
+        * UserInterface/Color.js:
+        (WebInspector.Color.prototype.toString):
+
+2013-11-01  Antoine Quint  <graouts@apple.com>
+
+        Remove custom Element.prototype.remove() in favor of native version
+        https://bugs.webkit.org/show_bug.cgi?id=123607
+
+        Reviewed by Timothy Hatcher.
+
+        * UserInterface/Utilities.js:
+
+2013-10-31  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Breakpoints in auto-formatted JavaScript editors are not working
+        https://bugs.webkit.org/show_bug.cgi?id=123589
+
+        Reviewed by Timothy Hatcher.
+
+        The internal this._ignoreCodeMirrorContentDidChangeEvent flag was being used
+        in two places that could be nested, meaning the flag was deleted while it
+        was still expected to be set. Change it instead to a counter, to handle nesting.
+
+        * UserInterface/TextEditor.js:
+        (WebInspector.TextEditor):
+        (WebInspector.TextEditor.prototype.set string):
+        (WebInspector.TextEditor.prototype.set formatted):
+        (WebInspector.TextEditor.prototype._contentChanged):
+
+2013-10-31  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Remove stale optional native memory instrumentation protocol params
+        https://bugs.webkit.org/show_bug.cgi?id=123552
+
+        Reviewed by Timothy Hatcher.
+
+        * UserInterface/InspectorBackendCommands.js:
+
+2013-10-30  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Fix PrettyPrinting Tool Load from Saved URL
+
+        Reviewed by Timothy Hatcher.
+
+        * Tools/PrettyPrinting/index.html:
+
 2013-10-28  Alexandru Chiculita  <achicu@adobe.com>
 
         Web Inspector: CSS Regions: Add protocol API to expose content nodes addition/removal

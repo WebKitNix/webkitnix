@@ -46,10 +46,10 @@ class MediaStreamCenter;
 
 class MediaStream FINAL : public RefCounted<MediaStream>, public URLRegistrable, public ScriptWrappable, public MediaStreamDescriptorClient, public EventTargetWithInlineData, public ContextDestructionObserver {
 public:
-    static PassRefPtr<MediaStream> create(ScriptExecutionContext*);
-    static PassRefPtr<MediaStream> create(ScriptExecutionContext*, PassRefPtr<MediaStream>);
-    static PassRefPtr<MediaStream> create(ScriptExecutionContext*, const MediaStreamTrackVector&);
-    static PassRefPtr<MediaStream> create(ScriptExecutionContext*, PassRefPtr<MediaStreamDescriptor>);
+    static PassRefPtr<MediaStream> create(ScriptExecutionContext&);
+    static PassRefPtr<MediaStream> create(ScriptExecutionContext&, PassRefPtr<MediaStream>);
+    static PassRefPtr<MediaStream> create(ScriptExecutionContext&, const MediaStreamTrackVector&);
+    static PassRefPtr<MediaStream> create(ScriptExecutionContext&, PassRefPtr<MediaStreamDescriptor>);
     virtual ~MediaStream();
 
     String id() const { return m_descriptor->id(); }
@@ -82,7 +82,7 @@ public:
     virtual URLRegistry& registry() const OVERRIDE;
 
 protected:
-    MediaStream(ScriptExecutionContext*, PassRefPtr<MediaStreamDescriptor>);
+    MediaStream(ScriptExecutionContext&, PassRefPtr<MediaStreamDescriptor>);
 
     // ContextDestructionObserver
     virtual void contextDestroyed() OVERRIDE FINAL;
@@ -97,6 +97,11 @@ private:
     virtual void streamDidEnd() OVERRIDE FINAL;
     virtual void addRemoteSource(MediaStreamSource*) OVERRIDE FINAL;
     virtual void removeRemoteSource(MediaStreamSource*) OVERRIDE FINAL;
+    virtual void addRemoteTrack(MediaStreamTrackPrivate*) OVERRIDE FINAL;
+    virtual void removeRemoteTrack(MediaStreamTrackPrivate*) OVERRIDE FINAL;
+
+    bool removeTrack(PassRefPtr<MediaStreamTrack>);
+    bool addTrack(PassRefPtr<MediaStreamTrack>);
 
     bool haveTrackWithSource(PassRefPtr<MediaStreamSource>);
 
@@ -104,6 +109,8 @@ private:
     void scheduledEventTimerFired(Timer<MediaStream>*);
 
     void cloneMediaStreamTrackVector(MediaStreamTrackVector&, const MediaStreamTrackVector&);
+
+    MediaStreamTrackVector* getTrackVectorForType(MediaStreamSource::Type);
 
     RefPtr<MediaStreamDescriptor> m_descriptor;
     MediaStreamTrackVector m_audioTracks;

@@ -1,3 +1,276 @@
+2013-10-31  Anders Carlsson  <andersca@apple.com>
+
+        Add a WKRemoteObject class
+        https://bugs.webkit.org/show_bug.cgi?id=123586
+
+        Reviewed by Dan Bernstein.
+
+        * TestWebKitAPI/Tests/WebKit2ObjC/WKRemoteObjectRegistry.mm:
+        (TestWebKitAPI::TEST):
+        Add a conformsToProtocol: test.
+
+2013-10-30  Ryosuke Niwa  <rniwa@webkit.org>
+
+        build.webkit.org should have a clean build button
+        https://bugs.webkit.org/show_bug.cgi?id=123559
+
+        Reviewed by Darin Adler.
+
+        Add a new "clean" forced scheduler. When a build was created by this scheduler, CleanBuildIfScheduled
+        step executes clean-build script that removes the WebKitBuild directory.
+
+        Also added make-passwords-json.py which creates a fake passwords.json from config.json for testing purposes.
+
+        * BuildSlaveSupport/build.webkit.org-config/make-passwords-json.py: Added.
+        * BuildSlaveSupport/build.webkit.org-config/master.cfg:
+        (CleanBuildIfScheduled): Added.
+        (CleanBuildIfScheduled.start): Added. Don't do a clean build if if this build wasn't schecueld by
+        the clean build scheduler.
+        (DeleteStaleBuildFiles): Added.
+        (DeleteStaleBuildFiles.start): Added. Don't delete stale build files if this build was scheduled by
+        the clean build scheduler since everything in the WebKitBuild directory had already been removed.
+        (Factory.__init__): Always add CleanBuildIfScheduled.  The step itself checks whether to run
+        clean-build script or hide itself.
+        (loadBuilderConfig): Added the new clean build scheduler. Also make ForceScheduler future proof; in newer
+        versions of buildbot, builderNames needs to be a list of regular strings.
+        * BuildSlaveSupport/clean-build: Added.
+
+2013-10-31  Filip Pizlo  <fpizlo@apple.com>
+
+        Remove CachedTranscendentalFunction because caching math functions is an ugly idea
+        https://bugs.webkit.org/show_bug.cgi?id=123574
+
+        Reviewed by Mark Hahnenberg.
+
+        Make it easier to see that a test doesn't have an -expected file.
+
+        * Scripts/run-jsc-stress-tests:
+
+2013-10-31  Tamas Gergely  <gertom@inf.u-szeged.hu>
+
+        Run tests as if they are expected to pass when --force is given.
+        https://bugs.webkit.org/show_bug.cgi?id=112890
+
+        Reviewed by Ryosuke Niwa.
+
+        The --force switch of new-run-webkit-tests is now forces all tests to
+        be run with 'PASS' as expected result.
+
+        * Scripts/webkitpy/layout_tests/controllers/manager.py:
+        (Manager.run):
+        * Scripts/webkitpy/layout_tests/models/test_expectations.py:
+        (TestExpectations.__init__):
+        (TestExpectations._add_expectations):
+        * Scripts/webkitpy/layout_tests/run_webkit_tests.py:
+        (parse_args):
+        (_set_up_derived_options):
+
+2013-10-31  Geoffrey Garen  <ggaren@apple.com>
+
+        Added Mark Lam as a reviewer.
+
+        Unreviewed.
+
+        * Scripts/webkitpy/common/config/contributors.json:
+
+2013-10-30  Alexey Proskuryakov  <ap@apple.com>
+
+        Teach the style checker about ENUM_CLASS
+        https://bugs.webkit.org/show_bug.cgi?id=123528
+
+        Reviewed by Andy Estes.
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (_EnumState.process_clean_line): Make content of an ENUM_CLASS declaration
+        equivalent to enum content for checking.
+        (check_braces): Allow semicolon at the end.
+
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py:
+        (NoNonVirtualDestructorsTest.test_enum_casing):
+        (NoNonVirtualDestructorsTest.test_enum_trailing_semicolon):
+        (WebKitStyleTest.test_braces):
+        Test it.
+
+2013-10-30  Ryosuke Niwa  <rniwa@webkit.org>
+
+        kill-old-processes should kill Web Socket script
+        https://bugs.webkit.org/show_bug.cgi?id=123546
+
+        Reviewed by Benjamin Poulain.
+
+        * BuildSlaveSupport/kill-old-processes:
+        (main):
+
+2013-10-30  Alexey Proskuryakov  <ap@apple.com>
+
+        Set svn:ignore for .pyc files created for test-webkitpy.
+
+        * Scripts/webkitpy/layout_tests/reftests: Added property svn:ignore.
+        * Scripts/webkitpy/performance_tests: Added property svn:ignore.
+        * Scripts/webkitpy/to_be_moved: Added property svn:ignore.
+        * Scripts/webkitpy/w3c: Added property svn:ignore.
+
+2013-10-30  Alexey Proskuryakov  <ap@apple.com>
+
+        85 inspector tests asserting in DrawingAreaProxyImpl::updateAcceleratedCompositingMode()
+        when there is a stale WebKitTestRunner preference
+        https://bugs.webkit.org/show_bug.cgi?id=115115
+
+        Reviewed by Darin Adler.
+
+        Delete stale preferences on launch.
+
+        * WebKitTestRunner/TestController.h:
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::initialize): Now that we don't have preferences stored from
+        the previous run, we need th reinstate them before creating a WKView. Not all preferences
+        can be applied to an existing view retroactively.
+        (WTR::TestController::resetPreferencesToConsistentValues): Split out of resetStateToConsistentValues,
+        because there is no injected bundle yet when calling this function from initialize().
+
+        * WebKitTestRunner/mac/main.mm: (setDefaultsToConsistentValuesForTesting): Delete
+        the preferences.
+
+        * WebKitTestRunner/InjectedBundle/mac/InjectedBundleMac.mm: (WTR::InjectedBundle::platformInitialize):
+        Added some FIXMEs.
+
+2013-10-30  Anders Carlsson  <andersca@apple.com>
+
+        Try to fix the 32-bit build.
+        
+        * TestWebKitAPI/Tests/WebKit2ObjC/WKRemoteObjectRegistry.mm:
+        * TestWebKitAPI/Tests/mac/WKRemoteObjectRegistry_Bundle.mm:
+
+2013-10-30  Anders Carlsson  <andersca@apple.com>
+
+        Begin fleshing out an API test for WKRemoteObjectRegistry
+        https://bugs.webkit.org/show_bug.cgi?id=123531
+
+        Reviewed by Andreas Kling.
+
+        Add a very simple test that doesn't really test anything for now.
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/WebKit2ObjC/WKRemoteObjectRegistry.mm: Added.
+        * TestWebKitAPI/Tests/mac/WKRemoteObjectRegistry_Bundle.mm: Added.
+        * TestWebKitAPI/Tests/mac/WKRemoteObjectRegistry_Shared.h: Added.
+
+2013-10-30  Filip Pizlo  <fpizlo@apple.com>
+
+        Remove unnecessary touch
+
+        Rubber stamped by Mark Hahnenberg.
+
+        * Scripts/run-jsc-stress-tests:
+
+2013-10-30  Samuel White  <samuel_white@apple.com>
+
+        AX: Add samuel_white@apple.com to accessibility watchlist cc rules
+        https://bugs.webkit.org/show_bug.cgi?id=123515
+
+        Reviewed by Chris Fleizach.
+
+        Adding myself and jcraig@apple.com (per his request) to the accessibility watchlist. Also
+        updating contributors.json with permission from bweinstein@apple.com to make this possible.
+
+        * Scripts/webkitpy/common/config/contributors.json:
+        * Scripts/webkitpy/common/config/watchlist:
+
+2013-10-30  Patrick Gansterer  <paroga@webkit.org>
+
+        [WIN] Add executable entry points to DRT and WinLauncher
+        https://bugs.webkit.org/show_bug.cgi?id=121837
+
+        Reviewed by Brent Fulgham.
+
+        This allows to compile and run the executables without DLLLauncher.
+
+        * DumpRenderTree/win/DumpRenderTree.cpp:
+        (main):
+        (dllLauncherEntryPoint):
+        * WinLauncher/WinLauncher.cpp:
+        (wWinMain):
+        (dllLauncherEntryPoint):
+
+2013-10-30  Filip Pizlo  <fpizlo@apple.com>
+
+        run-jsc-stress-tests should handle ".." in paths and "slow!" in cmd's
+        https://bugs.webkit.org/show_bug.cgi?id=123521
+
+        Reviewed by Mark Hahnenberg.
+
+        * Scripts/run-jsc-stress-tests:
+
+2013-10-30  Alexey Proskuryakov  <ap@apple.com>
+
+        Mavericks: 128 tests are failing due to pixel differences
+        https://bugs.webkit.org/show_bug.cgi?id=123488
+
+        Reviewed by Simon Fraser.
+
+        Apple font preferences cannot be fully reset after they've been read, so we
+        need to set them using CFPreferences before initializing NSApplication.
+
+        In theory, this should be an issue on WebKit2 as well, but somehow it doesn't
+        appear to be. I guess we can figure out the reasons for this difference when/if
+        any observable problems start to occur.
+
+        * DumpRenderTree/mac/DumpRenderTree.mm:
+        (setDefaultsToConsistentValuesForTesting): Only set defaults here, move other work
+        to prepareConsistentTestingEnvironment().
+        (main): Call setDefaultsToConsistentValuesForTesting before [NSApplication sharedApplication]
+        (which is unnecessary anyway since NSUserDefaults will implicitly call it, but seems
+        useful to keep in case we change out approach to defaults again).
+
+2013-10-29  Andy Estes  <aestes@apple.com>
+
+        Teach the style checker how to handle Objective-C categories and NS_ENUM
+        https://bugs.webkit.org/show_bug.cgi?id=123482
+
+        Reviewed by Dan Bernstein.
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (check_spacing_for_function_call): Allow a space before '(' in a line
+        starting with @interface or @implementation, since this is defining an
+        Objective-C category rather than a function.
+        (check_braces): The opening brace of an NS_ENUM should not be on its
+        own line.
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py: Added unit tests.
+
+2013-10-30  Robert Plociennik  <r.plociennik@samsung.com>
+
+        [EFL] accessibility/textarea-selected-text-range.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=112016
+
+        Reviewed by Mario Sanchez Prada.
+
+        Provided implementation for AccessibilityUIElement::selectedTextRange() and
+        AccessibilityUIElement::setSelectedTextRange().
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::selectedTextRange): Implemented.
+        (AccessibilityUIElement::setSelectedTextRange): Implemented
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::selectedTextRange): Implemented.
+        (WTR::AccessibilityUIElement::setSelectedTextRange): Implemented.
+
+2013-10-30  Robert Plociennik  <r.plociennik@samsung.com>
+
+        [GTK] accessibility/svg-remote-element.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=101185
+
+        Reviewed by Chris Fleizach.
+
+        Implemented missing methods by mimicing existing functionality in
+        AccessibilityObject::clickPoint() using available ATK API.
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::clickPointX): Implemented.
+        (AccessibilityUIElement::clickPointY): Implemented.
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::clickPointX): Implemented.
+        (WTR::AccessibilityUIElement::clickPointY): Implemented.
+
 2013-10-30  Tamas Gergely  <gertom@inf.u-szeged.hu>
 
         Removed Windows platform configurations from WebKitTestRunner.

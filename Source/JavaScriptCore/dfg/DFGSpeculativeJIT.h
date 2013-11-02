@@ -284,19 +284,9 @@ public:
     {
         return m_jit.graph().masqueradesAsUndefinedWatchpointIsStillValid(codeOrigin);
     }
-    void speculationWatchpointForMasqueradesAsUndefined(const CodeOrigin& codeOrigin)
-    {
-        m_jit.addLazily(
-            speculationWatchpoint(),
-            m_jit.graph().globalObjectFor(codeOrigin)->masqueradesAsUndefinedWatchpoint());
-    }
     bool masqueradesAsUndefinedWatchpointIsStillValid()
     {
         return masqueradesAsUndefinedWatchpointIsStillValid(m_currentNode->codeOrigin);
-    }
-    void speculationWatchpointForMasqueradesAsUndefined()
-    {
-        speculationWatchpointForMasqueradesAsUndefined(m_currentNode->codeOrigin);
     }
 
     void writeBarrier(GPRReg ownerGPR, GPRReg valueGPR, Edge valueUse, WriteBarrierUseKind, GPRReg scratchGPR1 = InvalidGPRReg, GPRReg scratchGPR2 = InvalidGPRReg);
@@ -741,35 +731,40 @@ public:
     }
     
     // Access to our fixed callee CallFrame.
-    MacroAssembler::Address callFrameSlot(int numArgs, int slot)
+    MacroAssembler::Address calleeFrameSlot(int numArgs, int slot)
     {
         return MacroAssembler::Address(GPRInfo::callFrameRegister, calleeFrameOffset(numArgs) + sizeof(Register) * slot);
     }
 
     // Access to our fixed callee CallFrame.
-    MacroAssembler::Address argumentSlot(int numArgs, int argument)
+    MacroAssembler::Address calleeArgumentSlot(int numArgs, int argument)
     {
-        return callFrameSlot(numArgs, virtualRegisterForArgument(argument).offset());
+        return calleeFrameSlot(numArgs, virtualRegisterForArgument(argument).offset());
     }
 
-    MacroAssembler::Address callFrameTagSlot(int numArgs, int slot)
+    MacroAssembler::Address calleeFrameTagSlot(int numArgs, int slot)
     {
-        return callFrameSlot(numArgs, slot).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag));
+        return calleeFrameSlot(numArgs, slot).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag));
     }
 
-    MacroAssembler::Address callFramePayloadSlot(int numArgs, int slot)
+    MacroAssembler::Address calleeFramePayloadSlot(int numArgs, int slot)
     {
-        return callFrameSlot(numArgs, slot).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload));
+        return calleeFrameSlot(numArgs, slot).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload));
     }
 
-    MacroAssembler::Address argumentTagSlot(int numArgs, int argument)
+    MacroAssembler::Address calleeArgumentTagSlot(int numArgs, int argument)
     {
-        return argumentSlot(numArgs, argument).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag));
+        return calleeArgumentSlot(numArgs, argument).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag));
     }
 
-    MacroAssembler::Address argumentPayloadSlot(int numArgs, int argument)
+    MacroAssembler::Address calleeArgumentPayloadSlot(int numArgs, int argument)
     {
-        return argumentSlot(numArgs, argument).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload));
+        return calleeArgumentSlot(numArgs, argument).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload));
+    }
+
+    MacroAssembler::Address calleeFrameCallerFrame(int numArgs)
+    {
+        return calleeFrameSlot(numArgs, 0).withOffset(CallFrame::callerFrameOffset());
     }
 
     void emitCall(Node*);
@@ -1136,6 +1131,11 @@ public:
     JITCompiler::Call callOperation(D_JITOperation_ZZ operation, FPRReg result, GPRReg arg1, GPRReg arg2)
     {
         m_jit.setupArguments(arg1, arg2);
+        return appendCallSetResult(operation, result);
+    }
+    JITCompiler::Call callOperation(D_JITOperation_D operation, FPRReg result, FPRReg arg1)
+    {
+        m_jit.setupArguments(arg1);
         return appendCallSetResult(operation, result);
     }
     JITCompiler::Call callOperation(D_JITOperation_DD operation, FPRReg result, FPRReg arg1, FPRReg arg2)
@@ -2131,16 +2131,8 @@ public:
     // Add a speculation check with additional recovery.
     void backwardSpeculationCheck(ExitKind, JSValueSource, Node*, MacroAssembler::Jump jumpToFail, const SpeculationRecovery&);
     void backwardSpeculationCheck(ExitKind, JSValueSource, Edge, MacroAssembler::Jump jumpToFail, const SpeculationRecovery&);
-    // Use this like you would use speculationCheck(), except that you don't pass it a jump
-    // (because you don't have to execute a branch; that's kind of the whole point), and you
-    // must register the returned Watchpoint with something relevant. In general, this should
-    // be used with extreme care. Use speculationCheck() unless you've got an amazing reason
-    // not to.
-    JumpReplacementWatchpoint* speculationWatchpoint(ExitKind, JSValueSource, Node*);
-    // The default for speculation watchpoints is that they're uncounted, because the
-    // act of firing a watchpoint invalidates it. So, future recompilations will not
-    // attempt to set this watchpoint again.
-    JumpReplacementWatchpoint* speculationWatchpoint(ExitKind = UncountableWatchpoint);
+    
+    void emitInvalidationPoint(Node*);
     
     // It is generally a good idea to not use this directly.
     void convertLastOSRExitToForward(const ValueRecovery& = ValueRecovery());
@@ -3022,18 +3014,13 @@ void SpeculativeJIT::speculateStringObjectForStructure(Edge edge, StructureLocat
 {
     Structure* stringObjectStructure =
         m_jit.globalObjectFor(m_currentNode->codeOrigin)->stringObjectStructure();
-    Structure* stringPrototypeStructure = stringObjectStructure->storedPrototype().asCell()->structure();
-    ASSERT(m_jit.graph().watchpoints().isValidOrMixed(stringPrototypeStructure->transitionWatchpointSet()));
     
-    if (!m_state.forNode(edge).m_currentKnownStructure.isSubsetOf(StructureSet(m_jit.globalObjectFor(m_currentNode->codeOrigin)->stringObjectStructure()))) {
+    if (!m_state.forNode(edge).m_currentKnownStructure.isSubsetOf(StructureSet(stringObjectStructure))) {
         speculationCheck(
             NotStringObject, JSValueRegs(), 0,
             m_jit.branchPtr(
                 JITCompiler::NotEqual, structureLocation, TrustedImmPtr(stringObjectStructure)));
     }
-    m_jit.addLazily(
-        speculationWatchpoint(NotStringObject),
-        stringPrototypeStructure->transitionWatchpointSet());
 }
 
 #define DFG_TYPE_CHECK(source, edge, typesPassedThrough, jumpToFail) do { \

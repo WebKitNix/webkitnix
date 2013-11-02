@@ -308,10 +308,10 @@ void GraphicsContext::drawLine(const IntPoint& point1, const IntPoint& point2)
     switch (strokeStyle()) {
     case NoStroke:
     case SolidStroke:
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
     case DoubleStroke:
     case WavyStroke: // FIXME: https://bugs.webkit.org/show_bug.cgi?id=94112 - Needs platform support.
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
         break;
     case DottedStroke:
         patWidth = (int)width;
@@ -1235,16 +1235,68 @@ FloatRect GraphicsContext::roundToDevicePixels(const FloatRect& rect, RoundingMo
     return FloatRect(roundedOrigin, roundedLowerRight - roundedOrigin);
 }
 
-void GraphicsContext::drawLineForText(const FloatRect& bounds, bool)
+static FloatRect computeLineBoundsAndAntialiasingModeForText(GraphicsContext& context, const FloatPoint& point, float width, bool printing, bool& shouldAntialias)
+{
+    shouldAntialias = true;
+
+    if (width <= 0)
+        return FloatRect();
+
+    // Use a minimum thickness of 0.5 in user space.
+    // See http://bugs.webkit.org/show_bug.cgi?id=4255 for details of why 0.5 is the right minimum thickness to use.
+    FloatRect initialBounds(point, FloatSize(width, max(context.strokeThickness(), 0.5f)));
+
+    if (printing || !context.getCTM(GraphicsContext::DefinitelyIncludeDeviceScale).preservesAxisAlignment())
+        return initialBounds;
+
+    // On screen, use a minimum thickness of 1.0 in user space (later rounded to an integral number in device space).
+    FloatRect adjustedBounds = initialBounds;
+    adjustedBounds.setHeight(max(initialBounds.width(), 1.0f));
+
+    // FIXME: This should be done a better way.
+    // We try to round all parameters to integer boundaries in device space. If rounding pixels in device space
+    // makes our thickness more than double, then there must be a shrinking-scale factor and rounding to pixels
+    // in device space will make the underlines too thick.
+    FloatRect lineRect = context.roundToDevicePixels(adjustedBounds, GraphicsContext::RoundAllSides);
+    if (lineRect.height() < initialBounds.height() * 2) {
+        shouldAntialias = false;
+        return lineRect;
+    }
+    return initialBounds;
+}
+
+FloatRect GraphicsContext::computeLineBoundsForText(const FloatPoint& point, float width, bool printing)
+{
+    bool dummy;
+    return computeLineBoundsAndAntialiasingModeForText(*this, point, width, printing, dummy);
+}
+
+void GraphicsContext::drawLineForText(const FloatPoint& point, float width, bool printing)
 {
     if (paintingDisabled())
         return;
 
+    if (width <= 0)
+        return;
+
+    bool shouldAntialiasLine;
+    FloatRect bounds = computeLineBoundsAndAntialiasingModeForText(*this, point, width, printing, shouldAntialiasLine);
+
+    bool savedShouldAntialias = shouldAntialias();
+    bool restoreAntialiasMode = savedShouldAntialias != shouldAntialiasLine;
+
+    if (restoreAntialiasMode)
+        CGContextSetShouldAntialias(platformContext(), shouldAntialiasLine);
+
     if (fillColor() != strokeColor())
         setCGFillColor(platformContext(), strokeColor(), strokeColorSpace());
-    CGContextFillRect(platformContext(), CGRectMake(bounds.location().x(), bounds.location().y(), bounds.width(), bounds.height()));
+    CGContextFillRect(platformContext(), bounds);
     if (fillColor() != strokeColor())
         setCGFillColor(platformContext(), fillColor(), fillColorSpace());
+    CGContextSetShouldAntialias(platformContext(), savedShouldAntialias);
+
+    if (restoreAntialiasMode)
+        CGContextSetShouldAntialias(platformContext(), true);
 }
 
 void GraphicsContext::setURLForRect(const URL& link, const IntRect& destRect)

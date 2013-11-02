@@ -105,10 +105,10 @@ namespace WebCore {
         SolidStroke,
         DottedStroke,
         DashedStroke,
-#if ENABLE(CSS3_TEXT)
+#if ENABLE(CSS3_TEXT_DECORATION)
         DoubleStroke,
         WavyStroke,
-#endif // CSS3_TEXT
+#endif // CSS3_TEXT_DECORATION
     };
 
     enum InterpolationQuality {
@@ -330,7 +330,8 @@ namespace WebCore {
         };
         FloatRect roundToDevicePixels(const FloatRect&, RoundingMode = RoundAllSides);
 
-        void drawLineForText(const FloatRect& bounds, bool printing);
+        FloatRect computeLineBoundsForText(const FloatPoint&, float width, bool printing);
+        void drawLineForText(const FloatPoint&, float width, bool printing);
         enum DocumentMarkerLineStyle {
             DocumentMarkerSpellingLineStyle,
             DocumentMarkerGrammarLineStyle,

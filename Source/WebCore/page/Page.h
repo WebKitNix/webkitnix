@@ -103,16 +103,6 @@ enum FindDirection { FindDirectionForward, FindDirectionBackward };
 
 float deviceScaleFactor(Frame*);
 
-struct ArenaSize {
-    ArenaSize(size_t treeSize, size_t allocated)
-        : treeSize(treeSize)
-        , allocated(allocated)
-    {
-    }
-    size_t treeSize;
-    size_t allocated;
-};
-
 class Page : public Supplementable<Page> {
     WTF_MAKE_NONCOPYABLE(Page);
     friend class Settings;
@@ -145,7 +135,7 @@ public:
     explicit Page(PageClients&);
     ~Page();
 
-    ArenaSize renderTreeSize() const;
+    uint64_t renderTreeSize() const;
 
     void setNeedsRecalcStyleInAllFrames();
 
@@ -312,7 +302,6 @@ public:
     void storageBlockingStateChanged();
     void privateBrowsingStateChanged();
 
-    static void setDebuggerForAllPages(JSC::Debugger*);
     void setDebugger(JSC::Debugger*);
     JSC::Debugger* debugger() const { return m_debugger; }
 

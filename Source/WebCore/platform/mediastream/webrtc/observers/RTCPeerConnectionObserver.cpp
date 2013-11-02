@@ -90,7 +90,7 @@ PassRefPtr<MediaStreamDescriptor> RTCPeerConnectionObserver::mediaStreamDescript
 
     // FIXME: Handle video.
 
-    RefPtr<MediaStreamDescriptor> descriptor = MediaStreamDescriptor::create(audioSourceVector, videoSourceVector, MediaStreamDescriptor::IsNotEnded);
+    RefPtr<MediaStreamDescriptor> descriptor = MediaStreamDescriptor::create(audioSourceVector, videoSourceVector);
 
     RefPtr<MediaStreamWebRTCObserver> streamObserver = adoptRef(new MediaStreamWebRTCObserver(stream, descriptor.get(), audioTrackObservers, videoTrackObservers));
     stream->RegisterObserver(streamObserver.get());

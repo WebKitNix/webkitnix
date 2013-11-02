@@ -239,8 +239,7 @@ WebPageProxy::WebPageProxy(PageClient* pageClient, PassRefPtr<WebProcessProxy> p
     , m_geolocationPermissionRequestManager(this)
     , m_notificationPermissionRequestManager(this)
     , m_estimatedProgress(0)
-    , m_isInWindow(m_pageClient->isViewInWindow())
-    , m_isVisible(m_pageClient->isViewVisible())
+    , m_viewState(ViewState::NoFlags)
     , m_backForwardList(WebBackForwardList::create(this))
     , m_loadStateAtProcessExit(WebFrameProxy::LoadStateFinished)
     , m_temporarilyClosedComposition(false)
@@ -320,10 +319,12 @@ WebPageProxy::WebPageProxy(PageClient* pageClient, PassRefPtr<WebProcessProxy> p
 #endif
     , m_scrollPinningBehavior(DoNotPin)
 {
+    updateViewState();
+
     platformInitialize();
 
 #if ENABLE(PAGE_VISIBILITY_API)
-    if (!m_isVisible)
+    if (isViewVisible())
         m_visibilityState = PageVisibilityStateHidden;
 #endif
 #ifndef NDEBUG
@@ -471,6 +472,8 @@ void WebPageProxy::reattachToWebProcess()
     ASSERT(!m_process->isValid());
     ASSERT(!m_process->isLaunching());
 
+    updateViewState();
+
     m_isValid = true;
 
     if (m_process->context()->processModel() == ProcessModelSharedSecondaryProcess)
@@ -523,12 +526,13 @@ void WebPageProxy::initializeWebPage()
         inspector()->enableRemoteInspection();
 #endif
 
-    m_process->send(Messages::WebProcess::CreateWebPage(m_pageID, creationParameters()), 0);
+    initializeCreationParameters();
+    m_process->send(Messages::WebProcess::CreateWebPage(m_pageID, m_creationParameters), 0);
 
 #if ENABLE(PAGE_VISIBILITY_API)
     m_process->send(Messages::WebPage::SetVisibilityState(m_visibilityState, /* isInitialState */ true), m_pageID);
 #elif ENABLE(HIDDEN_PAGE_DOM_TIMER_THROTTLING)
-    m_process->send(Messages::WebPage::SetVisibilityState(m_isVisible ? PageVisibilityStateVisible : PageVisibilityStateHidden, /* isInitialState */ true), m_pageID);
+    m_process->send(Messages::WebPage::SetVisibilityState(isViewVisible() ? PageVisibilityStateVisible : PageVisibilityStateHidden, /* isInitialState */ true), m_pageID);
 #endif
 
 #if PLATFORM(MAC)
@@ -974,59 +978,56 @@ void WebPageProxy::scrollView(const IntRect& scrollRect, const IntSize& scrollOf
     m_pageClient->scrollView(scrollRect, scrollOffset);
 }
 
+void WebPageProxy::updateViewState(ViewState::Flags flagsToUpdate)
+{
+    m_viewState &= ~flagsToUpdate;
+    if (flagsToUpdate & ViewState::WindowIsVisible && m_pageClient->isWindowVisible())
+        m_viewState |= ViewState::WindowIsVisible;
+    if (flagsToUpdate & ViewState::IsFocused && m_pageClient->isViewFocused())
+        m_viewState |= ViewState::IsFocused;
+    if (flagsToUpdate & ViewState::WindowIsActive && m_pageClient->isViewWindowActive())
+        m_viewState |= ViewState::WindowIsActive;
+    if (flagsToUpdate & ViewState::IsVisible && m_pageClient->isViewVisible())
+        m_viewState |= ViewState::IsVisible;
+    if (flagsToUpdate & ViewState::IsInWindow && m_pageClient->isViewInWindow())
+        m_viewState |= ViewState::IsInWindow;
+}
+
 void WebPageProxy::viewStateDidChange(ViewState::Flags mayHaveChanged, WantsReplyOrNot wantsReply)
 {
-    // Wants reply currently only applies to the IsInWindow flag, so check only this is set.
-    ASSERT(wantsReply == WantsReplyOrNot::DoesNotWantReply || mayHaveChanged == ViewState::IsInWindow);
-
     if (!isValid())
         return;
 
-    if (mayHaveChanged & ViewState::WindowIsVisible)
-        process()->send(Messages::WebPage::SetWindowIsVisible(m_pageClient->isWindowVisible()), m_pageID);
+    // Record the prior view state, update the flags that may have changed,
+    // and check which flags have actually changed.
+    ViewState::Flags previousViewState = m_viewState;
+    updateViewState(mayHaveChanged);
+    ViewState::Flags changed = m_viewState ^ previousViewState;
 
-    if (mayHaveChanged & ViewState::IsFocused)
-        m_process->send(Messages::WebPage::SetFocused(m_pageClient->isViewFocused()), m_pageID);
+    if (changed)
+        m_process->send(Messages::WebPage::SetViewState(m_viewState, wantsReply == WantsReplyOrNot::DoesWantReply), m_pageID);
 
-    // We want to make sure to update the active state while hidden, so if the view is hidden then update the active state
-    // early (in case it becomes visible), and if the view was visible then update active state later (in case it hides).
-    bool viewWasVisible = m_isVisible;
-    
-    if (mayHaveChanged & ViewState::WindowIsActive && !viewWasVisible)
-        m_process->send(Messages::WebPage::SetActive(m_pageClient->isViewWindowActive()), m_pageID);
+    if (changed & ViewState::IsVisible) {
+        m_process->pageVisibilityChanged(this);
 
-    if (mayHaveChanged & ViewState::IsVisible) {
-        bool isVisible = m_pageClient->isViewVisible();
-        if (isVisible != m_isVisible) {
-            m_isVisible = isVisible;
-            m_process->pageVisibilityChanged(this);
-            m_process->send(Messages::WebPage::SetViewIsVisible(isVisible), m_pageID);
-
-            if (!m_isVisible) {
-                // If we've started the responsiveness timer as part of telling the web process to update the backing store
-                // state, it might not send back a reply (since it won't paint anything if the web page is hidden) so we
-                // stop the unresponsiveness timer here.
-                m_process->responsivenessTimer()->stop();
-            }
-
-#if ENABLE(HIDDEN_PAGE_DOM_TIMER_THROTTLING) && !ENABLE(PAGE_VISIBILITY_API)
-            PageVisibilityState visibilityState = m_isVisible ? PageVisibilityStateVisible : PageVisibilityStateHidden;
-            m_process->send(Messages::WebPage::SetVisibilityState(visibilityState, false), m_pageID);
-#endif
+        if (!isViewVisible()) {
+            // If we've started the responsiveness timer as part of telling the web process to update the backing store
+            // state, it might not send back a reply (since it won't paint anything if the web page is hidden) so we
+            // stop the unresponsiveness timer here.
+            m_process->responsivenessTimer()->stop();
         }
+
+#if ENABLE(PAGE_VISIBILITY_API)
+        m_visibilityState = isViewVisible() ? PageVisibilityStateVisible : PageVisibilityStateHidden;
+        m_process->send(Messages::WebPage::SetVisibilityState(m_visibilityState, false), m_pageID);
+#elif ENABLE(HIDDEN_PAGE_DOM_TIMER_THROTTLING)
+        PageVisibilityState visibilityState = isViewVisible() ? PageVisibilityStateVisible : PageVisibilityStateHidden;
+        m_process->send(Messages::WebPage::SetVisibilityState(visibilityState, false), m_pageID);
+#endif
     }
 
-    if (mayHaveChanged & ViewState::WindowIsActive && viewWasVisible)
-        m_process->send(Messages::WebPage::SetActive(m_pageClient->isViewWindowActive()), m_pageID);
-
     if (mayHaveChanged & ViewState::IsInWindow) {
-        bool isInWindow = m_pageClient->isViewInWindow();
-        if (m_isInWindow != isInWindow) {
-            m_isInWindow = isInWindow;
-            m_process->send(Messages::WebPage::SetIsInWindow(isInWindow, wantsReply == WantsReplyOrNot::DoesWantReply), m_pageID);
-        }
-
-        if (isInWindow) {
+        if (m_viewState & ViewState::IsInWindow) {
             LayerHostingMode layerHostingMode = m_pageClient->viewLayerHostingMode();
             if (m_layerHostingMode != layerHostingMode) {
                 m_layerHostingMode = layerHostingMode;
@@ -1041,18 +1042,6 @@ void WebPageProxy::viewStateDidChange(ViewState::Flags mayHaveChanged, WantsRepl
         }
 #endif
     }
-
-#if ENABLE(PAGE_VISIBILITY_API)
-    PageVisibilityState visibilityState = PageVisibilityStateHidden;
-
-    if (m_isVisible)
-        visibilityState = PageVisibilityStateVisible;
-
-    if (visibilityState != m_visibilityState) {
-        m_visibilityState = visibilityState;
-        m_process->send(Messages::WebPage::SetVisibilityState(visibilityState, false), m_pageID);
-    }
-#endif
 
     updateBackingStoreDiscardableState();
 }
@@ -3898,47 +3887,40 @@ void WebPageProxy::resetStateAfterProcessExited()
 #endif
 }
 
-WebPageCreationParameters WebPageProxy::creationParameters() const
+void WebPageProxy::initializeCreationParameters()
 {
-    WebPageCreationParameters parameters;
-
-    parameters.viewSize = m_pageClient->viewSize();
-    parameters.isActive = m_pageClient->isViewWindowActive();
-    parameters.isFocused = m_pageClient->isViewFocused();
-    parameters.isVisible = m_pageClient->isViewVisible();
-    parameters.isInWindow = m_pageClient->isViewInWindow();
-    parameters.drawingAreaType = m_drawingArea->type();
-    parameters.store = m_pageGroup->preferences()->store();
-    parameters.pageGroupData = m_pageGroup->data();
-    parameters.drawsBackground = m_drawsBackground;
-    parameters.drawsTransparentBackground = m_drawsTransparentBackground;
-    parameters.underlayColor = m_underlayColor;
-    parameters.areMemoryCacheClientCallsEnabled = m_areMemoryCacheClientCallsEnabled;
-    parameters.useFixedLayout = m_useFixedLayout;
-    parameters.fixedLayoutSize = m_fixedLayoutSize;
-    parameters.suppressScrollbarAnimations = m_suppressScrollbarAnimations;
-    parameters.paginationMode = m_paginationMode;
-    parameters.paginationBehavesLikeColumns = m_paginationBehavesLikeColumns;
-    parameters.pageLength = m_pageLength;
-    parameters.gapBetweenPages = m_gapBetweenPages;
-    parameters.userAgent = userAgent();
-    parameters.sessionState = SessionState(m_backForwardList->entries(), m_backForwardList->currentIndex());
-    parameters.highestUsedBackForwardItemID = WebBackForwardListItem::highedUsedItemID();
-    parameters.canRunBeforeUnloadConfirmPanel = m_uiClient.canRunBeforeUnloadConfirmPanel();
-    parameters.canRunModal = m_canRunModal;
-    parameters.deviceScaleFactor = deviceScaleFactor();
-    parameters.mediaVolume = m_mediaVolume;
-    parameters.mayStartMediaWhenInWindow = m_mayStartMediaWhenInWindow;
-    parameters.minimumLayoutSize = m_minimumLayoutSize;
-    parameters.autoSizingShouldExpandToViewHeight = m_autoSizingShouldExpandToViewHeight;
-    parameters.scrollPinningBehavior = m_scrollPinningBehavior;
+    m_creationParameters.viewSize = m_pageClient->viewSize();
+    m_creationParameters.viewState = m_viewState;
+    m_creationParameters.drawingAreaType = m_drawingArea->type();
+    m_creationParameters.store = m_pageGroup->preferences()->store();
+    m_creationParameters.pageGroupData = m_pageGroup->data();
+    m_creationParameters.drawsBackground = m_drawsBackground;
+    m_creationParameters.drawsTransparentBackground = m_drawsTransparentBackground;
+    m_creationParameters.underlayColor = m_underlayColor;
+    m_creationParameters.areMemoryCacheClientCallsEnabled = m_areMemoryCacheClientCallsEnabled;
+    m_creationParameters.useFixedLayout = m_useFixedLayout;
+    m_creationParameters.fixedLayoutSize = m_fixedLayoutSize;
+    m_creationParameters.suppressScrollbarAnimations = m_suppressScrollbarAnimations;
+    m_creationParameters.paginationMode = m_paginationMode;
+    m_creationParameters.paginationBehavesLikeColumns = m_paginationBehavesLikeColumns;
+    m_creationParameters.pageLength = m_pageLength;
+    m_creationParameters.gapBetweenPages = m_gapBetweenPages;
+    m_creationParameters.userAgent = userAgent();
+    m_creationParameters.sessionState = SessionState(m_backForwardList->entries(), m_backForwardList->currentIndex());
+    m_creationParameters.highestUsedBackForwardItemID = WebBackForwardListItem::highedUsedItemID();
+    m_creationParameters.canRunBeforeUnloadConfirmPanel = m_uiClient.canRunBeforeUnloadConfirmPanel();
+    m_creationParameters.canRunModal = m_canRunModal;
+    m_creationParameters.deviceScaleFactor = deviceScaleFactor();
+    m_creationParameters.mediaVolume = m_mediaVolume;
+    m_creationParameters.mayStartMediaWhenInWindow = m_mayStartMediaWhenInWindow;
+    m_creationParameters.minimumLayoutSize = m_minimumLayoutSize;
+    m_creationParameters.autoSizingShouldExpandToViewHeight = m_autoSizingShouldExpandToViewHeight;
+    m_creationParameters.scrollPinningBehavior = m_scrollPinningBehavior;
 
 #if PLATFORM(MAC)
-    parameters.layerHostingMode = m_layerHostingMode;
-    parameters.colorSpace = m_pageClient->colorSpace();
+    m_creationParameters.layerHostingMode = m_layerHostingMode;
+    m_creationParameters.colorSpace = m_pageClient->colorSpace();
 #endif
-
-    return parameters;
 }
 
 #if USE(ACCELERATED_COMPOSITING)

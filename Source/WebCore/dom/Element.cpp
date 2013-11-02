@@ -2411,7 +2411,7 @@ PassRefPtr<PseudoElement> Element::createPseudoElementIfNeeded(PseudoId pseudoId
         return 0;
     if (!pseudoElementRendererIsNeeded(renderer()->getCachedPseudoStyle(pseudoId)))
         return 0;
-    RefPtr<PseudoElement> pseudoElement = PseudoElement::create(this, pseudoId);
+    RefPtr<PseudoElement> pseudoElement = PseudoElement::create(*this, pseudoId);
     Style::attachRenderTree(*pseudoElement);
     return pseudoElement.release();
 }
@@ -2619,17 +2619,15 @@ const AtomicString& Element::UIActions() const
 }
 #endif
 
-    
-#if ENABLE(SVG)
 bool Element::childShouldCreateRenderer(const Node* child) const
 {
+#if ENABLE(SVG)
     // Only create renderers for SVG elements whose parents are SVG elements, or for proper <svg xmlns="svgNS"> subdocuments.
     if (child->isSVGElement())
         return child->hasTagName(SVGNames::svgTag) || isSVGElement();
-
+#endif
     return ContainerNode::childShouldCreateRenderer(child);
 }
-#endif
 
 #if ENABLE(FULLSCREEN_API)
 void Element::webkitRequestFullscreen()

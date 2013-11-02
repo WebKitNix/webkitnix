@@ -31,7 +31,7 @@
 
 #include "DOMStringList.h"
 #include "IDBBackingStoreLevelDB.h"
-#include "IDBCursorBackendLevelDB.h"
+#include "IDBCursorBackendImpl.h"
 #include "IDBDatabaseBackendImpl.h"
 #include "IDBDatabaseException.h"
 #include "IDBTransactionBackendImpl.h"
@@ -162,7 +162,7 @@ PassRefPtr<IDBBackingStoreLevelDB> IDBFactoryBackendLevelDB::openBackingStore(co
     return 0;
 }
 
-void IDBFactoryBackendLevelDB::open(const String& name, int64_t version, int64_t transactionId, PassRefPtr<IDBCallbacks> callbacks, PassRefPtr<IDBDatabaseCallbacks> databaseCallbacks, const SecurityOrigin& openingOrigin, const SecurityOrigin&)
+void IDBFactoryBackendLevelDB::open(const String& name, uint64_t version, int64_t transactionId, PassRefPtr<IDBCallbacks> callbacks, PassRefPtr<IDBDatabaseCallbacks> databaseCallbacks, const SecurityOrigin& openingOrigin, const SecurityOrigin&)
 {
     LOG(StorageAPI, "IDBFactoryBackendLevelDB::open");
     const String uniqueIdentifier = computeUniqueIdentifier(name, openingOrigin);
@@ -199,7 +199,7 @@ PassRefPtr<IDBTransactionBackendInterface> IDBFactoryBackendLevelDB::maybeCreate
 
 PassRefPtr<IDBCursorBackendInterface> IDBFactoryBackendLevelDB::createCursorBackend(IDBTransactionBackendInterface& transactionBackend, IDBBackingStoreInterface::Cursor& backingStoreCursor, IndexedDB::CursorType cursorType, IDBDatabaseBackendInterface::TaskType taskType, int64_t objectStoreId)
 {
-    return IDBCursorBackendLevelDB::create(&backingStoreCursor, cursorType, taskType, &transactionBackend, objectStoreId);
+    return IDBCursorBackendImpl::create(&backingStoreCursor, cursorType, taskType, &transactionBackend, objectStoreId);
 }
 
 
