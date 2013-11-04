@@ -36,21 +36,6 @@ namespace WebCore {
 
 namespace WebRTCUtils {
 
-void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint> constraints, webrtc::MediaConstraintsInterface::Constraints* webRTCConstraints)
-{
-    for (const MediaConstraint& constraint : constraints) {
-        webrtc::MediaConstraintsInterface::Constraint newConstraint;
-        newConstraint.key = constraint.m_name.utf8().data();
-        newConstraint.value = constraint.m_value.utf8().data();
-
-        // Ignore internal constraints set by JS.
-        if (!newConstraint.key.compare(0, 8, "internal"))
-            continue;
-
-        webRTCConstraints->push_back(newConstraint);
-    }
-}
-
 void toWebRTCIceServers(PassRefPtr<RTCConfiguration> configuration, webrtc::PeerConnectionInterface::IceServers* servers)
 {
     if (!configuration.get() || !servers)

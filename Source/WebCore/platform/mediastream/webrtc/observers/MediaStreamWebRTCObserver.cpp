@@ -50,7 +50,7 @@ void MediaStreamWebRTCObserver::OnChanged()
     // the track. So we need to iterate through every tracks we have and check if a addition
     // or removal has take place.
 
-    // The only changes in MediaStreamInterface that can fire events are in adding or removing tracks
+    // The only changes in MediaStreamInterface that can fire events are in adding or removing tracks.
     const webrtc::AudioTrackVector& audioTracks = m_stream->GetAudioTracks();
     if (m_descriptor->numberOfAudioTracks() < audioTracks.size())
         findAndAddTrack(audioTracks, m_audioTrackObservers);

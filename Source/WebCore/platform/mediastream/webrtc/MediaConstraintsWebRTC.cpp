@@ -29,18 +29,54 @@
 
 #include "MediaConstraintsWebRTC.h"
 
-#include "WebRTCUtils.h"
+#include <wtf/text/CString.h>
 
 namespace WebCore {
+
+const String MediaConstraintsWebRTC::s_validConstraints[] = {
+    "OfferToReceiveAudio",
+    "OfferToReceiveVideo",
+    "VoiceActivityDetection",
+    "IceTransports",
+    "IceRestart",
+    "RequestIdentity",
+    "" // Loop stop condition.
+};
 
 MediaConstraintsWebRTC::MediaConstraintsWebRTC(PassRefPtr<MediaConstraints> constraints)
 {
     Vector<MediaConstraint> mandatory;
     constraints->getMandatoryConstraints(mandatory);
-    WebRTCUtils::toMediaConstraintsWebRTC(mandatory, &m_mandatory);
+    toMediaConstraintsWebRTC(mandatory, m_mandatory);
     Vector<MediaConstraint> optional;
     constraints->getOptionalConstraints(optional);
-    WebRTCUtils::toMediaConstraintsWebRTC(optional, &m_optional);
+    toMediaConstraintsWebRTC(optional, m_optional);
+}
+
+bool MediaConstraintsWebRTC::isConstraintValid(const String& constraint)
+{
+    for (unsigned i = 0; !s_validConstraints[i].isEmpty(); ++i) {
+        if (constraint == s_validConstraints[i])
+            return true;
+    }
+
+    return false;
+}
+
+void MediaConstraintsWebRTC::pushConstraint(const String& constraint, const String& value, webrtc::MediaConstraintsInterface::Constraints& webRTCConstraints)
+{
+    webrtc::MediaConstraintsInterface::Constraint newConstraint;
+    newConstraint.key = constraint.utf8().data();
+    newConstraint.value = value.utf8().data();
+    webRTCConstraints.push_back(newConstraint);
+}
+
+void MediaConstraintsWebRTC::toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>& constraints, webrtc::MediaConstraintsInterface::Constraints& webRTCConstraints)
+{
+    for (const MediaConstraint& constraint : constraints) {
+        if (isConstraintValid(constraint.m_name))
+            pushConstraint(constraint.m_name, constraint.m_value, webRTCConstraints);
+    }
 }
 
 const webrtc::MediaConstraintsInterface::Constraints& MediaConstraintsWebRTC::GetMandatory() const
@@ -51,6 +87,16 @@ const webrtc::MediaConstraintsInterface::Constraints& MediaConstraintsWebRTC::Ge
 const webrtc::MediaConstraintsInterface::Constraints& MediaConstraintsWebRTC::GetOptional() const
 {
     return m_optional;
+}
+
+void MediaConstraintsWebRTC::addMandatoryConstraint(const String& constraint, const String& value)
+{
+    pushConstraint(constraint, value, m_mandatory);
+}
+
+void MediaConstraintsWebRTC::addOptionalConstraint(const String& constraint, const String& value)
+{
+    pushConstraint(constraint, value, m_optional);
 }
 
 } // namespace WebCore

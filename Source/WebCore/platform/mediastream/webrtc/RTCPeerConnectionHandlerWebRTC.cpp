@@ -57,6 +57,8 @@ RTCPeerConnectionHandlerWebRTC::RTCPeerConnectionHandlerWebRTC(RTCPeerConnection
 bool RTCPeerConnectionHandlerWebRTC::initialize(PassRefPtr<RTCConfiguration> configuration, PassRefPtr<MediaConstraints> constraints)
 {
     MediaConstraintsWebRTC mediaConstraints(constraints);
+    // libwebrtc needs to have RtpDataChannels constraint set (it is internal).
+    mediaConstraints.addOptionalConstraint("RtpDataChannels", "true");
     webrtc::PeerConnectionInterface::IceServers servers;
     WebRTCUtils::toWebRTCIceServers(configuration, &servers);
 
@@ -65,7 +67,6 @@ bool RTCPeerConnectionHandlerWebRTC::initialize(PassRefPtr<RTCConfiguration> con
 
 bool RTCPeerConnectionHandlerWebRTC::createPeerConnection(const webrtc::PeerConnectionInterface::IceServers& servers, const webrtc::MediaConstraintsInterface& constraints)
 {
-
     m_pcFactory = webrtc::CreatePeerConnectionFactory();
     m_webRTCPeerConnection = m_pcFactory->CreatePeerConnection(servers, &constraints, 0, &m_connectionObserver);
     if (!m_webRTCPeerConnection.get())

@@ -41,7 +41,6 @@ class RTCConfiguration;
 
 namespace WebRTCUtils {
 
-void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>, webrtc::MediaConstraintsInterface::Constraints*);
 void toWebRTCIceServers(PassRefPtr<RTCConfiguration>, webrtc::PeerConnectionInterface::IceServers*);
 RTCDataChannelHandlerClient::ReadyState toWebKitDataChannelReadyState(webrtc::DataChannelInterface::DataState);
 RTCPeerConnectionHandlerClient::SignalingState toWebKitSignalingState(webrtc::PeerConnectionInterface::SignalingState);

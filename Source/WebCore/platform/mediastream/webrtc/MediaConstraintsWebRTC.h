@@ -30,19 +30,27 @@
 
 #include "MediaConstraints.h"
 #include "libwebrtc.h"
+#include <wtf/text/WTFString.h>
 
 namespace WebCore {
 
 class MediaConstraintsWebRTC : public webrtc::MediaConstraintsInterface {
 public:
     explicit MediaConstraintsWebRTC(PassRefPtr<MediaConstraints>);
-    virtual ~MediaConstraintsWebRTC() { };
     virtual const Constraints& GetMandatory() const OVERRIDE;
     virtual const Constraints& GetOptional() const OVERRIDE;
+    void addMandatoryConstraint(const String& name, const String& value);
+    void addOptionalConstraint(const String& name, const String& value);
 
 protected:
     Constraints m_mandatory;
     Constraints m_optional;
+
+private:
+    bool isConstraintValid(const String&);
+    void pushConstraint(const String& constraint, const String& value, webrtc::MediaConstraintsInterface::Constraints&);
+    void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>&, webrtc::MediaConstraintsInterface::Constraints&);
+    const static String s_validConstraints[];
 };
 
 } // namespace WebCore
