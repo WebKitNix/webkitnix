@@ -23,26 +23,17 @@
 #include "config.h"
 #include "LiveNodeList.h"
 
-#include "Document.h"
 #include "Element.h"
 #include "HTMLCollection.h"
 
 namespace WebCore {
 
-Node& LiveNodeListBase::rootNode() const
+ContainerNode& LiveNodeListBase::rootNode() const
 {
     if (isRootedAtDocument() && ownerNode().inDocument())
         return ownerNode().document();
 
     return ownerNode();
-}
-
-ContainerNode* LiveNodeListBase::rootContainerNode() const
-{
-    Node& rootNode = this->rootNode();
-    if (!rootNode.isContainerNode())
-        return 0;
-    return &toContainerNode(rootNode);
 }
 
 void LiveNodeListBase::invalidateCache() const
@@ -71,6 +62,7 @@ void LiveNodeListBase::invalidateIdNameCacheMaps() const
 
 Node* LiveNodeList::namedItem(const AtomicString& elementId) const
 {
+    // FIXME: Why doesn't this look into the name attribute like HTMLCollection::namedItem does?
     Node& rootNode = this->rootNode();
 
     if (rootNode.inDocument()) {

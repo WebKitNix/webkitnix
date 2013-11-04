@@ -1,3 +1,150 @@
+2013-11-04  Krzysztof Czech  <k.czech@samsung.com>
+
+        [EFL] Change ATK version to 2.10.0
+        https://bugs.webkit.org/show_bug.cgi?id=123727
+
+        Reviewed by Mario Sanchez Prada.
+
+        Provided new API to retrieve text at a given offset.
+
+        * efl/jhbuild.modules:
+
+2013-11-04  Robert Plociennik  <r.plociennik@samsung.com>
+
+        [EFL] accessibility/textarea-line-for-index.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=112015
+
+        Reviewed by Mario Sanchez Prada.
+
+        Provided implementation for AccessibilityUIElement::lineForIndex().
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::lineForIndex): Implemented.
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::lineForIndex): Implemented.
+
+2013-11-04  Krzysztof Czech  <k.czech@samsung.com>
+
+        [EFL] accessibility/button-press-action.html
+        https://bugs.webkit.org/show_bug.cgi?id=111993
+
+        Reviewed by Mario Sanchez Prada.
+
+        Provided an implementation for AccessibilityUIElement::isPressActionSupported.
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::isPressActionSupported):
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::isPressActionSupported):
+
+2013-11-03  Patrick Gansterer  <paroga@webkit.org>
+
+        Add test for ListHashSet::removeLast()
+        https://bugs.webkit.org/show_bug.cgi?id=121810
+
+        Reviewed by Anders Carlsson.
+
+        * TestWebKitAPI/Tests/WTF/ListHashSet.cpp:
+        (TestWebKitAPI::TEST):
+
+2013-11-02  Filip Pizlo  <fpizlo@apple.com>
+
+        LLVM assertion failures should funnel into WTF's crash handling
+        https://bugs.webkit.org/show_bug.cgi?id=123682
+
+        Reviewed by Geoffrey Garen.
+        
+        Need to disable LLVM's crash overrides so that we can do our own crash overrides.
+
+        * Scripts/configure-llvm:
+
+2013-11-01  Andy Estes  <aestes@apple.com>
+
+        Teach check-for-webkit-framework-include-consistency to ignore stale iOS Private headers that might exist in build directories due to r158443
+        https://bugs.webkit.org/show_bug.cgi?id=123636
+
+        Reviewed by Andreas Kling.
+
+        * Scripts/check-for-webkit-framework-include-consistency:
+
+2013-11-01  Anders Carlsson  <andersca@apple.com>
+
+        Begin work on encoding argument types
+        https://bugs.webkit.org/show_bug.cgi?id=123631
+
+        Reviewed by Dan Bernstein.
+
+        Add another test method.
+
+        * TestWebKitAPI/Tests/WebKit2ObjC/WKRemoteObjectRegistry.mm:
+        * TestWebKitAPI/Tests/mac/WKRemoteObjectRegistry_Shared.h:
+
+2013-11-01  Afonso R. Costa Jr.  <afonso.costa@samsung.com>
+
+        Expose setApplicationCacheOriginQuota via window.internals
+        https://bugs.webkit.org/show_bug.cgi?id=87838
+
+        Reviewed by Joseph Pecoraro.
+
+        * DumpRenderTree/TestRunner.cpp: Move setApplicationCacheOriginQuota
+        to window.internals
+        (TestRunner::staticFunctions):
+        * DumpRenderTree/TestRunner.h: Ditto.
+        * DumpRenderTree/blackberry/TestRunnerBlackBerry.cpp: Remove setApplicationCacheOriginQuota.
+        * DumpRenderTree/efl/TestRunnerEfl.cpp: Ditto.
+        * DumpRenderTree/gtk/TestRunnerGtk.cpp: Ditto.
+        * DumpRenderTree/mac/TestRunnerMac.mm: Ditto.
+        * DumpRenderTree/win/TestRunnerWin.cpp: Ditto.
+        * WebKitTestRunner/InjectedBundle/Bindings/TestRunner.idl: Ditto.
+        * WebKitTestRunner/InjectedBundle/TestRunner.cpp: Ditto.
+        * WebKitTestRunner/InjectedBundle/TestRunner.h: Ditto.
+
+2013-10-31  Mark Lam  <mark.lam@apple.com>
+
+        REGRESSION: Crashes in -[UIDelegate webView:frame:exceededDatabaseQuotaForSecurityOrigin:database:].
+        https://bugs.webkit.org/show_bug.cgi?id=123383.
+
+        Reviewed by Geoffrey Garen.
+
+        Removed an inappropriate assertion in DumpRenderTree/mac/UIDelegate.mm and
+        added 2 attributes (databaseDefaultQuota and databaseMaxQuota) to allow
+        tests to set appropriate quota settings to exercise quota expansion tests
+        when needed.
+
+        * DumpRenderTree/TestRunner.cpp:
+        (TestRunner::TestRunner):
+        (getDatabaseDefaultQuotaCallback):
+        (getDatabaseMaxQuotaCallback):
+        (setDatabaseDefaultQuotaCallback):
+        (setDatabaseMaxQuotaCallback):
+        (TestRunner::staticValues):
+        * DumpRenderTree/TestRunner.h:
+        (TestRunner::databaseDefaultQuota):
+        (TestRunner::setDatabaseDefaultQuota):
+        (TestRunner::databaseMaxQuota):
+        (TestRunner::setDatabaseMaxQuota):
+        * DumpRenderTree/blackberry/DumpRenderTree.cpp:
+        (BlackBerry::WebKit::DumpRenderTree::exceededDatabaseQuota):
+        * DumpRenderTree/efl/DumpRenderTreeView.cpp:
+        (onExceededDatabaseQuota):
+        * DumpRenderTree/mac/UIDelegate.mm:
+        (-[UIDelegate webView:frame:exceededDatabaseQuotaForSecurityOrigin:database:]):
+        * DumpRenderTree/win/UIDelegate.cpp:
+        (UIDelegate::exceededDatabaseQuota):
+        * WebKitTestRunner/InjectedBundle/Bindings/TestRunner.idl:
+        * WebKitTestRunner/InjectedBundle/InjectedBundlePage.cpp:
+        (WTR::InjectedBundlePage::didExceedDatabaseQuota):
+        * WebKitTestRunner/InjectedBundle/TestRunner.cpp:
+        (WTR::TestRunner::TestRunner):
+        * WebKitTestRunner/InjectedBundle/TestRunner.h:
+        (WTR::TestRunner::databaseDefaultQuota):
+        (WTR::TestRunner::setDatabaseDefaultQuota):
+        (WTR::TestRunner::databaseMaxQuota):
+        (WTR::TestRunner::setDatabaseMaxQuota):
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::createOtherPage):
+        (WTR::TestController::createWebViewWithOptions):
+
 2013-10-31  Anders Carlsson  <andersca@apple.com>
 
         Add a WKRemoteObject class

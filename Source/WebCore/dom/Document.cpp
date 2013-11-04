@@ -31,7 +31,6 @@
 #include "AXObjectCache.h"
 #include "AnimationController.h"
 #include "Attr.h"
-#include "Attribute.h"
 #include "CDATASection.h"
 #include "CSSStyleDeclaration.h"
 #include "CSSStyleSheet.h"
@@ -47,22 +46,15 @@
 #include "DOMWindow.h"
 #include "DateComponents.h"
 #include "Dictionary.h"
-#include "DocumentEventQueue.h"
-#include "DocumentFragment.h"
 #include "DocumentLoader.h"
 #include "DocumentMarkerController.h"
 #include "DocumentSharedObjectPool.h"
 #include "DocumentType.h"
 #include "Editor.h"
-#include "Element.h"
 #include "ElementIterator.h"
 #include "EntityReference.h"
-#include "Event.h"
 #include "EventFactory.h"
 #include "EventHandler.h"
-#include "EventListener.h"
-#include "EventNames.h"
-#include "ExceptionCode.h"
 #include "FontLoader.h"
 #include "FormController.h"
 #include "FrameLoader.h"
@@ -88,18 +80,15 @@
 #include "HTMLLinkElement.h"
 #include "HTMLMediaElement.h"
 #include "HTMLNameCollection.h"
-#include "HTMLNames.h"
 #include "HTMLParserIdioms.h"
 #include "HTMLPlugInElement.h"
 #include "HTMLScriptElement.h"
 #include "HTMLStyleElement.h"
 #include "HTMLTitleElement.h"
 #include "HTTPParsers.h"
-#include "HitTestRequest.h"
 #include "HitTestResult.h"
 #include "IconController.h"
 #include "ImageLoader.h"
-#include "InspectorCounters.h"
 #include "InspectorInstrumentation.h"
 #include "JSLazyEventListener.h"
 #include "Language.h"
@@ -110,13 +99,10 @@
 #include "MediaQueryMatcher.h"
 #include "MouseEventWithHitTestResults.h"
 #include "NameNodeList.h"
-#include "NamedFlowCollection.h"
 #include "NestingLevelIncrementer.h"
-#include "NodeFilter.h"
 #include "NodeIterator.h"
 #include "NodeRareData.h"
 #include "NodeWithIndex.h"
-#include "Page.h"
 #include "PageConsole.h"
 #include "PageGroup.h"
 #include "PageTransitionEvent.h"
@@ -126,8 +112,6 @@
 #include "PointerLockController.h"
 #include "PopStateEvent.h"
 #include "ProcessingInstruction.h"
-#include "QualifiedName.h"
-#include "RenderArena.h"
 #include "RenderView.h"
 #include "RenderWidget.h"
 #include "ResourceLoader.h"
@@ -138,7 +122,6 @@
 #include "ScriptController.h"
 #include "ScriptRunner.h"
 #include "ScriptSourceCode.h"
-#include "ScriptValue.h"
 #include "ScrollingCoordinator.h"
 #include "SecurityOrigin.h"
 #include "SecurityPolicy.h"
@@ -151,7 +134,6 @@
 #include "StyleSheetContents.h"
 #include "StyleSheetList.h"
 #include "TextResourceDecoder.h"
-#include "Timer.h"
 #include "TransformSource.h"
 #include "TreeWalker.h"
 #include "VisitedLinkState.h"
@@ -164,9 +146,6 @@
 #include "XPathResult.h"
 #include "htmlediting.h"
 #include <wtf/CurrentTime.h>
-#include <wtf/MainThread.h>
-#include <wtf/PassRefPtr.h>
-#include <wtf/Ref.h>
 #include <wtf/TemporaryChange.h>
 #include <wtf/text/StringBuffer.h>
 
@@ -581,8 +560,6 @@ Document::~Document()
     // if the DocumentParser outlives the Document it won't cause badness.
     ASSERT(!m_parser || m_parser->refCount() == 1);
     detachParser();
-
-    m_renderArena = nullptr;
 
     if (this == topDocument())
         clearAXObjectCache();
@@ -1724,7 +1701,7 @@ void Document::recalcStyle(Style::Change change)
 
     InspectorInstrumentationCookie cookie = InspectorInstrumentation::willRecalculateStyle(this);
 
-    if (m_elementSheet && m_elementSheet->contents()->usesRemUnits())
+    if (m_elementSheet && m_elementSheet->contents().usesRemUnits())
         m_styleSheetCollection.setUsesRemUnit(true);
 
     m_inStyleRecalc = true;
@@ -1943,9 +1920,6 @@ void Document::createRenderTree()
     ASSERT(!attached());
     ASSERT(!m_inPageCache);
     ASSERT(!m_axObjectCache || this != topDocument());
-    ASSERT(!m_renderArena);
-
-    m_renderArena = std::make_unique<RenderArena>();
 
     // FIXME: It would be better if we could pass the resolved document style directly here.
     setRenderView(new RenderView(*this, RenderStyle::create()));
@@ -2052,8 +2026,6 @@ void Document::destroyRenderTree()
     // Do this before the arena is cleared, which is needed to deref the RenderStyle on TextAutoSizingKey.
     m_textAutoSizedNodes.clear();
 #endif
-
-    m_renderArena = nullptr;
 }
 
 void Document::prepareForDestruction()
@@ -2594,11 +2566,11 @@ void Document::updateBaseURL()
 
     if (m_elementSheet) {
         // Element sheet is silly. It never contains anything.
-        ASSERT(!m_elementSheet->contents()->ruleCount());
-        bool usesRemUnits = m_elementSheet->contents()->usesRemUnits();
+        ASSERT(!m_elementSheet->contents().ruleCount());
+        bool usesRemUnits = m_elementSheet->contents().usesRemUnits();
         m_elementSheet = CSSStyleSheet::createInline(*this, m_baseURL);
         // FIXME: So we are not really the parser. The right fix is to eliminate the element sheet completely.
-        m_elementSheet->contents()->parserSetUsesRemUnits(usesRemUnits);
+        m_elementSheet->contents().parserSetUsesRemUnits(usesRemUnits);
     }
 
     if (!equalIgnoringFragmentIdentifier(oldBaseURL, m_baseURL)) {
@@ -3957,7 +3929,6 @@ void Document::setInPageCache(bool flag)
         m_styleRecalcTimer.stop();
     } else {
         ASSERT(!renderView() || renderView() == m_savedRenderView);
-        ASSERT(m_renderArena);
         setRenderView(m_savedRenderView);
         m_savedRenderView = nullptr;
 

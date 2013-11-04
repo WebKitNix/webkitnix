@@ -253,7 +253,7 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     , m_accessibilityObject(0)
 #endif
     , m_setCanStartMediaTimer(RunLoop::main(), this, &WebPage::setCanStartMediaTimerFired)
-    , m_sendDidUpdateInWindowStateTimer(RunLoop::main(), this, &WebPage::didUpdateInWindowStateTimerFired)
+    , m_sendDidUpdateViewStateTimer(RunLoop::main(), this, &WebPage::didUpdateViewStateTimerFired)
     , m_findController(this)
 #if ENABLE(INPUT_TYPE_COLOR)
     , m_activeColorChooser(0)
@@ -2043,9 +2043,9 @@ void WebPage::setCanStartMediaTimerFired()
 }
 
 #if !PLATFORM(MAC)
-void WebPage::didUpdateInWindowStateTimerFired()
+void WebPage::didUpdateViewStateTimerFired()
 {
-    send(Messages::WebPageProxy::DidUpdateInWindowState());
+    send(Messages::WebPageProxy::DidUpdateViewState());
 }
 #endif
 
@@ -2088,7 +2088,7 @@ void WebPage::setIsInWindow(bool isInWindow)
         layoutIfNeeded();
 }
 
-void WebPage::setViewState(ViewState::Flags viewState, bool wantsDidUpdateInWindowState)
+void WebPage::setViewState(ViewState::Flags viewState, bool wantsDidUpdateViewState)
 {
     ViewState::Flags changed = m_viewState ^ viewState;
 
@@ -2109,8 +2109,8 @@ void WebPage::setViewState(ViewState::Flags viewState, bool wantsDidUpdateInWind
 
     m_viewState = viewState;
 
-    if (wantsDidUpdateInWindowState)
-        m_sendDidUpdateInWindowStateTimer.startOneShot(0);
+    if (wantsDidUpdateViewState)
+        m_sendDidUpdateViewStateTimer.startOneShot(0);
 }
 
 void WebPage::didReceivePolicyDecision(uint64_t frameID, uint64_t listenerID, uint32_t policyAction, uint64_t downloadID)

@@ -27,27 +27,24 @@
 #include "ChildListMutationScope.h"
 #include "Chrome.h"
 #include "ChromeClient.h"
+#include "ClassNodeList.h"
 #include "ContainerNodeAlgorithms.h"
 #include "Editor.h"
-#include "ElementTraversal.h"
-#include "EventNames.h"
-#include "ExceptionCode.h"
 #include "FloatRect.h"
-#include "Frame.h"
 #include "FrameView.h"
-#include "HTMLNames.h"
 #include "InlineTextBox.h"
 #include "InsertionPoint.h"
-#include "InspectorInstrumentation.h"
 #include "JSLazyEventListener.h"
 #include "JSNode.h"
+#include "LabelsNodeList.h"
 #include "LoaderStrategy.h"
 #include "MemoryCache.h"
 #include "MutationEvent.h"
+#include "NameNodeList.h"
+#include "NodeRareData.h"
 #include "NodeRenderStyle.h"
-#include "NodeTraversal.h"
-#include "Page.h"
 #include "PlatformStrategies.h"
+#include "RadioNodeList.h"
 #include "RenderBox.h"
 #include "RenderTheme.h"
 #include "RenderWidget.h"
@@ -55,10 +52,7 @@
 #include "RootInlineBox.h"
 #include "SelectorQuery.h"
 #include "TemplateContentDocumentFragment.h"
-#include "Text.h"
 #include <wtf/CurrentTime.h>
-#include <wtf/Ref.h>
-#include <wtf/Vector.h>
 
 #if ENABLE(DELETION_UI)
 #include "DeleteButtonController.h"
@@ -1125,6 +1119,43 @@ RefPtr<NodeList> ContainerNode::querySelectorAll(const AtomicString& selectors, 
     if (!selectorQuery)
         return nullptr;
     return selectorQuery->queryAll(*this);
+}
+
+PassRefPtr<NodeList> ContainerNode::getElementsByTagName(const AtomicString& localName)
+{
+    if (localName.isNull())
+        return 0;
+
+    if (document().isHTMLDocument())
+        return ensureRareData().ensureNodeLists().addCacheWithAtomicName<HTMLTagNodeList>(*this, HTMLTagNodeListType, localName);
+    return ensureRareData().ensureNodeLists().addCacheWithAtomicName<TagNodeList>(*this, TagNodeListType, localName);
+}
+
+PassRefPtr<NodeList> ContainerNode::getElementsByTagNameNS(const AtomicString& namespaceURI, const AtomicString& localName)
+{
+    if (localName.isNull())
+        return 0;
+
+    if (namespaceURI == starAtom)
+        return getElementsByTagName(localName);
+
+    return ensureRareData().ensureNodeLists().addCacheWithQualifiedName(*this, namespaceURI.isEmpty() ? nullAtom : namespaceURI, localName);
+}
+
+PassRefPtr<NodeList> ContainerNode::getElementsByName(const String& elementName)
+{
+    return ensureRareData().ensureNodeLists().addCacheWithAtomicName<NameNodeList>(*this, NameNodeListType, elementName);
+}
+
+PassRefPtr<NodeList> ContainerNode::getElementsByClassName(const String& classNames)
+{
+    return ensureRareData().ensureNodeLists().addCacheWithName<ClassNodeList>(*this, ClassNodeListType, classNames);
+}
+
+PassRefPtr<RadioNodeList> ContainerNode::radioNodeList(const AtomicString& name)
+{
+    ASSERT(hasTagName(HTMLNames::formTag) || hasTagName(HTMLNames::fieldsetTag));
+    return ensureRareData().ensureNodeLists().addCacheWithAtomicName<RadioNodeList>(*this, RadioNodeListType, name);
 }
 
 } // namespace WebCore

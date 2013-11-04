@@ -27,7 +27,6 @@
 #define CryptoKeyHMAC_h
 
 #include "CryptoKey.h"
-#include <wtf/Ref.h>
 #include <wtf/Vector.h>
 
 #if ENABLE(SUBTLE_CRYPTO)
@@ -42,6 +41,11 @@ public:
     }
     virtual ~CryptoKeyHMAC();
 
+    // If lengthBytes is 0, a recommended length is used, which is the size of the associated hash function's block size.
+    static PassRefPtr<CryptoKeyHMAC> generate(size_t lengthBytes, CryptoAlgorithmIdentifier hash, bool extractable, CryptoKeyUsage);
+
+    virtual CryptoKeyClass keyClass() const OVERRIDE { return CryptoKeyClass::HMAC; }
+
     const Vector<char>& key() const { return m_key; }
 
     virtual void buildAlgorithmDescription(CryptoAlgorithmDescriptionBuilder&) const OVERRIDE;
@@ -52,6 +56,20 @@ private:
     CryptoAlgorithmIdentifier m_hash;
     Vector<char> m_key;
 };
+
+inline const CryptoKeyHMAC* asCryptoKeyHMAC(const CryptoKey& key)
+{
+    if (key.keyClass() != CryptoKeyClass::HMAC)
+        return nullptr;
+    return static_cast<const CryptoKeyHMAC*>(&key);
+}
+
+inline CryptoKeyHMAC* asCryptoKeyHMAC(CryptoKey& key)
+{
+    if (key.keyClass() != CryptoKeyClass::HMAC)
+        return nullptr;
+    return static_cast<CryptoKeyHMAC*>(&key);
+}
 
 } // namespace WebCore
 

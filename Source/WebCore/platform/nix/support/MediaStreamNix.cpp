@@ -108,7 +108,7 @@ MediaStream::operator WebCore::MediaStreamDescriptor*() const
 
 void MediaStream::initialize(std::vector<MediaStreamSource*>& audioSources, std::vector<MediaStreamSource*>& videoSources)
 {
-    WebCore::MediaStreamSourceVector audio, video;
+    Vector<RefPtr<WebCore::MediaStreamSource>> audio, video;
     for (size_t i = 0; i < audioSources.size(); ++i) {
         WebCore::MediaStreamAudioSource* source = *(dynamic_cast<MediaStreamAudioSource*>(audioSources[i]));
         audio.append(source);

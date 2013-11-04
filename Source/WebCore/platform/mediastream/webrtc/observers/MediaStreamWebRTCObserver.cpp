@@ -31,10 +31,11 @@
 
 #include "MediaStreamAudioSource.h"
 #include "MediaStreamDescriptor.h"
+#include "MediaStreamTrackWebRTCObserver.h"
 
 namespace WebCore {
 
-MediaStreamWebRTCObserver::MediaStreamWebRTCObserver(webrtc::MediaStreamInterface* stream, MediaStreamDescriptor* descriptor, const MediaStreamTrackObserverVector& audioTracks, const MediaStreamTrackObserverVector& videoTracks)
+MediaStreamWebRTCObserver::MediaStreamWebRTCObserver(webrtc::MediaStreamInterface* stream, MediaStreamDescriptor* descriptor, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& audioTracks, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& videoTracks)
     : m_stream(stream)
     , m_descriptor(descriptor)
     , m_audioTrackObservers(audioTracks)
@@ -66,7 +67,7 @@ void MediaStreamWebRTCObserver::OnChanged()
 }
 
 template<typename T>
-void MediaStreamWebRTCObserver::findAndAddTrack(const T& tracks, MediaStreamTrackObserverVector& observers)
+void MediaStreamWebRTCObserver::findAndAddTrack(const T& tracks, Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& observers)
 {
     for (const auto& track : tracks) {
         if (haveTrackObserver(track->id(), observers))
@@ -85,7 +86,7 @@ void MediaStreamWebRTCObserver::findAndAddTrack(const T& tracks, MediaStreamTrac
     }
 }
 
-void MediaStreamWebRTCObserver::findAndRemoveTrack(MediaStreamTrackObserverVector& observers)
+void MediaStreamWebRTCObserver::findAndRemoveTrack(Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& observers)
 {
     for (unsigned i = 0; i < observers.size(); i++) {
         const std::string id = observers[i]->webRTCTrack()->id();
@@ -101,7 +102,7 @@ void MediaStreamWebRTCObserver::findAndRemoveTrack(MediaStreamTrackObserverVecto
     }
 }
 
-bool MediaStreamWebRTCObserver::haveTrackObserver(const std::string& id, const MediaStreamTrackObserverVector& observers)
+bool MediaStreamWebRTCObserver::haveTrackObserver(const std::string& id, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& observers)
 {
     for (const RefPtr<MediaStreamTrackWebRTCObserver>& observer : observers) {
         if (observer->webRTCTrack()->id() == id)

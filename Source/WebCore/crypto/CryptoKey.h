@@ -39,10 +39,17 @@ namespace WebCore {
 
 class CryptoAlgorithmDescriptionBuilder;
 
+ENUM_CLASS(CryptoKeyClass) {
+    HMAC,
+    AES
+};
+
 class CryptoKey : public RefCounted<CryptoKey> {
 public:
     CryptoKey(CryptoAlgorithmIdentifier, CryptoKeyType, bool extractable, CryptoKeyUsage);
     virtual ~CryptoKey();
+
+    virtual CryptoKeyClass keyClass() const = 0;
 
     String type() const;
     bool extractable() const { return m_extractable; }
@@ -50,6 +57,8 @@ public:
     Vector<String> usages() const;
 
     bool allows(CryptoKeyUsage usage) const { return usage == (m_usages & usage); }
+
+    static Vector<char> randomData(size_t);
 
 private:
     CryptoAlgorithmIdentifier m_algorithm;

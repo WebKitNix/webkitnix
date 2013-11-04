@@ -32,6 +32,7 @@
 #include "FrameView.h"
 #include "HTMLFormElement.h"
 #include "MIMETypeRegistry.h"
+#include "MainFrame.h"
 #include "NotImplemented.h"
 #include "Page.h"
 #include "PluginDatabase.h"
@@ -139,27 +140,27 @@ void FrameLoaderClientWinCE::dispatchDidReceiveResponse(DocumentLoader*, unsigne
     m_response = response;
 }
 
-void FrameLoaderClientWinCE::dispatchDecidePolicyForResponse(FramePolicyFunction policyFunction, const WebCore::ResourceResponse& response, const WebCore::ResourceRequest&)
+void FrameLoaderClientWinCE::dispatchDecidePolicyForResponse(const WebCore::ResourceResponse& response, const WebCore::ResourceRequest&, FramePolicyFunction policyFunction)
 {
     if (canShowMIMEType(response.mimeType()))
-        (m_frame->loader().policyChecker().*policyFunction)(PolicyUse);
+        policyFunction(PolicyUse);
     else
-        (m_frame->loader().policyChecker().*policyFunction)(PolicyDownload);
+        policyFunction(PolicyDownload);
 }
 
-void FrameLoaderClientWinCE::dispatchDecidePolicyForNewWindowAction(FramePolicyFunction policyFunction, const NavigationAction&, const WebCore::ResourceRequest&, PassRefPtr<FormState>, const String&)
+void FrameLoaderClientWinCE::dispatchDecidePolicyForNewWindowAction(const NavigationAction&, const WebCore::ResourceRequest&, PassRefPtr<FormState>, const String&, FramePolicyFunction policyFunction)
 {
-    (m_frame->loader().policyChecker().*policyFunction)(PolicyUse);
+    policyFunction(PolicyUse);
 }
 
-void FrameLoaderClientWinCE::dispatchDecidePolicyForNavigationAction(FramePolicyFunction policyFunction, const NavigationAction&, const WebCore::ResourceRequest&, PassRefPtr<FormState>)
+void FrameLoaderClientWinCE::dispatchDecidePolicyForNavigationAction(const NavigationAction&, const WebCore::ResourceRequest&, PassRefPtr<FormState>, FramePolicyFunction policyFunction)
 {
-    (m_frame->loader().policyChecker().*policyFunction)(PolicyUse);
+    policyFunction(PolicyUse);
 }
 
-void FrameLoaderClientWinCE::dispatchWillSubmitForm(FramePolicyFunction policyFunction, PassRefPtr<FormState>)
+void FrameLoaderClientWinCE::dispatchWillSubmitForm(PassRefPtr<FormState>, FramePolicyFunction policyFunction)
 {
-    (m_frame->loader().policyChecker().*policyFunction)(PolicyUse);
+    policyFunction(PolicyUse);
 }
 
 PassRefPtr<Widget> FrameLoaderClientWinCE::createPlugin(const IntSize&, HTMLPlugInElement*, const URL&, const Vector<String>&, const Vector<String>&, const String&, bool)
@@ -607,9 +608,9 @@ void FrameLoaderClientWinCE::transitionToCommittedForNewPage()
     if (isMainFrame) {
         RECT rect;
         m_webView->frameRect(&rect);
-        frameView = FrameView::create(m_frame, IntRect(rect).size());
+        frameView = FrameView::create(*m_frame, IntRect(rect).size());
     } else
-        frameView = FrameView::create(m_frame);
+        frameView = FrameView::create(*m_frame);
 
     m_frame->setView(frameView);
 

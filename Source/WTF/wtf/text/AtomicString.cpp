@@ -97,7 +97,7 @@ struct CStringTranslator {
 
     static void translate(StringImpl*& location, const LChar* const& c, unsigned hash)
     {
-        location = StringImpl::create(c).leakRef();
+        location = &StringImpl::create(c).leakRef();
         location->setHash(hash);
         location->setIsAtomic(true);
     }
@@ -293,7 +293,7 @@ struct SubstringTranslator {
 
     static void translate(StringImpl*& location, const SubstringLocation& buffer, unsigned hash)
     {
-        location = StringImpl::create(buffer.baseString, buffer.start, buffer.length).leakRef();
+        location = &StringImpl::create(buffer.baseString, buffer.start, buffer.length).leakRef();
         location->setHash(hash);
         location->setIsAtomic(true);
     }
@@ -352,7 +352,7 @@ struct CharBufferFromLiteralDataTranslator {
 
     static void translate(StringImpl*& location, const CharBuffer& buf, unsigned hash)
     {
-        location = StringImpl::createFromLiteral(buf.s, buf.length).leakRef();
+        location = &StringImpl::createFromLiteral(buf.s, buf.length).leakRef();
         location->setHash(hash);
         location->setIsAtomic(true);
     }

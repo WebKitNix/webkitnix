@@ -1,3 +1,48 @@
+2013-11-02  Christophe Dumez  <ch.dumez@samsung.com>
+
+        EnforceRange doesn't enforce range of a short
+        https://bugs.webkit.org/show_bug.cgi?id=123661
+
+        Reviewed by Alexey Proskuryakov.
+
+        Export symbols to fix Windows build.
+
+        * WebKit.vcxproj/WebKitExportGenerator/WebKitExports.def.in:
+
+2013-11-01  Andy Estes  <aestes@apple.com>
+
+        [iOS] Make some headers Private
+        https://bugs.webkit.org/show_bug.cgi?id=123626
+
+        Reviewed by Andreas Kling.
+
+        * WebKit.xcodeproj/project.pbxproj:
+
+2013-11-01  Afonso R. Costa Jr.  <afonso.costa@samsung.com>
+
+        Expose setApplicationCacheOriginQuota via window.internals
+        https://bugs.webkit.org/show_bug.cgi?id=87838
+
+        Reviewed by Joseph Pecoraro.
+
+        * WebKit.vcxproj/WebKitExportGenerator/WebKitExports.def.in: Add
+        symbols for setApplicationCacheOriginQuota from Internals.
+
+2013-11-01  Andy Estes  <aestes@apple.com>
+
+        Reverted r158443. It broke the build.
+
+        * WebKit.xcodeproj/project.pbxproj:
+
+2013-11-01  Andy Estes  <aestes@apple.com>
+
+        [iOS] Make some headers Private
+        https://bugs.webkit.org/show_bug.cgi?id=123626
+
+        Reviewed by Sam Weinig.
+
+        * WebKit.xcodeproj/project.pbxproj:
+
 2013-10-31  Ryosuke Niwa  <rniwa@webkit.org>
 
         Windows build fix attempt after r158421.

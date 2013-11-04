@@ -141,7 +141,6 @@ public:
     void clearApplicationCacheForOrigin(JSStringRef origin);
     void setAppCacheMaximumSize(uint64_t);
     long long applicationCacheDiskUsageForOrigin(JSStringRef origin);
-    void setApplicationCacheOriginQuota(unsigned long long);
     void disallowIncreaseForApplicationCacheQuota();
     bool shouldDisallowIncreaseForApplicationCacheQuota() { return m_disallowIncreaseForApplicationCacheQuota; }
     JSValueRef originsWithApplicationCache();
@@ -219,6 +218,12 @@ public:
     
     bool globalFlag() const { return m_globalFlag; }
     void setGlobalFlag(bool value) { m_globalFlag = value; }
+
+    double databaseDefaultQuota() const { return m_databaseDefaultQuota; }
+    void setDatabaseDefaultQuota(double quota) { m_databaseDefaultQuota = quota; }
+
+    double databaseMaxQuota() const { return m_databaseMaxQuota; }
+    void setDatabaseMaxQuota(double quota) { m_databaseMaxQuota = quota; }
 
     void addChromeInputField(JSValueRef);
     void removeChromeInputField(JSValueRef);
@@ -320,6 +325,9 @@ private:
     bool m_customFullScreenBehavior;
 
     int m_timeout;
+
+    double m_databaseDefaultQuota;
+    double m_databaseMaxQuota;
 
     bool m_userStyleSheetEnabled;
     WKRetainPtr<WKStringRef> m_userStyleSheetLocation;

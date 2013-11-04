@@ -29,11 +29,9 @@
 #include "DocumentStyleSheetCollection.h"
 
 #include "CSSStyleSheet.h"
-#include "Document.h"
 #include "Element.h"
 #include "HTMLIFrameElement.h"
 #include "HTMLLinkElement.h"
-#include "HTMLNames.h"
 #include "HTMLStyleElement.h"
 #include "Page.h"
 #include "PageGroup.h"
@@ -99,8 +97,8 @@ CSSStyleSheet* DocumentStyleSheetCollection::pageUserSheet()
     
     // Parse the sheet and cache it.
     m_pageUserSheet = CSSStyleSheet::createInline(m_document, m_document.settings()->userStyleSheetLocation());
-    m_pageUserSheet->contents()->setIsUserStyleSheet(true);
-    m_pageUserSheet->contents()->parseString(userSheetText);
+    m_pageUserSheet->contents().setIsUserStyleSheet(true);
+    m_pageUserSheet->contents().parseString(userSheetText);
     return m_pageUserSheet.get();
 }
 
@@ -163,8 +161,8 @@ void DocumentStyleSheetCollection::updateInjectedStyleSheetCache() const
                 m_injectedUserStyleSheets.append(groupSheet);
             else
                 m_injectedAuthorStyleSheets.append(groupSheet);
-            groupSheet->contents()->setIsUserStyleSheet(isUserStyleSheet);
-            groupSheet->contents()->parseString(sheet->source());
+            groupSheet->contents().setIsUserStyleSheet(isUserStyleSheet);
+            groupSheet->contents().parseString(sheet->source());
         }
     }
 }
@@ -381,7 +379,7 @@ void DocumentStyleSheetCollection::analyzeStyleSheetChange(UpdateFlag updateFlag
         if (newIndex >= newStylesheetCount)
             return;
         while (m_activeAuthorStyleSheets[oldIndex] != newStylesheets[newIndex]) {
-            addedSheets.append(newStylesheets[newIndex]->contents());
+            addedSheets.append(&newStylesheets[newIndex]->contents());
             ++newIndex;
             if (newIndex == newStylesheetCount)
                 return;
@@ -390,7 +388,7 @@ void DocumentStyleSheetCollection::analyzeStyleSheetChange(UpdateFlag updateFlag
     }
     bool hasInsertions = !addedSheets.isEmpty();
     while (newIndex < newStylesheetCount) {
-        addedSheets.append(newStylesheets[newIndex]->contents());
+        addedSheets.append(&newStylesheets[newIndex]->contents());
         ++newIndex;
     }
     // If all new sheets were added at the end of the list we can just add them to existing StyleResolver.
@@ -410,7 +408,7 @@ void DocumentStyleSheetCollection::analyzeStyleSheetChange(UpdateFlag updateFlag
 static bool styleSheetsUseRemUnits(const Vector<RefPtr<CSSStyleSheet>>& sheets)
 {
     for (unsigned i = 0; i < sheets.size(); ++i) {
-        if (sheets[i]->contents()->usesRemUnits())
+        if (sheets[i]->contents().usesRemUnits())
             return true;
     }
     return false;

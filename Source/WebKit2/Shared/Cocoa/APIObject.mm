@@ -31,6 +31,7 @@
 #import "WKBackForwardListInternal.h"
 #import "WKBackForwardListItemInternal.h"
 #import "WKNSArray.h"
+#import "WKNSDictionary.h"
 #import "WKNSString.h"
 #import "WKNSURL.h"
 
@@ -65,6 +66,10 @@ void* APIObject::newObject(size_t size, Type type)
 
     case TypeBackForwardListItem:
         wrapper = [WKBackForwardListItem alloc];
+        break;
+
+    case TypeDictionary:
+        wrapper = [WKNSDictionary alloc];
         break;
 
     case TypeString:

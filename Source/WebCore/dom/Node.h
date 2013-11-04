@@ -71,7 +71,6 @@ class NodeRareData;
 class QualifiedName;
 class RadioNodeList;
 class RegisteredEventListener;
-class RenderArena;
 class RenderBox;
 class RenderBoxModelObject;
 class RenderObject;
@@ -499,12 +498,6 @@ public:
     void invalidateNodeListCachesInAncestors(const QualifiedName* attrName = 0, Element* attributeOwnerElement = 0);
     NodeListsNodeData* nodeLists();
     void clearNodeLists();
-
-    PassRefPtr<NodeList> getElementsByTagName(const AtomicString&);
-    PassRefPtr<NodeList> getElementsByTagNameNS(const AtomicString& namespaceURI, const AtomicString& localName);
-    PassRefPtr<NodeList> getElementsByName(const String& elementName);
-    PassRefPtr<NodeList> getElementsByClassName(const String& classNames);
-    PassRefPtr<RadioNodeList> radioNodeList(const AtomicString&);
 
     virtual bool willRespondToMouseMoveEvents();
     virtual bool willRespondToMouseClickEvents();

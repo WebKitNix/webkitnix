@@ -30,13 +30,12 @@
 #include "config.h"
 #include "ClassNodeList.h"
 
-#include "Document.h"
 #include "NodeRareData.h"
 #include "StyledElement.h"
 
 namespace WebCore {
 
-ClassNodeList::ClassNodeList(Node& rootNode, const String& classNames)
+ClassNodeList::ClassNodeList(ContainerNode& rootNode, const String& classNames)
     : LiveNodeList(rootNode, ClassNodeListType, InvalidateOnClassAttrChange)
     , m_classNames(classNames, document().inQuirksMode())
     , m_originalClassNames(classNames)

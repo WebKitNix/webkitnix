@@ -29,51 +29,37 @@
 #include "AXObjectCache.h"
 #include "Attr.h"
 #include "CSSParser.h"
-#include "CSSSelectorList.h"
 #include "Chrome.h"
 #include "ChromeClient.h"
-#include "ClassList.h"
 #include "ClientRect.h"
 #include "ClientRectList.h"
 #include "ContainerNodeAlgorithms.h"
 #include "DOMTokenList.h"
-#include "DatasetDOMStringMap.h"
-#include "Document.h"
-#include "DocumentFragment.h"
 #include "DocumentSharedObjectPool.h"
 #include "ElementRareData.h"
-#include "ElementTraversal.h"
 #include "EventDispatcher.h"
-#include "ExceptionCode.h"
 #include "FlowThreadController.h"
 #include "FocusController.h"
 #include "FocusEvent.h"
-#include "Frame.h"
 #include "FrameSelection.h"
 #include "FrameView.h"
 #include "HTMLCollection.h"
 #include "HTMLDocument.h"
 #include "HTMLElement.h"
 #include "HTMLFormControlsCollection.h"
-#include "HTMLFrameOwnerElement.h"
 #include "HTMLLabelElement.h"
 #include "HTMLNameCollection.h"
-#include "HTMLNames.h"
 #include "HTMLOptionsCollection.h"
 #include "HTMLParserIdioms.h"
+#include "HTMLSelectElement.h"
 #include "HTMLTableRowsCollection.h"
 #include "InsertionPoint.h"
-#include "InspectorInstrumentation.h"
 #include "KeyboardEvent.h"
 #include "MutationObserverInterestGroup.h"
 #include "MutationRecord.h"
-#include "NamedNodeMap.h"
-#include "NodeList.h"
 #include "NodeRenderStyle.h"
-#include "Page.h"
 #include "PlatformWheelEvent.h"
 #include "PointerLockController.h"
-#include "PseudoElement.h"
 #include "RenderNamedFlowFragment.h"
 #include "RenderRegion.h"
 #include "RenderTheme.h"
@@ -81,10 +67,8 @@
 #include "RenderWidget.h"
 #include "SelectorQuery.h"
 #include "Settings.h"
-#include "ShadowRoot.h"
 #include "StylePropertySet.h"
 #include "StyleResolver.h"
-#include "Text.h"
 #include "TextIterator.h"
 #include "VoidCallback.h"
 #include "WheelEvent.h"
@@ -2965,11 +2949,9 @@ PassRefPtr<HTMLCollection> Element::ensureCachedHTMLCollection(CollectionType ty
 
     RefPtr<HTMLCollection> collection;
     if (type == TableRows) {
-        ASSERT(hasTagName(tableTag));
-        return ensureRareData().ensureNodeLists().addCacheWithAtomicName<HTMLTableRowsCollection>(*this, type);
+        return ensureRareData().ensureNodeLists().addCacheWithAtomicName<HTMLTableRowsCollection>(toHTMLTableElement(*this), type);
     } else if (type == SelectOptions) {
-        ASSERT(hasTagName(selectTag));
-        return ensureRareData().ensureNodeLists().addCacheWithAtomicName<HTMLOptionsCollection>(*this, type);
+        return ensureRareData().ensureNodeLists().addCacheWithAtomicName<HTMLOptionsCollection>(toHTMLSelectElement(*this), type);
     } else if (type == FormControls) {
         ASSERT(hasTagName(formTag) || hasTagName(fieldsetTag));
         return ensureRareData().ensureNodeLists().addCacheWithAtomicName<HTMLFormControlsCollection>(*this, type);

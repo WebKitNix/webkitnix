@@ -50,14 +50,19 @@ using namespace WebKit;
 
 - (id)objectAtIndex:(NSUInteger)i
 {
-    return reinterpret_cast<ImmutableArray*>(&_array)->at(i)->wrapper();
+    APIObject* object = reinterpret_cast<ImmutableArray*>(&_array)->at(i);
+    return object ? object->wrapper() : [NSNull null];
 }
 
 #pragma mark NSCopying protocol implementation
 
 - (id)copyWithZone:(NSZone *)zone
 {
-    return [self retain];
+    if (!reinterpret_cast<ImmutableArray*>(&_array)->isMutable())
+        return [self retain];
+
+    auto entries = reinterpret_cast<ImmutableArray*>(&_array)->entries();
+    return ImmutableArray::adopt(entries).leakRef()->wrapper();
 }
 
 #pragma mark WKObject protocol implementation

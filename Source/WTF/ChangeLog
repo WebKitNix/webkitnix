@@ -1,3 +1,164 @@
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Fix compilation of DateMath.cpp with MSVC
+        https://bugs.webkit.org/show_bug.cgi?id=123680
+
+        Reviewed by Darin Adler.
+
+        * wtf/DateMath.cpp:
+        (WTF::appendTwoDigitNumber): Help the compiler finding the
+        correct overload by casting the characters to LChar.
+
+2013-11-02  Filip Pizlo  <fpizlo@apple.com>
+
+        LLVM assertion failures should funnel into WTF's crash handling
+        https://bugs.webkit.org/show_bug.cgi?id=123682
+
+        Reviewed by Geoffrey Garen.
+        
+        Give JSC some new toys to play with for crash handling.
+
+        * wtf/Assertions.cpp:
+        * wtf/Assertions.h:
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Fix UnicodeWchar after r157330.
+        https://bugs.webkit.org/show_bug.cgi?id=123668
+
+        Reviewed by Darin Adler.
+
+        * wtf/unicode/wchar/UnicodeWchar.cpp:
+        (unorm_normalize):
+        (u_strFoldCase):
+        (u_strToLower):
+        (u_strToUpper):
+        * wtf/unicode/wchar/UnicodeWchar.h:
+        (u_foldCase):
+        (u_isprint):
+        (u_isspace):
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        Make remaining StringImpl functions return PassRef.
+        <https://webkit.org/b/123683>
+
+        Okay, this seems to work well! Let's go all in and convert the
+        remaining StringImpl functions to return PassRef<StringImpl> instead
+        of PassRefPtr where we know that null is never returned.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        StringImpl::upper() should return PassRef.
+        <https://webkit.org/b/123655>
+
+        Make upper() return PassRef<StringImpl>. Spotted and removed some
+        ref churning in implementations.
+
+        Reviewed by Darin Adler.
+
+2013-11-01  Alexey Proskuryakov  <ap@apple.com>
+
+        Add WebCrypto AES-CBC
+        https://bugs.webkit.org/show_bug.cgi?id=123647
+
+        Reviewed by Anders Carlsson.
+
+        * wtf/FixedArray.h: (WTF::FixedArray::data): Added a const version of the function.
+
+        * wtf/Vector.h: Added a comment to Vector constructor about how it is different
+        from std::vector.
+
+2013-11-01  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Unreviewed extended attempt at Windows build fix after r158471.
+
+        * wtf/text/cf/AtomicStringCF.cpp:
+        * wtf/text/cf/StringCF.cpp:
+        * wtf/text/cf/StringImplCF.cpp:
+
+2013-11-01  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Unreviewed attempt at Windows build fix after r158471.
+
+        * wtf/text/cf/AtomicStringCF.cpp:
+        * wtf/text/cf/StringCF.cpp:
+        * wtf/text/cf/StringImplCF.cpp:
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        Make more StringImpl construction helpers return PassRef.
+        <https://webkit.org/b/123652>
+
+        Tweak another handful of StringImpl constructor functions to return
+        PassRef<StringImpl> instead of PassRefPtr.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        Neuter WTF_MAKE_FAST_ALLOCATED in GLOBAL_FASTMALLOC_NEW builds.
+        <https://webkit.org/b/123639>
+
+        When building with GLOBAL_FASTMALLOC_NEW, we don't need to expand
+        operator new/delete overrides in every class.
+
+        This change makes allocations group up nicely in Instruments,
+        instead of being split between "WTF::fastMalloc" and "operator new"
+        depending on whether the class had WTF_MAKE_FAST_ALLOCATED.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-01  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Move CF/Mac WTF String implementations down into WTF
+        https://bugs.webkit.org/show_bug.cgi?id=123635
+
+        Reviewed by Sam Weinig.
+
+        * WTF.vcxproj/WTF.vcxproj:
+        * WTF.vcxproj/WTF.vcxproj.filters:
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/text/AtomicString.h:
+        * wtf/text/StringImpl.h:
+        * wtf/text/WTFString.h:
+        * wtf/text/cf/AtomicStringCF.cpp: Renamed from Source/WebCore/platform/text/cf/AtomicStringCF.cpp.
+        (WTF::AtomicString::add):
+        * wtf/text/cf/StringCF.cpp: Renamed from Source/WebCore/platform/text/cf/StringCF.cpp.
+        (WTF::String::String):
+        (WTF::String::createCFString):
+        * wtf/text/cf/StringImplCF.cpp: Renamed from Source/WebCore/platform/text/cf/StringImplCF.cpp.
+        (garbageCollectionEnabled):
+        (WTF::StringWrapperCFAllocator::retain):
+        (WTF::StringWrapperCFAllocator::release):
+        (WTF::StringWrapperCFAllocator::copyDescription):
+        (WTF::StringWrapperCFAllocator::allocate):
+        (WTF::StringWrapperCFAllocator::reallocate):
+        (WTF::StringWrapperCFAllocator::deallocateOnMainThread):
+        (WTF::StringWrapperCFAllocator::deallocate):
+        (WTF::StringWrapperCFAllocator::preferredSize):
+        (WTF::StringWrapperCFAllocator::create):
+        (WTF::StringWrapperCFAllocator::allocator):
+        (WTF::StringImpl::createCFString):
+        * wtf/text/mac/StringImplMac.mm: Renamed from Source/WebCore/platform/text/mac/StringImplMac.mm.
+        (WTF::StringImpl::operator NSString *):
+        * wtf/text/mac/StringMac.mm: Renamed from Source/WebCore/platform/text/mac/StringMac.mm.
+        (WTF::String::String):
+
+2013-11-01  Emilio Pozuelo Monfort  <pochu27@gmail.com>
+
+        HPPA build fixes
+        https://bugs.webkit.org/show_bug.cgi?id=123625
+
+        Original patch from John David Anglin <dave.anglin@bell.net>
+
+        Reviewed by Darin Adler.
+
+        * wtf/Platform.h:
+        * wtf/dtoa/utils.h:
+
 2013-11-01  Patrick Gansterer  <paroga@webkit.org>
 
         Buildfix for !USE(ICU_UNICODE) after 156968.

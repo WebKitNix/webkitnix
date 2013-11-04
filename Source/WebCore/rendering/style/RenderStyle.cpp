@@ -30,7 +30,6 @@
 #include "FontSelector.h"
 #include "Pagination.h"
 #include "QuotesData.h"
-#include "RenderArena.h"
 #include "RenderObject.h"
 #include "ScaleTransformOperation.h"
 #include "ShadowData.h"
@@ -226,30 +225,6 @@ bool RenderStyle::operator==(const RenderStyle& o) const
 bool RenderStyle::isStyleAvailable() const
 {
     return this != StyleResolver::styleNotYetAvailable();
-}
-
-static inline int pseudoBit(PseudoId pseudo)
-{
-    return 1 << (pseudo - 1);
-}
-
-bool RenderStyle::hasAnyPublicPseudoStyles() const
-{
-    return PUBLIC_PSEUDOID_MASK & noninherited_flags._pseudoBits;
-}
-
-bool RenderStyle::hasPseudoStyle(PseudoId pseudo) const
-{
-    ASSERT(pseudo > NOPSEUDO);
-    ASSERT(pseudo < FIRST_INTERNAL_PSEUDOID);
-    return pseudoBit(pseudo) & noninherited_flags._pseudoBits;
-}
-
-void RenderStyle::setHasPseudoStyle(PseudoId pseudo)
-{
-    ASSERT(pseudo > NOPSEUDO);
-    ASSERT(pseudo < FIRST_INTERNAL_PSEUDOID);
-    noninherited_flags._pseudoBits |= pseudoBit(pseudo);
 }
 
 bool RenderStyle::hasUniquePseudoStyle() const
@@ -792,6 +767,7 @@ bool RenderStyle::changeRequiresRepaintIfTextOrBorderOrOutline(const RenderStyle
 #if ENABLE(CSS3_TEXT_DECORATION)
         || rareNonInheritedData->m_textDecorationStyle != other->rareNonInheritedData->m_textDecorationStyle
         || rareNonInheritedData->m_textDecorationColor != other->rareNonInheritedData->m_textDecorationColor
+        || rareInheritedData->m_textDecorationSkip != other->rareInheritedData->m_textDecorationSkip
 #endif // CSS3_TEXT_DECORATION
         || rareInheritedData->textFillColor != other->rareInheritedData->textFillColor
         || rareInheritedData->textStrokeColor != other->rareInheritedData->textStrokeColor

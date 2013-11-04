@@ -35,12 +35,11 @@
 namespace WebCore {
 
 class MediaStreamDescriptor;
-
-typedef Vector<RefPtr<MediaStreamTrackWebRTCObserver>> MediaStreamTrackObserverVector;
+class MediaStreamTrackWebRTCObserver;
 
 class MediaStreamWebRTCObserver : public RefCounted<MediaStreamWebRTCObserver>, public webrtc::ObserverInterface {
 public:
-    MediaStreamWebRTCObserver(webrtc::MediaStreamInterface*, MediaStreamDescriptor*, const MediaStreamTrackObserverVector&, const MediaStreamTrackObserverVector&);
+    MediaStreamWebRTCObserver(webrtc::MediaStreamInterface*, MediaStreamDescriptor*, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&);
 
     virtual ~MediaStreamWebRTCObserver() { }
 
@@ -50,15 +49,15 @@ public:
 
 private:
     template<typename T>
-    void findAndAddTrack(const T&, MediaStreamTrackObserverVector&);
+    void findAndAddTrack(const T&, Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&);
 
-    void findAndRemoveTrack(MediaStreamTrackObserverVector&);
+    void findAndRemoveTrack(Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&);
 
-    bool haveTrackObserver(const std::string&, const MediaStreamTrackObserverVector&);
+    bool haveTrackObserver(const std::string&, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&);
     talk_base::scoped_refptr<webrtc::MediaStreamInterface> m_stream;
     MediaStreamDescriptor* m_descriptor;
-    MediaStreamTrackObserverVector m_audioTrackObservers;
-    MediaStreamTrackObserverVector m_videoTrackObservers;
+    Vector<RefPtr<MediaStreamTrackWebRTCObserver>> m_audioTrackObservers;
+    Vector<RefPtr<MediaStreamTrackWebRTCObserver>> m_videoTrackObservers;
 };
 
 } // namespace WebCore

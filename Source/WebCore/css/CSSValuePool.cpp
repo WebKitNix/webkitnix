@@ -49,7 +49,7 @@ CSSValuePool::CSSValuePool()
 {
 }
 
-PassRefPtr<CSSPrimitiveValue> CSSValuePool::createIdentifierValue(CSSValueID ident)
+PassRef<CSSPrimitiveValue> CSSValuePool::createIdentifierValue(CSSValueID ident)
 {
     if (!ident)
         return CSSPrimitiveValue::createIdentifier(ident);
@@ -57,35 +57,34 @@ PassRefPtr<CSSPrimitiveValue> CSSValuePool::createIdentifierValue(CSSValueID ide
     RELEASE_ASSERT(ident > 0 && ident < numCSSValueKeywords);
     if (!m_identifierValueCache[ident])
         m_identifierValueCache[ident] = CSSPrimitiveValue::createIdentifier(ident);
-    return m_identifierValueCache[ident];
+    return *m_identifierValueCache[ident];
 }
 
-PassRefPtr<CSSPrimitiveValue> CSSValuePool::createIdentifierValue(CSSPropertyID ident)
+PassRef<CSSPrimitiveValue> CSSValuePool::createIdentifierValue(CSSPropertyID ident)
 {
     return CSSPrimitiveValue::createIdentifier(ident);
 }
 
-PassRefPtr<CSSPrimitiveValue> CSSValuePool::createColorValue(unsigned rgbValue)
+PassRef<CSSPrimitiveValue> CSSValuePool::createColorValue(unsigned rgbValue)
 {
     // These are the empty and deleted values of the hash table.
     if (rgbValue == Color::transparent)
-        return m_colorTransparent;
+        return m_colorTransparent.get();
     if (rgbValue == Color::white)
-        return m_colorWhite;
+        return m_colorWhite.get();
     // Just because it is common.
     if (rgbValue == Color::black)
-        return m_colorBlack;
+        return m_colorBlack.get();
 
-    // Just wipe out the cache and start rebuilding if it gets too big.
+    // Remove one entry at random if the cache grows too large.
     const int maximumColorCacheSize = 512;
-    if (m_colorValueCache.size() > maximumColorCacheSize)
-        m_colorValueCache.clear();
+    if (m_colorValueCache.size() >= maximumColorCacheSize)
+        m_colorValueCache.remove(m_colorValueCache.begin());
 
-    RefPtr<CSSPrimitiveValue> dummyValue;
-    ColorValueCache::AddResult entry = m_colorValueCache.add(rgbValue, dummyValue);
+    ColorValueCache::AddResult entry = m_colorValueCache.add(rgbValue, nullptr);
     if (entry.isNewEntry)
         entry.iterator->value = CSSPrimitiveValue::createColor(rgbValue);
-    return entry.iterator->value;
+    return *entry.iterator->value;
 }
 
 PassRefPtr<CSSPrimitiveValue> CSSValuePool::createValue(double value, CSSPrimitiveValue::UnitTypes type)
@@ -127,10 +126,10 @@ PassRefPtr<CSSPrimitiveValue> CSSValuePool::createFontFamilyValue(const String& 
 
 PassRefPtr<CSSValueList> CSSValuePool::createFontFaceValue(const AtomicString& string)
 {
-    // Just wipe out the cache and start rebuilding if it gets too big.
+    // Remove one entry at random if the cache grows too large.
     const int maximumFontFaceCacheSize = 128;
-    if (m_fontFaceValueCache.size() > maximumFontFaceCacheSize)
-        m_fontFaceValueCache.clear();
+    if (m_fontFaceValueCache.size() >= maximumFontFaceCacheSize)
+        m_fontFaceValueCache.remove(m_fontFaceValueCache.begin());
 
     RefPtr<CSSValueList>& value = m_fontFaceValueCache.add(string, nullptr).iterator->value;
     if (!value)

@@ -1,3 +1,325 @@
+2013-11-04  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        JSArrayBufferViews of length 0 allocate 0 CopiedSpace bytes, which is invalid
+        https://bugs.webkit.org/show_bug.cgi?id=123746
+
+        Reviewed by Geoffrey Garen.
+
+        This patch disallows clients from allocating 0 bytes in CopiedSpace. We enforce this invariant 
+        with an ASSERT in C++ code and a breakpoint in JIT code. Clients who care about 0-byte 
+        allocations (like JSArrayBufferViews) must handle that case themselves, but we don't punish 
+        anybody else for the rare case that somebody decides to allocate a 0-length typed array. 
+        It also makes the allocation and copying cases consistent for CopiedSpace: no 0-byte allocations, 
+        no 0-byte copying.
+ 
+        Also added a check so that JSArrayBufferViews don't try to copy their m_vector backing store when 
+        their length is 0. Also sprinkled several ASSERTs throughout the JSArrayBufferView code to make sure that 
+        when length is 0 m_vector is null.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileNewTypedArray):
+        * dfg/DFGSpeculativeJIT.h:
+        (JSC::DFG::SpeculativeJIT::emitAllocateBasicStorage):
+        * heap/CopiedSpaceInlines.h:
+        (JSC::CopiedSpace::tryAllocate):
+        * runtime/ArrayBuffer.h:
+        (JSC::ArrayBuffer::create):
+        * runtime/JSArrayBufferView.cpp:
+        (JSC::JSArrayBufferView::ConstructionContext::ConstructionContext):
+        * runtime/JSGenericTypedArrayViewInlines.h:
+        (JSC::::visitChildren):
+        (JSC::::copyBackingStore):
+        (JSC::::slowDownAndWasteMemory):
+
+2013-11-04  Julien Brianceau  <jbriance@cisco.com>
+
+        [sh4] Refactor jumps in baseline JIT to return label after the jump.
+        https://bugs.webkit.org/show_bug.cgi?id=123734
+
+        Reviewed by Michael Saboff.
+
+        Current implementation of jumps in sh4 baseline JIT returns a label on the jump itself
+        and not after it. This is not correct and leads to issues like infinite loop the DFG
+        (https://bugs.webkit.org/show_bug.cgi?id=122597 for instance). This refactor fixes this
+        and also simplifies the link and relink procedures for sh4 jumps.
+
+        * assembler/MacroAssemblerSH4.h:
+        (JSC::MacroAssemblerSH4::branchDouble):
+        (JSC::MacroAssemblerSH4::branchTrue):
+        (JSC::MacroAssemblerSH4::branchFalse):
+        * assembler/SH4Assembler.h:
+        (JSC::SH4Assembler::jmp):
+        (JSC::SH4Assembler::extraInstrForBranch):
+        (JSC::SH4Assembler::jne):
+        (JSC::SH4Assembler::je):
+        (JSC::SH4Assembler::bra):
+        (JSC::SH4Assembler::linkJump):
+        (JSC::SH4Assembler::relinkJump):
+
+2013-11-03  Filip Pizlo  <fpizlo@apple.com>
+
+        Generated color wheel displays incorrectly (regressed in r155567)
+        https://bugs.webkit.org/show_bug.cgi?id=123664
+
+        Reviewed by Andreas Kling.
+
+        Interestingly, r155567 just "un-broke" the attempt to constant-fold ArithMod, but
+        that constant folding was just wrong to begin with. There is no evidence that this
+        constant folding rule is profitable. I'm removing it instead of trying to think
+        about what it means for it to be correct.
+
+        * dfg/DFGAbstractInterpreterInlines.h:
+        (JSC::DFG::::executeEffects):
+
+2013-11-03  Filip Pizlo  <fpizlo@apple.com>
+
+        Unreviewed, it is no longer necessary to call DisablePrettyStackTrace.
+
+        * llvm/library/LLVMExports.cpp:
+        (initializeAndGetJSCLLVMAPI):
+
+2013-11-02  Mark Lam  <mark.lam@apple.com>
+
+        Assertion failure in non-JIT'ed LLInt on ARM Thumb.
+        https://bugs.webkit.org/show_bug.cgi?id=97569.
+
+        Reviewed by Geoffrey Garen.
+
+        * assembler/MacroAssemblerCodeRef.h:
+        - Thumb2 alignment assertions do not apply to the C Loop LLINT because
+          the arguments passed to those assertions are actually OpcodeIDs
+          masquerading as addresses.
+        * llint/LLIntOfflineAsmConfig.h:
+        - Some of the #defines belong in the !ENABLE(LLINT_C_LOOP) section.
+          Moving them there.
+        * llint/LowLevelInterpreter.cpp:
+        - Keep the compiler happy from some unreferenced C Loop labels.
+
+2013-11-02  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should use LLVM intrinsics for OSR exit, watchpoints, inline caches, and stack layout
+        https://bugs.webkit.org/show_bug.cgi?id=122318
+
+        Reviewed by Geoffrey Garen.
+        
+        This all now works. This patch just updates our implementation to work with LLVM trunk,
+        and removes all of the old code that tried to do OSR exits and heap accesses without
+        the benefit of those intrinsics.
+        
+        In particular:
+        
+        - StackMaps parsing now uses the new, less compact, but more future-proof, format.
+        
+        - Remove the ftlUsesStackmaps() option and hard-code ftlUsesStackmaps = true. Remove
+          all code for ftlUsesStackmaps = false, since that was only there for back when we
+          didn't have the intrinsics.
+        
+        - Remove the other experimental OSR options (useLLVMOSRExitIntrinsic,
+          ftlTrapsOnOSRExit, and FTLOSRExitOmitsMarshalling).
+        
+        - Remove LowerDFGToLLVM's use of the ExitThunkGenerator since we don't need to generate
+          the exit thunks until after we parse the stackmaps.
+        
+        - Remove all of the exit thunk and compiler code for the no-stackmaps case.
+
+        * dfg/DFGDriver.cpp:
+        (JSC::DFG::compileImpl):
+        * ftl/FTLCompile.cpp:
+        (JSC::FTL::mmAllocateDataSection):
+        * ftl/FTLExitThunkGenerator.cpp:
+        (JSC::FTL::ExitThunkGenerator::emitThunk):
+        * ftl/FTLIntrinsicRepository.h:
+        * ftl/FTLLocation.cpp:
+        (JSC::FTL::Location::forStackmaps):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::LowerDFGToLLVM):
+        (JSC::FTL::LowerDFGToLLVM::lower):
+        (JSC::FTL::LowerDFGToLLVM::compileGetById):
+        (JSC::FTL::LowerDFGToLLVM::compileInvalidationPoint):
+        (JSC::FTL::LowerDFGToLLVM::appendOSRExit):
+        (JSC::FTL::LowerDFGToLLVM::emitOSRExitCall):
+        (JSC::FTL::LowerDFGToLLVM::callStackmap):
+        (JSC::FTL::LowerDFGToLLVM::addExitArgumentForNode):
+        * ftl/FTLOSRExitCompilationInfo.h:
+        (JSC::FTL::OSRExitCompilationInfo::OSRExitCompilationInfo):
+        * ftl/FTLOSRExitCompiler.cpp:
+        (JSC::FTL::compileStub):
+        (JSC::FTL::compileFTLOSRExit):
+        * ftl/FTLStackMaps.cpp:
+        (JSC::FTL::StackMaps::Location::parse):
+        (JSC::FTL::StackMaps::parse):
+        (WTF::printInternal):
+        * ftl/FTLStackMaps.h:
+        * ftl/FTLThunks.cpp:
+        (JSC::FTL::osrExitGenerationThunkGenerator):
+        * ftl/FTLThunks.h:
+        (JSC::FTL::Thunks::getOSRExitGenerationThunk):
+        * runtime/Options.h:
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Add missing getHostCallReturnValue() for MSVC ARM
+        https://bugs.webkit.org/show_bug.cgi?id=123685
+
+        Reviewed by Darin Adler.
+
+        * jit/JITStubsARM.h:
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Fix MSVC warning about unary minus operator
+        https://bugs.webkit.org/show_bug.cgi?id=123674
+
+        Reviewed by Darin Adler.
+
+        Change some static_cast<> to silence the following warning of Microsoft compiler:
+        warning C4146: unary minus operator applied to unsigned type, result still unsigned
+
+        * jit/Repatch.cpp:
+        (JSC::emitPutTransitionStub):
+
+2013-11-02  Filip Pizlo  <fpizlo@apple.com>
+
+        Disable LLVM's pretty stack traces, which involve intercepting fatal signals
+        https://bugs.webkit.org/show_bug.cgi?id=123681
+
+        Reviewed by Geoffrey Garen.
+
+        * llvm/library/LLVMExports.cpp:
+        (initializeAndGetJSCLLVMAPI):
+
+2013-11-02  Filip Pizlo  <fpizlo@apple.com>
+
+        LLVM assertion failures should funnel into WTF's crash handling
+        https://bugs.webkit.org/show_bug.cgi?id=123682
+
+        Reviewed by Geoffrey Garen.
+        
+        Inside llvmForJSC, we override assertion-related functions and funnel them
+        into g_llvmTrapCallback(). We also now register a fatal error handler inside
+        the library and funnel that into g_llvmTrapCallback, and have
+        initializeAndGetJSCLLVMAPI() take such a callback as an argument.
+        
+        Inside JSC, we no longer call LLVMInstallFatalErrorHandler() but instead we
+        pass WTFLogAlwaysAndCrash() as the trap callback for llvmForJSC.
+
+        * llvm/InitializeLLVM.cpp:
+        (JSC::initializeLLVM):
+        * llvm/InitializeLLVMPOSIX.cpp:
+        (JSC::initializeLLVMPOSIX):
+        * llvm/library/LLVMExports.cpp:
+        (llvmCrash):
+        (initializeAndGetJSCLLVMAPI):
+        * llvm/library/LLVMOverrides.cpp:
+        (raise):
+        (__assert_rtn):
+        (abort):
+        * llvm/library/LLVMTrapCallback.h: Added.
+
+2013-11-02  Filip Pizlo  <fpizlo@apple.com>
+
+        CodeBlock::jettison() shouldn't call baselineVersion()
+        https://bugs.webkit.org/show_bug.cgi?id=123675
+
+        Reviewed by Geoffrey Garen.
+        
+        Fix more uses of baselineVersion().
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::jettison):
+        * bytecode/CodeBlock.h:
+        * bytecode/ProfiledCodeBlockJettisoningWatchpoint.cpp:
+        (JSC::ProfiledCodeBlockJettisoningWatchpoint::fireInternal):
+
+2013-11-02  Filip Pizlo  <fpizlo@apple.com>
+
+        LLVM asserts in internal-js-tests.yaml/Octane/stress-tests/mandreel.js
+        https://bugs.webkit.org/show_bug.cgi?id=123535
+
+        Reviewed by Geoffrey Garen.
+        
+        Use double comparisons for doubles.
+
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::doubleToInt32):
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Various small WinCE build fixes
+
+        * jsc.cpp:
+        (main):
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Fix MSVC ARM build after r157581.
+
+        * jit/JITStubsARM.h:
+
+2013-11-01  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should use a simple optimization pipeline by default
+        https://bugs.webkit.org/show_bug.cgi?id=123638
+
+        Reviewed by Geoffrey Garen.
+        
+        20% speed-up on imagine-gaussian-blur, when combined with --ftlUsesStackmaps=true.
+
+        * ftl/FTLCompile.cpp:
+        (JSC::FTL::compile):
+        * runtime/Options.h:
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        Neuter WTF_MAKE_FAST_ALLOCATED in GLOBAL_FASTMALLOC_NEW builds.
+        <https://webkit.org/b/123639>
+
+        JSC::ParserArenaRefCounted really needed to have the new/delete
+        operators overridden, in order for JSC::ScopeNode to be able to
+        choose that "operator new" out of the two it inherits.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-01  Filip Pizlo  <fpizlo@apple.com>
+
+        OSR exit profiling should be robust against all code being cleared
+        https://bugs.webkit.org/show_bug.cgi?id=123629
+        <rdar://problem/15365476>
+
+        Reviewed by Michael Saboff.
+        
+        The problem here is two-fold:
+
+        1) A watchpoint (i.e. ProfiledCodeBlockJettisoningWatchpoint) may be fired after we
+        have cleared the CodeBlock for all or some Executables.  This means that doing
+        codeBlock->baselineVersion() would either crash or return a bogus CodeBlock, since
+        there wasn't a baseline code block reachable from the Executable anymore.  The
+        solution is that we shouldn't be asking for the baseline code block reachable from
+        the owning executable (what baselineVersion did), but instead we should be asking
+        for the baseline version reachable from the code block being watchpointed (basically
+        what CodeBlock::alternative() did).
+
+        2) If dealing with inlined code, baselienCodeBlockForOriginAndBaselineCodeBlock()
+        may return null, for the same reason as above - we might have cleared the baseline
+        codeblock for the executable that was inlined.  The solution is to just not do
+        profiling if there isn't a baseline code block anymore.
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::baselineAlternative):
+        (JSC::CodeBlock::baselineVersion):
+        (JSC::CodeBlock::jettison):
+        * bytecode/CodeBlock.h:
+        * bytecode/CodeBlockJettisoningWatchpoint.cpp:
+        (JSC::CodeBlockJettisoningWatchpoint::fireInternal):
+        * bytecode/ProfiledCodeBlockJettisoningWatchpoint.cpp:
+        (JSC::ProfiledCodeBlockJettisoningWatchpoint::fireInternal):
+        * dfg/DFGOSRExitBase.cpp:
+        (JSC::DFG::OSRExitBase::considerAddingAsFrequentExitSiteSlow):
+        * jit/AssemblyHelpers.h:
+        (JSC::AssemblyHelpers::AssemblyHelpers):
+        * runtime/Executable.cpp:
+        (JSC::FunctionExecutable::baselineCodeBlockFor):
+
 2013-10-31  Oliver Hunt  <oliver@apple.com>
 
         JavaScript parser bug

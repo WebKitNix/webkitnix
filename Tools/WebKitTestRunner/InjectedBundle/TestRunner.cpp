@@ -93,6 +93,8 @@ TestRunner::TestRunner()
     , m_policyDelegatePermissive(false)
     , m_globalFlag(false)
     , m_customFullScreenBehavior(false)
+    , m_databaseDefaultQuota(-1)
+    , m_databaseMaxQuota(-1)
     , m_userStyleSheetEnabled(false)
     , m_userStyleSheetLocation(adoptWK(WKStringCreateWithUTF8CString("")))
 {
@@ -262,12 +264,6 @@ void TestRunner::setAppCacheMaximumSize(uint64_t size)
 long long TestRunner::applicationCacheDiskUsageForOrigin(JSStringRef origin)
 {
     return WKBundleGetAppCacheUsageForOrigin(InjectedBundle::shared().bundle(), toWK(origin).get());
-}
-
-void TestRunner::setApplicationCacheOriginQuota(unsigned long long bytes)
-{
-    WKRetainPtr<WKStringRef> origin(AdoptWK, WKStringCreateWithUTF8CString("http://127.0.0.1:8000"));
-    WKBundleSetApplicationCacheOriginQuota(InjectedBundle::shared().bundle(), origin.get(), bytes);
 }
 
 void TestRunner::disallowIncreaseForApplicationCacheQuota()

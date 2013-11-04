@@ -1442,9 +1442,9 @@ void CSSParser::parseSelector(const String& string, CSSSelectorList& selectorLis
 
 PassRef<ImmutableStylePropertySet> CSSParser::parseInlineStyleDeclaration(const String& string, Element* element)
 {
-    CSSParserContext context = element->document().elementSheet().contents()->parserContext();
+    CSSParserContext context = element->document().elementSheet().contents().parserContext();
     context.mode = strictToCSSParserMode(element->isHTMLElement() && !element->document().inQuirksMode());
-    return CSSParser(context).parseDeclaration(string, element->document().elementSheet().contents());
+    return CSSParser(context).parseDeclaration(string, &element->document().elementSheet().contents());
 }
 
 PassRef<ImmutableStylePropertySet> CSSParser::parseDeclaration(const String& string, StyleSheetContents* contextStyleSheet)
@@ -5926,12 +5926,12 @@ bool CSSParser::parseFontFaceSrcURI(CSSValueList* valueList)
 
     CSSParserValue* value = m_valueList->next();
     if (!value) {
-        valueList->append(uriValue.release());
+        valueList->append(uriValue.releaseNonNull());
         return true;
     }
     if (value->unit == CSSParserValue::Operator && value->iValue == ',') {
         m_valueList->next();
-        valueList->append(uriValue.release());
+        valueList->append(uriValue.releaseNonNull());
         return true;
     }
 
@@ -5944,7 +5944,7 @@ bool CSSParser::parseFontFaceSrcURI(CSSValueList* valueList)
     if (!args || args->size() != 1 || (args->current()->unit != CSSPrimitiveValue::CSS_STRING && args->current()->unit != CSSPrimitiveValue::CSS_IDENT))
         return false;
     uriValue->setFormat(args->current()->string);
-    valueList->append(uriValue.release());
+    valueList->append(uriValue.releaseNonNull());
     value = m_valueList->next();
     if (value && value->unit == CSSParserValue::Operator && value->iValue == ',')
         m_valueList->next();
@@ -6815,8 +6815,7 @@ bool CSSParser::parseReflect(CSSPropertyID propId, bool important)
             return false;
     }
 
-    RefPtr<CSSReflectValue> reflectValue = CSSReflectValue::create(direction.release(), offset.release(), mask.release());
-    addProperty(propId, reflectValue.release(), important);
+    addProperty(propId, CSSReflectValue::create(direction.release(), offset.release(), mask.release()), important);
     m_valueList->next();
     return true;
 }

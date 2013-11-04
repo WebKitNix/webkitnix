@@ -50,6 +50,7 @@
 #include "RenderDeprecatedFlexibleBox.h"
 #include "RenderFlexibleBox.h"
 #include "RenderInline.h"
+#include "RenderIterator.h"
 #include "RenderLayer.h"
 #include "RenderMarquee.h"
 #include "RenderNamedFlowThread.h"
@@ -1386,12 +1387,10 @@ void RenderBlock::markShapeInsideDescendantsForLayout()
         setNeedsLayout();
         return;
     }
-    for (RenderObject* child = firstChild(); child; child = child->nextSibling()) {
-        if (!child->isRenderBlock())
-            continue;
-        RenderBlock* childBlock = toRenderBlock(child);
+
+    auto blockChildren = childrenOfType<RenderBlock>(*this);
+    for (auto childBlock = blockChildren.begin(), end = blockChildren.end(); childBlock != end; ++childBlock)
         childBlock->markShapeInsideDescendantsForLayout();
-    }
 }
 
 ShapeInsideInfo* RenderBlock::layoutShapeInsideInfo() const
@@ -4756,7 +4755,7 @@ void RenderBlock::updateFirstLetterStyle(RenderObject* firstLetterBlock, RenderO
         if (RenderTextFragment* remainingText = toRenderBoxModelObject(firstLetter)->firstLetterRemainingText()) {
             ASSERT(remainingText->isAnonymous() || remainingText->textNode()->renderer() == remainingText);
             // Replace the old renderer with the new one.
-            remainingText->setFirstLetter(newFirstLetter);
+            remainingText->setFirstLetter(*newFirstLetter);
             newFirstLetter->setFirstLetterRemainingText(remainingText);
         }
         // To prevent removal of single anonymous block in RenderBlock::removeChild and causing
@@ -4822,7 +4821,7 @@ void RenderBlock::createFirstLetterRenderer(RenderObject* firstLetterBlock, Rend
 
         firstLetterContainer->addChild(remainingText, currentTextChild);
         firstLetterContainer->removeChild(*currentTextChild);
-        remainingText->setFirstLetter(firstLetter);
+        remainingText->setFirstLetter(*firstLetter);
         firstLetter->setFirstLetterRemainingText(remainingText);
         
         // construct text fragment for the first letter

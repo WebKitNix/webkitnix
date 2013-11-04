@@ -287,8 +287,6 @@ public:
 #endif
 
 public:
-    RenderArena& renderArena() const { return *document().renderArena(); }
-
     bool isPseudoElement() const { return node() && node()->isPseudoElement(); }
 
     bool isRenderElement() const { return !isText(); }
@@ -1058,6 +1056,9 @@ private:
     void setIsDragging(bool b) { m_bitfields.setIsDragging(b); }
     void setEverHadLayout(bool b) { m_bitfields.setEverHadLayout(b); }
 };
+
+template <typename Type> bool isRendererOfType(const RenderObject&);
+template <> inline bool isRendererOfType<const RenderObject>(const RenderObject&) { return true; }
 
 inline bool RenderObject::documentBeingDestroyed() const
 {

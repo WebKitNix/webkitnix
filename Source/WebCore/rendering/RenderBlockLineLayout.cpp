@@ -32,7 +32,6 @@
 #include "LineInfo.h"
 #include "LineLayoutState.h"
 #include "Logging.h"
-#include "RenderArena.h"
 #include "RenderBlockFlow.h"
 #include "RenderCombineText.h"
 #include "RenderCounter.h"
@@ -240,7 +239,7 @@ static inline void ensureCharacterGetsLineBox(LineMidpointState& lineMidpointSta
 
 static inline BidiRun* createRun(int start, int end, RenderObject* obj, InlineBidiResolver& resolver)
 {
-    return new (obj->renderArena()) BidiRun(start, end, obj, resolver.context(), resolver.dir());
+    return new BidiRun(start, end, obj, resolver.context(), resolver.dir());
 }
 
 void RenderBlockFlow::appendRunsForObject(BidiRunList<BidiRun>& runs, int start, int end, RenderObject* obj, InlineBidiResolver& resolver)
@@ -1056,7 +1055,7 @@ inline BidiRun* RenderBlockFlow::handleTrailingSpaces(BidiRunList<BidiRun>& bidi
         while (BidiContext* parent = baseContext->parent())
             baseContext = parent;
 
-        BidiRun* newTrailingRun = new (renderArena()) BidiRun(firstSpace, trailingSpaceRun->m_stop, trailingSpaceRun->m_object, baseContext, U_OTHER_NEUTRAL);
+        BidiRun* newTrailingRun = new BidiRun(firstSpace, trailingSpaceRun->m_stop, trailingSpaceRun->m_object, baseContext, U_OTHER_NEUTRAL);
         trailingSpaceRun->m_stop = firstSpace;
         if (direction == LTR)
             bidiRuns.addRun(newTrailingRun);
@@ -2401,7 +2400,7 @@ static ALWAYS_INLINE float textWidth(RenderText* text, unsigned from, unsigned l
     ASSERT(run.charactersLength() >= run.length());
 
     run.setCharacterScanForCodePath(!text->canUseSimpleFontCodePath());
-    run.setTabSize(!collapseWhiteSpace, text->style().tabSize());
+    run.setTabSize(!collapseWhiteSpace, style.tabSize());
     run.setXPos(xPos);
     return font.width(run, &fallbackFonts, &glyphOverflow);
 }

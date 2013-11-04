@@ -23,16 +23,13 @@
 #include "config.h"
 #include "NameNodeList.h"
 
-#include "Element.h"
-#include "HTMLNames.h"
 #include "NodeRareData.h"
-#include <wtf/Assertions.h>
 
 namespace WebCore {
 
 using namespace HTMLNames;
 
-NameNodeList::NameNodeList(Node& rootNode, const AtomicString& name)
+NameNodeList::NameNodeList(ContainerNode& rootNode, const AtomicString& name)
     : LiveNodeList(rootNode, NameNodeListType, InvalidateOnNameAttrChange)
     , m_name(name)
 {

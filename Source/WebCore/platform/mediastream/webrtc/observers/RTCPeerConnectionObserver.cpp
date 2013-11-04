@@ -63,7 +63,7 @@ void RTCPeerConnectionObserver::OnStateChange(webrtc::PeerConnectionObserver::St
     notImplemented();
 }
 
-void RTCPeerConnectionObserver::processTrack(webrtc::MediaStreamTrackInterface* track, MediaStreamTrackObserverVector& trackObservers, MediaStreamSourceVector& sourceVector)
+void RTCPeerConnectionObserver::processTrack(webrtc::MediaStreamTrackInterface* track, Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& trackObservers, Vector<RefPtr<MediaStreamSource>>& sourceVector)
 {
     RefPtr<MediaStreamSource> source;
     if (track->kind() == "audio")
@@ -79,10 +79,10 @@ void RTCPeerConnectionObserver::processTrack(webrtc::MediaStreamTrackInterface* 
 
 PassRefPtr<MediaStreamDescriptor> RTCPeerConnectionObserver::mediaStreamDescriptorFromMediaStreamInterface(webrtc::MediaStreamInterface* stream)
 {
-    MediaStreamSourceVector audioSourceVector;
-    MediaStreamSourceVector videoSourceVector;
-    MediaStreamTrackObserverVector audioTrackObservers;
-    MediaStreamTrackObserverVector videoTrackObservers;
+    Vector<RefPtr<MediaStreamSource>> audioSourceVector;
+    Vector<RefPtr<MediaStreamSource>> videoSourceVector;
+    Vector<RefPtr<MediaStreamTrackWebRTCObserver>> audioTrackObservers;
+    Vector<RefPtr<MediaStreamTrackWebRTCObserver>> videoTrackObservers;
     webrtc::AudioTrackVector audioTracks = stream->GetAudioTracks();
     webrtc::VideoTrackVector videoTracks = stream->GetVideoTracks();
     for (unsigned i = 0; i < audioTracks.size(); i++)

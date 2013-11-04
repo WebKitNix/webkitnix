@@ -28,7 +28,6 @@
 #include "CachedResourceRequest.h"
 #include "CachedXSLStyleSheet.h"
 #include "Document.h"
-#include "DocumentStyleSheetCollection.h"
 #include "ExceptionCode.h"
 #include "Frame.h"
 #include "FrameLoader.h"
@@ -223,7 +222,7 @@ void ProcessingInstruction::setXSLStyleSheet(const String& href, const URL& base
 void ProcessingInstruction::parseStyleSheet(const String& sheet)
 {
     if (m_isCSS)
-        static_cast<CSSStyleSheet*>(m_sheet.get())->contents()->parseString(sheet);
+        static_cast<CSSStyleSheet*>(m_sheet.get())->contents().parseString(sheet);
 #if ENABLE(XSLT)
     else if (m_isXSL)
         static_cast<XSLStyleSheet*>(m_sheet.get())->parseString(sheet);
@@ -236,7 +235,7 @@ void ProcessingInstruction::parseStyleSheet(const String& sheet)
     m_loading = false;
 
     if (m_isCSS)
-        static_cast<CSSStyleSheet*>(m_sheet.get())->contents()->checkLoaded();
+        static_cast<CSSStyleSheet*>(m_sheet.get())->contents().checkLoaded();
 #if ENABLE(XSLT)
     else if (m_isXSL)
         static_cast<XSLStyleSheet*>(m_sheet.get())->checkLoaded();

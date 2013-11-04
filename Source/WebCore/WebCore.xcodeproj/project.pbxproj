@@ -693,7 +693,6 @@
 		1A927FD31416A15B003A83C8 /* npruntime.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A927FD01416A15B003A83C8 /* npruntime.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		1A927FD41416A15B003A83C8 /* nptypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A927FD11416A15B003A83C8 /* nptypes.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		1A98956B0AA78F80005EF5EF /* URLCF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1A98956A0AA78F80005EF5EF /* URLCF.cpp */; };
-		1AA21250163F0DA80000E63F /* AtomicStringCF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA2124F163F0DA80000E63F /* AtomicStringCF.cpp */; };
 		1AA7160A149BC4DB0016EC19 /* TileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1AA71608149BC4DA0016EC19 /* TileController.mm */; };
 		1AA7160B149BC4DB0016EC19 /* TileController.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AA71609149BC4DB0016EC19 /* TileController.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		1AA84F04143BA7BD0051D153 /* ScrollElasticityController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1AA84F02143BA7BD0051D153 /* ScrollElasticityController.mm */; };
@@ -4345,16 +4344,12 @@
 		B2AFFC7F0D00A5C10030074D /* SimpleFontDataMac.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2AFFC770D00A5C10030074D /* SimpleFontDataMac.mm */; };
 		B2AFFC800D00A5C10030074D /* FontMac.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2AFFC780D00A5C10030074D /* FontMac.mm */; };
 		B2AFFC830D00A5C10030074D /* GlyphPageTreeNodeMac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B2AFFC7B0D00A5C10030074D /* GlyphPageTreeNodeMac.cpp */; };
-		B2AFFC950D00A5DF0030074D /* StringImplMac.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2AFFC8A0D00A5DF0030074D /* StringImplMac.mm */; };
-		B2AFFC960D00A5DF0030074D /* StringMac.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2AFFC8B0D00A5DF0030074D /* StringMac.mm */; };
 		B2AFFC970D00A5DF0030074D /* TextBoundaries.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2AFFC8C0D00A5DF0030074D /* TextBoundaries.mm */; };
 		B2AFFC980D00A5DF0030074D /* TextBreakIteratorInternalICUMac.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2AFFC8D0D00A5DF0030074D /* TextBreakIteratorInternalICUMac.mm */; };
 		B2AFFC990D00A5DF0030074D /* TextCodecMac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B2AFFC8E0D00A5DF0030074D /* TextCodecMac.cpp */; };
 		B2AFFC9A0D00A5DF0030074D /* TextCodecMac.h in Headers */ = {isa = PBXBuildFile; fileRef = B2AFFC8F0D00A5DF0030074D /* TextCodecMac.h */; };
 		B2B1F7160D00CAA8004AEA64 /* PointerEventsHitRules.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B2B1F7140D00CAA8004AEA64 /* PointerEventsHitRules.cpp */; };
 		B2B1F7170D00CAA8004AEA64 /* PointerEventsHitRules.h in Headers */ = {isa = PBXBuildFile; fileRef = B2B1F7150D00CAA8004AEA64 /* PointerEventsHitRules.h */; };
-		B2B2645C0D00A77E000ACC1D /* StringCF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B2B2645A0D00A77E000ACC1D /* StringCF.cpp */; };
-		B2B2645D0D00A77E000ACC1D /* StringImplCF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B2B2645B0D00A77E000ACC1D /* StringImplCF.cpp */; };
 		B2C3DA230D006C1D00EF6F26 /* BidiContext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D9F20D006C1D00EF6F26 /* BidiContext.cpp */; };
 		B2C3DA240D006C1D00EF6F26 /* BidiContext.h in Headers */ = {isa = PBXBuildFile; fileRef = B2C3D9F30D006C1D00EF6F26 /* BidiContext.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		B2C3DA250D006C1D00EF6F26 /* BidiResolver.h in Headers */ = {isa = PBXBuildFile; fileRef = B2C3D9F40D006C1D00EF6F26 /* BidiResolver.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -4649,10 +4644,12 @@
 		B562DB6017D3CD630010AF96 /* HTMLElementTypeHelpers.h in Headers */ = {isa = PBXBuildFile; fileRef = B562DB5E17D3CD560010AF96 /* HTMLElementTypeHelpers.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		B562DB6117D3CD660010AF96 /* SVGElementTypeHelpers.h in Headers */ = {isa = PBXBuildFile; fileRef = B562DB5F17D3CD560010AF96 /* SVGElementTypeHelpers.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		B56576E817DA94E200A56BDC /* DOMConstructorWithDocument.h in Headers */ = {isa = PBXBuildFile; fileRef = B56576E717DA94E200A56BDC /* DOMConstructorWithDocument.h */; };
+		B56579B51824D12A00E79F23 /* RenderChildIterator.h in Headers */ = {isa = PBXBuildFile; fileRef = B56579B41824D12A00E79F23 /* RenderChildIterator.h */; };
 		B58CEB6911913607002A6790 /* JSDatabaseSync.h in Headers */ = {isa = PBXBuildFile; fileRef = B58CEB6711913607002A6790 /* JSDatabaseSync.h */; };
 		B58CEB6A11913607002A6790 /* JSDatabaseSync.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B58CEB6811913607002A6790 /* JSDatabaseSync.cpp */; };
 		B58CEB6D1191361C002A6790 /* JSSQLTransactionSync.h in Headers */ = {isa = PBXBuildFile; fileRef = B58CEB6B1191361C002A6790 /* JSSQLTransactionSync.h */; };
 		B58CEB6E1191361C002A6790 /* JSSQLTransactionSync.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B58CEB6C1191361C002A6790 /* JSSQLTransactionSync.cpp */; };
+		B595FF471824CEE300FF51CD /* RenderIterator.h in Headers */ = {isa = PBXBuildFile; fileRef = B595FF461824CEE300FF51CD /* RenderIterator.h */; };
 		B59DD699119029E5007E9684 /* JSDatabaseCallback.h in Headers */ = {isa = PBXBuildFile; fileRef = B59DD697119029E5007E9684 /* JSDatabaseCallback.h */; };
 		B59DD69A119029E5007E9684 /* JSDatabaseCallback.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B59DD698119029E5007E9684 /* JSDatabaseCallback.cpp */; };
 		B59DD69D11902A42007E9684 /* JSSQLTransactionCallback.h in Headers */ = {isa = PBXBuildFile; fileRef = B59DD69B11902A42007E9684 /* JSSQLTransactionCallback.h */; };
@@ -4663,6 +4660,7 @@
 		B59DD6A611902A62007E9684 /* JSSQLStatementCallback.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B59DD6A411902A62007E9684 /* JSSQLStatementCallback.cpp */; };
 		B59DD6A911902A71007E9684 /* JSSQLStatementErrorCallback.h in Headers */ = {isa = PBXBuildFile; fileRef = B59DD6A711902A71007E9684 /* JSSQLStatementErrorCallback.h */; };
 		B59DD6AA11902A71007E9684 /* JSSQLStatementErrorCallback.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B59DD6A811902A71007E9684 /* JSSQLStatementErrorCallback.cpp */; };
+		B59ED23B18272679006D564C /* RenderAncestorIterator.h in Headers */ = {isa = PBXBuildFile; fileRef = B59ED23A18272679006D564C /* RenderAncestorIterator.h */; };
 		B5A684220FFABE9800D24689 /* SQLiteFileSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = B5A684210FFABE9800D24689 /* SQLiteFileSystem.h */; };
 		B5A684240FFABEAA00D24689 /* SQLiteFileSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B5A684230FFABEAA00D24689 /* SQLiteFileSystem.cpp */; };
 		B5B7A17017C10AA800E4AA0A /* ElementData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B5B7A16F17C1080600E4AA0A /* ElementData.cpp */; };
@@ -5119,8 +5117,6 @@
 		BCEA4855097D93020094C9E4 /* break_lines.h in Headers */ = {isa = PBXBuildFile; fileRef = BCEA4816097D93020094C9E4 /* break_lines.h */; };
 		BCEA4859097D93020094C9E4 /* InlineTextBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BCEA481A097D93020094C9E4 /* InlineTextBox.cpp */; };
 		BCEA485A097D93020094C9E4 /* InlineTextBox.h in Headers */ = {isa = PBXBuildFile; fileRef = BCEA481B097D93020094C9E4 /* InlineTextBox.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		BCEA485D097D93020094C9E4 /* RenderArena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BCEA481E097D93020094C9E4 /* RenderArena.cpp */; };
-		BCEA485E097D93020094C9E4 /* RenderArena.h in Headers */ = {isa = PBXBuildFile; fileRef = BCEA481F097D93020094C9E4 /* RenderArena.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		BCEA485F097D93020094C9E4 /* RenderBlock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BCEA4820097D93020094C9E4 /* RenderBlock.cpp */; };
 		BCEA4860097D93020094C9E4 /* RenderBlock.h in Headers */ = {isa = PBXBuildFile; fileRef = BCEA4821097D93020094C9E4 /* RenderBlock.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		BCEA4861097D93020094C9E4 /* RenderBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BCEA4822097D93020094C9E4 /* RenderBox.cpp */; };
@@ -5176,8 +5172,6 @@
 		BCF7E491137CD7C7001DDAE7 /* AdjustViewSizeOrNot.h in Headers */ = {isa = PBXBuildFile; fileRef = BCF48CE61370D114004E87D6 /* AdjustViewSizeOrNot.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		BCFA930810333193007B25D1 /* RenderOverflow.h in Headers */ = {isa = PBXBuildFile; fileRef = BCFA930710333193007B25D1 /* RenderOverflow.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		BCFB2E5E0979E46400BA703D /* CachedResourceClient.h in Headers */ = {isa = PBXBuildFile; fileRef = BCFB2E5D0979E46400BA703D /* CachedResourceClient.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		BCFB2F76097A2E1A00BA703D /* Arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BCFB2F74097A2E1A00BA703D /* Arena.cpp */; };
-		BCFB2F77097A2E1A00BA703D /* Arena.h in Headers */ = {isa = PBXBuildFile; fileRef = BCFB2F75097A2E1A00BA703D /* Arena.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		BCFE2F110C1B58370020235F /* JSRect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BCFE2F0F0C1B58370020235F /* JSRect.cpp */; };
 		BCFE2F120C1B58380020235F /* JSRect.h in Headers */ = {isa = PBXBuildFile; fileRef = BCFE2F100C1B58370020235F /* JSRect.h */; };
 		BCFF64910EAD15C200C1D6F7 /* LengthBox.h in Headers */ = {isa = PBXBuildFile; fileRef = BCFF648F0EAD15C200C1D6F7 /* LengthBox.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -5509,6 +5503,14 @@
 		E125F8351822F18A00D84CD9 /* CryptoKeyHMAC.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E125F8331822F18A00D84CD9 /* CryptoKeyHMAC.cpp */; };
 		E125F8361822F18A00D84CD9 /* CryptoKeyHMAC.h in Headers */ = {isa = PBXBuildFile; fileRef = E125F8341822F18A00D84CD9 /* CryptoKeyHMAC.h */; };
 		E125F8381822F1EB00D84CD9 /* CryptoAlgorithmHMACMac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E125F8371822F1EB00D84CD9 /* CryptoAlgorithmHMACMac.cpp */; };
+		E125F83A1824104800D84CD9 /* CryptoAlgorithmAesCbcParams.h in Headers */ = {isa = PBXBuildFile; fileRef = E125F8391824104800D84CD9 /* CryptoAlgorithmAesCbcParams.h */; };
+		E125F83D182411E700D84CD9 /* JSCryptoOperationData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E125F83B182411E700D84CD9 /* JSCryptoOperationData.cpp */; };
+		E125F83E182411E700D84CD9 /* JSCryptoOperationData.h in Headers */ = {isa = PBXBuildFile; fileRef = E125F83C182411E700D84CD9 /* JSCryptoOperationData.h */; };
+		E125F8411824253A00D84CD9 /* CryptoAlgorithmAES_CBC.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E125F83F1824253A00D84CD9 /* CryptoAlgorithmAES_CBC.cpp */; };
+		E125F8421824253A00D84CD9 /* CryptoAlgorithmAES_CBC.h in Headers */ = {isa = PBXBuildFile; fileRef = E125F8401824253A00D84CD9 /* CryptoAlgorithmAES_CBC.h */; };
+		E125F845182425C900D84CD9 /* CryptoAlgorithmAES_CBCMac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E125F843182425C900D84CD9 /* CryptoAlgorithmAES_CBCMac.cpp */; };
+		E125F84D1824289D00D84CD9 /* CryptoKeyAES.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E125F84B1824289D00D84CD9 /* CryptoKeyAES.cpp */; };
+		E125F84E1824289D00D84CD9 /* CryptoKeyAES.h in Headers */ = {isa = PBXBuildFile; fileRef = E125F84C1824289D00D84CD9 /* CryptoKeyAES.h */; };
 		E12719C70EEEC16800F61213 /* NavigatorBase.h in Headers */ = {isa = PBXBuildFile; fileRef = E12719C60EEEC16800F61213 /* NavigatorBase.h */; };
 		E12719CA0EEEC21300F61213 /* NavigatorBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E12719C90EEEC21300F61213 /* NavigatorBase.cpp */; };
 		E1271A0B0EEEC77A00F61213 /* WorkerNavigator.h in Headers */ = {isa = PBXBuildFile; fileRef = E1271A0A0EEEC77A00F61213 /* WorkerNavigator.h */; };
@@ -5580,6 +5582,22 @@
 		E187056316E54A0D00585E97 /* MainThreadTask.h in Headers */ = {isa = PBXBuildFile; fileRef = E187056216E54A0D00585E97 /* MainThreadTask.h */; };
 		E18772F1126E2629003DD586 /* Language.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E18772F0126E2629003DD586 /* Language.cpp */; };
 		E19727161820549E00592D51 /* CryptoKeyType.h in Headers */ = {isa = PBXBuildFile; fileRef = E19727151820549E00592D51 /* CryptoKeyType.h */; };
+		E19AC3F71824E5D100349426 /* CryptoAlgorithmAesKeyGenParams.h in Headers */ = {isa = PBXBuildFile; fileRef = E19AC3F61824E5D100349426 /* CryptoAlgorithmAesKeyGenParams.h */; };
+		E19AC3F9182566F700349426 /* CryptoKeyMac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3F8182566F700349426 /* CryptoKeyMac.cpp */; };
+		E19AC3E21824DC6900349426 /* CryptoAlgorithmSHA224Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3DE1824DC6900349426 /* CryptoAlgorithmSHA224Mac.cpp */; };
+		E19AC3E31824DC6900349426 /* CryptoAlgorithmSHA256Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3DF1824DC6900349426 /* CryptoAlgorithmSHA256Mac.cpp */; };
+		E19AC3E41824DC6900349426 /* CryptoAlgorithmSHA384Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3E01824DC6900349426 /* CryptoAlgorithmSHA384Mac.cpp */; };
+		E19AC3E51824DC6900349426 /* CryptoAlgorithmSHA512Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3E11824DC6900349426 /* CryptoAlgorithmSHA512Mac.cpp */; };
+		E19AC3EE1824DC7900349426 /* CryptoAlgorithmSHA224.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3E61824DC7900349426 /* CryptoAlgorithmSHA224.cpp */; };
+		E19AC3EF1824DC7900349426 /* CryptoAlgorithmSHA224.h in Headers */ = {isa = PBXBuildFile; fileRef = E19AC3E71824DC7900349426 /* CryptoAlgorithmSHA224.h */; };
+		E19AC3F01824DC7900349426 /* CryptoAlgorithmSHA256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3E81824DC7900349426 /* CryptoAlgorithmSHA256.cpp */; };
+		E19AC3F11824DC7900349426 /* CryptoAlgorithmSHA256.h in Headers */ = {isa = PBXBuildFile; fileRef = E19AC3E91824DC7900349426 /* CryptoAlgorithmSHA256.h */; };
+		E19AC3F21824DC7900349426 /* CryptoAlgorithmSHA384.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3EA1824DC7900349426 /* CryptoAlgorithmSHA384.cpp */; };
+		E19AC3F31824DC7900349426 /* CryptoAlgorithmSHA384.h in Headers */ = {isa = PBXBuildFile; fileRef = E19AC3EB1824DC7900349426 /* CryptoAlgorithmSHA384.h */; };
+		E19AC3F41824DC7900349426 /* CryptoAlgorithmSHA512.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3EC1824DC7900349426 /* CryptoAlgorithmSHA512.cpp */; };
+		E19AC3F51824DC7900349426 /* CryptoAlgorithmSHA512.h in Headers */ = {isa = PBXBuildFile; fileRef = E19AC3ED1824DC7900349426 /* CryptoAlgorithmSHA512.h */; };
+		E19AC3F71824E5D100349426 /* CryptoAlgorithmAesKeyGenParams.h in Headers */ = {isa = PBXBuildFile; fileRef = E19AC3F61824E5D100349426 /* CryptoAlgorithmAesKeyGenParams.h */; };
+		E19AC3F9182566F700349426 /* CryptoKeyMac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E19AC3F8182566F700349426 /* CryptoKeyMac.cpp */; };
 		E19DA29C18189ADD00088BC8 /* CryptoAlgorithmHmacKeyParams.h in Headers */ = {isa = PBXBuildFile; fileRef = E19DA29B18189ADD00088BC8 /* CryptoAlgorithmHmacKeyParams.h */; };
 		E1A1470811102B1500EEC0F3 /* ContainerNodeAlgorithms.h in Headers */ = {isa = PBXBuildFile; fileRef = E1A1470711102B1500EEC0F3 /* ContainerNodeAlgorithms.h */; };
 		E1A3162D134BC32D007C9A4F /* WebNSAttributedStringExtras.h in Headers */ = {isa = PBXBuildFile; fileRef = E1A3162B134BC32D007C9A4F /* WebNSAttributedStringExtras.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -7208,7 +7226,6 @@
 		1A927FD01416A15B003A83C8 /* npruntime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = npruntime.h; sourceTree = "<group>"; };
 		1A927FD11416A15B003A83C8 /* nptypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nptypes.h; sourceTree = "<group>"; };
 		1A98956A0AA78F80005EF5EF /* URLCF.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = URLCF.cpp; sourceTree = "<group>"; };
-		1AA2124F163F0DA80000E63F /* AtomicStringCF.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AtomicStringCF.cpp; sourceTree = "<group>"; };
 		1AA71608149BC4DA0016EC19 /* TileController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = TileController.mm; path = ca/mac/TileController.mm; sourceTree = "<group>"; };
 		1AA71609149BC4DB0016EC19 /* TileController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TileController.h; path = ca/mac/TileController.h; sourceTree = "<group>"; };
 		1AA84F02143BA7BD0051D153 /* ScrollElasticityController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ScrollElasticityController.mm; sourceTree = "<group>"; };
@@ -11252,16 +11269,12 @@
 		B2AFFC850D00A5DF0030074D /* character-sets.txt */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "character-sets.txt"; sourceTree = "<group>"; };
 		B2AFFC860D00A5DF0030074D /* mac-encodings.txt */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "mac-encodings.txt"; sourceTree = "<group>"; };
 		B2AFFC870D00A5DF0030074D /* make-charset-table.pl */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.perl; path = "make-charset-table.pl"; sourceTree = "<group>"; };
-		B2AFFC8A0D00A5DF0030074D /* StringImplMac.mm */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.objcpp; lineEnding = 0; path = StringImplMac.mm; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		B2AFFC8B0D00A5DF0030074D /* StringMac.mm */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.objcpp; path = StringMac.mm; sourceTree = "<group>"; };
 		B2AFFC8C0D00A5DF0030074D /* TextBoundaries.mm */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.objcpp; path = TextBoundaries.mm; sourceTree = "<group>"; };
 		B2AFFC8D0D00A5DF0030074D /* TextBreakIteratorInternalICUMac.mm */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.objcpp; path = TextBreakIteratorInternalICUMac.mm; sourceTree = "<group>"; };
 		B2AFFC8E0D00A5DF0030074D /* TextCodecMac.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = TextCodecMac.cpp; sourceTree = "<group>"; };
 		B2AFFC8F0D00A5DF0030074D /* TextCodecMac.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = TextCodecMac.h; sourceTree = "<group>"; };
 		B2B1F7140D00CAA8004AEA64 /* PointerEventsHitRules.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = PointerEventsHitRules.cpp; sourceTree = "<group>"; };
 		B2B1F7150D00CAA8004AEA64 /* PointerEventsHitRules.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = PointerEventsHitRules.h; sourceTree = "<group>"; };
-		B2B2645A0D00A77E000ACC1D /* StringCF.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = StringCF.cpp; sourceTree = "<group>"; };
-		B2B2645B0D00A77E000ACC1D /* StringImplCF.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = StringImplCF.cpp; sourceTree = "<group>"; };
 		B2C3D9F20D006C1D00EF6F26 /* BidiContext.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = BidiContext.cpp; sourceTree = "<group>"; };
 		B2C3D9F30D006C1D00EF6F26 /* BidiContext.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = BidiContext.h; sourceTree = "<group>"; };
 		B2C3D9F40D006C1D00EF6F26 /* BidiResolver.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = BidiResolver.h; sourceTree = "<group>"; };
@@ -11558,10 +11571,12 @@
 		B562DB5F17D3CD560010AF96 /* SVGElementTypeHelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SVGElementTypeHelpers.h; sourceTree = "<group>"; };
 		B56576E417DA599F00A56BDC /* JSMainThreadExecStateInstrumentation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSMainThreadExecStateInstrumentation.h; sourceTree = "<group>"; };
 		B56576E717DA94E200A56BDC /* DOMConstructorWithDocument.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOMConstructorWithDocument.h; sourceTree = "<group>"; };
+		B56579B41824D12A00E79F23 /* RenderChildIterator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RenderChildIterator.h; sourceTree = "<group>"; };
 		B58CEB6711913607002A6790 /* JSDatabaseSync.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSDatabaseSync.h; sourceTree = "<group>"; };
 		B58CEB6811913607002A6790 /* JSDatabaseSync.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JSDatabaseSync.cpp; sourceTree = "<group>"; };
 		B58CEB6B1191361C002A6790 /* JSSQLTransactionSync.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSSQLTransactionSync.h; sourceTree = "<group>"; };
 		B58CEB6C1191361C002A6790 /* JSSQLTransactionSync.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JSSQLTransactionSync.cpp; sourceTree = "<group>"; };
+		B595FF461824CEE300FF51CD /* RenderIterator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RenderIterator.h; sourceTree = "<group>"; };
 		B59DD697119029E5007E9684 /* JSDatabaseCallback.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSDatabaseCallback.h; sourceTree = "<group>"; };
 		B59DD698119029E5007E9684 /* JSDatabaseCallback.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JSDatabaseCallback.cpp; sourceTree = "<group>"; };
 		B59DD69B11902A42007E9684 /* JSSQLTransactionCallback.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSSQLTransactionCallback.h; sourceTree = "<group>"; };
@@ -11572,6 +11587,7 @@
 		B59DD6A411902A62007E9684 /* JSSQLStatementCallback.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JSSQLStatementCallback.cpp; sourceTree = "<group>"; };
 		B59DD6A711902A71007E9684 /* JSSQLStatementErrorCallback.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSSQLStatementErrorCallback.h; sourceTree = "<group>"; };
 		B59DD6A811902A71007E9684 /* JSSQLStatementErrorCallback.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JSSQLStatementErrorCallback.cpp; sourceTree = "<group>"; };
+		B59ED23A18272679006D564C /* RenderAncestorIterator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RenderAncestorIterator.h; sourceTree = "<group>"; };
 		B5A684210FFABE9800D24689 /* SQLiteFileSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQLiteFileSystem.h; path = sql/SQLiteFileSystem.h; sourceTree = "<group>"; };
 		B5A684230FFABEAA00D24689 /* SQLiteFileSystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SQLiteFileSystem.cpp; path = sql/SQLiteFileSystem.cpp; sourceTree = "<group>"; };
 		B5B7A16E17C1048000E4AA0A /* ElementData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ElementData.h; sourceTree = "<group>"; };
@@ -12059,8 +12075,6 @@
 		BCEA4816097D93020094C9E4 /* break_lines.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = break_lines.h; sourceTree = "<group>"; };
 		BCEA481A097D93020094C9E4 /* InlineTextBox.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = InlineTextBox.cpp; sourceTree = "<group>"; };
 		BCEA481B097D93020094C9E4 /* InlineTextBox.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = InlineTextBox.h; sourceTree = "<group>"; };
-		BCEA481E097D93020094C9E4 /* RenderArena.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = RenderArena.cpp; sourceTree = "<group>"; };
-		BCEA481F097D93020094C9E4 /* RenderArena.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = RenderArena.h; sourceTree = "<group>"; };
 		BCEA4820097D93020094C9E4 /* RenderBlock.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = RenderBlock.cpp; sourceTree = "<group>"; };
 		BCEA4821097D93020094C9E4 /* RenderBlock.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = RenderBlock.h; sourceTree = "<group>"; };
 		BCEA4822097D93020094C9E4 /* RenderBox.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = RenderBox.cpp; sourceTree = "<group>"; };
@@ -12119,8 +12133,6 @@
 		BCF48CE61370D114004E87D6 /* AdjustViewSizeOrNot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AdjustViewSizeOrNot.h; sourceTree = "<group>"; };
 		BCFA930710333193007B25D1 /* RenderOverflow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RenderOverflow.h; sourceTree = "<group>"; };
 		BCFB2E5D0979E46400BA703D /* CachedResourceClient.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = CachedResourceClient.h; sourceTree = "<group>"; };
-		BCFB2F74097A2E1A00BA703D /* Arena.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = Arena.cpp; sourceTree = "<group>"; };
-		BCFB2F75097A2E1A00BA703D /* Arena.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = Arena.h; sourceTree = "<group>"; };
 		BCFB45F317D8E39200444446 /* RenderBlockFlow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RenderBlockFlow.h; sourceTree = "<group>"; };
 		BCFB45F417D8E49400444446 /* RenderBlockFlow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RenderBlockFlow.cpp; sourceTree = "<group>"; };
 		BCFE2F0F0C1B58370020235F /* JSRect.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = JSRect.cpp; sourceTree = "<group>"; };
@@ -12519,6 +12531,14 @@
 		E125F8331822F18A00D84CD9 /* CryptoKeyHMAC.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CryptoKeyHMAC.cpp; path = keys/CryptoKeyHMAC.cpp; sourceTree = "<group>"; };
 		E125F8341822F18A00D84CD9 /* CryptoKeyHMAC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CryptoKeyHMAC.h; path = keys/CryptoKeyHMAC.h; sourceTree = "<group>"; };
 		E125F8371822F1EB00D84CD9 /* CryptoAlgorithmHMACMac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CryptoAlgorithmHMACMac.cpp; path = mac/CryptoAlgorithmHMACMac.cpp; sourceTree = "<group>"; };
+		E125F8391824104800D84CD9 /* CryptoAlgorithmAesCbcParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoAlgorithmAesCbcParams.h; sourceTree = "<group>"; };
+		E125F83B182411E700D84CD9 /* JSCryptoOperationData.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JSCryptoOperationData.cpp; sourceTree = "<group>"; };
+		E125F83C182411E700D84CD9 /* JSCryptoOperationData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSCryptoOperationData.h; sourceTree = "<group>"; };
+		E125F83F1824253A00D84CD9 /* CryptoAlgorithmAES_CBC.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CryptoAlgorithmAES_CBC.cpp; sourceTree = "<group>"; };
+		E125F8401824253A00D84CD9 /* CryptoAlgorithmAES_CBC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoAlgorithmAES_CBC.h; sourceTree = "<group>"; };
+		E125F843182425C900D84CD9 /* CryptoAlgorithmAES_CBCMac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CryptoAlgorithmAES_CBCMac.cpp; path = mac/CryptoAlgorithmAES_CBCMac.cpp; sourceTree = "<group>"; };
+		E125F84B1824289D00D84CD9 /* CryptoKeyAES.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CryptoKeyAES.cpp; sourceTree = "<group>"; };
+		E125F84C1824289D00D84CD9 /* CryptoKeyAES.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoKeyAES.h; sourceTree = "<group>"; };
 		E12719C60EEEC16800F61213 /* NavigatorBase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NavigatorBase.h; sourceTree = "<group>"; };
 		E12719C90EEEC21300F61213 /* NavigatorBase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NavigatorBase.cpp; sourceTree = "<group>"; };
 		E1271A0A0EEEC77A00F61213 /* WorkerNavigator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WorkerNavigator.h; sourceTree = "<group>"; };
@@ -12596,6 +12616,22 @@
 		E187056216E54A0D00585E97 /* MainThreadTask.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MainThreadTask.h; sourceTree = "<group>"; };
 		E18772F0126E2629003DD586 /* Language.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Language.cpp; sourceTree = "<group>"; };
 		E19727151820549E00592D51 /* CryptoKeyType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoKeyType.h; sourceTree = "<group>"; };
+		E19AC3F61824E5D100349426 /* CryptoAlgorithmAesKeyGenParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoAlgorithmAesKeyGenParams.h; sourceTree = "<group>"; };
+		E19AC3F8182566F700349426 /* CryptoKeyMac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CryptoKeyMac.cpp; sourceTree = "<group>"; };
+		E19AC3DE1824DC6900349426 /* CryptoAlgorithmSHA224Mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CryptoAlgorithmSHA224Mac.cpp; path = mac/CryptoAlgorithmSHA224Mac.cpp; sourceTree = "<group>"; };
+		E19AC3DF1824DC6900349426 /* CryptoAlgorithmSHA256Mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CryptoAlgorithmSHA256Mac.cpp; path = mac/CryptoAlgorithmSHA256Mac.cpp; sourceTree = "<group>"; };
+		E19AC3E01824DC6900349426 /* CryptoAlgorithmSHA384Mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CryptoAlgorithmSHA384Mac.cpp; path = mac/CryptoAlgorithmSHA384Mac.cpp; sourceTree = "<group>"; };
+		E19AC3E11824DC6900349426 /* CryptoAlgorithmSHA512Mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CryptoAlgorithmSHA512Mac.cpp; path = mac/CryptoAlgorithmSHA512Mac.cpp; sourceTree = "<group>"; };
+		E19AC3E61824DC7900349426 /* CryptoAlgorithmSHA224.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CryptoAlgorithmSHA224.cpp; sourceTree = "<group>"; };
+		E19AC3E71824DC7900349426 /* CryptoAlgorithmSHA224.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoAlgorithmSHA224.h; sourceTree = "<group>"; };
+		E19AC3E81824DC7900349426 /* CryptoAlgorithmSHA256.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CryptoAlgorithmSHA256.cpp; sourceTree = "<group>"; };
+		E19AC3E91824DC7900349426 /* CryptoAlgorithmSHA256.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoAlgorithmSHA256.h; sourceTree = "<group>"; };
+		E19AC3EA1824DC7900349426 /* CryptoAlgorithmSHA384.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CryptoAlgorithmSHA384.cpp; sourceTree = "<group>"; };
+		E19AC3EB1824DC7900349426 /* CryptoAlgorithmSHA384.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoAlgorithmSHA384.h; sourceTree = "<group>"; };
+		E19AC3EC1824DC7900349426 /* CryptoAlgorithmSHA512.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CryptoAlgorithmSHA512.cpp; sourceTree = "<group>"; };
+		E19AC3ED1824DC7900349426 /* CryptoAlgorithmSHA512.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoAlgorithmSHA512.h; sourceTree = "<group>"; };
+		E19AC3F61824E5D100349426 /* CryptoAlgorithmAesKeyGenParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoAlgorithmAesKeyGenParams.h; sourceTree = "<group>"; };
+		E19AC3F8182566F700349426 /* CryptoKeyMac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CryptoKeyMac.cpp; sourceTree = "<group>"; };
 		E19DA29B18189ADD00088BC8 /* CryptoAlgorithmHmacKeyParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CryptoAlgorithmHmacKeyParams.h; path = parameters/CryptoAlgorithmHmacKeyParams.h; sourceTree = "<group>"; };
 		E1A1470711102B1500EEC0F3 /* ContainerNodeAlgorithms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ContainerNodeAlgorithms.h; sourceTree = "<group>"; };
 		E1A3162B134BC32D007C9A4F /* WebNSAttributedStringExtras.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebNSAttributedStringExtras.h; sourceTree = "<group>"; };
@@ -19112,10 +19148,7 @@
 		B2B264590D00A77E000ACC1D /* cf */ = {
 			isa = PBXGroup;
 			children = (
-				1AA2124F163F0DA80000E63F /* AtomicStringCF.cpp */,
 				371A67CA11C6C7DB00047B8B /* HyphenationCF.cpp */,
-				B2B2645A0D00A77E000ACC1D /* StringCF.cpp */,
-				B2B2645B0D00A77E000ACC1D /* StringImplCF.cpp */,
 			);
 			path = cf;
 			sourceTree = "<group>";
@@ -19197,8 +19230,6 @@
 				F5973DDF15CFB2030027F804 /* LocaleMac.mm */,
 				B2AFFC860D00A5DF0030074D /* mac-encodings.txt */,
 				B2AFFC870D00A5DF0030074D /* make-charset-table.pl */,
-				B2AFFC8A0D00A5DF0030074D /* StringImplMac.mm */,
-				B2AFFC8B0D00A5DF0030074D /* StringMac.mm */,
 				B2AFFC8C0D00A5DF0030074D /* TextBoundaries.mm */,
 				B2AFFC8D0D00A5DF0030074D /* TextBreakIteratorInternalICUMac.mm */,
 				B2AFFC8E0D00A5DF0030074D /* TextCodecMac.cpp */,
@@ -19306,6 +19337,8 @@
 				1C81BA040E97348300266E07 /* JavaScriptCallFrame.h */,
 				E157A8EE18185425009F821D /* JSCryptoAlgorithmBuilder.cpp */,
 				E157A8EF18185425009F821D /* JSCryptoAlgorithmBuilder.h */,
+				E125F83B182411E700D84CD9 /* JSCryptoOperationData.cpp */,
+				E125F83C182411E700D84CD9 /* JSCryptoOperationData.h */,
 				E1C657101815F9DD00256CDD /* JSCryptoAlgorithmDictionary.cpp */,
 				E1C657111815F9DD00256CDD /* JSCryptoAlgorithmDictionary.h */,
 				BCE438A1140C0DBF005E437E /* JSDictionary.cpp */,
@@ -19852,8 +19885,6 @@
 				516030090CC4245400C8AC25 /* posix */,
 				1A2E6E560CC551E0004A2062 /* sql */,
 				B2C3D9EC0D006C1D00EF6F26 /* text */,
-				BCFB2F74097A2E1A00BA703D /* Arena.cpp */,
-				BCFB2F75097A2E1A00BA703D /* Arena.h */,
 				49AE2D94134EE5F90072920A /* CalculationValue.cpp */,
 				49AE2D95134EE5F90072920A /* CalculationValue.h */,
 				CDEA76331460B462008B31F1 /* Clock.cpp */,
@@ -20141,9 +20172,15 @@
 		E172AF71180F343400FBADB9 /* mac */ = {
 			isa = PBXGroup;
 			children = (
+				E125F843182425C900D84CD9 /* CryptoAlgorithmAES_CBCMac.cpp */,
 				E125F8371822F1EB00D84CD9 /* CryptoAlgorithmHMACMac.cpp */,
 				E1BB84AC1822CA7400525043 /* CryptoAlgorithmRegistryMac.cpp */,
 				E125F82D1822CFFF00D84CD9 /* CryptoAlgorithmSHA1Mac.cpp */,
+				E19AC3DE1824DC6900349426 /* CryptoAlgorithmSHA224Mac.cpp */,
+				E19AC3DF1824DC6900349426 /* CryptoAlgorithmSHA256Mac.cpp */,
+				E19AC3E01824DC6900349426 /* CryptoAlgorithmSHA384Mac.cpp */,
+				E19AC3E11824DC6900349426 /* CryptoAlgorithmSHA512Mac.cpp */,
+				E19AC3F8182566F700349426 /* CryptoKeyMac.cpp */,
 			);
 			name = mac;
 			sourceTree = "<group>";
@@ -20151,10 +20188,20 @@
 		E172AF7C180F3B0D00FBADB9 /* algorithms */ = {
 			isa = PBXGroup;
 			children = (
+				E125F83F1824253A00D84CD9 /* CryptoAlgorithmAES_CBC.cpp */,
+				E125F8401824253A00D84CD9 /* CryptoAlgorithmAES_CBC.h */,
 				E125F82F1822F11B00D84CD9 /* CryptoAlgorithmHMAC.cpp */,
 				E125F8301822F11B00D84CD9 /* CryptoAlgorithmHMAC.h */,
 				E125F8291822CFEC00D84CD9 /* CryptoAlgorithmSHA1.cpp */,
 				E125F82A1822CFEC00D84CD9 /* CryptoAlgorithmSHA1.h */,
+				E19AC3E61824DC7900349426 /* CryptoAlgorithmSHA224.cpp */,
+				E19AC3E71824DC7900349426 /* CryptoAlgorithmSHA224.h */,
+				E19AC3E81824DC7900349426 /* CryptoAlgorithmSHA256.cpp */,
+				E19AC3E91824DC7900349426 /* CryptoAlgorithmSHA256.h */,
+				E19AC3EA1824DC7900349426 /* CryptoAlgorithmSHA384.cpp */,
+				E19AC3EB1824DC7900349426 /* CryptoAlgorithmSHA384.h */,
+				E19AC3EC1824DC7900349426 /* CryptoAlgorithmSHA512.cpp */,
+				E19AC3ED1824DC7900349426 /* CryptoAlgorithmSHA512.h */,
 			);
 			path = algorithms;
 			sourceTree = "<group>";
@@ -20162,6 +20209,8 @@
 		E19DA29D181995CE00088BC8 /* keys */ = {
 			isa = PBXGroup;
 			children = (
+				E125F84B1824289D00D84CD9 /* CryptoKeyAES.cpp */,
+				E125F84C1824289D00D84CD9 /* CryptoKeyAES.h */,
 				E125F8331822F18A00D84CD9 /* CryptoKeyHMAC.cpp */,
 				E125F8341822F18A00D84CD9 /* CryptoKeyHMAC.h */,
 			);
@@ -20171,6 +20220,8 @@
 		E1C657141816015F00256CDD /* parameters */ = {
 			isa = PBXGroup;
 			children = (
+				E125F8391824104800D84CD9 /* CryptoAlgorithmAesCbcParams.h */,
+				E19AC3F61824E5D100349426 /* CryptoAlgorithmAesKeyGenParams.h */,
 				E19DA29B18189ADD00088BC8 /* CryptoAlgorithmHmacKeyParams.h */,
 				E1C6571E1816E50300256CDD /* CryptoAlgorithmHmacParams.h */,
 			);
@@ -20715,8 +20766,7 @@
 				B2B1F7140D00CAA8004AEA64 /* PointerEventsHitRules.cpp */,
 				B2B1F7150D00CAA8004AEA64 /* PointerEventsHitRules.h */,
 				6C70A81417707C49009A446E /* RegionOversetState.h */,
-				BCEA481E097D93020094C9E4 /* RenderArena.cpp */,
-				BCEA481F097D93020094C9E4 /* RenderArena.h */,
+				B59ED23A18272679006D564C /* RenderAncestorIterator.h */,
 				BCEA4820097D93020094C9E4 /* RenderBlock.cpp */,
 				BCEA4821097D93020094C9E4 /* RenderBlock.h */,
 				BCFB45F417D8E49400444446 /* RenderBlockFlow.cpp */,
@@ -20729,6 +20779,7 @@
 				BCEB179B143379F50052EAE9 /* RenderBoxRegionInfo.h */,
 				BCEA4826097D93020094C9E4 /* RenderButton.cpp */,
 				BCEA4827097D93020094C9E4 /* RenderButton.h */,
+				B56579B41824D12A00E79F23 /* RenderChildIterator.h */,
 				BCE4413112F748E2009B84B8 /* RenderCombineText.cpp */,
 				BCE4413212F748E2009B84B8 /* RenderCombineText.h */,
 				9392F1430AD185FE00691BD4 /* RenderCounter.cpp */,
@@ -20774,6 +20825,7 @@
 				BCEA4838097D93020094C9E4 /* RenderInline.cpp */,
 				BCEA4839097D93020094C9E4 /* RenderInline.h */,
 				750D029211D0E7F300BD1B27 /* RenderInputSpeech.h */,
+				B595FF461824CEE300FF51CD /* RenderIterator.h */,
 				BCEA483A097D93020094C9E4 /* RenderLayer.cpp */,
 				BCEA483B097D93020094C9E4 /* RenderLayer.h */,
 				0F580CFC0F12DE9B0051D689 /* RenderLayerBacking.cpp */,
@@ -21697,6 +21749,7 @@
 				AAC08CF315F941FD00F1E188 /* AccessibilitySVGRoot.h in Headers */,
 				29A8122B0FBB9C1D00510293 /* AccessibilityTable.h in Headers */,
 				29A812320FBB9C1D00510293 /* AccessibilityTableCell.h in Headers */,
+				E19AC3F11824DC7900349426 /* CryptoAlgorithmSHA256.h in Headers */,
 				29A812410FBB9C1D00510293 /* AccessibilityTableColumn.h in Headers */,
 				29A8123F0FBB9C1D00510293 /* AccessibilityTableHeaderContainer.h in Headers */,
 				29A812310FBB9C1D00510293 /* AccessibilityTableRow.h in Headers */,
@@ -21729,7 +21782,6 @@
 				512DD8FD0D91E6AF000F89EE /* ArchiveFactory.h in Headers */,
 				512DD8FC0D91E6AF000F89EE /* ArchiveResource.h in Headers */,
 				512DD8F80D91E6AF000F89EE /* ArchiveResourceCollection.h in Headers */,
-				BCFB2F77097A2E1A00BA703D /* Arena.h in Headers */,
 				49B3760D15C6C6840059131D /* ArrayValue.h in Headers */,
 				FD5686CA13AC180200B69C68 /* AsyncAudioDecoder.h in Headers */,
 				E1CDE9221501916900862CC5 /* AsyncFileStream.h in Headers */,
@@ -22251,6 +22303,7 @@
 				2ED609BD1145B07100C8684E /* DOMFormData.h in Headers */,
 				BC1A37B6097C715F0019F3D8 /* DOMHTML.h in Headers */,
 				85DF81270AA7787200486AD7 /* DOMHTMLAnchorElement.h in Headers */,
+				B595FF471824CEE300FF51CD /* RenderIterator.h in Headers */,
 				85E7119B0AC5D5350053270F /* DOMHTMLAnchorElementInternal.h in Headers */,
 				854075690AD6CBF900620C57 /* DOMHTMLAppletElement.h in Headers */,
 				855247CF0AD850B80012093B /* DOMHTMLAppletElementInternal.h in Headers */,
@@ -22827,6 +22880,7 @@
 				A8EA7CB50A192B9C00A8EF5F /* HTMLParagraphElement.h in Headers */,
 				A871D4580A127CBC00B12A68 /* HTMLParamElement.h in Headers */,
 				BC588AF00BFA6CF900EE679E /* HTMLParserErrorCodes.h in Headers */,
+				B59ED23B18272679006D564C /* RenderAncestorIterator.h in Headers */,
 				93E2A307123E9DC0009FE12A /* HTMLParserIdioms.h in Headers */,
 				973F418A169B95FF0006BF60 /* HTMLParserOptions.h in Headers */,
 				449B19F50FA72ECE0015CA4A /* HTMLParserQuirks.h in Headers */,
@@ -22836,6 +22890,7 @@
 				A871D4560A127CBC00B12A68 /* HTMLPlugInElement.h in Headers */,
 				4415292E0E1AE8A000C4A2D0 /* HTMLPlugInImageElement.h in Headers */,
 				A8EA7CB00A192B9C00A8EF5F /* HTMLPreElement.h in Headers */,
+				B56579B51824D12A00E79F23 /* RenderChildIterator.h in Headers */,
 				977B3873122883E900B81FF8 /* HTMLPreloadScanner.h in Headers */,
 				A43BF5991149290A00C643CA /* HTMLProgressElement.h in Headers */,
 				A8CFF7A30A156978000A4234 /* HTMLQuoteElement.h in Headers */,
@@ -23079,6 +23134,7 @@
 				A9D248090D757E7D00FDF959 /* JSDOMMimeTypeArray.h in Headers */,
 				52CCA9E315E3F62C0053C77F /* JSDOMNamedFlowCollection.h in Headers */,
 				1ACE53E00A8D18810022947D /* JSDOMParser.h in Headers */,
+				E19AC3F31824DC7900349426 /* CryptoAlgorithmSHA384.h in Headers */,
 				FB91392A16AE4FC0001FE682 /* JSDOMPath.h in Headers */,
 				A9D247FF0D757E6900FDF959 /* JSDOMPlugin.h in Headers */,
 				A9D248010D757E6900FDF959 /* JSDOMPluginArray.h in Headers */,
@@ -23141,6 +23197,7 @@
 				D359D8BF129CA55C0006E5D2 /* JSHTMLDetailsElement.h in Headers */,
 				76808B50159DADFA002B5233 /* JSHTMLDialogElement.h in Headers */,
 				1A85B1E70A1B240500D8C87C /* JSHTMLDirectoryElement.h in Headers */,
+				E19AC3F71824E5D100349426 /* CryptoAlgorithmAesKeyGenParams.h in Headers */,
 				1A85B2B70A1B2AC700D8C87C /* JSHTMLDivElement.h in Headers */,
 				1A85B1E90A1B240500D8C87C /* JSHTMLDListElement.h in Headers */,
 				1A494E350A12358B00FDAFC1 /* JSHTMLDocument.h in Headers */,
@@ -23348,6 +23405,7 @@
 				B2CB92480B5BD984009BAA78 /* JSSVGElementInstanceList.h in Headers */,
 				8542A7990AE5C94400DF58DF /* JSSVGElementWrapperFactory.h in Headers */,
 				B2FA3D690AB75A6F000E5AC4 /* JSSVGEllipseElement.h in Headers */,
+				E19AC3EF1824DC7900349426 /* CryptoAlgorithmSHA224.h in Headers */,
 				078E092B17D14D1C00420AA1 /* RTCStatsRequestImpl.h in Headers */,
 				B266CD4E0C3AEC6500EB08D2 /* JSSVGException.h in Headers */,
 				B2FA3D6B0AB75A6F000E5AC4 /* JSSVGFEBlendElement.h in Headers */,
@@ -23743,6 +23801,7 @@
 				9B50B1DE17CD4C0F0087F63C /* FormNamedItem.h in Headers */,
 				1477E7770BF4134A00152872 /* PageCache.h in Headers */,
 				DAED203116F244480070EC0F /* PageConsole.h in Headers */,
+				E125F83E182411E700D84CD9 /* JSCryptoOperationData.h in Headers */,
 				F3820893147D35F90010BC06 /* PageConsoleAgent.h in Headers */,
 				F34742DD134362F000531BC2 /* PageDebuggerAgent.h in Headers */,
 				9302B0BF0D79F82C00C7EE83 /* PageGroup.h in Headers */,
@@ -23849,6 +23908,7 @@
 				514C76750CE923A1007EF3CD /* ProtectionSpace.h in Headers */,
 				51A052561058874000CC9E95 /* ProtectionSpaceHash.h in Headers */,
 				1AF8E11A1256592600230FF7 /* ProxyServer.h in Headers */,
+				E125F84E1824289D00D84CD9 /* CryptoKeyAES.h in Headers */,
 				FF945ECC161F7F3600971BC8 /* PseudoElement.h in Headers */,
 				0081FF0016B0A2D3008AAA7A /* PublicSuffix.h in Headers */,
 				10FB084B14E15C7E00A3DB98 /* PublicURLManager.h in Headers */,
@@ -23858,6 +23918,7 @@
 				379E371713736A6600B9E919 /* QuotedPrintable.h in Headers */,
 				5A574F29131DB96D00471B88 /* QuotesData.h in Headers */,
 				B22279720D00BF220071B782 /* RadialGradientAttributes.h in Headers */,
+				E125F8421824253A00D84CD9 /* CryptoAlgorithmAES_CBC.h in Headers */,
 				F55B3DCC1251F12D003EF269 /* RadioInputType.h in Headers */,
 				B658FFA61522EFAA00DD5595 /* RadioNodeList.h in Headers */,
 				93F1991808245E59001E9ABC /* Range.h in Headers */,
@@ -23878,7 +23939,6 @@
 				D06C0D8F0CFD11460065F43F /* RemoveFormatCommand.h in Headers */,
 				93309E05099E64920056E581 /* RemoveNodeCommand.h in Headers */,
 				93309E07099E64920056E581 /* RemoveNodePreservingChildrenCommand.h in Headers */,
-				BCEA485E097D93020094C9E4 /* RenderArena.h in Headers */,
 				BCEA4860097D93020094C9E4 /* RenderBlock.h in Headers */,
 				BCEA4862097D93020094C9E4 /* RenderBox.h in Headers */,
 				BC96DB430F3A880E00573CB3 /* RenderBoxModelObject.h in Headers */,
@@ -24710,6 +24770,7 @@
 				A7D20F6D107F438B00A80392 /* WebGLActiveInfo.h in Headers */,
 				07C59B5717F4AC15000FBCBB /* VideoStreamTrack.h in Headers */,
 				49C7B9C91042D32F0009D447 /* WebGLBuffer.h in Headers */,
+				E19AC3F51824DC7900349426 /* CryptoAlgorithmSHA512.h in Headers */,
 				7E66E23416D6EB6C00F7E7FF /* WebGLCompressedTextureATC.h in Headers */,
 				7E66E23417E6EB6C00F7E7FF /* WebGLCompressedTexturePVRTC.h in Headers */,
 				6E3FAE8F14733FDB00E42306 /* WebGLCompressedTextureS3TC.h in Headers */,
@@ -24823,6 +24884,7 @@
 				14476AA815DC4BB100305DB2 /* WritingMode.h in Headers */,
 				6565820209D1508D000E61D7 /* XLinkNames.h in Headers */,
 				00B9318813BA8DBA0035A948 /* XMLDocumentParser.h in Headers */,
+				E125F83A1824104800D84CD9 /* CryptoAlgorithmAesCbcParams.h in Headers */,
 				00B9318C13BA8DCC0035A948 /* XMLDocumentParserScope.h in Headers */,
 				59C28046138DC2410079B7E2 /* XMLErrors.h in Headers */,
 				BC772C470C4EB2C60083285F /* XMLHttpRequest.h in Headers */,
@@ -25243,11 +25305,9 @@
 				512DD8FA0D91E6AF000F89EE /* ArchiveFactory.cpp in Sources */,
 				512DD8FB0D91E6AF000F89EE /* ArchiveResource.cpp in Sources */,
 				512DD8F70D91E6AF000F89EE /* ArchiveResourceCollection.cpp in Sources */,
-				BCFB2F76097A2E1A00BA703D /* Arena.cpp in Sources */,
 				49B3760C15C6C6840059131D /* ArrayValue.cpp in Sources */,
 				FD5686C913AC180200B69C68 /* AsyncAudioDecoder.cpp in Sources */,
 				E1CDE92015018ED000862CC5 /* AsyncFileStream.cpp in Sources */,
-				1AA21250163F0DA80000E63F /* AtomicStringCF.cpp in Sources */,
 				A8C4A80E09D563270003AC8D /* Attr.cpp in Sources */,
 				FD629EA4154B47160006D026 /* AudioBasicInspectorNode.cpp in Sources */,
 				FD315FF612B0267600C1A359 /* AudioBasicProcessorNode.cpp in Sources */,
@@ -25394,6 +25454,7 @@
 				37C236101097EE7700EF9F72 /* ComplexTextController.cpp in Sources */,
 				37C238221098C84200EF9F72 /* ComplexTextControllerCoreText.mm in Sources */,
 				316FE1150E6E1DA700BF6088 /* CompositeAnimation.cpp in Sources */,
+				E19AC3E31824DC6900349426 /* CryptoAlgorithmSHA256Mac.cpp in Sources */,
 				93309DDC099E64920056E581 /* CompositeEditCommand.cpp in Sources */,
 				79F2F5A11091939A000D87CB /* CompositionEvent.cpp in Sources */,
 				FD31608E12B026F700C1A359 /* Cone.cpp in Sources */,
@@ -25641,6 +25702,7 @@
 				07C59B6817F784BA000FBCBB /* MediaSourceStates.cpp in Sources */,
 				859A9C4A0AA5E3BD00B694B2 /* DOMHTMLBodyElement.mm in Sources */,
 				85183B430AA6926100F19FA3 /* DOMHTMLBRElement.mm in Sources */,
+				E125F84D1824289D00D84CD9 /* CryptoKeyAES.cpp in Sources */,
 				85BA4CDE0AA6861B0088052D /* DOMHTMLButtonElement.mm in Sources */,
 				93F9B6570BA0F35E00854064 /* DOMHTMLCanvasElement.mm in Sources */,
 				85DF2F8F0AA3C88100AD64C5 /* DOMHTMLCollection.mm in Sources */,
@@ -26076,6 +26138,7 @@
 				A871DB300A150BD600B12A68 /* HTMLTableRowElement.cpp in Sources */,
 				93442CA00D2B336000338FF9 /* HTMLTableRowsCollection.cpp in Sources */,
 				A871DB260A150BD600B12A68 /* HTMLTableSectionElement.cpp in Sources */,
+				E19AC3F01824DC7900349426 /* CryptoAlgorithmSHA256.cpp in Sources */,
 				511EF2CB17F0FD3500E4FA16 /* JSIDBVersionChangeEvent.cpp in Sources */,
 				D66817FA166FE6D700FA07B4 /* HTMLTemplateElement.cpp in Sources */,
 				A81369D7097374F600D74463 /* HTMLTextAreaElement.cpp in Sources */,
@@ -26361,6 +26424,7 @@
 				511EF2C717F0FD3500E4FA16 /* JSIDBObjectStore.cpp in Sources */,
 				BC94D14E0C275C68006BC617 /* JSHistory.cpp in Sources */,
 				BCE7B1930D4E86960075A539 /* JSHistoryCustom.cpp in Sources */,
+				E125F83D182411E700D84CD9 /* JSCryptoOperationData.cpp in Sources */,
 				BC97E412109154FA0010D361 /* JSHTMLAllCollection.cpp in Sources */,
 				BC97E42C10915B060010D361 /* JSHTMLAllCollectionCustom.cpp in Sources */,
 				1A4A2DEF0A1B852A00C807F8 /* JSHTMLAnchorElement.cpp in Sources */,
@@ -26390,6 +26454,7 @@
 				CD336F6717FA0AC600DDDCD0 /* VideoTrackPrivateAVFObjC.cpp in Sources */,
 				938E65F709F0985D008A48EC /* JSHTMLElementWrapperFactory.cpp in Sources */,
 				BC6D44EC0C07F2ED0072D2C9 /* JSHTMLEmbedElement.cpp in Sources */,
+				E19AC3EE1824DC7900349426 /* CryptoAlgorithmSHA224.cpp in Sources */,
 				BC6D44BE0C07EFB60072D2C9 /* JSHTMLEmbedElementCustom.cpp in Sources */,
 				1AE2AA260A1CDAB400B42B25 /* JSHTMLFieldSetElement.cpp in Sources */,
 				1AE2AA280A1CDAB400B42B25 /* JSHTMLFontElement.cpp in Sources */,
@@ -26479,6 +26544,7 @@
 				CD27F6E51457685A0078207D /* JSMediaController.cpp in Sources */,
 				FD23A12513F5FA5900F67001 /* JSMediaElementAudioSourceNode.cpp in Sources */,
 				E44614180CD6826900FADA75 /* JSMediaError.cpp in Sources */,
+				E19AC3F41824DC7900349426 /* CryptoAlgorithmSHA512.cpp in Sources */,
 				CDA98DA31601464100FEA3B1 /* JSMediaKeyError.cpp in Sources */,
 				CDB859FA160D494900E5B07F /* JSMediaKeyEvent.cpp in Sources */,
 				CDA98DDF16026A3700FEA3B1 /* JSMediaKeyMessageEvent.cpp in Sources */,
@@ -26948,7 +27014,9 @@
 				FDB1700514A2BAB200A2B5D9 /* MultiChannelResampler.cpp in Sources */,
 				85031B490A44EFC700F992E0 /* MutationEvent.cpp in Sources */,
 				C6F0900E14327B6100685849 /* MutationObserver.cpp in Sources */,
+				E19AC3E51824DC6900349426 /* CryptoAlgorithmSHA512Mac.cpp in Sources */,
 				D6E528A3149A926D00EFE1F3 /* MutationObserverInterestGroup.cpp in Sources */,
+				E19AC3F9182566F700349426 /* CryptoKeyMac.cpp in Sources */,
 				D6E276AF14637455001D280A /* MutationObserverRegistration.cpp in Sources */,
 				C6F08FBC1430FE8F00685849 /* MutationRecord.cpp in Sources */,
 				52B6C9C515E3F4DF00690B05 /* NamedFlowCollection.cpp in Sources */,
@@ -27104,7 +27172,6 @@
 				D06C0D900CFD11460065F43F /* RemoveFormatCommand.cpp in Sources */,
 				93309E04099E64920056E581 /* RemoveNodeCommand.cpp in Sources */,
 				93309E06099E64920056E581 /* RemoveNodePreservingChildrenCommand.cpp in Sources */,
-				BCEA485D097D93020094C9E4 /* RenderArena.cpp in Sources */,
 				BCEA485F097D93020094C9E4 /* RenderBlock.cpp in Sources */,
 				BCEA4852097D93020094C9E4 /* RenderBlockLineLayout.cpp in Sources */,
 				E157A8E01817331C009F821D /* JSCryptoKey.cpp in Sources */,
@@ -27316,6 +27383,7 @@
 				976F36EA14686225005E93B4 /* SecurityContext.cpp in Sources */,
 				BCD0E0FA0E972C3500265DEA /* SecurityOrigin.cpp in Sources */,
 				974D2DA4146A535D00D51F8B /* SecurityPolicy.cpp in Sources */,
+				E19AC3E21824DC6900349426 /* CryptoAlgorithmSHA224Mac.cpp in Sources */,
 				371F4FFD0D25E7F300ECE0D5 /* SegmentedFontData.cpp in Sources */,
 				B2C3DA2E0D006C1D00EF6F26 /* SegmentedString.cpp in Sources */,
 				E44B4BB3141650D7002B1D8B /* SelectorChecker.cpp in Sources */,
@@ -27420,10 +27488,6 @@
 				3AB02D2B12D4F91600FBB694 /* StorageTracker.cpp in Sources */,
 				8102C5881325BB1100DDE67A /* StringCallback.cpp in Sources */,
 				E4D988B617BFEB210084FB88 /* TextNodeTraversal.cpp in Sources */,
-				B2B2645C0D00A77E000ACC1D /* StringCF.cpp in Sources */,
-				B2B2645D0D00A77E000ACC1D /* StringImplCF.cpp in Sources */,
-				B2AFFC950D00A5DF0030074D /* StringImplMac.mm in Sources */,
-				B2AFFC960D00A5DF0030074D /* StringMac.mm in Sources */,
 				B23540F20D00782E002382FA /* StringTruncator.cpp in Sources */,
 				51D719B9181106E00016DC51 /* IDBAny.cpp in Sources */,
 				BC5EB6A20E81DC4F00B25965 /* StyleBackgroundData.cpp in Sources */,
@@ -27512,6 +27576,7 @@
 				B22279A70D00BF220071B782 /* SVGCursorElement.cpp in Sources */,
 				B22279AD0D00BF220071B782 /* SVGDefsElement.cpp in Sources */,
 				B22279B00D00BF220071B782 /* SVGDescElement.cpp in Sources */,
+				E19AC3F21824DC7900349426 /* CryptoAlgorithmSHA384.cpp in Sources */,
 				CDE3A85717F6020400C5BE20 /* AudioTrackPrivateAVFObjC.mm in Sources */,
 				B22279B30D00BF220071B782 /* SVGDocument.cpp in Sources */,
 				B28C6A270D00C44800334AA4 /* SVGDocumentExtensions.cpp in Sources */,
@@ -27683,6 +27748,7 @@
 				97BC84831236FD93000C6161 /* TextDocumentParser.cpp in Sources */,
 				B2C3DA460D006C1D00EF6F26 /* TextEncoding.cpp in Sources */,
 				C105DA620F3AA68F001DD44F /* TextEncodingDetectorICU.cpp in Sources */,
+				E125F8411824253A00D84CD9 /* CryptoAlgorithmAES_CBC.cpp in Sources */,
 				B2C3DA480D006C1D00EF6F26 /* TextEncodingRegistry.cpp in Sources */,
 				933A142E0B7D188600A53FFD /* TextEvent.cpp in Sources */,
 				F55B3DD71251F12D003EF269 /* TextFieldInputType.cpp in Sources */,
@@ -27755,6 +27821,7 @@
 				FD3160AE12B026F700C1A359 /* VectorMath.cpp in Sources */,
 				BE88E0DE1715D2A200658D98 /* VideoTrack.cpp in Sources */,
 				BE88E0E11715D2A200658D98 /* VideoTrackList.cpp in Sources */,
+				E125F845182425C900D84CD9 /* CryptoAlgorithmAES_CBCMac.cpp in Sources */,
 				CEF418CE1179678C009D112C /* ViewportArguments.cpp in Sources */,
 				3FFFF9AD159D9B060020BBD5 /* ViewportStyleResolver.cpp in Sources */,
 				93309E1F099E64920056E581 /* VisiblePosition.cpp in Sources */,
@@ -27891,6 +27958,7 @@
 				59C28045138DC2410079B7E2 /* XMLErrors.cpp in Sources */,
 				BC772C460C4EB2C60083285F /* XMLHttpRequest.cpp in Sources */,
 				978D07CE145A10370096908D /* XMLHttpRequestException.cpp in Sources */,
+				E19AC3E41824DC6900349426 /* CryptoAlgorithmSHA384Mac.cpp in Sources */,
 				A136A00C1134DBD200CC8D50 /* XMLHttpRequestProgressEventThrottle.cpp in Sources */,
 				BCDFD48F0E305290009D10AD /* XMLHttpRequestUpload.cpp in Sources */,
 				A833C80C0A2CF25600D57664 /* XMLNames.cpp in Sources */,

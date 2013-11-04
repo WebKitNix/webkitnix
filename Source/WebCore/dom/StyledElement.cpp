@@ -24,18 +24,12 @@
 #include "config.h"
 #include "StyledElement.h"
 
-#include "Attribute.h"
 #include "CSSImageValue.h"
 #include "CSSParser.h"
-#include "CSSPropertyNames.h"
 #include "CSSStyleSheet.h"
-#include "CSSValueKeywords.h"
 #include "CSSValuePool.h"
-#include "Color.h"
 #include "ContentSecurityPolicy.h"
 #include "DOMTokenList.h"
-#include "Document.h"
-#include "HTMLNames.h"
 #include "HTMLParserIdioms.h"
 #include "InspectorInstrumentation.h"
 #include "PropertySetCSSStyleDeclaration.h"
@@ -43,7 +37,6 @@
 #include "StylePropertySet.h"
 #include "StyleResolver.h"
 #include <wtf/HashFunctions.h>
-#include <wtf/text/TextPosition.h>
 
 namespace WebCore {
 
@@ -194,7 +187,7 @@ inline void StyledElement::setInlineStyleFromString(const AtomicString& newStyle
         inlineStyle = CSSParser::parseInlineStyleDeclaration(newStyleString, this);
     else {
         ASSERT(inlineStyle->isMutable());
-        static_pointer_cast<MutableStylePropertySet>(inlineStyle)->parseDeclaration(newStyleString, document().elementSheet().contents());
+        static_pointer_cast<MutableStylePropertySet>(inlineStyle)->parseDeclaration(newStyleString, &document().elementSheet().contents());
     }
 }
 
@@ -248,7 +241,7 @@ bool StyledElement::setInlineStyleProperty(CSSPropertyID propertyID, double valu
 
 bool StyledElement::setInlineStyleProperty(CSSPropertyID propertyID, const String& value, bool important)
 {
-    bool changes = ensureMutableInlineStyle().setProperty(propertyID, value, important, document().elementSheet().contents());
+    bool changes = ensureMutableInlineStyle().setProperty(propertyID, value, important, &document().elementSheet().contents());
     if (changes)
         inlineStyleChanged();
     return changes;
@@ -275,7 +268,7 @@ void StyledElement::removeAllInlineStyleProperties()
 void StyledElement::addSubresourceAttributeURLs(ListHashSet<URL>& urls) const
 {
     if (const StylePropertySet* inlineStyle = elementData() ? elementData()->inlineStyle() : 0)
-        inlineStyle->addSubresourceStyleURLs(urls, document().elementSheet().contents());
+        inlineStyle->addSubresourceStyleURLs(urls, &document().elementSheet().contents());
 }
 
 static inline bool attributeNameSort(const pair<AtomicStringImpl*, AtomicString>& p1, const pair<AtomicStringImpl*, AtomicString>& p2)
@@ -383,7 +376,7 @@ void StyledElement::addPropertyToPresentationAttributeStyle(MutableStyleProperty
     
 void StyledElement::addPropertyToPresentationAttributeStyle(MutableStylePropertySet* style, CSSPropertyID propertyID, const String& value)
 {
-    style->setProperty(propertyID, value, false, document().elementSheet().contents());
+    style->setProperty(propertyID, value, false, &document().elementSheet().contents());
 }
 
 }

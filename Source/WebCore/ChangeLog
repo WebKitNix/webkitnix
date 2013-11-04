@@ -1,3 +1,1391 @@
+2013-11-04  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        [css shapes] Fix support for shape-outside on a float with padding
+        https://bugs.webkit.org/show_bug.cgi?id=123590
+
+        Reviewed by Alexandru Chiculita.
+
+        The line top was being improperly converted to the coordinates of the
+        shape, causing the shape to be positioned incorrectly when the float
+        had padding. This fixes that problem.
+
+        No new tests, covered by updates to existing ones.
+
+        * rendering/shapes/ShapeOutsideInfo.cpp:
+        (WebCore::ShapeOutsideInfo::updateDeltasForContainingBlockLine):
+
+2013-11-04  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement generateKey for HMAC and AES-CBC
+        https://bugs.webkit.org/show_bug.cgi?id=123669
+
+        Reviewed by Dan Bernstein.
+
+        Tests: crypto/subtle/aes-cbc-generate-key.html
+               crypto/subtle/hmac-generate-key.html
+
+        * WebCore.xcodeproj/project.pbxproj: Added new files.
+
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::createAesKeyGenParams): Added bindings for AesKeyGenParams.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForGenerateKey): Handle
+        algorithms that generate AES and HMAC keys.
+
+        * bindings/js/JSSubtleCryptoCustom.cpp: (WebCore::JSSubtleCrypto::generateKey): Added.
+
+        * crypto/CryptoAlgorithmAesKeyGenParams.h: Added.
+
+        * crypto/CryptoKey.cpp: (WebCore::CryptoKey::randomData):
+        * crypto/CryptoKey.h:
+        * crypto/CryptoKeyMac.cpp: Added
+        Expose a function that produces random data for symmetric crypto keys. Cross-platform
+        implementation uses ARC4 code from WTF, while Mac uses a system function that
+        provides a FIPS validated random number generator.
+
+        * crypto/CryptoKeyAES.cpp: (WebCore::CryptoKeyAES::generate):
+        * crypto/CryptoKeyAES.h:
+        Added a function that creates AES keys.
+
+        * crypto/SubtleCrypto.idl: Added generateKey.
+
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::generateKey): Added.
+
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp:
+        (WebCore::CryptoAlgorithmHMAC::generateKey): Added.
+
+        * crypto/keys/CryptoKeyHMAC.cpp: (WebCore::CryptoKeyHMAC::generate):
+        * crypto/keys/CryptoKeyHMAC.h:
+        Added a function that creates HMAC keys.
+
+        * crypto/mac/CryptoAlgorithmAES_CBCMac.cpp: Removed generateKey stub, the implementation
+        ended up in cross-platform file.
+
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp: Ditto.
+
+2013-11-04  Daniel Bates  <dabates@apple.com>
+
+        Revert SetCGFontRenderingMode() build fix for Chromium Mac
+        https://bugs.webkit.org/show_bug.cgi?id=123633
+
+        Reviewed by Darin Adler.
+
+        Reverts <http://trac.webkit.org/changeset/134380>, which
+        was a Chromium Mac build fix for <http://trac.webkit.org/changeset/134348>
+        (https://bugs.webkit.org/show_bug.cgi?id=101787). Chromium doesn't
+        build against top-of-tree WebKit.
+
+        * platform/graphics/mac/FontMac.mm:
+        (WebCore::Font::drawGlyphs):
+        * platform/mac/WebCoreSystemInterface.h:
+        * platform/mac/WebCoreSystemInterface.mm:
+
+2013-11-04  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r158526.
+        http://trac.webkit.org/changeset/158526
+        https://bugs.webkit.org/show_bug.cgi?id=123744
+
+        it broke the build (Requested by jessieberlin on #webkit).
+
+        * WebCore.xcodeproj/project.pbxproj:
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::createAesCbcParams):
+        (WebCore::createHmacParams):
+        (WebCore::createHmacKeyParams):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForGenerateKey):
+        * bindings/js/JSSubtleCryptoCustom.cpp:
+        * crypto/CryptoAlgorithmAesKeyGenParams.h: Removed.
+        * crypto/CryptoKey.cpp:
+        * crypto/CryptoKey.h:
+        * crypto/CryptoKeyAES.cpp:
+        * crypto/CryptoKeyAES.h:
+        * crypto/CryptoKeyMac.cpp: Removed.
+        * crypto/SubtleCrypto.idl:
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp:
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp:
+        * crypto/keys/CryptoKeyHMAC.cpp:
+        * crypto/keys/CryptoKeyHMAC.h:
+        * crypto/mac/CryptoAlgorithmAES_CBCMac.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::generateKey):
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp:
+        (WebCore::CryptoAlgorithmHMAC::generateKey):
+
+2013-11-04  Przemyslaw Szymanski  <p.szymanski3@samsung.com>
+
+        [Texmap] Remove redundant calls in CoordinatedGraphicsScene
+        https://bugs.webkit.org/show_bug.cgi?id=123737
+
+        Reviewed by Noam Rosenthal.
+
+        Removing unused code left after few refactoring patches.
+
+        No new tests. Covered by existing ones.
+
+        * platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp:
+        (WebCore::CoordinatedGraphicsScene::paintToCurrentGLContext):
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        CSSPrimitiveValue color constructors should return PassRef.
+        <https://webkit.org/b/123728>
+
+        Make CSSPrimitiveValue::createColor() and the corresponding
+        CSSValuePool helper functions return PassRef<CSSPrimitiveValue>.
+
+        Also made CSSValuePool slightly less stupid when hitting the upper
+        size limit on the color value cache: instead of throwing out cache
+        and rebuilding it from scratch, just remove one value at random.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        Some more RenderChildIterator deployment.
+        <https://webkit.org/b/123735>
+
+        Convert another handful of loops to use childrenOfType<RenderFoo>
+        iterators, mostly for skipping over uninteresting text renderers.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        LabelsNodeList always is always rooted at a LabelableElement.
+        <https://webkit.org/b/123730>
+
+        Tighten up LabelsNodeList by enforcing that it's only rooted to
+        a LabelableElement. Also marked the class FINAL and made its
+        create() helper return PassRef.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        REGRESSION: RenderStyle is leaked when not creating renderer for display:none
+        <https://webkit.org/b/123726>
+
+        Explicitly drop the RenderStyle reference in RenderElement::createFor
+        if we decide to not create any renderer.
+
+        Reviewed by Antti Koivisto.
+
+        Test: fast/css/renderstyle-leak-with-display-none.html
+
+        * rendering/RenderElement.cpp:
+        (WebCore::RenderElement::createFor):
+
+2013-11-04  Santosh Mahto  <santosh.ma@samsung.com>
+
+        [webcore/dom] Remove extra header includes from cpp files.
+        https://bugs.webkit.org/show_bug.cgi?id=123720
+
+        Reviewed by Andreas Kling.
+
+        Removing redundant headers from dom related cpp files.
+
+        * dom/Attr.cpp:
+        * dom/CharacterData.cpp:
+        * dom/ChildListMutationScope.cpp:
+        * dom/ChildNodeList.cpp:
+        * dom/ContainerNode.cpp:
+        * dom/ContainerNodeAlgorithms.cpp:
+        * dom/DOMNamedFlowCollection.cpp:
+        * dom/DatasetDOMStringMap.cpp:
+        * dom/Document.cpp:
+        * dom/DocumentEventQueue.cpp:
+        * dom/DocumentMarkerController.cpp:
+        * dom/DocumentOrderedMap.cpp:
+        * dom/DocumentStyleSheetCollection.cpp:
+        * dom/Element.cpp:
+        * dom/ElementRareData.cpp:
+        * dom/Event.cpp:
+        * dom/EventContext.cpp:
+        * dom/EventDispatcher.cpp:
+        * dom/EventTarget.cpp:
+        * dom/ExceptionBase.cpp:
+        * dom/FocusEvent.cpp:
+        * dom/InlineStyleSheetOwner.cpp:
+        * dom/KeyboardEvent.cpp:
+        * dom/LiveNodeList.cpp:
+        * dom/MessageEvent.cpp:
+        * dom/MessagePort.cpp:
+        * dom/MouseRelatedEvent.cpp:
+        * dom/MutationEvent.cpp:
+        * dom/MutationObserver.cpp:
+        * dom/MutationObserverInterestGroup.cpp:
+        * dom/MutationObserverRegistration.cpp:
+        * dom/MutationRecord.cpp:
+        * dom/NameNodeList.cpp:
+        * dom/NamedFlowCollection.cpp:
+        * dom/NamedNodeMap.cpp:
+        * dom/Node.cpp:
+        * dom/NodeIterator.cpp:
+        * dom/NodeTraversal.cpp:
+        * dom/PositionIterator.cpp:
+        * dom/ProcessingInstruction.cpp:
+        * dom/Range.cpp:
+        * dom/RegisteredEventListener.cpp:
+        * dom/ScopedEventQueue.cpp:
+        * dom/ScriptElement.cpp:
+        * dom/ScriptRunner.cpp:
+        * dom/SelectorQuery.cpp:
+        * dom/ShadowRoot.cpp:
+        * dom/StyledElement.cpp:
+        * dom/TagNodeList.cpp:
+        * dom/Text.cpp:
+        * dom/TextEvent.cpp:
+        * dom/TouchEvent.cpp:
+        * dom/TreeScope.cpp:
+        * dom/TreeScopeAdopter.cpp:
+        * dom/TreeWalker.cpp:
+        * dom/UIEvent.cpp:
+        * dom/UserActionElementSet.cpp:
+        * dom/UserTypingGestureIndicator.cpp:
+        * dom/VisitedLinkState.cpp:
+        * dom/WebKitNamedFlow.cpp:
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        HTMLAllCollection is always rooted at a Document.
+        <https://webkit.org/b/123724>
+
+        Tighten up HTMLAllCollection by making the constructor take a
+        Document& instead of a ContainerNode&. Drive-by application of
+        FINAL and PassRef also happened.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        Make more CSSValue subclass constructors return PassRef.
+        <https://webkit.org/b/123731>
+
+        Make the constructor helpers for the following classes return
+        PassRef instead of PassRefPtr:
+
+            - CSSFontValue
+            - CSSImageSetValue
+            - CSSUnicodeRangeValue
+            - WebKitCSSArrayFunctionValue
+            - WebKitCSSFilterValue
+            - WebKitCSSMatFunctionValue
+            - WebKitCSSMixFunctionValue
+            - WebKitCSSShaderValue
+            - WebKitCSSTransformValue
+
+        Reviewed by Antti Koivisto.
+
+2013-11-04  Jozsef Berta  <jberta@inf.u-szeged.hu>
+
+        Buildfix after r158182 for GCC 4.6
+        https://bugs.webkit.org/show_bug.cgi?id=123442
+
+        Reviewed by Csaba Osztrogonác.
+
+        Added explicit "friend class", because  GCC 4.6 doesn't support extended friend declaration (c++11)
+
+        * dom/ScopedEventQueue.h:
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        HTMLTableRowsCollection is always rooted at a HTMLTableElement.
+        <https://webkit.org/b/123721>
+
+        Tighten up HTMLTableRowsCollection by making the create() helper
+        take a HTMLTableElement& and adding a HTMLSelectElement& getter.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        HTMLNameCollection and friends are always rooted at a Document.
+        <https://webkit.org/b/123722>
+
+        Tighten WindowNameCollection and DocumentNameCollection by making
+        their constructors take a Document&, and add a slightly better
+        document() than the one we inherit from LiveNodeListBase.
+
+        Also marked the classes FINAL and made create() helpers return
+        PassRef instead of PassRefPtr.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        Add an ancestor renderer iterator.
+        <https://webkit.org/b/123718>
+
+        Add ancestor iterators for renderers, analogous to element ancestor
+        iterators. They walk the chain of parent renderers, stopping at each
+        ancestor of a certain type.
+
+        Just like child renderer iterators, this requires isRendererOfType()
+        to be implemented for the targeted renderer class.
+
+        You use them like this:
+
+        auto frameSets = ancestorsOfType<RenderFrameSet>(*this);
+        for (auto frameSet = frameSets.begin(), end = frameSets.end(); frameSet != end; ++frameSet)
+            frameSet->thisOrThat();
+
+        To complete the patch, I put them to use in a couple of random places.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-04  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Use auto keyword to clean-up for loops
+        https://bugs.webkit.org/show_bug.cgi?id=123699
+
+        Reviewed by Anders Carlsson.
+
+        Start using auto keyword for loops.
+        Also, since region breaks (forced breaks) can be added only on boxes,
+        i changed RenderFlowThread::addForcedRegionBreak to use a RenderBox* instead of RenderObject*.
+
+        No change in functionality, no new tests.
+
+        * dom/WebKitNamedFlow.cpp:
+        (WebCore::WebKitNamedFlow::firstEmptyRegionIndex):
+        * rendering/FlowThreadController.cpp:
+        (WebCore::FlowThreadController::ensureRenderFlowThreadWithName):
+        (WebCore::FlowThreadController::styleDidChange):
+        (WebCore::FlowThreadController::layoutRenderNamedFlowThreads):
+        (WebCore::FlowThreadController::updateFlowThreadsChainIfNecessary):
+        (WebCore::FlowThreadController::updateFlowThreadsNeedingLayout):
+        (WebCore::FlowThreadController::updateFlowThreadsNeedingTwoStepLayout):
+        (WebCore::FlowThreadController::resetFlowThreadsWithAutoHeightRegions):
+        (WebCore::FlowThreadController::updateFlowThreadsIntoConstrainedPhase):
+        (WebCore::FlowThreadController::updateFlowThreadsIntoOverflowPhase):
+        (WebCore::FlowThreadController::updateFlowThreadsIntoMeasureContentPhase):
+        (WebCore::FlowThreadController::updateFlowThreadsIntoFinalPhase):
+        (WebCore::FlowThreadController::updateRenderFlowThreadLayersIfNeeded):
+        (WebCore::FlowThreadController::collectFixedPositionedLayers):
+        (WebCore::FlowThreadController::isAutoLogicalHeightRegionsCountConsistent):
+        * rendering/RenderFlowThread.cpp:
+        (WebCore::RenderFlowThread::validateRegions):
+        (WebCore::RenderFlowThread::hasCompositingRegionDescendant):
+        (WebCore::RenderFlowThread::getLayerListForRegion):
+        (WebCore::RenderFlowThread::updateLayerToRegionMappings):
+        (WebCore::RenderFlowThread::updateLogicalWidth):
+        (WebCore::RenderFlowThread::computeLogicalHeight):
+        (WebCore::RenderFlowThread::repaintRectangleInRegions):
+        (WebCore::RenderFlowThread::removeRenderBoxRegionInfo):
+        (WebCore::RenderFlowThread::logicalWidthChangedInRegionsForBlock):
+        (WebCore::RenderFlowThread::clearRenderObjectCustomStyle):
+        (WebCore::RenderFlowThread::clearRenderBoxRegionInfoAndCustomStyle):
+        (WebCore::RenderFlowThread::setRegionRangeForBox):
+        (WebCore::RenderFlowThread::getRegionRangeForBox):
+        (WebCore::RenderFlowThread::regionInRange):
+        (WebCore::RenderFlowThread::checkRegionsWithStyling):
+        (WebCore::RenderFlowThread::objectInFlowRegion):
+        (WebCore::RenderFlowThread::isAutoLogicalHeightRegionsCountConsistent):
+        (WebCore::RenderFlowThread::initializeRegionsComputedAutoHeight):
+        (WebCore::RenderFlowThread::markAutoLogicalHeightRegionsForLayout):
+        (WebCore::RenderFlowThread::markRegionsForOverflowLayoutIfNeeded):
+        (WebCore::RenderFlowThread::updateRegionsFlowThreadPortionRect):
+        (WebCore::RenderFlowThread::addForcedRegionBreak):
+        (WebCore::RenderFlowThread::collectLayerFragments):
+        (WebCore::RenderFlowThread::fragmentsBoundingBox):
+        (WebCore::RenderFlowThread::addRegionsVisualEffectOverflow):
+        (WebCore::RenderFlowThread::addRegionsVisualOverflowFromTheme):
+        (WebCore::RenderFlowThread::addRegionsOverflowFromChild):
+        (WebCore::RenderFlowThread::addRegionsLayoutOverflow):
+        (WebCore::RenderFlowThread::clearRegionsOverflow):
+        * rendering/RenderFlowThread.h:
+        * rendering/RenderNamedFlowThread.cpp:
+        (WebCore::RenderNamedFlowThread::nextRendererForNode):
+        (WebCore::RenderNamedFlowThread::previousRendererForNode):
+        (WebCore::RenderNamedFlowThread::dependsOn):
+        (WebCore::addRegionToList):
+        (WebCore::RenderNamedFlowThread::computeOversetStateForRegions):
+        (WebCore::RenderNamedFlowThread::checkInvalidRegions):
+        (WebCore::RenderNamedFlowThread::pushDependencies):
+        * rendering/RenderRegion.cpp:
+        (WebCore::RenderRegion::setRegionObjectsRegionStyle):
+        (WebCore::RenderRegion::restoreRegionObjectsOriginalStyle):
+        (WebCore::RenderRegion::computeChildrenStyleInRegion):
+
+2013-11-03  Zan Dobersek  <zdobersek@igalia.com>
+
+        PingLoader objects unnecessarily pass through OwnPtr
+        https://bugs.webkit.org/show_bug.cgi?id=122942
+
+        Reviewed by Darin Adler.
+
+        There's no need to store new PingLoader objects into an OwnPtr just to leak them out a few lines later
+        into an unused variable. New objects are created through a new helper method and then left unmanaged as
+        they're guaranteed to destroy themselves when they receive a response of any kind.
+
+        * loader/PingLoader.cpp:
+        (WebCore::PingLoader::loadImage): Call the new createPingLoader method to spawn the PingLoader.
+        (WebCore::PingLoader::sendPing): Ditto.
+        (WebCore::PingLoader::sendViolationReport): Ditto.
+        (WebCore::PingLoader::createPingLoader): A helper method that creates a new PingLoader object
+        * loader/PingLoader.h: Declare the new PingLoader::createPingLoader method.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        HTMLOptionsCollection is always rooted at a HTMLSelectElement.
+        <https://webkit.org/b/123719>
+
+        Tighten up HTMLOptionsCollection by making the constructor take
+        a HTMLSelectElement& and adding a HTMLSelectElement& getter instead
+        of casting all over the place. Removed now-pointless assertions.
+
+        Reviewed by Sam Weinig.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        RenderTextFragment: Tighten first-letter logic.
+        <https://webkit.org/b/123714>
+
+        Reviewed by Antti Koivisto.
+
+        * editing/TextIterator.cpp:
+        (WebCore::firstRenderTextInFirstLetter):
+
+            Use iterator helper to find first RenderText child.
+
+        (WebCore::TextIterator::handleTextNodeFirstLetter):
+
+            Tightening through type inference.
+
+        * rendering/RenderBlock.cpp:
+        (WebCore::RenderBlock::updateFirstLetterStyle):
+        (WebCore::RenderBlock::createFirstLetterRenderer):
+        * rendering/RenderTextFragment.h:
+
+            The first letter renderer is always a RenderBoxModelObject,
+            so make the code deal in that instead of RenderObject.
+
+        * rendering/RenderChildIterator.h:
+        (WebCore::RenderChildIteratorAdapter::first):
+        (WebCore::RenderChildIteratorAdapter::last):
+
+            Remove excess ampersands that were keeping this from building.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        CSSPrimitiveValue identifier constructors should return PassRef.
+        <https://webkit.org/b/123712>
+
+        Make CSSPrimitiveValue::createIdentifier() and the corresponding
+        CSSValuePool helper return PassRef<CSSPrimitiveValue>.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Use RenderChildIterator in two more loops.
+        <https://webkit.org/b/123713>
+
+        Switch two more renderer child traversal loops to childrenOfType.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        CSSShadowValue constructor should return PassRef.
+        <https://webkit.org/b/123711>
+
+        Make CSSShadowValue::create() return a PassRef since it will never
+        return null.
+
+        Reviewed by Sam Weinig.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        CSSLineBoxContainValue constructor should return PassRef.
+        <https://webkit.org/b/123710>
+
+        Make CSSLineBoxContainValue::create() return a PassRef since it
+        will never return null.
+
+        Reviewed by Sam Weinig.
+
+2013-11-03  Antti Koivisto  <antti@apple.com>
+
+        LiveNodeLists should have non-null ContainerNode as root
+        https://bugs.webkit.org/show_bug.cgi?id=123709
+
+        Reviewed by Andreas Kling.
+
+        After moving ChildNodeList off from LiveNodeList the root is now always at least a ContainerNode.
+
+        * dom/ContainerNode.cpp:
+        (WebCore::ContainerNode::getElementsByTagName):
+        (WebCore::ContainerNode::getElementsByTagNameNS):
+        (WebCore::ContainerNode::getElementsByName):
+        (WebCore::ContainerNode::getElementsByClassName):
+        (WebCore::ContainerNode::radioNodeList):
+        
+            Also these move from Node to ContainerNode to make tighter typing work.
+
+2013-11-03  Antti Koivisto  <antti@apple.com>
+
+        Switch createContextualFragment to element iterator
+        https://bugs.webkit.org/show_bug.cgi?id=123704
+
+        Reviewed by Andreas Kling.
+
+        * editing/FrameSelection.cpp:
+        (WebCore::scanForForm):
+        
+            Use type helpers instead of hasTagName
+
+        * editing/markup.cpp:
+        (WebCore::collectElementsToRemoveFromFragment):
+        (WebCore::removeElementFromFragmentPreservingChildren):
+        (WebCore::createContextualFragment):
+        * html/HTMLFormElement.cpp:
+        (WebCore::HTMLFormElement::formElementIndex):
+        
+            Use type helpers instead of hasTagName
+
+        * html/HTMLTagNames.in:
+        
+            Generate type helpers for <html>.
+
+2013-11-03  Antti Koivisto  <antti@apple.com>
+
+        ChildNodeList should not be LiveNodeList
+        https://bugs.webkit.org/show_bug.cgi?id=123708
+
+        Reviewed by Sam Weinig.
+
+        ChildNodeList is a poor fit to be a LiveNodeList. It is heavily special-cased. It is also
+        the only subtype that returns non-Elements thus preventing tightening.
+
+        * bindings/js/JSNodeListCustom.cpp:
+        (WebCore::JSNodeListOwner::isReachableFromOpaqueRoots):
+        
+            Support new types.
+
+        * dom/ChildNodeList.cpp:
+        (WebCore::EmptyNodeList::~EmptyNodeList):
+        (WebCore::ChildNodeList::ChildNodeList):
+        (WebCore::ChildNodeList::~ChildNodeList):
+        (WebCore::ChildNodeList::length):
+        (WebCore::childFromFirst):
+        (WebCore::childFromLast):
+        (WebCore::ChildNodeList::nodeBeforeCached):
+        (WebCore::ChildNodeList::nodeAfterCached):
+        (WebCore::ChildNodeList::item):
+        (WebCore::ChildNodeList::namedItem):
+        (WebCore::ChildNodeList::invalidateCache):
+        
+            Implement the same caching optimizations as LiveNodeList with tighter, less generic code.
+
+        * dom/ChildNodeList.h:
+        
+            Inherit ChildNodeList directly from NodeList.
+
+            Add new EmptyNodeList type. This is only ever used if NodeList is requested for a non-container node.
+            It allows tighter typing in ChildNodeList.
+
+        * dom/LiveNodeList.cpp:
+        (WebCore::LiveNodeList::namedItem):
+        * dom/LiveNodeList.h:
+        (WebCore::LiveNodeListBase::LiveNodeListBase):
+        (WebCore::LiveNodeListBase::~LiveNodeListBase):
+        (WebCore::LiveNodeList::LiveNodeList):
+        
+            Remove ChildNodeList specific code and branches.
+
+        * dom/Node.cpp:
+        (WebCore::Node::childNodes):
+        
+            Return EmptyNodeList for non-containers.
+
+        * dom/NodeList.h:
+        (WebCore::NodeList::~NodeList):
+        (WebCore::NodeList::isLiveNodeList):
+        (WebCore::NodeList::isChildNodeList):
+        (WebCore::NodeList::isEmptyNodeList):
+        
+            For isReachableFromOpaqueRoots.
+
+        * dom/NodeRareData.h:
+        (WebCore::NodeListsNodeData::ensureChildNodeList):
+        (WebCore::NodeListsNodeData::removeChildNodeList):
+        (WebCore::NodeListsNodeData::ensureEmptyChildNodeList):
+        (WebCore::NodeListsNodeData::removeEmptyChildNodeList):
+        (WebCore::NodeListsNodeData::NodeListsNodeData):
+        (WebCore::NodeListsNodeData::deleteThisAndUpdateNodeRareDataIfAboutToRemoveLastList):
+        
+            EmptyNodeList support.
+
+        * html/CollectionType.h:
+        * html/HTMLCollection.cpp:
+        (WebCore::shouldOnlyIncludeDirectChildren):
+        (WebCore::rootTypeFromCollectionType):
+        (WebCore::invalidationTypeExcludingIdAndNameAttributes):
+        (WebCore::isMatchingElement):
+        (WebCore::LiveNodeListBase::itemBefore):
+        (WebCore::LiveNodeListBase::traverseLiveNodeListFirstElement):
+        (WebCore::LiveNodeListBase::traverseLiveNodeListForwardToOffset):
+        (WebCore::LiveNodeListBase::item):
+        (WebCore::LiveNodeListBase::itemBeforeOrAfterCachedItem):
+        
+            Remove ChildNodeList specific code and branches.
+
+2013-11-03  Patrick Gansterer  <paroga@webkit.org>
+
+        [WINCE] Replace OwnPtr with GDIObject
+        https://bugs.webkit.org/show_bug.cgi?id=123670
+
+        Reviewed by Anders Carlsson.
+
+        * page/win/FrameGdiWin.cpp:
+        (WebCore::imageFromRect):
+        * platform/graphics/wince/FontPlatformData.cpp:
+        (WebCore::FixedSizeFontData::create):
+        (WebCore::FontPlatformData::hfont):
+        (WebCore::FontPlatformData::getScaledFontHandle):
+        * platform/graphics/wince/GraphicsContextWinCE.cpp:
+        (WebCore::createPen):
+        (WebCore::createBrush):
+        (WebCore::GraphicsContext::drawRect):
+        (WebCore::GraphicsContext::drawLine):
+        (WebCore::GraphicsContext::drawEllipse):
+        (WebCore::GraphicsContext::drawConvexPolygon):
+        (WebCore::GraphicsContext::fillRect):
+        (WebCore::GraphicsContext::clip):
+        (WebCore::GraphicsContext::strokeRect):
+        (WebCore::GraphicsContext::fillRoundedRect):
+        (WebCore::GraphicsContext::drawRoundCorner):
+        (WebCore::GraphicsContext::fillPath):
+        (WebCore::GraphicsContext::strokePath):
+        (WebCore::GraphicsContext::drawText):
+        * platform/graphics/wince/ImageWinCE.cpp:
+        (WebCore::BitmapImage::getHBITMAPOfSize):
+        * platform/graphics/wince/SharedBitmap.cpp:
+        (WebCore::SharedBitmap::createHandle):
+        (WebCore::SharedBitmap::draw):
+        (WebCore::SharedBitmap::clipBitmap):
+        (WebCore::drawPatternSimple):
+        (WebCore::SharedBitmap::drawPattern):
+        (WebCore::SharedBitmap::DCProvider::getDC):
+        * platform/graphics/wince/SharedBitmap.h:
+
+2013-11-03  Antti Koivisto  <antti@apple.com>
+
+        Add helpers for partial descendant traversal to element iterators
+        https://bugs.webkit.org/show_bug.cgi?id=123703
+
+        Reviewed by Andreas Kling.
+
+        * dom/ElementAncestorIterator.h:
+        (WebCore::lineageOfType):
+        
+            lineageOfType definition didn't match the declaration.
+
+        * dom/ElementDescendantIterator.h:
+        (WebCore::::find):
+        (WebCore::::from):
+        
+            Add find and from for getting begin iterator for partial traversals.
+
+        * editing/FrameSelection.cpp:
+        (WebCore::scanForForm):
+        (WebCore::FrameSelection::currentForm):
+        * html/HTMLFormElement.cpp:
+        (WebCore::HTMLFormElement::formElementIndex):
+        (WebCore::HTMLFormElement::findClosestFormAncestor):
+        
+            Use them in a few places.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Inline RenderStyle functions for getting/setting pseudo style bits.
+        <https://webkit.org/b/123702>
+
+        hasPseudoStyle() actually shows up on html5-full-render.html,
+        and it's pretty crazy to eat the cost of a function call just
+        to do some basic bit twiddling.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-03  Xabier Rodriguez Calvar  <calvaris@igalia.com>
+
+        Remove HTMLMediaElement.initialTime
+        https://bugs.webkit.org/show_bug.cgi?id=123572
+
+        Reviewed by Eric Carlson.
+
+        Patch based on one by: philipj@opera.com
+        Blink review URL: https://codereview.chromium.org/35033002
+
+        initialTime has been removed from the HTMLMediaElement.
+
+        * bindings/gobject/WebKitDOMCustom.cpp:
+        (webkit_dom_html_media_element_get_initial_time):
+        * bindings/gobject/WebKitDOMCustom.h:
+        * bindings/gobject/WebKitDOMCustom.symbols: Added phony function.
+        * html/HTMLMediaElement.cpp:
+        * html/HTMLMediaElement.h:
+        * html/HTMLMediaElement.idl: Removed HTMLMediaElement::initialTime.
+
+2013-11-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement generateKey for HMAC and AES-CBC
+        https://bugs.webkit.org/show_bug.cgi?id=123669
+
+        Reviewed by Dan Bernstein.
+
+        Tests: crypto/subtle/aes-cbc-generate-key.html
+               crypto/subtle/hmac-generate-key.html
+
+        * WebCore.xcodeproj/project.pbxproj: Added new files.
+
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::createAesKeyGenParams): Added bindings for AesKeyGenParams.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForGenerateKey): Handle
+        algorithms that generate AES and HMAC keys.
+
+        * bindings/js/JSSubtleCryptoCustom.cpp: (WebCore::JSSubtleCrypto::generateKey): Added.
+
+        * crypto/CryptoAlgorithmAesKeyGenParams.h: Added.
+
+        * crypto/CryptoKey.cpp: (WebCore::CryptoKey::randomData):
+        * crypto/CryptoKey.h:
+        * crypto/CryptoKeyMac.cpp: Added
+        Expose a function that produces random data for symmetric crypto keys. Cross-platform
+        implementation uses ARC4 code from WTF, while Mac uses a system function that
+        provides a FIPS validated random number generator.
+
+        * crypto/CryptoKeyAES.cpp: (WebCore::CryptoKeyAES::generate):
+        * crypto/CryptoKeyAES.h:
+        Added a function that creates AES keys.
+
+        * crypto/SubtleCrypto.idl: Added generateKey.
+
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::generateKey): Added.
+
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp:
+        (WebCore::CryptoAlgorithmHMAC::generateKey): Added.
+
+        * crypto/keys/CryptoKeyHMAC.cpp: (WebCore::CryptoKeyHMAC::generate):
+        * crypto/keys/CryptoKeyHMAC.h:
+        Added a function that creates HMAC keys.
+
+        * crypto/mac/CryptoAlgorithmAES_CBCMac.cpp: Removed generateKey stub, the implementation
+        ended up in cross-platform file.
+
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp: Ditto.
+
+2013-11-02  Christophe Dumez  <ch.dumez@samsung.com>
+
+        EnforceRange doesn't enforce range of a short
+        https://bugs.webkit.org/show_bug.cgi?id=123661
+
+        Reviewed by Alexey Proskuryakov.
+
+        Handle Web IDL short / unsigned short types as per the
+        specification:
+        - http://www.w3.org/TR/WebIDL/#es-short
+        - http://www.w3.org/TR/WebIDL/#es-unsigned-short
+
+        Specifically, we used to treat short / unsigned short as 32bit
+        integers, which was wrong. We now properly handle them as 16bit
+        integers.
+
+        No new tests, added test cases to js/dom/webidl-type-mapping.html.
+
+        * WebCore.exp.in:
+        * bindings/js/JSDOMBinding.cpp:
+        (WebCore::toSmallerInt):
+        (WebCore::toSmallerUInt):
+        (WebCore::toInt8):
+        (WebCore::toUInt8):
+        (WebCore::toInt16):
+        (WebCore::toUInt16):
+        * bindings/js/JSDOMBinding.h:
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (JSValueToNative):
+        * bindings/scripts/test/JS/JSTestObj.cpp:
+        (WebCore::setJSTestObjShortAttr):
+        (WebCore::setJSTestObjUnsignedShortAttr):
+        * testing/TypeConversions.h:
+        (WebCore::TypeConversions::testShort):
+        (WebCore::TypeConversions::setTestShort):
+        (WebCore::TypeConversions::testEnforceRangeShort):
+        (WebCore::TypeConversions::setTestEnforceRangeShort):
+        (WebCore::TypeConversions::testUnsignedShort):
+        (WebCore::TypeConversions::setTestUnsignedShort):
+        (WebCore::TypeConversions::testEnforceRangeUnsignedShort):
+        (WebCore::TypeConversions::setTestEnforceRangeUnsignedShort):
+        * testing/TypeConversions.idl:
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Cleanup OpenTypeUtilities
+        https://bugs.webkit.org/show_bug.cgi?id=123686
+
+        Reviewed by Darin Adler.
+
+        Merge the WinCE specific code into the general Windows code to
+        make the compilation of WinCE port on WinNT easier.
+
+        * platform/graphics/opentype/OpenTypeUtilities.cpp:
+        (WebCore::renameFont):
+        (WebCore::renameAndActivateFont):
+        * platform/graphics/opentype/OpenTypeUtilities.h:
+        * platform/graphics/win/FontCustomPlatformData.cpp:
+        (WebCore::createFontCustomPlatformData):
+        * platform/graphics/win/FontCustomPlatformDataCairo.cpp:
+        (WebCore::createFontCustomPlatformData):
+        * platform/graphics/wince/FontCustomPlatformData.cpp:
+        (WebCore::createFontCustomPlatformData):
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        CSSFontFaceSrcValue constructors should return PassRef.
+        <https://webkit.org/b/123692>
+
+        Make functions that return non-null CSSFontFaceSrcValues return
+        PassRef instead of PassRefPtr. Tweak some call sites to be
+        slightly more efficient.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        CSSStyleSheet::contents() should return a reference.
+        <https://webkit.org/b/123689>
+
+        Make CSSStyleSheet::contents() return a StyleSheetContents& instead
+        of a pointer. The object was already stored in a Ref.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        CSSReflectValue constructor should return PassRef.
+        <https://webkit.org/b/123963>
+
+        Make CSSReflectValue::create() return a PassRef. Tweak one call
+        site to be slightly more efficient.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        CSSFontFeatureValue constructor should return PassRef.
+        <https://webkit.org/b/123691>
+
+        Make CSSFontFeatureValue::create() return PassRef, since it never
+        returns null. Tweak one call site to be slightly more efficient.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        Tighten typing in SVGResources::buildCachedResources().
+        <https://webkit.org/b/123690>
+
+        Make this function take a RenderElement&/SVGRenderStyle& pair instead
+        of a RenderObject*/SVGRenderStyle* pair. Also tweaked the code a bit,
+        removing ampersands and asserts as appropriate.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        CSSImageValue constructors should return PassRef.
+        <https://webkit.org/b/123688>
+
+        Make the CSSImageValue::create() helpers return PassRef.
+        Tightened call sites to avoid null checks and destructor calls.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Fix compilation of SynchronousLoaderClient
+        https://bugs.webkit.org/show_bug.cgi?id=123676
+
+        Reviewed by Darin Adler.
+
+        Assign a ResourceRequest varibale an empty ResourceRequest instead of 0.
+        The current solution only works for ports which can create a
+        ResourceRequest from a pointer, which might not be true for all ports.
+
+        * platform/network/SynchronousLoaderClient.cpp:
+        (WebCore::SynchronousLoaderClient::willSendRequest):
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Port LoggingWin.cpp to WinCE
+        https://bugs.webkit.org/show_bug.cgi?id=123678
+
+        Reviewed by Darin Adler.
+
+        This makes it easier to use a common list of files
+        for the different Windows ports later.
+
+        * PlatformWin.cmake:
+        * platform/win/LoggingWin.cpp:
+        (WebCore::logLevelString):
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Fix UnicodeWchar after r157330.
+        https://bugs.webkit.org/show_bug.cgi?id=123668
+
+        Reviewed by Darin Adler.
+
+        * editing/TextIterator.cpp:
+        (WebCore::SearchBuffer::append):
+        * platform/graphics/wince/FontWinCE.cpp:
+        (WebCore::generateComponents):
+        * platform/graphics/wince/GraphicsContextWinCE.cpp:
+        (WebCore::GraphicsContext::drawText):
+        * platform/text/wchar/TextBreakIteratorWchar.cpp:
+        (WebCore::isCharStop):
+        (WebCore::isLineStop):
+        (WebCore::isSentenceStop):
+        (WebCore::WordBreakIterator::next):
+        (WebCore::WordBreakIterator::previous):
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        Use RenderChildIterator in a couple of places.
+        <https://webkit.org/b/123684>
+
+        Added isRendererOfType() for RenderBox and RenderBlock and switch
+        some loops over to using childrenOfType<>. Also sprinkled const
+        and references on touched code.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-02  Zan Dobersek  <zdobersek@igalia.com>
+
+        Manage FileReaderLoader through std::unique_ptr
+        https://bugs.webkit.org/show_bug.cgi?id=123666
+
+        Reviewed by Anders Carlsson.
+
+        Construct FileReaderLoader objects through std::make_unique and store them in std::unique_ptr.
+
+        * fileapi/FileReader.cpp:
+        (WebCore::FileReader::readInternal):
+        * fileapi/FileReader.h:
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        Add a child renderer iterator.
+        <https://webkit.org/b/123662>
+
+        Introduce an ElementIterator-style iterator for renderers and put
+        it to use in a childrenOfType() implementation.
+
+        It's used just like the Element iterators:
+
+        auto sections = childrenOfType<RenderTableSection>(*this);
+        for (auto section = sections.begin(), section = sections.end(); section != sections.end(); ++section)
+            section->thisOrThat();
+
+        Just like the DOM counterpart, it relies on a templatized helper:
+
+            bool isRendererOfType<T>(const RenderObject&)
+
+        This patch puts the iterator to use in a couple of random places.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement remaining SHA variations for WebCrypto
+        https://bugs.webkit.org/show_bug.cgi?id=123659
+
+        Reviewed by Anders Carlsson.
+
+        Tests: crypto/subtle/sha-224.html
+               crypto/subtle/sha-256.html
+               crypto/subtle/sha-384.html
+               crypto/subtle/sha-512.html
+
+        * WebCore.xcodeproj/project.pbxproj:
+        * crypto/algorithms/CryptoAlgorithmSHA224.cpp: Added.
+        (WebCore::CryptoAlgorithmSHA224::CryptoAlgorithmSHA224):
+        (WebCore::CryptoAlgorithmSHA224::~CryptoAlgorithmSHA224):
+        (WebCore::CryptoAlgorithmSHA224::create):
+        (WebCore::CryptoAlgorithmSHA224::identifier):
+        * crypto/algorithms/CryptoAlgorithmSHA224.h: Added.
+        * crypto/algorithms/CryptoAlgorithmSHA256.cpp: Added.
+        (WebCore::CryptoAlgorithmSHA256::CryptoAlgorithmSHA256):
+        (WebCore::CryptoAlgorithmSHA256::~CryptoAlgorithmSHA256):
+        (WebCore::CryptoAlgorithmSHA256::create):
+        (WebCore::CryptoAlgorithmSHA256::identifier):
+        * crypto/algorithms/CryptoAlgorithmSHA256.h: Added.
+        * crypto/algorithms/CryptoAlgorithmSHA384.cpp: Added.
+        (WebCore::CryptoAlgorithmSHA384::CryptoAlgorithmSHA384):
+        (WebCore::CryptoAlgorithmSHA384::~CryptoAlgorithmSHA384):
+        (WebCore::CryptoAlgorithmSHA384::create):
+        (WebCore::CryptoAlgorithmSHA384::identifier):
+        * crypto/algorithms/CryptoAlgorithmSHA384.h: Added.
+        * crypto/algorithms/CryptoAlgorithmSHA512.cpp: Added.
+        (WebCore::CryptoAlgorithmSHA512::CryptoAlgorithmSHA512):
+        (WebCore::CryptoAlgorithmSHA512::~CryptoAlgorithmSHA512):
+        (WebCore::CryptoAlgorithmSHA512::create):
+        (WebCore::CryptoAlgorithmSHA512::identifier):
+        * crypto/algorithms/CryptoAlgorithmSHA512.h: Added.
+        * crypto/mac/CryptoAlgorithmRegistryMac.cpp:
+        (WebCore::CryptoAlgorithmRegistry::platformRegisterAlgorithms):
+        * crypto/mac/CryptoAlgorithmSHA224Mac.cpp: Added.
+        (WebCore::CryptoAlgorithmSHA224::digest):
+        * crypto/mac/CryptoAlgorithmSHA256Mac.cpp: Added.
+        (WebCore::CryptoAlgorithmSHA256::digest):
+        * crypto/mac/CryptoAlgorithmSHA384Mac.cpp: Added.
+        (WebCore::CryptoAlgorithmSHA384::digest):
+        * crypto/mac/CryptoAlgorithmSHA512Mac.cpp: Added.
+        (WebCore::CryptoAlgorithmSHA512::digest):
+
+2013-11-02  Patrick Gansterer  <paroga@webkit.org>
+
+        Various small WinCE build fixes
+
+        * editing/TextIterator.cpp:
+        (WebCore::SearchBuffer::append):
+        * platform/graphics/BitmapImage.h:
+        * platform/graphics/wince/ImageWinCE.cpp:
+        (WebCore::BitmapImage::getHBITMAPOfSize):
+        (WebCore::BitmapImage::drawFrameMatchingSourceSize):
+        * platform/graphics/wince/PlatformPathWinCE.h:
+        * platform/win/PopupMenuWin.h:
+        * rendering/RenderThemeWinCE.cpp:
+        (WebCore::RenderThemeWinCE::adjustMenuListButtonStyle):
+
+2013-11-01  Alexey Proskuryakov  <ap@apple.com>
+
+        Add WebCrypto AES-CBC
+        https://bugs.webkit.org/show_bug.cgi?id=123647
+
+        Reviewed by Anders Carlsson.
+
+        Tests: crypto/subtle/aes-cbc-192-encrypt-decrypt.html
+               crypto/subtle/aes-cbc-256-encrypt-decrypt.html
+               crypto/subtle/aes-cbc-encrypt-decrypt-with-padding.html
+               crypto/subtle/aes-cbc-encrypt-decrypt.html
+               crypto/subtle/aes-cbc-invalid-length.html
+               crypto/subtle/aes-cbc-wrong-key-class.html
+
+        * WebCore.xcodeproj/project.pbxproj: Added new files.
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::getProperty): Factored out a function to get a property as JSValue.
+        (WebCore::getHashAlgorithm): Use it.
+        (WebCore::createAesCbcParams): Added converter for AesCbcParams.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForEncrypt): Support AES_CBC.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDecrypt): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForImportKey): Support all
+        algorithms, all the new ones just have trivial dictionaries.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForExportKey): Ditto.
+
+        * bindings/js/JSCryptoOperationData.cpp: Added.
+        (WebCore::sequenceOfCryptoOperationDataFromJSValue):
+        (WebCore::cryptoOperationDataFromJSValue):
+        * bindings/js/JSCryptoOperationData.h: Added.
+        Moved CryptoOperationData bindings out of JSSubtleCryptoCustom.cpp, so that we
+        could use them in JSCryptoAlgorithmDictionary.cpp.
+
+        * bindings/js/JSDOMPromise.h: (WebCore::PromiseWrapper::reject): Added a specialization
+        to reject with null result. The spec doesn't actually say how algorithms fail.
+
+        * bindings/js/JSSubtleCryptoCustom.cpp:
+        (WebCore::JSSubtleCrypto::encrypt): Added.
+        (WebCore::JSSubtleCrypto::decrypt): Ditto.
+        (WebCore::JSSubtleCrypto::sign): Style fix.
+
+        * crypto/CryptoAlgorithmAesCbcParams.h: Added.
+
+        * crypto/CryptoKey.h:
+        (WebCore::CryptoKeyClass):
+        * crypto/keys/CryptoKeyHMAC.h:
+        (WebCore::asCryptoKeyHMAC):
+        Added poor man's RTTI, so that we can safely upcast Keys passed fro JavaScript code.
+
+        * crypto/CryptoKeyAES.cpp: Added.
+        (WebCore::CryptoKeyAES::CryptoKeyAES):
+        (WebCore::CryptoKeyAES::~CryptoKeyAES):
+        (WebCore::CryptoKeyAES::buildAlgorithmDescription):
+        * crypto/CryptoKeyAES.h: Added.
+        (WebCore::asCryptoKeyAES):
+        AES keys are the same for all algorithms, but they still need to remember the algorithm.
+
+        * crypto/SubtleCrypto.idl: Added encrypt/decrypt.
+
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp: Added.
+        (WebCore::CryptoAlgorithmAES_CBC::CryptoAlgorithmAES_CBC):
+        (WebCore::CryptoAlgorithmAES_CBC::~CryptoAlgorithmAES_CBC):
+        (WebCore::CryptoAlgorithmAES_CBC::create):
+        (WebCore::CryptoAlgorithmAES_CBC::identifier):
+        (WebCore::CryptoAlgorithmAES_CBC::importKey):
+        (WebCore::CryptoAlgorithmAES_CBC::exportKey):
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.h: Added.
+        * crypto/mac/CryptoAlgorithmAES_CBCMac.cpp: Added.
+        (WebCore::transformAES_CBC):
+        (WebCore::CryptoAlgorithmAES_CBC::encrypt):
+        (WebCore::CryptoAlgorithmAES_CBC::decrypt):
+        (WebCore::CryptoAlgorithmAES_CBC::generateKey):
+        Added.
+
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp:
+        (WebCore::CryptoAlgorithmHMAC::sign):
+        (WebCore::CryptoAlgorithmHMAC::verify):
+        Check key class before casting it to CryptoKeyHMAC.
+
+        * crypto/mac/CryptoAlgorithmRegistryMac.cpp:
+        (WebCore::CryptoAlgorithmRegistry::platformRegisterAlgorithms): Register AES-CBC
+        on Mac, so that it can be used.
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        SVGRenderStyle accessors should return references.
+        <https://webkit.org/b/123656>
+
+        RenderStyle::svgStyle() and accessSVGStyle() never return null,
+        so make them return references instead.
+        
+        This flushed out a myriad of pointless null checks and assertions.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-01  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Removing MediaStreamTrackVector and MediaStreamSourceVector typedefs
+        https://bugs.webkit.org/show_bug.cgi?id=123648
+
+        Reviewed by Eric Carlson.
+
+        No new tests needed.
+
+        * Modules/mediastream/MediaStream.cpp:
+        (WebCore::MediaStream::create):
+        (WebCore::MediaStream::clone):
+        (WebCore::MediaStream::cloneMediaStreamTrackVector):
+        (WebCore::MediaStream::addTrack):
+        (WebCore::MediaStream::removeTrack):
+        (WebCore::MediaStream::haveTrackWithSource):
+        (WebCore::MediaStream::getTrackById):
+        (WebCore::MediaStream::trackVectorForType):
+        * Modules/mediastream/MediaStream.h:
+        * Modules/mediastream/MediaStreamTrack.h:
+        * Modules/mediastream/UserMediaRequest.cpp:
+        (WebCore::UserMediaRequest::callSuccessHandler):
+        * Modules/webaudio/AudioContext.cpp:
+        (WebCore::AudioContext::createMediaStreamSource):
+        * Modules/webaudio/MediaStreamAudioDestinationNode.cpp:
+        (WebCore::MediaStreamAudioDestinationNode::MediaStreamAudioDestinationNode):
+        * platform/mediastream/MediaStreamDescriptor.cpp:
+        (WebCore::MediaStreamDescriptor::create):
+        (WebCore::MediaStreamDescriptor::MediaStreamDescriptor):
+        * platform/mediastream/MediaStreamDescriptor.h:
+        * platform/mediastream/MediaStreamSource.h:
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        createFontFaceValue() should be smarter about overgrown cache.
+        <https://webkit.org/b/123643>
+
+        Instead of clearing the whole font-face value cache when it passes
+        128 entries, just delete one entry at random.
+
+        Reviewed by Geoffrey Garen.
+
+2013-11-01  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Fixing mac code to use new MediaStreamDescriptor create method
+        https://bugs.webkit.org/show_bug.cgi?id=123653
+
+        Reviewed by Eric Carlson.
+
+        No new tests needed.
+
+        * platform/mediastream/mac/MediaStreamCenterMac.cpp:
+        (WebCore::MediaStreamCenterMac::createMediaStream):
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        Re-use existing RenderStyle local in textWidth().
+        <https://webkit.org/b/123392>
+
+        We already have the RenderStyle cached in a local here, so avoid
+        getting it from RenderText since that has to go via the parent.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        Neuter WTF_MAKE_FAST_ALLOCATED in GLOBAL_FASTMALLOC_NEW builds.
+        <https://webkit.org/b/123639>
+
+        WebCore::TimerBase really needed to have the new/delete operators
+        overridden, in order for WebCore::SuspendableTimer to be able to
+        choose that "operator new" out of the two it inherits.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        CSSCanvasValue construction helper should return PassRef.
+        <https://webkit.org/b/123650>
+
+        Return PassRef instead of PassRefPtr from functions that return
+        ownership-passing pointers that are known to be non-null.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-01  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Move CF/Mac WTF String implementations down into WTF
+        https://bugs.webkit.org/show_bug.cgi?id=123635
+
+        Reviewed by Sam Weinig.
+
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+
+2013-11-01  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Removing unnecessary early returns in addTrack, removeTrack and removeRemoteSource methods
+        https://bugs.webkit.org/show_bug.cgi?id=123644
+
+        Reviewed by Eric Carlson.
+
+        No new tests needed.
+
+        * Modules/mediastream/MediaStream.cpp:
+        (WebCore::MediaStream::addTrack):
+        (WebCore::MediaStream::removeTrack):
+        (WebCore::MediaStream::removeRemoteSource):
+        (WebCore::MediaStream::trackVectorForType):
+        * Modules/mediastream/MediaStream.h:
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        CSSAspectRatioValue construction helper should return PassRef.
+        <https://webkit.org/b/123645>
+
+        Return PassRef instead of PassRefPtr from functions that return
+        ownership-passing pointers that are known to be non-null.
+
+        Reviewed by Darin Adler.
+
+2013-11-01  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Initial implementation of text-decoration-skip ink
+        https://bugs.webkit.org/show_bug.cgi?id=121806
+
+        Reviewed by Darin Adler.
+
+        text-decoration-skip: ink is implemented by the following steps:
+        1. Before drawing any decorations, figure out the bounding box for the decorations that will be drawn
+        2. Create an ImageBuffer with these dimensions
+        3. Draw text into this ImageBuffer with a thicker stroke
+        4. Apply the ImageBuffer as a mask to the context
+        5. Draw decorations like normal
+        6. Clean up
+
+        Test: fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink.html
+
+        * platform/graphics/cg/GraphicsContextCG.cpp:
+        (WebCore::computeLineBoundsAndAntialiasingModeForText): Don't call GraphicsContext::roundToDevicePixels
+        when painting is disabled
+        * rendering/InlineTextBox.cpp:
+        (WebCore::InlineTextBox::paint): Pass the TextPainter to paintDecoration
+        (WebCore::computeUnderlineOffset): Small cleanup
+        (WebCore::getWavyStrokeControlPointDistance): Pulling out of strokeWavyTextDecoration()
+        (WebCore::getWavyStrokeStep): Ditto
+        (WebCore::strokeWavyTextDecoration): Use the previous 2 functions
+        (WebCore::getSingleDecorationBoundingBox): Pulling out repeated code into a function
+        (WebCore::getDecorationBoundingBox): Compute the bounding box for an underline which
+        hasn't been drawn yet
+        (WebCore::InlineTextBox::paintDecoration): Construct a mask and apply it to the GraphicsContext
+        * rendering/InlineTextBox.h: paintDecoration needs the TextPainter
+        * rendering/style/RenderStyle.cpp:
+        (WebCore::RenderStyle::changeRequiresRepaintIfTextOrBorderOrOutline): Redraw the underline when
+        text-decoration-skip changes
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        CSS 'initial' and 'inherit' value constructors should return PassRef.
+        <https://webkit.org/b/123641>
+
+        Make the helpers involved in constructing CSS{Initial,Inherited}Value
+        all return PassRef instead of PassRefPtr. This avoids generating
+        pointless null checks at the call sites.
+
+        Reviewed by Darin Adler.
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        Kill RenderArena.
+        <https://webkit.org/b/123634>
+
+        There are no remaining users of the RenderArena allocator.
+
+        Reviewed by Geoffrey Garen.
+
+2013-11-01  James Craig  <jcraig@apple.com>
+
+        AX: Regression: media controls are no longer accessible
+        https://bugs.webkit.org/show_bug.cgi?id=121990
+
+        Reviewed by Jer Noble.
+
+        Updated existing test coverage.
+        Added ARIA roles, attrs, and labels to the new media controls shadow DOM.
+        Localization will be handled in http://webkit.org/b/120956
+
+        * Modules/mediacontrols/mediaControlsApple.js:
+        (Controller.prototype.UIString):
+        (Controller.prototype.createControls):
+        (Controller.prototype.handleLoadStart):
+        (Controller.prototype.handleError):
+        (Controller.prototype.handleAbort):
+        (Controller.prototype.handleSuspend):
+        (Controller.prototype.handleStalled):
+        (Controller.prototype.handleWaiting):
+        (Controller.prototype.handleFullscreenChange):
+        (Controller.prototype.handleMuteButtonClicked):
+        (Controller.prototype.handleMinButtonClicked):
+        (Controller.prototype.handleMaxButtonClicked):
+        (Controller.prototype.handleVolumeSliderChange):
+        (Controller.prototype.updatePlaying):
+
+2013-11-01  Andreas Kling  <akling@apple.com>
+
+        Take BidiRuns out of the arena.
+        <https://webkit.org/b/123630>
+
+        Stop arena-allocating BidiRun objects and use regular new/delete.
+
+        With this, there are no remaining clients of RenderArena.
+        It will be removed in a subsequent patch.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-01  Afonso R. Costa Jr.  <afonso.costa@samsung.com>
+
+        Expose setApplicationCacheOriginQuota via window.internals
+        https://bugs.webkit.org/show_bug.cgi?id=87838
+
+        Reviewed by Joseph Pecoraro.
+
+        Also reset the default origin quota in resetToConsistentState().
+
+        * testing/Internals.cpp: Add setApplicationCacheOriginQuota.
+        (WebCore::Internals::resetToConsistentState): Reset the default origin
+        quota.
+        (WebCore::Internals::setApplicationCacheOriginQuota): Added.
+        * testing/Internals.h: Add setApplicationCacheOriginQuota.
+        * testing/Internals.idl: Ditto.
+
 2013-11-01  Nick Diego Yamane  <nick.yamane@openbossa.org>
 
         Explicitly initialize RefCounted base class in MediaStreamTrack's constructors

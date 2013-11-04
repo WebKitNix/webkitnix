@@ -1,3 +1,1378 @@
+2013-11-04  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        [css shapes] Fix support for shape-outside on a float with padding
+        https://bugs.webkit.org/show_bug.cgi?id=123590
+
+        Reviewed by Alexandru Chiculita.
+
+        Fix existing tests that depended on the incorrect behavior so that
+        they are now testing the proper thing. Also fix up the tests to make
+        them clearer and more robust.
+
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/resources/w3c-import.log:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-circle-000-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-circle-000.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-ellipse-000-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-ellipse-000.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-inset-rectangle-001-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-inset-rectangle-001.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-000-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-000.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-001-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-001.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-002-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-002.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-003-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-003.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-004-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-004.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-005-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-005.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-006-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-006.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-007-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-007.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-008-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-008.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-009-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-009.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-rounded-rectangle-001-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-rounded-rectangle-001.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-rounded-rectangle-002-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-rounded-rectangle-002.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-rounded-rectangle-003-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-rounded-rectangle-003.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-rounded-rectangle-004-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-rounded-rectangle-004.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-square-border-000-expected.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-square-border-000.html:
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/w3c-import.log:
+
+2013-11-04  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        JSArrayBufferViews of length 0 allocate 0 CopiedSpace bytes, which is invalid
+        https://bugs.webkit.org/show_bug.cgi?id=123746
+
+        Reviewed by Geoffrey Garen.
+
+        Added a test to make sure that we don't crash when allocating a typed array with 0 length.
+
+        * js/script-tests/typedarray-zero-size.js: Added.
+        (foo):
+        * js/typedarray-zero-size-expected.txt: Added.
+        * js/typedarray-zero-size.html: Added.
+
+2013-11-04  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement generateKey for HMAC and AES-CBC
+        https://bugs.webkit.org/show_bug.cgi?id=123669
+
+        Reviewed by Dan Bernstein.
+
+        * crypto/subtle/aes-cbc-generate-key-expected.txt: Added.
+        * crypto/subtle/aes-cbc-generate-key.html: Added.
+        * crypto/subtle/hmac-generate-key-expected.txt: Added.
+        * crypto/subtle/hmac-generate-key.html: Added.
+
+        * crypto/subtle/sha-1-expected.txt: Now that crypto.webkitSubtle.generateKey exists,
+        a different exception is raised.
+
+2013-11-04  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r158526.
+        http://trac.webkit.org/changeset/158526
+        https://bugs.webkit.org/show_bug.cgi?id=123744
+
+        it broke the build (Requested by jessieberlin on #webkit).
+
+        * crypto/subtle/aes-cbc-generate-key-expected.txt: Removed.
+        * crypto/subtle/aes-cbc-generate-key.html: Removed.
+        * crypto/subtle/hmac-generate-key-expected.txt: Removed.
+        * crypto/subtle/hmac-generate-key.html: Removed.
+        * crypto/subtle/sha-1-expected.txt:
+
+2013-11-04  Robert Plociennik  <r.plociennik@samsung.com>
+
+        [EFL] accessibility/textarea-line-for-index.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=112015
+
+        Reviewed by Mario Sanchez Prada.
+
+        Removed failure expectations.
+
+        * platform/efl-wk1/TestExpectations: The test is no longer failing.
+        * platform/efl-wk2/TestExpectations: The test is no longer failing.
+
+2013-11-04  Krzysztof Czech  <k.czech@samsung.com>
+
+        [EFL] accessibility/button-press-action.html
+        https://bugs.webkit.org/show_bug.cgi?id=111993
+
+        Reviewed by Mario Sanchez Prada.
+
+        Removed failure expectations.
+
+        * platform/efl-wk1/TestExpectations:
+        * platform/efl-wk2/TestExpectations:
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        REGRESSION: RenderStyle is leaked when not creating renderer for display:none
+        <https://webkit.org/b/123726>
+
+        Reviewed by Antti Koivisto.
+
+        * fast/css/renderstyle-leak-with-display-none-expected.txt: Added.
+        * fast/css/renderstyle-leak-with-display-none.html: Added.
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: svg/zoom
+
+        Unreviewed; run "webkit-patch optimize-baselines svg/zoom"
+
+        * platform/gtk/svg/zoom/page/zoom-background-images-expected.txt: Removed.
+        * platform/gtk/svg/zoom/page/zoom-coords-viewattr-01-b-expected.txt: Removed.
+        * platform/gtk/svg/zoom/page/zoom-hixie-rendering-model-004-expected.txt: Removed.
+        * platform/gtk/svg/zoom/page/zoom-mask-with-percentages-expected.txt: Removed.
+        * platform/gtk/svg/zoom/page/zoom-replaced-intrinsic-ratio-001-expected.txt: Removed.
+        * platform/gtk/svg/zoom/page/zoom-svg-as-background-with-relative-size-expected.txt: Removed.
+        * platform/gtk/svg/zoom/page/zoom-svg-as-image-expected.png: Removed.
+        * platform/gtk/svg/zoom/page/zoom-svg-float-border-padding-expected.txt: Removed.
+        * platform/gtk/svg/zoom/text/zoom-coords-viewattr-01-b-expected.txt: Removed.
+        * platform/gtk/svg/zoom/text/zoom-hixie-rendering-model-004-expected.txt: Removed.
+        * platform/gtk/svg/zoom/text/zoom-svg-float-border-padding-expected.txt: Removed.
+        * svg/zoom/page/zoom-background-images-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/page/zoom-background-images-expected.txt.
+        * svg/zoom/page/zoom-coords-viewattr-01-b-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/page/zoom-coords-viewattr-01-b-expected.txt.
+        * svg/zoom/page/zoom-hixie-rendering-model-004-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/page/zoom-hixie-rendering-model-004-expected.txt.
+        * svg/zoom/page/zoom-mask-with-percentages-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/page/zoom-mask-with-percentages-expected.txt.
+        * svg/zoom/page/zoom-replaced-intrinsic-ratio-001-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/page/zoom-replaced-intrinsic-ratio-001-expected.txt.
+        * svg/zoom/page/zoom-svg-as-background-with-relative-size-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/page/zoom-svg-as-background-with-relative-size-expected.txt.
+        * svg/zoom/page/zoom-svg-as-image-expected.png: Renamed from LayoutTests/platform/efl/svg/zoom/page/zoom-svg-as-image-expected.png.
+        * svg/zoom/page/zoom-svg-float-border-padding-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/page/zoom-svg-float-border-padding-expected.txt.
+        * svg/zoom/page/zoom-svg-through-object-with-auto-size-expected.txt: Removed.
+        * svg/zoom/text/zoom-coords-viewattr-01-b-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/text/zoom-coords-viewattr-01-b-expected.txt.
+        * svg/zoom/text/zoom-hixie-rendering-model-004-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/text/zoom-hixie-rendering-model-004-expected.txt.
+        * svg/zoom/text/zoom-svg-float-border-padding-expected.txt: Renamed from LayoutTests/platform/efl/svg/zoom/text/zoom-svg-float-border-padding-expected.txt.
+
+2013-11-04  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: fast/images
+
+        Unreviewed; run "webkit-patch optimize-baselines fast/images"
+
+        * fast/images/crossfade-client-not-removed-crash-expected.txt:
+        * fast/images/embed-image-expected.png: Renamed from LayoutTests/platform/efl/fast/images/embed-image-expected.png.
+        * fast/images/exif-orientation-css-expected.txt: Renamed from LayoutTests/platform/efl/fast/images/exif-orientation-css-expected.txt.
+        * fast/images/exif-orientation-expected.txt: Renamed from LayoutTests/platform/efl/fast/images/exif-orientation-expected.txt.
+        * fast/images/icon-decoding-expected.txt: Renamed from LayoutTests/platform/efl/fast/images/icon-decoding-expected.txt.
+        * fast/images/image-in-map-expected.png: Renamed from LayoutTests/platform/efl/fast/images/image-in-map-expected.png.
+        * fast/images/image-in-map-expected.txt: Renamed from LayoutTests/platform/efl/fast/images/image-in-map-expected.txt.
+        * fast/images/imagemap-focus-ring-zoom-expected.txt: Renamed from LayoutTests/platform/efl/fast/images/imagemap-focus-ring-zoom-expected.txt.
+        * fast/images/support-broken-image-delegate-expected.txt: Renamed from LayoutTests/platform/gtk/fast/images/support-broken-image-delegate-expected.txt.
+        * platform/efl-wk2/fast/images/imagemap-circle-focus-ring-expected.png: Renamed from LayoutTests/platform/efl/fast/images/imagemap-circle-focus-ring-expected.png.
+        * platform/efl-wk2/fast/images/imagemap-focus-ring-outline-color-expected.png: Renamed from LayoutTests/platform/efl/fast/images/imagemap-focus-ring-outline-color-expected.png.
+        * platform/efl-wk2/fast/images/imagemap-focus-ring-outline-color-explicitly-inherited-from-map-expected.png: Renamed from LayoutTests/platform/efl/fast/images/imagemap-focus-ring-outline-color-explicitly-inherited-from-map-expected.png.
+        * platform/efl-wk2/fast/images/imagemap-focus-ring-outline-color-not-inherited-from-map-expected.png: Renamed from LayoutTests/platform/efl/fast/images/imagemap-focus-ring-outline-color-not-inherited-from-map-expected.png.
+        * platform/efl-wk2/fast/images/imagemap-polygon-focus-ring-expected.png: Renamed from LayoutTests/platform/efl/fast/images/imagemap-polygon-focus-ring-expected.png.
+        * platform/efl/fast/images/crossfade-client-not-removed-crash-expected.txt: Removed.
+        * platform/gtk/fast/images/crossfade-client-not-removed-crash-expected.txt: Removed.
+        * platform/gtk/fast/images/embed-image-expected.png: Removed.
+        * platform/gtk/fast/images/exif-orientation-css-expected.txt: Removed.
+        * platform/gtk/fast/images/icon-decoding-expected.txt: Removed.
+        * platform/gtk/fast/images/image-in-map-expected.png: Removed.
+        * platform/gtk/fast/images/image-in-map-expected.txt: Removed.
+        * platform/gtk/fast/images/imagemap-focus-ring-zoom-expected.txt: Removed.
+        * platform/mac/fast/images/crossfade-client-not-removed-crash-expected.txt: Removed.
+        * platform/mac/fast/images/exif-orientation-css-expected.txt: Removed.
+        * platform/mac/fast/images/exif-orientation-expected.txt: Removed.
+        * platform/win-7sp0/fast/images/support-broken-image-delegate-expected.txt: Renamed from LayoutTests/platform/win/fast/images/support-broken-image-delegate-expected.txt.
+
+2013-11-03  Filip Pizlo  <fpizlo@apple.com>
+
+        Generated color wheel displays incorrectly (regressed in r155567)
+        https://bugs.webkit.org/show_bug.cgi?id=123664
+
+        Reviewed by Andreas Kling.
+        
+        * js/dfg-mod-1-expected.txt: Added.
+        * js/dfg-mod-1.html: Added.
+        * js/script-tests/dfg-mod-1.js: Added.
+        (foo):
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: fast/repaint
+
+        Unreviewed; run "webkit-patch optimize-baselines fast/repaint"
+
+        * fast/repaint/4774354-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/4774354-expected.txt.
+        * fast/repaint/absolute-position-changed-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/absolute-position-changed-expected.png.
+        * fast/repaint/block-selection-gap-stale-cache-2-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/block-selection-gap-stale-cache-2-expected.png.
+        * fast/repaint/block-selection-gap-stale-cache-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/block-selection-gap-stale-cache-expected.png.
+        * fast/repaint/box-shadow-inset-repaint-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/box-shadow-inset-repaint-expected.txt.
+        * fast/repaint/button-spurious-layout-hint-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/button-spurious-layout-hint-expected.png.
+        * fast/repaint/canvas-putImageData-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/canvas-putImageData-expected.png.
+        * fast/repaint/clip-with-layout-delta-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/clip-with-layout-delta-expected.txt.
+        * fast/repaint/content-into-overflow-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/content-into-overflow-expected.png.
+        * fast/repaint/erase-overflow-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/erase-overflow-expected.png.
+        * fast/repaint/fixed-after-scroll-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/fixed-after-scroll-expected.png.
+        * fast/repaint/fixed-and-absolute-position-scrolled-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/fixed-and-absolute-position-scrolled-expected.png.
+        * fast/repaint/fixed-position-transparency-with-overflow-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/fixed-position-transparency-with-overflow-expected.png.
+        * fast/repaint/fixed-scale-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/fixed-scale-expected.png.
+        * fast/repaint/fixed-scroll-simple-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/fixed-scroll-simple-expected.png.
+        * fast/repaint/fixed-table-cell-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/fixed-table-cell-expected.png.
+        * fast/repaint/fixed-table-overflow-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/fixed-table-overflow-expected.png.
+        * fast/repaint/fixed-table-overflow-zindex-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/fixed-table-overflow-zindex-expected.png.
+        * fast/repaint/fixed-tranformed-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/fixed-tranformed-expected.png.
+        * fast/repaint/float-in-new-block-with-layout-delta-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/float-in-new-block-with-layout-delta-expected.png.
+        * fast/repaint/float-overflow-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/float-overflow-expected.txt.
+        * fast/repaint/float-overflow-right-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/float-overflow-right-expected.txt.
+        * fast/repaint/inline-block-resize-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/inline-block-resize-expected.png.
+        * fast/repaint/inline-horizontal-bt-overflow-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/inline-horizontal-bt-overflow-expected.txt.
+        * fast/repaint/inline-vertical-lr-overflow-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/inline-vertical-lr-overflow-expected.png.
+        * fast/repaint/inline-vertical-lr-overflow-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/inline-vertical-lr-overflow-expected.txt.
+        * fast/repaint/inline-vertical-rl-overflow-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/inline-vertical-rl-overflow-expected.png.
+        * fast/repaint/inline-vertical-rl-overflow-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/inline-vertical-rl-overflow-expected.txt.
+        * fast/repaint/intermediate-layout-position-clip-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/intermediate-layout-position-clip-expected.png.
+        * fast/repaint/japanese-rl-selection-clear-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/japanese-rl-selection-clear-expected.txt.
+        * fast/repaint/japanese-rl-selection-repaint-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/japanese-rl-selection-repaint-expected.txt.
+        * fast/repaint/layer-hide-when-needs-layout-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/layer-hide-when-needs-layout-expected.png.
+        * fast/repaint/layer-visibility-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/layer-visibility-expected.png.
+        * fast/repaint/line-in-scrolled-clipped-block-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/line-in-scrolled-clipped-block-expected.txt.
+        * fast/repaint/moving-shadow-on-path-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/moving-shadow-on-path-expected.txt.
+        * fast/repaint/overflow-auto-in-overflow-auto-scrolled-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/overflow-auto-in-overflow-auto-scrolled-expected.png.
+        * fast/repaint/overflow-clip-subtree-layout-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/overflow-clip-subtree-layout-expected.png.
+        * fast/repaint/overflow-into-content-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/overflow-into-content-expected.png.
+        * fast/repaint/overflow-scroll-in-overflow-scroll-scrolled-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/overflow-scroll-in-overflow-scroll-scrolled-expected.png.
+        * fast/repaint/reflection-repaint-test-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/reflection-repaint-test-expected.txt.
+        * fast/repaint/repaint-across-writing-mode-boundary-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/repaint-across-writing-mode-boundary-expected.txt.
+        * fast/repaint/repaint-during-scroll-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/repaint-during-scroll-expected.png.
+        * fast/repaint/repaint-during-scroll-with-zoom-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/repaint-during-scroll-with-zoom-expected.txt.
+        * fast/repaint/scroll-absolute-layer-with-reflection-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/scroll-absolute-layer-with-reflection-expected.png.
+        * fast/repaint/scroll-fixed-layer-with-no-visible-content-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/scroll-fixed-layer-with-no-visible-content-expected.png.
+        * fast/repaint/scroll-fixed-layer-with-reflection-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/scroll-fixed-layer-with-reflection-expected.png.
+        * fast/repaint/scroll-fixed-reflected-layer-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/scroll-fixed-reflected-layer-expected.png.
+        * fast/repaint/scroll-in-clipped-layer-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/scroll-in-clipped-layer-expected.png.
+        * fast/repaint/scroll-in-fixed-layer-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/scroll-in-fixed-layer-expected.png.
+        * fast/repaint/subtree-root-clip-2-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/subtree-root-clip-2-expected.png.
+        * fast/repaint/subtree-root-clip-3-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/subtree-root-clip-3-expected.png.
+        * fast/repaint/subtree-root-clip-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/subtree-root-clip-expected.png.
+        * fast/repaint/table-cell-vertical-overflow-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/table-cell-vertical-overflow-expected.txt.
+        * fast/repaint/table-col-background-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/table-col-background-expected.png.
+        * fast/repaint/table-outer-border-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/table-outer-border-expected.png.
+        * fast/repaint/table-overflow-auto-in-overflow-auto-scrolled-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/table-overflow-auto-in-overflow-auto-scrolled-expected.png.
+        * fast/repaint/table-overflow-hidden-in-overflow-hidden-scrolled-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/table-overflow-hidden-in-overflow-hidden-scrolled-expected.png.
+        * fast/repaint/table-overflow-scroll-in-overflow-scroll-scrolled-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/table-overflow-scroll-in-overflow-scroll-scrolled-expected.png.
+        * fast/repaint/table-row-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/table-row-expected.png.
+        * fast/repaint/table-section-overflow-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/table-section-overflow-expected.png.
+        * fast/repaint/transform-layout-repaint-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/transform-layout-repaint-expected.txt.
+        * fast/repaint/view-background-from-body-1-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/view-background-from-body-1-expected.png.
+        * fast/repaint/view-background-from-body-2-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/view-background-from-body-2-expected.png.
+        * platform/efl-wk2/fast/repaint/selection-after-delete-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/selection-after-delete-expected.png.
+        * platform/efl-wk2/fast/repaint/selection-after-remove-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/selection-after-remove-expected.png.
+        * platform/efl-wk2/fast/repaint/selection-gap-overflow-scroll-2-expected.png: Renamed from LayoutTests/platform/efl/fast/repaint/selection-gap-overflow-scroll-2-expected.png.
+        * platform/gtk/fast/repaint/4774354-expected.txt: Removed.
+        * platform/gtk/fast/repaint/absolute-position-changed-expected.png: Removed.
+        * platform/gtk/fast/repaint/block-selection-gap-stale-cache-2-expected.png: Removed.
+        * platform/gtk/fast/repaint/block-selection-gap-stale-cache-expected.png: Removed.
+        * platform/gtk/fast/repaint/box-shadow-inset-repaint-expected.txt: Removed.
+        * platform/gtk/fast/repaint/button-spurious-layout-hint-expected.png: Removed.
+        * platform/gtk/fast/repaint/canvas-putImageData-expected.png: Removed.
+        * platform/gtk/fast/repaint/clip-with-layout-delta-expected.txt: Removed.
+        * platform/gtk/fast/repaint/content-into-overflow-expected.png: Removed.
+        * platform/gtk/fast/repaint/erase-overflow-expected.png: Removed.
+        * platform/gtk/fast/repaint/fixed-after-scroll-expected.png: Removed.
+        * platform/gtk/fast/repaint/fixed-and-absolute-position-scrolled-expected.png: Removed.
+        * platform/gtk/fast/repaint/fixed-position-transparency-with-overflow-expected.png: Removed.
+        * platform/gtk/fast/repaint/fixed-scale-expected.png: Removed.
+        * platform/gtk/fast/repaint/fixed-scroll-simple-expected.png: Removed.
+        * platform/gtk/fast/repaint/fixed-table-cell-expected.png: Removed.
+        * platform/gtk/fast/repaint/fixed-table-overflow-expected.png: Removed.
+        * platform/gtk/fast/repaint/fixed-table-overflow-zindex-expected.png: Removed.
+        * platform/gtk/fast/repaint/fixed-tranformed-expected.png: Removed.
+        * platform/gtk/fast/repaint/float-in-new-block-with-layout-delta-expected.png: Removed.
+        * platform/gtk/fast/repaint/inline-block-resize-expected.png: Removed.
+        * platform/gtk/fast/repaint/inline-horizontal-bt-overflow-expected.txt: Removed.
+        * platform/gtk/fast/repaint/inline-vertical-lr-overflow-expected.png: Removed.
+        * platform/gtk/fast/repaint/inline-vertical-lr-overflow-expected.txt: Removed.
+        * platform/gtk/fast/repaint/inline-vertical-rl-overflow-expected.png: Removed.
+        * platform/gtk/fast/repaint/inline-vertical-rl-overflow-expected.txt: Removed.
+        * platform/gtk/fast/repaint/intermediate-layout-position-clip-expected.png: Removed.
+        * platform/gtk/fast/repaint/japanese-rl-selection-clear-expected.txt: Removed.
+        * platform/gtk/fast/repaint/japanese-rl-selection-repaint-expected.txt: Removed.
+        * platform/gtk/fast/repaint/layer-hide-when-needs-layout-expected.png: Removed.
+        * platform/gtk/fast/repaint/layer-visibility-expected.png: Removed.
+        * platform/gtk/fast/repaint/line-in-scrolled-clipped-block-expected.txt: Removed.
+        * platform/gtk/fast/repaint/moving-shadow-on-path-expected.txt: Removed.
+        * platform/gtk/fast/repaint/overflow-auto-in-overflow-auto-scrolled-expected.png: Removed.
+        * platform/gtk/fast/repaint/overflow-clip-subtree-layout-expected.png: Removed.
+        * platform/gtk/fast/repaint/overflow-into-content-expected.png: Removed.
+        * platform/gtk/fast/repaint/overflow-scroll-in-overflow-scroll-scrolled-expected.png: Removed.
+        * platform/gtk/fast/repaint/reflection-repaint-test-expected.txt: Removed.
+        * platform/gtk/fast/repaint/repaint-across-writing-mode-boundary-expected.txt: Removed.
+        * platform/gtk/fast/repaint/repaint-during-scroll-expected.png: Removed.
+        * platform/gtk/fast/repaint/repaint-during-scroll-with-zoom-expected.txt: Removed.
+        * platform/gtk/fast/repaint/scroll-absolute-layer-with-reflection-expected.png: Removed.
+        * platform/gtk/fast/repaint/scroll-fixed-layer-with-no-visible-content-expected.png: Removed.
+        * platform/gtk/fast/repaint/scroll-fixed-layer-with-reflection-expected.png: Removed.
+        * platform/gtk/fast/repaint/scroll-fixed-reflected-layer-expected.png: Removed.
+        * platform/gtk/fast/repaint/scroll-in-clipped-layer-expected.png: Removed.
+        * platform/gtk/fast/repaint/scroll-in-fixed-layer-expected.png: Removed.
+        * platform/gtk/fast/repaint/subtree-root-clip-2-expected.png: Removed.
+        * platform/gtk/fast/repaint/subtree-root-clip-3-expected.png: Removed.
+        * platform/gtk/fast/repaint/subtree-root-clip-expected.png: Removed.
+        * platform/gtk/fast/repaint/table-cell-vertical-overflow-expected.txt: Removed.
+        * platform/gtk/fast/repaint/table-col-background-expected.png: Removed.
+        * platform/gtk/fast/repaint/table-outer-border-expected.png: Removed.
+        * platform/gtk/fast/repaint/table-overflow-auto-in-overflow-auto-scrolled-expected.png: Removed.
+        * platform/gtk/fast/repaint/table-overflow-hidden-in-overflow-hidden-scrolled-expected.png: Removed.
+        * platform/gtk/fast/repaint/table-overflow-scroll-in-overflow-scroll-scrolled-expected.png: Removed.
+        * platform/gtk/fast/repaint/table-row-expected.png: Removed.
+        * platform/gtk/fast/repaint/table-section-overflow-expected.png: Removed.
+        * platform/gtk/fast/repaint/transform-layout-repaint-expected.txt: Removed.
+        * platform/gtk/fast/repaint/view-background-from-body-1-expected.png: Removed.
+        * platform/gtk/fast/repaint/view-background-from-body-2-expected.png: Removed.
+        * platform/mac-wk2/fast/repaint/table-cell-collapsed-border-scroll-expected.txt: Removed.
+        * platform/mac/fast/repaint/box-shadow-inset-repaint-expected.txt: Removed.
+        * platform/mac/fast/repaint/float-overflow-expected.txt: Removed.
+        * platform/mac/fast/repaint/float-overflow-right-expected.txt: Removed.
+        * platform/mac/fast/repaint/inline-horizontal-bt-overflow-expected.txt: Removed.
+        * platform/mac/fast/repaint/inline-vertical-lr-overflow-expected.txt: Removed.
+        * platform/mac/fast/repaint/inline-vertical-rl-overflow-expected.txt: Removed.
+        * platform/mac/fast/repaint/table-cell-vertical-overflow-expected.txt: Removed.
+        * platform/win/fast/repaint/table-cell-collapsed-border-scroll-expected.txt: Removed.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: fast/forms
+
+        Unreviewed; run "webkit-patch optimize-baselines fast/forms"
+
+        * fast/forms/fieldset-legend-padding-unclipped-fieldset-border-expected.txt:
+        * fast/forms/fieldset-with-float-expected.txt: Renamed from LayoutTests/platform/efl/fast/forms/fieldset-with-float-expected.txt.
+        * fast/forms/input-no-renderer-expected.txt: Renamed from LayoutTests/platform/efl/fast/forms/input-no-renderer-expected.txt.
+        * fast/forms/label/labelable-elements-expected.txt: Renamed from LayoutTests/platform/gtk/fast/forms/label/labelable-elements-expected.txt.
+        * fast/forms/range/slider-thumb-stylability-expected.png: Renamed from LayoutTests/platform/efl/fast/forms/range/slider-thumb-stylability-expected.png.
+        * fast/forms/select-listbox-multiple-no-focusring-expected.txt: Renamed from LayoutTests/platform/efl/fast/forms/select-listbox-multiple-no-focusring-expected.txt.
+        * fast/forms/select-overflow-scroll-expected.txt: Renamed from LayoutTests/platform/efl/fast/forms/select-overflow-scroll-expected.txt.
+        * fast/forms/select-overflow-scroll-inherited-expected.txt: Renamed from LayoutTests/platform/efl/fast/forms/select-overflow-scroll-inherited-expected.txt.
+        * fast/forms/textfield-overflow-by-value-update-expected.png: Renamed from LayoutTests/platform/efl/fast/forms/textfield-overflow-by-value-update-expected.png.
+        * fast/forms/textfield-overflow-by-value-update-expected.txt: Renamed from LayoutTests/platform/efl/fast/forms/textfield-overflow-by-value-update-expected.txt.
+        * platform/efl-wk2/fast/forms/validation-message-appearance-expected.png: Renamed from LayoutTests/platform/efl/fast/forms/validation-message-appearance-expected.png.
+        * platform/gtk/fast/forms/fieldset-with-float-expected.txt: Removed.
+        * platform/gtk/fast/forms/input-no-renderer-expected.txt: Removed.
+        * platform/gtk/fast/forms/range/slider-thumb-stylability-expected.png: Removed.
+        * platform/gtk/fast/forms/select-listbox-multiple-no-focusring-expected.txt: Removed.
+        * platform/gtk/fast/forms/select-overflow-scroll-expected.txt: Removed.
+        * platform/gtk/fast/forms/select-overflow-scroll-inherited-expected.txt: Removed.
+        * platform/gtk/fast/forms/textfield-overflow-by-value-update-expected.png: Removed.
+        * platform/mac/fast/forms/fieldset-legend-padding-unclipped-fieldset-border-expected.txt: Removed.
+        * platform/mac/fast/forms/label/labelable-elements-expected.txt: Removed.
+        * platform/mac/fast/forms/textfield-overflow-by-value-update-expected.txt: Removed.
+        * platform/win-7sp0/fast/forms/cursor-at-editable-content-boundary-expected.txt: Renamed from LayoutTests/platform/win/fast/forms/cursor-at-editable-content-boundary-expected.txt.
+        * platform/win-7sp0/fast/forms/implicit-submission-expected.txt: Renamed from LayoutTests/platform/win/fast/forms/implicit-submission-expected.txt.
+        * platform/win-7sp0/fast/forms/range/slider-mouse-events-expected.txt: Renamed from LayoutTests/platform/win/fast/forms/range/slider-mouse-events-expected.txt.
+        * platform/win-7sp0/fast/forms/select-popup-pagekeys-expected.txt: Renamed from LayoutTests/platform/win/fast/forms/select-popup-pagekeys-expected.txt.
+        * platform/win/fast/forms/fieldset-legend-padding-unclipped-fieldset-border-expected.txt: Removed.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: editing
+
+        Unreviewed; run "webkit-patch optimize-baselines editing"
+
+        * editing/deleting/delete-3775172-fix-expected.png: Renamed from LayoutTests/platform/efl/editing/deleting/delete-3775172-fix-expected.png.
+        * editing/deleting/delete-after-span-ws-001-expected.txt: Renamed from LayoutTests/platform/efl/editing/deleting/delete-after-span-ws-001-expected.txt.
+        * editing/deleting/delete-after-span-ws-002-expected.txt: Renamed from LayoutTests/platform/efl/editing/deleting/delete-after-span-ws-002-expected.txt.
+        * editing/deleting/delete-after-span-ws-003-expected.txt: Renamed from LayoutTests/platform/efl/editing/deleting/delete-after-span-ws-003-expected.txt.
+        * editing/deleting/delete-at-start-or-end-expected.txt: Renamed from LayoutTests/platform/efl/editing/deleting/delete-at-start-or-end-expected.txt.
+        * editing/deleting/delete-br-002-expected.txt: Renamed from LayoutTests/platform/mac/editing/deleting/delete-br-002-expected.txt.
+        * editing/deleting/delete-br-004-expected.txt: Renamed from LayoutTests/platform/mac/editing/deleting/delete-br-004-expected.txt.
+        * editing/deleting/delete-br-005-expected.txt: Renamed from LayoutTests/platform/mac/editing/deleting/delete-br-005-expected.txt.
+        * editing/deleting/delete-br-006-expected.txt: Renamed from LayoutTests/platform/mac/editing/deleting/delete-br-006-expected.txt.
+        * editing/deleting/delete-line-end-ws-001-expected.txt: Renamed from LayoutTests/platform/efl/editing/deleting/delete-line-end-ws-001-expected.txt.
+        * editing/deleting/delete-line-end-ws-002-expected.txt: Renamed from LayoutTests/platform/efl/editing/deleting/delete-line-end-ws-002-expected.txt.
+        * editing/input/scroll-to-edge-if-line-break-at-end-of-document-contenteditable-expected.txt:
+        * editing/inserting/insert-3851164-fix-expected.png: Renamed from LayoutTests/platform/efl/editing/inserting/insert-3851164-fix-expected.png.
+        * editing/selection/5195166-1-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/5195166-1-expected.txt.
+        * editing/selection/editable-links-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/editable-links-expected.txt.
+        * editing/selection/focus-body-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/focus-body-expected.txt.
+        * editing/selection/select-all-001-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/select-all-001-expected.txt.
+        * editing/selection/select-all-002-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/select-all-002-expected.txt.
+        * editing/selection/select-all-003-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/select-all-003-expected.txt.
+        * editing/selection/select-all-004-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/select-all-004-expected.txt.
+        * editing/selection/unrendered-001-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/unrendered-001-expected.txt.
+        * editing/selection/unrendered-002-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/unrendered-002-expected.txt.
+        * editing/selection/unrendered-003-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/unrendered-003-expected.txt.
+        * editing/selection/unrendered-004-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/unrendered-004-expected.txt.
+        * editing/selection/unrendered-005-expected.txt: Renamed from LayoutTests/platform/efl/editing/selection/unrendered-005-expected.txt.
+        * editing/undo/5378473-expected.txt: Renamed from LayoutTests/platform/efl/editing/undo/5378473-expected.txt.
+        * editing/undo/undo-misspellings-expected.txt: Renamed from LayoutTests/platform/efl/editing/undo/undo-misspellings-expected.txt.
+        * editing/unsupported-content/table-delete-001-expected.txt: Renamed from LayoutTests/platform/efl/editing/unsupported-content/table-delete-001-expected.txt.
+        * editing/unsupported-content/table-delete-003-expected.png: Renamed from LayoutTests/platform/efl/editing/unsupported-content/table-delete-003-expected.png.
+        * editing/unsupported-content/table-delete-003-expected.txt: Renamed from LayoutTests/platform/efl/editing/unsupported-content/table-delete-003-expected.txt.
+        * platform/efl-wk2/editing/input/reveal-caret-of-multiline-contenteditable-expected.txt: Renamed from LayoutTests/platform/efl/editing/input/reveal-caret-of-multiline-contenteditable-expected.txt.
+        * platform/efl/editing/caret/caret-color-expected.txt: Renamed from LayoutTests/editing/caret/caret-color-expected.txt.
+        * platform/efl/editing/input/scroll-to-edge-if-line-break-at-end-of-document-contenteditable-expected.txt: Removed.
+        * platform/gtk/editing/deleting/delete-3775172-fix-expected.png: Removed.
+        * platform/gtk/editing/deleting/delete-after-span-ws-001-expected.txt: Removed.
+        * platform/gtk/editing/deleting/delete-after-span-ws-002-expected.txt: Removed.
+        * platform/gtk/editing/deleting/delete-after-span-ws-003-expected.txt: Removed.
+        * platform/gtk/editing/deleting/delete-line-end-ws-001-expected.txt: Removed.
+        * platform/gtk/editing/deleting/delete-line-end-ws-002-expected.txt: Removed.
+        * platform/gtk/editing/input/scroll-to-edge-if-line-break-at-end-of-document-contenteditable-expected.txt: Removed.
+        * platform/gtk/editing/inserting/insert-3851164-fix-expected.png: Removed.
+        * platform/gtk/editing/selection/editable-links-expected.txt: Removed.
+        * platform/gtk/editing/selection/focus-body-expected.txt: Removed.
+        * platform/gtk/editing/selection/select-all-001-expected.txt: Removed.
+        * platform/gtk/editing/selection/select-all-002-expected.txt: Removed.
+        * platform/gtk/editing/selection/select-all-003-expected.txt: Removed.
+        * platform/gtk/editing/selection/select-all-004-expected.txt: Removed.
+        * platform/gtk/editing/selection/unrendered-001-expected.txt: Removed.
+        * platform/gtk/editing/selection/unrendered-002-expected.txt: Removed.
+        * platform/gtk/editing/selection/unrendered-003-expected.txt: Removed.
+        * platform/gtk/editing/selection/unrendered-004-expected.txt: Removed.
+        * platform/gtk/editing/selection/unrendered-005-expected.txt: Removed.
+        * platform/mac/editing/deleting/delete-at-start-or-end-expected.txt: Removed.
+        * platform/mac/editing/input/scroll-to-edge-if-line-break-at-end-of-document-contenteditable-expected.txt: Removed.
+        * platform/mac/editing/inserting/insert-div-010-expected.txt: Renamed from LayoutTests/editing/inserting/insert-div-010-expected.txt.
+        * platform/mac/editing/selection/5195166-1-expected.txt: Removed.
+        * platform/mac/editing/style/unbold-in-bold-expected.txt: Renamed from LayoutTests/editing/style/unbold-in-bold-expected.txt.
+        * platform/mac/editing/undo/5378473-expected.txt: Removed.
+        * platform/mac/editing/undo/undo-misspellings-expected.txt: Removed.
+        * platform/mac/editing/unsupported-content/table-delete-001-expected.txt: Removed.
+        * platform/mac/editing/unsupported-content/table-delete-003-expected.png: Removed.
+        * platform/mac/editing/unsupported-content/table-delete-003-expected.txt: Removed.
+        * platform/win-7sp0/editing/selection/collapse-selection-in-bidi-expected.txt: Renamed from LayoutTests/platform/win/editing/selection/collapse-selection-in-bidi-expected.txt.
+        * platform/win-7sp0/editing/selection/drag-text-delay-expected.txt: Renamed from LayoutTests/platform/win/editing/selection/drag-text-delay-expected.txt.
+        * platform/win-7sp0/editing/selection/extend-selection-home-end-expected.txt: Renamed from LayoutTests/platform/win/editing/selection/extend-selection-home-end-expected.txt.
+        * platform/win/editing/deleting/delete-br-002-expected.txt: Removed.
+        * platform/win/editing/deleting/delete-br-004-expected.txt: Removed.
+        * platform/win/editing/deleting/delete-br-005-expected.txt: Removed.
+        * platform/win/editing/deleting/delete-br-006-expected.txt: Removed.
+        * platform/win/editing/deleting/delete-br-009-expected.txt: Removed.
+        * platform/win/editing/inserting/insert-3800346-fix-expected.txt: Removed.
+        * platform/win/editing/selection/anchor-focus2-expected.txt: Removed.
+        * platform/win/editing/selection/anchor-focus3-expected.txt: Removed.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: tables
+
+        Unreviewed; run "webkit-patch optimize-baselines tables"
+
+        * platform/gtk/tables/mozilla/bugs/adforce_imgis_com-expected.txt: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug102145-1-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug102145-2-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug102145-3-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug102145-4-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug10269-1-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug10296-2-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug103533-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug11321-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug12908-2-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug13105-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug14159-3-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug149275-2-expected.txt: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug1818-6-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug196870-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug222336-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug222467-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug23072-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug23151-expected.txt: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug23994-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug26553-expected.txt: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug269566-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug27038-3-expected.txt: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug275625-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug277062-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug2886-2-expected.txt: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug28933-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug3037-1-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug3037-2-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug32447-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug34538-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug56405-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug641-2-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug75250-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug8032-2-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug8361-expected.png: Removed.
+        * platform/gtk/tables/mozilla/bugs/bug9024-expected.png: Removed.
+        * platform/gtk/tables/mozilla/core/col_widths_fix_autoFixPer-expected.png: Removed.
+        * platform/gtk/tables/mozilla/marvin/table_overflow_hidden_td-expected.txt: Removed.
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug128876-expected.png: Removed.
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug178855-expected.png: Removed.
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug3517-expected.png: Removed.
+        * platform/gtk/tables/mozilla_expected_failures/marvin/table_overflow_dirty_reflow-expected.png: Removed.
+        * platform/gtk/tables/mozilla_expected_failures/marvin/table_overflow_hidden_table-expected.txt: Removed.
+        * platform/gtk/tables/mozilla_expected_failures/marvin/table_overflow_hidden_tbody-expected.txt: Removed.
+        * platform/gtk/tables/mozilla_expected_failures/marvin/table_overflow_hidden_tr-expected.txt: Removed.
+        * platform/gtk/tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_cell_sibling-expected.txt: Removed.
+        * platform/gtk/tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_row-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug120107-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug1271-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug12908-2-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug12910-2-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug131020-2-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug13169-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug137388-1-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug137388-2-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug137388-3-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug157890-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug1818-3-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug1818-6-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug196870-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug222336-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug222467-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug269566-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug277062-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug28933-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug29314-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug2954-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug50695-2-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug56201-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug8032-2-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug9024-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug92647-2-expected.txt: Removed.
+        * platform/mac-mountainlion/tables/mozilla/core/col_widths_fix_autoFixPer-expected.txt: Removed.
+        * platform/mac/tables/mozilla/bugs/bug27038-3-expected.txt: Removed.
+        * platform/mac/tables/mozilla/core/row_span-expected.txt: Removed.
+        * platform/mac/tables/mozilla_expected_failures/bugs/bug131020-3-expected.txt: Removed.
+        * platform/win-future/tables/mozilla/core/bloomberg-expected.txt: Renamed from LayoutTests/tables/mozilla/core/bloomberg-expected.txt.
+        * platform/win-future/tables/mozilla_expected_failures/collapsing_borders/bug41262-1-expected.txt: Renamed from LayoutTests/tables/mozilla_expected_failures/collapsing_borders/bug41262-1-expected.txt.
+        * platform/win/tables/mozilla/bugs/bug133756-1-expected.txt: Removed.
+        * platform/win/tables/mozilla/bugs/bug133756-2-expected.txt: Removed.
+        * platform/win/tables/mozilla/bugs/bug220536-expected.txt: Removed.
+        * platform/win/tables/mozilla/bugs/bug8858-expected.txt: Removed.
+        * platform/win/tables/mozilla/core/row_span-expected.txt: Removed.
+        * platform/win/tables/mozilla_expected_failures/bugs/bug131020-3-expected.txt: Removed.
+        * platform/win/tables/mozilla_expected_failures/bugs/bug65372-expected.txt: Removed.
+        * tables/mozilla/bugs/adforce_imgis_com-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/adforce_imgis_com-expected.txt.
+        * tables/mozilla/bugs/bug102145-1-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug102145-1-expected.png.
+        * tables/mozilla/bugs/bug102145-2-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug102145-2-expected.png.
+        * tables/mozilla/bugs/bug102145-3-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug102145-3-expected.png.
+        * tables/mozilla/bugs/bug102145-4-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug102145-4-expected.png.
+        * tables/mozilla/bugs/bug10269-1-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug10269-1-expected.png.
+        * tables/mozilla/bugs/bug10296-2-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug10296-2-expected.png.
+        * tables/mozilla/bugs/bug103533-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug103533-expected.png.
+        * tables/mozilla/bugs/bug11321-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug11321-expected.png.
+        * tables/mozilla/bugs/bug12908-2-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug12908-2-expected.png.
+        * tables/mozilla/bugs/bug13105-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug13105-expected.png.
+        * tables/mozilla/bugs/bug133756-1-expected.txt: Renamed from LayoutTests/platform/mac/tables/mozilla/bugs/bug133756-1-expected.txt.
+        * tables/mozilla/bugs/bug133756-2-expected.txt: Renamed from LayoutTests/platform/mac/tables/mozilla/bugs/bug133756-2-expected.txt.
+        * tables/mozilla/bugs/bug14159-3-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug14159-3-expected.png.
+        * tables/mozilla/bugs/bug149275-2-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug149275-2-expected.txt.
+        * tables/mozilla/bugs/bug1818-6-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug1818-6-expected.png.
+        * tables/mozilla/bugs/bug196870-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug196870-expected.png.
+        * tables/mozilla/bugs/bug220536-expected.txt: Renamed from LayoutTests/platform/mac/tables/mozilla/bugs/bug220536-expected.txt.
+        * tables/mozilla/bugs/bug222336-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug222336-expected.png.
+        * tables/mozilla/bugs/bug222467-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug222467-expected.png.
+        * tables/mozilla/bugs/bug23072-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug23072-expected.png.
+        * tables/mozilla/bugs/bug23151-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug23151-expected.txt.
+        * tables/mozilla/bugs/bug23994-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug23994-expected.png.
+        * tables/mozilla/bugs/bug26553-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug26553-expected.txt.
+        * tables/mozilla/bugs/bug269566-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug269566-expected.png.
+        * tables/mozilla/bugs/bug27038-3-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug27038-3-expected.txt.
+        * tables/mozilla/bugs/bug275625-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug275625-expected.png.
+        * tables/mozilla/bugs/bug277062-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug277062-expected.png.
+        * tables/mozilla/bugs/bug2886-2-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug2886-2-expected.txt.
+        * tables/mozilla/bugs/bug28933-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug28933-expected.png.
+        * tables/mozilla/bugs/bug3037-1-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug3037-1-expected.png.
+        * tables/mozilla/bugs/bug3037-2-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug3037-2-expected.png.
+        * tables/mozilla/bugs/bug32447-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug32447-expected.png.
+        * tables/mozilla/bugs/bug34538-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug34538-expected.png.
+        * tables/mozilla/bugs/bug56405-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug56405-expected.png.
+        * tables/mozilla/bugs/bug641-2-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug641-2-expected.png.
+        * tables/mozilla/bugs/bug75250-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug75250-expected.png.
+        * tables/mozilla/bugs/bug8032-2-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug8032-2-expected.png.
+        * tables/mozilla/bugs/bug8361-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug8361-expected.png.
+        * tables/mozilla/bugs/bug8858-expected.txt: Renamed from LayoutTests/platform/mac/tables/mozilla/bugs/bug8858-expected.txt.
+        * tables/mozilla/bugs/bug9024-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/bugs/bug9024-expected.png.
+        * tables/mozilla/core/col_widths_fix_autoFixPer-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla/core/col_widths_fix_autoFixPer-expected.png.
+        * tables/mozilla/core/row_span-expected.txt:
+        * tables/mozilla/marvin/table_overflow_hidden_td-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla/marvin/table_overflow_hidden_td-expected.txt.
+        * tables/mozilla_expected_failures/bugs/bug128876-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla_expected_failures/bugs/bug128876-expected.png.
+        * tables/mozilla_expected_failures/bugs/bug131020-3-expected.txt:
+        * tables/mozilla_expected_failures/bugs/bug178855-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla_expected_failures/bugs/bug178855-expected.png.
+        * tables/mozilla_expected_failures/bugs/bug3517-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla_expected_failures/bugs/bug3517-expected.png.
+        * tables/mozilla_expected_failures/bugs/bug65372-expected.txt: Renamed from LayoutTests/platform/mac/tables/mozilla_expected_failures/bugs/bug65372-expected.txt.
+        * tables/mozilla_expected_failures/marvin/table_overflow_dirty_reflow-expected.png: Renamed from LayoutTests/platform/efl/tables/mozilla_expected_failures/marvin/table_overflow_dirty_reflow-expected.png.
+        * tables/mozilla_expected_failures/marvin/table_overflow_hidden_table-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla_expected_failures/marvin/table_overflow_hidden_table-expected.txt.
+        * tables/mozilla_expected_failures/marvin/table_overflow_hidden_tbody-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla_expected_failures/marvin/table_overflow_hidden_tbody-expected.txt.
+        * tables/mozilla_expected_failures/marvin/table_overflow_hidden_tr-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla_expected_failures/marvin/table_overflow_hidden_tr-expected.txt.
+        * tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_cell_sibling-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_cell_sibling-expected.txt.
+        * tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_row-expected.txt: Renamed from LayoutTests/platform/efl/tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_row-expected.txt.
+
+2013-11-03  Zan Dobersek  <zdobersek@igalia.com>
+
+        Precision errors in Math.cbrt() on GTK, EFL
+        https://bugs.webkit.org/show_bug.cgi?id=123624
+
+        Reviewed by Csaba Osztrogonác.
+
+        Calculate cube roots of 8 and -8, expecting 2 and -2, respectively. Cube roots of those two
+        numbers don't contain precision errors on the GTK and EFL ports as is the case with 27 and -27.
+
+        * js/math-expected.txt:
+        * js/script-tests/math.js:
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: fast/frames
+
+        Unreviewed; run "webkit-patch optimize-baselines fast/frames"
+
+        * fast/frames/002-expected.png: Renamed from LayoutTests/platform/efl/fast/frames/002-expected.png.
+        * fast/frames/empty-cols-attribute-expected.png: Renamed from LayoutTests/platform/efl/fast/frames/empty-cols-attribute-expected.png.
+        * fast/frames/flattening/frameset-flattening-subframesets-expected.txt: Renamed from LayoutTests/platform/efl/fast/frames/flattening/frameset-flattening-subframesets-expected.txt.
+        * fast/frames/frame-set-whitespace-attributes-expected.png: Renamed from LayoutTests/platform/efl/fast/frames/frame-set-whitespace-attributes-expected.png.
+        * fast/frames/no-frame-borders-expected.png: Renamed from LayoutTests/platform/efl/fast/frames/no-frame-borders-expected.png.
+        * platform/gtk/fast/frames/002-expected.png: Removed.
+        * platform/gtk/fast/frames/empty-cols-attribute-expected.png: Removed.
+        * platform/gtk/fast/frames/flattening/frameset-flattening-subframesets-expected.txt: Removed.
+        * platform/gtk/fast/frames/frame-set-whitespace-attributes-expected.png: Removed.
+        * platform/gtk/fast/frames/no-frame-borders-expected.png: Removed.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: fast/table
+
+        Unreviewed; run "webkit-patch optimize-baselines fast/table"
+
+        * fast/table/022-expected.txt: Renamed from LayoutTests/platform/efl/fast/table/022-expected.txt.
+        * fast/table/024-expected.png: Renamed from LayoutTests/platform/efl/fast/table/024-expected.png.
+        * fast/table/031-expected.png: Renamed from LayoutTests/platform/efl/fast/table/031-expected.png.
+        * fast/table/032-expected.png: Renamed from LayoutTests/platform/efl/fast/table/032-expected.png.
+        * fast/table/034-expected.txt: Renamed from LayoutTests/platform/efl/fast/table/034-expected.txt.
+        * fast/table/auto-100-percent-width-expected.png: Renamed from LayoutTests/platform/efl/fast/table/auto-100-percent-width-expected.png.
+        * fast/table/border-collapsing/cached-change-cell-sl-border-color-expected.png: Renamed from LayoutTests/platform/efl/fast/table/border-collapsing/cached-change-cell-sl-border-color-expected.png.
+        * fast/table/div-as-col-span-expected.png: Renamed from LayoutTests/platform/efl/fast/table/div-as-col-span-expected.png.
+        * fast/table/fixed-table-with-percent-width-inside-extra-large-div-expected.txt: Renamed from LayoutTests/platform/efl/fast/table/fixed-table-with-percent-width-inside-extra-large-div-expected.txt.
+        * fast/table/giantCellspacing-expected.png: Renamed from LayoutTests/platform/efl/fast/table/giantCellspacing-expected.png.
+        * fast/table/giantCellspacing-expected.txt: Renamed from LayoutTests/platform/efl/fast/table/giantCellspacing-expected.txt.
+        * fast/table/giantRowspan-expected.txt: Renamed from LayoutTests/platform/efl/fast/table/giantRowspan-expected.txt.
+        * fast/table/giantRowspan2-expected.txt: Renamed from LayoutTests/platform/mac/fast/table/giantRowspan2-expected.txt.
+        * fast/table/percent-widths-stretch-vertical-expected.png: Renamed from LayoutTests/platform/efl/fast/table/percent-widths-stretch-vertical-expected.png.
+        * fast/table/table-before-child-style-update-expected.png: Renamed from LayoutTests/platform/efl/fast/table/table-before-child-style-update-expected.png.
+        * fast/table/table-row-before-child-style-update-expected.png: Renamed from LayoutTests/platform/efl/fast/table/table-row-before-child-style-update-expected.png.
+        * fast/table/table-row-style-not-updated-expected.png: Renamed from LayoutTests/platform/efl/fast/table/table-row-style-not-updated-expected.png.
+        * fast/table/table-row-style-not-updated-with-after-content-expected.png: Renamed from LayoutTests/platform/efl/fast/table/table-row-style-not-updated-with-after-content-expected.png.
+        * fast/table/table-row-style-not-updated-with-before-content-expected.png: Renamed from LayoutTests/platform/efl/fast/table/table-row-style-not-updated-with-before-content-expected.png.
+        * fast/table/table-style-not-updated-expected.png: Renamed from LayoutTests/platform/efl/fast/table/table-style-not-updated-expected.png.
+        * fast/table/vertical-align-baseline-readjust-expected.png: Renamed from LayoutTests/platform/efl/fast/table/vertical-align-baseline-readjust-expected.png.
+        * platform/gtk/fast/table/022-expected.txt: Removed.
+        * platform/gtk/fast/table/024-expected.png: Removed.
+        * platform/gtk/fast/table/031-expected.png: Removed.
+        * platform/gtk/fast/table/032-expected.png: Removed.
+        * platform/gtk/fast/table/034-expected.txt: Removed.
+        * platform/gtk/fast/table/auto-100-percent-width-expected.png: Removed.
+        * platform/gtk/fast/table/border-collapsing/cached-change-cell-sl-border-color-expected.png: Removed.
+        * platform/gtk/fast/table/div-as-col-span-expected.png: Removed.
+        * platform/gtk/fast/table/fixed-table-with-percent-width-inside-extra-large-div-expected.txt: Removed.
+        * platform/gtk/fast/table/giantCellspacing-expected.png: Removed.
+        * platform/gtk/fast/table/giantCellspacing-expected.txt: Removed.
+        * platform/gtk/fast/table/giantRowspan-expected.txt: Removed.
+        * platform/gtk/fast/table/percent-widths-stretch-vertical-expected.png: Removed.
+        * platform/gtk/fast/table/table-before-child-style-update-expected.png: Removed.
+        * platform/gtk/fast/table/table-row-before-child-style-update-expected.png: Removed.
+        * platform/gtk/fast/table/table-row-style-not-updated-expected.png: Removed.
+        * platform/gtk/fast/table/table-row-style-not-updated-with-after-content-expected.png: Removed.
+        * platform/gtk/fast/table/table-row-style-not-updated-with-before-content-expected.png: Removed.
+        * platform/gtk/fast/table/table-style-not-updated-expected.png: Removed.
+        * platform/gtk/fast/table/vertical-align-baseline-readjust-expected.png: Removed.
+        * platform/mac/fast/table/022-expected.txt: Removed.
+        * platform/mac/fast/table/giantCellspacing-expected.txt: Removed.
+        * platform/mac/fast/table/giantRowspan-expected.txt: Removed.
+        * platform/win/fast/table/giantRowspan-expected.txt: Removed.
+        * platform/win/fast/table/giantRowspan2-expected.txt: Removed.
+
+2013-11-03  Sun-woo Nam  <sunny.nam@samsung.com>
+
+        [EFL][WK1] Some tests of editing/selection fail to render properly
+        https://bugs.webkit.org/show_bug.cgi?id=117574
+
+        Unreviewed, EFL gardening.
+
+        These tests are passed in wk1(and wk2), but skipped in wk1.
+        These tests have been reviewed since those are added.
+        Now these tests are operating properly, so those need to update the test expectations.
+        Also 'editing/selection/caret-and-focus-ring.html' is already changed a reason of failure by Bug no.123696
+
+        * platform/efl-wk1/TestExpectations:
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: fast/text
+
+        Unreviewed; run "webkit-patch optimize-baselines fast/text"
+
+        * fast/text/decorations-transformed-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/decorations-transformed-expected.txt.
+        * fast/text/fixed-pitch-control-characters-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/fixed-pitch-control-characters-expected.txt.
+        * fast/text/international/001-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/international/001-expected.txt.
+        * fast/text/international/vertical-text-glyph-test-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/international/vertical-text-glyph-test-expected.txt.
+        * fast/text/international/vertical-text-metrics-test-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/international/vertical-text-metrics-test-expected.txt.
+        * fast/text/international/wrap-CJK-001-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/international/wrap-CJK-001-expected.txt.
+        * fast/text/justify-ideograph-complex-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/justify-ideograph-complex-expected.txt.
+        * fast/text/justify-ideograph-simple-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/justify-ideograph-simple-expected.txt.
+        * fast/text/justify-ideograph-vertical-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/justify-ideograph-vertical-expected.txt.
+        * fast/text/selection-painted-separately-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/selection-painted-separately-expected.txt.
+        * fast/text/soft-hyphen-2-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/soft-hyphen-2-expected.txt.
+        * fast/text/soft-hyphen-3-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/soft-hyphen-3-expected.txt.
+        * fast/text/stripNullFromText-expected.png: Renamed from LayoutTests/platform/efl/fast/text/stripNullFromText-expected.png.
+        * fast/text/updateNewFont-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/updateNewFont-expected.txt.
+        * fast/text/whitespace/001-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/whitespace/001-expected.txt.
+        * fast/text/whitespace/013-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/whitespace/013-expected.txt.
+        * fast/text/whitespace/014-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/whitespace/014-expected.txt.
+        * fast/text/whitespace/017-expected.png: Renamed from LayoutTests/platform/efl/fast/text/whitespace/017-expected.png.
+        * fast/text/whitespace/017-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/whitespace/017-expected.txt.
+        * fast/text/whitespace/029-expected.png: Renamed from LayoutTests/platform/efl/fast/text/whitespace/029-expected.png.
+        * fast/text/whitespace/029-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/whitespace/029-expected.txt.
+        * fast/text/whitespace/pre-newline-box-test-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/whitespace/pre-newline-box-test-expected.txt.
+        * fast/text/whitespace/tab-character-basics-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/whitespace/tab-character-basics-expected.txt.
+        * platform/efl-wk1/fast/text/complex-text-opacity-expected.png: Renamed from LayoutTests/platform/efl/fast/text/complex-text-opacity-expected.png.
+        * platform/efl-wk1/fast/text/complex-text-opacity-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/complex-text-opacity-expected.txt.
+        * platform/efl-wk1/fast/text/international/bidi-layout-across-linebreak-expected.png: Renamed from LayoutTests/platform/efl/fast/text/international/bidi-layout-across-linebreak-expected.png.
+        * platform/efl-wk1/fast/text/international/bidi-layout-across-linebreak-expected.txt: Renamed from LayoutTests/platform/efl/fast/text/international/bidi-layout-across-linebreak-expected.txt.
+        * platform/efl-wk2/fast/text/atsui-pointtooffset-calls-cg-expected.png: Renamed from LayoutTests/platform/efl/fast/text/atsui-pointtooffset-calls-cg-expected.png.
+        * platform/efl-wk2/fast/text/atsui-rtl-override-selection-expected.png: Renamed from LayoutTests/platform/efl/fast/text/atsui-rtl-override-selection-expected.png.
+        * platform/efl-wk2/fast/text/atsui-small-caps-punctuation-size-expected.png: Renamed from LayoutTests/platform/efl/fast/text/atsui-small-caps-punctuation-size-expected.png.
+        * platform/efl-wk2/fast/text/hyphenate-character-expected.png: Renamed from LayoutTests/platform/efl/fast/text/hyphenate-character-expected.png.
+        * platform/efl-wk2/fast/text/hyphenate-first-word-expected.png: Renamed from LayoutTests/platform/efl/fast/text/hyphenate-first-word-expected.png.
+        * platform/efl-wk2/fast/text/hyphenate-limit-before-after-expected.png: Renamed from LayoutTests/platform/efl/fast/text/hyphenate-limit-before-after-expected.png.
+        * platform/efl-wk2/fast/text/hyphenate-limit-lines-expected.png: Renamed from LayoutTests/platform/efl/fast/text/hyphenate-limit-lines-expected.png.
+        * platform/efl-wk2/fast/text/hyphens-expected.png: Renamed from LayoutTests/platform/efl/fast/text/hyphens-expected.png.
+        * platform/efl-wk2/fast/text/midword-break-before-surrogate-pair-2-expected.png: Renamed from LayoutTests/platform/efl/fast/text/midword-break-before-surrogate-pair-2-expected.png.
+        * platform/gtk/fast/text/decorations-transformed-expected.txt: Removed.
+        * platform/gtk/fast/text/fixed-pitch-control-characters-expected.txt: Removed.
+        * platform/gtk/fast/text/international/001-expected.txt: Removed.
+        * platform/gtk/fast/text/international/vertical-text-glyph-test-expected.txt: Removed.
+        * platform/gtk/fast/text/international/vertical-text-metrics-test-expected.txt: Removed.
+        * platform/gtk/fast/text/international/wrap-CJK-001-expected.txt: Removed.
+        * platform/gtk/fast/text/justify-ideograph-complex-expected.txt: Removed.
+        * platform/gtk/fast/text/justify-ideograph-simple-expected.txt: Removed.
+        * platform/gtk/fast/text/justify-ideograph-vertical-expected.txt: Removed.
+        * platform/gtk/fast/text/selection-painted-separately-expected.txt: Removed.
+        * platform/gtk/fast/text/soft-hyphen-2-expected.txt: Removed.
+        * platform/gtk/fast/text/soft-hyphen-3-expected.txt: Removed.
+        * platform/gtk/fast/text/stripNullFromText-expected.png: Removed.
+        * platform/gtk/fast/text/updateNewFont-expected.txt: Removed.
+        * platform/gtk/fast/text/whitespace/001-expected.txt: Removed.
+        * platform/gtk/fast/text/whitespace/017-expected.png: Removed.
+        * platform/gtk/fast/text/whitespace/017-expected.txt: Removed.
+        * platform/gtk/fast/text/whitespace/029-expected.png: Removed.
+        * platform/gtk/fast/text/whitespace/029-expected.txt: Removed.
+        * platform/gtk/fast/text/whitespace/pre-newline-box-test-expected.txt: Removed.
+        * platform/gtk/fast/text/whitespace/tab-character-basics-expected.txt: Removed.
+        * platform/mac/fast/text/decorations-transformed-expected.txt: Removed.
+        * platform/mac/fast/text/fixed-pitch-control-characters-expected.txt: Removed.
+        * platform/mac/fast/text/selection-painted-separately-expected.txt: Removed.
+        * platform/mac/fast/text/soft-hyphen-2-expected.txt: Removed.
+        * platform/mac/fast/text/soft-hyphen-3-expected.txt: Removed.
+        * platform/mac/fast/text/whitespace/001-expected.txt: Removed.
+        * platform/mac/fast/text/whitespace/013-expected.txt: Removed.
+        * platform/mac/fast/text/whitespace/014-expected.txt: Removed.
+        * platform/mac/fast/text/whitespace/017-expected.txt: Removed.
+
+2013-11-03  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: fast/canvas
+
+        Unreviewed; run "webkit-patch optimize-baselines fast/canvas"
+
+        * fast/canvas/canvas-empty-image-pattern-expected.png: Renamed from LayoutTests/platform/efl/fast/canvas/canvas-empty-image-pattern-expected.png.
+        * fast/canvas/canvas-incremental-repaint-2-expected.png: Renamed from LayoutTests/platform/efl/fast/canvas/canvas-incremental-repaint-2-expected.png.
+        * fast/canvas/canvas-render-layer-expected.png: Renamed from LayoutTests/platform/efl/fast/canvas/canvas-render-layer-expected.png.
+        * fast/canvas/set-colors-expected.txt: Renamed from LayoutTests/platform/efl/fast/canvas/set-colors-expected.txt.
+        * platform/gtk/fast/canvas/canvas-empty-image-pattern-expected.png: Removed.
+        * platform/gtk/fast/canvas/canvas-incremental-repaint-2-expected.png: Removed.
+        * platform/gtk/fast/canvas/canvas-render-layer-expected.png: Removed.
+        * platform/gtk/fast/canvas/set-colors-expected.txt: Removed.
+        * platform/win-7sp0/fast/canvas/canvas-draw-canvas-on-canvas-shadow-expected.txt: Renamed from LayoutTests/platform/win/fast/canvas/canvas-draw-canvas-on-canvas-shadow-expected.txt.
+        * platform/win-7sp0/fast/canvas/canvas-fillRect-gradient-shadow-expected.txt: Renamed from LayoutTests/platform/win/fast/canvas/canvas-fillRect-gradient-shadow-expected.txt.
+        * platform/win-7sp0/fast/canvas/canvas-render-layer-expected.txt: Renamed from LayoutTests/platform/win/fast/canvas/canvas-render-layer-expected.txt.
+        * platform/win-7sp0/fast/canvas/canvas-strokeRect-alpha-shadow-expected.txt: Renamed from LayoutTests/platform/win/fast/canvas/canvas-strokeRect-alpha-shadow-expected.txt.
+        * platform/win-xp/fast/canvas/set-colors-expected.txt: Removed.
+
+2013-11-03  Xabier Rodriguez Calvar  <calvaris@igalia.com>
+
+        Remove HTMLMediaElement.initialTime
+        https://bugs.webkit.org/show_bug.cgi?id=123572
+
+        Reviewed by Eric Carlson.
+
+        Patch by: philipj@opera.com
+        Blink review URL: https://codereview.chromium.org/35033002
+
+        Removed presence of initialTime in the tests.
+
+        * media/media-fragments/TC0001-expected.txt:
+        * media/media-fragments/TC0002-expected.txt:
+        * media/media-fragments/TC0003-expected.txt:
+        * media/media-fragments/TC0004-expected.txt:
+        * media/media-fragments/TC0005-expected.txt:
+        * media/media-fragments/TC0006-expected.txt:
+        * media/media-fragments/TC0009-expected.txt:
+        * media/media-fragments/TC0011-expected.txt:
+        * media/media-fragments/TC0012-expected.txt:
+        * media/media-fragments/TC0014-expected.txt:
+        * media/media-fragments/TC0015-expected.txt:
+        * media/media-fragments/TC0017-expected.txt:
+        * media/media-fragments/TC0024-expected.txt:
+        * media/media-fragments/TC0027-expected.txt:
+        * media/media-fragments/TC0028-expected.txt:
+        * media/media-fragments/TC0029-expected.txt:
+        * media/media-fragments/TC0030-expected.txt:
+        * media/media-fragments/TC0031-expected.txt:
+        * media/media-fragments/TC0032-expected.txt:
+        * media/media-fragments/TC0033-expected.txt:
+        * media/media-fragments/TC0034-expected.txt:
+        * media/media-fragments/TC0035-expected.txt:
+        * media/media-fragments/TC0036-expected.txt:
+        * media/media-fragments/TC0037-expected.txt:
+        * media/media-fragments/TC0038-expected.txt:
+        * media/media-fragments/TC0039-expected.txt:
+        * media/media-fragments/TC0044-expected.txt:
+        * media/media-fragments/TC0051-expected.txt:
+        * media/media-fragments/TC0052-expected.txt:
+        * media/media-fragments/TC0053-expected.txt:
+        * media/media-fragments/TC0054-expected.txt:
+        * media/media-fragments/TC0055-expected.txt:
+        * media/media-fragments/TC0058-expected.txt:
+        * media/media-fragments/TC0059-expected.txt:
+        * media/media-fragments/TC0061-expected.txt:
+        * media/media-fragments/TC0062-expected.txt:
+        * media/media-fragments/TC0063-expected.txt:
+        * media/media-fragments/TC0064-expected.txt:
+        * media/media-fragments/TC0065-expected.txt:
+        * media/media-fragments/TC0066-expected.txt:
+        * media/media-fragments/TC0067-expected.txt:
+        * media/media-fragments/TC0068-expected.txt:
+        * media/media-fragments/TC0069-expected.txt:
+        * media/media-fragments/TC0070-expected.txt:
+        * media/media-fragments/TC0071-expected.txt:
+        * media/media-fragments/TC0072-expected.txt:
+        * media/media-fragments/TC0073-expected.txt:
+        * media/media-fragments/TC0074-expected.txt:
+        * media/media-fragments/TC0075-expected.txt:
+        * media/media-fragments/TC0076-expected.txt:
+        * media/media-fragments/TC0077-expected.txt:
+        * media/media-fragments/TC0078-expected.txt:
+        * media/media-fragments/TC0079-expected.txt:
+        * media/media-fragments/TC0080-expected.txt:
+        * media/media-fragments/TC0081-expected.txt:
+        * media/media-fragments/TC0082-expected.txt:
+        * media/media-fragments/TC0083-expected.txt:
+        * media/media-fragments/TC0084-expected.txt:
+        * media/media-fragments/TC0085-expected.txt:
+        * media/media-fragments/TC0086-expected.txt:
+        * media/media-fragments/TC0087-expected.txt:
+        * media/media-fragments/TC0088-expected.txt:
+        * media/media-fragments/TC0089-expected.txt:
+        * media/media-fragments/TC0090-expected.txt:
+        * media/media-fragments/TC0091-expected.txt:
+        * media/media-fragments/TC0092-expected.txt:
+        * media/media-fragments/TC0093-expected.txt:
+        * media/media-fragments/TC0094-expected.txt:
+        * media/media-fragments/media-fragments.js:
+        (canplaythrough): Removed check for initialTime
+        * media/media-initialTime-expected.txt: Removed.
+        * media/media-initialTime.html: Removed.
+
+2013-11-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement generateKey for HMAC and AES-CBC
+        https://bugs.webkit.org/show_bug.cgi?id=123669
+
+        Reviewed by Dan Bernstein.
+
+        * crypto/subtle/aes-cbc-generate-key-expected.txt: Added.
+        * crypto/subtle/aes-cbc-generate-key.html: Added.
+        * crypto/subtle/hmac-generate-key-expected.txt: Added.
+        * crypto/subtle/hmac-generate-key.html: Added.
+
+        * crypto/subtle/sha-1-expected.txt: Now that crypto.webkitSubtle.generateKey exists,
+        a different exception is raised.
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: css3
+
+        Unreviewed; run "webkit-patch optimize-baselines css3"
+
+        * css3/images/cross-fade-background-size-expected.txt: Renamed from LayoutTests/platform/efl/css3/images/cross-fade-background-size-expected.txt.
+        * css3/images/cross-fade-blending-expected.png: Renamed from LayoutTests/platform/efl/css3/images/cross-fade-blending-expected.png.
+        * css3/images/cross-fade-blending-expected.txt: Renamed from LayoutTests/platform/efl/css3/images/cross-fade-blending-expected.txt.
+        * css3/images/cross-fade-invalidation-expected.txt: Renamed from LayoutTests/platform/efl/css3/images/cross-fade-invalidation-expected.txt.
+        * css3/images/cross-fade-simple-expected.txt: Renamed from LayoutTests/platform/efl/css3/images/cross-fade-simple-expected.txt.
+        * css3/images/cross-fade-sizing-expected.txt: Renamed from LayoutTests/platform/efl/css3/images/cross-fade-sizing-expected.txt.
+        * css3/images/cross-fade-tiled-expected.txt: Renamed from LayoutTests/platform/efl/css3/images/cross-fade-tiled-expected.txt.
+        * css3/selectors3/html/css3-modsel-17-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/html/css3-modsel-17-expected.png.
+        * css3/selectors3/html/css3-modsel-177a-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/html/css3-modsel-177a-expected.png.
+        * css3/selectors3/html/css3-modsel-18c-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/html/css3-modsel-18c-expected.png.
+        * css3/selectors3/html/css3-modsel-27a-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/html/css3-modsel-27a-expected.png.
+        * css3/selectors3/html/css3-modsel-27b-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/html/css3-modsel-27b-expected.png.
+        * css3/selectors3/html/css3-modsel-61-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/html/css3-modsel-61-expected.png.
+        * css3/selectors3/xhtml/css3-modsel-123b-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xhtml/css3-modsel-123b-expected.png.
+        * css3/selectors3/xhtml/css3-modsel-17-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xhtml/css3-modsel-17-expected.png.
+        * css3/selectors3/xhtml/css3-modsel-177a-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xhtml/css3-modsel-177a-expected.png.
+        * css3/selectors3/xhtml/css3-modsel-18c-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xhtml/css3-modsel-18c-expected.png.
+        * css3/selectors3/xhtml/css3-modsel-27a-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xhtml/css3-modsel-27a-expected.png.
+        * css3/selectors3/xhtml/css3-modsel-27b-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xhtml/css3-modsel-27b-expected.png.
+        * css3/selectors3/xhtml/css3-modsel-61-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xhtml/css3-modsel-61-expected.png.
+        * css3/selectors3/xhtml/css3-modsel-91-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xhtml/css3-modsel-91-expected.png.
+        * css3/selectors3/xhtml/css3-modsel-92-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xhtml/css3-modsel-92-expected.png.
+        * css3/selectors3/xml/css3-modsel-123b-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-123b-expected.png.
+        * css3/selectors3/xml/css3-modsel-167-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-167-expected.png.
+        * css3/selectors3/xml/css3-modsel-167a-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-167a-expected.png.
+        * css3/selectors3/xml/css3-modsel-17-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-17-expected.png.
+        * css3/selectors3/xml/css3-modsel-177a-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-177a-expected.png.
+        * css3/selectors3/xml/css3-modsel-18c-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-18c-expected.png.
+        * css3/selectors3/xml/css3-modsel-27a-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-27a-expected.png.
+        * css3/selectors3/xml/css3-modsel-27b-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-27b-expected.png.
+        * css3/selectors3/xml/css3-modsel-61-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-61-expected.png.
+        * css3/selectors3/xml/css3-modsel-91-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-91-expected.png.
+        * css3/selectors3/xml/css3-modsel-92-expected.png: Renamed from LayoutTests/platform/efl/css3/selectors3/xml/css3-modsel-92-expected.png.
+        * platform/efl-wk1/css3/flexbox/flexbox-baseline-expected.png: Renamed from LayoutTests/platform/efl/css3/flexbox/flexbox-baseline-expected.png.
+        * platform/efl-wk1/css3/flexbox/flexbox-baseline-expected.txt: Renamed from LayoutTests/platform/efl/css3/flexbox/flexbox-baseline-expected.txt.
+        * platform/gtk/css3/images/cross-fade-blending-expected.png: Removed.
+        * platform/gtk/css3/images/cross-fade-blending-expected.txt: Removed.
+        * platform/gtk/css3/images/cross-fade-invalidation-expected.txt: Removed.
+        * platform/gtk/css3/images/cross-fade-simple-expected.txt: Removed.
+        * platform/gtk/css3/images/cross-fade-sizing-expected.txt: Removed.
+        * platform/gtk/css3/images/cross-fade-tiled-expected.txt: Removed.
+        * platform/gtk/css3/selectors3/html/css3-modsel-17-expected.png: Removed.
+        * platform/gtk/css3/selectors3/html/css3-modsel-177a-expected.png: Removed.
+        * platform/gtk/css3/selectors3/html/css3-modsel-18c-expected.png: Removed.
+        * platform/gtk/css3/selectors3/html/css3-modsel-27a-expected.png: Removed.
+        * platform/gtk/css3/selectors3/html/css3-modsel-27b-expected.png: Removed.
+        * platform/gtk/css3/selectors3/html/css3-modsel-61-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xhtml/css3-modsel-123b-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xhtml/css3-modsel-17-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xhtml/css3-modsel-177a-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xhtml/css3-modsel-18c-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xhtml/css3-modsel-27a-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xhtml/css3-modsel-27b-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xhtml/css3-modsel-61-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xhtml/css3-modsel-91-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xhtml/css3-modsel-92-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-123b-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-167-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-167a-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-17-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-177a-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-18c-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-27a-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-27b-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-61-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-91-expected.png: Removed.
+        * platform/gtk/css3/selectors3/xml/css3-modsel-92-expected.png: Removed.
+        * platform/mac/css3/images/cross-fade-background-size-expected.txt: Removed.
+        * platform/mac/css3/images/cross-fade-blending-expected.txt: Removed.
+        * platform/mac/css3/images/cross-fade-invalidation-expected.txt: Removed.
+        * platform/mac/css3/images/cross-fade-simple-expected.txt: Removed.
+        * platform/mac/css3/images/cross-fade-sizing-expected.txt: Removed.
+        * platform/mac/css3/images/cross-fade-tiled-expected.txt: Removed.
+        * platform/win/css3/filters/effect-reference-expected.txt: Removed.
+        * platform/win/css3/filters/effect-reference-hw-expected.txt: Removed.
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: css2.1
+
+        Unreviewed; run "webkit-patch optimize-baselines css2.1"
+
+        * css2.1/20110323/absolute-replaced-height-036-expected.png: Renamed from LayoutTests/platform/efl/css2.1/20110323/absolute-replaced-height-036-expected.png.
+        * css2.1/20110323/block-non-replaced-height-011-expected.png: Renamed from LayoutTests/platform/efl/css2.1/20110323/block-non-replaced-height-011-expected.png.
+        * css2.1/20110323/block-non-replaced-height-013-expected.png: Renamed from LayoutTests/platform/efl/css2.1/20110323/block-non-replaced-height-013-expected.png.
+        * css2.1/20110323/empty-inline-001-expected.png: Renamed from LayoutTests/platform/efl/css2.1/20110323/empty-inline-001-expected.png.
+        * css2.1/20110323/replaced-intrinsic-002-expected.png: Renamed from LayoutTests/platform/efl/css2.1/20110323/replaced-intrinsic-002-expected.png.
+        * css2.1/20110323/replaced-intrinsic-002-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/20110323/replaced-intrinsic-002-expected.txt.
+        * css2.1/20110323/replaced-intrinsic-ratio-001-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/20110323/replaced-intrinsic-ratio-001-expected.txt.
+        * css2.1/t040105-atkeyw-00-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-atkeyw-00-b-expected.png.
+        * css2.1/t040105-atkeyw-01-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-atkeyw-01-b-expected.png.
+        * css2.1/t040105-atkeyw-02-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-atkeyw-02-b-expected.png.
+        * css2.1/t040105-atrule-00-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-atrule-00-b-expected.png.
+        * css2.1/t040105-atrule-01-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-atrule-01-b-expected.png.
+        * css2.1/t040105-atrule-02-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-atrule-02-b-expected.png.
+        * css2.1/t040105-atrule-03-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-atrule-03-b-expected.png.
+        * css2.1/t040105-atrule-04-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-atrule-04-b-expected.png.
+        * css2.1/t040105-import-00-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-import-00-b-expected.png.
+        * css2.1/t040105-import-01-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-import-01-b-expected.png.
+        * css2.1/t040105-import-10-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040105-import-10-b-expected.png.
+        * css2.1/t0402-syntax-01-f-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0402-syntax-01-f-expected.png.
+        * css2.1/t0402-syntax-02-f-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0402-syntax-02-f-expected.png.
+        * css2.1/t0402-syntax-03-f-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0402-syntax-03-f-expected.png.
+        * css2.1/t0402-syntax-04-f-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0402-syntax-04-f-expected.png.
+        * css2.1/t0402-syntax-05-f-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0402-syntax-05-f-expected.png.
+        * css2.1/t0402-syntax-06-f-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0402-syntax-06-f-expected.png.
+        * css2.1/t040307-syntax-01-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t040307-syntax-01-b-expected.png.
+        * css2.1/t0505-c16-descendant-02-e-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0505-c16-descendant-02-e-expected.png.
+        * css2.1/t0509-id-sel-syntax-01-f-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0509-id-sel-syntax-01-f-expected.png.
+        * css2.1/t0509-id-sel-syntax-02-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0509-id-sel-syntax-02-b-expected.png.
+        * css2.1/t0511-c21-pseud-link-00-e-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0511-c21-pseud-link-00-e-expected.png.
+        * css2.1/t0511-c21-pseud-link-01-e-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0511-c21-pseud-link-01-e-expected.png.
+        * css2.1/t0511-c21-pseud-link-02-e-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0511-c21-pseud-link-02-e-expected.png.
+        * css2.1/t0511-c21-pseud-link-03-e-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0511-c21-pseud-link-03-e-expected.png.
+        * css2.1/t051103-c21-focus-ln-00-e-i-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t051103-c21-focus-ln-00-e-i-expected.png.
+        * css2.1/t051103-c21-hover-ln-00-e-i-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t051103-c21-hover-ln-00-e-i-expected.png.
+        * css2.1/t0803-c5504-mrgn-l-02-c-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0803-c5504-mrgn-l-02-c-expected.png.
+        * css2.1/t0805-c5511-brdr-tw-02-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0805-c5511-brdr-tw-02-b-expected.png.
+        * css2.1/t0805-c5512-brdr-rw-02-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0805-c5512-brdr-rw-02-b-expected.png.
+        * css2.1/t0805-c5513-brdr-bw-02-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0805-c5513-brdr-bw-02-b-expected.png.
+        * css2.1/t0805-c5514-brdr-lw-02-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0805-c5514-brdr-lw-02-b-expected.png.
+        * css2.1/t0805-c5515-brdr-w-02-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t0805-c5515-brdr-w-02-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-01-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-01-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-01-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-01-b-expected.txt.
+        * css2.1/t1001-abs-pos-cb-02-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-02-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-02-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-02-b-expected.txt.
+        * css2.1/t1001-abs-pos-cb-03-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-03-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-03-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-03-b-expected.txt.
+        * css2.1/t1001-abs-pos-cb-04-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-04-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-04-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-04-b-expected.txt.
+        * css2.1/t1001-abs-pos-cb-05-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-05-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-05-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-05-b-expected.txt.
+        * css2.1/t1001-abs-pos-cb-06-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-06-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-06-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-06-b-expected.txt.
+        * css2.1/t1001-abs-pos-cb-07-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-07-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-07-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-07-b-expected.txt.
+        * css2.1/t1001-abs-pos-cb-08-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-08-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-08-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-08-b-expected.txt.
+        * css2.1/t1001-abs-pos-cb-09-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-09-b-expected.png.
+        * css2.1/t1001-abs-pos-cb-09-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1001-abs-pos-cb-09-b-expected.txt.
+        * css2.1/t1205-c566-list-stl-01-c-g-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1205-c566-list-stl-01-c-g-expected.txt.
+        * css2.1/t140201-c532-bgcolor-01-b-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t140201-c532-bgcolor-01-b-expected.png.
+        * css2.1/t140201-c533-bgimage-01-b-g-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t140201-c533-bgimage-01-b-g-expected.png.
+        * css2.1/t140201-c536-bgpos-01-b-ag-expected.png: Renamed from LayoutTests/platform/efl/css2.1/t140201-c536-bgpos-01-b-ag-expected.png.
+        * css2.1/t1508-c527-font-00-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-00-b-expected.txt.
+        * css2.1/t1508-c527-font-01-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-01-b-expected.txt.
+        * css2.1/t1508-c527-font-02-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-02-b-expected.txt.
+        * css2.1/t1508-c527-font-03-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-03-b-expected.txt.
+        * css2.1/t1508-c527-font-04-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-04-b-expected.txt.
+        * css2.1/t1508-c527-font-05-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-05-b-expected.txt.
+        * css2.1/t1508-c527-font-07-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-07-b-expected.txt.
+        * css2.1/t1508-c527-font-08-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-08-b-expected.txt.
+        * css2.1/t1508-c527-font-09-b-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-09-b-expected.txt.
+        * css2.1/t1508-c527-font-10-c-expected.txt: Renamed from LayoutTests/platform/efl/css2.1/t1508-c527-font-10-c-expected.txt.
+        * platform/gtk/css2.1/20110323/absolute-replaced-height-036-expected.png: Removed.
+        * platform/gtk/css2.1/20110323/block-non-replaced-height-011-expected.png: Removed.
+        * platform/gtk/css2.1/20110323/block-non-replaced-height-013-expected.png: Removed.
+        * platform/gtk/css2.1/20110323/empty-inline-001-expected.png: Removed.
+        * platform/gtk/css2.1/20110323/replaced-intrinsic-002-expected.png: Removed.
+        * platform/gtk/css2.1/20110323/replaced-intrinsic-002-expected.txt: Removed.
+        * platform/gtk/css2.1/20110323/replaced-intrinsic-ratio-001-expected.txt: Removed.
+        * platform/gtk/css2.1/t040105-atkeyw-00-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-atkeyw-01-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-atkeyw-02-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-atrule-00-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-atrule-01-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-atrule-02-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-atrule-03-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-atrule-04-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-import-00-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-import-01-b-expected.png: Removed.
+        * platform/gtk/css2.1/t040105-import-10-b-expected.png: Removed.
+        * platform/gtk/css2.1/t0402-syntax-01-f-expected.png: Removed.
+        * platform/gtk/css2.1/t0402-syntax-02-f-expected.png: Removed.
+        * platform/gtk/css2.1/t0402-syntax-03-f-expected.png: Removed.
+        * platform/gtk/css2.1/t0402-syntax-04-f-expected.png: Removed.
+        * platform/gtk/css2.1/t0402-syntax-05-f-expected.png: Removed.
+        * platform/gtk/css2.1/t0402-syntax-06-f-expected.png: Removed.
+        * platform/gtk/css2.1/t040307-syntax-01-b-expected.png: Removed.
+        * platform/gtk/css2.1/t0505-c16-descendant-02-e-expected.png: Removed.
+        * platform/gtk/css2.1/t0509-id-sel-syntax-01-f-expected.png: Removed.
+        * platform/gtk/css2.1/t0509-id-sel-syntax-02-b-expected.png: Removed.
+        * platform/gtk/css2.1/t0511-c21-pseud-link-00-e-expected.png: Removed.
+        * platform/gtk/css2.1/t0511-c21-pseud-link-01-e-expected.png: Removed.
+        * platform/gtk/css2.1/t0511-c21-pseud-link-02-e-expected.png: Removed.
+        * platform/gtk/css2.1/t0511-c21-pseud-link-03-e-expected.png: Removed.
+        * platform/gtk/css2.1/t051103-c21-focus-ln-00-e-i-expected.png: Removed.
+        * platform/gtk/css2.1/t051103-c21-hover-ln-00-e-i-expected.png: Removed.
+        * platform/gtk/css2.1/t0803-c5504-mrgn-l-02-c-expected.png: Removed.
+        * platform/gtk/css2.1/t0805-c5511-brdr-tw-02-b-expected.png: Removed.
+        * platform/gtk/css2.1/t0805-c5512-brdr-rw-02-b-expected.png: Removed.
+        * platform/gtk/css2.1/t0805-c5513-brdr-bw-02-b-expected.png: Removed.
+        * platform/gtk/css2.1/t0805-c5514-brdr-lw-02-b-expected.png: Removed.
+        * platform/gtk/css2.1/t0805-c5515-brdr-w-02-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-01-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-01-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-02-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-02-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-03-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-03-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-04-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-04-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-05-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-05-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-06-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-06-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-07-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-07-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-08-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-08-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-09-b-expected.png: Removed.
+        * platform/gtk/css2.1/t1001-abs-pos-cb-09-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1205-c566-list-stl-01-c-g-expected.txt: Removed.
+        * platform/gtk/css2.1/t140201-c532-bgcolor-01-b-expected.png: Removed.
+        * platform/gtk/css2.1/t140201-c533-bgimage-01-b-g-expected.png: Removed.
+        * platform/gtk/css2.1/t140201-c536-bgpos-01-b-ag-expected.png: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-00-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-01-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-02-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-03-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-04-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-05-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-07-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-08-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-09-b-expected.txt: Removed.
+        * platform/gtk/css2.1/t1508-c527-font-10-c-expected.txt: Removed.
+        * platform/mac/css2.1/t1508-c527-font-00-b-expected.txt: Removed.
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: fast/dom
+
+        Unreviewed; run "webkit-patch optimize-baselines fast/dom"
+
+        * fast/dom/HTMLHeadElement/textInHead1-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/HTMLHeadElement/textInHead1-expected.txt.
+        * fast/dom/HTMLHeadElement/textInHead2-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/HTMLHeadElement/textInHead2-expected.txt.
+        * fast/dom/HTMLHeadElement/textInHead3-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/HTMLHeadElement/textInHead3-expected.txt.
+        * fast/dom/HTMLHeadElement/textInHead4-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/HTMLHeadElement/textInHead4-expected.txt.
+        * fast/dom/HTMLHeadElement/textInHead5-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/HTMLHeadElement/textInHead5-expected.txt.
+        * fast/dom/HTMLMeterElement/meter-element-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/HTMLMeterElement/meter-element-expected.txt.
+        * fast/dom/HTMLMeterElement/meter-element-repaint-on-update-value-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/HTMLMeterElement/meter-element-repaint-on-update-value-expected.txt.
+        * fast/dom/anchor-text-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/anchor-text-expected.txt.
+        * fast/dom/comment-not-documentElement-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/comment-not-documentElement-expected.txt.
+        * fast/dom/delete-contents-expected.png: Renamed from LayoutTests/platform/efl/fast/dom/delete-contents-expected.png.
+        * fast/dom/scroll-reveal-left-overflow-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/scroll-reveal-left-overflow-expected.txt.
+        * fast/dom/scroll-reveal-top-overflow-expected.txt: Renamed from LayoutTests/platform/efl/fast/dom/scroll-reveal-top-overflow-expected.txt.
+        * platform/gtk/fast/dom/HTMLHeadElement/textInHead1-expected.txt: Removed.
+        * platform/gtk/fast/dom/HTMLHeadElement/textInHead2-expected.txt: Removed.
+        * platform/gtk/fast/dom/HTMLHeadElement/textInHead3-expected.txt: Removed.
+        * platform/gtk/fast/dom/HTMLHeadElement/textInHead4-expected.txt: Removed.
+        * platform/gtk/fast/dom/HTMLHeadElement/textInHead5-expected.txt: Removed.
+        * platform/gtk/fast/dom/HTMLMeterElement/meter-element-expected.txt: Removed.
+        * platform/gtk/fast/dom/HTMLMeterElement/meter-element-repaint-on-update-value-expected.txt: Removed.
+        * platform/gtk/fast/dom/anchor-text-expected.txt: Removed.
+        * platform/gtk/fast/dom/comment-not-documentElement-expected.txt: Removed.
+        * platform/gtk/fast/dom/delete-contents-expected.png: Removed.
+        * platform/gtk/fast/dom/scroll-reveal-left-overflow-expected.txt: Removed.
+        * platform/gtk/fast/dom/scroll-reveal-top-overflow-expected.txt: Removed.
+        * platform/win-7sp0/fast/dom/horizontal-scrollbar-in-rtl-expected.txt: Renamed from LayoutTests/platform/win/fast/dom/horizontal-scrollbar-in-rtl-expected.txt.
+        * platform/win-7sp0/fast/dom/vertical-scrollbar-in-rtl-expected.txt: Renamed from LayoutTests/platform/win/fast/dom/vertical-scrollbar-in-rtl-expected.txt.
+
+2013-11-02  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed, EFL gardening. Add missing baselines to EFL wk1 TestExpectation.
+
+        * platform/efl-wk1/TestExpectations: Need to add new baseline since upgrading base OS.
+
+2013-11-02  Christophe Dumez  <ch.dumez@samsung.com>
+
+        EnforceRange doesn't enforce range of a short
+        https://bugs.webkit.org/show_bug.cgi?id=123661
+
+        Reviewed by Alexey Proskuryakov.
+
+        Extend js/dom/webidl-type-mapping.html layout test to validate
+        Web IDL type mapping for short / unsigned short.
+
+        * js/dom/webidl-type-mapping-expected.txt:
+        * js/dom/webidl-type-mapping.html:
+
+2013-11-02  Andreas Kling  <akling@apple.com>
+
+        Optimize baselines: fast/css
+
+        Unreviewed; run "webkit-patch optimize-baselines fast/css"
+
+        * fast/css/background-image-with-baseurl-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/background-image-with-baseurl-expected.txt.
+        * fast/css/caption-width-absolute-position-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/caption-width-absolute-position-expected.txt.
+        * fast/css/caption-width-absolute-position-offset-top-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/caption-width-absolute-position-offset-top-expected.txt.
+        * fast/css/caption-width-fixed-position-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/caption-width-fixed-position-expected.txt.
+        * fast/css/caption-width-fixed-position-offset-top-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/caption-width-fixed-position-offset-top-expected.txt.
+        * fast/css/caption-width-relative-position-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/caption-width-relative-position-expected.txt.
+        * fast/css/caption-width-relative-position-offset-top-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/caption-width-relative-position-offset-top-expected.txt.
+        * fast/css/font-face-default-font-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/font-face-default-font-expected.txt.
+        * fast/css/font-face-in-media-rule-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/font-face-in-media-rule-expected.txt.
+        * fast/css/font-size-negative-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/font-size-negative-expected.txt.
+        * fast/css/imageTileOpacity-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/imageTileOpacity-expected.txt.
+        * fast/css/import_with_baseurl-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/import_with_baseurl-expected.txt.
+        * fast/css/line-height-determined-by-primary-font-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/line-height-determined-by-primary-font-expected.txt.
+        * fast/css/line-height-font-order-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/line-height-font-order-expected.txt.
+        * fast/css/line-height-negative-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/line-height-negative-expected.txt.
+        * fast/css/max-height-none-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/max-height-none-expected.txt.
+        * fast/css/min-width-with-spanned-cell-expected.png: Renamed from LayoutTests/platform/efl/fast/css/min-width-with-spanned-cell-expected.png.
+        * fast/css/min-width-with-spanned-cell-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/min-width-with-spanned-cell-expected.txt.
+        * fast/css/min-width-with-spanned-cell-fixed-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/min-width-with-spanned-cell-fixed-expected.txt.
+        * fast/css/pseudo-first-line-border-width-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/pseudo-first-line-border-width-expected.txt.
+        * fast/css/replaced-element-implicit-size-expected.png: Renamed from LayoutTests/platform/efl/fast/css/replaced-element-implicit-size-expected.png.
+        * fast/css/vertical-align-lengths-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/vertical-align-lengths-expected.txt.
+        * fast/css/visibility-hit-test-expected.txt: Renamed from LayoutTests/platform/efl/fast/css/visibility-hit-test-expected.txt.
+        * platform/efl-wk2/fast/css/font-smoothing-expected.png: Renamed from LayoutTests/platform/efl/fast/css/font-smoothing-expected.png.
+        * platform/efl-wk2/fast/css/font-weight-1-expected.png: Renamed from LayoutTests/platform/efl/fast/css/font-weight-1-expected.png.
+        * platform/efl-wk2/fast/css/input-search-padding-expected.png: Renamed from LayoutTests/platform/efl/fast/css/input-search-padding-expected.png.
+        * platform/gtk/fast/css/background-image-with-baseurl-expected.txt: Removed.
+        * platform/gtk/fast/css/caption-width-absolute-position-expected.txt: Removed.
+        * platform/gtk/fast/css/caption-width-absolute-position-offset-top-expected.txt: Removed.
+        * platform/gtk/fast/css/caption-width-fixed-position-expected.txt: Removed.
+        * platform/gtk/fast/css/caption-width-fixed-position-offset-top-expected.txt: Removed.
+        * platform/gtk/fast/css/caption-width-relative-position-expected.txt: Removed.
+        * platform/gtk/fast/css/caption-width-relative-position-offset-top-expected.txt: Removed.
+        * platform/gtk/fast/css/font-face-in-media-rule-expected.txt: Removed.
+        * platform/gtk/fast/css/font-size-negative-expected.txt: Removed.
+        * platform/gtk/fast/css/imageTileOpacity-expected.txt: Removed.
+        * platform/gtk/fast/css/import_with_baseurl-expected.txt: Removed.
+        * platform/gtk/fast/css/line-height-determined-by-primary-font-expected.txt: Removed.
+        * platform/gtk/fast/css/line-height-font-order-expected.txt: Removed.
+        * platform/gtk/fast/css/line-height-negative-expected.txt: Removed.
+        * platform/gtk/fast/css/max-height-none-expected.txt: Removed.
+        * platform/gtk/fast/css/min-width-with-spanned-cell-expected.png: Removed.
+        * platform/gtk/fast/css/min-width-with-spanned-cell-expected.txt: Removed.
+        * platform/gtk/fast/css/min-width-with-spanned-cell-fixed-expected.txt: Removed.
+        * platform/gtk/fast/css/pseudo-first-line-border-width-expected.txt: Removed.
+        * platform/gtk/fast/css/replaced-element-implicit-size-expected.png: Removed.
+        * platform/gtk/fast/css/vertical-align-lengths-expected.txt: Removed.
+        * platform/gtk/fast/css/visibility-hit-test-expected.txt: Removed.
+        * platform/mac/fast/css/caption-width-absolute-position-expected.txt: Removed.
+        * platform/mac/fast/css/caption-width-absolute-position-offset-top-expected.txt: Removed.
+        * platform/mac/fast/css/caption-width-fixed-position-expected.txt: Removed.
+        * platform/mac/fast/css/caption-width-fixed-position-offset-top-expected.txt: Removed.
+        * platform/mac/fast/css/caption-width-relative-position-expected.txt: Removed.
+        * platform/mac/fast/css/caption-width-relative-position-offset-top-expected.txt: Removed.
+        * platform/mac/fast/css/font-face-default-font-expected.txt: Removed.
+        * platform/mac/fast/css/font-face-in-media-rule-expected.txt: Removed.
+        * platform/mac/fast/css/min-width-with-spanned-cell-expected.txt: Removed.
+        * platform/mac/fast/css/min-width-with-spanned-cell-fixed-expected.txt: Removed.
+        * platform/mac/fast/css/pseudo-first-line-border-width-expected.txt: Removed.
+        * platform/win/fast/css/zoom-body-scroll-expected.txt: Removed.
+
+2013-11-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement remaining SHA variations for WebCrypto
+        https://bugs.webkit.org/show_bug.cgi?id=123659
+
+        Reviewed by Anders Carlsson.
+
+        * crypto/subtle/sha-224-expected.txt: Added.
+        * crypto/subtle/sha-224.html: Added.
+        * crypto/subtle/sha-256-expected.txt: Added.
+        * crypto/subtle/sha-256.html: Added.
+        * crypto/subtle/sha-384-expected.txt: Added.
+        * crypto/subtle/sha-384.html: Added.
+        * crypto/subtle/sha-512-expected.txt: Added.
+        * crypto/subtle/sha-512.html: Added.
+
+2013-11-01  Alexey Proskuryakov  <ap@apple.com>
+
+        Add WebCrypto AES-CBC
+        https://bugs.webkit.org/show_bug.cgi?id=123647
+
+        Reviewed by Anders Carlsson.
+
+        Part of aes-cbc-encrypt-decrypt.html test was taken from Blink.
+
+        * crypto/subtle/aes-cbc-192-encrypt-decrypt-expected.txt: Added.
+        * crypto/subtle/aes-cbc-192-encrypt-decrypt.html: Added.
+        * crypto/subtle/aes-cbc-256-encrypt-decrypt-expected.txt: Added.
+        * crypto/subtle/aes-cbc-256-encrypt-decrypt.html: Added.
+        * crypto/subtle/aes-cbc-encrypt-decrypt-expected.txt: Added.
+        * crypto/subtle/aes-cbc-encrypt-decrypt-with-padding-expected.txt: Added.
+        * crypto/subtle/aes-cbc-encrypt-decrypt-with-padding.html: Added.
+        * crypto/subtle/aes-cbc-encrypt-decrypt.html: Added.
+        * crypto/subtle/aes-cbc-invalid-length-expected.txt: Added.
+        * crypto/subtle/aes-cbc-invalid-length.html: Added.
+        * crypto/subtle/aes-cbc-wrong-key-class-expected.txt: Added.
+        * crypto/subtle/aes-cbc-wrong-key-class.html: Added.
+
+        * crypto/subtle/hmac-sign-verify-expected.txt:
+        * crypto/subtle/hmac-sign-verify.html:
+        Corrected a description.
+
+        * crypto/subtle/resources/common.js: (hexToArrayBuffer): Added a helper.
+
+2013-11-01  Jaehun Lim  <ljaehun.lim@samsung.com>
+
+        Update layout test results after CSS calc() simplification
+        https://bugs.webkit.org/show_bug.cgi?id=123654
+
+        Reviewed by Andreas Kling.
+
+        r156586 simplified CSS calc expressions.
+        Update layout test results for calc().
+
+        * fast/css3-text/css3-text-indent/getComputedStyle/getComputedStyle-text-indent-expected.txt:
+        * fast/css3-text/css3-text-indent/getComputedStyle/script-tests/getComputedStyle-text-indent.js:
+        (valueSettingTest):
+        * platform/efl/TestExpectations: gardening
+
+2013-11-01  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Initial implementation of text-decoration-skip ink
+        https://bugs.webkit.org/show_bug.cgi?id=121806
+
+        Reviewed by Darin Adler.
+
+        Adding a test which draws a very large "p" with text-decoration-skip:ink. The
+        viewport is restricted to be just hugging the place where an underline would
+        intersect the descender of the "p". This should look the same as if there was
+        no underline at all (because of the skipping underline).
+
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-expected.html: Added.
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink.html: Added.
+
+2013-11-01  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] Fix typo in simple-polygon.js LayoutTest helper
+        https://bugs.webkit.org/show_bug.cgi?id=123595
+
+        Reviewed by Darin Adler.
+
+        * fast/shapes/resources/simple-polygon.js:
+        (generatePolygonContentString): Fixed a typo: the lineHeight parameter generatePolygonContentString() is now lineHeight.
+
+2013-11-01  James Craig  <jcraig@apple.com>
+
+        AX: Regression: media controls are no longer accessible
+        https://bugs.webkit.org/show_bug.cgi?id=121990
+
+        Reviewed by Jer Noble.
+
+        Removed failure expectation and updated expected render dump output. 
+
+        * platform/mac/TestExpectations:
+        * platform/mac/accessibility/media-element-expected.txt:
+
+2013-11-01  Afonso R. Costa Jr.  <afonso.costa@samsung.com>
+
+        Expose setApplicationCacheOriginQuota via window.internals
+        https://bugs.webkit.org/show_bug.cgi?id=87838
+
+        Reviewed by Joseph Pecoraro.
+
+        * http/tests/appcache/origin-quota-continued-download-multiple-manifests.html: Updated
+        to use setApplicationCacheOriginQuota from window.internals
+        * http/tests/appcache/origin-quota-continued-download.html: Ditto.
+        * http/tests/appcache/origin-quota.html: Ditto.
+
+2013-10-31  Mark Lam  <mark.lam@apple.com>
+
+        REGRESSION: Crashes in -[UIDelegate webView:frame:exceededDatabaseQuotaForSecurityOrigin:database:].
+        https://bugs.webkit.org/show_bug.cgi?id=123383.
+
+        Reviewed by Geoffrey Garen.
+
+        Removed an inappropriate assertion in DumpRenderTree/mac/UIDelegate.mm and
+        added 2 attributes (databaseDefaultQuota and databaseMaxQuota) to allow
+        tests to set appropriate quota settings to exercise quota expansion tests
+        when needed.
+        
+        * storage/websql/open-database-expand-quota.html:
+        - Set databaseDefaultQuota and databaseMaxQuota as needed for this test.
+        * storage/websql/open-database-over-quota-expected.txt:
+        * storage/websql/open-database-over-quota.html:
+        - Revert the change from r157874 which is no longer needed for this test.
+
 2013-11-01  Bem Jones-Bey  <bjonesbe@adobe.com>
 
         [css shapes] Pull in upstream fixes to shape-outside margin and clipping tests

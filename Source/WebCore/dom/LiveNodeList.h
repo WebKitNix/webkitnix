@@ -48,7 +48,7 @@ public:
         DoesNotOverrideItemAfter,
     };
 
-    LiveNodeListBase(Node& ownerNode, NodeListRootType rootType, NodeListInvalidationType invalidationType,
+    LiveNodeListBase(ContainerNode& ownerNode, NodeListRootType rootType, NodeListInvalidationType invalidationType,
         bool shouldOnlyIncludeDirectChildren, CollectionType collectionType, ItemAfterOverrideType itemAfterOverrideType)
         : m_ownerNode(ownerNode)
         , m_cachedItem(0)
@@ -67,14 +67,12 @@ public:
         ASSERT(m_collectionType == static_cast<unsigned>(collectionType));
         ASSERT(!m_overridesItemAfter || !isNodeList(collectionType));
 
-        if (collectionType != ChildNodeListType)
-            document().registerNodeList(this);
+        document().registerNodeList(this);
     }
 
     virtual ~LiveNodeListBase()
     {
-        if (type() != ChildNodeListType)
-            document().unregisterNodeList(this);
+        document().unregisterNodeList(this);
     }
 
     // DOM API
@@ -85,7 +83,7 @@ public:
     ALWAYS_INLINE bool isRootedAtDocument() const { return m_rootType == NodeListIsRootedAtDocument || m_rootType == NodeListIsRootedAtDocumentIfOwnerHasItemrefAttr; }
     ALWAYS_INLINE NodeListInvalidationType invalidationType() const { return static_cast<NodeListInvalidationType>(m_invalidationType); }
     ALWAYS_INLINE CollectionType type() const { return static_cast<CollectionType>(m_collectionType); }
-    Node& ownerNode() const { return const_cast<Node&>(m_ownerNode.get()); }
+    ContainerNode& ownerNode() const { return const_cast<ContainerNode&>(m_ownerNode.get()); }
     ALWAYS_INLINE void invalidateCache(const QualifiedName* attrName) const
     {
         if (!attrName || shouldInvalidateTypeOnAttributeChange(invalidationType(), *attrName))
@@ -100,8 +98,7 @@ public:
 
 protected:
     Document& document() const { return m_ownerNode->document(); }
-    Node& rootNode() const;
-    ContainerNode* rootContainerNode() const;
+    ContainerNode& rootNode() const;
     bool overridesItemAfter() const { return m_overridesItemAfter; }
 
     ALWAYS_INLINE bool isItemCacheValid() const { return m_isItemCacheValid; }
@@ -136,7 +133,6 @@ protected:
 
 private:
     Node* itemBeforeOrAfterCachedItem(unsigned offset, ContainerNode* root) const;
-    Node* traverseChildNodeListForwardToOffset(unsigned offset, Node* currentNode, unsigned& currentOffset) const;
     Element* traverseLiveNodeListFirstElement(ContainerNode* root) const;
     Element* traverseLiveNodeListForwardToOffset(unsigned offset, Element* currentElement, unsigned& currentOffset, ContainerNode* root) const;
     bool isLastItemCloserThanLastOrCachedItem(unsigned offset) const;
@@ -144,7 +140,7 @@ private:
     Node* iterateForPreviousNode(Node* current) const;
     Node* itemBefore(Node* previousItem) const;
 
-    Ref<Node> m_ownerNode;
+    Ref<ContainerNode> m_ownerNode;
     mutable Node* m_cachedItem;
     mutable unsigned m_cachedLength;
     mutable unsigned m_cachedItemOffset;
@@ -187,9 +183,8 @@ ALWAYS_INLINE bool LiveNodeListBase::shouldInvalidateTypeOnAttributeChange(NodeL
 
 class LiveNodeList : public LiveNodeListBase {
 public:
-    LiveNodeList(Node& ownerNode, CollectionType collectionType, NodeListInvalidationType invalidationType, NodeListRootType rootType = NodeListIsRootedAtNode)
-        : LiveNodeListBase(ownerNode, rootType, invalidationType, collectionType == ChildNodeListType,
-        collectionType, DoesNotOverrideItemAfter)
+    LiveNodeList(ContainerNode& ownerNode, CollectionType collectionType, NodeListInvalidationType invalidationType, NodeListRootType rootType = NodeListIsRootedAtNode)
+        : LiveNodeListBase(ownerNode, rootType, invalidationType, /*shouldOnlyIncludeDirectChildren*/ false, collectionType, DoesNotOverrideItemAfter)
     { }
 
     virtual Node* namedItem(const AtomicString&) const OVERRIDE;

@@ -2469,22 +2469,33 @@ void CodeBlock::stronglyVisitWeakReferences(SlotVisitor& visitor)
 #endif    
 }
 
+CodeBlock* CodeBlock::baselineAlternative()
+{
+#if ENABLE(JIT)
+    CodeBlock* result = this;
+    while (result->alternative())
+        result = result->alternative();
+    RELEASE_ASSERT(result);
+    RELEASE_ASSERT(JITCode::isBaselineCode(result->jitType()) || result->jitType() == JITCode::None);
+    return result;
+#else
+    return this;
+#endif
+}
+
 CodeBlock* CodeBlock::baselineVersion()
 {
+#if ENABLE(JIT)
     if (JITCode::isBaselineCode(jitType()))
         return this;
-#if ENABLE(JIT)
     CodeBlock* result = replacement();
     if (!result) {
         // This can happen if we're creating the original CodeBlock for an executable.
         // Assume that we're the baseline CodeBlock.
-        ASSERT(jitType() == JITCode::None);
+        RELEASE_ASSERT(jitType() == JITCode::None);
         return this;
     }
-    while (result->alternative())
-        result = result->alternative();
-    RELEASE_ASSERT(result);
-    RELEASE_ASSERT(JITCode::isBaselineCode(result->jitType()));
+    result = result->baselineAlternative();
     return result;
 #else
     return this;
@@ -2806,6 +2817,7 @@ DFG::CapabilityLevel FunctionCodeBlock::capabilityLevelInternal()
         return DFG::functionForConstructCapabilityLevel(this);
     return DFG::functionForCallCapabilityLevel(this);
 }
+#endif
 
 void CodeBlock::jettison(ReoptimizationMode mode)
 {
@@ -2839,7 +2851,9 @@ void CodeBlock::jettison(ReoptimizationMode mode)
     
     // Count the reoptimization if that's what the user wanted.
     if (mode == CountReoptimization) {
-        baselineVersion()->countReoptimization();
+        // FIXME: Maybe this should call alternative().
+        // https://bugs.webkit.org/show_bug.cgi?id=123677
+        baselineAlternative()->countReoptimization();
         if (DFG::shouldShowDisassembly())
             dataLog("    Did count reoptimization for ", *this, "\n");
     }
@@ -2856,10 +2870,10 @@ void CodeBlock::jettison(ReoptimizationMode mode)
     if (DFG::shouldShowDisassembly())
         dataLog("    Did install baseline version of ", *this, "\n");
 #else // ENABLE(DFG_JIT)
+    UNUSED_PARAM(mode);
     UNREACHABLE_FOR_PLATFORM();
 #endif // ENABLE(DFG_JIT)
 }
-#endif
 
 JSGlobalObject* CodeBlock::globalObjectFor(CodeOrigin codeOrigin)
 {
