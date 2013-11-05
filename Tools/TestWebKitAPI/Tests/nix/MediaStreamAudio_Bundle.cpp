@@ -190,7 +190,17 @@ class MockMediaStreamCenter : public Nix::MediaStreamCenter {
 public:
     virtual const char* validateRequestConstraints(Nix::MediaConstraints& audioConstraints, Nix::MediaConstraints& videoConstraints) OVERRIDE
     {
-        return nullptr; // All constraints are ok.
+        std::vector<Nix::MediaConstraint> optional;
+        audioConstraints.getOptionalConstraints(optional);
+        const char *retVal = "volume";
+
+        Nix::MediaConstraint volume = optional[0];
+        if (volume.m_name == "volume" && volume.m_value == "99") {
+            WKBundlePostMessage(InjectedBundleController::shared().bundle(), Util::toWK("MediaConstraintsOk").get(), 0);
+            retVal = nullptr;
+        }
+
+        return retVal;
     }
 
     virtual Nix::MediaStream createMediaStream(Nix::MediaConstraints& audioConstraints, Nix::MediaConstraints& videoConstraints) OVERRIDE

@@ -2,7 +2,7 @@
 <html>
     <body>
         <script>
-        navigator.webkitGetUserMedia({ 'audio': true, 'video': false }, successCallback, errorCallback);
+        navigator.webkitGetUserMedia({ 'audio': {'optional': [{'volume': 99}]}, 'video': false }, successCallback, errorCallback);
 
         function successCallback(stream) {
             document.title = "MediaStreamRequestSuccess";
