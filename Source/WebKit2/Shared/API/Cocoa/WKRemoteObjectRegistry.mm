@@ -27,6 +27,8 @@
 #import "WKRemoteObjectRegistryInternal.h"
 
 #import "Connection.h"
+#import "ImmutableDictionary.h"
+#import "MutableDictionary.h"
 #import "WKConnectionRef.h"
 #import "WKRemoteObject.h"
 #import "WKRemoteObjectCoder.h"
@@ -36,21 +38,33 @@
 
 #if WK_API_ENABLED
 
+const char* const messageName = "WKRemoteObjectRegistryMessage";
+
+const char* const encodedInvocationKey = "encodedInvocation";
+const char* const interfaceIdentifierKey = "interfaceIdentifier";
+
+NSString * const invocationKey = @"invocation";
+
 using namespace WebKit;
 
 @implementation WKRemoteObjectRegistry {
     RefPtr<WebConnection> _connection;
     RetainPtr<NSMapTable> _remoteObjectProxies;
+    HashMap<String, std::pair<RetainPtr<id>, RetainPtr<WKRemoteObjectInterface>>> _exportedObjects;
 }
 
 - (void)registerExportedObject:(id)object interface:(WKRemoteObjectInterface *)interface
 {
-    // FIXME: Implement.
+    ASSERT(!_exportedObjects.contains(interface.identifier));
+    _exportedObjects.add(interface.identifier, std::make_pair<RetainPtr<id>, RetainPtr<WKRemoteObjectInterface>>(object, interface));
 }
 
 - (void)unregisterExportedObject:(id)object interface:(WKRemoteObjectInterface *)interface
 {
-    // FIXME: Implement.
+    ASSERT(_exportedObjects.get(interface.identifier).first == object);
+    ASSERT(_exportedObjects.get(interface.identifier).second == interface);
+
+    _exportedObjects.remove(interface.identifier);
 }
 
 - (id)remoteObjectProxyWithInterface:(WKRemoteObjectInterface *)interface
@@ -71,9 +85,18 @@ using namespace WebKit;
 - (void)_sendInvocation:(NSInvocation *)invocation interface:(WKRemoteObjectInterface *)interface
 {
     RetainPtr<WKRemoteObjectEncoder> encoder = adoptNS([[WKRemoteObjectEncoder alloc] init]);
+    [encoder encodeObject:invocation forKey:invocationKey];
 
-    [encoder encodeObject:interface.identifier forKey:@"interfaceIdentifier"];
-    [encoder encodeObject:invocation forKey:@"invocation"];
+    RefPtr<MutableDictionary> body = MutableDictionary::create();
+    body->set(interfaceIdentifierKey, WebString::create(interface.identifier));
+    body->set(encodedInvocationKey, [encoder rootObjectDictionary]);
+
+    [self _sendMessageWithBody:body.release()];
+}
+
+- (void)_sendMessageWithBody:(PassRefPtr<ImmutableDictionary>)body
+{
+    _connection->postMessage(messageName, body.get());
 }
 
 @end
@@ -92,8 +115,45 @@ using namespace WebKit;
 
 - (BOOL)_handleMessageWithName:(WKStringRef)name body:(WKTypeRef)body
 {
-    // FIXME: Implement.
-    return NO;
+    if (toImpl(name)->string() != messageName)
+        return NO;
+
+    if (!toImpl(body) || toImpl(body)->type() != APIObject::TypeDictionary)
+        return NO;
+
+    const ImmutableDictionary* dictionary = toImpl(static_cast<WKDictionaryRef>(body));
+
+    WebString* interfaceIdentifier = dictionary->get<WebString>(interfaceIdentifierKey);
+    if (!interfaceIdentifier)
+        return NO;
+
+    const ImmutableDictionary* encodedInvocation = dictionary->get<ImmutableDictionary>(encodedInvocationKey);
+    if (!encodedInvocationKey)
+        return NO;
+
+    [self _invokeMessageWithInterfaceIdentifier:interfaceIdentifier->string() encodedInvocation:encodedInvocation];
+    return YES;
+}
+
+- (void)_invokeMessageWithInterfaceIdentifier:(const String&)interfaceIdentifier encodedInvocation:(const ImmutableDictionary*)encodedInvocation
+{
+    auto interfaceAndObject = _exportedObjects.get(interfaceIdentifier);
+    if (!interfaceAndObject.second) {
+        NSLog(@"Did not find a registered object for the interface \"%@\"", (NSString *)interfaceIdentifier);
+        return;
+    }
+
+    RetainPtr<WKRemoteObjectDecoder> decoder = adoptNS([[WKRemoteObjectDecoder alloc] initWithInterface:interfaceAndObject.second.get() rootObjectDictionary:encodedInvocation]);
+
+    NSInvocation *invocation = nil;
+
+    @try {
+        invocation = [decoder decodeObjectOfClass:[NSInvocation class] forKey:invocationKey];
+    } @catch (NSException *exception) {
+        NSLog(@"Exception caught during decoding of message: %@", exception);
+    }
+
+    // FIXME: Invoke the invocation.
 }
 
 @end

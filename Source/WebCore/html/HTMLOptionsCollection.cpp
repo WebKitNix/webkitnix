@@ -23,12 +23,11 @@
 
 #include "ExceptionCode.h"
 #include "HTMLOptionElement.h"
-#include "HTMLSelectElement.h"
 
 namespace WebCore {
 
 HTMLOptionsCollection::HTMLOptionsCollection(HTMLSelectElement& select)
-    : HTMLCollection(select, SelectOptions, DoesNotOverrideItemAfter)
+    : HTMLCollection(select, SelectOptions)
 {
 }
 

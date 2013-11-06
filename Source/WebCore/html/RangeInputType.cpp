@@ -34,9 +34,7 @@
 
 #include "AXObjectCache.h"
 #include "ExceptionCodePlaceholder.h"
-#include "HTMLDivElement.h"
 #include "HTMLInputElement.h"
-#include "HTMLNames.h"
 #include "HTMLParserIdioms.h"
 #include "InputTypeNames.h"
 #include "KeyboardEvent.h"
@@ -46,7 +44,6 @@
 #include "ScopedEventQueue.h"
 #include "ShadowRoot.h"
 #include "SliderThumbElement.h"
-#include "StepRange.h"
 #include <limits>
 #include <wtf/MathExtras.h>
 
@@ -152,10 +149,10 @@ void RangeInputType::handleMouseDownEvent(MouseEvent* event)
     ASSERT(element().shadowRoot());
     if (targetNode != &element() && !targetNode->isDescendantOf(element().userAgentShadowRoot()))
         return;
-    SliderThumbElement& thumb = typedSliderThumbElement();
-    if (targetNode == &thumb)
+    Ref<SliderThumbElement> thumb(typedSliderThumbElement());
+    if (targetNode == &thumb.get())
         return;
-    thumb.dragFrom(event->absoluteLocation());
+    thumb->dragFrom(event->absoluteLocation());
 }
 
 #if ENABLE(TOUCH_EVENTS)

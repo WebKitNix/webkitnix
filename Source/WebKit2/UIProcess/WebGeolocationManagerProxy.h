@@ -27,9 +27,11 @@
 #define WebGeolocationManagerProxy_h
 
 #include "APIObject.h"
+#include "Connection.h"
 #include "MessageReceiver.h"
 #include "WebContextSupplement.h"
 #include "WebGeolocationProvider.h"
+#include <wtf/HashSet.h>
 #include <wtf/text/WTFString.h>
 
 namespace WebKit {
@@ -42,7 +44,6 @@ public:
     static const char* supplementName();
 
     static PassRefPtr<WebGeolocationManagerProxy> create(WebContext*);
-    virtual ~WebGeolocationManagerProxy();
 
     void initializeProvider(const WKGeolocationProvider*);
 
@@ -64,11 +65,16 @@ private:
     // CoreIPC::MessageReceiver
     virtual void didReceiveMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&) OVERRIDE;
 
-    void startUpdating();
-    void stopUpdating();
-    void didChangeEnableHighAccuracy(bool);
+    bool isUpdating() const { return !m_updateRequesters.isEmpty(); }
+    bool isHighAccuracyEnabled() const { return !m_highAccuracyRequesters.isEmpty(); }
 
-    bool m_isUpdating;
+    void startUpdating(CoreIPC::Connection*);
+    void stopUpdating(CoreIPC::Connection*);
+    void removeRequester(const CoreIPC::Connection::Client*);
+    void setEnableHighAccuracy(CoreIPC::Connection*, bool);
+
+    HashSet<const CoreIPC::Connection::Client*> m_updateRequesters;
+    HashSet<const CoreIPC::Connection::Client*> m_highAccuracyRequesters;
 
     WebGeolocationProvider m_provider;
 };

@@ -44,13 +44,8 @@ PassRefPtr<WebGeolocationManagerProxy> WebGeolocationManagerProxy::create(WebCon
 
 WebGeolocationManagerProxy::WebGeolocationManagerProxy(WebContext* context)
     : WebContextSupplement(context)
-    , m_isUpdating(false)
 {
     WebContextSupplement::context()->addMessageReceiver(Messages::WebGeolocationManagerProxy::messageReceiverName(), this);
-}
-
-WebGeolocationManagerProxy::~WebGeolocationManagerProxy()
-{
 }
 
 void WebGeolocationManagerProxy::initializeProvider(const WKGeolocationProvider* provider)
@@ -62,12 +57,13 @@ void WebGeolocationManagerProxy::initializeProvider(const WKGeolocationProvider*
 
 void WebGeolocationManagerProxy::contextDestroyed()
 {
-    stopUpdating();
+    m_updateRequesters.clear();
+    m_provider.stopUpdating(this);
 }
 
-void WebGeolocationManagerProxy::processDidClose(WebProcessProxy*)
+void WebGeolocationManagerProxy::processDidClose(WebProcessProxy* webProcessProxy)
 {
-    stopUpdating();
+    removeRequester(webProcessProxy);
 }
 
 void WebGeolocationManagerProxy::refWebContextSupplement()
@@ -96,27 +92,50 @@ void WebGeolocationManagerProxy::providerDidFailToDeterminePosition(const String
     context()->sendToAllProcesses(Messages::WebGeolocationManager::DidFailToDeterminePosition(errorMessage));
 }
 
-void WebGeolocationManagerProxy::startUpdating()
+void WebGeolocationManagerProxy::startUpdating(CoreIPC::Connection* connection)
 {
-    if (m_isUpdating)
-        return;
-
-    m_provider.startUpdating(this);
-    m_isUpdating = true;
+    bool wasUpdating = isUpdating();
+    m_updateRequesters.add(connection->client());
+    if (!wasUpdating) {
+        m_provider.setEnableHighAccuracy(this, isHighAccuracyEnabled());
+        m_provider.startUpdating(this);
+    }
 }
 
-void WebGeolocationManagerProxy::stopUpdating()
+void WebGeolocationManagerProxy::stopUpdating(CoreIPC::Connection* connection)
 {
-    if (!m_isUpdating)
-        return;
-
-    m_provider.stopUpdating(this);
-    m_isUpdating = false;
+    removeRequester(connection->client());
 }
 
-void WebGeolocationManagerProxy::didChangeEnableHighAccuracy(bool value)
+void WebGeolocationManagerProxy::removeRequester(const CoreIPC::Connection::Client* client)
 {
-    m_provider.didChangeEnableHighAccuracy(this, value);
+    bool wasUpdating = isUpdating();
+    bool highAccuracyWasEnabled = isHighAccuracyEnabled();
+
+    m_highAccuracyRequesters.remove(client);
+    m_updateRequesters.remove(client);
+
+    if (wasUpdating && !isUpdating())
+        m_provider.stopUpdating(this);
+    else {
+        bool highAccuracyShouldBeEnabled = isHighAccuracyEnabled();
+        if (highAccuracyShouldBeEnabled != highAccuracyWasEnabled)
+            m_provider.setEnableHighAccuracy(this, highAccuracyShouldBeEnabled);
+    }
+}
+
+void WebGeolocationManagerProxy::setEnableHighAccuracy(CoreIPC::Connection* connection, bool enabled)
+{
+    bool highAccuracyWasEnabled = isHighAccuracyEnabled();
+
+    if (enabled)
+        m_highAccuracyRequesters.add(connection->client());
+    else
+        m_highAccuracyRequesters.remove(connection->client());
+
+    bool highAccuracyShouldBeEnabled = isHighAccuracyEnabled();
+    if (isUpdating() && highAccuracyWasEnabled != highAccuracyShouldBeEnabled)
+        m_provider.setEnableHighAccuracy(this, highAccuracyShouldBeEnabled);
 }
 
 } // namespace WebKit

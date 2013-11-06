@@ -127,8 +127,6 @@ static const unsigned wheelEventQueueSizeThreshold = 10;
 
 namespace WebKit {
 
-WKPageDebugPaintFlags WebPageProxy::s_debugPaintFlags = 0;
-
 DEFINE_DEBUG_ONLY_GLOBAL(WTF::RefCountedLeakCounter, webPageProxyCounter, ("WebPageProxy"));
 
 class ExceededDatabaseQuotaRecords {
@@ -884,6 +882,14 @@ String WebPageProxy::committedURL() const
         return String();
 
     return m_mainFrame->url();
+}
+
+String WebPageProxy::unreachableURL() const
+{
+    if (!m_mainFrame)
+        return String();
+
+    return m_mainFrame->unreachableURL();
 }
 
 bool WebPageProxy::canShowMIMEType(const String& mimeType) const
@@ -4243,11 +4249,6 @@ void WebPageProxy::drawPagesForPrinting(WebFrameProxy* frame, const PrintInfo& p
 }
 #endif
 
-void WebPageProxy::flashBackingStoreUpdates(const Vector<IntRect>& updateRects)
-{
-    m_pageClient->flashBackingStoreUpdates(updateRects);
-}
-
 void WebPageProxy::updateBackingStoreDiscardableState()
 {
     ASSERT(isValid());
@@ -4260,16 +4261,6 @@ void WebPageProxy::updateBackingStoreDiscardableState()
         isDiscardable = !m_pageClient->isViewWindowActive() || !isViewVisible();
 
     m_drawingArea->setBackingStoreIsDiscardable(isDiscardable);
-}
-
-Color WebPageProxy::viewUpdatesFlashColor()
-{
-    return Color(0, 200, 255);
-}
-
-Color WebPageProxy::backingStoreUpdatesFlashColor()
-{
-    return Color(200, 0, 255);
 }
 
 void WebPageProxy::saveDataToFileInDownloadsFolder(const String& suggestedFilename, const String& mimeType, const String& originatingURLString, WebData* data)

@@ -163,7 +163,7 @@ VM::VM(VMType vmType, HeapType heapType)
     , heap(this, heapType)
     , vmType(vmType)
     , clientData(0)
-    , topCallFrame(CallFrame::noCaller()->removeHostCallFrameFlag())
+    , topCallFrame(CallFrame::noCaller())
     , arrayConstructorTable(adoptPtr(new HashTable(JSC::arrayConstructorTable)))
     , arrayPrototypeTable(adoptPtr(new HashTable(JSC::arrayPrototypeTable)))
     , booleanPrototypeTable(adoptPtr(new HashTable(JSC::booleanPrototypeTable)))
@@ -257,6 +257,8 @@ VM::VM(VMType vmType, HeapType heapType)
 
 #if ENABLE(JIT)
     jitStubs = adoptPtr(new JITThunks());
+
+    callJavaScriptJITFunction = reinterpret_cast<CallJavaScriptJITFunction>(getCTIStub(callToJavaScript).code().executableAddress());
 #endif
 
 #if ENABLE(FTL_JIT)
@@ -650,8 +652,10 @@ JSValue VM::throwException(ExecState* exec, JSValue error)
     if (exception->isErrorInstance() && static_cast<ErrorInstance*>(exception)->appendSourceToMessage()) {
         unsigned stackIndex = 0;
         CallFrame* callFrame;
-        for (callFrame = exec; callFrame && !callFrame->codeBlock(); callFrame = callFrame->callerFrame()->removeHostCallFrameFlag())
+        for (callFrame = exec; callFrame && !callFrame->codeBlock(); ) {
             stackIndex++;
+            callFrame = callFrame->callerFrameSkippingVMEntrySentinel();
+        }
         if (callFrame && callFrame->codeBlock()) {
             stackFrame = stackTrace.at(stackIndex);
             bytecodeOffset = stackFrame.bytecodeOffset;

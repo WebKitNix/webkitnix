@@ -50,11 +50,9 @@ PassRefPtr<PlatformCALayer> GraphicsLayerCARemote::createPlatformCALayer(Platfor
     return PlatformCALayerRemote::create(layerType, owner, m_context);
 }
 
-PassRefPtr<PlatformCALayer> GraphicsLayerCARemote::createPlatformCALayer(PlatformLayer*, PlatformCALayerClient*)
+PassRefPtr<PlatformCALayer> GraphicsLayerCARemote::createPlatformCALayer(PlatformLayer* platformLayer, PlatformCALayerClient* owner)
 {
-    ASSERT_NOT_REACHED();
-
-    return nullptr;
+    return PlatformCALayerRemote::create(platformLayer, owner, m_context);
 }
 
 }

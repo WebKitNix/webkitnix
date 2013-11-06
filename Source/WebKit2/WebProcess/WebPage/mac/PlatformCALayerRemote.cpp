@@ -29,9 +29,11 @@
 
 #import "PlatformCALayerRemote.h"
 
+#import "PlatformCALayerRemoteCustom.h"
 #import "PlatformCALayerRemoteTiledBacking.h"
 #import "RemoteLayerBackingStore.h"
 #import "RemoteLayerTreeContext.h"
+#import "RemoteLayerTreePropertyApplier.h"
 #import <WebCore/AnimationUtilities.h>
 #import <WebCore/GraphicsContext.h>
 #import <WebCore/GraphicsLayerCA.h>
@@ -59,10 +61,25 @@ static PlatformCALayerRemote* toPlatformCALayerRemote(PlatformCALayer* layer)
 
 PassRefPtr<PlatformCALayer> PlatformCALayerRemote::create(LayerType layerType, PlatformCALayerClient* owner, RemoteLayerTreeContext* context)
 {
-    if (layerType == LayerTypeTiledBackingLayer ||  layerType == LayerTypePageTiledBackingLayer)
-        return adoptRef(new PlatformCALayerRemoteTiledBacking(layerType, owner, context));
+    RefPtr<PlatformCALayerRemote> layer;
 
-    return adoptRef(new PlatformCALayerRemote(layerType, owner, context));
+    if (layerType == LayerTypeTiledBackingLayer ||  layerType == LayerTypePageTiledBackingLayer)
+        layer = adoptRef(new PlatformCALayerRemoteTiledBacking(layerType, owner, context));
+    else
+        layer = adoptRef(new PlatformCALayerRemote(layerType, owner, context));
+
+    context->layerWasCreated(layer.get(), layerType);
+
+    return layer.release();
+}
+
+PassRefPtr<PlatformCALayer> PlatformCALayerRemote::create(PlatformLayer *platformLayer, PlatformCALayerClient* owner, RemoteLayerTreeContext* context)
+{
+    RefPtr<PlatformCALayerRemote> layer = adoptRef(new PlatformCALayerRemoteCustom(static_cast<PlatformLayer*>(platformLayer), owner, context));
+
+    context->layerWasCreated(layer.get(), LayerTypeCustom);
+
+    return layer.release();
 }
 
 PlatformCALayerRemote::PlatformCALayerRemote(LayerType layerType, PlatformCALayerClient* owner, RemoteLayerTreeContext* context)
@@ -74,8 +91,6 @@ PlatformCALayerRemote::PlatformCALayerRemote(LayerType layerType, PlatformCALaye
 {
     // FIXME: match all default values from CA.
     setContentsScale(1);
-
-    m_context->layerWasCreated(this, layerType);
 }
 
 PassRefPtr<PlatformCALayer> PlatformCALayerRemote::clone(PlatformCALayerClient* owner) const
@@ -100,6 +115,12 @@ void PlatformCALayerRemote::recursiveBuildTransaction(RemoteLayerTreeTransaction
             m_properties.children.clear();
             for (auto layer : m_children)
                 m_properties.children.append(toPlatformCALayerRemote(layer.get())->layerID());
+        }
+
+        if (m_layerType == LayerTypeCustom) {
+            RemoteLayerTreePropertyApplier::applyPropertiesToLayer(platformLayer(), m_properties, RemoteLayerTreePropertyApplier::RelatedLayerMap());
+            m_properties.changedProperties = RemoteLayerTreeTransaction::NoChange;
+            return;
         }
 
         transaction.layerPropertiesChanged(this, m_properties);
@@ -476,14 +497,15 @@ void PlatformCALayerRemote::setEdgeAntialiasingMask(unsigned value)
     m_properties.notePropertiesChanged(RemoteLayerTreeTransaction::EdgeAntialiasingMaskChanged);
 }
 
-AVPlayerLayer* PlatformCALayerRemote::playerLayer() const
-{
-    return nullptr;
-}
-
 PassRefPtr<PlatformCALayer> PlatformCALayerRemote::createCompatibleLayer(PlatformCALayer::LayerType layerType, PlatformCALayerClient* client) const
 {
     return PlatformCALayerRemote::create(layerType, client, m_context);
+}
+
+uint32_t PlatformCALayerRemote::hostingContextID()
+{
+    ASSERT_NOT_REACHED();
+    return 0;
 }
 
 #endif // USE(ACCELERATED_COMPOSITING)

@@ -343,6 +343,9 @@ private:
         case GetById:
             compileGetById();
             break;
+        case PutById:
+            compilePutById();
+            break;
         case GetButterfly:
             compileGetButterfly();
             break;
@@ -361,6 +364,15 @@ private:
         case PutByVal:
         case PutByValAlias:
             compilePutByVal();
+            break;
+        case NewObject:
+            compileNewObject();
+            break;
+        case StringCharAt:
+            compileStringCharAt();
+            break;
+        case StringCharCodeAt:
+            compileStringCharCodeAt();
             break;
         case GetByOffset:
             compileGetByOffset();
@@ -528,15 +540,6 @@ private:
             RELEASE_ASSERT_NOT_REACHED();
             break;
         }
-    }
-    
-    void compileJSConstant()
-    {
-        JSValue value = m_graph.valueOfJSConstant(m_node);
-        if (value.isDouble())
-            setDouble(m_out.constDouble(value.asDouble()));
-        else
-            setJSValue(m_out.constInt64(JSValue::encode(value)));
     }
     
     void compileWeakJSConstant()
@@ -1259,6 +1262,28 @@ private:
         m_ftlState.getByIds.append(GetByIdDescriptor(stackmapID, m_node->codeOrigin, uid));
     }
     
+    void compilePutById()
+    {
+        // See above; CellUse is easier so we do only that for now.
+        ASSERT(m_node->child1().useKind() == CellUse);
+
+        LValue base = lowCell(m_node->child1());
+        LValue value = lowJSValue(m_node->child2());
+        StringImpl* uid = m_graph.identifiers()[m_node->identifierNumber()];
+
+        // Arguments: id, bytes, target, numArgs, args...
+        unsigned stackmapID = m_stackmapIDs++;
+        m_out.call(
+            m_out.patchpointVoidIntrinsic(),
+            m_out.constInt32(stackmapID), m_out.constInt32(sizeOfPutById()),
+            constNull(m_out.ref8), m_out.constInt32(3), m_callFrame, base, value);
+        
+        m_ftlState.putByIds.append(PutByIdDescriptor(
+            stackmapID, m_node->codeOrigin, uid,
+            m_graph.executableFor(m_node->codeOrigin)->ecmaMode(),
+            m_node->op() == PutByIdDirect ? Direct : NotDirect));
+    }
+    
     void compileGetButterfly()
     {
         setStorage(m_out.loadPtr(lowCell(m_node->child1()), m_heaps.JSObject_butterfly));
@@ -1266,7 +1291,31 @@ private:
     
     void compileGetIndexedPropertyStorage()
     {
-        setStorage(m_out.loadPtr(lowCell(m_node->child1()), m_heaps.JSArrayBufferView_vector));
+        LValue cell = lowCell(m_node->child1());
+        
+        if (m_node->arrayMode().type() == Array::String) {
+            LBasicBlock slowPath = FTL_NEW_BLOCK(m_out, ("GetIndexedPropertyStorage String slow case"));
+            LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("GetIndexedPropertyStorage String continuation"));
+            
+            ValueFromBlock fastResult = m_out.anchor(
+                m_out.loadPtr(cell, m_heaps.JSString_value));
+            
+            m_out.branch(m_out.notNull(fastResult.value()), continuation, slowPath);
+            
+            LBasicBlock lastNext = m_out.appendTo(slowPath, continuation);
+            
+            ValueFromBlock slowResult = m_out.anchor(
+                vmCall(m_out.operation(operationResolveRope), m_callFrame, cell));
+            
+            m_out.jump(continuation);
+            
+            m_out.appendTo(continuation, lastNext);
+            
+            setStorage(m_out.loadPtr(m_out.phi(m_out.intPtr, fastResult, slowResult), m_heaps.StringImpl_data));
+            return;
+        }
+        
+        setStorage(m_out.loadPtr(cell, m_heaps.JSArrayBufferView_vector));
     }
     
     void compileCheckArray()
@@ -1292,6 +1341,12 @@ private:
             return;
         }
             
+        case Array::String: {
+            LValue string = lowCell(m_node->child1());
+            setInt32(m_out.load32(string, m_heaps.JSString_length));
+            return;
+        }
+            
         default:
             if (isTypedView(m_node->arrayMode().typedArrayType())) {
                 setInt32(
@@ -1306,12 +1361,12 @@ private:
     
     void compileGetByVal()
     {
-        LValue index = lowInt32(m_node->child2());
-        LValue storage = lowStorage(m_node->child3());
-        
         switch (m_node->arrayMode().type()) {
         case Array::Int32:
         case Array::Contiguous: {
+            LValue index = lowInt32(m_node->child2());
+            LValue storage = lowStorage(m_node->child3());
+            
             if (m_node->arrayMode().isInBounds()) {
                 speculate(
                     OutOfBounds, noValue(), 0,
@@ -1335,6 +1390,9 @@ private:
         }
             
         case Array::Double: {
+            LValue index = lowInt32(m_node->child2());
+            LValue storage = lowStorage(m_node->child3());
+            
             if (m_node->arrayMode().isInBounds()) {
                 speculate(
                     OutOfBounds, noValue(), 0,
@@ -1361,7 +1419,15 @@ private:
             return;
         }
             
+        case Array::String: {
+            compileStringCharAt();
+            return;
+        }
+            
         default: {
+            LValue index = lowInt32(m_node->child2());
+            LValue storage = lowStorage(m_node->child3());
+            
             TypedArrayType type = m_node->arrayMode().typedArrayType();
             
             if (isTypedView(type)) {
@@ -1660,6 +1726,175 @@ private:
             RELEASE_ASSERT_NOT_REACHED();
             break;
         }
+    }
+    
+    void compileNewObject()
+    {
+        Structure* structure = m_node->structure();
+        size_t allocationSize = JSFinalObject::allocationSize(structure->inlineCapacity());
+        MarkedAllocator* allocator = &vm().heap.allocatorForObjectWithoutDestructor(allocationSize);
+        
+        LBasicBlock slowPath = FTL_NEW_BLOCK(m_out, ("NewObject slow path"));
+        LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("NewObject continuation"));
+        
+        LBasicBlock lastNext = m_out.insertNewBlocksBefore(slowPath);
+        
+        ValueFromBlock fastResult = m_out.anchor(allocate(
+            m_out.constIntPtr(allocator), m_out.constIntPtr(structure), m_out.intPtrZero, slowPath));
+        
+        m_out.jump(continuation);
+        
+        m_out.appendTo(slowPath, continuation);
+        
+        ValueFromBlock slowResult = m_out.anchor(vmCall(
+            m_out.operation(operationNewObject), m_callFrame, m_out.constIntPtr(structure)));
+        m_out.jump(continuation);
+        
+        m_out.appendTo(continuation, lastNext);
+        setJSValue(m_out.phi(m_out.intPtr, fastResult, slowResult));
+    }
+    
+    void compileStringCharAt()
+    {
+        LValue base = lowCell(m_node->child1());
+        LValue index = lowInt32(m_node->child2());
+        LValue storage = lowStorage(m_node->child3());
+            
+        LBasicBlock fastPath = FTL_NEW_BLOCK(m_out, ("GetByVal String fast path"));
+        LBasicBlock slowPath = FTL_NEW_BLOCK(m_out, ("GetByVal String slow path"));
+        LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("GetByVal String continuation"));
+            
+        m_out.branch(
+            m_out.aboveOrEqual(
+                index, m_out.load32(base, m_heaps.JSString_length)),
+            slowPath, fastPath);
+            
+        LBasicBlock lastNext = m_out.appendTo(fastPath, slowPath);
+            
+        LValue stringImpl = m_out.loadPtr(base, m_heaps.JSString_value);
+            
+        LBasicBlock is8Bit = FTL_NEW_BLOCK(m_out, ("GetByVal String 8-bit case"));
+        LBasicBlock is16Bit = FTL_NEW_BLOCK(m_out, ("GetByVal String 16-bit case"));
+        LBasicBlock bitsContinuation = FTL_NEW_BLOCK(m_out, ("GetByVal String bitness continuation"));
+        LBasicBlock bigCharacter = FTL_NEW_BLOCK(m_out, ("GetByVal String big character"));
+            
+        m_out.branch(
+            m_out.testIsZero32(
+                m_out.load32(stringImpl, m_heaps.StringImpl_hashAndFlags),
+                m_out.constInt32(StringImpl::flagIs8Bit())),
+            is16Bit, is8Bit);
+            
+        m_out.appendTo(is8Bit, is16Bit);
+            
+        ValueFromBlock char8Bit = m_out.anchor(m_out.zeroExt(
+            m_out.load8(m_out.baseIndex(
+                m_heaps.characters8,
+                storage, m_out.zeroExt(index, m_out.intPtr),
+                m_state.forNode(m_node->child2()).m_value)),
+            m_out.int32));
+        m_out.jump(bitsContinuation);
+            
+        m_out.appendTo(is16Bit, bigCharacter);
+            
+        ValueFromBlock char16Bit = m_out.anchor(m_out.zeroExt(
+            m_out.load16(m_out.baseIndex(
+                m_heaps.characters16,
+                storage, m_out.zeroExt(index, m_out.intPtr),
+                m_state.forNode(m_node->child2()).m_value)),
+            m_out.int32));
+        m_out.branch(m_out.aboveOrEqual(char16Bit.value(), m_out.constInt32(0x100)), bigCharacter, bitsContinuation);
+            
+        m_out.appendTo(bigCharacter, bitsContinuation);
+            
+        Vector<ValueFromBlock, 4> results;
+        results.append(m_out.anchor(vmCall(
+            m_out.operation(operationSingleCharacterString),
+            m_callFrame, char16Bit.value())));
+        m_out.jump(continuation);
+            
+        m_out.appendTo(bitsContinuation, slowPath);
+            
+        LValue character = m_out.phi(m_out.int32, char8Bit, char16Bit);
+            
+        LValue smallStrings = m_out.constIntPtr(vm().smallStrings.singleCharacterStrings());
+            
+        results.append(m_out.anchor(m_out.loadPtr(m_out.baseIndex(
+            m_heaps.singleCharacterStrings, smallStrings,
+            m_out.zeroExt(character, m_out.intPtr)))));
+        m_out.jump(continuation);
+            
+        m_out.appendTo(slowPath, continuation);
+            
+        if (m_node->arrayMode().isInBounds()) {
+            speculate(OutOfBounds, noValue(), 0, m_out.booleanTrue);
+            results.append(m_out.anchor(m_out.intPtrZero));
+        } else {
+            JSGlobalObject* globalObject = m_graph.globalObjectFor(m_node->codeOrigin);
+                
+            if (globalObject->stringPrototypeChainIsSane()) {
+                LBasicBlock negativeIndex = FTL_NEW_BLOCK(m_out, ("GetByVal String negative index"));
+                    
+                results.append(m_out.anchor(m_out.constInt64(JSValue::encode(jsUndefined()))));
+                m_out.branch(m_out.lessThan(index, m_out.int32Zero), negativeIndex, continuation);
+                    
+                m_out.appendTo(negativeIndex, continuation);
+            }
+                
+            results.append(m_out.anchor(vmCall(
+                m_out.operation(operationGetByValStringInt), base, index)));
+        }
+            
+        m_out.jump(continuation);
+            
+        m_out.appendTo(continuation, lastNext);
+        setJSValue(m_out.phi(m_out.int64, results));
+    }
+    
+    void compileStringCharCodeAt()
+    {
+        LBasicBlock is8Bit = FTL_NEW_BLOCK(m_out, ("StringCharCodeAt 8-bit case"));
+        LBasicBlock is16Bit = FTL_NEW_BLOCK(m_out, ("StringCharCodeAt 16-bit case"));
+        LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("StringCharCodeAt continuation"));
+
+        LValue base = lowCell(m_node->child1());
+        LValue index = lowInt32(m_node->child2());
+        LValue storage = lowStorage(m_node->child3());
+        
+        speculate(
+            Uncountable, noValue(), 0,
+            m_out.aboveOrEqual(index, m_out.load32(base, m_heaps.JSString_length)));
+        
+        LValue stringImpl = m_out.loadPtr(base, m_heaps.JSString_value);
+        
+        m_out.branch(
+            m_out.testIsZero32(
+                m_out.load32(stringImpl, m_heaps.StringImpl_hashAndFlags),
+                m_out.constInt32(StringImpl::flagIs8Bit())),
+            is16Bit, is8Bit);
+            
+        LBasicBlock lastNext = m_out.appendTo(is8Bit, is16Bit);
+            
+        ValueFromBlock char8Bit = m_out.anchor(m_out.zeroExt(
+            m_out.load8(m_out.baseIndex(
+                m_heaps.characters8,
+                storage, m_out.zeroExt(index, m_out.intPtr),
+                m_state.forNode(m_node->child2()).m_value)),
+            m_out.int32));
+        m_out.jump(continuation);
+            
+        m_out.appendTo(is16Bit, continuation);
+            
+        ValueFromBlock char16Bit = m_out.anchor(m_out.zeroExt(
+            m_out.load16(m_out.baseIndex(
+                m_heaps.characters16,
+                storage, m_out.zeroExt(index, m_out.intPtr),
+                m_state.forNode(m_node->child2()).m_value)),
+            m_out.int32));
+        m_out.jump(continuation);
+        
+        m_out.appendTo(continuation, lastNext);
+        
+        setInt32(m_out.phi(m_out.int32, char8Bit, char16Bit));
     }
     
     void compileGetByOffset()
@@ -2140,6 +2375,28 @@ private:
         callStackmap(exit, arguments);
         
         info.m_isInvalidationPoint = true;
+    }
+    
+    LValue allocate(
+        LValue allocator, LValue structure, LValue butterfly, LBasicBlock slowPath)
+    {
+        LBasicBlock success = FTL_NEW_BLOCK(m_out, ("allocation success"));
+        
+        LValue result = m_out.loadPtr(
+            allocator, m_heaps.MarkedAllocator_freeListHead);
+        
+        m_out.branch(m_out.notNull(result), success, slowPath);
+        
+        m_out.appendTo(success);
+        
+        m_out.storePtr(
+            m_out.loadPtr(result, m_heaps.JSCell_freeListNext),
+            allocator, m_heaps.MarkedAllocator_freeListHead);
+        
+        m_out.storePtr(structure, result, m_heaps.JSCell_structure);
+        m_out.storePtr(butterfly, result, m_heaps.JSObject_butterfly);
+        
+        return result;
     }
     
     LValue boolify(Edge edge)
@@ -3020,11 +3277,19 @@ private:
                     m_out.bitAnd(indexingType, m_out.constInt8(IsArray | IndexingShapeMask)),
                     m_out.constInt8(IsArray | arrayMode.shapeMask()));
                 
-            default:
+            case Array::NonArray:
+            case Array::OriginalNonArray:
+                return m_out.equal(
+                    m_out.bitAnd(indexingType, m_out.constInt8(IsArray | IndexingShapeMask)),
+                    m_out.constInt8(arrayMode.shapeMask()));
+                
+            case Array::PossiblyArray:
                 return m_out.equal(
                     m_out.bitAnd(indexingType, m_out.constInt8(IndexingShapeMask)),
                     m_out.constInt8(arrayMode.shapeMask()));
             }
+            
+            RELEASE_ASSERT_NOT_REACHED();
         }
             
         default:

@@ -24,9 +24,7 @@
 #include "config.h"
 #include "RenderFrame.h"
 
-#include "FrameView.h"
 #include "HTMLFrameElement.h"
-#include "RenderView.h"
 
 namespace WebCore {
 
@@ -49,22 +47,6 @@ void RenderFrame::updateFromElement()
 {
     if (parent() && parent()->isFrameSet())
         toRenderFrameSet(parent())->notifyFrameEdgeInfoChanged();
-}
-
-void RenderFrame::viewCleared()
-{
-    if (!widget() || !widget()->isFrameView())
-        return;
-
-    FrameView* view = toFrameView(widget());
-
-    int marginWidth = frameElement().marginWidth();
-    int marginHeight = frameElement().marginHeight();
-
-    if (marginWidth != -1)
-        view->setMarginWidth(marginWidth);
-    if (marginHeight != -1)
-        view->setMarginHeight(marginHeight);
 }
 
 } // namespace WebCore

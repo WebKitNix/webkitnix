@@ -671,10 +671,19 @@ JITCompiler::Jump SpeculativeJIT::jumpSlowForUnwantedArrayMode(GPRReg tempGPR, A
         return m_jit.branch32(
             MacroAssembler::NotEqual, tempGPR, TrustedImm32(IsArray | shape));
         
-    default:
+    case Array::NonArray:
+    case Array::OriginalNonArray:
+        m_jit.and32(TrustedImm32(IsArray | IndexingShapeMask), tempGPR);
+        return m_jit.branch32(
+            MacroAssembler::NotEqual, tempGPR, TrustedImm32(shape));
+        
+    case Array::PossiblyArray:
         m_jit.and32(TrustedImm32(IndexingShapeMask), tempGPR);
         return m_jit.branch32(MacroAssembler::NotEqual, tempGPR, TrustedImm32(shape));
     }
+    
+    RELEASE_ASSERT_NOT_REACHED();
+    return JITCompiler::Jump();
 }
 
 JITCompiler::JumpList SpeculativeJIT::jumpSlowForUnwantedArrayMode(GPRReg tempGPR, ArrayMode arrayMode)
@@ -751,7 +760,7 @@ void SpeculativeJIT::checkArray(Node* node)
     
     switch (node->arrayMode().type()) {
     case Array::String:
-        expectedClassInfo = JSString::info();
+        RELEASE_ASSERT_NOT_REACHED(); // Should have been a Phantom(String:)
         break;
     case Array::Int32:
     case Array::Double:
@@ -2023,17 +2032,9 @@ void SpeculativeJIT::compileGetByValOnString(Node* node)
     // 8 bit string values don't need the isASCII check.
     cont8Bit.link(&m_jit);
 
-#if CPU(X86)
-    // Don't have enough register, construct our own indexed address and load.
-    m_jit.lshift32(MacroAssembler::TrustedImm32(2), scratchReg);
+    m_jit.lshift32(MacroAssembler::TrustedImm32(sizeof(void*) == 4 ? 2 : 3), scratchReg);
     m_jit.addPtr(MacroAssembler::TrustedImmPtr(m_jit.vm()->smallStrings.singleCharacterStrings()), scratchReg);
     m_jit.loadPtr(scratchReg, scratchReg);
-#else
-    GPRTemporary smallStrings(this);
-    GPRReg smallStringsReg = smallStrings.gpr();
-    m_jit.move(MacroAssembler::TrustedImmPtr(m_jit.vm()->smallStrings.singleCharacterStrings()), smallStringsReg);
-    m_jit.loadPtr(MacroAssembler::BaseIndex(smallStringsReg, scratchReg, MacroAssembler::ScalePtr, 0), scratchReg);
-#endif
 
     addSlowPathGenerator(
         slowPathCall(

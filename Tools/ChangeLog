@@ -1,3 +1,372 @@
+2013-11-06  Jer Noble  <jer.noble@apple.com>
+
+        Unreviewed webkitpy unit test fix; update baselines after r158765
+
+        * Scripts/webkitpy/port/win_unittest.py:
+        (WinPortTest.test_baseline_search_path):
+
+2013-11-06  Jer Noble  <jer.noble@apple.com>
+
+        [Win] run-webkit-tests on the win platform should fall back to mac-mountainlion, not mac-lion.
+        https://bugs.webkit.org/show_bug.cgi?id=123905
+
+        Reviewed by Brent Fulgham.
+
+        Now that the mac-lion results have been removed, the win port should fall back to
+        the mac-mountainlion results.
+
+        * Scripts/webkitpy/port/win.py:
+        (WinPort.default_baseline_search_path):
+
+2013-11-06  Anders Carlsson  <andersca@apple.com>
+
+        Fix a Mountain Lion test failure.
+
+        NSURLRequest doesn't conform to NSSecureCoding on Mountain Lion, so don't try to test encoding it.
+
+        * TestWebKitAPI/Tests/WebKit2ObjC/WKRemoteObjectRegistry.mm:
+        (TestWebKitAPI::TEST):
+
+2013-11-06  Krzysztof Czech  <k.czech@samsung.com>
+
+        [ATK] Implement tables-related attributesOf*() functions for AccessibilityUIElement
+        https://bugs.webkit.org/show_bug.cgi?id=118969
+
+        Reviewed by Mario Sanchez Prada.
+
+        Added missing implementation of attributesOfColumnHeaders, attributesOfRowHeaders, attributesOfVisibleCells.
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::attributesOfChildren):
+        (AccessibilityUIElement::attributesOfColumnHeaders):
+        (AccessibilityUIElement::attributesOfRowHeaders):
+        (AccessibilityUIElement::attributesOfVisibleCells):
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::attributesOfChildren):
+        (WTR::AccessibilityUIElement::attributesOfColumnHeaders):
+        (WTR::AccessibilityUIElement::attributesOfRowHeaders):
+        (WTR::AccessibilityUIElement::attributesOfVisibleCells):
+
+2013-11-05  Benjamin Poulain  <benjamin@webkit.org>
+
+        [WK2] Add a WebKit2 API for Geolocation's highAccuracy
+        https://bugs.webkit.org/show_bug.cgi?id=123786
+
+        Reviewed by Darin Adler.
+
+        Add basic testing for the Geolocation API (start, stop and change accuracy).
+
+        * TestWebKitAPI/GNUmakefile.am:
+        * TestWebKitAPI/PlatformEfl.cmake:
+        * TestWebKitAPI/PlatformGTK.cmake:
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/WebKit2/Geolocation.cpp: Added.
+        (TestWebKitAPI::operator<<):
+        (TestWebKitAPI::GeolocationStateTracker::~GeolocationStateTracker):
+        (TestWebKitAPI::GeolocationStateTracker::eventsChanged):
+        (TestWebKitAPI::GeolocationStateTracker::startUpdatingCallback):
+        (TestWebKitAPI::GeolocationStateTracker::stopUpdatingCallback):
+        (TestWebKitAPI::GeolocationStateTracker::setEnableHighAccuracyCallback):
+        (TestWebKitAPI::decidePolicyForGeolocationPermissionRequestCallBack):
+        (TestWebKitAPI::setupGeolocationProvider):
+        (TestWebKitAPI::setupView):
+        (TestWebKitAPI::GeolocationBasicStateTracker::GeolocationBasicStateTracker):
+        (TestWebKitAPI::GeolocationBasicStateTracker::eventsChanged):
+        (TestWebKitAPI::GeolocationBasicWithHighAccuracyStateTracker::GeolocationBasicWithHighAccuracyStateTracker):
+        (TestWebKitAPI::GeolocationBasicWithHighAccuracyStateTracker::eventsChanged):
+        (TestWebKitAPI::GeolocationTransitionToHighAccuracyStateTracker::GeolocationTransitionToHighAccuracyStateTracker):
+        (TestWebKitAPI::GeolocationTransitionToHighAccuracyStateTracker::eventsChanged):
+        (TestWebKitAPI::GeolocationTransitionToLowAccuracyStateTracker::GeolocationTransitionToLowAccuracyStateTracker):
+        (TestWebKitAPI::GeolocationTransitionToLowAccuracyStateTracker::eventsChanged):
+        (TestWebKitAPI::didFinishLoadForFrame):
+        * TestWebKitAPI/Tests/WebKit2/geolocationGetCurrentPosition.html: Added.
+        * TestWebKitAPI/Tests/WebKit2/geolocationGetCurrentPositionWithHighAccuracy.html: Added.
+        * TestWebKitAPI/Tests/WebKit2/geolocationWatchPosition.html: Added.
+        * TestWebKitAPI/Tests/WebKit2/geolocationWatchPositionWithHighAccuracy.html: Added.
+        * WebKitTestRunner/GeolocationProviderMock.cpp:
+        (WTR::GeolocationProviderMock::GeolocationProviderMock):
+
+2013-11-05  Anders Carlsson  <andersca@apple.com>
+
+        Implement more NSCoder methods
+        https://bugs.webkit.org/show_bug.cgi?id=123815
+
+        Reviewed by Dan Bernstein.
+
+        Add a method that takes an NSArray, an NSDictionary and an NSURLRequest.
+
+        * TestWebKitAPI/Tests/WebKit2ObjC/WKRemoteObjectRegistry.mm:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/mac/WKRemoteObjectRegistry_Bundle.mm:
+        (-[BundleObject testMethodWithArray:dictionary:request:]):
+        * TestWebKitAPI/Tests/mac/WKRemoteObjectRegistry_Shared.h:
+
+2013-11-05  Filip Pizlo  <fpizlo@apple.com>
+
+        Update ReducedFTL
+        https://bugs.webkit.org/show_bug.cgi?id=123805
+
+        Reviewed by Sam Weinig.
+        
+        - Make ReducedFTL build with debug info.
+        
+        - Give ReducedFTL a --loop mode that runs everything in a loop. Great for finding
+          memory leaks and attaching a profiler.
+        
+        - Reorder the passes so that they match the FTL.
+        
+        - Make it possible to change the backend opt level and enable the fast isel.
+
+        * ReducedFTL/ReducedFTL.c:
+        (usage):
+        (roundUpSize):
+        (mmAllocateCodeSection):
+        (main):
+        * ReducedFTL/build.sh:
+
+2013-11-05  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: switch DRT AX methods to use nullptr
+        https://bugs.webkit.org/show_bug.cgi?id=123773
+
+        Reviewed by Andreas Kling.
+
+        Switch AX related code in DRT and WKTR to use nullptr.
+
+        * DumpRenderTree/AccessibilityUIElement.cpp:
+        (AccessibilityUIElement::startTextMarker):
+        (AccessibilityUIElement::endTextMarker):
+        * DumpRenderTree/mac/AccessibilityControllerMac.mm:
+        (findAccessibleObjectById):
+        (AccessibilityController::accessibleElementById):
+        * DumpRenderTree/mac/AccessibilityUIElementMac.mm:
+        (AccessibilityUIElement::getChildAtIndex):
+        (AccessibilityUIElement::linkedUIElementAtIndex):
+        (AccessibilityUIElement::ariaOwnsElementAtIndex):
+        (AccessibilityUIElement::ariaFlowToElementAtIndex):
+        (AccessibilityUIElement::disclosedRowAtIndex):
+        (AccessibilityUIElement::selectedChildAtIndex):
+        (AccessibilityUIElement::selectedRowAtIndex):
+        (AccessibilityUIElement::rowAtIndex):
+        (AccessibilityUIElement::titleUIElement):
+        (AccessibilityUIElement::parentElement):
+        (AccessibilityUIElement::disclosedByRow):
+        (AccessibilityUIElement::stringAttributeValue):
+        (AccessibilityUIElement::uiElementAttributeValue):
+        (AccessibilityUIElement::role):
+        (AccessibilityUIElement::subrole):
+        (AccessibilityUIElement::roleDescription):
+        (AccessibilityUIElement::title):
+        (AccessibilityUIElement::description):
+        (AccessibilityUIElement::orientation):
+        (AccessibilityUIElement::stringValue):
+        (AccessibilityUIElement::language):
+        (AccessibilityUIElement::helpText):
+        (AccessibilityUIElement::valueDescription):
+        (AccessibilityUIElement::speak):
+        (AccessibilityUIElement::classList):
+        (AccessibilityUIElement::ariaDropEffects):
+        (AccessibilityUIElement::rangeForLine):
+        (AccessibilityUIElement::rangeForPosition):
+        (AccessibilityUIElement::boundsForRange):
+        (AccessibilityUIElement::stringForRange):
+        (AccessibilityUIElement::attributedStringForRange):
+        (AccessibilityUIElement::uiElementForSearchPredicate):
+        (AccessibilityUIElement::attributesOfColumnHeaders):
+        (AccessibilityUIElement::attributesOfRowHeaders):
+        (AccessibilityUIElement::attributesOfColumns):
+        (AccessibilityUIElement::attributesOfRows):
+        (AccessibilityUIElement::attributesOfVisibleCells):
+        (AccessibilityUIElement::attributesOfHeader):
+        (AccessibilityUIElement::rowIndexRange):
+        (AccessibilityUIElement::columnIndexRange):
+        (AccessibilityUIElement::cellForColumnAndRow):
+        (AccessibilityUIElement::horizontalScrollbar):
+        (AccessibilityUIElement::verticalScrollbar):
+        (AccessibilityUIElement::pathDescription):
+        (AccessibilityUIElement::selectedTextRange):
+        (AccessibilityUIElement::url):
+        (AccessibilityUIElement::textMarkerRangeForElement):
+        (AccessibilityUIElement::textMarkerForIndex):
+        (AccessibilityUIElement::previousTextMarker):
+        (AccessibilityUIElement::nextTextMarker):
+        (AccessibilityUIElement::stringForTextMarkerRange):
+        (AccessibilityUIElement::textMarkerRangeForMarkers):
+        (AccessibilityUIElement::startTextMarkerForTextMarkerRange):
+        (AccessibilityUIElement::endTextMarkerForTextMarkerRange):
+        (AccessibilityUIElement::endTextMarkerForBounds):
+        (AccessibilityUIElement::startTextMarkerForBounds):
+        (AccessibilityUIElement::textMarkerForPoint):
+        (AccessibilityUIElement::accessibilityElementForTextMarker):
+        (AccessibilityUIElement::startTextMarker):
+        (AccessibilityUIElement::endTextMarker):
+        (AccessibilityUIElement::supportedActions):
+        (AccessibilityUIElement::mathPostscriptsDescription):
+        (AccessibilityUIElement::mathPrescriptsDescription):
+        * WebKitTestRunner/InjectedBundle/AccessibilityController.cpp:
+        (WTR::AccessibilityController::accessibleElementById):
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::startTextMarker):
+        (WTR::AccessibilityUIElement::endTextMarker):
+        * WebKitTestRunner/InjectedBundle/mac/AccessibilityControllerMac.mm:
+        (WTR::findAccessibleObjectById):
+        (WTR::AccessibilityController::accessibleElementById):
+        * WebKitTestRunner/InjectedBundle/mac/AccessibilityUIElementMac.mm:
+        (WTR::AccessibilityUIElement::childAtIndex):
+        (WTR::AccessibilityUIElement::linkedUIElementAtIndex):
+        (WTR::AccessibilityUIElement::ariaOwnsElementAtIndex):
+        (WTR::AccessibilityUIElement::ariaFlowToElementAtIndex):
+        (WTR::AccessibilityUIElement::disclosedRowAtIndex):
+        (WTR::AccessibilityUIElement::rowAtIndex):
+        (WTR::AccessibilityUIElement::selectedChildAtIndex):
+        (WTR::AccessibilityUIElement::selectedRowAtIndex):
+        (WTR::AccessibilityUIElement::titleUIElement):
+        (WTR::AccessibilityUIElement::parentElement):
+        (WTR::AccessibilityUIElement::disclosedByRow):
+        (WTR::AccessibilityUIElement::stringAttributeValue):
+        (WTR::AccessibilityUIElement::uiElementAttributeValue):
+        (WTR::AccessibilityUIElement::role):
+        (WTR::AccessibilityUIElement::subrole):
+        (WTR::AccessibilityUIElement::roleDescription):
+        (WTR::AccessibilityUIElement::title):
+        (WTR::AccessibilityUIElement::description):
+        (WTR::AccessibilityUIElement::orientation):
+        (WTR::AccessibilityUIElement::stringValue):
+        (WTR::AccessibilityUIElement::language):
+        (WTR::AccessibilityUIElement::helpText):
+        (WTR::AccessibilityUIElement::valueDescription):
+        (WTR::AccessibilityUIElement::classList):
+        (WTR::AccessibilityUIElement::speak):
+        (WTR::AccessibilityUIElement::ariaDropEffects):
+        (WTR::AccessibilityUIElement::rangeForLine):
+        (WTR::AccessibilityUIElement::rangeForPosition):
+        (WTR::AccessibilityUIElement::boundsForRange):
+        (WTR::AccessibilityUIElement::stringForRange):
+        (WTR::AccessibilityUIElement::attributedStringForRange):
+        (WTR::AccessibilityUIElement::uiElementForSearchPredicate):
+        (WTR::AccessibilityUIElement::attributesOfColumnHeaders):
+        (WTR::AccessibilityUIElement::attributesOfRowHeaders):
+        (WTR::AccessibilityUIElement::attributesOfColumns):
+        (WTR::AccessibilityUIElement::attributesOfRows):
+        (WTR::AccessibilityUIElement::attributesOfVisibleCells):
+        (WTR::AccessibilityUIElement::attributesOfHeader):
+        (WTR::AccessibilityUIElement::rowIndexRange):
+        (WTR::AccessibilityUIElement::columnIndexRange):
+        (WTR::AccessibilityUIElement::cellForColumnAndRow):
+        (WTR::AccessibilityUIElement::horizontalScrollbar):
+        (WTR::AccessibilityUIElement::verticalScrollbar):
+        (WTR::AccessibilityUIElement::selectedTextRange):
+        (WTR::AccessibilityUIElement::url):
+        (WTR::AccessibilityUIElement::textMarkerRangeForElement):
+        (WTR::AccessibilityUIElement::previousTextMarker):
+        (WTR::AccessibilityUIElement::nextTextMarker):
+        (WTR::AccessibilityUIElement::stringForTextMarkerRange):
+        (WTR::AccessibilityUIElement::textMarkerRangeForMarkers):
+        (WTR::AccessibilityUIElement::startTextMarkerForTextMarkerRange):
+        (WTR::AccessibilityUIElement::endTextMarkerForTextMarkerRange):
+        (WTR::AccessibilityUIElement::endTextMarkerForBounds):
+        (WTR::AccessibilityUIElement::startTextMarkerForBounds):
+        (WTR::AccessibilityUIElement::textMarkerForPoint):
+        (WTR::AccessibilityUIElement::accessibilityElementForTextMarker):
+        (WTR::AccessibilityUIElement::textMarkerForIndex):
+        (WTR::AccessibilityUIElement::startTextMarker):
+        (WTR::AccessibilityUIElement::endTextMarker):
+        (WTR::AccessibilityUIElement::mathPostscriptsDescription):
+        (WTR::AccessibilityUIElement::mathPrescriptsDescription):
+        (WTR::AccessibilityUIElement::pathDescription):
+        (WTR::AccessibilityUIElement::supportedActions):
+
+2013-11-05  László Langó  <laszlo.lango@frontendart.com>
+
+        Remove leftover Qt related things from the flakiness_dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=123800
+
+        Reviewed by Anders Carlsson.
+
+        * TestResultServer/static-dashboards/flakiness_dashboard_unittests.js:
+        (test):
+
+2013-11-05  Robert Plociennik  <r.plociennik@samsung.com>
+
+        [EFL] accessibility/svg-group-element-with-title.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=114151
+
+        Reviewed by Mario Sanchez Prada.
+
+        atk_component_ref_accessible_at_point(), utilized in
+        AccessibilityUIElement::elementAtPoint(), is expected to 'get a reference to the
+        accessible child, if one exists, at the coordinate point specified' and not
+        explicitly return self in case of lack of child elements. This contradicts with
+        expected behavior of elementAtPoint(). Therefore, elementAtPoint() is
+        changed to return self regardless of coordinates specified, provided no child
+        element could be retrieved, effectively mimicing the behaviour of equivalent
+        Mac implementation in accessibilityHitTest().
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::elementAtPoint): Fixed.
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::elementAtPoint): Fixed.
+
+2013-11-05  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        [CSS] Enable css-image-orientation on EFL and GTK ports.
+        https://bugs.webkit.org/show_bug.cgi?id=123698
+
+        Reviewed by Beth Dakin.
+
+        r157909 added wrong early return for css-image-orientation. It causes about 20 regressions in layout test
+        when enabling css-image-orientaiton. This fixes those wrong implementation as well as enables it on EFL
+        and GTK ports by default.
+
+        * Scripts/webkitperl/FeatureList.pm:
+
+2013-11-04  Alexey Proskuryakov  <ap@apple.com>
+
+        DumpRenderTree should reset its preferences file on launch
+        https://bugs.webkit.org/show_bug.cgi?id=29751
+
+        Reviewed by Dan Bernstein.
+
+        Using NSArgumentDomain was not a good idea. While it works with NSUserDefaults
+        and CFPreferencesCopyAppValue family of functions, it doesn't work with
+        CFPreferencesCopyValue(..., kCFPreferencesCurrentApplication, ...).
+
+        So, now we'll just set defaults in the current application.
+
+        * DumpRenderTree/mac/DumpRenderTree.mm: (setDefaultsToConsistentValuesForTesting):
+        - Delete the defaults.
+        - Removed CFPreferencesSetAppValue calls, as -setValuesForKeysWithDictionary: does the same.
+        - The comment about [NSUserDefaults standardUserDefaults] indirectly initializing NSApplication was incorrect.
+
+        * WebKitTestRunner/mac/main.mm: (setDefaultsToConsistentValuesForTesting):
+        Switched to -setValuesForKeysWithDictionary for consistency.
+
+2013-11-04  Filip Pizlo  <fpizlo@apple.com>
+
+        Running FTL tests shouldn't reduce coverage on DFG tests
+        https://bugs.webkit.org/show_bug.cgi?id=123780
+
+        Reviewed by Geoffrey Garen.
+
+        * Scripts/run-jsc-stress-tests:
+
+2013-11-04  Anders Carlsson  <andersca@apple.com>
+
+        More WKRemoteObjectRegistry work
+        https://bugs.webkit.org/show_bug.cgi?id=123754
+
+        Reviewed by Dan Bernstein.
+
+        * TestWebKitAPI/Tests/WebKit2ObjC/WKRemoteObjectRegistry.mm:
+        (TestWebKitAPI::TEST):
+        Use the correct bundle test name. Call Util::run.
+
+        * TestWebKitAPI/Tests/mac/WKRemoteObjectRegistry_Bundle.mm:
+        (-[BundleObject sayHello]):
+        (-[BundleObject testMethodWithString:double:integer:]):
+        Add BundleObject implementation. Register the bundle object with
+        the remote object registry. Call _handleMessageWithName:body: on the incoming message.
+
 2013-11-04  Krzysztof Czech  <k.czech@samsung.com>
 
         [EFL] Change ATK version to 2.10.0

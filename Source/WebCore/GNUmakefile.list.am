@@ -1784,9 +1784,15 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/indexeddb/DOMWindowIndexedDatabase.h \
 	Source/WebCore/Modules/indexeddb/IDBAny.cpp \
 	Source/WebCore/Modules/indexeddb/IDBAny.h \
+	Source/WebCore/Modules/indexeddb/IDBBackingStoreCursorInterface.h \
 	Source/WebCore/Modules/indexeddb/IDBBackingStoreInterface.h \
+	Source/WebCore/Modules/indexeddb/IDBBackingStoreTransactionInterface.h \
+	Source/WebCore/Modules/indexeddb/leveldb/IDBBackingStoreCursorLevelDB.cpp \
+	Source/WebCore/Modules/indexeddb/leveldb/IDBBackingStoreCursorLevelDB.h \
 	Source/WebCore/Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.cpp \
 	Source/WebCore/Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.h \
+	Source/WebCore/Modules/indexeddb/leveldb/IDBBackingStoreTransactionLevelDB.cpp \
+	Source/WebCore/Modules/indexeddb/leveldb/IDBBackingStoreTransactionLevelDB.h \
 	Source/WebCore/Modules/indexeddb/IDBCallbacks.h \
 	Source/WebCore/Modules/indexeddb/IDBCursorBackendImpl.cpp \
 	Source/WebCore/Modules/indexeddb/IDBCursorBackendImpl.h \
@@ -2731,6 +2737,7 @@ webcore_sources += \
 	Source/WebCore/dom/ClipboardEvent.cpp \
 	Source/WebCore/dom/ClipboardEvent.h \
 	Source/WebCore/dom/Clipboard.h \
+	Source/WebCore/dom/CollectionIndexCache.h \
 	Source/WebCore/dom/Comment.cpp \
 	Source/WebCore/dom/Comment.h \
 	Source/WebCore/dom/CompositionEvent.cpp \
@@ -4271,6 +4278,8 @@ webcore_sources += \
 	Source/WebCore/rendering/ImageQualityController.h \
 	Source/WebCore/rendering/InlineBox.cpp \
 	Source/WebCore/rendering/InlineBox.h \
+	Source/WebCore/rendering/InlineElementBox.cpp \
+	Source/WebCore/rendering/InlineElementBox.h \
 	Source/WebCore/rendering/InlineFlowBox.cpp \
 	Source/WebCore/rendering/InlineFlowBox.h \
 	Source/WebCore/rendering/InlineIterator.h \
@@ -5818,6 +5827,7 @@ platform_sources += \
 	Source/WebCore/platform/graphics/TextTrackRepresentation.cpp \
 	Source/WebCore/platform/graphics/TextTrackRepresentation.h \
 	Source/WebCore/platform/graphics/TiledBacking.h \
+	Source/WebCore/platform/graphics/TrackBasePrivate.h \
 	Source/WebCore/platform/graphics/TypesettingFeatures.h \
 	Source/WebCore/platform/graphics/UnitBezier.h \
 	Source/WebCore/platform/graphics/VideoTrackPrivate.h \
@@ -6089,14 +6099,10 @@ webcoregtk_sources += \
 	Source/WebCore/page/gtk/DragControllerGtk.cpp \
 	Source/WebCore/page/gtk/EventHandlerGtk.cpp \
 	Source/WebCore/platform/cairo/WidgetBackingStore.h \
-	Source/WebCore/platform/graphics/gstreamer/FullscreenVideoControllerGStreamer.cpp \
-	Source/WebCore/platform/graphics/gstreamer/FullscreenVideoControllerGStreamer.h \
 	Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp \
 	Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.h \
 	Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp \
 	Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.h \
-	Source/WebCore/platform/graphics/gtk/FullscreenVideoControllerGtk.cpp \
-	Source/WebCore/platform/graphics/gtk/FullscreenVideoControllerGtk.h \
 	Source/WebCore/platform/graphics/gtk/IconGtk.cpp \
 	Source/WebCore/platform/graphics/gtk/ImageBufferGtk.cpp \
 	Source/WebCore/platform/gtk/ClipboardUtilitiesGtk.cpp \
@@ -6132,12 +6138,8 @@ platformgtk_sources += \
 	Source/WebCore/platform/graphics/cairo/GraphicsContextPlatformPrivateCairo.h \
 	Source/WebCore/platform/graphics/freetype/FontPlatformData.h \
 	Source/WebCore/platform/graphics/freetype/FontPlatformDataFreeType.cpp \
-	Source/WebCore/platform/graphics/gstreamer/GStreamerGWorld.cpp \
-	Source/WebCore/platform/graphics/gstreamer/GStreamerGWorld.h \
 	Source/WebCore/platform/graphics/gstreamer/ImageGStreamerCairo.cpp \
 	Source/WebCore/platform/graphics/gstreamer/ImageGStreamer.h \
-	Source/WebCore/platform/graphics/gstreamer/PlatformVideoWindowGtk.cpp \
-	Source/WebCore/platform/graphics/gstreamer/PlatformVideoWindow.h \
 	Source/WebCore/platform/graphics/gstreamer/VideoSinkGStreamer.cpp \
 	Source/WebCore/platform/graphics/gstreamer/VideoSinkGStreamer.h \
 	Source/WebCore/platform/graphics/gtk/ColorGtk.cpp \

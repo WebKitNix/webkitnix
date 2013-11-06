@@ -739,12 +739,12 @@ static PassRefPtr<CSSValueList> getBorderRadiusShorthandValue(const RenderStyle*
 {
     RefPtr<CSSValueList> list = CSSValueList::createSlashSeparated();
     bool showHorizontalBottomLeft = style->borderTopRightRadius().width() != style->borderBottomLeftRadius().width();
-    bool showHorizontalBottomRight = style->borderBottomRightRadius().width() != style->borderTopLeftRadius().width();
-    bool showHorizontalTopRight = style->borderTopRightRadius().width() != style->borderTopLeftRadius().width();
+    bool showHorizontalBottomRight = showHorizontalBottomLeft || (style->borderBottomRightRadius().width() != style->borderTopLeftRadius().width());
+    bool showHorizontalTopRight = showHorizontalBottomRight || (style->borderTopRightRadius().width() != style->borderTopLeftRadius().width());
 
     bool showVerticalBottomLeft = style->borderTopRightRadius().height() != style->borderBottomLeftRadius().height();
-    bool showVerticalBottomRight = (style->borderBottomRightRadius().height() != style->borderTopLeftRadius().height()) || showVerticalBottomLeft;
-    bool showVerticalTopRight = (style->borderTopRightRadius().height() != style->borderTopLeftRadius().height()) || showVerticalBottomRight;
+    bool showVerticalBottomRight = showVerticalBottomLeft || (style->borderBottomRightRadius().height() != style->borderTopLeftRadius().height());
+    bool showVerticalTopRight = showVerticalBottomRight || (style->borderTopRightRadius().height() != style->borderTopLeftRadius().height());
     bool showVerticalTopLeft = (style->borderTopLeftRadius().width() != style->borderTopLeftRadius().height());
 
     RefPtr<CSSValueList> topLeftRadius = getBorderRadiusCornerValues(style->borderTopLeftRadius(), style, renderView);
@@ -1168,6 +1168,9 @@ static PassRefPtr<CSSValue> valueForGridPosition(const GridPosition& position)
     if (position.isAuto())
         return cssValuePool().createIdentifierValue(CSSValueAuto);
 
+    if (position.isNamedGridArea())
+        return cssValuePool().createValue(position.namedGridLine(), CSSPrimitiveValue::CSS_STRING);
+
     RefPtr<CSSValueList> list = CSSValueList::createSpaceSeparated();
     if (position.isSpan()) {
         list->append(cssValuePool().createIdentifierValue(CSSValueSpan));
@@ -1563,7 +1566,7 @@ static PassRefPtr<CSSPrimitiveValue> lineHeightFromStyle(RenderStyle* style, Ren
         // On the other hand, since font-size doesn't include the zoom factor, we really can't do
         // that here either.
         return zoomAdjustedPixelValue(static_cast<int>(length.percent() * style->fontDescription().specifiedSize()) / 100, style);
-    return zoomAdjustedPixelValue(valueForLength(length, 0, renderView), style);
+    return zoomAdjustedPixelValue(floatValueForLength(length, 0, renderView), style);
 }
 
 static PassRefPtr<CSSPrimitiveValue> fontSizeFromStyle(RenderStyle* style)

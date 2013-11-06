@@ -30,7 +30,9 @@
 @class WKBrowsingContextControllerData;
 @class WKBackForwardList;
 @class WKBackForwardListItem;
+@protocol WKBrowsingContextHistoryDelegate;
 @protocol WKBrowsingContextLoadDelegate;
+@protocol WKBrowsingContextPolicyDelegate;
 
 WK_EXPORT
 @interface WKBrowsingContextController : NSObject {
@@ -40,8 +42,12 @@ WK_EXPORT
 
 #pragma mark Delegates
 
-@property(assign) id<WKBrowsingContextLoadDelegate> loadDelegate;
+@property (assign) id <WKBrowsingContextLoadDelegate> loadDelegate;
 
+#if WK_API_ENABLED
+@property (assign) id <WKBrowsingContextPolicyDelegate> policyDelegate;
+@property (assign) id <WKBrowsingContextHistoryDelegate> historyDelegate;
+#endif
 
 #pragma mark Loading
 
@@ -104,11 +110,13 @@ WK_EXPORT
 /* URL for the active load. This is the URL that should be shown in user interface. */
 @property(readonly) NSURL *activeURL;
 
-/* URL for a request that has been sent, but no response has been recieved yet. */
+/* URL for a request that has been sent, but no response has been received yet. */
 @property(readonly) NSURL *provisionalURL;
 
-/* URL for a request that has been recieved, and is now being used. */
+/* URL for a request that has been received, and is now being used. */
 @property(readonly) NSURL *committedURL;
+
+@property(readonly) NSURL *unreachableURL;
 
 @property(readonly) double estimatedProgress;
 

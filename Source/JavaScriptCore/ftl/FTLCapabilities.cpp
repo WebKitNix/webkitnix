@@ -62,6 +62,7 @@ inline CapabilityLevel canCompile(Node* node)
     case PutStructure:
     case PhantomPutStructure:
     case GetButterfly:
+    case NewObject:
     case GetByOffset:
     case PutByOffset:
     case GetGlobalVar:
@@ -96,13 +97,18 @@ inline CapabilityLevel canCompile(Node* node)
     case PutClosureVar:
     case Int52ToValue:
     case InvalidationPoint:
+    case StringCharAt:
+    case StringCharCodeAt:
         // These are OK.
         break;
     case GetById:
+    case PutById:
         if (node->child1().useKind() == CellUse)
             break;
         return CannotCompile;
     case GetIndexedPropertyStorage:
+        if (node->arrayMode().type() == Array::String)
+            break;
         if (isTypedView(node->arrayMode().typedArrayType()))
             break;
         return CannotCompile;
@@ -123,6 +129,7 @@ inline CapabilityLevel canCompile(Node* node)
         case Array::Int32:
         case Array::Double:
         case Array::Contiguous:
+        case Array::String:
             break;
         default:
             if (isTypedView(node->arrayMode().typedArrayType()))
@@ -133,6 +140,7 @@ inline CapabilityLevel canCompile(Node* node)
     case GetByVal:
         switch (node->arrayMode().type()) {
         case Array::ForceExit:
+        case Array::String:
             return CanCompileAndOSREnter;
         case Array::Int32:
         case Array::Double:

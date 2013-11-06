@@ -96,8 +96,6 @@ fast/dom/Window/slow-unload-handler-only-frame-is-stopped.html [ WontFix Timeout
 # the right platform or re-written in a more platform-agnostic way.
 webkit.org/b/98348 accessibility/internal-link-anchors2.html [ WontFix Missing ]
 webkit.org/b/98348 accessibility/radio-button-group-members.html [ WontFix Missing ]
-webkit.org/b/98348 accessibility/table-attributes.html [ WontFix Missing ]
-webkit.org/b/98348 accessibility/table-sections.html [ WontFix Missing ]
 
 # Feature disabled, see: https://bugs.webkit.org/show_bug.cgi?id=85425
 webkit.org/b/98925 fast/viewport/viewport-legacy-handheldfriendly.html [ Skip ]
@@ -880,13 +878,11 @@ webkit.org/b/121684 accessibility/aria-describedby-on-input.html [ Failure ]
 webkit.org/b/98355 accessibility/aria-link-supports-press.html [ Failure ]
 webkit.org/b/98357 accessibility/aria-readonly.html [ Failure ]
 webkit.org/b/98359 accessibility/aria-text-role.html [ Failure ]
-webkit.org/b/98361 accessibility/button-press-action.html [ Failure ]
 webkit.org/b/98363 accessibility/canvas-fallback-content-2.html [ Failure ]
 webkit.org/b/98371 accessibility/loading-iframe-updates-axtree.html [ Failure ]
 webkit.org/b/98372 accessibility/onclick-handlers.html [ Failure ]
 webkit.org/b/98375 accessibility/secure-textfield-title-ui.html [ Failure ]
 webkit.org/b/98377 accessibility/textarea-insertion-point-line-number.html [ Failure ]
-webkit.org/b/98378 accessibility/textarea-line-for-index.html [ Failure ]
 webkit.org/b/98380 accessibility/th-as-title-ui.html [ Failure ]
 webkit.org/b/98382 accessibility/visible-elements.html [ Failure ]
 
@@ -1226,8 +1222,6 @@ webkit.org/b/98613 css3/masking/clip-path-reference.html [ ImageOnlyFailure ]
 
 webkit.org/b/98950 transitions/blendmode-transitions.html [ Failure ]
 
-webkit.org/b/99825 accessibility/title-ui-element-correctness.html [ Failure ]
-
 webkit.org/b/98718 svg/animations/animate-css-xml-attributeType.html [ Failure ]
 
 webkit.org/b/100424 editing/selection/user-select-all-selection.html [ Failure ]
@@ -1326,10 +1320,14 @@ webkit.org/b/113127 media/track/track-prefer-captions.html [ Timeout ]
 webkit.org/b/113772 http/tests/w3c/webperf/submission/Google/resource-timing/html/test_resource_iframe_self_navigation.html [ Failure ]
 webkit.org/b/113772 http/tests/w3c/webperf/submission/Google/resource-timing/html/test_resource_cached.html [ Failure ]
 
-webkit.org/b/114251 accessibility/svg-group-element-with-title.html [ Failure ]
-
 webkit.org/b/114259 platform/gtk/accessibility/aria-slider-required-attributes.html [ Failure ]
 webkit.org/b/114259 platform/gtk/accessibility/combo-box-collapsed-selection-changed.html [ Failure ]
+
+webkit.org/b/123885 platform/gtk/accessibility/spans-paragraphs-and-divs.html [ Failure ]
+webkit.org/b/123885 platform/gtk/accessibility/spans.html [ Failure ]
+
+webkit.org/b/123894 accessibility/media-element.html [ Failure ]
+webkit.org/b/123894 platform/gtk/accessibility/media-controls-panel-title.html [ Failure ]
 
 webkit.org/b/114612 editing/style/block-style-005.html [ Failure ]
 

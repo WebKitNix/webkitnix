@@ -1719,6 +1719,10 @@ static bool needsSelfRetainWhileLoadingQuirk()
     settings.setDiagnosticLoggingEnabled([preferences diagnosticLoggingEnabled]);
     settings.setLowPowerVideoAudioBufferSizeEnabled([preferences lowPowerVideoAudioBufferSizeEnabled]);
 
+#if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
+    settings->setVideoPluginProxyEnabled([preferences isVideoPluginProxyEnabled]);
+#endif
+
     switch ([preferences storageBlockingPolicy]) {
     case WebAllowAllStorage:
         settings.setStorageBlockingPolicy(SecurityOrigin::AllowAllStorage);
@@ -6519,10 +6523,10 @@ static inline uint64_t roundUpToPowerOf2(uint64_t num)
 
 - (void)_retrieveKeyboardUIModeFromPreferences:(NSNotification *)notification
 {
-    CFPreferencesAppSynchronize(kCFPreferencesAnyApplication);
+    CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
 
     Boolean keyExistsAndHasValidFormat;
-    int mode = CFPreferencesGetAppIntegerValue(AppleKeyboardUIMode, kCFPreferencesAnyApplication, &keyExistsAndHasValidFormat);
+    int mode = CFPreferencesGetAppIntegerValue(AppleKeyboardUIMode, kCFPreferencesCurrentApplication, &keyExistsAndHasValidFormat);
 
     // The keyboard access mode has two bits:
     // Bit 0 is set if user can set the focus to menus, the dock, and various windows using the keyboard.

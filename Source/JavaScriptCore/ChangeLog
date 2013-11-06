@@ -1,3 +1,463 @@
+2013-11-06  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG CheckArray(NonArray) should prove that the child isn't an array
+        https://bugs.webkit.org/show_bug.cgi?id=123911
+        <rdar://problem/15202803>
+
+        Reviewed by Mark Hahnenberg.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::jumpSlowForUnwantedArrayMode):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::isArrayType):
+
+2013-11-06  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        JSExport doesn't support constructors
+        https://bugs.webkit.org/show_bug.cgi?id=123380
+
+        Reviewed by Geoffrey Garen.
+
+        Needed another linked-on-or-after check for when we're deciding whether
+        we should copy over init family methods.
+
+        Factored out the link time checks into a separate function so that they can be cached.
+
+        Factored out the check for init-family method selectors into helper function and changed it to
+        match the description in the clang docs, namely that there can be underscores at the beginning
+        and the first letter after 'init' part of the selector (if there is one) must be a capital letter.
+
+        Updated tests to make sure we don't treat "initialize" as an init-family method and that we do
+        treat "_init" as an init-family method.
+
+        * API/JSWrapperMap.h:
+        * API/JSWrapperMap.mm:
+        (isInitFamilyMethod):
+        (shouldSkipMethodWithName):
+        (copyMethodsToObject):
+        (allocateConstructorForCustomClass):
+        (supportsInitMethodConstructors):
+        * API/tests/testapi.mm:
+        (-[ClassA initialize]):
+        (-[ClassD initialize]):
+
+2013-11-06  Michael Saboff  <msaboff@apple.com>
+
+        Change ctiTrampoline into a thunk
+        https://bugs.webkit.org/show_bug.cgi?id=123844
+
+        Reviewed by Filip Pizlo.
+
+        Converted ctiTrampoline and ctiOpThrowNotCaught into thunks named callToJavaScript
+        and returnFromJavaScript.  Cleaned up and in some cases removed JITStubsXXX.h files
+        after removing ctiTrampoline and ctiOpThrowNotCaught.  Added callJavaScriptJITFunction
+        to VM that is a function pointer to the callToJavaScript thunk.
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * dfg/DFGDriver.cpp:
+        (JSC::DFG::compileImpl):
+        * jit/JITCode.cpp:
+        (JSC::JITCode::execute):
+        * jit/JITExceptions.cpp:
+        (JSC::genericUnwind):
+        * jit/JITStubs.cpp:
+        * jit/JITStubs.h:
+        * jit/JITStubsARM.h:
+        * jit/JITStubsARM64.h: Removed.
+        * jit/JITStubsARMv7.h:
+        * jit/JITStubsMIPS.h: Removed.
+        * jit/JITStubsMSVC64.asm:
+        * jit/JITStubsSH4.h: Removed.
+        * jit/JITStubsX86.h:
+        * jit/JITStubsX86_64.h:
+        * jit/JSInterfaceJIT.h:
+        * jit/ThunkGenerators.cpp:
+        (JSC::returnFromJavaScript):
+        (JSC::callToJavaScript):
+        * jit/ThunkGenerators.h:
+        * runtime/VM.cpp:
+        (JSC::VM::VM):
+        * runtime/VM.h:
+
+2013-11-05  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support StringCharCodeAt
+        https://bugs.webkit.org/show_bug.cgi?id=123854
+
+        Reviewed by Sam Weinig.
+
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileStringCharCodeAt):
+
+2013-11-05  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support NewObject
+        https://bugs.webkit.org/show_bug.cgi?id=123849
+
+        Reviewed by Oliver Hunt.
+
+        * ftl/FTLAbstractHeapRepository.cpp:
+        (JSC::FTL::AbstractHeapRepository::AbstractHeapRepository):
+        * ftl/FTLAbstractHeapRepository.h:
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLIntrinsicRepository.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileNewObject):
+        (JSC::FTL::LowerDFGToLLVM::allocate):
+
+2013-11-05  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support StringCharAt
+        https://bugs.webkit.org/show_bug.cgi?id=123855
+
+        Reviewed by Oliver Hunt.
+        
+        This is just like GetByVal for String, so we reuse that code.
+
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileGetByVal):
+        (JSC::FTL::LowerDFGToLLVM::compileStringCharAt):
+
+2013-11-05  Filip Pizlo  <fpizlo@apple.com>
+
+        Remove old unused code for hypothetical LLVM intrinsics
+        https://bugs.webkit.org/show_bug.cgi?id=123824
+
+        Reviewed by Oliver Hunt.
+
+        * ftl/FTLIntrinsicRepository.h:
+
+2013-11-05  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support String character access operations
+        https://bugs.webkit.org/show_bug.cgi?id=123783
+
+        Reviewed by Oliver Hunt.
+        
+        Implements:
+        
+        - string.length
+        
+        - string[index]
+
+        * ftl/FTLAbstractHeapRepository.h:
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLIntrinsicRepository.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileGetIndexedPropertyStorage):
+        (JSC::FTL::LowerDFGToLLVM::compileGetArrayLength):
+        (JSC::FTL::LowerDFGToLLVM::compileGetByVal):
+
+2013-11-05  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        ObjCCallbackFunctionImpl's NSInvocation shouldn't retain its target or arguments
+        https://bugs.webkit.org/show_bug.cgi?id=123822
+
+        Reviewed by Geoffrey Garen.
+
+        Using -retainArguments on ObjCCallbackFunctionImpl's NSInvocation leads to memory leaks.
+        We should handle retaining/releasing the target ourselves, and we should never retain the arguments.
+
+        * API/ObjCCallbackFunction.mm:
+        (JSC::ObjCCallbackFunctionImpl::~ObjCCallbackFunctionImpl):
+        (JSC::ObjCCallbackFunctionImpl::name):
+        (objCCallbackFunctionForInvocation):
+        (objCCallbackFunctionForMethod):
+        (objCCallbackFunctionForBlock):
+
+2013-11-05  Julien Brianceau  <jbriance@cisco.com>
+
+        Fix build for architectures with 4 argument registers (broken since r158681).
+        https://bugs.webkit.org/show_bug.cgi?id=123826
+
+        Reviewed by Michael Saboff.
+
+        * jit/CCallHelpers.h:
+        (JSC::CCallHelpers::setupArgumentsWithExecState):
+        (JSC::CCallHelpers::setupArguments):
+
+2013-11-05  Filip Pizlo  <fpizlo@apple.com>
+
+        Fix register allocation inside control flow in GetByVal String
+        https://bugs.webkit.org/show_bug.cgi?id=123816
+
+        Reviewed by Geoffrey Garen.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileGetByValOnString):
+
+2013-11-05  Filip Pizlo  <fpizlo@apple.com>
+
+        Remove FTL::LowerDFGToLLVM::compileJSConstant()
+        https://bugs.webkit.org/show_bug.cgi?id=123817
+
+        Reviewed by Geoffrey Garen.
+
+        * ftl/FTLLowerDFGToLLVM.cpp:
+
+2013-11-04  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support PutById
+        https://bugs.webkit.org/show_bug.cgi?id=123784
+
+        Reviewed by Geoffrey Garen.
+
+        * ftl/FTLAbbreviations.h:
+        (JSC::FTL::buildCall):
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLCompile.cpp:
+        (JSC::FTL::generateICFastPath):
+        (JSC::FTL::fixFunctionBasedOnStackMaps):
+        * ftl/FTLInlineCacheDescriptor.h:
+        (JSC::FTL::InlineCacheDescriptor::InlineCacheDescriptor):
+        (JSC::FTL::GetByIdDescriptor::GetByIdDescriptor):
+        (JSC::FTL::PutByIdDescriptor::PutByIdDescriptor):
+        (JSC::FTL::PutByIdDescriptor::ecmaMode):
+        (JSC::FTL::PutByIdDescriptor::putKind):
+        * ftl/FTLIntrinsicRepository.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compilePutById):
+        * ftl/FTLOutput.h:
+        (JSC::FTL::Output::call):
+        * ftl/FTLSlowPathCall.cpp:
+        (JSC::FTL::callOperation):
+        * ftl/FTLSlowPathCall.h:
+        * ftl/FTLState.h:
+        * jit/CCallHelpers.h:
+        (JSC::CCallHelpers::setupArguments):
+        * runtime/Executable.h:
+        (JSC::ScriptExecutable::ecmaMode):
+
+2013-11-04  Filip Pizlo  <fpizlo@apple.com>
+
+        GetById->GetByOffset and PutById->PutByOffset folding should mark haveStructures since it may result in structure transition watchpoints
+        https://bugs.webkit.org/show_bug.cgi?id=123788
+
+        Reviewed by Geoffrey Garen.
+        
+        haveStructures is true if there are any currentlyKnownStructures that have
+        interesting values, since that's the only time when clobbering needs to do things.
+        It's a really important compile-time optimization. But that also means that anytime
+        we might cause currentlyKnownStructures to get set - like when we might insert some
+        structure transition watchpoints - we need to set haveStructures. We were forgetting
+        to do that for GetById->GetByOffset and PutById->PutByOffset because, I guess, we
+        forgot that those might insert structure transition watchpoints.
+
+        * dfg/DFGAbstractInterpreterInlines.h:
+        (JSC::DFG::::executeEffects):
+
+2013-11-05  Julien Brianceau  <jbriance@cisco.com>
+
+        [mips] Make regTx registers match between JSInterfaceJIT and GPRInfo.
+        https://bugs.webkit.org/show_bug.cgi?id=123807
+
+        Reviewed by Mark Lam.
+
+        * jit/GPRInfo.h:
+        (JSC::GPRInfo::toIndex):
+        * jit/JSInterfaceJIT.h:
+
+2013-11-05  Julien Brianceau  <jbriance@cisco.com>
+
+        REGRESSION(r158315): Fix register mixup in JIT::compileOpCall.
+        https://bugs.webkit.org/show_bug.cgi?id=123799
+
+        Reviewed by Mark Lam.
+
+        Changeset r158315 is crashing architectures where JSInterfaceJIT::regT3 is
+        different from GPRInfo::regT3. This is the case for MIPS architecture.
+
+        * jit/JITCall32_64.cpp:
+        (JSC::JIT::compileOpCall):
+
+2013-11-05  Julien Brianceau  <jbriance@cisco.com>
+
+        [mips] Fix build for MIPS platforms.
+        https://bugs.webkit.org/show_bug.cgi?id=123796
+
+        Reviewed by Michael Saboff.
+
+        * assembler/LinkBuffer.cpp:
+        (JSC::LinkBuffer::linkCode): Add specific MIPS call to relocateJumps.
+        * assembler/MIPSAssembler.h: Remove executableCopy (because of r157690) and set relocateJumps function public.
+        (JSC::MIPSAssembler::firstRegister):
+        (JSC::MIPSAssembler::lastRegister):
+        (JSC::MIPSAssembler::firstFPRegister):
+        (JSC::MIPSAssembler::lastFPRegister):
+        (JSC::MIPSAssembler::buffer): Needed since r157690.
+        * assembler/MacroAssemblerMIPS.h: Add framePointerRegister.
+        (JSC::MacroAssemblerMIPS::revertJumpReplacementToPatchableBranchPtrWithPatch): Remove unused parameter warning.
+
+2013-11-04  Filip Pizlo  <fpizlo@apple.com>
+
+        internal-js-tests.yaml/Octane/stress-tests/pdfjs.js.default: ASSERTION FAILED: m_state.forNode(child).m_futurePossibleStructure.isSubsetOf(StructureSet(structure)) at DFGConstantFoldingPhase.cpp:249
+        https://bugs.webkit.org/show_bug.cgi?id=123778
+
+        Unreviewed, remove the other such assertion.
+
+        * dfg/DFGConstantFoldingPhase.cpp:
+        (JSC::DFG::ConstantFoldingPhase::foldConstants):
+
+2013-11-04  Michael Saboff  <msaboff@apple.com>
+
+        REGRESSION(r158586): plugins/refcount-leaks.html fails
+        https://bugs.webkit.org/show_bug.cgi?id=123765
+
+        We were leaving a hole of one slot above a new frame when pushing the new frame on
+        the stack with pushFrame().  This unused slot can contain residual values that will
+        be marked during GC.
+
+        Reviewed by Filip Pizlo.
+
+        * interpreter/JSStackInlines.h:
+        (JSC::JSStack::pushFrame):
+
+2013-11-04  Filip Pizlo  <fpizlo@apple.com>
+
+        internal-js-tests.yaml/Octane/stress-tests/pdfjs.js.default: ASSERTION FAILED: m_state.forNode(child).m_futurePossibleStructure.isSubsetOf(StructureSet(structure)) at DFGConstantFoldingPhase.cpp:249
+        https://bugs.webkit.org/show_bug.cgi?id=123778
+
+        Reviewed by Geoffrey Garen.
+        
+        This assertion was just wrong: ee do an execute() above the assertion. The assertion
+        is asserting that if we need a watchpoint (i.e. the best proven structure was not the
+        current structure) then it must be the future possible structure.  But while that may
+        have been true before execute(), it won't be true after if the PutById was a
+        transition. Of course, this can only happen in the concurrent JIT in which case the
+        code would be invalidated anyway since we would only transform the code in a way that
+        leveraged the lack of a transition if we inserted a watchpoint, in which case we
+        would realize that the watchpoint had been fired during compilation.
+        
+        Since this requires concurrent JIT awesomeness, I don't know how to test it.
+
+        * dfg/DFGConstantFoldingPhase.cpp:
+        (JSC::DFG::ConstantFoldingPhase::foldConstants):
+
+2013-11-04  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG CheckArray(String) should just be a Phantom(String:)
+        https://bugs.webkit.org/show_bug.cgi?id=123779
+
+        Reviewed by Geoffrey Garen.
+        
+        This should be a speed-up since Phantom(String:) is smart enough to use the string
+        structure. It should also be a simplification since CheckArray(String) was totally
+        redundant.
+        
+        Also FixupPhase was assuming that it may see CheckArray's. That's wrong. It can
+        create CheckArray's but it won't see them as input since no previous phase can
+        create them.
+
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        (JSC::DFG::FixupPhase::checkArray):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::checkArray):
+
+2013-11-04  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG NewArray/NewArrayBuffer shouldn't be constructing with negative indexing
+        https://bugs.webkit.org/show_bug.cgi?id=123760
+        <rdar://problem/15356705>
+
+        Reviewed by Mark Hahnenberg and Oliver Hunt.
+
+        * dfg/DFGOperations.cpp:
+
+2013-11-04  Michael Saboff  <msaboff@apple.com>
+
+        Eliminate HostCall bit from JSC Stack CallerFrame
+        https://bugs.webkit.org/show_bug.cgi?id=123642
+
+        Reviewed by Geoffrey Garen.
+
+        Replace the HostCallFrame bit or'ed to the CallerFrame value in a CallFrame with
+        a VM entry sentinel CallFrame.  Logically, the VM entry sentinel call frame is
+        pushed on the stack before the callee frame when calling from native to JavaScript
+        code.  The callee frame's CallerFrame points at the VM entry sentinel call frame
+        and the VM entry sentinel call frame's CallerFrame points to the real caller.
+        The VM entry sentinel call frame has a sentinel (1) in the CodeBlock to indicate
+        its a VM entry sentinel call frame.  It's ScopeChain has vm.topCallFrame at the
+        time of the call.  This allows for a complete stack walk as well as walking just
+        the contiguous JS frames.
+
+        The VM entry sentinel call frame and callee frame are currently allocated and
+        initialized in ExecState::init(), but this initialization will be moved to
+        ctiTrampoline when we actually move onto the native stack.
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::noticeIncomingCall):
+        * debugger/DebuggerCallFrame.cpp:
+        (JSC::DebuggerCallFrame::callerFrame):
+        * dfg/DFGJITCompiler.cpp:
+        (JSC::DFG::JITCompiler::compileExceptionHandlers):
+        * interpreter/CallFrame.h:
+        (JSC::ExecState::frameExtent):
+        (JSC::ExecState::currentVPC):
+        (JSC::ExecState::setCurrentVPC):
+        (JSC::ExecState::init):
+        (JSC::ExecState::noCaller):
+        (JSC::ExecState::isVMEntrySentinel):
+        (JSC::ExecState::vmEntrySentinelCallerFrame):
+        (JSC::ExecState::initializeVMEntrySentinelFrame):
+        (JSC::ExecState::callerFrameSkippingVMEntrySentinel):
+        (JSC::ExecState::vmEntrySentinelCodeBlock):
+        * interpreter/Interpreter.cpp:
+        (JSC::unwindCallFrame):
+        (JSC::Interpreter::getStackTrace):
+        * interpreter/Interpreter.h:
+        (JSC::TopCallFrameSetter::TopCallFrameSetter):
+        (JSC::TopCallFrameSetter::~TopCallFrameSetter):
+        (JSC::NativeCallFrameTracer::NativeCallFrameTracer):
+        * interpreter/JSStack.cpp:
+        (JSC::JSStack::~JSStack):
+        * interpreter/JSStackInlines.h:
+        (JSC::JSStack::getStartOfFrame):
+        (JSC::JSStack::pushFrame):
+        (JSC::JSStack::popFrame):
+        * interpreter/Register.h:
+        (JSC::Register::operator=):
+        (JSC::Register::callFrame):
+        * interpreter/StackVisitor.cpp:
+        (JSC::StackVisitor::readFrame):
+        (JSC::StackVisitor::readNonInlinedFrame):
+        (JSC::StackVisitor::readInlinedFrame):
+        (JSC::StackVisitor::Frame::print):
+        * interpreter/VMInspector.cpp:
+        (JSC::VMInspector::countFrames):
+        * jit/JIT.cpp:
+        (JSC::JIT::privateCompileExceptionHandlers):
+        * jit/JITOperations.cpp:
+        * jit/JITStubsARM.h:
+        (JSC::ctiTrampoline):
+        * jit/JITStubsARM64.h:
+        * jit/JITStubsARMv7.h:
+        (JSC::ctiTrampoline):
+        * jit/JITStubsMIPS.h:
+        * jit/JITStubsMSVC64.asm:
+        * jit/JITStubsSH4.h:
+        * jit/JITStubsX86.h:
+        * jit/JITStubsX86_64.h:
+        * jsc.cpp:
+        (functionDumpCallFrame):
+        * llint/LowLevelInterpreter.cpp:
+        (JSC::CLoop::execute):
+        * runtime/VM.cpp:
+        (JSC::VM::VM):
+        (JSC::VM::throwException):
+
 2013-11-04  Mark Hahnenberg  <mhahnenberg@apple.com>
 
         JSArrayBufferViews of length 0 allocate 0 CopiedSpace bytes, which is invalid

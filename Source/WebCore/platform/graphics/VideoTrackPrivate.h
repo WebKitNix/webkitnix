@@ -26,10 +26,7 @@
 #ifndef VideoTrackPrivate_h
 #define VideoTrackPrivate_h
 
-#include <wtf/Forward.h>
-#include <wtf/Noncopyable.h>
-#include <wtf/RefCounted.h>
-#include <wtf/text/AtomicString.h>
+#include "TrackPrivateBase.h"
 
 #if ENABLE(VIDEO_TRACK)
 
@@ -37,26 +34,20 @@ namespace WebCore {
 
 class VideoTrackPrivate;
 
-class VideoTrackPrivateClient {
+class VideoTrackPrivateClient : public TrackPrivateBaseClient {
 public:
-    virtual ~VideoTrackPrivateClient() { }
     virtual void selectedChanged(VideoTrackPrivate*, bool) = 0;
-    virtual void labelChanged(VideoTrackPrivate*, const String&) = 0;
-    virtual void languageChanged(VideoTrackPrivate*, const String&) = 0;
-    virtual void willRemoveVideoTrackPrivate(VideoTrackPrivate*) = 0;
 };
 
-class VideoTrackPrivate : public RefCounted<VideoTrackPrivate> {
-    WTF_MAKE_NONCOPYABLE(VideoTrackPrivate); WTF_MAKE_FAST_ALLOCATED;
+class VideoTrackPrivate : public TrackPrivateBase {
 public:
     static PassRefPtr<VideoTrackPrivate> create()
     {
         return adoptRef(new VideoTrackPrivate());
     }
-    virtual ~VideoTrackPrivate() { }
 
     void setClient(VideoTrackPrivateClient* client) { m_client = client; }
-    VideoTrackPrivateClient* client() { return m_client; }
+    virtual VideoTrackPrivateClient* client() const OVERRIDE { return m_client; }
 
     virtual void setSelected(bool selected)
     {
@@ -70,18 +61,6 @@ public:
 
     enum Kind { Alternative, Captions, Main, Sign, Subtitles, Commentary, None };
     virtual Kind kind() const { return None; }
-
-    virtual AtomicString id() const { return emptyAtom; }
-    virtual AtomicString label() const { return emptyAtom; }
-    virtual AtomicString language() const { return emptyAtom; }
-
-    virtual int videoTrackIndex() const { return 0; }
-
-    void willBeRemoved()
-    {
-        if (m_client)
-            m_client->willRemoveVideoTrackPrivate(this);
-    }
 
 protected:
     VideoTrackPrivate()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,12 +47,12 @@ void WebGeolocationProvider::stopUpdating(WebGeolocationManagerProxy* geolocatio
     m_client.stopUpdating(toAPI(geolocationManager), m_client.clientInfo);
 }
 
-void WebGeolocationProvider::didChangeEnableHighAccuracy(WebGeolocationManagerProxy* geolocationManager, bool value)
+void WebGeolocationProvider::setEnableHighAccuracy(WebGeolocationManagerProxy* geolocationManager, bool enabled)
 {
-    if (!m_client.didChangeEnableHighAccuracy || m_client.version < 1)
+    if (!m_client.setEnableHighAccuracy)
         return;
 
-    m_client.didChangeEnableHighAccuracy(toAPI(geolocationManager), value, m_client.clientInfo);
+    m_client.setEnableHighAccuracy(toAPI(geolocationManager), enabled, m_client.clientInfo);
 }
 
 } // namespace WebKit

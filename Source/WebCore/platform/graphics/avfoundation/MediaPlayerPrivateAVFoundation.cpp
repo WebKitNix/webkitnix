@@ -197,6 +197,15 @@ void MediaPlayerPrivateAVFoundation::load(const String& url)
     setPreload(m_preload);
 }
 
+#if ENABLE(MEDIA_SOURCE)
+void MediaPlayerPrivateAVFoundation::load(const String&, PassRefPtr<HTMLMediaSource>)
+{
+    m_networkState = MediaPlayer::FormatError;
+    m_player->networkStateChanged();
+}
+#endif
+
+
 void MediaPlayerPrivateAVFoundation::playabilityKnown()
 {
     LOG(Media, "MediaPlayerPrivateAVFoundation::playabilityKnown(%p)", this);
@@ -799,7 +808,7 @@ void MediaPlayerPrivateAVFoundation::dispatchNotification()
         
         if (!m_queuedNotifications.isEmpty() && !m_mainThreadCallPending)
             callOnMainThread(mainThreadCallback, this);
-        
+
         if (!notification.isValid())
             return;
     }
@@ -865,6 +874,9 @@ void MediaPlayerPrivateAVFoundation::dispatchNotification()
     case Notification::InbandTracksNeedConfiguration:
         m_inbandTrackConfigurationPending = false;
         configureInbandTracks();
+        break;
+    case Notification::FunctionType:
+        notification.function()();
         break;
 
     case Notification::None:

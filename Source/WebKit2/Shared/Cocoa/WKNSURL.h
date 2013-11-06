@@ -28,6 +28,11 @@
 #if WK_API_ENABLED
 
 #import "WKObject.h"
+#import "WebURL.h"
+
+namespace WebKit {
+inline NSURL *wrapper(WebURL& url) { ASSERT([url.wrapper() isKindOfClass:[NSURL class]]); return (NSURL *)url.wrapper(); }
+}
 
 @interface WKNSURL : WKObject <NSCopying>
 @end

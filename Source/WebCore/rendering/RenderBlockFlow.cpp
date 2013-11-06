@@ -136,7 +136,7 @@ void RenderBlockFlow::willBeDestroyed()
     }
 
     if (!documentBeingDestroyed()) {
-        if (firstLineBox()) {
+        if (firstRootBox()) {
             // We can't wait for RenderBox::destroy to clear the selection,
             // because by then we will have nuked the line boxes.
             // FIXME: The FrameSelection should be responsible for this when it
@@ -148,7 +148,7 @@ void RenderBlockFlow::willBeDestroyed()
             // that will outlast this block. In the non-anonymous block case those
             // children will be destroyed by the time we return from this function.
             if (isAnonymousBlock()) {
-                for (auto box = firstLineBox(); box; box = box->nextLineBox()) {
+                for (auto box = firstRootBox(); box; box = box->nextRootBox()) {
                     while (auto childBox = box->firstChild())
                         childBox->removeFromParent();
                 }
@@ -1973,11 +1973,6 @@ FloatingObject* RenderBlockFlow::insertFloatingObject(RenderBox& floatBox)
 
     setLogicalWidthForFloat(floatingObject.get(), logicalWidthForChild(floatBox) + marginStartForChild(floatBox) + marginEndForChild(floatBox));
 
-#if ENABLE(CSS_SHAPES)
-    if (ShapeOutsideInfo* shapeOutside = floatBox.shapeOutsideInfo())
-        shapeOutside->setShapeSize(logicalWidthForChild(floatBox), logicalHeightForChild(floatBox));
-#endif
-
     return m_floatingObjects->add(std::move(floatingObject));
 }
 
@@ -2217,6 +2212,10 @@ bool RenderBlockFlow::positionNewFloats()
 
         m_floatingObjects->addPlacedObject(floatingObject);
 
+#if ENABLE(CSS_SHAPES)
+        if (ShapeOutsideInfo* shapeOutside = childBox.shapeOutsideInfo())
+            shapeOutside->setShapeSize(logicalWidthForChild(childBox), logicalHeightForChild(childBox));
+#endif
         // If the child moved, we have to repaint it.
         if (childBox.checkForRepaintDuringLayout())
             childBox.repaintDuringLayoutIfMoved(oldRect);
@@ -2689,8 +2688,8 @@ int RenderBlockFlow::firstLineBaseline() const
     if (m_simpleLineLayout)
         return SimpleLineLayout::computeFlowFirstLineBaseline(*this, *m_simpleLineLayout);
 
-    ASSERT(firstLineBox());
-    return firstLineBox()->logicalTop() + firstLineStyle().fontMetrics().ascent(firstRootBox()->baselineType());
+    ASSERT(firstRootBox());
+    return firstRootBox()->logicalTop() + firstLineStyle().fontMetrics().ascent(firstRootBox()->baselineType());
 }
 
 int RenderBlockFlow::inlineBlockBaseline(LineDirectionMode lineDirection) const
@@ -2713,9 +2712,9 @@ int RenderBlockFlow::inlineBlockBaseline(LineDirectionMode lineDirection) const
     if (m_simpleLineLayout)
         return SimpleLineLayout::computeFlowLastLineBaseline(*this, *m_simpleLineLayout);
 
-    bool isFirstLine = lastLineBox() == firstLineBox();
+    bool isFirstLine = lastRootBox() == firstRootBox();
     const RenderStyle& style = isFirstLine ? firstLineStyle() : this->style();
-    return lastLineBox()->logicalTop() + style.fontMetrics().ascent(lastRootBox()->baselineType());
+    return lastRootBox()->logicalTop() + style.fontMetrics().ascent(lastRootBox()->baselineType());
 }
 
 GapRects RenderBlockFlow::inlineSelectionGaps(RenderBlock& rootBlock, const LayoutPoint& rootBlockPhysicalPosition, const LayoutSize& offsetFromRootBlock,

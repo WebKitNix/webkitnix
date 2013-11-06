@@ -308,11 +308,8 @@ public:
     RenderLineBoxList& lineBoxes() { return m_lineBoxes; }
     const RenderLineBoxList& lineBoxes() const { return m_lineBoxes; }
 
-    InlineFlowBox* firstLineBox() const { return m_lineBoxes.firstLineBox(); }
-    InlineFlowBox* lastLineBox() const { return m_lineBoxes.lastLineBox(); }
-
-    RootInlineBox* firstRootBox() const { return static_cast<RootInlineBox*>(firstLineBox()); }
-    RootInlineBox* lastRootBox() const { return static_cast<RootInlineBox*>(lastLineBox()); }
+    RootInlineBox* firstRootBox() const { return static_cast<RootInlineBox*>(m_lineBoxes.firstLineBox()); }
+    RootInlineBox* lastRootBox() const { return static_cast<RootInlineBox*>(m_lineBoxes.lastLineBox()); }
 
     virtual bool hasLines() const OVERRIDE FINAL;
 
@@ -461,7 +458,7 @@ private:
     void layoutLineBoxes(bool relayoutChildren, LayoutUnit& repaintLogicalTop, LayoutUnit& repaintLogicalBottom);
     void layoutSimpleLines(LayoutUnit& repaintLogicalTop, LayoutUnit& repaintLogicalBottom);
 
-    virtual RootInlineBox* createRootInlineBox(); // Subclassed by SVG and Ruby.
+    virtual std::unique_ptr<RootInlineBox> createRootInlineBox(); // Subclassed by RenderSVGText.
     InlineFlowBox* createLineBoxes(RenderObject*, const LineInfo&, InlineBox* childBox, bool startsNewSegment);
     RootInlineBox* constructLine(BidiRunList<BidiRun>&, const LineInfo&);
     void setMarginsForRubyRun(BidiRun*, RenderRubyRun&, RenderObject*, const LineInfo&);

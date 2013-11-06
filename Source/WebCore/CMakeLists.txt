@@ -786,7 +786,10 @@ set(WebCore_SOURCES
     Modules/indexeddb/IDBVersionChangeEvent.cpp
     Modules/indexeddb/PageGroupIndexedDatabase.cpp
     Modules/indexeddb/WorkerGlobalScopeIndexedDatabase.cpp
+
+    Modules/indexeddb/leveldb/IDBBackingStoreCursorLevelDB.cpp
     Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.cpp
+    Modules/indexeddb/leveldb/IDBBackingStoreTransactionLevelDB.cpp
     Modules/indexeddb/leveldb/IDBFactoryBackendLevelDB.cpp
     Modules/indexeddb/leveldb/IDBLevelDBCoding.cpp
 
@@ -2079,6 +2082,7 @@ set(WebCore_SOURCES
     rendering/HitTestingTransformState.cpp
     rendering/ImageQualityController.cpp
     rendering/InlineBox.cpp
+    rendering/InlineElementBox.cpp
     rendering/InlineFlowBox.cpp
     rendering/InlineTextBox.cpp
     rendering/LayoutRepainter.cpp
@@ -2826,6 +2830,13 @@ if (WTF_USE_3D_GRAPHICS)
         )
         list(APPEND WebCore_LIBRARIES
             ${OPENGL_gl_LIBRARY}
+        )
+    elseif (OPENGLES2_FOUND)
+        list(APPEND WebCore_INCLUDE_DIRECTORIES
+            ${OPENGLES2_INCLUDE_DIR}
+        )
+        list(APPEND WebCore_LIBRARIES
+            ${OPENGLES2_LIBRARIES}
         )
     endif ()
 

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="DebugSuffix|Win32">
@@ -9478,6 +9478,20 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\rendering\InlineElementBox.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_WinCairo|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_WinCairo|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSuffix|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSuffix|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_WinCairo|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_WinCairo|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\rendering\InlineFlowBox.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -18841,6 +18855,7 @@
     <ClInclude Include="..\platform\graphics\TiledBackingStore.h" />
     <ClInclude Include="..\platform\graphics\TiledBackingStoreBackend.h" />
     <ClInclude Include="..\platform\graphics\TiledBackingStoreClient.h" />
+    <ClInclude Include="..\platform\graphics\TrackBasePrivate.h" />
     <ClInclude Include="..\platform\graphics\VideoTrackPrivate.h" />
     <ClInclude Include="..\platform\graphics\win\SharedGDIObject.h" />
     <ClInclude Include="..\platform\HistogramSupport.h" />
@@ -19559,6 +19574,7 @@
     <ClInclude Include="..\rendering\HitTestResult.h" />
     <ClInclude Include="..\rendering\ImageQualityController.h" />
     <ClInclude Include="..\rendering\InlineBox.h" />
+    <ClInclude Include="..\rendering\InlineElementBox.h" />
     <ClInclude Include="..\rendering\InlineFlowBox.h" />
     <ClInclude Include="..\rendering\InlineIterator.h" />
     <ClInclude Include="..\rendering\InlineTextBox.h" />
@@ -19839,6 +19855,7 @@
     <ClInclude Include="..\dom\Clipboard.h" />
     <ClInclude Include="..\dom\ClipboardAccessPolicy.h" />
     <ClInclude Include="..\dom\ClipboardEvent.h" />
+    <ClInclude Include="..\dom\CollectionIndexCache.h" />
     <ClInclude Include="..\dom\Comment.h" />
     <ClInclude Include="..\dom\CompositionEvent.h" />
     <ClInclude Include="..\dom\ContainerNode.h" />

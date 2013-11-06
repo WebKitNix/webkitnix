@@ -36,9 +36,7 @@
 #include "VideoTrack.h"
 
 #include "Event.h"
-#include "ExceptionCode.h"
 #include "HTMLMediaElement.h"
-#include "TrackBase.h"
 #include "VideoTrackList.h"
 
 namespace WebCore {
@@ -80,8 +78,7 @@ const AtomicString& VideoTrack::commentaryKeyword()
 }
 
 VideoTrack::VideoTrack(VideoTrackClient* client, PassRefPtr<VideoTrackPrivate> trackPrivate)
-    : TrackBase(TrackBase::VideoTrack, trackPrivate->label(), trackPrivate->language())
-    , m_id(trackPrivate->id())
+    : TrackBase(TrackBase::VideoTrack, trackPrivate->id(), trackPrivate->label(), trackPrivate->language())
     , m_selected(trackPrivate->selected())
     , m_client(client)
     , m_private(trackPrivate)
@@ -154,7 +151,7 @@ void VideoTrack::setSelected(const bool selected)
 size_t VideoTrack::inbandTrackIndex()
 {
     ASSERT(m_private);
-    return m_private->videoTrackIndex();
+    return m_private->trackIndex();
 }
 
 void VideoTrack::selectedChanged(VideoTrackPrivate* trackPrivate, bool selected)
@@ -163,19 +160,25 @@ void VideoTrack::selectedChanged(VideoTrackPrivate* trackPrivate, bool selected)
     setSelected(selected);
 }
 
-void VideoTrack::labelChanged(VideoTrackPrivate* trackPrivate, const String& label)
+void VideoTrack::idChanged(TrackPrivateBase* trackPrivate, const String& id)
+{
+    ASSERT_UNUSED(trackPrivate, trackPrivate == m_private);
+    setId(id);
+}
+
+void VideoTrack::labelChanged(TrackPrivateBase* trackPrivate, const String& label)
 {
     ASSERT_UNUSED(trackPrivate, trackPrivate == m_private);
     setLabel(label);
 }
 
-void VideoTrack::languageChanged(VideoTrackPrivate* trackPrivate, const String& language)
+void VideoTrack::languageChanged(TrackPrivateBase* trackPrivate, const String& language)
 {
     ASSERT_UNUSED(trackPrivate, trackPrivate == m_private);
     setLanguage(language);
 }
 
-void VideoTrack::willRemoveVideoTrackPrivate(VideoTrackPrivate* trackPrivate)
+void VideoTrack::willRemove(TrackPrivateBase* trackPrivate)
 {
     ASSERT_UNUSED(trackPrivate, trackPrivate == m_private);
     mediaElement()->removeVideoTrack(this);

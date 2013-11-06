@@ -24,13 +24,9 @@
 #include "RenderWidget.h"
 
 #include "AXObjectCache.h"
-#include "AnimationController.h"
 #include "Frame.h"
-#include "GraphicsContext.h"
 #include "HTMLFrameOwnerElement.h"
 #include "HitTestResult.h"
-#include "PluginViewBase.h"
-#include "RenderCounter.h"
 #include "RenderLayer.h"
 #include "RenderView.h"
 #include <wtf/StackStats.h>
@@ -122,9 +118,10 @@ static inline IntRect roundedIntRect(const LayoutRect& rect)
 bool RenderWidget::setWidgetGeometry(const LayoutRect& frame)
 {
     IntRect clipRect = roundedIntRect(enclosingLayer()->childrenClipRect());
-    IntRect newFrame = roundedIntRect(frame);
+    IntRect newFrameRect = roundedIntRect(frame);
+    IntRect oldFrameRect = m_widget->frameRect();
     bool clipChanged = m_clipRect != clipRect;
-    bool boundsChanged = m_widget->frameRect() != newFrame;
+    bool boundsChanged = oldFrameRect != newFrameRect;
 
     if (!boundsChanged && !clipChanged)
         return false;
@@ -132,37 +129,28 @@ bool RenderWidget::setWidgetGeometry(const LayoutRect& frame)
     m_clipRect = clipRect;
 
     WeakPtr<RenderWidget> weakThis = createWeakPtr();
-
-    // This call *may* cause this renderer to disappear from underneath...
-    m_widget->setFrameRect(newFrame);
-
+    // These calls *may* cause this renderer to disappear from underneath...
+    if (boundsChanged)
+        m_widget->setFrameRect(newFrameRect);
+    else if (clipChanged)
+        m_widget->clipRectChanged();
     // ...so we follow up with a sanity check.
     if (!weakThis)
         return true;
 
-    if (clipChanged && !boundsChanged) {
-        // This call *may* cause this renderer to disappear from underneath...
-        m_widget->clipRectChanged();
-
-        // ...so here's another sanity check.
-        if (!weakThis)
-            return true;
-    }
-
 #if USE(ACCELERATED_COMPOSITING)
-    if (hasLayer() && layer()->isComposited())
+    if (boundsChanged && hasLayer() && layer()->isComposited())
         layer()->backing()->updateAfterWidgetResize();
 #endif
-    
-    return boundsChanged;
+    return oldFrameRect.size() != newFrameRect.size();
 }
 
 bool RenderWidget::updateWidgetGeometry()
 {
-    LayoutRect contentBox = contentBoxRect();
     if (!m_widget->transformsAffectFrameRect())
         return setWidgetGeometry(absoluteContentBox());
 
+    LayoutRect contentBox = contentBoxRect();
     LayoutRect absoluteContentBox(localToAbsoluteQuad(FloatQuad(contentBox)).boundingBox());
     if (m_widget->isFrameView()) {
         contentBox.setLocation(absoluteContentBox.location());
@@ -206,9 +194,6 @@ void RenderWidget::setWidget(PassRefPtr<Widget> widget)
         }
         moveWidgetToParentSoon(m_widget.get(), &view().frameView());
     }
-    // make sure the scrollbars are set correctly for restore
-    // ### find better fix
-    viewCleared();
 }
 
 void RenderWidget::layout()
@@ -228,12 +213,6 @@ void RenderWidget::styleDidChange(StyleDifference diff, const RenderStyle* oldSt
         else
             m_widget->show();
     }
-}
-
-void RenderWidget::notifyWidget(WidgetNotification notification)
-{
-    if (m_widget)
-        m_widget->notifyWidget(notification);
 }
 
 void RenderWidget::paintContents(PaintInfo& paintInfo, const LayoutPoint& paintOffset)
@@ -337,18 +316,16 @@ void RenderWidget::updateWidgetPosition()
         return;
 
     WeakPtr<RenderWidget> weakThis = createWeakPtr();
-
-    bool boundsChanged = updateWidgetGeometry();
-
+    bool widgetSizeChanged = updateWidgetGeometry();
     if (!weakThis)
         return;
 
-    // if the frame bounds got changed, or if view needs layout (possibly indicating
-    // content size is wrong) we have to do a layout to set the right widget size
-    if (m_widget && m_widget->isFrameView()) {
+    // if the frame size got changed, or if view needs layout (possibly indicating
+    // content size is wrong) we have to do a layout to set the right widget size.
+    if (m_widget->isFrameView()) {
         FrameView* frameView = toFrameView(m_widget.get());
         // Check the frame's page to make sure that the frame isn't in the process of being destroyed.
-        if ((boundsChanged || frameView->needsLayout()) && frameView->frame().page())
+        if ((widgetSizeChanged || frameView->needsLayout()) && frameView->frame().page())
             frameView->layout();
     }
 }
@@ -404,16 +381,6 @@ bool RenderWidget::nodeAtPoint(const HitTestRequest& request, HitTestResult& res
     return inside;
 }
 
-CursorDirective RenderWidget::getCursor(const LayoutPoint& point, Cursor& cursor) const
-{
-    if (widget() && widget()->isPluginViewBase()) {
-        // A plug-in is responsible for setting the cursor when the pointer is over it.
-        return DoNotSetCursor;
-    }
-    return RenderReplaced::getCursor(point, cursor);
-}
-
-
 #if USE(ACCELERATED_COMPOSITING)
 bool RenderWidget::requiresLayer() const
 {
@@ -422,13 +389,7 @@ bool RenderWidget::requiresLayer() const
 
 bool RenderWidget::requiresAcceleratedCompositing() const
 {
-    // There are two general cases in which we can return true. First, if this is a plugin 
-    // renderer and the plugin has a layer, then we need a layer. Second, if this is 
-    // a renderer with a contentDocument and that document needs a layer, then we need
-    // a layer.
-    if (widget() && widget()->isPluginViewBase() && toPluginViewBase(widget())->platformLayer())
-        return true;
-
+    // If this is a renderer with a contentDocument and that document needs a layer, then we need a layer.
     if (Document* contentDocument = frameOwnerElement().contentDocument()) {
         if (RenderView* view = contentDocument->renderView())
             return view->usesCompositing();

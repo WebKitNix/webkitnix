@@ -65,10 +65,8 @@ static bool hasInlineBoxWrapper(RenderObject& renderer)
 static Node* nextRenderedEditable(Node* node)
 {
     while ((node = nextLeafNode(node))) {
-        if (!node->rendererIsEditable())
-            continue;
         RenderObject* renderer = node->renderer();
-        if (!renderer)
+        if (!renderer || !node->rendererIsEditable())
             continue;
         if (hasInlineBoxWrapper(*renderer))
             return node;
@@ -79,10 +77,8 @@ static Node* nextRenderedEditable(Node* node)
 static Node* previousRenderedEditable(Node* node)
 {
     while ((node = previousLeafNode(node))) {
-        if (!node->rendererIsEditable())
-            continue;
         RenderObject* renderer = node->renderer();
-        if (!renderer)
+        if (!renderer || !node->rendererIsEditable())
             continue;
         if (hasInlineBoxWrapper(*renderer))
             return node;
@@ -937,6 +933,9 @@ bool Position::isCandidate() const
     if (m_anchorNode->hasTagName(htmlTag))
         return false;
         
+    if (isRendererReplacedElement(renderer))
+        return !nodeIsUserSelectNone(deprecatedNode()) && atFirstEditingPositionForNode();
+
     if (renderer->isRenderBlockFlow()) {
         RenderBlock& block = toRenderBlock(*renderer);
         if (block.logicalHeight() || m_anchorNode->hasTagName(bodyTag)) {
