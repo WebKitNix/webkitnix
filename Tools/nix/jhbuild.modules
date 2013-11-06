@@ -116,7 +116,7 @@
    </autotools>
 
  <autotools id="libwebrtc">
-   <branch repo="git.github.com" module="qrwteyrutiyoup/libwebrtc-meta.git" checkoutdir="libwebrtc"/>
+   <branch repo="git.github.com" module="WebKitNix/libwebrtc-meta.git" checkoutdir="libwebrtc"/>
  </autotools>
 
 </moduleset>
