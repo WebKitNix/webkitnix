@@ -38,7 +38,7 @@
 
 #include "MediaConstraints.h"
 #include "MediaStreamCreationClient.h"
-#include "MediaStreamDescriptor.h"
+#include "MediaStreamPrivate.h"
 
 #include <public/MediaConstraints.h>
 #include <public/MediaStream.h>

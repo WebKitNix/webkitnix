@@ -30,12 +30,12 @@
 #include "MediaStreamWebRTCObserver.h"
 
 #include "MediaStreamAudioSource.h"
-#include "MediaStreamDescriptor.h"
+#include "MediaStreamPrivate.h"
 #include "MediaStreamTrackWebRTCObserver.h"
 
 namespace WebCore {
 
-MediaStreamWebRTCObserver::MediaStreamWebRTCObserver(webrtc::MediaStreamInterface* stream, MediaStreamDescriptor* descriptor, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& audioTracks, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& videoTracks)
+MediaStreamWebRTCObserver::MediaStreamWebRTCObserver(webrtc::MediaStreamInterface* stream, MediaStreamPrivate* descriptor, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& audioTracks, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& videoTracks)
     : m_stream(stream)
     , m_descriptor(descriptor)
     , m_audioTrackObservers(audioTracks)

@@ -169,7 +169,7 @@ bool RTCPeerConnectionHandlerWebRTC::addIceCandidate(PassRefPtr<RTCVoidRequest> 
     return iceAdded;
 }
 
-bool RTCPeerConnectionHandlerWebRTC::addStream(PassRefPtr<MediaStreamDescriptor> streamDescriptor, PassRefPtr<MediaConstraints> constraints)
+bool RTCPeerConnectionHandlerWebRTC::addStream(PassRefPtr<MediaStreamPrivate> streamDescriptor, PassRefPtr<MediaConstraints> constraints)
 {
     talk_base::scoped_refptr<webrtc::MediaStreamInterface> stream = m_pcFactory->CreateLocalMediaStream(streamDescriptor->id().utf8().data());
     MediaConstraintsWebRTC mediaConstraints(constraints);
@@ -197,7 +197,7 @@ void RTCPeerConnectionHandlerWebRTC::addWebRTCStream(webrtc::MediaStreamInterfac
     } // TODO: video.
 }
 
-void RTCPeerConnectionHandlerWebRTC::removeStream(PassRefPtr<MediaStreamDescriptor> streamDescriptor)
+void RTCPeerConnectionHandlerWebRTC::removeStream(PassRefPtr<MediaStreamPrivate> streamDescriptor)
 {
     webrtc::MediaStreamInterface* media = getWebRTCMediaStream(streamDescriptor->id().utf8().data());
     if (!media)

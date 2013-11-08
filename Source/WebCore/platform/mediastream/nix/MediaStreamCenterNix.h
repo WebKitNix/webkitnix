@@ -46,7 +46,7 @@ class MediaStreamCenter;
 
 namespace WebCore {
 
-class MediaStreamDescriptor;
+class MediaStreamPrivate;
 class MediaStreamSource;
 
 class MediaStreamCenterNix : public MediaStreamCenter {

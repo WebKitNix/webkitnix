@@ -30,7 +30,7 @@
 #include <public/MediaStream.h>
 
 #include "MediaStreamAudioSource.h"
-#include "MediaStreamDescriptor.h"
+#include "MediaStreamPrivate.h"
 #include "MediaStreamSource.h"
 
 #include <public/MediaStreamAudioSource.h>
@@ -43,12 +43,12 @@ using namespace WebCore;
 
 namespace Nix {
 
-MediaStream::MediaStream(const PassRefPtr<WebCore::MediaStreamDescriptor>& mediaStreamDescriptor)
+MediaStream::MediaStream(const PassRefPtr<WebCore::MediaStreamPrivate>& mediaStreamDescriptor)
     : m_private(mediaStreamDescriptor)
 {
 }
 
-MediaStream::MediaStream(WebCore::MediaStreamDescriptor* mediaStreamDescriptor)
+MediaStream::MediaStream(WebCore::MediaStreamPrivate* mediaStreamDescriptor)
     : m_private(mediaStreamDescriptor)
 {
 }
@@ -81,27 +81,27 @@ std::vector<MediaStreamSource*> MediaStream::videoSources() const
 void MediaStream::addSource(const MediaStreamSource&)
 {
     ASSERT(!isNull());
-    // FIXME: Set a MediaStreamDescriptorClient when initialize.
+    // FIXME: Set a MediaStreamPrivateClient when initialize.
 }
 
 void MediaStream::removeSource(const MediaStreamSource&)
 {
     ASSERT(!isNull());
-    // FIXME: Set a MediaStreamDescriptorClient when initialize.
+    // FIXME: Set a MediaStreamPrivateClient when initialize.
 }
 
-MediaStream& MediaStream::operator=(const PassRefPtr<WebCore::MediaStreamDescriptor>& mediaStreamDescriptor)
+MediaStream& MediaStream::operator=(const PassRefPtr<WebCore::MediaStreamPrivate>& mediaStreamDescriptor)
 {
     m_private = mediaStreamDescriptor;
     return *this;
 }
 
-MediaStream::operator PassRefPtr<WebCore::MediaStreamDescriptor>() const
+MediaStream::operator PassRefPtr<WebCore::MediaStreamPrivate>() const
 {
     return m_private.get();
 }
 
-MediaStream::operator WebCore::MediaStreamDescriptor*() const
+MediaStream::operator WebCore::MediaStreamPrivate*() const
 {
     return m_private.get();
 }
@@ -120,7 +120,7 @@ void MediaStream::initialize(std::vector<MediaStreamSource*>& audioSources, std:
         video.append(source);
         delete videoSources[i];
     }
-    m_private = WebCore::MediaStreamDescriptor::create(audio, video);
+    m_private = WebCore::MediaStreamPrivate::create(audio, video);
 }
 
 void MediaStream::assign(const MediaStream& other)

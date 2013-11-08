@@ -34,16 +34,16 @@
 
 namespace WebCore {
 
-class MediaStreamDescriptor;
+class MediaStreamPrivate;
 
 class MediaStreamWebRTCObserver : public RefCounted<MediaStreamWebRTCObserver>, public webrtc::ObserverInterface {
 public:
-    MediaStreamWebRTCObserver(webrtc::MediaStreamInterface*, MediaStreamDescriptor*, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&);
+    MediaStreamWebRTCObserver(webrtc::MediaStreamInterface*, MediaStreamPrivate*, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&);
 
     virtual ~MediaStreamWebRTCObserver() { }
 
     void OnChanged();
-    MediaStreamDescriptor* descriptor() { return m_descriptor; }
+    MediaStreamPrivate* descriptor() { return m_descriptor; }
     webrtc::MediaStreamInterface* webRTCStream() { return m_stream.get(); }
 
 private:
@@ -54,7 +54,7 @@ private:
 
     bool haveTrackObserver(const std::string&, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&);
     talk_base::scoped_refptr<webrtc::MediaStreamInterface> m_stream;
-    MediaStreamDescriptor* m_descriptor;
+    MediaStreamPrivate* m_descriptor;
     Vector<RefPtr<MediaStreamTrackWebRTCObserver>> m_audioTrackObservers;
     Vector<RefPtr<MediaStreamTrackWebRTCObserver>> m_videoTrackObservers;
 };

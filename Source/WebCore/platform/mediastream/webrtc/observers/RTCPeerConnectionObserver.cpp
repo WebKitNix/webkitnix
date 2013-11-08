@@ -30,7 +30,7 @@
 #include "RTCPeerConnectionObserver.h"
 
 #include "MediaStreamAudioSource.h"
-#include "MediaStreamDescriptor.h"
+#include "MediaStreamPrivate.h"
 #include "MediaStreamTrackPrivate.h"
 #include "MediaStreamTrackWebRTCObserver.h"
 #include "NotImplemented.h"
@@ -77,7 +77,7 @@ void RTCPeerConnectionObserver::processTrack(webrtc::MediaStreamTrackInterface* 
     trackObservers.append(trackObserver);
 }
 
-PassRefPtr<MediaStreamDescriptor> RTCPeerConnectionObserver::mediaStreamDescriptorFromMediaStreamInterface(webrtc::MediaStreamInterface* stream)
+PassRefPtr<MediaStreamPrivate> RTCPeerConnectionObserver::mediaStreamDescriptorFromMediaStreamInterface(webrtc::MediaStreamInterface* stream)
 {
     Vector<RefPtr<MediaStreamTrackPrivate>> audioTrackVector;
     Vector<RefPtr<MediaStreamTrackPrivate>> videoTrackVector;
@@ -90,7 +90,7 @@ PassRefPtr<MediaStreamDescriptor> RTCPeerConnectionObserver::mediaStreamDescript
 
     // FIXME: Handle video.
 
-    RefPtr<MediaStreamDescriptor> descriptor = MediaStreamDescriptor::create(audioTrackVector, videoTrackVector);
+    RefPtr<MediaStreamPrivate> descriptor = MediaStreamPrivate::create(audioTrackVector, videoTrackVector);
 
     RefPtr<MediaStreamWebRTCObserver> streamObserver = adoptRef(new MediaStreamWebRTCObserver(stream, descriptor.get(), audioTrackObservers, videoTrackObservers));
     stream->RegisterObserver(streamObserver.get());
@@ -101,13 +101,13 @@ PassRefPtr<MediaStreamDescriptor> RTCPeerConnectionObserver::mediaStreamDescript
 
 void RTCPeerConnectionObserver::OnAddStream(webrtc::MediaStreamInterface* stream)
 {
-    RefPtr<MediaStreamDescriptor> descriptor = mediaStreamDescriptorFromMediaStreamInterface(stream);
+    RefPtr<MediaStreamPrivate> descriptor = mediaStreamDescriptorFromMediaStreamInterface(stream);
     callOnMainThread(bind(&RTCPeerConnectionHandlerClient::didAddRemoteStream, m_client, descriptor.release()));
 }
 
 void RTCPeerConnectionObserver::OnRemoveStream(webrtc::MediaStreamInterface* stream)
 {
-    MediaStreamDescriptor* descriptor = 0;
+    MediaStreamPrivate* descriptor = 0;
     for (unsigned i = 0; i < m_streamObservers.size(); ++i) {
         if (m_streamObservers[i]->webRTCStream() != stream)
             continue;

@@ -33,7 +33,7 @@
 #include <vector>
 
 namespace WebCore {
-class MediaStreamDescriptor;
+class MediaStreamPrivate;
 }
 
 namespace Nix {
@@ -73,15 +73,15 @@ public:
     NIX_EXPORT void removeSource(const MediaStreamSource&);
 
 #if BUILDING_NIX__
-    MediaStream(WebCore::MediaStreamDescriptor*);
-    MediaStream(const WTF::PassRefPtr<WebCore::MediaStreamDescriptor>&);
-    operator WTF::PassRefPtr<WebCore::MediaStreamDescriptor>() const;
-    operator WebCore::MediaStreamDescriptor*() const;
-    MediaStream& operator=(const WTF::PassRefPtr<WebCore::MediaStreamDescriptor>&);
+    MediaStream(WebCore::MediaStreamPrivate*);
+    MediaStream(const WTF::PassRefPtr<WebCore::MediaStreamPrivate>&);
+    operator WTF::PassRefPtr<WebCore::MediaStreamPrivate>() const;
+    operator WebCore::MediaStreamPrivate*() const;
+    MediaStream& operator=(const WTF::PassRefPtr<WebCore::MediaStreamPrivate>&);
 #endif
 
 private:
-    PrivatePtr<WebCore::MediaStreamDescriptor> m_private;
+    PrivatePtr<WebCore::MediaStreamPrivate> m_private;
 };
 
 } // namespace Nix

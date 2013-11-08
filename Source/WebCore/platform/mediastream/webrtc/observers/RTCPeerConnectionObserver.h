@@ -36,7 +36,7 @@
 
 namespace WebCore {
 
-class MediaStreamDescriptor;
+class MediaStreamPrivate;
 class RTCPeerConnectionHandlerClient;
 class MediaStreamTrackWebRTCObserver;
 class MediaStreamWebRTCObserver;
@@ -58,7 +58,7 @@ public:
 
 private:
     void processTrack(webrtc::MediaStreamTrackInterface*, Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&, Vector<RefPtr<MediaStreamTrackPrivate>>&);
-    PassRefPtr<MediaStreamDescriptor> mediaStreamDescriptorFromMediaStreamInterface(webrtc::MediaStreamInterface*);
+    PassRefPtr<MediaStreamPrivate> mediaStreamDescriptorFromMediaStreamInterface(webrtc::MediaStreamInterface*);
     RTCPeerConnectionHandlerClient* m_client;
 
     Vector<RefPtr<MediaStreamWebRTCObserver>> m_streamObservers;
