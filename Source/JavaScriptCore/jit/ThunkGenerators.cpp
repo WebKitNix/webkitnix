@@ -116,15 +116,15 @@ static void returnFromJavaScript(CCallHelpers& jit)
 #   define EXTRA_STACK_SIZE              28
 
     jit.addPtr(CCallHelpers::TrustedImm32(EXTRA_STACK_SIZE), ARMRegisters::sp);
-    jit.push(ARMRegisters::r11);
-    jit.push(ARMRegisters::r10);
-    jit.push(ARMRegisters::r9);
-    jit.push(ARMRegisters::r8);
-    jit.push(ARMRegisters::r7);
-    jit.push(ARMRegisters::r6);
-    jit.push(ARMRegisters::r5);
-    jit.push(ARMRegisters::r4);
-    jit.push(ARMRegisters::lr);
+    jit.pop(ARMRegisters::r11);
+    jit.pop(ARMRegisters::r10);
+    jit.pop(ARMRegisters::r9);
+    jit.pop(ARMRegisters::r8);
+    jit.pop(ARMRegisters::r7);
+    jit.pop(ARMRegisters::r6);
+    jit.pop(ARMRegisters::r5);
+    jit.pop(ARMRegisters::r4);
+    jit.pop(ARMRegisters::lr);
 #elif CPU(ARM64)
     jit.pop(ARM64Registers::x28);
     jit.pop(ARM64Registers::x27);
@@ -145,6 +145,7 @@ static void returnFromJavaScript(CCallHelpers& jit)
 #   define PRESERVED_S3_OFFSET         76
 #   define PRESERVED_S4_OFFSET         80
 #   define PRESERVED_RETURN_ADDRESS_OFFSET 84
+#   define PRESERVED_FP_OFFSET         88
 #   define STACK_LENGTH               112
 
     jit.loadPtr(CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_S0_OFFSET), MIPSRegisters::s0);
@@ -153,6 +154,7 @@ static void returnFromJavaScript(CCallHelpers& jit)
     jit.loadPtr(CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_S3_OFFSET), MIPSRegisters::s3);
     jit.loadPtr(CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_S4_OFFSET), MIPSRegisters::s4);
     jit.loadPtr(CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_RETURN_ADDRESS_OFFSET), MIPSRegisters::ra);
+    jit.loadPtr(CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_FP_OFFSET), MIPSRegisters::fp);
     jit.addPtr(CCallHelpers::TrustedImm32(STACK_LENGTH), MIPSRegisters::sp);
 #elif CPU(SH4)
 #   define EXTRA_STACK_SIZE 20
@@ -206,9 +208,6 @@ MacroAssemblerCodeRef callToJavaScript(VM* vm)
     jit.push(X86Registers::ebx);
 
     jit.subPtr(CCallHelpers::TrustedImm32(EXTRA_STACK_SIZE), X86Registers::esp);
-#if COMPILER(MSVC)
-    jit.move(X86Registers::esp, X86Registers::ecx);
-#endif
 
     jit.load32(CCallHelpers::Address(X86Registers::esp, EXTRA_STACK_SIZE + 24), GPRInfo::callFrameRegister);
 
@@ -224,11 +223,11 @@ MacroAssemblerCodeRef callToJavaScript(VM* vm)
     jit.push(ARMRegisters::r10);
     jit.push(ARMRegisters::r11);
     jit.push(ARMRegisters::lr);
-
+    jit.move(ARMRegisters::r11, GPRInfo::nonArgGPR0);
     jit.subPtr(CCallHelpers::TrustedImm32(EXTRA_STACK_SIZE), ARMRegisters::sp);
 
 #   define CALLFRAME_SRC_REG GPRInfo::argumentGPR1
-#   define PREVIOUS_CALLFRAME_REG ARMRegisters::r11
+#   define PREVIOUS_CALLFRAME_REG GPRInfo::nonArgGPR0
 #elif CPU(ARM_THUMB2)
     jit.push(ARMRegisters::lr);
     jit.push(ARMRegisters::r4);
@@ -239,10 +238,11 @@ MacroAssemblerCodeRef callToJavaScript(VM* vm)
     jit.push(ARMRegisters::r9);
     jit.push(ARMRegisters::r10);
     jit.push(ARMRegisters::r11);
+    jit.move(ARMRegisters::r7, GPRInfo::nonArgGPR0);
     jit.subPtr(CCallHelpers::TrustedImm32(EXTRA_STACK_SIZE), ARMRegisters::sp);
 
 #   define CALLFRAME_SRC_REG GPRInfo::argumentGPR1
-#   define PREVIOUS_CALLFRAME_REG ARMRegisters::r7
+#   define PREVIOUS_CALLFRAME_REG GPRInfo::nonArgGPR0
 #elif CPU(ARM64)
     jit.push(ARM64Registers::lr);
     jit.push(ARM64Registers::x19);
@@ -256,11 +256,13 @@ MacroAssemblerCodeRef callToJavaScript(VM* vm)
     jit.push(ARM64Registers::x27);
     jit.push(ARM64Registers::x28);
     jit.push(ARM64Registers::x29);
+    jit.move(ARM64Registers::x29, GPRInfo::nonArgGPR0);
 
 #   define CALLFRAME_SRC_REG GPRInfo::argumentGPR1
-#   define PREVIOUS_CALLFRAME_REG ARM64Registers::x29
+#   define PREVIOUS_CALLFRAME_REG GPRInfo::nonArgGPR0
 #elif CPU(MIPS)
     jit.subPtr(CCallHelpers::TrustedImm32(STACK_LENGTH), MIPSRegisters::sp);
+    jit.storePtr(MIPSRegisters::fp, CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_FP_OFFSET));
     jit.storePtr(MIPSRegisters::ra, CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_RETURN_ADDRESS_OFFSET));
     jit.storePtr(MIPSRegisters::s4, CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_S4_OFFSET));
     jit.storePtr(MIPSRegisters::s3, CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_S3_OFFSET));
@@ -268,11 +270,12 @@ MacroAssemblerCodeRef callToJavaScript(VM* vm)
     jit.storePtr(MIPSRegisters::s1, CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_S1_OFFSET));
     jit.storePtr(MIPSRegisters::s0, CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_S0_OFFSET));
 #if WTF_MIPS_PIC
-    jit.storePtr(MIPSRegisters::gp), CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_GP_OFFSET));
+    jit.storePtr(MIPSRegisters::gp, CCallHelpers::Address(MIPSRegisters::sp, PRESERVED_GP_OFFSET));
 #endif
+    jit.move(MIPSRegisters::fp, GPRInfo::nonArgGPR0);
 
 #   define CALLFRAME_SRC_REG GPRInfo::argumentGPR1
-#   define PREVIOUS_CALLFRAME_REG MIPSRegisters::fp
+#   define PREVIOUS_CALLFRAME_REG GPRInfo::nonArgGPR0
 #elif CPU(SH4)
     jit.push(SH4Registers::fp);
     jit.push(SH4Registers::pr);
@@ -717,7 +720,7 @@ static MacroAssemblerCodeRef nativeForGenerator(VM* vm, CodeSpecializationKind k
     jit.addPtr(JSInterfaceJIT::TrustedImm32(-12), JSInterfaceJIT::stackPointerRegister);
     jit.push(JSInterfaceJIT::callFrameRegister);
 #else
-    jit.move(JSInterfaceJIT::callFrameRegister, JSInterfaceJIT::firstArgumentRegister);
+    jit.move(JSInterfaceJIT::callFrameRegister, JSInterfaceJIT::argumentGPR0);
 #endif
     jit.move(JSInterfaceJIT::TrustedImmPtr(FunctionPtr(operationVMHandleException).value()), JSInterfaceJIT::regT3);
     jit.call(JSInterfaceJIT::regT3);

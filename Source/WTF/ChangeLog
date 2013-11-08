@@ -1,3 +1,27 @@
+2013-11-07  Denis Nomiyama  <d.nomiyama@samsung.com>
+
+        [GTK] Glyphs in vertical text tests are rotated 90 degrees clockwise
+        https://bugs.webkit.org/show_bug.cgi?id=50619
+
+        Reviewed by Martin Robinson.
+
+        Enabled OPENTYPE_VERTICAL by default on GTK+ and EFL ports, which are
+        currently using Freetype.
+
+        * wtf/Platform.h:
+
+2013-11-06  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Upstream Letterpress effect
+        https://bugs.webkit.org/show_bug.cgi?id=123932
+
+        Reviewed by Sam Weinig.
+
+        Add feature define ENABLE_LETTERPRESS disabled by default. We only enable
+        letterpress on iOS.
+
+        * wtf/FeatureDefines.h:
+
 2013-11-06  Nick Diego Yamane  <nick.yamane@openbossa.org>
 
         Disable "unused local typedefs" warning for GCC 4.7

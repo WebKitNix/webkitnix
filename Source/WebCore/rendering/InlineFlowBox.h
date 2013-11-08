@@ -131,13 +131,13 @@ public:
     {
         if (!includeLogicalLeftEdge())
             return 0;
-        return isHorizontal() ? boxModelObject()->marginLeft() : boxModelObject()->marginTop();
+        return isHorizontal() ? renderer().marginLeft() : renderer().marginTop();
     }
     LayoutUnit marginLogicalRight() const
     {
         if (!includeLogicalRightEdge())
             return 0;
-        return isHorizontal() ? boxModelObject()->marginRight() : boxModelObject()->marginBottom();
+        return isHorizontal() ? renderer().marginRight() : renderer().marginBottom();
     }
     int borderLogicalLeft() const
     {
@@ -155,13 +155,13 @@ public:
     {
         if (!includeLogicalLeftEdge())
             return 0;
-        return isHorizontal() ? boxModelObject()->paddingLeft() : boxModelObject()->paddingTop();
+        return isHorizontal() ? renderer().paddingLeft() : renderer().paddingTop();
     }
     int paddingLogicalRight() const
     {
         if (!includeLogicalRightEdge())
             return 0;
-        return isHorizontal() ? boxModelObject()->paddingRight() : boxModelObject()->paddingBottom();
+        return isHorizontal() ? renderer().paddingRight() : renderer().paddingBottom();
     }
 
     bool includeLogicalLeftEdge() const { return m_includeLogicalLeftEdge; }
@@ -293,6 +293,9 @@ public:
     }
 
 private:
+    virtual bool isInlineFlowBox() const OVERRIDE FINAL { return true; }
+    void boxModelObject() const WTF_DELETED_FUNCTION;
+
     void addBoxShadowVisualOverflow(LayoutRect& logicalVisualOverflow);
     void addBorderOutsetVisualOverflow(LayoutRect& logicalVisualOverflow);
     void addTextBoxVisualOverflow(InlineTextBox*, GlyphOverflowAndFallbackFontsMap&, LayoutRect& logicalVisualOverflow);
@@ -301,8 +304,6 @@ private:
 
 protected:
     OwnPtr<RenderOverflow> m_overflow;
-
-    virtual bool isInlineFlowBox() const OVERRIDE FINAL { return true; }
 
     InlineBox* m_firstChild;
     InlineBox* m_lastChild;
@@ -344,20 +345,7 @@ private:
 #endif
 };
 
-inline InlineFlowBox* toInlineFlowBox(InlineBox* object)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(!object || object->isInlineFlowBox());
-    return static_cast<InlineFlowBox*>(object);
-}
-
-inline const InlineFlowBox* toInlineFlowBox(const InlineBox* object)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(!object || object->isInlineFlowBox());
-    return static_cast<const InlineFlowBox*>(object);
-}
-
-// This will catch anyone doing an unnecessary cast.
-void toInlineFlowBox(const InlineFlowBox*);
+INLINE_BOX_OBJECT_TYPE_CASTS(InlineFlowBox, isInlineFlowBox())
 
 #ifdef NDEBUG
 inline void InlineFlowBox::checkConsistency() const

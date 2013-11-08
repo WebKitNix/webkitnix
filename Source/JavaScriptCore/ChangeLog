@@ -1,3 +1,387 @@
+2013-11-08  Oliver Hunt  <oliver@apple.com>
+
+        Map.forEach crashes on deleted values
+        https://bugs.webkit.org/show_bug.cgi?id=124017
+
+        Reviewed by Ryosuke Niwa.
+
+        MapData iterator did not consider the case of the first entries
+        being holes.  To fix this I've refactored iteration so that we
+        can perform an initialisation increment on construction, whle
+        retaining the useful assertion in MapData::const_iterator::operator++
+
+        * runtime/MapData.h:
+        (JSC::MapData::const_iterator::operator++):
+        (JSC::MapData::const_iterator::internalIncrement):
+        (JSC::MapData::const_iterator::const_iterator):
+
+2013-11-08  Julien Brianceau  <jbriance@cisco.com>
+
+        REGRESSION(r158883): Fix crashes for ARM architecture.
+        https://bugs.webkit.org/show_bug.cgi?id=124038
+
+        Reviewed by Michael Saboff.
+
+        * jit/GPRInfo.h: Remove r11 from the temporary register set, use a free register for
+        nonPreservedNonReturnGPR and remove obsolete declaration of bucketCounterRegister.
+        (JSC::GPRInfo::toRegister):
+        (JSC::GPRInfo::toIndex):
+        * jit/JITOperations.cpp: Frame pointer register is r11 for ARM_TRADITIONAL and
+        r7 for ARM_THUMB2 instead of r5 since r158883.
+
+2013-11-08  Julien Brianceau  <jbriance@cisco.com>
+
+        REGRESSION(r158883): Fix crashes for MIPS architecture.
+        https://bugs.webkit.org/show_bug.cgi?id=124044
+
+        Reviewed by Michael Saboff.
+
+        * jit/JITOperations.cpp: Frame pointer register is fp instead of s0 since r158883 for MIPS.
+        * jit/ThunkGenerators.cpp: Save and restore the new frame pointer register.
+        (JSC::returnFromJavaScript):
+        (JSC::callToJavaScript):
+
+2013-11-08  peavo@outlook.com  <peavo@outlook.com>
+
+        [Win] JavaScript crash in getHostCallReturnValue.
+        https://bugs.webkit.org/show_bug.cgi?id=124040
+
+        Reviewed by Geoffrey Garen.
+
+        * jit/JITOperations.cpp: Update MSVC assembler code in getHostCallReturnValue according to gcc x86 version.
+
+2013-11-08  Julien Brianceau  <jbriance@cisco.com>
+
+        [mips] Fix typo (introduced in r158751).
+        https://bugs.webkit.org/show_bug.cgi?id=124033.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * jit/ThunkGenerators.cpp:
+        (JSC::callToJavaScript):
+
+2013-11-08  Julien Brianceau  <jbriance@cisco.com>
+
+        [arm] Use specific PatchableJump implementation for CPU(ARM_TRADITIONAL).
+        https://bugs.webkit.org/show_bug.cgi?id=123891
+
+        Reviewed by Michael Saboff.
+
+        Although patchableBranch32 is implemented in MacroAssemblerARM.h, the used implementation
+        is the generic one in MacroAssembler.h. This patch fixes it and also implements the
+        patchableJump() function for CPU(ARM_TRADITIONAL). These specific implementations are
+        needed for this architecture backend to ensure that these jumps can be relinked.
+
+        * assembler/MacroAssembler.h:
+        * assembler/MacroAssemblerARM.h:
+        (JSC::MacroAssemblerARM::patchableJump):
+        * jit/GPRInfo.h: Remove static_cast that are generating warnings in debug builds.
+        (JSC::GPRInfo::toIndex):
+        (JSC::GPRInfo::debugName):
+
+2013-11-07  Mark Lam  <mark.lam@apple.com>
+
+        Get rid of the regT* definitions in JSInterfaceJIT.h.
+        https://bugs.webkit.org/show_bug.cgi?id=123806.
+
+        Reviewed by Geoffrey Garen.
+
+        JSInterfaceJIT now inherits from GPRInfo and FPRInfo, and relies on them
+        to provide all the register definitions.
+
+        * jit/GPRInfo.h:
+        (JSC::GPRInfo::toArgumentRegister):
+        * jit/JIT.cpp:
+        (JSC::JIT::emitEnterOptimizationCheck):
+        (JSC::JIT::privateCompile):
+        * jit/JITArithmetic.cpp:
+        (JSC::JIT::emit_compareAndJumpSlow):
+        * jit/JITArithmetic32_64.cpp:
+        (JSC::JIT::emit_compareAndJumpSlow):
+        * jit/JITCall.cpp:
+        (JSC::JIT::compileLoadVarargs):
+        * jit/JITCall32_64.cpp:
+        (JSC::JIT::compileLoadVarargs):
+        * jit/JITInlines.h:
+        (JSC::JIT::appendCallWithExceptionCheckSetJSValueResult):
+        (JSC::JIT::appendCallWithExceptionCheckSetJSValueResultWithProfile):
+        * jit/JITOpcodes.cpp:
+        (JSC::JIT::emit_op_end):
+        (JSC::JIT::emitSlow_op_new_object):
+        (JSC::JIT::emit_op_ret):
+        (JSC::JIT::emit_op_ret_object_or_this):
+        (JSC::JIT::emit_op_throw):
+        (JSC::JIT::emit_op_get_pnames):
+        (JSC::JIT::emit_op_switch_imm):
+        (JSC::JIT::emit_op_switch_char):
+        (JSC::JIT::emit_op_switch_string):
+        (JSC::JIT::emit_op_create_activation):
+        (JSC::JIT::emit_op_create_arguments):
+        (JSC::JIT::emitSlow_op_jfalse):
+        (JSC::JIT::emitSlow_op_jtrue):
+        (JSC::JIT::emitSlow_op_eq):
+        (JSC::JIT::emitSlow_op_neq):
+        (JSC::JIT::emitSlow_op_get_argument_by_val):
+        (JSC::JIT::emitSlow_op_loop_hint):
+        * jit/JITOpcodes32_64.cpp:
+        (JSC::JIT::privateCompileCTINativeCall):
+        (JSC::JIT::emit_op_end):
+        (JSC::JIT::emitSlow_op_new_object):
+        (JSC::JIT::emitSlow_op_jfalse):
+        (JSC::JIT::emitSlow_op_jtrue):
+        (JSC::JIT::emitSlow_op_eq):
+        (JSC::JIT::emitSlow_op_neq):
+        (JSC::JIT::emit_op_throw):
+        (JSC::JIT::emit_op_get_pnames):
+        (JSC::JIT::emit_op_switch_imm):
+        (JSC::JIT::emit_op_switch_char):
+        (JSC::JIT::emit_op_switch_string):
+        (JSC::JIT::emit_op_create_activation):
+        (JSC::JIT::emit_op_create_arguments):
+        (JSC::JIT::emitSlow_op_get_argument_by_val):
+        * jit/JSInterfaceJIT.h:
+        (JSC::JSInterfaceJIT::JSInterfaceJIT):
+        * jit/SlowPathCall.h:
+        (JSC::JITSlowPathCall::call):
+        * jit/ThunkGenerators.cpp:
+
+2013-11-07  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support NewArray
+        https://bugs.webkit.org/show_bug.cgi?id=124010
+
+        Reviewed by Oliver Hunt.
+
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLIntrinsicRepository.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileNewObject):
+        (JSC::FTL::LowerDFGToLLVM::compileNewArray):
+        (JSC::FTL::LowerDFGToLLVM::allocateCell):
+        (JSC::FTL::LowerDFGToLLVM::allocateObject):
+        (JSC::FTL::LowerDFGToLLVM::allocateBasicStorageAndGetEnd):
+        (JSC::FTL::LowerDFGToLLVM::ArrayValues::ArrayValues):
+        (JSC::FTL::LowerDFGToLLVM::allocateJSArray):
+        * ftl/FTLOutput.h:
+        (JSC::FTL::Output::loadDouble):
+        (JSC::FTL::Output::storeDouble):
+
+2013-11-07  Michael Saboff  <msaboff@apple.com>
+
+        Change CallFrameRegister to architected frame pointer register
+        https://bugs.webkit.org/show_bug.cgi?id=123956
+
+        Reviewed by Geoffrey Garen.
+
+        Changed X86 and ARM variants as well as MIPS to use their respective architected
+        frame pointer registers.  The freed up callFrameRegisteris are made available to 
+        the DFG register allocator.  Modified the FTL OSR exit compiler to use a temporary
+        register as a stand in for the destination callFrameRegister since the FTL frame
+        pointer register is needed to extract values from the FTL stack.
+
+        Reviewed by Geoffrey Garen.
+
+        * assembler/ARMAssembler.h:
+        * assembler/ARMv7Assembler.h:
+        * assembler/MacroAssemblerMIPS.h:
+        * ftl/FTLOSRExitCompiler.cpp:
+        (JSC::FTL::compileStub):
+        * jit/AssemblyHelpers.h:
+        (JSC::AssemblyHelpers::addressFor):
+        * jit/GPRInfo.h:
+        (JSC::GPRInfo::toRegister):
+        (JSC::GPRInfo::toIndex):
+        * jit/JITOperations.cpp:
+        * jit/JSInterfaceJIT.h:
+        * jit/ThunkGenerators.cpp:
+        (JSC::callToJavaScript):
+        * offlineasm/arm.rb:
+        * offlineasm/arm64.rb:
+        * offlineasm/mips.rb:
+        * offlineasm/x86.rb:
+
+2013-11-07  Oliver Hunt  <oliver@apple.com>
+
+        Reproducible crash when using Map (affects Web Inspector)
+        https://bugs.webkit.org/show_bug.cgi?id=123940
+
+        Reviewed by Geoffrey Garen.
+
+        Trivial fix.  Once again we get bitten by attempting to be clever when
+        growing while adding entries to indexing maps.
+
+        Now we simply do a find(), and then add() _after_ we've ensured there is
+        sufficient space in the MapData list.
+
+        * runtime/MapData.cpp:
+        (JSC::MapData::add):
+
+2013-11-07  Mark Lam  <mark.lam@apple.com>
+
+        Cosmetic: rename xxxId to xxxID for ScriptId, SourceId, and BreakpointId.
+        https://bugs.webkit.org/show_bug.cgi?id=123945.
+
+        Reviewed by Geoffrey Garen.
+
+        * debugger/DebuggerCallFrame.cpp:
+        (JSC::DebuggerCallFrame::sourceID):
+        (JSC::DebuggerCallFrame::sourceIDForCallFrame):
+        * debugger/DebuggerCallFrame.h:
+
+2013-11-07  Michael Saboff  <msaboff@apple.com>
+
+        returnFromJavaScript() for ARM_THUMB2 uses push()s which should be pop()s
+        https://bugs.webkit.org/show_bug.cgi?id=124006
+
+        Rubber stamped by Mark Hahnenberg.
+
+        Changed the push() calls to pop().
+
+        * jit/ThunkGenerators.cpp:
+        (JSC::returnFromJavaScript):
+
+2013-11-07  Michael Saboff  <msaboff@apple.com>
+
+        Remove unneeded moving of ESP to ECX in callToJavaScript for COMPILER(MSVC)
+        https://bugs.webkit.org/show_bug.cgi?id=123998
+
+        Reviewed by Mark Lam.
+
+        Dead code removal.  Passing esp as the first "C" argument to a JavaScript
+        function is no longer needed.
+
+        * jit/ThunkGenerators.cpp:
+        (JSC::callToJavaScript):
+
+2013-11-07  Julien Brianceau  <jbriance@cisco.com>
+
+        Fix build for architectures with 4 argument registers (broken since r158820).
+        https://bugs.webkit.org/show_bug.cgi?id=123969
+
+        Reviewed by Andreas Kling.
+
+        * jit/CCallHelpers.h:
+        (JSC::CCallHelpers::setupArguments):
+
+2013-11-05  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support CheckFunction
+        https://bugs.webkit.org/show_bug.cgi?id=123862
+
+        Reviewed by Sam Weinig.
+
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileCheckFunction):
+
+2013-11-06  Filip Pizlo  <fpizlo@apple.com>
+
+        IC code should handle the call frame register not being the callFrameRegister
+        https://bugs.webkit.org/show_bug.cgi?id=123865
+
+        Reviewed by Geoffrey Garen.
+        
+        For now, in the FTL, the call frame may be something other than our frame pointer,
+        since it's an argument passed in according to whatever convention LLVM picks.
+        
+        This is temporary in two ways - pretty soon the callFrameRegister will be the actual
+        frame pointer and not some other register, and LLVM will not pass the frame pointer
+        as an argument to IC's.
+
+        * bytecode/StructureStubInfo.h:
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::cachedGetById):
+        (JSC::DFG::SpeculativeJIT::cachedPutById):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::cachedGetById):
+        (JSC::DFG::SpeculativeJIT::cachedPutById):
+        * ftl/FTLCompile.cpp:
+        (JSC::FTL::fixFunctionBasedOnStackMaps):
+        * ftl/FTLInlineCacheSize.cpp:
+        (JSC::FTL::sizeOfGetById):
+        (JSC::FTL::sizeOfPutById):
+        * jit/CCallHelpers.h:
+        (JSC::CCallHelpers::setupArguments):
+        * jit/JITInlineCacheGenerator.cpp:
+        (JSC::JITByIdGenerator::JITByIdGenerator):
+        (JSC::JITPutByIdGenerator::JITPutByIdGenerator):
+        * jit/JITInlineCacheGenerator.h:
+        (JSC::JITGetByIdGenerator::JITGetByIdGenerator):
+        * jit/JITPropertyAccess.cpp:
+        (JSC::JIT::emit_op_get_by_id):
+        (JSC::JIT::emit_op_put_by_id):
+        * jit/JITPropertyAccess32_64.cpp:
+        (JSC::JIT::emit_op_get_by_id):
+        (JSC::JIT::emit_op_put_by_id):
+        * jit/Repatch.cpp:
+        (JSC::tryBuildGetByIDList):
+        (JSC::emitPutTransitionStub):
+
+2013-11-06  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Upstream Letterpress effect
+        https://bugs.webkit.org/show_bug.cgi?id=123932
+
+        Reviewed by Sam Weinig.
+
+        Add feature define ENABLE_LETTERPRESS disabled by default. We only enable
+        letterpress on iOS.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-11-05  Oliver Hunt  <oliver@apple.com>
+
+        Support iteration of the Arguments object
+        https://bugs.webkit.org/show_bug.cgi?id=123835
+
+        Reviewed by Mark Lam.
+
+        Add an ArgumentsIterator object, and associated classes so that we can support
+        iteration of the arguments object.
+
+        This is a largely mechanical patch.  The only gnarliness is in the
+        logic to avoid reifying the Arguments object in for(... of arguments)
+        scenarios.
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::emitEnumeration):
+        * runtime/Arguments.cpp:
+        (JSC::Arguments::getOwnPropertySlot):
+        (JSC::argumentsFuncIterator):
+        * runtime/Arguments.h:
+        * runtime/ArgumentsIteratorConstructor.cpp: Added.
+        (JSC::ArgumentsIteratorConstructor::finishCreation):
+        * runtime/ArgumentsIteratorConstructor.h: Added.
+        (JSC::ArgumentsIteratorConstructor::create):
+        (JSC::ArgumentsIteratorConstructor::createStructure):
+        (JSC::ArgumentsIteratorConstructor::ArgumentsIteratorConstructor):
+        * runtime/ArgumentsIteratorPrototype.cpp: Added.
+        (JSC::ArgumentsIteratorPrototype::finishCreation):
+        (JSC::argumentsIteratorPrototypeFuncIterator):
+        (JSC::argumentsIteratorPrototypeFuncNext):
+        * runtime/ArgumentsIteratorPrototype.h: Added.
+        (JSC::ArgumentsIteratorPrototype::create):
+        (JSC::ArgumentsIteratorPrototype::createStructure):
+        (JSC::ArgumentsIteratorPrototype::ArgumentsIteratorPrototype):
+        * runtime/CommonIdentifiers.h:
+        * runtime/JSArgumentsIterator.cpp: Added.
+        (JSC::JSArgumentsIterator::finishCreation):
+        * runtime/JSArgumentsIterator.h: Added.
+        (JSC::JSArgumentsIterator::createStructure):
+        (JSC::JSArgumentsIterator::create):
+        (JSC::JSArgumentsIterator::next):
+        (JSC::JSArgumentsIterator::JSArgumentsIterator):
+        * runtime/JSArrayIterator.cpp:
+        (JSC::createIteratorResult):
+        * runtime/JSGlobalObject.cpp:
+        * runtime/JSGlobalObject.h:
+
 2013-11-06  Filip Pizlo  <fpizlo@apple.com>
 
         DFG CheckArray(NonArray) should prove that the child isn't an array

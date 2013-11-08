@@ -1992,9 +1992,9 @@ static bool createGridTrackList(CSSValue* value, Vector<GridTrackSize>& trackSiz
         trackSizes.append(trackSize);
     }
 
-    if (trackSizes.isEmpty())
-        return false;
-
+    // The parser should have rejected any <track-list> without any <track-size> as
+    // this is not conformant to the syntax.
+    ASSERT(!trackSizes.isEmpty());
     return true;
 }
 
@@ -2555,7 +2555,8 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
                 result *= 3;
             else if (primitiveValue->getValueID() == CSSValueThick)
                 result *= 5;
-            width = CSSPrimitiveValue::create(result, CSSPrimitiveValue::CSS_EMS)->computeLength<float>(state.style(), state.rootElementStyle(), zoomFactor);
+            Ref<CSSPrimitiveValue> value(CSSPrimitiveValue::create(result, CSSPrimitiveValue::CSS_EMS));
+            width = value.get().computeLength<float>(state.style(), state.rootElementStyle(), zoomFactor);
             break;
         }
         default:
@@ -2588,7 +2589,8 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
             perspectiveValue = primitiveValue->computeLength<float>(state.style(), state.rootElementStyle(), zoomFactor);
         else if (primitiveValue->isNumber()) {
             // For backward compatibility, treat valueless numbers as px.
-            perspectiveValue = CSSPrimitiveValue::create(primitiveValue->getDoubleValue(), CSSPrimitiveValue::CSS_PX)->computeLength<float>(state.style(), state.rootElementStyle(), zoomFactor);
+            Ref<CSSPrimitiveValue> value(CSSPrimitiveValue::create(primitiveValue->getDoubleValue(), CSSPrimitiveValue::CSS_PX));
+            perspectiveValue = value.get().computeLength<float>(state.style(), state.rootElementStyle(), zoomFactor);
         } else
             return;
 
@@ -2757,6 +2759,7 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
     }
 #endif
     case CSSPropertyWebkitGridAutoColumns: {
+        HANDLE_INHERIT_AND_INITIAL(gridAutoColumns, GridAutoColumns);
         GridTrackSize trackSize;
         if (!createGridTrackSize(value, trackSize, state))
             return;
@@ -2764,6 +2767,7 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
         return;
     }
     case CSSPropertyWebkitGridAutoRows: {
+        HANDLE_INHERIT_AND_INITIAL(gridAutoRows, GridAutoRows);
         GridTrackSize trackSize;
         if (!createGridTrackSize(value, trackSize, state))
             return;
@@ -2771,6 +2775,16 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
         return;
     }
     case CSSPropertyWebkitGridDefinitionColumns: {
+        if (isInherit) {
+            m_state.style()->setGridColumns(m_state.parentStyle()->gridColumns());
+            m_state.style()->setNamedGridColumnLines(m_state.parentStyle()->namedGridColumnLines());
+            return;
+        }
+        if (isInitial) {
+            m_state.style()->setGridColumns(RenderStyle::initialGridColumns());
+            m_state.style()->setNamedGridColumnLines(RenderStyle::initialNamedGridColumnLines());
+            return;
+        }
         Vector<GridTrackSize> trackSizes;
         NamedGridLinesMap namedGridLines;
         if (!createGridTrackList(value, trackSizes, namedGridLines, state))
@@ -2780,6 +2794,16 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
         return;
     }
     case CSSPropertyWebkitGridDefinitionRows: {
+        if (isInherit) {
+            m_state.style()->setGridRows(m_state.parentStyle()->gridRows());
+            m_state.style()->setNamedGridRowLines(m_state.parentStyle()->namedGridRowLines());
+            return;
+        }
+        if (isInitial) {
+            m_state.style()->setGridRows(RenderStyle::initialGridRows());
+            m_state.style()->setNamedGridRowLines(RenderStyle::initialNamedGridRowLines());
+            return;
+        }
         Vector<GridTrackSize> trackSizes;
         NamedGridLinesMap namedGridLines;
         if (!createGridTrackList(value, trackSizes, namedGridLines, state))

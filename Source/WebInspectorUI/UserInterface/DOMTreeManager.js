@@ -39,7 +39,8 @@ WebInspector.DOMTreeManager = function() {
     this._idToDOMNode = {};
     this._document = null;
     this._attributeLoadNodeIds = {};
-    this._flows = {};
+    this._flows = new Map;
+    this._contentNodesToFlowsMap = new Map;
 }
 
 WebInspector.Object.addConstructorFunctions(WebInspector.DOMTreeManager);
@@ -337,6 +338,8 @@ WebInspector.DOMTreeManager.prototype = {
      */
     _unbind: function(node)
     {
+        this._removeContentNodeFromFlowIfNeeded(node);
+
         delete this._idToDOMNode[node.id];
         for (var i = 0; node.children && i < node.children.length; ++i)
             this._unbind(node.children[i]);
@@ -536,7 +539,14 @@ WebInspector.DOMTreeManager.prototype = {
     _createContentFlowFromPayload: function(flowPayload)
     {
         // FIXME: Collect the regions from the payload.
-        return new WebInspector.ContentFlow(flowPayload.documentNodeId, flowPayload.name, flowPayload.overset, flowPayload.content.map(this.nodeForId.bind(this)));
+        var flow = new WebInspector.ContentFlow(flowPayload.documentNodeId, flowPayload.name, flowPayload.overset, flowPayload.content.map(this.nodeForId.bind(this)));
+
+        for (var contentNode of flow.contentNodes) {
+            console.assert(!this._contentNodesToFlowsMap.has(contentNode.id));
+            this._contentNodesToFlowsMap.set(contentNode.id, flow);
+        }
+
+        return flow;
     },
 
     _updateContentFlowFromPayload: function(contentFlow, flowPayload)
@@ -557,16 +567,17 @@ WebInspector.DOMTreeManager.prototype = {
                 console.error("Error while getting the named flows for document " + documentNodeIdentifier + ": " + error);
                 return;
             }
+            this._contentNodesToFlowsMap.clear();
             var contentFlows = [];
             for (var i = 0; i < flows.length; ++i) {
                 var flowPayload = flows[i];
                 var flowKey = WebInspector.DOMTreeManager._flowPayloadHashKey(flowPayload);
-                var contentFlow = this._flows[flowKey];
+                var contentFlow = this._flows.get(flowKey);
                 if (contentFlow)
                     this._updateContentFlowFromPayload(contentFlow, flowPayload);
                 else {
                     contentFlow = this._createContentFlowFromPayload(flowPayload);
-                    this._flows[flowKey] = contentFlow;
+                    this._flows.set(flowKey, contentFlow);
                 }
                 contentFlows.push(contentFlow);
             }
@@ -578,26 +589,26 @@ WebInspector.DOMTreeManager.prototype = {
     namedFlowCreated: function(flowPayload)
     {
         var flowKey = WebInspector.DOMTreeManager._flowPayloadHashKey(flowPayload);
-        console.assert(!this._flows.hasOwnProperty(flowKey));
+        console.assert(!this._flows.has(flowKey));
         var contentFlow = this._createContentFlowFromPayload(flowPayload);
-        this._flows[flowKey] = contentFlow;
+        this._flows.set(flowKey, contentFlow);
         this.dispatchEventToListeners(WebInspector.DOMTreeManager.Event.ContentFlowWasAdded, {flow: contentFlow});
     },
 
     namedFlowRemoved: function(documentNodeIdentifier, flowName)
     {
         var flowKey = WebInspector.DOMTreeManager._flowPayloadHashKey({documentNodeId: documentNodeIdentifier, name: flowName});
-        var contentFlow = this._flows[flowKey];
+        var contentFlow = this._flows.get(flowKey);
         console.assert(contentFlow);
-        delete this._flows[flowKey];
+        this._flows.delete(flowKey);
         this.dispatchEventToListeners(WebInspector.DOMTreeManager.Event.ContentFlowWasRemoved, {flow: contentFlow});
     },
 
     _sendNamedFlowUpdateEvents: function(flowPayload)
     {
         var flowKey = WebInspector.DOMTreeManager._flowPayloadHashKey(flowPayload);
-        console.assert(this._flows.hasOwnProperty(flowKey));
-        this._updateContentFlowFromPayload(this._flows[flowKey], flowPayload);
+        console.assert(this._flows.has(flowKey));
+        this._updateContentFlowFromPayload(this._flows.get(flowKey), flowPayload);
     },
 
     regionLayoutUpdated: function(flowPayload)
@@ -613,10 +624,13 @@ WebInspector.DOMTreeManager.prototype = {
     registeredNamedFlowContentElement: function(documentNodeIdentifier, flowName, contentNodeId, nextContentElementNodeId)
     {
         var flowKey = WebInspector.DOMTreeManager._flowPayloadHashKey({documentNodeId: documentNodeIdentifier, name: flowName});
-        console.assert(this._flows.hasOwnProperty(flowKey));
+        console.assert(this._flows.has(flowKey));
+        console.assert(!this._contentNodesToFlowsMap.has(contentNodeId));
 
-        var flow = this._flows[flowKey];
+        var flow = this._flows.get(flowKey);
         var contentNode = this.nodeForId(contentNodeId);
+
+        this._contentNodesToFlowsMap.set(contentNode.id, flow);
 
         if (nextContentElementNodeId)
             flow.insertContentNodeBefore(contentNode, this.nodeForId(nextContentElementNodeId));
@@ -624,11 +638,24 @@ WebInspector.DOMTreeManager.prototype = {
             flow.appendContentNode(contentNode);
     },
 
+    _removeContentNodeFromFlowIfNeeded: function(node)
+    {
+        if (!this._contentNodesToFlowsMap.has(node.id))
+            return;
+        var flow = this._contentNodesToFlowsMap.get(node.id);
+        this._contentNodesToFlowsMap.delete(node.id);
+        flow.removeContentNode(node);
+    },
+
     unregisteredNamedFlowContentElement: function(documentNodeIdentifier, flowName, contentNodeId)
     {
-        var flowKey = WebInspector.DOMTreeManager._flowPayloadHashKey({documentNodeId: documentNodeIdentifier, name: flowName});
-        console.assert(this._flows.hasOwnProperty(flowKey));
-        this._flows[flowKey].removeContentNode(this.nodeForId(contentNodeId));
+        console.assert(this._contentNodesToFlowsMap.has(contentNodeId));
+
+        var flow = this._contentNodesToFlowsMap.get(contentNodeId);
+        console.assert(flow.id === WebInspector.DOMTreeManager._flowPayloadHashKey({documentNodeId: documentNodeIdentifier, name: flowName}));
+
+        this._contentNodesToFlowsMap.delete(contentNodeId);
+        flow.removeContentNode(this.nodeForId(contentNodeId));
     }
 }
 

@@ -94,9 +94,14 @@ BINDING_IDLS = \
     $(WebCore)/Modules/indieui/UIRequestEvent.idl \
     $(WebCore)/Modules/mediacontrols/MediaControlsHost.idl \
 	$(WebCore)/Modules/mediasource/DOMURLMediaSource.idl \
+	$(WebCore)/Modules/mediasource/AudioTrackMediaSource.idl \
 	$(WebCore)/Modules/mediasource/MediaSource.idl \
 	$(WebCore)/Modules/mediasource/SourceBuffer.idl \
 	$(WebCore)/Modules/mediasource/SourceBufferList.idl \
+    $(WebCore)/Modules/mediasource/SourceBuffer.idl \
+    $(WebCore)/Modules/mediasource/SourceBufferList.idl \
+	$(WebCore)/Modules/mediasource/TextTrackMediaSource.idl \
+	$(WebCore)/Modules/mediasource/VideoTrackMediaSource.idl \
 	$(WebCore)/Modules/mediastream/AllVideoCapabilities.idl \
 	$(WebCore)/Modules/mediastream/AllAudioCapabilities.idl \
 	$(WebCore)/Modules/mediastream/AudioStreamTrack.idl \
@@ -1052,7 +1057,7 @@ JS%.h : %.idl $(JS_BINDINGS_SCRIPTS) $(IDL_ATTRIBUTES_FILE) $(WINDOW_CONSTRUCTOR
 
 all : InspectorFrontend.h
 
-INSPECTOR_GENERATOR_SCRIPTS = inspector/CodeGeneratorInspector.py
+INSPECTOR_GENERATOR_SCRIPTS = inspector/CodeGeneratorInspector.py inspector/CodeGeneratorInspectorStrings.py
 
 InspectorFrontend.h : Inspector.json $(INSPECTOR_GENERATOR_SCRIPTS)
 	python $(WebCore)/inspector/CodeGeneratorInspector.py $(WebCore)/inspector/Inspector.json --output_h_dir . --output_cpp_dir . --output_js_dir .

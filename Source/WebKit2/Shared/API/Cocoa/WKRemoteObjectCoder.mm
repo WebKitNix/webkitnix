@@ -104,7 +104,12 @@ static void encodeToObjectStream(WKRemoteObjectEncoder *encoder, id value)
 {
     ensureObjectStream(encoder);
 
-    encoder->_objectStream->append(createEncodedObject(encoder, value));
+    size_t position = encoder->_objectStream->size();
+    encoder->_objectStream->append(nullptr);
+
+    RefPtr<ImmutableDictionary> encodedObject = createEncodedObject(encoder, value);
+    ASSERT(!encoder->_objectStream->entries()[position]);
+    encoder->_objectStream->entries()[position] = encodedObject.release();
 }
 
 static void encodeInvocation(WKRemoteObjectEncoder *encoder, NSInvocation *invocation)
@@ -250,6 +255,11 @@ static NSString *escapeKey(NSString *key)
     _currentDictionary->set(escapeKey(key), WebDouble::create(value));
 }
 
+- (BOOL)requiresSecureCoding
+{
+    return YES;
+}
+
 @end
 
 @implementation WKRemoteObjectDecoder {
@@ -279,6 +289,19 @@ static NSString *escapeKey(NSString *key)
     return self;
 }
 
+- (void)decodeValueOfObjCType:(const char *)type at:(void *)data
+{
+    switch (*type) {
+    // int
+    case 'i':
+        *static_cast<int*>(data) = [decodeObjectFromObjectStream(self, [NSSet setWithObject:[NSNumber class]]) intValue];
+        break;
+
+    default:
+        [NSException raise:NSInvalidUnarchiveOperationException format:@"Unsupported type '%s'", type];
+    }
+}
+
 - (BOOL)allowsKeyedCoding
 {
     return YES;
@@ -289,22 +312,12 @@ static NSString *escapeKey(NSString *key)
     return _currentDictionary->map().contains(escapeKey(key));
 }
 
-- (const uint8_t *)decodeBytesForKey:(NSString *)key returnedLength:(NSUInteger *)length
+- (id)decodeObjectForKey:(NSString *)key
 {
-    WebData* data = _currentDictionary->get<WebData>(escapeKey(key));
-    if (!data || !data->size())
-        return nullptr;
-
-    *length = data->size();
-    return data->bytes();
+    return [self decodeObjectOfClasses:nil forKey:key];
 }
 
-- (BOOL)requiresSecureCoding
-{
-    return YES;
-}
-
-static id decodeObject(WKRemoteObjectDecoder *decoder, const ImmutableDictionary*);
+static id decodeObject(WKRemoteObjectDecoder *, const ImmutableDictionary*, NSSet *allowedClasses);
 
 static id decodeObjectFromObjectStream(WKRemoteObjectDecoder *decoder, NSSet *allowedClasses)
 {
@@ -314,11 +327,9 @@ static id decodeObjectFromObjectStream(WKRemoteObjectDecoder *decoder, NSSet *al
     if (decoder->_objectStreamPosition == decoder->_objectStream->size())
         return nil;
 
-    TemporaryChange<NSSet *> allowedClassesChange(decoder->_allowedClasses, allowedClasses);
-
     const ImmutableDictionary* dictionary = decoder->_objectStream->at<ImmutableDictionary>(decoder->_objectStreamPosition++);
 
-    return decodeObject(decoder, dictionary);
+    return decodeObject(decoder, dictionary, allowedClasses);
 }
 
 static void checkIfClassIsAllowed(WKRemoteObjectDecoder *decoder, Class objectClass)
@@ -453,21 +464,63 @@ static id decodeObject(WKRemoteObjectDecoder *decoder)
     return [result.leakRef() autorelease];
 }
 
-static id decodeObject(WKRemoteObjectDecoder *decoder, const ImmutableDictionary* dictionary)
+static id decodeObject(WKRemoteObjectDecoder *decoder, const ImmutableDictionary* dictionary, NSSet *allowedClasses)
 {
     if (!dictionary)
         return nil;
 
     TemporaryChange<const ImmutableDictionary*> dictionaryChange(decoder->_currentDictionary, dictionary);
 
+    // If no allowed classes were listed, just use the currently allowed classes.
+    if (!allowedClasses)
+        return decodeObject(decoder);
+
+    TemporaryChange<NSSet *> allowedClassesChange(decoder->_allowedClasses, allowedClasses);
     return decodeObject(decoder);
+}
+
+- (BOOL)decodeBoolForKey:(NSString *)key
+{
+    const WebBoolean* value = _currentDictionary->get<WebBoolean>(escapeKey(key));
+    if (!value)
+        return false;
+    return value->value();
+}
+
+- (int64_t)decodeInt64ForKey:(NSString *)key
+{
+    const WebUInt64* value = _currentDictionary->get<WebUInt64>(escapeKey(key));
+    if (!value)
+        return 0;
+    return value->value();
+}
+
+- (double)decodeDoubleForKey:(NSString *)key
+{
+    const WebDouble* value = _currentDictionary->get<WebDouble>(escapeKey(key));
+    if (!value)
+        return 0;
+    return value->value();
+}
+
+- (const uint8_t *)decodeBytesForKey:(NSString *)key returnedLength:(NSUInteger *)length
+{
+    WebData* data = _currentDictionary->get<WebData>(escapeKey(key));
+    if (!data || !data->size())
+        return nullptr;
+
+    *length = data->size();
+    return data->bytes();
+}
+
+- (BOOL)requiresSecureCoding
+{
+    return YES;
 }
 
 - (id)decodeObjectOfClasses:(NSSet *)classes forKey:(NSString *)key
 {
-    TemporaryChange<NSSet *> allowedClassesChange(_allowedClasses, classes);
-
-    return decodeObject(self, _currentDictionary->get<ImmutableDictionary>(escapeKey(key)));
+    return decodeObject(self, _currentDictionary->get<ImmutableDictionary>(escapeKey(key)), classes);
 }
 
 - (NSSet *)allowedClasses

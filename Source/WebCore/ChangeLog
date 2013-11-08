@@ -1,3 +1,1434 @@
+2013-10-30  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Bring SourceBuffer.append up to the most recent spec.
+        https://bugs.webkit.org/show_bug.cgi?id=123377
+
+        Reviewed by Eric Carlson.
+
+        Test: media/media-source/media-source-append-failed.html
+
+        Bring the MediaSource append() implementation up to the current spec.
+
+        * Modules/mediasource/SourceBuffer.cpp:
+        (WebCore::SourceBuffer::appendBufferInternal):
+        (WebCore::SourceBuffer::appendBufferTimerFired):
+        * platform/graphics/SourceBufferPrivate.h:
+        * platform/mock/mediasource/MockSourceBufferPrivate.cpp:
+        (WebCore::MockSourceBufferPrivate::append):
+        (WebCore::MockSourceBufferPrivate::evictCodedFrames):
+        (WebCore::MockSourceBufferPrivate::isFull):
+        * platform/mock/mediasource/MockSourceBufferPrivate.h:
+
+2013-11-07  Jer Noble  <jer.noble@apple.com>
+
+        [Mac] Crash at com.apple.WebCore: WebCore::MediaPlayerPrivateAVFoundationObjC::tracksDidChange + 26
+        https://bugs.webkit.org/show_bug.cgi?id=124031
+
+        Reviewed by Eric Carlson.
+
+        WTF::bind() causes errors when given a bare id pointer as a parameter,
+        when that parameter is casted to a specific NS type pointer (in this
+        case, a NSArray*) in order to pass it as a parameter to the bound
+        function.
+
+        Instead of passing around bare id pointers, wrap them in RetainPtr<>
+        objects before passing them to WTF::bind().
+
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateAVFoundationObjC.h:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateAVFoundationObjC.mm:
+        (WebCore::MediaPlayerPrivateAVFoundationObjC::seekableTimeRangesDidChange):
+        (WebCore::MediaPlayerPrivateAVFoundationObjC::loadedTimeRangesDidChange):
+        (WebCore::MediaPlayerPrivateAVFoundationObjC::tracksDidChange):
+        (-[WebCoreAVFMovieObserver observeValueForKeyPath:ofObject:change:context:]):
+
+2013-11-08  Antti Koivisto  <antti@apple.com>
+
+        Templated LChar/UChar paths for simple line layout
+        https://bugs.webkit.org/show_bug.cgi?id=124035
+
+        Reviewed by Andreas Kling.
+
+        * rendering/SimpleLineLayout.cpp:
+        (WebCore::SimpleLineLayout::canUseForText):
+        (WebCore::SimpleLineLayout::canUseFor):
+        
+            Use a templated function to check for illegal characters.
+
+        (WebCore::SimpleLineLayout::skipWhitespaces):
+        
+            Make a template function.
+
+        (WebCore::SimpleLineLayout::textWidth):
+        
+            Make a template function plus some argument changes.
+
+        (WebCore::SimpleLineLayout::createTextRuns):
+        
+            Template function for creating runs while operating with either LChars or UChar.
+            Also simplified line breaking and text width measuring logic.
+
+        (WebCore::SimpleLineLayout::create):
+        
+            Pick the template.
+
+        * rendering/break_lines.cpp:
+        * rendering/break_lines.h:
+        
+            Move the implementation to the header (except for the table) so we can use the template
+            versions directly.
+
+        (WebCore::isBreakableSpace):
+        (WebCore::shouldBreakAfter):
+        (WebCore::needsLineBreakIterator):
+        (WebCore::nextBreakablePosition):
+        (WebCore::nextBreakablePositionIgnoringNBSP):
+
+2013-11-08  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        AX: [ATK] <span> elements exposed through ATK when not needed
+        https://bugs.webkit.org/show_bug.cgi?id=123885
+
+        Reviewed by Chris Fleizach.
+
+        As per SVN r158195, the way it's decided whether <span> elements
+        should be ignored or not has slightly changed, causing that the
+        GTK/EFL ports expose them in cases that they should be ignored,
+        such as for text elements that neither are focusable (e.g. by
+        explicitly setting tabindex) nor have a meaningful accessible name
+        suggesting they should be exposed.
+
+        As a result, the flattening that ATK based ports normally do for
+        this kind of elements (by folding them into their parents) do not
+        work correctly anymore, making two tests to fail:
+
+            platform/gtk/accessibility/spans-paragraphs-and-divs.html
+            platform/gtk/accessibility/spans.html
+
+        This patch encapsulates the part of the logic that affects this in
+        the computeAccessibilityIsIgnored() method, placing it in a
+        new method of AccessibilityObject that we can call from ATK's
+        accessibilityPlatformIncludesObject() to ensure we hide those
+        <span> elements when they don't fulfill those requirements.
+
+        * accessibility/AccessibilityObject.cpp:
+        (WebCore::AccessibilityObject::hasAttributesRequiredForInclusion):
+        New virtual method encapsulating part of the logic from the function
+        that computes whether accessibility should be ignored or not.
+        * accessibility/AccessibilityObject.h:
+
+        * accessibility/AccessibilityNodeObject.cpp:
+        (WebCore::AccessibilityNodeObject::hasAttributesRequiredForInclusion):
+        Override of the new method adding additional checks, as extracted from
+        the original bits in computeAccessibilityIsIgnored().
+        * accessibility/AccessibilityNodeObject.h:
+
+        * accessibility/AccessibilityRenderObject.cpp:
+        (WebCore::AccessibilityRenderObject::computeAccessibilityIsIgnored):
+        Use the newly added function where we had the original code before.
+
+        * accessibility/atk/AccessibilityObjectAtk.cpp:
+        (WebCore::AccessibilityObject::accessibilityPlatformIncludesObject):
+        Make sure <span> elements are ignored if they are not focusable
+        and they don't have a meaningful accessible name.
+
+2013-11-08  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Add missing symbols to WebKitDOMEventTarget.symbols
+        https://bugs.webkit.org/show_bug.cgi?id=123990
+
+        Reviewed by Philippe Normand.
+
+        Add webkit_dom_event_target_add_event_listener_with_closure and
+        webkit_dom_event_target_remove_event_listener_with_closure to the
+        symbols files.
+
+        * bindings/gobject/WebKitDOMEventTarget.symbols:
+        * bindings/gobject/webkitdom.symbols:
+
+2013-11-07  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Use deprecation guards around deprecated API in GObject DOM bindings
+        https://bugs.webkit.org/show_bug.cgi?id=123899
+
+        Reviewed by Martin Robinson.
+
+        Do not include deprecated API when compiling with
+        WEBKIT_DISABLE_DEPRECATED option.
+
+        * bindings/scripts/CodeGeneratorGObject.pm:
+        (GenerateFunction):
+        * bindings/scripts/test/GObject/WebKitDOMTestEventTarget.cpp:
+        * bindings/scripts/test/GObject/WebKitDOMTestEventTarget.h:
+
+2013-11-07  Brady Eidson  <beidson@apple.com>
+
+        Enhance SQL journal_mode setting code to be less likely to log an error.
+        <rdar://problem/15418577> and https://bugs.webkit.org/show_bug.cgi?id=124018
+
+        Reviewed by Anders Carlsson.
+
+        Even though the docs says SQLITE_ROW will always be returned, apparently SQLITE_OK is sometimes returned.
+        Change the code to handle that.
+
+        * platform/sql/SQLiteDatabase.cpp:
+        (WebCore::SQLiteDatabase::open): Save the statement result value, and accept SQLITE_OK as a non-error condition.
+
+2013-11-07  Brady Eidson  <beidson@apple.com>
+
+        Update an out-dated ASSERT in IconDatabase code.
+        <rdar://problem/15171118> and https://bugs.webkit.org/show_bug.cgi?id=124030.
+
+        Reviewed by Andreas Kling.
+
+        With the asynchronous interfaces that have been added and the support for WK2 that has been added, 
+        this ASSERT can incorrectly fire if an icon is asked for before database cleanup is allowed.
+
+        * loader/icon/IconDatabase.cpp:
+        (WebCore::IconDatabase::synchronousIconForPageURL): Update an invalid ASSERT.
+
+2013-11-07  Andreas Kling  <akling@apple.com>
+
+        RenderSVGResource helpers should take RenderStyle by const reference.
+        <https://webkit.org/b/124029>
+
+        Take const RenderStyle& instead of RenderStyle* in a few more places
+        so we can get rid of some ampersands and assertions.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-07  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        [AX] Generate toAccessibilityTableRow|Column|Cell to detect bad type casts
+        https://bugs.webkit.org/show_bug.cgi?id=123984
+
+        Reviewed by Mario Sanchez Prada.
+
+        As a step to let static_cast<> use TYPE_CASTS_BASE, AccessibilityTableRow|Column|Cell use
+        ACCESSIBILITY_OBJECT_TYPE_CASTS which can support more helper functions rather than manual
+        static_cast<>. This change will help to detect bad type casts further.
+
+        No new tests, no behavior changes.
+
+        * accessibility/AccessibilityARIAGrid.cpp:
+        (WebCore::AccessibilityARIAGrid::addTableCellChild):
+        (WebCore::AccessibilityARIAGrid::addChildren):
+        * accessibility/AccessibilityARIAGridCell.cpp:
+        (WebCore::AccessibilityARIAGridCell::rowIndexRange):
+        * accessibility/AccessibilityTable.cpp:
+        (WebCore::AccessibilityTable::addChildren):
+        (WebCore::AccessibilityTable::rowHeaders):
+        (WebCore::AccessibilityTable::columnHeaders):
+        (WebCore::AccessibilityTable::cellForColumnAndRow):
+        * accessibility/AccessibilityTableCell.h:
+        * accessibility/AccessibilityTableColumn.h:
+        * accessibility/AccessibilityTableRow.cpp:
+        (WebCore::AccessibilityTableRow::headerObject):
+        * accessibility/AccessibilityTableRow.h:
+        * accessibility/atk/WebKitAccessibleInterfaceTable.cpp:
+        (cellAtIndex):
+        (webkitAccessibleTableGetColumnHeader):
+        (webkitAccessibleTableGetRowHeader):
+        * accessibility/ios/WebAccessibilityObjectWrapperIOS.mm:
+        (-[WebAccessibilityObjectWrapper tableCellParent]):
+        * accessibility/mac/WebAccessibilityObjectWrapperMac.mm:
+        (-[WebAccessibilityObjectWrapper accessibilityAttributeValue:]):
+
+2013-11-07  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        REGRESSION (r154375): Image is oriented incorrectly
+        https://bugs.webkit.org/show_bug.cgi?id=123831
+
+        Reviewed by Antonio Gomes.
+
+        r154375 made that shouldRespectImageOrientation() isn't used by drawImage().
+        It causes an image isn't oriented correctly. This patch sets shouldRespectImageOrientation()
+        value by default.
+
+        * rendering/RenderImage.cpp:
+        (WebCore::RenderImage::paintReplaced):
+        (WebCore::RenderImage::paintIntoRect):
+
+2013-11-07  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] Image shape-outside with vertical gaps is handled incorrectly
+        https://bugs.webkit.org/show_bug.cgi?id=123934
+
+        Reviewed by Andreas Kling.
+
+        RasterShapeIntervals::getExcludedIntervals() was returning an empty
+        list when the line overlapped any vertical gap in the image. This short-circuit
+        had been mistakenly copied from getIncludedIntervals(), where it makes sense.
+
+        Test: fast/shapes/shape-outside-floats/shape-outside-floats-image-vgap.html
+
+        * rendering/shapes/RasterShape.cpp:
+        (WebCore::RasterShapeIntervals::getExcludedIntervals):
+
+2013-11-07  Simon Fraser  <simon.fraser@apple.com>
+
+        Make contents layer borders more visible
+        https://bugs.webkit.org/show_bug.cgi?id=124025
+
+        Reviewed by Tim Horton.
+
+        Layer borders for contents layers are impossible to see when the
+        contentsLayer has the same bounds as its parent; make the contents
+        layer border 4px thick to make it more visible.
+
+        * platform/graphics/ca/GraphicsLayerCA.cpp:
+        (WebCore::GraphicsLayerCA::setupContentsLayer):
+
+2013-11-07  Andreas Kling  <akling@apple.com>
+
+        InlineFlowBox always has a RenderBoxModelObject, take advantage.
+        <https://webkit.org/b/124024>
+
+        Since InlineFlowBox already has the branch-less renderer() returning
+        a RenderBoxModelObject&, avoid using InlineBox::boxModelObject()
+        wherever we have a tightly-typed box. One branch disappears from
+        every call site.
+
+        Deleted boxModelObject() on InlineFlowBox to prevent new code from
+        calling the less efficient function.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-07  Andreas Kling  <akling@apple.com>
+
+        CTTE: Scrolling tree nodes should always have a ScrollingTree&.
+        <https://webkit.org/b/124022>
+
+        Let ScrollingTreeNode and subclasses store the backpointer to the
+        tree as a ScrollingTree& reference.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-07  Simon Fraser  <simon.fraser@apple.com>
+
+        Lots of layers get solid color but transparent contents layers now
+        https://bugs.webkit.org/show_bug.cgi?id=123537
+
+        Reviewed by Tim Horton.
+        
+        We call rendererBackgroundColor() to determine the layer's background color,
+        but on most elements this returns the transparent color (a valid color).
+        This caused us to allocate a contentsLayer, and use the transparent color as its
+        backgroundColor, which was wasteful.
+        
+        Fix by only making a background-color layer if the color is not transparent (zero alpha).
+        
+        Also avoid making a new contents layer on every color change, and make sure that
+        we don't do implicit animations for backgroundColor, and some other properties
+        that were omitted by mistake.
+
+        Layer tree dumps don't dump content layers, so no way to test easily.
+
+        * platform/graphics/ca/GraphicsLayerCA.cpp:
+        (WebCore::GraphicsLayerCA::setContentsToSolidColor):
+        * platform/graphics/ca/mac/PlatformCALayerMac.mm:
+        (nullActionsDictionary):
+
+2013-11-07  Ryosuke Niwa  <rniwa@webkit.org>
+
+        DOMTokenList::add can add duplicated values if arguments had duplicated values
+        https://bugs.webkit.org/show_bug.cgi?id=123962
+
+        Reviewed by Benjamin Poulain.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/bd3822ad4ae3fc5d8f89f433a7bf04f697334305
+
+        In case we do element.classList.add('a', 'a') we need to ensure that we do not add the same token twice.
+        See http://dom.spec.whatwg.org/#dom-domtokenlist-add
+
+        * html/DOMTokenList.cpp:
+        (WebCore::DOMTokenList::add): Make sure filtered tokens are unique among themselves.
+
+2013-11-07  Eric Carlson  <eric.carlson@apple.com>
+
+        Remove npr.org specific hack in HTMLMediaElement
+        https://bugs.webkit.org/show_bug.cgi?id=123859
+
+        Reviewed by Jer Noble.
+
+        Remove the site specific hack added in r57820, it is no longer necessary.
+
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::HTMLMediaElement): Remove m_dispatchingCanPlayEvent.
+        (HTMLMediaElement::play): Don't special case npr.org.
+        * html/HTMLMediaElement.h:
+
+2013-11-07  Simon Fraser  <simon.fraser@apple.com>
+
+        Attempt to fix the 32-bit build. Virtual thunks seem to have different
+        symbol names between 32- and 64-bit.
+        
+        * WebCore.exp.in:
+
+2013-11-07  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Crash in HTMLMediaElement::contextDestroyed
+        https://bugs.webkit.org/show_bug.cgi?id=123963
+
+        Reviewed by Eric Carlson.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/177999cdb34b707465670f0feff723922939f278
+
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::~HTMLMediaElement):
+
+2013-11-07  Jer Noble  <jer.noble@apple.com>
+
+        [Mac] Crash at com.apple.WebCore: -[WebCoreAVFMovieObserver observeValueForKeyPath:ofObject:change:context:] + 2084 
+        https://bugs.webkit.org/show_bug.cgi?id=124012
+
+        Reviewed by Eric Carlson.
+
+        The value of the 'duration' key is a NSConcreteValue wrapping a CMTime, not a NSNumber.
+
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateAVFoundationObjC.mm:
+        (-[WebCoreAVFMovieObserver observeValueForKeyPath:ofObject:change:context:]):
+
+2013-11-07  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Crash when submitting form in a document with null encoding
+        https://bugs.webkit.org/show_bug.cgi?id=123975
+
+        Reviewed by Alexey Proskuryakov.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/bba01a7fff09e3053ada96ababac2a6e4261fe5f
+        
+        The CString object which is passed to normalizeLineEndingsToCRLF() can be
+        a null string. It is created in FormDataList::appendString(), and it
+        produces a null CString if FormDataList::m_encoding is a null encoding.
+
+        Test: fast/forms/form-submit-in-image-document.html
+
+        * platform/text/LineEnding.cpp:
+        (internalNormalizeLineEndingsToCRLF):
+
+2013-11-07  Anders Carlsson  <andersca@apple.com>
+
+        Use std::function for all policy continuation functions
+        https://bugs.webkit.org/show_bug.cgi?id=124011
+
+        Reviewed by Sam Weinig.
+
+        * loader/DocumentLoader.cpp:
+        (WebCore::DocumentLoader::willSendRequest):
+        (WebCore::DocumentLoader::responseReceived):
+        * loader/DocumentLoader.h:
+        * loader/FrameLoader.cpp:
+        (WebCore::FrameLoader::loadURL):
+        (WebCore::FrameLoader::load):
+        (WebCore::FrameLoader::loadWithDocumentLoader):
+        (WebCore::FrameLoader::loadPostRequest):
+        * loader/PolicyCallback.cpp:
+        (WebCore::PolicyCallback::clear):
+        (WebCore::PolicyCallback::set):
+        (WebCore::PolicyCallback::call):
+        (WebCore::PolicyCallback::clearRequest):
+        (WebCore::PolicyCallback::cancel):
+        * loader/PolicyCallback.h:
+        * loader/PolicyChecker.cpp:
+        (WebCore::PolicyChecker::checkNavigationPolicy):
+        (WebCore::PolicyChecker::checkNewWindowPolicy):
+        (WebCore::PolicyChecker::checkContentPolicy):
+        * loader/PolicyChecker.h:
+
+2013-11-07  Brady Eidson  <beidson@apple.com>
+
+        Use SQLite journal mode WAL (WriteAheadLogging)
+        https://bugs.webkit.org/show_bug.cgi?id=124009
+
+        Reviewed by Anders Carlsson.
+
+        WriteAheadLogging journalling is better than the traditional rollback model.
+
+        * platform/sql/SQLiteDatabase.cpp:
+        (WebCore::SQLiteDatabase::open): Use a PRAGMA to set journal_mode to WAL.
+
+2013-11-07  Mark Lam  <mark.lam@apple.com>
+
+        Cosmetic: rename xxxId to xxxID for ScriptId, SourceId, and BreakpointId.
+        https://bugs.webkit.org/show_bug.cgi?id=123945.
+
+        Reviewed by Geoffrey Garen.
+
+        No new tests.
+
+        * bindings/js/JSInjectedScriptHostCustom.cpp:
+        (WebCore::JSInjectedScriptHost::functionDetails):
+        * bindings/js/JavaScriptCallFrame.h:
+        (WebCore::JavaScriptCallFrame::sourceID):
+        * bindings/js/ScriptDebugServer.cpp:
+        (WebCore::ScriptDebugServer::ScriptDebugServer):
+        (WebCore::ScriptDebugServer::setBreakpoint):
+        (WebCore::ScriptDebugServer::removeBreakpoint):
+        (WebCore::ScriptDebugServer::hasBreakpoint):
+        (WebCore::ScriptDebugServer::clearBreakpoints):
+        (WebCore::ScriptDebugServer::updateCallFrame):
+        (WebCore::ScriptDebugServer::pauseIfNeeded):
+        * bindings/js/ScriptDebugServer.h:
+        * inspector/InspectorConsoleAgent.cpp:
+        (WebCore::InspectorConsoleAgent::addMessageToConsole):
+        * inspector/InspectorConsoleAgent.h:
+        * inspector/InspectorConsoleInstrumentation.h:
+        (WebCore::InspectorInstrumentation::addMessageToConsole):
+        * inspector/InspectorDOMAgent.cpp:
+        (WebCore::InspectorDOMAgent::buildObjectForEventListener):
+        * inspector/InspectorDebuggerAgent.cpp:
+        (WebCore::InspectorDebuggerAgent::setBreakpointByUrl):
+        (WebCore::parseLocation):
+        (WebCore::InspectorDebuggerAgent::setBreakpoint):
+        (WebCore::InspectorDebuggerAgent::removeBreakpoint):
+        (WebCore::InspectorDebuggerAgent::continueToLocation):
+        (WebCore::InspectorDebuggerAgent::resolveBreakpoint):
+        (WebCore::InspectorDebuggerAgent::searchInContent):
+        (WebCore::InspectorDebuggerAgent::setScriptSource):
+        (WebCore::InspectorDebuggerAgent::getScriptSource):
+        (WebCore::InspectorDebuggerAgent::compileScript):
+        (WebCore::InspectorDebuggerAgent::runScript):
+        (WebCore::InspectorDebuggerAgent::didParseSource):
+        (WebCore::InspectorDebuggerAgent::didPause):
+        (WebCore::InspectorDebuggerAgent::clear):
+        (WebCore::InspectorDebuggerAgent::reset):
+        * inspector/InspectorDebuggerAgent.h:
+        * inspector/InspectorInstrumentation.cpp:
+        (WebCore::InspectorInstrumentation::addMessageToConsoleImpl):
+        * inspector/InspectorInstrumentation.h:
+        * inspector/ScriptDebugListener.h:
+
+2013-11-07  Cidorvan Leite  <cidorvan.leite@openbossa.org>
+
+        Avoid invalid cairo matrix when drawing surfaces too small
+        https://bugs.webkit.org/show_bug.cgi?id=123810
+
+        Drawing surfaces too small makes inverse matrix with values too big,
+        when this happen, cairo context is not valid anymore and it stops to draw anything.
+
+        Reviewed by Martin Robinson.
+
+        Test: fast/canvas/drawImage-with-small-values.html
+
+        * platform/graphics/cairo/PlatformContextCairo.cpp:
+        (WebCore::PlatformContextCairo::drawSurfaceToContext):
+
+2013-11-07  Antti Koivisto  <antti@apple.com>
+
+        Simple line layout crashes with SVG fonts
+        https://bugs.webkit.org/show_bug.cgi?id=124002
+
+        Reviewed by Simon Fraser.
+        
+        Don't use simple line layout for flows using SVG fonts. They crash if kerning is enabled.
+
+        Test: fast/text/svg-font-simple-line-crash.html
+
+        * platform/graphics/Font.h:
+        (WebCore::Font::isSVGFont):
+        
+            Add isSVGFont() so callers don't need to go via primaryFont().
+
+        * rendering/InlineTextBox.cpp:
+        (WebCore::InlineTextBox::constructTextRun):
+        * rendering/RenderBlock.cpp:
+        (WebCore::constructTextRunInternal):
+        * rendering/SimpleLineLayout.cpp:
+        (WebCore::SimpleLineLayout::canUseFor):
+        
+            Disallow SVG fonts.
+
+        * rendering/svg/SVGInlineTextBox.cpp:
+        (WebCore::SVGInlineTextBox::constructTextRun):
+        * rendering/svg/SVGTextMetrics.cpp:
+        (WebCore::SVGTextMetrics::constructTextRun):
+        (WebCore::SVGTextMetrics::SVGTextMetrics):
+        * rendering/svg/SVGTextRunRenderingContext.h:
+        
+            Get rid of the abstract textRunNeedsRenderingContext in favor of just testing isSVGFont().
+
+2013-11-07  Simon Fraser  <simon.fraser@apple.com>
+
+        Allow customization of the contentsScale of TileController tiles
+        https://bugs.webkit.org/show_bug.cgi?id=124004
+
+        Reviewed by Tim Horton.
+
+        On some platorms, zooming out on pages with TiledBacking compositing
+        layers can cause very high memory use, because the TiledBacking retains
+        the original page scale while the zoom is in flight, but can be asked
+        to cover a large area.
+        
+        Make it possible to reduce memory use in this case by allowing RenderLayerCompositor
+        to provide an additional scale factor for newly created tiles. Platforms can
+        then customize this to create low-res tiles when necessary.
+
+        * WebCore.exp.in:
+        * platform/graphics/GraphicsLayerClient.h:
+        (WebCore::GraphicsLayerClient::contentsScaleMultiplierForNewTiles):
+        * platform/graphics/ca/GraphicsLayerCA.cpp:
+        (WebCore::GraphicsLayerCA::platformCALayerContentsScaleMultiplierForNewTiles):
+        * platform/graphics/ca/GraphicsLayerCA.h:
+        * platform/graphics/ca/PlatformCALayerClient.h:
+        (WebCore::PlatformCALayerClient::platformCALayerContentsScaleMultiplierForNewTiles):
+        * platform/graphics/ca/mac/TileController.h:
+        * platform/graphics/ca/mac/TileController.mm:
+        (WebCore::TileController::TileController):
+        (WebCore::TileController::setScale):
+        (WebCore::TileController::createTileLayer):
+        * rendering/RenderLayerBacking.cpp:
+        (WebCore::RenderLayerBacking::contentsScaleMultiplierForNewTiles):
+        * rendering/RenderLayerBacking.h:
+        * rendering/RenderLayerCompositor.cpp:
+        (WebCore::RenderLayerCompositor::contentsScaleMultiplierForNewTiles):
+        * rendering/RenderLayerCompositor.h:
+
+2013-11-07  Jer Noble  <jer.noble@apple.com>
+
+        Unreviewed Win build fix after r158855; wrap shapeInfoForFloat() in an ENABLE(CSS_SHAPES) guard.
+
+        * rendering/FloatingObjects.cpp:
+
+2013-11-07  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        Refactor logical left/right offset for line methods
+        https://bugs.webkit.org/show_bug.cgi?id=123898
+
+        Reviewed by David Hyatt.
+
+        Simplify the logical left/right offset for line methods and their
+        implementation, including the ComputeFloatOffsetAdapter. This also
+        reduces the number of line offset methods in RenderBlock.
+
+        No new tests, no behavior change.
+
+        * rendering/FloatingObjects.cpp:
+        (WebCore::ComputeFloatOffsetAdapter::ComputeFloatOffsetAdapter):
+        (WebCore::ComputeFloatOffsetAdapter::offset): Add a method to return
+            the offset instead of using a confusing out parameter.
+        (WebCore::::shapeOffset): Method to return the offset modified by the
+            shape delta. Moving the computation to this method allowed for
+            simplification of the users of ComputeFloatOffsetAdapter.
+        (WebCore::FloatingObjects::logicalLeftOffsetForPositioningFloat): Added this
+            method so that ShapeOutsideFloatOffsetMode isn't needed. Returns the
+            offset based on the float margin box.
+        (WebCore::FloatingObjects::logicalRightOffsetForPositioningFloat): Ditto.
+        (WebCore::FloatingObjects::logicalLeftOffset): This now only returns
+            the offset based on the shape's contour.
+        (WebCore::FloatingObjects::logicalRightOffset): Ditto.
+        (WebCore::::heightRemaining): Rename to properly follow the getter
+            naming convention.
+        * rendering/FloatingObjects.h:
+        * rendering/RenderBlock.h:
+        (WebCore::RenderBlock::logicalRightOffsetForLine): Update to remove
+            use of ShapeOutsideFloatOffsetMode and heightRemaining.
+        (WebCore::RenderBlock::logicalLeftOffsetForLine): Ditto.
+        (WebCore::RenderBlock::logicalRightFloatOffsetForLine): Ditto.
+        (WebCore::RenderBlock::logicalLeftFloatOffsetForLine): Ditto.
+        * rendering/RenderBlockFlow.cpp:
+        (WebCore::RenderBlockFlow::logicalLeftOffsetForPositioningFloat):
+            Positioning a float is the only case where the float margin box
+            should be used, and also the only case where heightRemaining is
+            needed. This handles that case.
+        (WebCore::RenderBlockFlow::logicalRightOffsetForPositioningFloat):
+            Ditto.
+        (WebCore::RenderBlockFlow::computeLogicalLocationForFloat): Update to
+            use logical(Left|Right)OffsetForPositioningFloatOnLine.
+        (WebCore::RenderBlockFlow::logicalLeftFloatOffsetForLine): Update to
+            remove use for ShapeOutsideFloatOffsetMode and heightRemaining.
+        (WebCore::RenderBlockFlow::logicalRightFloatOffsetForLine): Ditto.
+        * rendering/RenderBlockFlow.h:
+
+2013-11-07  Alexandru Chiculita  <achicu@adobe.com>
+
+        Web Inspector: CSS Regions: Removing a content node of a ContentFlow from the DOM will send a 0 nodeId
+        https://bugs.webkit.org/show_bug.cgi?id=123577
+
+        Reviewed by Timothy Hatcher.
+
+        Test: inspector-protocol/model/content-flow-content-removal.html
+
+        Do not send unregister events for the content nodes of a flow when the element is not part of the DOM
+        anymore. We already send an unbind event, so the inspector is already notified that the node was removed.
+
+        * inspector/InspectorCSSAgent.cpp:
+        (WebCore::InspectorCSSAgent::didUnregisterNamedFlowContentElement):
+
+2013-10-30  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Add mock MediaSource classes for testing.
+        https://bugs.webkit.org/show_bug.cgi?id=123322
+
+        Reviewed by Eric Carlson.
+
+        Tests: media/media-source/media-source-addsourcebuffer.html
+               media/media-source/media-source-append-buffer.html
+               media/media-source/media-source-canplaythrough.html
+               media/media-source/media-source-closed.html
+               media/media-source/media-source-play.html
+               media/media-source/media-source-track-enabled.html
+               media/media-source/media-source-tracks.html
+
+
+        Add mock implementation of platform MediaSource classes, allowing ports to test the
+        MediaSource API without having a platform implementation.
+
+        The MockMediaSource will support a byteformat defined in MockBox.h: a simple box-style media
+        format with an initialization segment containing a number of tracks, followed by a list of
+        samples.
+
+        Add a means to insert a new media engine factory at runtime, so the internals object can add
+        a MockMediaSourceMediaPlayer:
+        * platform/graphics/MediaPlayer.cpp:
+        (WebCore::MediaPlayerFactorySupport::callRegisterMediaEngine):
+        * platform/graphics/MediaPlayer.h:
+        * testing/Internals.cpp:
+        (WebCore::Internals::initializeMockMediaSource):
+        * testing/Internals.h:
+        * testing/Internals.idl:
+
+        For non-media-source supporting media engines, fail immediately when asked to load a media
+        source, so that the MockMediaSourceMediaPlayer will be instantiated as a fall-back:
+        * platform/graphics/avfoundation/MediaPlayerPrivateAVFoundation.cpp:
+        (WebCore::MediaPlayerPrivateAVFoundation::load):
+        * platform/graphics/avfoundation/MediaPlayerPrivateAVFoundation.h:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateAVFoundationObjC.mm:
+        (WebCore::MediaPlayerPrivateAVFoundationObjC::supportsType):
+        * platform/graphics/mac/MediaPlayerPrivateQTKit.h:
+        * platform/graphics/mac/MediaPlayerPrivateQTKit.mm:
+        (WebCore::MediaPlayerPrivateQTKit::load):
+        (WebCore::MediaPlayerPrivateQTKit::supportsType):
+
+        Add new files to the project:
+        * WebCore.xcodeproj/project.pbxproj:
+        * Source/WebCore/WebCore.exp.in:
+
+        Update the MediaSource implementation:
+        * Modules/mediasource/MediaSource.cpp:
+        (WebCore::MediaSource::monitorSourceBuffers): Add a link to the spec.
+        * Modules/mediasource/SourceBuffer.cpp:
+        (WebCore::SourceBuffer::buffered): Ditto.
+        (WebCore::SourceBuffer::setTimestampOffset): Ditto.
+        (WebCore::SourceBuffer::validateInitializationSegment): Ditto.
+        (WebCore::SourceBuffer::sourceBufferPrivateDidReceiveInitializationSegment): Ditto. Also,
+            bring the implementation up to date with part of the spec.
+        (WebCore::SourceBuffer::sourceBufferPrivateDidReceiveSample): Remove "Predicate" from
+            SampleIsRandomAccessPredicate.
+
+        Add utility classes to parse and represent the bytestream supported by the MockMediaSource:
+        * platform/mock/mediasource/MockBox.cpp: Added.
+        (WebCore::MockBox::MockBox):
+        (WebCore::MockBox::peekType):
+        (WebCore::MockBox::peekLength):
+        (WebCore::MockTrackBox::MockTrackBox):
+        (WebCore::MockTrackBox::type):
+        (WebCore::MockInitializationBox::MockInitializationBox):
+        (WebCore::MockInitializationBox::type):
+        (WebCore::MockSampleBox::MockSampleBox):
+        (WebCore::MockSampleBox::type):
+        * platform/mock/mediasource/MockBox.h: Added.
+        (WebCore::MockBox::length):
+        (WebCore::MockBox::type):
+        (WebCore::MockTrackBox::trackID):
+        (WebCore::MockTrackBox::codec):
+        (WebCore::MockTrackBox::kind):
+        (WebCore::MockInitializationBox::duration):
+        (WebCore::MockInitializationBox::tracks):
+        (WebCore::MockSampleBox::presentationTimestamp):
+        (WebCore::MockSampleBox::decodeTimestamp):
+        (WebCore::MockSampleBox::duration):
+        (WebCore::MockSampleBox::trackID):
+        (WebCore::MockSampleBox::flags):
+        (WebCore::MockSampleBox::isSync):
+
+        Add a MediaPlayerPrivate implementation which uses MockMediaSource:
+        * platform/mock/mediasource/MockMediaPlayerMediaSource.cpp: Added.
+        (WebCore::MockMediaPlayerMediaSource::registerMediaEngine):
+        (WebCore::MockMediaPlayerMediaSource::create):
+        (WebCore::mimeTypeCache):
+        (WebCore::MockMediaPlayerMediaSource::getSupportedTypes):
+        (WebCore::MockMediaPlayerMediaSource::supportsType):
+        (WebCore::MockMediaPlayerMediaSource::MockMediaPlayerMediaSource):
+        (WebCore::MockMediaPlayerMediaSource::~MockMediaPlayerMediaSource):
+        (WebCore::MockMediaPlayerMediaSource::load):
+        (WebCore::MockMediaPlayerMediaSource::cancelLoad):
+        (WebCore::MockMediaPlayerMediaSource::play):
+        (WebCore::MockMediaPlayerMediaSource::pause):
+        (WebCore::MockMediaPlayerMediaSource::naturalSize):
+        (WebCore::MockMediaPlayerMediaSource::hasVideo):
+        (WebCore::MockMediaPlayerMediaSource::hasAudio):
+        (WebCore::MockMediaPlayerMediaSource::setVisible):
+        (WebCore::MockMediaPlayerMediaSource::seeking):
+        (WebCore::MockMediaPlayerMediaSource::paused):
+        (WebCore::MockMediaPlayerMediaSource::networkState):
+        (WebCore::MockMediaPlayerMediaSource::readyState):
+        (WebCore::MockMediaPlayerMediaSource::buffered):
+        (WebCore::MockMediaPlayerMediaSource::didLoadingProgress):
+        (WebCore::MockMediaPlayerMediaSource::setSize):
+        (WebCore::MockMediaPlayerMediaSource::paint):
+        (WebCore::MockMediaPlayerMediaSource::currentTimeDouble):
+        (WebCore::MockMediaPlayerMediaSource::durationDouble):
+        (WebCore::MockMediaPlayerMediaSource::seekDouble):
+        (WebCore::MockMediaPlayerMediaSource::advanceCurrentTime):
+        (WebCore::MockMediaPlayerMediaSource::updateDuration):
+        (WebCore::MockMediaPlayerMediaSource::setReadyState):
+        * platform/mock/mediasource/MockMediaPlayerMediaSource.h: Added.
+
+        Add a mock implementation of MediaSourcePrivate, which uses MockSourceBuffer:
+        * platform/mock/mediasource/MockMediaSourcePrivate.cpp: Added.
+        (WebCore::MockMediaSourcePrivate::create):
+        (WebCore::MockMediaSourcePrivate::MockMediaSourcePrivate):
+        (WebCore::MockMediaSourcePrivate::~MockMediaSourcePrivate):
+        (WebCore::MockMediaSourcePrivate::addSourceBuffer):
+        (WebCore::MockMediaSourcePrivate::removeSourceBuffer):
+        (WebCore::MockMediaSourcePrivate::duration):
+        (WebCore::MockMediaSourcePrivate::setDuration):
+        (WebCore::MockMediaSourcePrivate::markEndOfStream):
+        (WebCore::MockMediaSourcePrivate::unmarkEndOfStream):
+        (WebCore::MockMediaSourcePrivate::readyState):
+        (WebCore::MockMediaSourcePrivate::setReadyState):
+        (WebCore::MockMediaSourcePrivate::sourceBufferPrivateDidChangeActiveState):
+        (WebCore::MockSourceBufferPrivateHasAudio):
+        (WebCore::MockMediaSourcePrivate::hasAudio):
+        (WebCore::MockSourceBufferPrivateHasVideo):
+        (WebCore::MockMediaSourcePrivate::hasVideo):
+        * platform/mock/mediasource/MockMediaSourcePrivate.h: Added.
+        (WebCore::MockMediaSourcePrivate::activeSourceBuffers):
+        (WebCore::MockMediaSourcePrivate::player):
+
+        Add a mock implementation of SourceBufferPrivate, which uses MockBoxes to parse the
+        bytestream provided by SourceBuffer:
+        * platform/mock/mediasource/MockSourceBufferPrivate.cpp: Added.
+        (WebCore::MockMediaSample::create):
+        (WebCore::MockMediaSample::~MockMediaSample):
+        (WebCore::MockMediaSample::MockMediaSample):
+        (WebCore::MockMediaSample::platformSample):
+        (WebCore::MockMediaDescription::create):
+        (WebCore::MockMediaDescription::~MockMediaDescription):
+        (WebCore::MockMediaDescription::MockMediaDescription):
+        (WebCore::MockSourceBufferPrivate::create):
+        (WebCore::MockSourceBufferPrivate::MockSourceBufferPrivate):
+        (WebCore::MockSourceBufferPrivate::~MockSourceBufferPrivate):
+        (WebCore::MockSourceBufferPrivate::setClient):
+        (WebCore::MockSourceBufferPrivate::append):
+        (WebCore::MockSourceBufferPrivate::didReceiveInitializationSegment):
+        (WebCore::MockSourceBufferPrivate::didReceiveSample):
+        (WebCore::MockSourceBufferPrivate::abort):
+        (WebCore::MockSourceBufferPrivate::removedFromMediaSource):
+        (WebCore::MockSourceBufferPrivate::readyState):
+        (WebCore::MockSourceBufferPrivate::setReadyState):
+        (WebCore::MockSourceBufferPrivate::hasVideo):
+        (WebCore::MockSourceBufferPrivate::hasAudio):
+        * platform/mock/mediasource/MockSourceBufferPrivate.h: Added.
+
+        Create mock implementations of AudioTrackPrivate, VideoTrackPrivate, and TextTrackPrivate
+        which wrap the MockTrackBox class:
+        * platform/mock/mediasource/MockTracks.cpp: Added.
+        * platform/mock/mediasource/MockTracks.h: Added.
+        (WebCore::MockAudioTrackPrivate::create):
+        (WebCore::MockAudioTrackPrivate::~MockAudioTrackPrivate):
+        (WebCore::MockAudioTrackPrivate::id):
+        (WebCore::MockAudioTrackPrivate::MockAudioTrackPrivate):
+        (WebCore::MockTextTrackPrivate::create):
+        (WebCore::MockTextTrackPrivate::~MockTextTrackPrivate):
+        (WebCore::MockTextTrackPrivate::id):
+        (WebCore::MockTextTrackPrivate::MockTextTrackPrivate):
+        (WebCore::MockVideoTrackPrivate::create):
+        (WebCore::MockVideoTrackPrivate::~MockVideoTrackPrivate):
+        (WebCore::MockVideoTrackPrivate::id):
+        (WebCore::MockVideoTrackPrivate::MockVideoTrackPrivate):
+
+2013-11-07  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Changing MediaStreamDescriptor to MediaStreamPrivate
+        https://bugs.webkit.org/show_bug.cgi?id=123935
+
+        Reviewed by Eric Carlson.
+
+        No new tests needed.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * Modules/mediastream/MediaStream.cpp:
+        (WebCore::MediaStream::create):
+        (WebCore::MediaStream::MediaStream):
+        (WebCore::MediaStream::~MediaStream):
+        (WebCore::MediaStream::ended):
+        (WebCore::MediaStream::setEnded):
+        (WebCore::MediaStream::addTrack):
+        (WebCore::MediaStream::removeTrack):
+        (WebCore::MediaStream::removeRemoteSource):
+        * Modules/mediastream/MediaStream.h:
+        * Modules/mediastream/MediaStreamRegistry.cpp:
+        (WebCore::MediaStreamRegistry::registerURL):
+        (WebCore::MediaStreamRegistry::unregisterURL):
+        (WebCore::MediaStreamRegistry::lookupMediaStreamPrivate):
+        * Modules/mediastream/MediaStreamRegistry.h:
+        * Modules/mediastream/MediaStreamTrack.cpp:
+        * Modules/mediastream/MediaStreamTrack.h:
+        * Modules/mediastream/RTCPeerConnection.cpp:
+        (WebCore::RTCPeerConnection::addStream):
+        (WebCore::RTCPeerConnection::removeStream):
+        (WebCore::RTCPeerConnection::didAddRemoteStream):
+        (WebCore::RTCPeerConnection::didRemoveRemoteStream):
+        * Modules/mediastream/RTCPeerConnection.h:
+        * Modules/mediastream/UserMediaRequest.cpp:
+        (WebCore::UserMediaRequest::didCreateStream):
+        (WebCore::UserMediaRequest::callSuccessHandler):
+        * Modules/mediastream/UserMediaRequest.h:
+        * Modules/webaudio/MediaStreamAudioDestinationNode.cpp:
+        (WebCore::MediaStreamAudioDestinationNode::MediaStreamAudioDestinationNode):
+        * WebCore.xcodeproj/project.pbxproj:
+        * html/HTMLMediaElement.cpp:
+        (HTMLMediaElement::loadResource):
+        * platform/graphics/blackberry/MediaPlayerPrivateBlackBerry.cpp:
+        (WebCore::toWebMediaStreamPrivate):
+        (WebCore::MediaPlayerPrivate::lookupMediaStream):
+        * platform/graphics/blackberry/MediaPlayerPrivateBlackBerry.h:
+        * platform/mediastream/MediaStreamCenter.cpp:
+        * platform/mediastream/MediaStreamCreationClient.h:
+        * platform/mediastream/MediaStreamPrivate.cpp: Renamed from Source/WebCore/platform/mediastream/MediaStreamDescriptor.cpp.
+        (WebCore::MediaStreamPrivate::create):
+        (WebCore::MediaStreamPrivate::addSource):
+        (WebCore::MediaStreamPrivate::removeSource):
+        (WebCore::MediaStreamPrivate::addRemoteSource):
+        (WebCore::MediaStreamPrivate::removeRemoteSource):
+        (WebCore::MediaStreamPrivate::addRemoteTrack):
+        (WebCore::MediaStreamPrivate::removeRemoteTrack):
+        (WebCore::MediaStreamPrivate::MediaStreamPrivate):
+        (WebCore::MediaStreamPrivate::setEnded):
+        (WebCore::MediaStreamPrivate::addTrack):
+        (WebCore::MediaStreamPrivate::removeTrack):
+        * platform/mediastream/MediaStreamPrivate.h: Renamed from Source/WebCore/platform/mediastream/MediaStreamDescriptor.h.
+        (WebCore::MediaStreamPrivateClient::~MediaStreamPrivateClient):
+        (WebCore::MediaStreamPrivate::~MediaStreamPrivate):
+        (WebCore::MediaStreamPrivate::client):
+        (WebCore::MediaStreamPrivate::setClient):
+        (WebCore::MediaStreamPrivate::id):
+        (WebCore::MediaStreamPrivate::numberOfAudioSources):
+        (WebCore::MediaStreamPrivate::audioSources):
+        (WebCore::MediaStreamPrivate::numberOfVideoSources):
+        (WebCore::MediaStreamPrivate::videoSources):
+        (WebCore::MediaStreamPrivate::numberOfAudioTracks):
+        (WebCore::MediaStreamPrivate::audioTracks):
+        (WebCore::MediaStreamPrivate::numberOfVideoTracks):
+        (WebCore::MediaStreamPrivate::videoTracks):
+        (WebCore::MediaStreamPrivate::ended):
+        * platform/mediastream/MediaStreamSource.cpp:
+        * platform/mediastream/MediaStreamSource.h:
+        * platform/mediastream/RTCPeerConnectionHandler.h:
+        * platform/mediastream/RTCPeerConnectionHandlerClient.h:
+        * platform/mediastream/blackberry/MediaStreamCenterBlackBerry.cpp:
+        * platform/mediastream/blackberry/MediaStreamCenterBlackBerry.h:
+        * platform/mediastream/gstreamer/MediaStreamCenterGStreamer.cpp:
+        * platform/mediastream/gstreamer/MediaStreamCenterGStreamer.h:
+        * platform/mediastream/mac/MediaStreamCenterMac.cpp:
+        (WebCore::MediaStreamCenterMac::createMediaStream):
+        * platform/mock/MockMediaStreamCenter.cpp:
+        (WebCore::MockMediaStreamCenter::createMediaStream):
+        * platform/mock/RTCPeerConnectionHandlerMock.cpp:
+        (WebCore::RTCPeerConnectionHandlerMock::addStream):
+        (WebCore::RTCPeerConnectionHandlerMock::removeStream):
+        * platform/mock/RTCPeerConnectionHandlerMock.h:
+
+2013-11-07  Denis Nomiyama  <d.nomiyama@samsung.com>
+
+        [GTK] Glyphs in vertical text tests are rotated 90 degrees clockwise
+        https://bugs.webkit.org/show_bug.cgi?id=50619
+
+        Reviewed by Martin Robinson.
+
+        Implemented the OPENTYPE_VERTICAL feature for the GTK+ port. It resolves
+        the 90 degrees rotation problem of CJK characters when displaying
+        vertical text.
+
+        New tests are not required as the existing tests for vertical text will
+        work properly now.
+
+        * GNUmakefile.list.am: Added OpenTypeVerticalData.cpp and
+        OpenTypeVerticalData.h to platformgtk_sources.
+        * PlatformEfl.cmake: Added OpenTypeVerticalData.cpp.
+        * PlatformGTK.cmake: Added OpenTypeVerticalData.cpp.
+        * platform/graphics/FontCache.cpp: Originally the HashMap for
+        OpenTypeVerticalData was designed with FontFileKey as integer in the
+        Chromium port, which was an unique number provided by Skia. Since other
+        ports use FontFileKey as string, new generic hash functions had to be
+        implemented instead of using the specific ones for integers.
+        (WebCore::FontVerticalDataCacheKeyHash::hash): New hash function for
+        HashMap of OpenTypeVerticalData.
+        (WebCore::FontVerticalDataCacheKeyHash::equal): New function for
+        comparing hash indexes in the HashMap of OpenTypeVerticalData.
+        (WebCore::FontVerticalDataCacheKeyTraits::emptyValue): New function for
+        giving an empty FontFileKey.
+        (WebCore::FontVerticalDataCacheKeyTraits::constructDeletedValue): New
+        function to create a FontFileKey for deleted values.
+        (WebCore::FontVerticalDataCacheKeyTraits::isDeletedValue): New function
+        to check if a HashMap entry is available.
+        * platform/graphics/freetype/FontCustomPlatformDataFreeType.cpp:
+        (WebCore::FontCustomPlatformData::fontPlatformData): Added font
+        orientation as a parameter to the FontPlatformData constructor.
+        * platform/graphics/freetype/FontPlatformData.h: Added m_orientation to
+        store the font orientation and m_horizontalOrientationMatrix to store
+        the Cairo matrix for horizontal orientation, which can be restored in
+        setOrientation().
+        (WebCore::FontPlatformData::FontPlatformData): Added font orientation as
+        a parameter.
+        (WebCore::FontPlatformData::orientation): Implemented this function
+        based on m_orientation.
+        * platform/graphics/freetype/FontPlatformDataFreeType.cpp: Added new
+        helper function rotateCairoMatrixForVerticalOrientation() to rotate the
+        Cairo matrix in case of vertical orientation.
+        (WebCore::FontPlatformData::FontPlatformData): Initialized
+        m_orientation.
+        (WebCore::FontPlatformData::operator=): Added m_orientation and
+        m_horizontalOrientationMatrix to the assignment operator.
+        (WebCore::FontPlatformData::operator==): Added m_orientation to the
+        equal operator.
+        (WebCore::FontPlatformData::initializeWithFontFace): Rotated and
+        translated fonts if orientation is vertical. Also stored the horizontal
+        Cairo matrix.
+        (WebCore::FontPlatformData::verticalData): Returned the vertical data
+        from the font cache.
+        (WebCore::FontPlatformData::openTypeTable): Loaded the font table into
+        a shared buffer.
+        (WebCore::FontPlatformData::setOrientation): Replaced the scaled font
+        data by rotating fonts according to the new orientation.
+        * platform/graphics/freetype/SimpleFontDataFreeType.cpp:
+        (WebCore::SimpleFontData::platformInit): Set the glyph's height and
+        width according to the font orientation. It also sets EM.
+        (WebCore::SimpleFontData::platformCreateScaledFontData): Added
+        orientation to the FontPlatformData constructor.
+        (WebCore::SimpleFontData::platformWidthForGlyph): Returned the glyph's
+        width according the orientation.
+        * platform/graphics/harfbuzz/HarfBuzzFaceCairo.cpp:
+        (WebCore::CairoGetGlyphWidthAndExtents): Obtained the character advance
+        and extents according to the font orientation.
+
+2013-11-07  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        [AX] Use toAccessibilityRenderObject() instead of using static_cast<>
+        https://bugs.webkit.org/show_bug.cgi?id=123986
+
+        Reviewed by Mario Sanchez Prada.
+
+        Though there is toAccessibilityRenderObject(), static_cast<> are being used by many places.
+        To use toAccessibilityRenderObject() is more helpful to find bad type cast.
+
+        No new tests, no behavior changes.
+
+        * accessibility/AXObjectCache.cpp:
+        (WebCore::AXObjectCache::notificationPostTimerFired):
+        * accessibility/AccessibilityImageMapLink.cpp:
+        (WebCore::AccessibilityImageMapLink::imageMapLinkRenderer):
+        * accessibility/AccessibilityRenderObject.cpp:
+        (WebCore::AccessibilityRenderObject::handleActiveDescendantChanged):
+        (WebCore::AccessibilityRenderObject::inheritsPresentationalRole):
+        * accessibility/ios/AccessibilityObjectIOS.mm:
+        (WebCore::AccessibilityObject::accessibilityPasswordFieldLength):
+        * accessibility/mac/WebAccessibilityObjectWrapperMac.mm:
+        (AXAttributeStringSetElement):
+        (-[WebAccessibilityObjectWrapper accessibilityAttributeValue:]):
+
+2013-11-07  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        [AX] Use toAccessibilityTable() instead of using manual static_cast<>
+        https://bugs.webkit.org/show_bug.cgi?id=123982
+
+        Reviewed by Mario Sanchez Prada.
+
+        Though there is toAccessibilityTable(), static_cast<> are being used by many places.
+        We need to use toAccessibilityTable().
+
+        No new tests, no behavior changes.
+
+        * accessibility/AccessibilityARIAGridRow.cpp:
+        (WebCore::AccessibilityARIAGridRow::disclosedRows):
+        (WebCore::AccessibilityARIAGridRow::disclosedByRow):
+        * accessibility/AccessibilityTableHeaderContainer.cpp:
+        (WebCore::AccessibilityTableHeaderContainer::addChildren):
+        * accessibility/atk/WebKitAccessibleInterfaceTable.cpp:
+        (cell):
+        (cellAtIndex):
+        (webkitAccessibleTableGetIndexAt):
+        (webkitAccessibleTableGetNColumns):
+        (webkitAccessibleTableGetNRows):
+        (webkitAccessibleTableGetColumnHeader):
+        (webkitAccessibleTableGetRowHeader):
+        * accessibility/ios/WebAccessibilityObjectWrapperIOS.mm:
+        (-[WebAccessibilityObjectWrapper tableParent]):
+        * accessibility/mac/WebAccessibilityObjectWrapperMac.mm:
+        (-[WebAccessibilityObjectWrapper additionalAccessibilityAttributeNames]):
+        (-[WebAccessibilityObjectWrapper accessibilityAttributeValue:]):
+        (-[WebAccessibilityObjectWrapper accessibilityAttributeValue:forParameter:]):
+
+2013-11-07  Andreas Kling  <akling@apple.com>
+
+        Use tighter InlineBox subtypes in some places.
+        <https://webkit.org/b/123980>
+
+        RenderLineBreak and RenderBox line box wrappers are always going to
+        be InlineElementBox, so codify this with tighter types. Also made
+        the various positionLine() functions take tighter reference types.
+
+        All the casting to renderer-appropriate box types happens inside of
+        RenderBlockFlow::computeBlockDirectionPositionsForLine() and
+        propagates from there.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-07  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        AX: [ATK] Video and audio elements are not properly exposed
+        https://bugs.webkit.org/show_bug.cgi?id=123894
+
+        Reviewed by Chris Fleizach.
+
+        Expose <audio> and <video> elements with ATK_ROLE_EMBEDDED, so we
+        can identify them properly from ATK/AT-SPI based ATs.
+
+        Tests: platform/gtk/accessibility/media-controls-panel-title.html
+               platform/efl/accessibility/media-emits-object-replacement.html
+               platform/gtk/accessibility/media-emits-object-replacement.html
+
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (atkRole): Add the new mapping.
+
+2013-11-07  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+        
+        Fix crash in BitmapImage::destroyDecodedData()
+        https://bugs.webkit.org/show_bug.cgi?id=116494
+
+        Reviewed by Csaba Osztrogonác.
+
+        Merge from https://chromium.googlesource.com/chromium/blink/+/6b6887bf53068f8537908e501fdc7317ad2c6d86
+
+        * platform/graphics/BitmapImage.cpp:
+        (WebCore::BitmapImage::destroyDecodedData):
+
+2013-11-06  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] CSSParser should reject <track-list> without a <track-size>
+        https://bugs.webkit.org/show_bug.cgi?id=118025
+
+        Reviewed by Andreas Kling.
+
+        From Blink r152914 by <jchaffraix@chromium.org>
+
+        Make sure that we parse at least 1 <track-size> inside each
+        <track-list>. The old parser code allowed track-lists exclusively
+        made of <track-name>. The way it was implemented eases the future
+        addition of parsing for the repeat() function.
+
+        * css/CSSParser.cpp:
+        (WebCore::CSSParser::parseGridTrackList):
+        * css/StyleResolver.cpp:
+        (WebCore::createGridTrackList): ASSERT if we don't find any
+        <track-size> now that we detect their absence in the parser.
+
+2013-11-06  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] Fix handling of 'inherit' and 'initial' for grid lines
+        https://bugs.webkit.org/show_bug.cgi?id=115401
+
+        Reviewed by Andreas Kling.
+
+        From Blink r150585 by <jchaffraix@chromium.org>
+
+        Added support for 'inherit' and 'initial' special values to
+        grid-auto-{columns|rows} and grid-definition-{columns|rows}.
+
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::applyProperty): Resolve 'initial' and 'inherit'.
+        * rendering/style/RenderStyle.h: Added initialNamedGrid{Column|Row}Lines().
+        * rendering/style/StyleGridData.cpp:
+        (WebCore::StyleGridData::StyleGridData): Initialize m_namedGrid{Column|Row}Lines.
+
+2013-11-07  Andreas Kling  <akling@apple.com>
+
+        Clean up BidiRun a little bit.
+        <https://webkit.org/b/123964>
+
+        Make BidiRun's member variables private and add accessors for them.
+        In doing so, codify the following:
+
+            - BidiRun always has a corresponding RenderObject.
+            - The inline box is never cleared after being set.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-07  Andreas Kling  <akling@apple.com>
+
+        More CSSPrimitiveValue constructors should return PassRef.
+        <https://webkit.org/b/123953>
+
+        Make some more CSSPrimitiveValue constructor helpers (that are
+        known to never return null) return PassRef instead of PassRefPtr.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-07  Andreas Kling  <akling@apple.com>
+
+        Generate type casting helpers for line boxes and use them.
+        <https://webkit.org/b/123976>
+
+        Semi-automatically generate the full set of toFooInlineBox()
+        helpers with macros instead of having them (partially) hand-coded.
+        Replaced static_casts with the new helpers across the codebase.
+
+        Also made the isFooInlineBox() overrides private since they should
+        never be called when the type is already known.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-07  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Simplify Attr by removing m_specified member variable and setter
+        https://bugs.webkit.org/show_bug.cgi?id=123965
+
+        Reviewed by Andreas Kling.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/597f44ec928e08820574728889adabc6d8ecd746
+
+        m_specified is always true in WebKit so simply return true in Attr::specified().
+
+        * dom/Attr.cpp:
+        (WebCore::Attr::Attr):
+        * dom/Attr.h:
+        * dom/Document.cpp:
+        (WebCore::Document::adoptNode):
+
+2013-10-25  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Add MediaSource extensions to AudioTrack, VideoTrack, and TextTrack.
+        https://bugs.webkit.org/show_bug.cgi?id=123374
+
+        Reviewed by Eric Carlson.
+
+        No tests added; tests will be added when Mock implementations are added in a future patch.
+
+        Add new partial interfaces for added methods on AudioTrack, TextTrack, and VideoTrack:
+        * Modules/mediasource/AudioTrackMediaSource.idl: Add read-only sourceBuffer attribute.
+        * Modules/mediasource/TextTrackMediaSource.idl: Ditto.
+        * Modules/mediasource/VideoTrackMediaSource.idl: Ditto.
+        * Modules/mediasource/AudioTrackMediaSource.h:
+        (WebCore::AudioTrackMediaSource::sourceBuffer): Added static wrapper around non-static sourceBuffer().
+        * Modules/mediasource/TextTrackMediaSource.h:
+        (WebCore::TextTrackMediaSource::sourceBuffer): Ditto.
+        * Modules/mediasource/VideoTrackMediaSource.h:
+        (WebCore::VideoTrackMediaSource::sourceBuffer): Ditto.
+
+        Add support for writable kind & language attributes through a custom setter:
+        * bindings/js/JSAudioTrackCustom.cpp:
+        (WebCore::JSAudioTrack::setKind):
+        (WebCore::JSAudioTrack::setLanguage):
+        * bindings/js/JSTextTrackCustom.cpp:
+        (WebCore::JSTextTrack::setKind):
+        (WebCore::JSTextTrack::setLanguage):
+        * bindings/js/JSVideoTrackCustom.cpp:
+        (WebCore::JSVideoTrack::setKind):
+        (WebCore::JSVideoTrack::setLanguage):
+        * html/track/AudioTrack.idl:
+        * html/track/TextTrack.idl:
+        * html/track/VideoTrack.idl:
+
+        Add setter methods to the implementation classes:
+        * html/track/TextTrack.cpp:
+        (WebCore::TextTrack::TextTrack):
+        (WebCore::TextTrack::setKind):
+        (WebCore::TextTrack::setLanguage):
+        * html/track/TextTrack.h:
+        * html/track/TrackBase.cpp:
+        (WebCore::TrackBase::TrackBase):
+        (WebCore::TrackBase::setKind):
+        (WebCore::TrackBase::setKindInternal):
+        * html/track/TrackBase.h:
+        (WebCore::TrackBase::setLanguage):
+        (WebCore::TrackBase::sourceBuffer):
+        (WebCore::TrackBase::setSourceBuffer):
+        * html/track/VideoTrack.cpp:
+        (WebCore::VideoTrack::VideoTrack):
+        (WebCore::VideoTrack::setKind):
+        (WebCore::VideoTrack::setLanguage):
+        * html/track/VideoTrack.h:
+
+        Implement the unimplemented portions of MediaSource and SourceBuffer:
+        * Modules/mediasource/MediaSource.cpp:
+        (WebCore::MediaSource::removeSourceBuffer):
+        * Modules/mediasource/MediaSourceBase.cpp:
+        (WebCore::MediaSourceBase::MediaSourceBase):
+        (WebCore::MediaSourceBase::setPrivateAndOpen):
+        (WebCore::MediaSourceBase::setReadyState):
+        (WebCore::MediaSourceBase::attachToElement):
+        * Modules/mediasource/MediaSourceBase.h:
+        (WebCore::MediaSourceBase::mediaElement):
+        * Modules/mediasource/SourceBuffer.cpp:
+        (WebCore::SourceBuffer::videoTracks):
+        (WebCore::SourceBuffer::audioTracks):
+        (WebCore::SourceBuffer::textTracks):
+        (WebCore::SourceBuffer::sourceBufferPrivateDidAddAudioTrack):
+        (WebCore::SourceBuffer::sourceBufferPrivateDidAddVideoTrack):
+        (WebCore::SourceBuffer::sourceBufferPrivateDidAddTextTrack):
+        (WebCore::SourceBuffer::sourceBufferPrivateDidChangeActiveState):
+        * Modules/mediasource/SourceBuffer.h:
+        * Modules/mediasource/SourceBuffer.idl:
+
+        Add new files to the project:
+        * DerivedSources.make:
+        * WebCore.xcodeproj/project.pbxproj:
+
+        And a smorgasbord of other utility changes:
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::loadResource): Pass this when attaching.
+        (WebCore::HTMLMediaElement::mediaPlayerDidAddTextTrack): Ditto.
+        * html/HTMLMediaSource.h:
+        * html/track/TextTrackList.cpp:
+        (TextTrackList::item): Make const.
+        * html/track/TextTrackList.h:
+        (WebCore::TextTrackList::lastItem): Added.
+        * platform/graphics/InbandTextTrackPrivate.h:
+        (WebCore::InbandTextTrackPrivate::create): Added.
+        (WebCore::MockSourceBufferPrivate::trackDidChangeEnabled):
+
+2013-11-06  Vani Hegde  <vani.hegde@samsung.com>
+
+        Applied background color is not retained after typing a characters
+        https://bugs.webkit.org/show_bug.cgi?id=117337
+
+        Reviewed by Ryosuke Niwa.
+
+        While deleting a selection, only the inheritable style properties
+        applied on the selection were saved.
+        Since background color is considered as noninheritable style property,
+        on deleting the selection, background color set on it was being lost.
+        Hence on typing in new text, it would not have the applied
+        background color set.
+        Fixed by saving editing preoperties that are already in effect
+        on a selection before deleting it.
+
+        Test: editing/style/background-color-retained.html
+
+        * editing/DeleteSelectionCommand.cpp:
+        (WebCore::DeleteSelectionCommand::saveTypingStyleState):
+        Modified as to save EditingPropertiesInEffect on a selection before
+        deleting it.
+
+2013-11-06  Andreas Kling  <akling@apple.com>
+
+        InlineBox: Make paint() and nodeAtPoint() pure virtuals.
+        <https://webkit.org/b/123937>
+
+        ...and move the current implementations to InlineElementBox.
+        All subclasses were already overriding these functions so the move
+        is completely natural.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-06  Andreas Kling  <akling@apple.com>
+
+        Nothing should return std::unique_ptr<InlineBox>.
+        <https://webkit.org/b/123936>
+
+        Made RenderBox, RenderLineBreak and RenderListMarker return tightly
+        typed InlineElementBoxes instead.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-06  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Upstream Letterpress effect
+        https://bugs.webkit.org/show_bug.cgi?id=123932
+
+        Reviewed by Sam Weinig.
+
+        Test: platform/iphone-simulator/iphone/getComputedStyle-text-decoration-letterpress.html
+
+        * Configurations/FeatureDefines.xcconfig: Add feature define ENABLE_LETTERPRESS disabled
+        by default. We only enable letterpress on iOS.
+        * css/CSSComputedStyleDeclaration.cpp:
+        (WebCore::renderTextDecorationFlagsToCSSValue): Add support for CSS value -webkit-letterpress.
+        * css/CSSParser.cpp:
+        (WebCore::CSSParser::parseTextDecoration): Ditto.
+        * css/CSSPrimitiveValueMappings.h:
+        (WebCore::CSSPrimitiveValue::operator TextDecoration): Ditto.
+        * css/CSSValueKeywords.in: Added CSS value -webkit-letterpress.
+        * platform/graphics/GraphicsContext.h:
+        * platform/graphics/mac/FontMac.mm:
+        (WebCore::fillVectorWithHorizontalGlyphPositions): Added.
+        (WebCore::shouldUseLetterpressEffect): Added.
+        (WebCore::showLetterpressedGlyphsWithAdvances): Added.
+        (WebCore::showGlyphsWithAdvances): Modified to call showLetterpressedGlyphsWithAdvances()
+        to show a letterpressed glyph. I also included additional iOS-specific changes.
+        (WebCore::Font::drawGlyphs):
+        * rendering/TextPaintStyle.cpp:
+        (WebCore::TextPaintStyle::TextPaintStyle): 
+        (WebCore::computeTextPaintStyle): Modified to compute letterpress effect style.
+        (WebCore::updateGraphicsContext): Modified to apply/unapply letterpress effect drawing mode.
+        * rendering/TextPaintStyle.h:
+        * rendering/style/RenderStyleConstants.h:
+
+2013-11-06  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Crash in SliderThumbElement::dragFrom
+        https://bugs.webkit.org/show_bug.cgi?id=123873
+
+        Reviewed by Sam Weinig.
+
+        Moved Ref.
+
+        * html/RangeInputType.cpp:
+        (WebCore::RangeInputType::handleMouseDownEvent):
+        * html/shadow/SliderThumbElement.cpp:
+        (WebCore::SliderThumbElement::dragFrom):
+
+2013-11-06  Daniel Bates  <dabates@apple.com>
+
+        Cleanup FontMac.mm
+        https://bugs.webkit.org/show_bug.cgi?id=123928
+
+        Reviewed by Andy Estes.
+
+        * platform/graphics/mac/FontMac.mm:
+        (WebCore::showGlyphsWithAdvances): Inline the value of variable isVertical as we
+        reference it exactly once and its value is sufficiently clear.
+        (WebCore::Font::drawGlyphs): Remove default case in switch block so that the compiler
+        checks that all cases are covered. Move definition of platformData to the top of the
+        function and use it whenever we want to access the platform font data
+
+2013-11-06  Brent Fulgham  <bfulgham@apple.com>
+
+        [WebGL] We should not allow generateMipMap on compressed textures
+        https://bugs.webkit.org/show_bug.cgi?id=123915
+        <rdar://problem/15201274>
+
+        Reviewed by Dean Jackson.
+
+        Found by existing conformance/extensions/webgl-compressed-texture-s3tc.html
+
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::compressedTexImage2D): Set compressed flag.
+        (WebCore::WebGLRenderingContext::compressedTexSubImage2D): Ditto.
+        (WebCore::WebGLRenderingContext::generateMipmap): For Apple builds, check state
+        of compressed flag and generate appropriate WebGL error if necessary.
+        * html/canvas/WebGLTexture.cpp:
+        (WebCore::WebGLTexture::WebGLTexture): Set compressed flag to false by default
+        (WebCore::WebGLTexture::isCompressed): Added
+        (WebCore::WebGLTexture::setCompressed): Added
+        * html/canvas/WebGLTexture.h:
+        * platform/graphics/opengl/GraphicsContext3DOpenGLCommon.cpp:
+        (WebCore::GraphicsContext3D::generateMipmap): Switch implementation to use proper
+        glGenerateMipmaps, rather than the glGenerateMipmapsEXT method.
+
+2013-11-06  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Changes to CodeGeneratorInspectorStrings.py should rebuild inspector generated files
+        https://bugs.webkit.org/show_bug.cgi?id=123925
+
+        Reviewed by Timothy Hatcher.
+
+        * CMakeLists.txt:
+        * DerivedSources.make:
+        * GNUmakefile.am:
+
 2013-11-06  Bem Jones-Bey  <bjonesbe@adobe.com>
 
         Rename region line offset methods

@@ -90,6 +90,7 @@ list(APPEND WebKit2_INCLUDE_DIRECTORIES
     "${JAVASCRIPTCORE_DIR}/llint"
     "${WEBCORE_DIR}/platform/nix"
     "${WEBCORE_DIR}/platform/graphics/cairo"
+    "${WEBCORE_DIR}/platform/graphics/opentype"
     "${WEBCORE_DIR}/platform/graphics/filters/texmap"
     "${WEBCORE_DIR}/svg/graphics"
     "${WTF_DIR}/wtf/gobject"

@@ -34,7 +34,8 @@
   <repository type="git" name="git.github.com"
       href="git://github.com"/>
 
-  <autotools id="cairo" autogen-sh="configure">
+  <autotools id="cairo" autogen-sh="configure"
+             makeargs="CFLAGS=-fno-lto CXXFLAGS=-fno-lto LDFLAGS=-fno-lto">
     <dependencies>
       <dep package="fontconfig"/>
       <dep package="pixman"/>

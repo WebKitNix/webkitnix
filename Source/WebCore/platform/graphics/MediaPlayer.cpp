@@ -1218,6 +1218,11 @@ size_t MediaPlayer::extraMemoryCost() const
     return m_private->extraMemoryCost();
 }
 
+void MediaPlayerFactorySupport::callRegisterMediaEngine(MediaEngineRegister registerMediaEngine)
+{
+    registerMediaEngine(addMediaEngine);
+}
+
 }
 
 #endif

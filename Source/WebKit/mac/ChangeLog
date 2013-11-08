@@ -1,3 +1,42 @@
+2013-11-07  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Remove a PLATFORM(IOS) from WebKit Private Header
+        https://bugs.webkit.org/show_bug.cgi?id=124014
+
+        Reviewed by Timothy Hatcher.
+
+        Make the previously iOS only WebInspectorDidStartSearchingForNode
+        and WebInspectorDidStopSearchingForNode notifications non iOS specific.
+
+        * WebCoreSupport/WebInspectorClient.h:
+        * WebCoreSupport/WebInspectorClient.mm:
+        (WebInspectorClient::didSetSearchingForNode):
+        * WebInspector/WebInspector.h:
+        * WebInspector/WebInspector.mm:
+        * WebKit.exp:
+
+2013-11-07  Mark Lam  <mark.lam@apple.com>
+
+        Cosmetic: rename xxxId to xxxID for ScriptId, SourceId, and BreakpointId.
+        https://bugs.webkit.org/show_bug.cgi?id=123945.
+
+        Reviewed by Geoffrey Garen.
+
+        * WebView/WebScriptDebugger.mm:
+        (WebScriptDebugger::exception):
+
+2013-11-06  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Upstream Letterpress effect
+        https://bugs.webkit.org/show_bug.cgi?id=123932
+
+        Reviewed by Sam Weinig.
+
+        Add feature define ENABLE_LETTERPRESS disabled by default. We only enable
+        letterpress on iOS.
+
+        * Configurations/FeatureDefines.xcconfig:
+
 2013-11-04  Alexey Proskuryakov  <ap@apple.com>
 
         DumpRenderTree should reset its preferences file on launch

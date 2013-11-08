@@ -279,6 +279,8 @@ const gchar* roleToString(AtkRole role)
         return "AXComboBox";
     case ATK_ROLE_DOCUMENT_FRAME:
         return "AXWebArea";
+    case ATK_ROLE_EMBEDDED:
+        return "AXEmbedded";
     case ATK_ROLE_ENTRY:
         return "AXTextField";
     case ATK_ROLE_FOOTER:
@@ -1008,7 +1010,8 @@ bool AccessibilityUIElement::isPressActionSupported()
     if (!ATK_IS_ACTION(m_element.get()))
         return false;
 
-    return equalIgnoringCase(atk_action_get_name(ATK_ACTION(m_element.get()), 0), String("press"));
+    const gchar* actionName = atk_action_get_name(ATK_ACTION(m_element.get()), 0);
+    return equalIgnoringCase(actionName, String("press")) || equalIgnoringCase(actionName, String("jump"));
 }
 
 bool AccessibilityUIElement::isIncrementActionSupported()

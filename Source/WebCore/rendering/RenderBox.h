@@ -32,6 +32,7 @@
 
 namespace WebCore {
 
+class InlineElementBox;
 class RenderBlockFlow;
 class RenderBoxRegionInfo;
 class RenderRegion;
@@ -371,16 +372,16 @@ public:
     void clearRenderBoxRegionInfo();
     virtual LayoutUnit offsetFromLogicalTopOfFirstPage() const;
     
-    void positionLineBox(InlineBox*);
+    void positionLineBox(InlineElementBox&);
 
-    virtual std::unique_ptr<InlineBox> createInlineBox();
+    virtual std::unique_ptr<InlineElementBox> createInlineBox();
     void dirtyLineBoxes(bool fullLayout);
 
     // For inline replaced elements, this function returns the inline box that owns us.  Enables
     // the replaced RenderObject to quickly determine what line it is contained on and to easily
     // iterate over structures on the line.
-    InlineBox* inlineBoxWrapper() const { return m_inlineBoxWrapper; }
-    void setInlineBoxWrapper(InlineBox* boxWrapper) { m_inlineBoxWrapper = boxWrapper; }
+    InlineElementBox* inlineBoxWrapper() const { return m_inlineBoxWrapper; }
+    void setInlineBoxWrapper(InlineElementBox* boxWrapper) { m_inlineBoxWrapper = boxWrapper; }
     void deleteLineBoxWrapper();
 
     virtual LayoutRect clippedOverflowRectForRepaint(const RenderLayerModelObject* repaintContainer) const OVERRIDE;
@@ -702,7 +703,7 @@ protected:
     LayoutUnit m_maxPreferredLogicalWidth;
 
     // For inline replaced elements, the inline box that owns us.
-    InlineBox* m_inlineBoxWrapper;
+    InlineElementBox* m_inlineBoxWrapper;
 
     // Our overflow information.
     OwnPtr<RenderOverflow> m_overflow;

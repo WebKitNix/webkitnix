@@ -1015,8 +1015,7 @@ webkit.org/b/103663 [ MountainLion ] media/track/track-in-band.html
 webkit.org/b/103663 [ MountainLion ] media/track/track-in-band-cues-added-once.html
 webkit.org/b/103663 [ MountainLion ] media/track/track-in-band-style.html
 webkit.org/b/103663 [ MountainLion ] media/track/track-in-band-legacy-api.html
-# Always times out on Mavericks https://bugs.webkit.org/show_bug.cgi?id=123412
-webkit.org/b/103663 media/track/track-forced-subtitles-in-band.html
+webkit.org/b/103663 [ MountainLion ] media/track/track-forced-subtitles-in-band.html
 webkit.org/b/103663 [ MountainLion ] media/track/track-in-band-mode.html
 
 # These two tests often timeout
@@ -1206,8 +1205,6 @@ webkit.org/b/117427 compositing/reflections/load-video-in-reflection.html [ Pass
 
 # Resizing windows appears broken in both DRT and WTR, making the test fail or time out flakily.
 webkit.org/b/96642 loader/go-back-to-different-window-size.html [ Pass Failure Timeout ]
-
-webkit.org/b/114193 transitions/cancel-transition.html [ Pass Failure ]
 
 webkit.org/b/121992 media/media-volume-slider-rendered-below.html [ Failure ]
 webkit.org/b/121992 media/media-volume-slider-rendered-normal.html [ Timeout Failure ]

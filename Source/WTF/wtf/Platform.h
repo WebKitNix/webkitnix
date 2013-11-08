@@ -1041,4 +1041,9 @@
 #define WTF_USE_AUDIO_SESSION 1
 #endif
 
+#if PLATFORM(GTK) || PLATFORM(EFL)
+#undef ENABLE_OPENTYPE_VERTICAL
+#define ENABLE_OPENTYPE_VERTICAL 1
+#endif
+
 #endif /* WTF_Platform_h */

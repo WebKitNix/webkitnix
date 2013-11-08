@@ -8,6 +8,7 @@ list(APPEND WebCore_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/graphics/harfbuzz/ng"
     "${WEBCORE_DIR}/platform/graphics/nix"
     "${WEBCORE_DIR}/platform/graphics/opengl"
+    "${WEBCORE_DIR}/platform/graphics/opentype"
     "${WEBCORE_DIR}/platform/graphics/surfaces"
     "${WEBCORE_DIR}/platform/graphics/texmap"
     "${WEBCORE_DIR}/platform/linux"
@@ -86,6 +87,7 @@ list(APPEND WebCore_SOURCES
     platform/graphics/OpenGLShims.cpp
     platform/graphics/opengl/Extensions3DOpenGLCommon.cpp
     platform/graphics/opengl/GraphicsContext3DOpenGLCommon.cpp
+    platform/graphics/opentype/OpenTypeVerticalData.cpp
     platform/graphics/texmap/TextureMapperGL.cpp
     platform/graphics/texmap/TextureMapperShaderProgram.cpp
     platform/graphics/texmap/GraphicsLayerTextureMapper.cpp

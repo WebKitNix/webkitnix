@@ -63,6 +63,7 @@ inline CapabilityLevel canCompile(Node* node)
     case PhantomPutStructure:
     case GetButterfly:
     case NewObject:
+    case NewArray:
     case GetByOffset:
     case PutByOffset:
     case GetGlobalVar:
@@ -98,6 +99,7 @@ inline CapabilityLevel canCompile(Node* node)
     case Int52ToValue:
     case InvalidationPoint:
     case StringCharAt:
+    case CheckFunction:
     case StringCharCodeAt:
         // These are OK.
         break;

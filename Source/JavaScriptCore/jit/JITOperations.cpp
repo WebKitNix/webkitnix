@@ -1717,8 +1717,8 @@ asm (
 ".globl " SYMBOL_STRING(getHostCallReturnValue) "\n"
 HIDE_SYMBOL(getHostCallReturnValue) "\n"
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
-    "mov 0(%r13), %r13\n" // CallerFrameAndPC::callerFrame
-    "mov %r13, %rdi\n"
+    "mov 0(%rbp), %rbp\n" // CallerFrameAndPC::callerFrame
+    "mov %rbp, %rdi\n"
     "jmp " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
 
@@ -1728,8 +1728,8 @@ asm (
 ".globl " SYMBOL_STRING(getHostCallReturnValue) "\n"
 HIDE_SYMBOL(getHostCallReturnValue) "\n"
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
-    "mov 0(%edi), %edi\n" // CallerFrameAndPC::callerFrame
-    "mov %edi, 4(%esp)\n"
+    "mov 0(%ebp), %ebp\n" // CallerFrameAndPC::callerFrame
+    "mov %ebp, 4(%esp)\n"
     "jmp " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
 
@@ -1742,8 +1742,8 @@ HIDE_SYMBOL(getHostCallReturnValue) "\n"
 ".thumb" "\n"
 ".thumb_func " THUMB_FUNC_PARAM(getHostCallReturnValue) "\n"
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
-    "ldr r5, [r5, #0]" "\n" // CallerFrameAndPC::callerFrame
-    "mov r0, r5" "\n"
+    "ldr r7, [r7, #0]" "\n" // CallerFrameAndPC::callerFrame
+    "mov r0, r7" "\n"
     "b " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
 
@@ -1754,8 +1754,8 @@ asm (
 HIDE_SYMBOL(getHostCallReturnValue) "\n"
 INLINE_ARM_FUNCTION(getHostCallReturnValue)
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
-    "ldr r5, [r5, #0]" "\n" // CallerFrameAndPC::callerFrame
-    "mov r0, r5" "\n"
+    "ldr r11, [r11, #0]" "\n" // CallerFrameAndPC::callerFrame
+    "mov r0, r11" "\n"
     "b " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
 
@@ -1778,8 +1778,8 @@ asm (
 HIDE_SYMBOL(getHostCallReturnValue) "\n"
 SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
     LOAD_FUNCTION_TO_T9(getHostCallReturnValueWithExecState)
-    "lw $s0, 0($s0)" "\n" // CallerFrameAndPC::callerFrame
-    "move $a0, $s0" "\n"
+    "lw $fp, 0($fp)" "\n" // CallerFrameAndPC::callerFrame
+    "move $a0, $fp" "\n"
     "b " LOCAL_REFERENCE(getHostCallReturnValueWithExecState) "\n"
 );
 
@@ -1802,11 +1802,9 @@ SYMBOL_STRING(getHostCallReturnValue) ":" "\n"
 extern "C" {
     __declspec(naked) EncodedJSValue HOST_CALL_RETURN_VALUE_OPTION getHostCallReturnValue()
     {
-        __asm {
-            mov edi, [edi + 0]; // CallerFrameAndPC::callerFrame
-            mov [esp + 4], edi;
-            jmp getHostCallReturnValueWithExecState
-        }
+        __asm mov ebp, [ebp + 0]; // CallerFrameAndPC::callerFrame
+        __asm mov [esp + 4], ebp;
+        __asm jmp getHostCallReturnValueWithExecState
     }
 }
 #endif

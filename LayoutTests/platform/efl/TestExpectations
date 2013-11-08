@@ -744,7 +744,13 @@ webkit.org/b/84333 http/tests/local/blob/send-hybrid-blob.html [ Failure ]
 webkit.org/b/84333 http/tests/local/fileapi/file-last-modified.html [ Failure ]
 webkit.org/b/84333 http/tests/local/fileapi/send-dragged-file.html [ Failure ]
 webkit.org/b/84333 http/tests/local/fileapi/send-sliced-dragged-file.html [ Failure ]
-webkit.org/b/84333 http/tests/local/formdata [ Failure ]
+webkit.org/b/84333 http/tests/local/formdata/form-data-with-unknown-file-extension.html [ Failure ]
+webkit.org/b/84333 http/tests/local/formdata/send-form-data-constructed-from-form.html [ Failure ]
+webkit.org/b/84333 http/tests/local/formdata/send-form-data.html [ Failure ]
+webkit.org/b/84333 http/tests/local/formdata/send-form-data-with-empty-file-filename.html [ Failure ]
+webkit.org/b/84333 http/tests/local/formdata/send-form-data-with-filename.html [ Failure ]
+webkit.org/b/84333 http/tests/local/formdata/send-form-data-with-sliced-file.html [ Failure ]
+webkit.org/b/84333 http/tests/local/formdata/upload-events.html [ Failure ]
 webkit.org/b/84333 http/tests/security/clipboard/clipboard-file-access.html [ Failure ]
 
 # EFL port needs Pasteboard implementation.
@@ -1413,9 +1419,6 @@ webkit.org/b/121593 accessibility/radio-button-title-label.html [ Failure ]
 # Newly added test at r139111 is failing.
 webkit.org/b/106439 editing/pasteboard/paste-noplugin.html [ Failure ]
 
-# Mark as missing image result, same as other ports. Test should be updated to text-based repaint test.
-webkit.org/b/103955 fast/repaint/caret-with-transformation.html [ Missing ]
-
 # Test fails on JSC platforms due to GC timing problems
 webkit.org/b/106957 svg/dom/SVGViewSpec-invalid-ref-crash.html [ Failure ]
 
@@ -1573,7 +1576,6 @@ webkit.org/b/122963 fast/regions/region-generated-content-before-after.html [ Mi
 webkit.org/b/122963 fast/regions/text-region-split-small-pagination.html [ Missing ]
 webkit.org/b/122963 fast/regions/top-overflow-out-of-second-region.html [ Missing ]
 
-webkit.org/b/122963 fast/repaint/japanese-rl-selection-repaint-in-regions.html [ Missing ]
 webkit.org/b/122963 fast/repaint/line-flow-with-floats-in-regions.html [ Missing ]
 webkit.org/b/122963 fast/repaint/overflow-flipped-writing-mode-block-in-regions.html [ Missing ]
 webkit.org/b/122963 fast/repaint/region-painting-invalidation.html [ Missing ]
@@ -1640,3 +1642,12 @@ webgl/conformance/glsl/misc/shader-varying-packing-restrictions.html [ Failure ]
 webgl/conformance/ogles/GL/sin/sin_001_to_006.html [ Failure ]
 webgl/conformance/ogles/GL/vec3/vec3_001_to_008.html [ Failure ]
 webgl/conformance/textures/texture-attachment-formats.html [ Failure ]
+
+# Text rendering is overflowing region
+webkit.org/b/122511 fast/regions/selection/selecting-text-ignoring-region-horiz-bt.html [ ImageOnlyFailure ]
+webkit.org/b/122511 fast/regions/selection/selecting-text-ignoring-region-vert-lr.html [ ImageOnlyFailure ]
+webkit.org/b/122511 fast/regions/selection/selecting-text-in-2-regions-horiz-bt.html [ ImageOnlyFailure ]
+webkit.org/b/122511 fast/regions/selection/selecting-text-in-2-regions-vert-lr.html [ ImageOnlyFailure ]
+
+# Radical sign is overflowing red background
+webkit.org/b/124045 mathml/presentation/bug95404.html [ ImageOnlyFailure ]

@@ -770,7 +770,7 @@ static void appendStringToResult(NSMutableString *result, NSString *string)
     if (!cell)
         return 0;
 
-    return static_cast<AccessibilityTableCell*>(cell);
+    return toAccessibilityTableCell(cell);
 }
 
 - (AccessibilityTable*)tableParent
@@ -783,7 +783,7 @@ static void appendStringToResult(NSMutableString *result, NSString *string)
     if (!parentTable)
         return 0;
     
-    return static_cast<AccessibilityTable*>(parentTable);
+    return toAccessibilityTable(parentTable);
 }
 
 - (id)accessibilityTitleElement

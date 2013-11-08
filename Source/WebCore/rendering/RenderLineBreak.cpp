@@ -68,21 +68,21 @@ int RenderLineBreak::baselinePosition(FontBaseline baselineType, bool firstLine,
     return fontMetrics.ascent(baselineType) + (lineHeight(firstLine, direction, linePositionMode) - fontMetrics.height()) / 2;
 }
 
-std::unique_ptr<InlineBox> RenderLineBreak::createInlineBox()
+std::unique_ptr<InlineElementBox> RenderLineBreak::createInlineBox()
 {
     return std::make_unique<InlineElementBox>(*this);
 }
 
-void RenderLineBreak::setInlineBoxWrapper(InlineBox* inlineBox)
+void RenderLineBreak::setInlineBoxWrapper(InlineElementBox* inlineBox)
 {
     ASSERT(!inlineBox || !m_inlineBoxWrapper);
     m_inlineBoxWrapper = inlineBox;
 }
 
-void RenderLineBreak::replaceInlineBoxWrapper(InlineBox* inlineBox)
+void RenderLineBreak::replaceInlineBoxWrapper(InlineElementBox& inlineBox)
 {
     deleteInlineBoxWrapper();
-    setInlineBoxWrapper(inlineBox);
+    setInlineBoxWrapper(&inlineBox);
 }
 
 void RenderLineBreak::deleteInlineBoxWrapper()

@@ -1,3 +1,316 @@
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Add WKRemoteObjectRegistry to WKConnection
+        https://bugs.webkit.org/show_bug.cgi?id=124054
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/mac/WKConnection.h:
+        * UIProcess/API/mac/WKConnection.mm:
+        (-[WKConnection delegate]):
+        (-[WKConnection setDelegate:]):
+        (-[WKConnection remoteObjectRegistry]):
+        (didReceiveMessage):
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Encode and decode NSURLRequests using NSCoder
+        https://bugs.webkit.org/show_bug.cgi?id=124051
+
+        Reviewed by Sam Weinig.
+
+        * Shared/mac/WebCoreArgumentCodersMac.mm:
+        (CoreIPC::archiveAndEncodeObject):
+        (CoreIPC::decodeAndUnarchiveObject):
+        (CoreIPC::::encodePlatformData):
+        (CoreIPC::::decodePlatformData):
+
+2013-11-07  Anders Carlsson  <andersca@apple.com>
+
+        Encode and decode NSURLResponse objects using NSCoder
+        https://bugs.webkit.org/show_bug.cgi?id=124028
+
+        Reviewed by Andreas Kling.
+
+        * Shared/mac/WebCoreArgumentCodersMac.mm:
+        (CoreIPC::::encodePlatformData):
+        (CoreIPC::::decodePlatformData):
+
+2013-11-07  Anders Carlsson  <andersca@apple.com>
+
+        Move m_destinationID to MessageDecoder
+        https://bugs.webkit.org/show_bug.cgi?id=124026
+
+        Reviewed by Andreas Kling.
+
+        * Platform/CoreIPC/ArgumentDecoder.h:
+        * Platform/CoreIPC/MessageDecoder.h:
+        (CoreIPC::MessageDecoder::destinationID):
+
+2013-11-07  Anders Carlsson  <andersca@apple.com>
+
+        Get rid of the out-of-line memory attachment type
+        https://bugs.webkit.org/show_bug.cgi?id=124023
+
+        Reviewed by Andreas Kling.
+
+        We're only using out-of-line memory for when the message body is too big, so
+        isolate that code in Connection and get rid of the out of line attachment type.
+
+        * Platform/CoreIPC/Attachment.cpp:
+        (CoreIPC::Attachment::Attachment):
+        * Platform/CoreIPC/Attachment.h:
+        (CoreIPC::Attachment::port):
+        (CoreIPC::Attachment::disposition):
+        * Platform/CoreIPC/mac/ConnectionMac.cpp:
+        (CoreIPC::Connection::sendOutgoingMessage):
+        (CoreIPC::createMessageDecoder):
+
+2013-11-07  Simon Fraser  <simon.fraser@apple.com>
+
+        Lots of layers get solid color but transparent contents layers now
+        https://bugs.webkit.org/show_bug.cgi?id=123537
+
+        Reviewed by Tim Horton.
+        
+        Add some properties to the list of things not to implicitly animate.
+
+        * Shared/mac/RemoteLayerTreePropertyApplier.mm:
+        (WebKit::RemoteLayerTreePropertyApplier::disableActionsForLayer):
+
+2013-11-07  Anders Carlsson  <andersca@apple.com>
+
+        Remove more dead code
+        https://bugs.webkit.org/show_bug.cgi?id=124016
+
+        Reviewed by Beth Dakin.
+
+        We're always layer backed now so we never scroll using the PageClient.
+
+        * UIProcess/API/mac/PageClientImpl.mm:
+        (WebKit::PageClientImpl::canScrollView):
+        (WebKit::PageClientImpl::scrollView):
+
+2013-11-07  Anders Carlsson  <andersca@apple.com>
+
+        Don't repaint the view when the web process crashes
+        https://bugs.webkit.org/show_bug.cgi?id=124013
+
+        Reviewed by Dan Bernstein.
+
+        It's up to each individual port to decide whether the view should be repainted when the web process crashes.
+
+        * UIProcess/API/mac/PageClientImpl.mm:
+        (WebKit::PageClientImpl::setViewNeedsDisplay):
+        (WebKit::PageClientImpl::displayView):
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::resetStateAfterProcessExited):
+
+2013-11-07  Tamas Gergely  <gertom@inf.u-szeged.hu>
+
+        Report error on unknown template class usage.
+        https://bugs.webkit.org/show_bug.cgi?id=123096
+
+        Reviewed by Darin Adler.
+
+        Report error when template class is not found in the dictionary.
+
+        * Scripts/webkit2/messages.py:
+        (class_template_headers):
+        (class_template_headers.template):
+
+2013-11-07  Denis Nomiyama  <d.nomiyama@samsung.com>
+
+        [GTK] Glyphs in vertical text tests are rotated 90 degrees clockwise
+        https://bugs.webkit.org/show_bug.cgi?id=50619
+
+        Reviewed by Martin Robinson.
+
+        Added WebCore/platform/graphics/opentype to the include path.
+
+        * PlatformEfl.cmake:
+        * PlatformGTK.cmake:
+
+2013-11-07  Brendan Long  <b.long@cablelabs.com>
+
+        [Gtk] Remove old takeFocus() method from PageClientImpl and mark methods as OVERRIDE
+        https://bugs.webkit.org/show_bug.cgi?id=123919
+
+        Reviewed by Carlos Garcia Campos.
+
+        * UIProcess/API/gtk/PageClientImpl.cpp: Remove takeFocus().
+        * UIProcess/API/gtk/PageClientImpl.h: Remove takeFocus() and mark methods as OVERRIDE.
+
+2013-11-06  Dan Bernstein  <mitz@apple.com>
+
+        Moved UIProcess/Cocoa to UIProcess/API/Cocoa.
+
+        Rubber-stamped by Anders Carlsson.
+
+        * UIProcess/API/Cocoa: Copied from Source/WebKit2/UIProcess/Cocoa.
+        * UIProcess/Cocoa: Removed.
+        * UIProcess/Cocoa/WKBackForwardList.h: Removed.
+        * UIProcess/Cocoa/WKBackForwardList.mm: Removed.
+        * UIProcess/Cocoa/WKBackForwardListInternal.h: Removed.
+        * UIProcess/Cocoa/WKBackForwardListItem.h: Removed.
+        * UIProcess/Cocoa/WKBackForwardListItem.mm: Removed.
+        * UIProcess/Cocoa/WKBackForwardListItemInternal.h: Removed.
+        * UIProcess/Cocoa/WKBrowsingContextHistoryDelegate.h: Removed.
+        * UIProcess/Cocoa/WKNavigationData.h: Removed.
+        * UIProcess/Cocoa/WKNavigationData.mm: Removed.
+        * UIProcess/Cocoa/WKNavigationDataInternal.h: Removed.
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-11-06  Brendan Long  <b.long@cablelabs.com>
+
+        [Gtk][EFL] Fix build after r158759
+        https://bugs.webkit.org/show_bug.cgi?id=123910
+
+        Reviewed by Gyuyoung Kim.
+
+        * UIProcess/CoordinatedGraphics/CoordinatedDrawingAreaProxy.cpp:
+        (WebKit::CoordinatedDrawingAreaProxy::incorporateUpdate): Remove call to flashBackingStoreUpdates().
+
+2013-11-06  Tim Horton  <timothy_horton@apple.com>
+
+        Remote Layer Tree: RemoteLayerTreeDrawingArea doesn't make layers for fixedpos elements
+        https://bugs.webkit.org/show_bug.cgi?id=123943
+
+        Reviewed by Simon Fraser.
+
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.h:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.mm:
+        (WebKit::RemoteLayerTreeDrawingArea::updatePreferences):
+        Make fixed position elements create compositing layers and stacking contexts
+        in the RemoteLayerTreeDrawingArea just like they do in TiledCoreAnimationDrawingArea.
+
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::updatePreferences):
+        Fix the comment, since we have long since achieved this goal.
+
+2013-11-06  Anders Carlsson  <andersca@apple.com>
+
+        Implement enough functionality so that NSURLRequest objects can be decoded
+        https://bugs.webkit.org/show_bug.cgi?id=123942
+
+        Reviewed by Andreas Kling.
+
+        * Shared/API/Cocoa/WKRemoteObjectCoder.mm:
+        (-[WKRemoteObjectEncoder requiresSecureCoding]):
+        Add new method. Return YES.
+
+        (-[WKRemoteObjectDecoder decodeValueOfObjCType:at:]):
+        Add new method. This currently only handles 'i', but we'll add more variants as needed.
+
+        (-[WKRemoteObjectDecoder decodeBoolForKey:]):
+        Get a WebBoolean from the dictionary and return its value.
+
+2013-11-06  Anders Carlsson  <andersca@apple.com>
+
+        Encoded object stream should be sequential
+        https://bugs.webkit.org/show_bug.cgi?id=123939
+
+        Reviewed by Andreas Kling.
+
+        Reserve space in the object stream for objects that are to be encoded, otherwise
+        the object stream will not be sequential.
+
+        * Shared/API/Cocoa/WKRemoteObjectCoder.mm:
+        (encodeToObjectStream):
+        * Shared/ImmutableArray.h:
+        (WebKit::ImmutableArray::entries):
+
+2013-11-06  Anders Carlsson  <andersca@apple.com>
+
+        Allow property list classes to exist in containers
+        https://bugs.webkit.org/show_bug.cgi?id=123938
+
+        Reviewed by Andreas Kling.
+
+        * Shared/API/Cocoa/WKRemoteObjectInterface.mm:
+        (isContainerClass):
+        Return whether a given class is a container class.
+
+        (propertyListClasses):
+        Return the set of property list classes.
+
+        (allowedArgumentClassesForMethod):
+        Allow all property list classes for container type arguments.
+
+2013-11-06  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Upstream Letterpress effect
+        https://bugs.webkit.org/show_bug.cgi?id=123932
+
+        Reviewed by Sam Weinig.
+
+        Add feature define ENABLE_LETTERPRESS disabled by default. We only enable
+        letterpress on iOS.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-11-06  Dan Bernstein  <mitz@apple.com>
+
+        Fixed multiple API test failures after r158764.
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (setUpPagePolicyClient): If the delegate isn’t set or doesn’t respond to a selector, respond
+        with WKFramePolicyListenerUse().
+
+2013-11-06  Anders Carlsson  <andersca@apple.com>
+
+        Move allowed classes handling to decodeObject
+        https://bugs.webkit.org/show_bug.cgi?id=123930
+
+        Reviewed by Andreas Kling.
+
+        * Shared/API/Cocoa/WKRemoteObjectCoder.mm:
+        (decodeObjectFromObjectStream):
+        Pass allowed classes through to decodeObject.
+
+        (decodeObject):
+        Update to take an NSSet of allowed classes. If the set is nil, use the current set.
+
+        (-[WKRemoteObjectDecoder decodeObjectOfClasses:forKey:]):
+        Pass classes to decodeObject.
+
+2013-11-06  Sergio Correia  <sergio.correia@openbossa.org>
+
+        Fix EFL build after r158753
+        https://bugs.webkit.org/show_bug.cgi?id=123923
+
+        r158753 renamed WKNavigationData.h as WKNavigationDataRef.h, so
+        update it in UIProcess/API/efl/ewk_navigation_data_private.h.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * UIProcess/API/efl/ewk_navigation_data_private.h:
+
+2013-11-06  Anders Carlsson  <andersca@apple.com>
+
+        Implement more decoding methods
+        https://bugs.webkit.org/show_bug.cgi?id=123922
+
+        Reviewed by Dan Bernstein.
+
+        * Shared/API/Cocoa/WKRemoteObjectCoder.mm:
+        (-[WKRemoteObjectDecoder decodeObjectForKey:]):
+        Call decodeObjectOfClasses:forKey: passing nil as the classes set.
+
+        (-[WKRemoteObjectDecoder decodeInt64ForKey:]):
+        Try to get a WebUInt64 and return its value.
+
+        (-[WKRemoteObjectDecoder decodeDoubleForKey:]):
+        Try to get a WebDouble and return its value.
+
+        (-[WKRemoteObjectDecoder decodeBytesForKey:returnedLength:]):
+        Move this method next to the other decoding methods.
+
+        (-[WKRemoteObjectDecoder requiresSecureCoding]):
+        Ditto.
+
 2013-11-06  Brendan Long  <b.long@cablelabs.com>
 
         [Gtk][EFL] Fix build after r158759
