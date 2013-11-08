@@ -357,7 +357,7 @@ set(WebKitNix_WebKit2_HEADERS
     UIProcess/API/C/WKKeyValueStorageManager.h
     UIProcess/API/C/WKMediaCacheManager.h
     UIProcess/API/C/WKNativeEvent.h
-    UIProcess/API/C/WKNavigationData.h
+    UIProcess/API/C/WKNavigationDataRef.h
     UIProcess/API/C/WKNetworkInfo.h
     UIProcess/API/C/WKNetworkInfoManager.h
     UIProcess/API/C/WKNotification.h
