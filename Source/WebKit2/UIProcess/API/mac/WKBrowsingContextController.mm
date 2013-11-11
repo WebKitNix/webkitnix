@@ -24,8 +24,6 @@
  */
 
 #import "config.h"
-#import "WKBrowsingContextController.h"
-#import "WKBrowsingContextControllerPrivate.h"
 #import "WKBrowsingContextControllerInternal.h"
 
 #import "ObjCObjectGraph.h"
@@ -35,6 +33,7 @@
 #import "WKFrame.h"
 #import "WKFramePolicyListener.h"
 #import "WKNSArray.h"
+#import "WKNSURLExtras.h"
 #import "WKPagePrivate.h"
 #import "WKRetainPtr.h"
 #import "WKStringCF.h"
@@ -49,6 +48,7 @@
 #import <wtf/ObjcRuntimeExtras.h>
 #import <wtf/RetainPtr.h>
 
+#import "WKBrowsingContextHandleInternal.h"
 #import "WKBrowsingContextLoadDelegate.h"
 #import "WKBrowsingContextPolicyDelegate.h"
 
@@ -333,11 +333,7 @@ static void releaseNSData(unsigned char*, const void* data)
 
 - (NSURL *)unreachableURL
 {
-    const String& unreachableURL = toImpl(_data->_pageRef.get())->unreachableURL();
-    if (!unreachableURL)
-        return nil;
-
-    return !unreachableURL ? nil : [NSURL URLWithString:unreachableURL];
+    return [NSURL _web_URLWithWTFString:toImpl(_data->_pageRef.get())->unreachableURL() relativeToURL:nil];
 }
 
 - (double)estimatedProgress
@@ -457,6 +453,15 @@ static void releaseNSData(unsigned char*, const void* data)
 {
     return WKPageGetPageCount(self._pageRef);
 }
+
+#if WK_API_ENABLED
+
+- (WKBrowsingContextHandle *)handle
+{
+    return [[[WKBrowsingContextHandle alloc] _initWithPageID:toImpl(self._pageRef)->pageID()] autorelease];
+}
+
+#endif
 
 @end
 

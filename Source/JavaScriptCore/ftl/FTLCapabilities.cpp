@@ -64,6 +64,7 @@ inline CapabilityLevel canCompile(Node* node)
     case GetButterfly:
     case NewObject:
     case NewArray:
+    case NewArrayBuffer:
     case GetByOffset:
     case PutByOffset:
     case GetGlobalVar:
@@ -101,6 +102,7 @@ inline CapabilityLevel canCompile(Node* node)
     case StringCharAt:
     case CheckFunction:
     case StringCharCodeAt:
+    case AllocatePropertyStorage:
         // These are OK.
         break;
     case GetById:
@@ -271,6 +273,7 @@ CapabilityLevel canCompile(Graph& graph)
                 case ObjectUse:
                 case ObjectOrOtherUse:
                 case StringUse:
+                case FinalObjectUse:
                     // These are OK.
                     break;
                 default:

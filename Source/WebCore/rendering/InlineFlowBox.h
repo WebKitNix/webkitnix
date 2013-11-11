@@ -52,6 +52,7 @@ public:
         , m_baselineType(AlphabeticBaseline)
         , m_hasAnnotationsBefore(false)
         , m_hasAnnotationsAfter(false)
+        , m_isFirstAfterPageBreak(false)
 #ifndef NDEBUG
         , m_hasBadChildList(false)
 #endif
@@ -121,8 +122,6 @@ public:
     virtual bool nodeAtPoint(const HitTestRequest&, HitTestResult&, const HitTestLocation& locationInContainer, const LayoutPoint& accumulatedOffset, LayoutUnit lineTop, LayoutUnit lineBottom) OVERRIDE;
 
     bool boxShadowCanBeAppliedToBackground(const FillLayer&) const;
-
-    virtual RenderLineBoxList& rendererLineBoxes() const;
 
     // logicalLeft = left in a horizontal line and top in a vertical line.
     LayoutUnit marginBorderPaddingLogicalLeft() const { return marginLogicalLeft() + borderLogicalLeft() + paddingLogicalLeft(); }
@@ -336,6 +335,8 @@ protected:
     unsigned m_lineBreakBidiStatusEor : 5; // UCharDirection
     unsigned m_lineBreakBidiStatusLastStrong : 5; // UCharDirection
     unsigned m_lineBreakBidiStatusLast : 5; // UCharDirection
+
+    unsigned m_isFirstAfterPageBreak : 1;
 
     // End of RootInlineBox-specific members.
 

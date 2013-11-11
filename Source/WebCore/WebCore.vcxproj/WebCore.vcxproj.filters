@@ -4248,9 +4248,6 @@
     <ClCompile Include="..\bindings\generic\ActiveDOMCallback.cpp">
       <Filter>bindings\generic</Filter>
     </ClCompile>
-    <ClCompile Include="..\bindings\generic\BindingSecurity.cpp">
-      <Filter>bindings\generic</Filter>
-    </ClCompile>
     <ClCompile Include="..\bindings\generic\RuntimeEnabledFeatures.cpp">
       <Filter>bindings\generic</Filter>
     </ClCompile>
@@ -4479,6 +4476,8 @@
     <ClCompile Include="..\bindings\js\JSSQLTransactionSyncCustom.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
+    <ClCompile Include="..\bindings\js\JSRTCPeerConnectionCustom.cpp">
+      <Filter>bindings\js</Filter>
     <ClCompile Include="..\bindings\js\JSRTCStatsResponseCustom.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
@@ -11320,13 +11319,13 @@
     <ClInclude Include="..\bindings\generic\ActiveDOMCallback.h">
       <Filter>bindings\generic</Filter>
     </ClInclude>
-    <ClInclude Include="..\bindings\generic\BindingSecurity.h">
-      <Filter>bindings\generic</Filter>
-    </ClInclude>
     <ClInclude Include="..\bindings\generic\RuntimeEnabledFeatures.h">
       <Filter>bindings\generic</Filter>
     </ClInclude>
     <ClInclude Include="..\bindings\js\ArrayValue.h">
+      <Filter>bindings\js</Filter>
+    </ClInclude>
+    <ClInclude Include="..\bindings\js\BreakpointID.h">
       <Filter>bindings\js</Filter>
     </ClInclude>
     <ClInclude Include="..\bindings\js\CachedScriptSourceProvider.h">
@@ -11462,6 +11461,9 @@
       <Filter>bindings\js</Filter>
     </ClInclude>
     <ClInclude Include="..\bindings\js\SerializedScriptValue.h">
+      <Filter>bindings\js</Filter>
+    </ClInclude>
+    <ClInclude Include="..\bindings\js\SourceID.h">
       <Filter>bindings\js</Filter>
     </ClInclude>
     <ClInclude Include="..\bindings\js\WebCoreJSClientData.h">

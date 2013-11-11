@@ -79,7 +79,7 @@ public:
         if (numElements > std::numeric_limits<size_t>::max() / sizeof(T))
             return false;
 
-        return bufferIsLargeEnoughToContain(__alignof(T), numElements * sizeof(T));
+        return bufferIsLargeEnoughToContain(alignof(T), numElements * sizeof(T));
     }
 
     // Generic type decode function.
@@ -99,7 +99,6 @@ protected:
     bool bufferIsLargeEnoughToContain(unsigned alignment, size_t size) const;
 
 private:
-    uint8_t* m_allocatedBase;
     uint8_t* m_buffer;
     uint8_t* m_bufferPos;
     uint8_t* m_bufferEnd;

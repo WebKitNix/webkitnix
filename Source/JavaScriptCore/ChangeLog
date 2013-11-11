@@ -1,3 +1,456 @@
+2013-11-09  Filip Pizlo  <fpizlo@apple.com>
+
+        Switch FTL GetById/PutById IC's over to using AnyRegCC
+        https://bugs.webkit.org/show_bug.cgi?id=124094
+
+        Reviewed by Sam Weinig.
+        
+        This closes the loop on inline caches (IC's) in the FTL. The goal is to have IC's
+        in LLVM-generated code that are just as efficient (if not more so) than what a
+        custom JIT could do. As in zero sources of overhead. Not a single extra instruction
+        or even register allocation pathology. We accomplish this by having two thingies in
+        LLVM. First is the llvm.experimental.patchpoint intrinsic, which is sort of an
+        inline machine code snippet that we can fill in with whatever we want and then
+        modify subsequently. But you have only two choices of how to pass values to a
+        patchpoint: (1) via the calling convention or (2) via the stackmap. Neither are good
+        for operands to an IC (like the base pointer for a GetById, for example). (1) is bad
+        because it results in things being pinned to certain registers a priori; a custom
+        JIT (like the DFG) will not pin IC operands to any registers a priori but will allow
+        the register allocator to do whatever it wants. (2) is bad because the operands may
+        be spilled or may be represented in other crazy ways. You generally want an IC to
+        have its operands in registers. Also, patchpoints only return values using the
+        calling convention, which is unfortunate since it pins the return value to a
+        register a priori. This is where the second thingy comes in: the AnyRegCC. This is
+        a special calling convention only for use with patchpoints. It means that arguments
+        passed "by CC" in the patchpoint can be placed in any register, and the register
+        that gets used is reported as part of the stackmap. It also means that the return
+        value (if there is one) can be placed in any register, and the stackmap will tell
+        you which one it was. Thus, patchpoints combined with AnyRegCC mean that you not
+        only get the kind of self-modifying code that you want for IC's, but you also get
+        all of the register allocation goodness that a custom JIT would have given you.
+        Except that you're getting it from LLVM and not a custom JIT. Awesome.
+        
+        Even though all of the fun stuff is on the LLVM side, this patch was harder than
+        you'd expect.
+        
+        First the obvious bits:
+        
+        - IC patchpoints now use AnyRegCC instead of the C CC. (CC = calling convention.)
+        
+        - FTL::fixFunctionBasedOnStackMaps() now correctly figures out which registers the
+          IC is supposed to use instead of assuming C CC argument registers.
+        
+        And then all of the stuff that broke and that this patch fixes:
+        
+        - IC sizing based on generating a dummy IC (what FTLInlineCacheSize did) is totally
+          bad on x86-64, where various register permutations lead to bizarre header bytes
+          and eclectic SIB encodings. I changed that to have magic constants, for now.
+        
+        - Slow path calls didn't preserve the CC return register.
+        
+        - Repatch's scratch register allocation would get totally confused if the operand
+          registers weren't one of the DFG-style "temp" registers. And by "totally confused"
+          I mean that it would crash.
+        
+        - We assumed that r10 is callee-saved. It's not. That one dude's PPT about x86-64
+          cdecl that I found on the intertubes was not a trustworthy source of information,
+          apparently.
+        
+        - Call repatching didn't know that the FTL does its IC slow calls via specially
+          generated thunks. This was particularly fun to fix: basically, now when we relink
+          an IC call in the FTL, we use the old call target to find the SlowPathCallKey,
+          which tells us everything we need to know to generate (or look up) a new thunk for
+          the new function we want to call.
+        
+        * assembler/MacroAssemblerCodeRef.h:
+        (JSC::MacroAssemblerCodePtr::MacroAssemblerCodePtr):
+        (JSC::MacroAssemblerCodePtr::isEmptyValue):
+        (JSC::MacroAssemblerCodePtr::isDeletedValue):
+        (JSC::MacroAssemblerCodePtr::hash):
+        (JSC::MacroAssemblerCodePtr::emptyValue):
+        (JSC::MacroAssemblerCodePtr::deletedValue):
+        (JSC::MacroAssemblerCodePtrHash::hash):
+        (JSC::MacroAssemblerCodePtrHash::equal):
+        * assembler/MacroAssemblerX86Common.h:
+        * assembler/RepatchBuffer.h:
+        (JSC::RepatchBuffer::RepatchBuffer):
+        (JSC::RepatchBuffer::codeBlock):
+        * ftl/FTLAbbreviations.h:
+        (JSC::FTL::setInstructionCallingConvention):
+        * ftl/FTLCompile.cpp:
+        (JSC::FTL::fixFunctionBasedOnStackMaps):
+        * ftl/FTLInlineCacheSize.cpp:
+        (JSC::FTL::sizeOfGetById):
+        (JSC::FTL::sizeOfPutById):
+        * ftl/FTLJITFinalizer.cpp:
+        (JSC::FTL::JITFinalizer::finalizeFunction):
+        * ftl/FTLLocation.cpp:
+        (JSC::FTL::Location::forStackmaps):
+        * ftl/FTLLocation.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileGetById):
+        (JSC::FTL::LowerDFGToLLVM::compilePutById):
+        * ftl/FTLOSRExitCompiler.cpp:
+        (JSC::FTL::compileStub):
+        * ftl/FTLSlowPathCall.cpp:
+        * ftl/FTLSlowPathCallKey.h:
+        (JSC::FTL::SlowPathCallKey::withCallTarget):
+        * ftl/FTLStackMaps.cpp:
+        (JSC::FTL::StackMaps::Location::directGPR):
+        (JSC::FTL::StackMaps::Location::restoreInto):
+        * ftl/FTLStackMaps.h:
+        * ftl/FTLThunks.h:
+        (JSC::FTL::generateIfNecessary):
+        (JSC::FTL::keyForThunk):
+        (JSC::FTL::Thunks::keyForSlowPathCallThunk):
+        * jit/FPRInfo.h:
+        (JSC::FPRInfo::toIndex):
+        * jit/GPRInfo.h:
+        (JSC::GPRInfo::toIndex):
+        (JSC::GPRInfo::debugName):
+        * jit/RegisterSet.cpp:
+        (JSC::RegisterSet::calleeSaveRegisters):
+        * jit/RegisterSet.h:
+        (JSC::RegisterSet::filter):
+        * jit/Repatch.cpp:
+        (JSC::readCallTarget):
+        (JSC::repatchCall):
+        (JSC::repatchByIdSelfAccess):
+        (JSC::tryCacheGetByID):
+        (JSC::tryCachePutByID):
+        (JSC::tryBuildPutByIdList):
+        (JSC::resetGetByID):
+        (JSC::resetPutByID):
+        * jit/ScratchRegisterAllocator.h:
+        (JSC::ScratchRegisterAllocator::lock):
+
+2013-11-10  Oliver Hunt  <oliver@apple.com>
+
+        Implement Set iterators
+        https://bugs.webkit.org/show_bug.cgi?id=124129
+
+        Reviewed by Antti Koivisto.
+
+        Add Set iterator classes and implementations
+
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * runtime/CommonIdentifiers.h:
+        * runtime/JSGlobalObject.cpp:
+        * runtime/JSGlobalObject.h:
+        * runtime/JSSetIterator.cpp: Added.
+        (JSC::JSSetIterator::finishCreation):
+        (JSC::JSSetIterator::visitChildren):
+        (JSC::JSSetIterator::createPair):
+        * runtime/JSSetIterator.h: Added.
+        (JSC::JSSetIterator::createStructure):
+        (JSC::JSSetIterator::create):
+        (JSC::JSSetIterator::next):
+        (JSC::JSSetIterator::JSSetIterator):
+        * runtime/SetIteratorConstructor.cpp: Added.
+        (JSC::SetIteratorConstructor::finishCreation):
+        * runtime/SetIteratorConstructor.h: Added.
+        (JSC::SetIteratorConstructor::create):
+        (JSC::SetIteratorConstructor::createStructure):
+        (JSC::SetIteratorConstructor::SetIteratorConstructor):
+        * runtime/SetIteratorPrototype.cpp: Added.
+        (JSC::SetIteratorPrototype::finishCreation):
+        (JSC::SetIteratorPrototypeFuncIterator):
+        (JSC::SetIteratorPrototypeFuncNext):
+        * runtime/SetIteratorPrototype.h: Added.
+        (JSC::SetIteratorPrototype::create):
+        (JSC::SetIteratorPrototype::createStructure):
+        (JSC::SetIteratorPrototype::SetIteratorPrototype):
+        * runtime/SetPrototype.cpp:
+        (JSC::SetPrototype::finishCreation):
+        (JSC::setProtoFuncValues):
+        (JSC::setProtoFuncEntries):
+        (JSC::setProtoFuncKeys):
+
+2013-11-09  Oliver Hunt  <oliver@apple.com>
+
+        Add Map Iterators
+        https://bugs.webkit.org/show_bug.cgi?id=124109
+
+        Reviewed by Andreas Kling.
+
+        Added new Map iterator implementation.  This is a mostly boilerplate patch
+        however there's a a little bit of additional logic added to the MapData iterator
+        to deal with the possibility of map mutation between creation of the iterator
+        and use of it.  We'll be able to improve the performance of this substantially
+        by using intrinsics, however I'm pondering coming up with a better way to define
+        these thunks without requiring so much duplicated logic.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * runtime/CommonIdentifiers.h:
+        * runtime/JSGlobalObject.cpp:
+        * runtime/JSGlobalObject.h:
+        * runtime/JSMapIterator.cpp: Added.
+        (JSC::JSMapIterator::finishCreation):
+        (JSC::JSMapIterator::visitChildren):
+        (JSC::JSMapIterator::createPair):
+        * runtime/JSMapIterator.h: Added.
+        (JSC::JSMapIterator::createStructure):
+        (JSC::JSMapIterator::create):
+        (JSC::JSMapIterator::next):
+        (JSC::JSMapIterator::JSMapIterator):
+        * runtime/MapData.h:
+        (JSC::MapData::const_iterator::ensureSlot):
+        * runtime/MapIteratorConstructor.cpp: Added.
+        (JSC::MapIteratorConstructor::finishCreation):
+        * runtime/MapIteratorConstructor.h: Added.
+        (JSC::MapIteratorConstructor::create):
+        (JSC::MapIteratorConstructor::createStructure):
+        (JSC::MapIteratorConstructor::MapIteratorConstructor):
+        * runtime/MapIteratorPrototype.cpp: Added.
+        (JSC::MapIteratorPrototype::finishCreation):
+        (JSC::MapIteratorPrototypeFuncIterator):
+        (JSC::MapIteratorPrototypeFuncNext):
+        * runtime/MapIteratorPrototype.h: Added.
+        (JSC::MapIteratorPrototype::create):
+        (JSC::MapIteratorPrototype::createStructure):
+        (JSC::MapIteratorPrototype::MapIteratorPrototype):
+        * runtime/MapPrototype.cpp:
+        (JSC::MapPrototype::finishCreation):
+        (JSC::mapProtoFuncValues):
+        (JSC::mapProtoFuncEntries):
+        (JSC::mapProtoFuncKeys):
+
+2013-11-08  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK build fix.
+
+        * GNUmakefile.list.am: Remove redundant build targets.
+
+2013-11-08  Filip Pizlo  <fpizlo@apple.com>
+
+        Remove dead FTL C ABI support
+        https://bugs.webkit.org/show_bug.cgi?id=124100
+
+        Reviewed by Jer Noble.
+
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * ftl/FTLCArgumentGetter.cpp: Removed.
+        * ftl/FTLCArgumentGetter.h: Removed.
+        * ftl/FTLOSRExitCompiler.cpp:
+        * jit/FPRInfo.h:
+
+2013-11-08  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support Phantom(FinalObject:)
+        https://bugs.webkit.org/show_bug.cgi?id=124092
+
+        Reviewed by Oliver Hunt.
+
+        * ftl/FTLAbstractHeapRepository.h:
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::speculate):
+        (JSC::FTL::LowerDFGToLLVM::isType):
+        (JSC::FTL::LowerDFGToLLVM::isNotType):
+        (JSC::FTL::LowerDFGToLLVM::speculateFinalObject):
+
+2013-11-08  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of the FTL tail call APIs since they are unused
+        https://bugs.webkit.org/show_bug.cgi?id=124093
+
+        Reviewed by Oliver Hunt.
+
+        * ftl/FTLAbbreviations.h:
+        (JSC::FTL::buildCall):
+        * ftl/FTLOutput.h:
+
+2013-11-08  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support AllocatePropertyStorage
+        https://bugs.webkit.org/show_bug.cgi?id=124086
+
+        Reviewed by Oliver Hunt.
+        
+        Also rationalized some offsets in the DFG.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileAllocatePropertyStorage):
+        (JSC::DFG::SpeculativeJIT::compileReallocatePropertyStorage):
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLIntrinsicRepository.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileAllocatePropertyStorage):
+
+2013-11-08  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of the bizarre Darwin/x86-only MacroAssembler::shouldBlindForSpecificArch(uintptr_t) overload
+        https://bugs.webkit.org/show_bug.cgi?id=124087
+
+        Reviewed by Michael Saboff.
+
+        * assembler/MacroAssembler.h:
+        (JSC::MacroAssembler::shouldBlindPointerForSpecificArch):
+        (JSC::MacroAssembler::shouldBlind):
+        * assembler/MacroAssemblerX86Common.h:
+        (JSC::MacroAssemblerX86Common::shouldBlindForSpecificArch):
+
+2013-11-08  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support NewArrayBuffer
+        https://bugs.webkit.org/show_bug.cgi?id=124067
+
+        Reviewed by Michael Saboff.
+        
+        This expanded coverage and revealed some bugs.
+        
+        This revealed a bug in FTL::OSRExitCompiler where it was assuming that it could save
+        the framePointer in regT3 even though DFG::reifyInlinedCallFrames() would clobber it.
+        It turns out that this can be fixed by just completely restoring the stack prior to
+        doing reifyInlineCallFrames().
+        
+        I used this as an opportunity to simplify NewArray. That revealed a bug; whenever we say
+        lowJSValue() in there we need to use ManualOperandSpeculation since we're using it to
+        rebox values even when we also have to do some speculations. The speculations are done
+        at the top of compileNewArray().
+        
+        This also revealed a bug in StringCharAt() for the OOB case.
+
+        * ftl/FTLAbstractHeapRepository.h:
+        (JSC::FTL::AbstractHeapRepository::forIndexingType):
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLIntrinsicRepository.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileNewArray):
+        (JSC::FTL::LowerDFGToLLVM::compileNewArrayBuffer):
+        (JSC::FTL::LowerDFGToLLVM::compileStringCharAt):
+        * ftl/FTLOSRExitCompiler.cpp:
+        (JSC::FTL::compileStub):
+
+2013-11-08  Filip Pizlo  <fpizlo@apple.com>
+
+        It should be easy to disable blinding on a per-architecture basis
+        https://bugs.webkit.org/show_bug.cgi?id=124083
+
+        Reviewed by Michael Saboff.
+
+        * assembler/AbstractMacroAssembler.h:
+        (JSC::AbstractMacroAssembler::haveScratchRegisterForBlinding):
+        (JSC::AbstractMacroAssembler::scratchRegisterForBlinding):
+        (JSC::AbstractMacroAssembler::canBlind):
+        (JSC::AbstractMacroAssembler::shouldBlindForSpecificArch):
+        * assembler/MacroAssembler.h:
+        (JSC::MacroAssembler::shouldBlind):
+        (JSC::MacroAssembler::store32):
+        (JSC::MacroAssembler::branch32):
+        (JSC::MacroAssembler::branchAdd32):
+        (JSC::MacroAssembler::branchMul32):
+        * assembler/MacroAssemblerX86Common.h:
+        (JSC::MacroAssemblerX86Common::canBlind):
+        * assembler/MacroAssemblerX86_64.h:
+        (JSC::MacroAssemblerX86_64::haveScratchRegisterForBlinding):
+
+2013-11-08  Oliver Hunt  <oliver@apple.com>
+
+        Remove more accidentally added files.
+
+        * runtime/SetIteratorConstructor.cpp: Removed.
+        * runtime/SetIteratorConstructor.h: Removed.
+        * runtime/SetIteratorPrototype.cpp: Removed.
+        * runtime/SetIteratorPrototype.h: Removed.
+
+2013-11-08  Oliver Hunt  <oliver@apple.com>
+
+        Remove accidentally added files.
+
+        * runtime/JSSetIterator.cpp: Removed.
+        * runtime/JSSetIterator.h: Removed.
+
+2013-11-08  Oliver Hunt  <oliver@apple.com>
+
+        Fix minor (unobservable) bug in ArrayIterator::next()
+        https://bugs.webkit.org/show_bug.cgi?id=124061
+
+        Reviewed by Beth Dakin.
+
+        I noticed this while reading the array iterator code.  Due to how
+        ArrayIterator::next() and our enumeration behaviour is implemented
+        this is not actually a code path that can be hit.  But in order to
+        future proof this it should be correct.
+        
+        * runtime/JSArrayIterator.cpp:
+        (JSC::arrayIteratorNext):
+
+2013-11-08  Mark Lam  <mark.lam@apple.com>
+
+        Move breakpoint (and exception break) functionality into JSC::Debugger.
+        https://bugs.webkit.org/show_bug.cgi?id=121796.
+
+        Reviewed by Geoffrey Garen.
+
+        - In ScriptDebugServer and JSC::Debugger, SourceID and BreakpointID are
+          now numeric tokens.
+
+        - JSC::Debugger now tracks user defined breakpoints in a JSC::Breakpoint
+          record. Previously, this info is tracked in the ScriptBreakpoint record
+          in ScriptDebugServer. The only element of ScriptBreakpoint that is not
+          being tracked by JSC::Breakpoint is the ScriptBreakpointAction.
+             The ScriptBreakpointAction is still tracked by the ScriptDebugServer
+          in a list keyed on the corresponding BreakpointID.
+             The ScriptBreakpoint record is now only used as a means of passing
+          breakpoint paramaters to the ScriptDebugServer.
+
+        - ScriptDebugServer now no longer accesses the JSC::CallFrame* directly.
+          It always goes through the DebuggerCallFrame.
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * debugger/Breakpoint.h: Added.
+        (JSC::Breakpoint::Breakpoint):
+        - Breakpoint class to track info for each breakpoint in JSC::Debugger.
+        * debugger/Debugger.cpp:
+        (JSC::DebuggerCallFrameScope::DebuggerCallFrameScope):
+        (JSC::DebuggerCallFrameScope::~DebuggerCallFrameScope):
+        (JSC::Debugger::Debugger):
+        (JSC::Debugger::detach):
+        (JSC::Debugger::updateNeedForOpDebugCallbacks):
+        (JSC::Debugger::setBreakpoint):
+        (JSC::Debugger::removeBreakpoint):
+        (JSC::Debugger::hasBreakpoint):
+        (JSC::Debugger::clearBreakpoints):
+        (JSC::Debugger::setBreakpointsActivated):
+        (JSC::Debugger::setPauseOnExceptionsState):
+        (JSC::Debugger::setPauseOnNextStatement):
+        (JSC::Debugger::breakProgram):
+        (JSC::Debugger::continueProgram):
+        (JSC::Debugger::stepIntoStatement):
+        (JSC::Debugger::stepOverStatement):
+        (JSC::Debugger::stepOutOfFunction):
+        (JSC::Debugger::updateCallFrame):
+        (JSC::Debugger::updateCallFrameAndPauseIfNeeded):
+        (JSC::Debugger::pauseIfNeeded):
+        (JSC::Debugger::exception):
+        (JSC::Debugger::atStatement):
+        (JSC::Debugger::callEvent):
+        (JSC::Debugger::returnEvent):
+        (JSC::Debugger::willExecuteProgram):
+        (JSC::Debugger::didExecuteProgram):
+        (JSC::Debugger::didReachBreakpoint):
+        (JSC::Debugger::currentDebuggerCallFrame):
+        * debugger/Debugger.h:
+        * debugger/DebuggerCallFrame.cpp:
+        (JSC::DebuggerCallFrame::sourceID):
+        (JSC::DebuggerCallFrame::sourceIDForCallFrame):
+        * debugger/DebuggerCallFrame.h:
+        * debugger/DebuggerPrimitives.h: Added.
+        - define SourceID, noSourceID, BreakpointID, and noBreakpointID.
+
 2013-11-08  Oliver Hunt  <oliver@apple.com>
 
         Map.forEach crashes on deleted values

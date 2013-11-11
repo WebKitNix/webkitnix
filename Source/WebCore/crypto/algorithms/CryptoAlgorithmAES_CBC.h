@@ -44,8 +44,7 @@ public:
     virtual void encrypt(const CryptoAlgorithmParameters&, const CryptoKey&, const Vector<CryptoOperationData>&, std::unique_ptr<PromiseWrapper>, ExceptionCode&) OVERRIDE;
     virtual void decrypt(const CryptoAlgorithmParameters&, const CryptoKey&, const Vector<CryptoOperationData>&, std::unique_ptr<PromiseWrapper>, ExceptionCode&) OVERRIDE;
     virtual void generateKey(const CryptoAlgorithmParameters&, bool extractable, CryptoKeyUsage, std::unique_ptr<PromiseWrapper>, ExceptionCode&) OVERRIDE;
-    virtual void importKey(const CryptoAlgorithmParameters&, CryptoKeyFormat, const CryptoOperationData&, bool extractable, CryptoKeyUsage, std::unique_ptr<PromiseWrapper>, ExceptionCode&) OVERRIDE;
-    virtual void exportKey(const CryptoAlgorithmParameters&, CryptoKeyFormat, const CryptoKey&, std::unique_ptr<PromiseWrapper>, ExceptionCode&) OVERRIDE;
+    virtual void importKey(const CryptoAlgorithmParameters&, const CryptoKeyData&, bool extractable, CryptoKeyUsage, std::unique_ptr<PromiseWrapper>, ExceptionCode&) OVERRIDE;
 
 private:
     CryptoAlgorithmAES_CBC();

@@ -374,6 +374,12 @@ private:
         case NewArray:
             compileNewArray();
             break;
+        case NewArrayBuffer:
+            compileNewArrayBuffer();
+            break;
+        case AllocatePropertyStorage:
+            compileAllocatePropertyStorage();
+            break;
         case StringCharAt:
             compileStringCharAt();
             break;
@@ -1269,10 +1275,12 @@ private:
 
         // Arguments: id, bytes, target, numArgs, args...
         unsigned stackmapID = m_stackmapIDs++;
-        setJSValue(m_out.call(
+        LValue call = m_out.call(
             m_out.patchpointInt64Intrinsic(),
             m_out.constInt32(stackmapID), m_out.constInt32(sizeOfGetById()),
-            constNull(m_out.ref8), m_out.constInt32(2), m_callFrame, base));
+            constNull(m_out.ref8), m_out.constInt32(2), m_callFrame, base);
+        setInstructionCallingConvention(call, LLVMAnyRegCallConv);
+        setJSValue(call);
         
         m_ftlState.getByIds.append(GetByIdDescriptor(stackmapID, m_node->codeOrigin, uid));
     }
@@ -1288,10 +1296,11 @@ private:
 
         // Arguments: id, bytes, target, numArgs, args...
         unsigned stackmapID = m_stackmapIDs++;
-        m_out.call(
+        LValue call = m_out.call(
             m_out.patchpointVoidIntrinsic(),
             m_out.constInt32(stackmapID), m_out.constInt32(sizeOfPutById()),
             constNull(m_out.ref8), m_out.constInt32(3), m_callFrame, base, value);
+        setInstructionCallingConvention(call, LLVMAnyRegCallConv);
         
         m_ftlState.putByIds.append(PutByIdDescriptor(
             stackmapID, m_node->codeOrigin, uid,
@@ -1786,12 +1795,6 @@ private:
         RELEASE_ASSERT(structure->indexingType() == m_node->indexingType());
         
         if (!globalObject->isHavingABadTime() && !hasArrayStorage(m_node->indexingType())) {
-            ASSERT(
-                hasUndecided(structure->indexingType())
-                || hasInt32(structure->indexingType())
-                || hasDouble(structure->indexingType())
-                || hasContiguous(structure->indexingType()));
-            
             unsigned numElements = m_node->numChildren();
             
             ArrayValues arrayValues = allocateJSArray(structure, numElements);
@@ -1812,16 +1815,11 @@ private:
                     break;
                     
                 case ALL_INT32_INDEXING_TYPES:
-                    m_out.store64(
-                        lowJSValue(edge),
-                        arrayValues.butterfly, m_heaps.indexedInt32Properties[operandIndex]);
-                    break;
-                    
                 case ALL_CONTIGUOUS_INDEXING_TYPES:
                     m_out.store64(
-                        lowJSValue(edge),
+                        lowJSValue(edge, ManualOperandSpeculation),
                         arrayValues.butterfly,
-                        m_heaps.indexedContiguousProperties[operandIndex]);
+                        m_heaps.forIndexingType(m_node->indexingType())->at(operandIndex));
                     break;
                     
                 default:
@@ -1847,7 +1845,9 @@ private:
         
         for (unsigned operandIndex = 0; operandIndex < m_node->numChildren(); ++operandIndex) {
             Edge edge = m_graph.varArgChild(m_node, operandIndex);
-            m_out.store64(lowJSValue(edge), m_out.absolute(buffer + operandIndex));
+            m_out.store64(
+                lowJSValue(edge, ManualOperandSpeculation),
+                m_out.absolute(buffer + operandIndex));
         }
         
         m_out.storePtr(
@@ -1861,6 +1861,85 @@ private:
         m_out.storePtr(m_out.intPtrZero, m_out.absolute(scratchBuffer->activeLengthPtr()));
         
         setJSValue(result);
+    }
+    
+    void compileNewArrayBuffer()
+    {
+        JSGlobalObject* globalObject = m_graph.globalObjectFor(m_node->codeOrigin);
+        Structure* structure = globalObject->arrayStructureForIndexingTypeDuringAllocation(
+            m_node->indexingType());
+        
+        RELEASE_ASSERT(structure->indexingType() == m_node->indexingType());
+        
+        if (!globalObject->isHavingABadTime() && !hasArrayStorage(m_node->indexingType())) {
+            unsigned numElements = m_node->numConstants();
+            
+            ArrayValues arrayValues = allocateJSArray(structure, numElements);
+            
+            JSValue* data = codeBlock()->constantBuffer(m_node->startConstant());
+            for (unsigned index = 0; index < m_node->numConstants(); ++index) {
+                int64_t value;
+                if (hasDouble(m_node->indexingType()))
+                    value = bitwise_cast<int64_t>(data[index].asNumber());
+                else
+                    value = JSValue::encode(data[index]);
+                
+                m_out.store64(
+                    m_out.constInt64(value),
+                    arrayValues.butterfly,
+                    m_heaps.forIndexingType(m_node->indexingType())->at(index));
+            }
+            
+            setJSValue(arrayValues.array);
+            return;
+        }
+        
+        setJSValue(vmCall(
+            m_out.operation(operationNewArrayBuffer), m_callFrame,
+            m_out.constIntPtr(structure), m_out.constIntPtr(m_node->startConstant()),
+            m_out.constIntPtr(m_node->numConstants())));
+    }
+    
+    void compileAllocatePropertyStorage()
+    {
+        StructureTransitionData& data = m_node->structureTransitionData();
+        
+        LValue object = lowCell(m_node->child1());
+        
+        if (data.previousStructure->couldHaveIndexingHeader()) {
+            setStorage(vmCall(
+                m_out.operation(
+                    operationReallocateButterflyToHavePropertyStorageWithInitialCapacity),
+                m_callFrame, object));
+            return;
+        }
+        
+        LBasicBlock slowPath = FTL_NEW_BLOCK(m_out, ("AllocatePropertyStorage slow path"));
+        LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("AllocatePropertyStorage continuation"));
+        
+        LBasicBlock lastNext = m_out.insertNewBlocksBefore(slowPath);
+        
+        LValue endOfStorage = allocateBasicStorageAndGetEnd(
+            m_out.constIntPtr(initialOutOfLineCapacity * sizeof(JSValue)), slowPath);
+        
+        ValueFromBlock fastButterfly = m_out.anchor(
+            m_out.add(m_out.constIntPtr(sizeof(IndexingHeader)), endOfStorage));
+        
+        m_out.jump(continuation);
+        
+        m_out.appendTo(slowPath, continuation);
+        
+        ValueFromBlock slowButterfly = m_out.anchor(vmCall(
+            m_out.operation(operationAllocatePropertyStorageWithInitialCapacity), m_callFrame));
+        
+        m_out.jump(continuation);
+        
+        m_out.appendTo(continuation, lastNext);
+        
+        LValue result = m_out.phi(m_out.intPtr, fastButterfly, slowButterfly);
+        m_out.storePtr(result, object, m_heaps.JSObject_butterfly);
+        
+        setStorage(result);
     }
     
     void compileStringCharAt()
@@ -1950,7 +2029,7 @@ private:
             }
                 
             results.append(m_out.anchor(vmCall(
-                m_out.operation(operationGetByValStringInt), base, index)));
+                m_out.operation(operationGetByValStringInt), m_callFrame, base, index)));
         }
             
         m_out.jump(continuation);
@@ -3426,6 +3505,9 @@ private:
         case ObjectOrOtherUse:
             speculateObjectOrOther(edge);
             break;
+        case FinalObjectUse:
+            speculateFinalObject(edge);
+            break;
         case StringUse:
             speculateString(edge);
             break;
@@ -3535,6 +3617,20 @@ private:
             m_out.constIntPtr(classInfo));
     }
     
+    LValue isType(LValue cell, JSType type)
+    {
+        return m_out.equal(
+            m_out.load8(
+                m_out.loadPtr(cell, m_heaps.JSCell_structure),
+                m_heaps.Structure_typeInfoType),
+            m_out.constInt8(type));
+    }
+    
+    LValue isNotType(LValue cell, JSType type)
+    {
+        return m_out.bitNot(isType(cell, type));
+    }
+    
     void speculateObject(Edge edge, LValue cell)
     {
         FTL_TYPE_CHECK(jsValueValue(cell), edge, SpecObject, isNotObject(cell));
@@ -3579,6 +3675,17 @@ private:
         m_out.jump(continuation);
         
         m_out.appendTo(continuation, lastNext);
+    }
+    
+    void speculateFinalObject(Edge edge, LValue cell)
+    {
+        FTL_TYPE_CHECK(
+            jsValueValue(cell), edge, SpecFinalObject, isNotType(cell, FinalObjectType));
+    }
+    
+    void speculateFinalObject(Edge edge)
+    {
+        speculateFinalObject(edge, lowCell(edge));
     }
     
     void speculateString(Edge edge, LValue cell)

@@ -1,3 +1,491 @@
+2013-11-11  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Crash when printing via javascript in WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=124043
+
+        Reviewed by Martin Robinson.
+
+        It happens because the print operation when started by the
+        WebProcess due to a DOM operation is supposed to be synchronous
+        and our print operation is always asynchronous. This is currently
+        handled only in the UI process because other ports print
+        synchronously in the WebProcess. In the GTK+ port we need to
+        notify the WebProcess that the print operation should run
+        synchronously when request by a DOM operation. Together with the
+        print settings and page setup we now send a print mode that can be
+        sync or async. When printing in sync mode we run a nested main loop
+        for the print operation, making sure that print sources have a
+        higher priority.
+
+        * Shared/PrintInfo.cpp:
+        (WebKit::PrintInfo::encode): Encode the print mode.
+        (WebKit::PrintInfo::decode): Decode the print mode.
+        * Shared/PrintInfo.h: Add PrintMode enum.
+        * Shared/gtk/PrintInfoGtk.cpp:
+        (WebKit::PrintInfo::PrintInfo): Initialize print mode.
+        * UIProcess/API/gtk/WebKitPrintOperation.cpp:
+        (drawPagesForPrintingCompleted): Do not call endPrinting() when
+        printing synchronously because WebPageProxy already calls it right
+        after sending the message to the WebProcess.
+        (webkitPrintOperationPrintPagesForFrame): Create the PrintInfo
+        struct with a print mode.
+        (webkitPrintOperationSetPrintMode): Helper private function to set
+        the print mode of the print operation.
+        * UIProcess/API/gtk/WebKitPrintOperationPrivate.h:
+        * UIProcess/API/gtk/WebKitWebView.cpp:
+        (webkitWebViewPrintFrame): Set sync print mode when printing due
+        to a UIClient request.
+        * WebProcess/WebPage/gtk/WebPrintOperationGtk.cpp:
+        (WebKit::PrintPagesData::PrintPagesData): Create a main loop when
+        printing synchronously.
+        (WebKit::WebPrintOperationGtk::WebPrintOperationGtk): Initialize
+        print mode.
+        (WebKit::WebPrintOperationGtk::printPagesIdleDone): Finish the
+        nested main loop when printing synchronously.
+        (WebKit::WebPrintOperationGtk::print): Run a nested main loop when
+        printing synchronously.
+        * WebProcess/WebPage/gtk/WebPrintOperationGtk.h:
+        (WebKit::WebPrintOperationGtk::printMode): Return the print mode.
+
+2013-11-10  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] [WebKit2] Crash when printing to a file via javascript
+        https://bugs.webkit.org/show_bug.cgi?id=122801
+
+        Reviewed by Martin Robinson.
+
+        This crash is caused by a GTK+ bug, but we can work around it by
+        ensuring the print dialog is always shown with a valid
+        GtkPrintSettings object.
+
+        * UIProcess/API/gtk/WebKitPrintOperation.cpp:
+        (webkitPrintOperationRunDialog):
+
+2013-11-09  Dan Bernstein  <mitz@apple.com>
+
+        Use createCFURLFromBuffer when converting a String to a CFURL
+        https://bugs.webkit.org/show_bug.cgi?id=124113
+
+        Reviewed by Anders Carlsson.
+
+        * Shared/API/c/cf/WKURLCF.mm:
+        (WKURLCopyCFURL): Replaced some code with a call to createCFURLFromBuffer(), which does the
+        same thing.
+
+        * Shared/Cocoa/WKNSURLExtras.h: Added.
+        * Shared/Cocoa/WKNSURLExtras.mm: Added.
+        (+[NSURL _web_URLWithWTFString:relativeToURL:]): Added. Returns nil for the null String,
+        otherwise returns the result of createCFURLFromBuffer().
+
+        * UIProcess/API/Cocoa/WKBackForwardListItem.mm:
+        (-[WKBackForwardListItem URL]): Changed to use +_web_URLWithWTFString:relativeToURL:.
+        (-[WKBackForwardListItem originalURL]): Ditto.
+
+        * UIProcess/API/Cocoa/WKNavigationData.mm:
+        (-[WKNavigationData destinationURL]): Ditto.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController unreachableURL]): Ditto.
+
+        * WebKit2.xcodeproj/project.pbxproj: Added references to new files.
+
+2013-11-09  Anders Carlsson  <andersca@apple.com>
+
+        Encode form data using the KeyedEncoder
+        https://bugs.webkit.org/show_bug.cgi?id=124107
+
+        Reviewed by Sam Weinig.
+
+        * Shared/cf/KeyedEncoder.cpp:
+        (WebKit::KeyedEncoder::encodeBool):
+        (WebKit::KeyedEncoder::encodeDouble):
+        * Shared/cf/KeyedEncoder.h:
+
+2013-11-09  Anders Carlsson  <andersca@apple.com>
+
+        Remove an unused file.
+
+        Rubber-stamped by Andreas Kling.
+
+        * WebProcess/WebPage/gtk/ChunkedUpdateDrawingAreaGtk.cpp: Removed.
+
+2013-11-09  Patrick Gansterer  <paroga@webkit.org>
+
+        Move RunLoop from WebCore to WTF
+        https://bugs.webkit.org/show_bug.cgi?id=116606
+
+        Reviewed by Anders Carlsson.
+
+        * DatabaseProcess/DatabaseProcess.cpp:
+        * DatabaseProcess/DatabaseToWebProcessConnection.cpp:
+        * NetworkProcess/NetworkConnectionToWebProcess.cpp:
+        * NetworkProcess/NetworkProcess.cpp:
+        * NetworkProcess/NetworkProcess.h:
+        * NetworkProcess/NetworkResourceLoader.h:
+        * NetworkProcess/mac/DiskCacheMonitor.h:
+        * NetworkProcess/unix/NetworkProcessMainUnix.cpp:
+        * Platform/CoreIPC/Connection.cpp:
+        * Platform/CoreIPC/Connection.h:
+        * Platform/CoreIPC/mac/ConnectionMac.cpp:
+        * PluginProcess/EntryPoint/mac/LegacyProcess/PluginProcessMain.mm:
+        * PluginProcess/EntryPoint/mac/XPCService/PluginServiceEntryPoint.mm:
+        * PluginProcess/PluginControllerProxy.h:
+        * PluginProcess/PluginProcess.cpp:
+        * PluginProcess/PluginProcess.h:
+        * PluginProcess/WebProcessConnection.cpp:
+        * PluginProcess/unix/PluginProcessMainUnix.cpp:
+        * Shared/ChildProcess.cpp:
+        * Shared/ChildProcess.h:
+        * Shared/ChildProcessProxy.cpp:
+        * Shared/EntryPointUtilities/mac/LegacyProcess/ChildProcessEntryPoint.h:
+        * Shared/EntryPointUtilities/mac/LegacyProcess/ChildProcessEntryPoint.mm:
+        * Shared/Plugins/NPObjectProxy.cpp:
+        * Shared/WebKit2Initialize.cpp:
+        (WebKit::InitializeWebKit2):
+        * UIProcess/API/gtk/WebKitFaviconDatabase.cpp:
+        * UIProcess/API/mac/FindIndicatorWindow.h:
+        * UIProcess/API/mac/WKPrintingView.mm:
+        * UIProcess/API/mac/WKView.mm:
+        * UIProcess/CoordinatedGraphics/CoordinatedDrawingAreaProxy.h:
+        * UIProcess/DrawingAreaProxyImpl.h:
+        * UIProcess/Launcher/efl/ProcessLauncherEfl.cpp:
+        * UIProcess/Launcher/gtk/ProcessLauncherGtk.cpp:
+        * UIProcess/Launcher/mac/ProcessLauncherMac.mm:
+        * UIProcess/Network/NetworkProcessProxy.cpp:
+        * UIProcess/Plugins/PluginProcessProxy.cpp:
+        * UIProcess/ResponsivenessTimer.cpp:
+        * UIProcess/ResponsivenessTimer.h:
+        * UIProcess/VisitedLinkProvider.h:
+        * UIProcess/WebContext.cpp:
+        * UIProcess/WebProcessProxy.cpp:
+        * WebProcess/Databases/WebToDatabaseProcessConnection.cpp:
+        * WebProcess/EntryPoint/mac/LegacyProcess/WebContentProcessMain.mm:
+        * WebProcess/EntryPoint/mac/XPCService/WebContentServiceEntryPoint.mm:
+        * WebProcess/Network/WebResourceLoadScheduler.h:
+        * WebProcess/Plugins/Netscape/NPRuntimeObjectMap.h:
+        * WebProcess/Plugins/Netscape/NetscapePlugin.h:
+        * WebProcess/Plugins/Netscape/NetscapePluginStream.h:
+        * WebProcess/Plugins/PluginView.h:
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedDrawingArea.h:
+        * WebProcess/WebPage/DrawingAreaImpl.h:
+        * WebProcess/WebPage/EventDispatcher.cpp:
+        * WebProcess/WebPage/PageOverlay.h:
+        * WebProcess/WebPage/WebPage.cpp:
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebProcess.cpp:
+        * WebProcess/efl/WebProcessMainEfl.cpp:
+        * WebProcess/gtk/WebProcessMainGtk.cpp:
+
+2013-11-08  Brady Eidson  <beidson@apple.com>
+
+        Merge IDBDatabaseBackendInterface and IDBDatabaseBackendImpl
+        https://bugs.webkit.org/show_bug.cgi?id=124088
+
+        Reviewed by Tim Horton.
+
+        This abstraction is no longer meaningful in its current form in WebCore.
+        The current groundwork for the WK2 DatabaseProcess relied on this abstraction,
+        but that will be reworked in a future patch.
+
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBDatabaseBackend.h:
+
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.cpp:
+        (WebKit::WebIDBFactoryBackend::maybeCreateTransactionBackend):
+        (WebKit::WebIDBFactoryBackend::createCursorBackend):
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.h:
+
+        * WebProcess/Databases/IndexedDB/WebProcessIDBDatabaseBackend.cpp:
+        (WebKit::WebProcessIDBDatabaseBackend::put):
+        (WebKit::WebProcessIDBDatabaseBackend::openCursor):
+        * WebProcess/Databases/IndexedDB/WebProcessIDBDatabaseBackend.h:
+
+2013-11-08  Jaehun Lim  <ljaehun.lim@samsung.com>
+
+        Unreviewed build fix after r158984.
+
+        No needs to include "KeyedEncoder.h".
+        WebKit/Source/WebKit2/WebProcess/WebPage/WebBackForwardListProxy.cpp:31:26: fatal error: KeyedEncoder.h: No such file or directory
+
+        * WebProcess/WebPage/WebBackForwardListProxy.cpp: Removed #include line.
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Implement encoding of arrays of objects
+        https://bugs.webkit.org/show_bug.cgi?id=124091
+
+        Reviewed by Beth Dakin.
+
+        Add a new array stack and push and pop from it accordingly.
+
+        * Shared/cf/KeyedEncoder.cpp:
+        (WebKit::KeyedEncoder::~KeyedEncoder):
+        (WebKit::KeyedEncoder::encodeBytes):
+        (WebKit::KeyedEncoder::encodeUInt32):
+        (WebKit::KeyedEncoder::encodeInt32):
+        (WebKit::KeyedEncoder::encodeInt64):
+        (WebKit::KeyedEncoder::encodeFloat):
+        (WebKit::KeyedEncoder::beginArray):
+        (WebKit::KeyedEncoder::beginArrayElement):
+        (WebKit::KeyedEncoder::endArrayElement):
+        (WebKit::KeyedEncoder::endArray):
+        * Shared/cf/KeyedEncoder.h:
+
+2013-11-08  Tim Horton  <timothy_horton@apple.com>
+
+        Remote Layer Tree: RemoteLayerBackingStore partial repaint is broken for the tile cache
+        https://bugs.webkit.org/show_bug.cgi?id=123944
+
+        Reviewed by Simon Fraser.
+
+        Rework RemoteLayerBackingStore painting to fix some rounding issues
+        that would cause pixel cracks upon repaint, and to speed it up a bit.
+
+        * Shared/mac/RemoteLayerBackingStore.h:
+        Redefine RepaintRectList because we can't include WebLayer.h here yet.
+        Remove createBackingStore, which was never implemented.
+        Remove mapToContentCoordinates, because we don't need it on Mac.
+
+        (WebKit::RemoteLayerBackingStore::paintingRects): Added.
+
+        * Shared/mac/RemoteLayerBackingStore.mm:
+        (RemoteLayerBackingStore::setNeedsDisplay):
+        (RemoteLayerBackingStore::display):
+        Stop using mapToContentCoordinates.
+
+        (RemoteLayerBackingStore::drawInContext):
+        Use clipping instead of painting the image multiple times.
+        Never repaint more than the dirty region's bounds.
+        Don't waste time with all of the drawNativeImage code, just use CG.
+        Unindent the switch's cases.
+        Store the rects we're painting so that enumerateRectsBeingDrawn can get them.
+        Pixel-snap the rects we're painting.
+        Clip the context before going to paint.
+
+        * WebProcess/WebPage/mac/PlatformCALayerRemote.cpp:
+        (PlatformCALayerRemote::enumerateRectsBeingDrawn):
+        * WebProcess/WebPage/mac/PlatformCALayerRemote.h:
+        Retrieve the rects currently being painted from our backing store, and
+        transform them (mostly) according to the CTM, to match the transformation
+        that will have occurred underneath wkCALayerEnumerateRectsBeingDrawnWithBlock.
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Implement more KeyedEncoder functionality
+        https://bugs.webkit.org/show_bug.cgi?id=124089
+
+        Reviewed by Beth Dakin.
+
+        * Shared/cf/KeyedEncoder.cpp:
+        (WebKit::KeyedEncoder::encodeBytes):
+        (WebKit::KeyedEncoder::encodeInt32):
+        (WebKit::KeyedEncoder::encodeFloat):
+        * Shared/cf/KeyedEncoder.h:
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        KeyedEncoder should be able to encoder objects
+        https://bugs.webkit.org/show_bug.cgi?id=124085
+
+        Reviewed by Sam Weinig.
+
+        Add a dictionary stack to KeyedEncoder that's pushed and popped by
+        beginObject/endObject.
+
+        * Shared/cf/KeyedEncoder.cpp:
+        (WebKit::KeyedEncoder::KeyedEncoder):
+        (WebKit::KeyedEncoder::~KeyedEncoder):
+        (WebKit::KeyedEncoder::encodeUInt32):
+        (WebKit::KeyedEncoder::encodeString):
+        (WebKit::KeyedEncoder::beginObject):
+        (WebKit::KeyedEncoder::endObject):
+        * Shared/cf/KeyedEncoder.h:
+
+2013-11-08  Alexandru Chiculita  <achicu@adobe.com>
+
+        Web Inspector: It should be possible to debug the Inspector code
+        https://bugs.webkit.org/show_bug.cgi?id=124065
+
+        Reviewed by Timothy Hatcher.
+
+        When the script is paused, the debugger will pause all the pages in the same PageGroup.
+        All the Inspector windows were created in the same PageGroup, so pausing one debugger
+        would stop the other too.
+
+        Added WebInspectorPageGroups to manage the PageGroups created for the Inspectors.
+        The WebInspectors will now use the inspection "level" to figure out which PageGroup to use.
+        The inspector that debugs the main page will use "__WebInspectorPageGroupLevel1__",
+        the second inspector (that debugs the first inspector) will use "__WebInspectorPageGroupLevel2__" ...
+
+        * UIProcess/WebInspectorProxy.cpp:
+        (WebKit::WebInspectorPageGroups::shared):
+        (WebKit::WebInspectorPageGroups::inspectorLevel):
+        (WebKit::WebInspectorPageGroups::isInspectorPageGroup):
+        (WebKit::WebInspectorPageGroups::inspectorPageGroupLevel):
+        (WebKit::WebInspectorPageGroups::inspectorPageGroupForLevel):
+        (WebKit::WebInspectorPageGroups::createInspectorPageGroup):
+        (WebKit::WebInspectorProxy::WebInspectorProxy):
+        (WebKit::WebInspectorProxy::inspectorPageGroup):
+        (WebKit::WebInspectorProxy::isInspectorPage):
+        (WebKit::WebInspectorProxy::canAttach):
+        * UIProcess/WebInspectorProxy.h:
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Begin stubbing out a KeyedEncoder class in WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=124079
+
+        Reviewed by Sam Weinig.
+
+        * Shared/KeyedEncoder.h: Removed.
+        * Shared/cf/KeyedCodingValueCF.cpp: Removed.
+        * Shared/cf/KeyedEncoder.cpp: Added.
+        Remove old keyed encoders.
+
+        (WebKit::createDictionary):
+        Helper function to create a mutable dictionary.
+        (WebKit::KeyedEncoder::KeyedEncoder):
+        Create the root dictionary.
+
+        (WebKit::KeyedEncoder::encodeUInt32):
+        Create a CFNumberRef and add it to the dictionary.
+
+        * Shared/cf/KeyedEncoder.h: Added.
+        * WebKit2.xcodeproj/project.pbxproj:
+        Add new files.
+
+        * WebProcess/WebPage/WebBackForwardListProxy.cpp:
+        (WebKit::updateBackForwardItem):
+        Create a KeyedEncoder and encode the history tree.
+
+2013-11-08  Brady Eidson  <beidson@apple.com>
+
+        Merge IDBTransactionBackendInterface and IDBTransactionBackendImpl
+        https://bugs.webkit.org/show_bug.cgi?id=124077
+
+        Reviewed by Alexey Proskuryakov.
+
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.cpp:
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.h:
+
+2013-11-08  Brady Eidson  <beidson@apple.com>
+
+        Merge IDBCursorBackendInterface and IDBCursorBackendImpl
+        https://bugs.webkit.org/show_bug.cgi?id=124068
+
+        Reviewed by Anders Carlsson.
+
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.cpp:
+        (WebKit::WebIDBFactoryBackend::createCursorBackend):
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.h:
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Remove a workaround for a bug in malloc on Symbian
+        https://bugs.webkit.org/show_bug.cgi?id=124069
+
+        Reviewed by Sam Weinig.
+
+        * Platform/CoreIPC/ArgumentDecoder.cpp:
+        (CoreIPC::ArgumentDecoder::~ArgumentDecoder):
+        (CoreIPC::ArgumentDecoder::initialize):
+        * Platform/CoreIPC/ArgumentDecoder.h:
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        More build fixes.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        * UIProcess/API/mac/WKConnection.mm:
+        (didReceiveMessage):
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        More build fixes.
+
+        * UIProcess/API/mac/WKConnection.h:
+        * UIProcess/API/mac/WKConnection.mm:
+        (didReceiveMessage):
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Try to fix the 32-bit build.
+
+        * Shared/API/Cocoa/WKBrowsingContextHandleInternal.h:
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Replace __alignof with alignof.
+
+        Rubber-stamped by Beth Dakin.
+
+        * Platform/CoreIPC/ArgumentCoders.cpp:
+        (CoreIPC::::encode):
+        (CoreIPC::decodeStringText):
+        * Platform/CoreIPC/ArgumentCoders.h:
+        (CoreIPC::SimpleArgumentCoder::encode):
+        (CoreIPC::SimpleArgumentCoder::decode):
+        * Platform/CoreIPC/ArgumentDecoder.h:
+        (CoreIPC::ArgumentDecoder::bufferIsLargeEnoughToContain):
+        * WebProcess/WebPage/DecoderAdapter.cpp:
+        (WebKit::DecoderAdapter::decodeString):
+        * WebProcess/WebPage/EncoderAdapter.cpp:
+        (WebKit::EncoderAdapter::encodeString):
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Add a way to get a WKWebProcessPlugInBrowserContextController from a handle
+        https://bugs.webkit.org/show_bug.cgi?id=124063
+
+        Reviewed by Beth Dakin.
+
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextController.mm:
+        (+[WKWebProcessPlugInBrowserContextController lookUpBrowsingContextFromHandle:]):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextControllerPrivate.h:
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        More work on WKBrowsingContextHandle
+        https://bugs.webkit.org/show_bug.cgi?id=124060
+
+        Reviewed by Beth Dakin.
+
+        Implement -hash and -isEqual: and add -[WKWebProcessPlugInBrowserContextController handle].
+
+        * Shared/API/Cocoa/WKBrowsingContextHandle.mm:
+        (-[WKBrowsingContextHandle hash]):
+        (-[WKBrowsingContextHandle isEqual:]):
+        * Shared/API/Cocoa/WKRemoteObjectCoder.mm:
+        (decodeInvocation):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextController.mm:
+        (-[WKWebProcessPlugInBrowserContextController mainFrameDocument]):
+        (-[WKWebProcessPlugInBrowserContextController selectedRange]):
+        (-[WKWebProcessPlugInBrowserContextController handle]):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextControllerInternal.h:
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextControllerPrivate.h:
+
+2013-11-08  Anders Carlsson  <andersca@apple.com>
+
+        Add A WKBrowsingContextHandle class
+        https://bugs.webkit.org/show_bug.cgi?id=124058
+
+        Reviewed by Sam Weinig.
+
+        The WKBrowsingContextHandle class represents a browsing context and can be sent across process boundaries.
+
+        * Shared/API/Cocoa/WKBrowsingContextHandle.h: Added.
+        * Shared/API/Cocoa/WKBrowsingContextHandle.mm: Added.
+        (-[WKBrowsingContextHandle _initWithPageID:]):
+        (-[WKBrowsingContextHandle encodeWithCoder:]):
+        (-[WKBrowsingContextHandle initWithCoder:]):
+        (+[WKBrowsingContextHandle supportsSecureCoding]):
+        * Shared/API/Cocoa/WKBrowsingContextHandleInternal.h: Added.
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController handle]):
+        * UIProcess/API/mac/WKBrowsingContextControllerInternal.h:
+        * UIProcess/API/mac/WKBrowsingContextControllerPrivate.h:
+        (NS_ENUM):
+        * WebKit2.xcodeproj/project.pbxproj:
+
 2013-11-08  Anders Carlsson  <andersca@apple.com>
 
         Add WKRemoteObjectRegistry to WKConnection

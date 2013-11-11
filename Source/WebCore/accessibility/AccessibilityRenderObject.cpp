@@ -257,8 +257,8 @@ static inline RenderInline* startOfContinuations(RenderObject* r)
         // MathML elements make anonymous RenderObjects, then set their node to the parent's node.
         // This makes it so that the renderer() != renderer()->node()->renderer()
         // (which is what isInlineElementContinuation() uses as a determinant).
-        if (r->node()->isElementNode() && toElement(r->node())->isMathMLElement())
-            return 0;
+        if (r->node()->isMathMLElement())
+            return nullptr;
 #endif
         
         return toRenderInline(r->node()->renderer());
@@ -1718,7 +1718,7 @@ void AccessibilityRenderObject::getDocumentLinks(AccessibilityChildrenVector& re
         } else {
             Node* parent = curr->parentNode();
             if (parent && isHTMLAreaElement(curr) && isHTMLMapElement(parent)) {
-                AccessibilityImageMapLink* areaObject = static_cast<AccessibilityImageMapLink*>(axObjectCache()->getOrCreate(ImageMapLinkRole));
+                AccessibilityImageMapLink* areaObject = toAccessibilityImageMapLink(axObjectCache()->getOrCreate(ImageMapLinkRole));
                 HTMLMapElement* map = toHTMLMapElement(parent);
                 areaObject->setHTMLAreaElement(toHTMLAreaElement(curr));
                 areaObject->setHTMLMapElement(map);
@@ -2727,7 +2727,7 @@ void AccessibilityRenderObject::addImageMapChildren()
         // add an <area> element for this child if it has a link
         if (!area->isLink())
             continue;
-        AccessibilityImageMapLink* areaObject = static_cast<AccessibilityImageMapLink*>(axObjectCache()->getOrCreate(ImageMapLinkRole));
+        AccessibilityImageMapLink* areaObject = toAccessibilityImageMapLink(axObjectCache()->getOrCreate(ImageMapLinkRole));
         areaObject->setHTMLAreaElement(&*area);
         areaObject->setHTMLMapElement(map);
         areaObject->setParent(this);
@@ -2757,7 +2757,7 @@ void AccessibilityRenderObject::addTextFieldChildren()
     if (!spinButtonElement || !spinButtonElement->isSpinButtonElement())
         return;
 
-    AccessibilitySpinButton* axSpinButton = static_cast<AccessibilitySpinButton*>(axObjectCache()->getOrCreate(SpinButtonRole));
+    AccessibilitySpinButton* axSpinButton = toAccessibilitySpinButton(axObjectCache()->getOrCreate(SpinButtonRole));
     axSpinButton->setSpinButtonElement(static_cast<SpinButtonElement*>(spinButtonElement));
     axSpinButton->setParent(this);
     m_children.append(axSpinButton);
@@ -3404,101 +3404,69 @@ bool AccessibilityRenderObject::isMathElement() const
     if (!m_renderer || !node)
         return false;
     
-    return node->isElementNode() && toElement(node)->isMathMLElement();
+    return node->isMathMLElement();
 }
 
 bool AccessibilityRenderObject::isMathFraction() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
-        return false;
-    
-    return toRenderMathMLBlock(m_renderer)->isRenderMathMLFraction();
+    return m_renderer && m_renderer->isRenderMathMLFraction();
 }
 
 bool AccessibilityRenderObject::isMathFenced() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
-        return false;
-    
-    return toRenderMathMLBlock(m_renderer)->isRenderMathMLFenced();
+    return m_renderer && m_renderer->isRenderMathMLFenced();
 }
 
 bool AccessibilityRenderObject::isMathSubscriptSuperscript() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
-        return false;
-    
-    return toRenderMathMLBlock(m_renderer)->isRenderMathMLScripts() && !isMathMultiscript();
+    return m_renderer && m_renderer->isRenderMathMLScripts() && !isMathMultiscript();
 }
 
 bool AccessibilityRenderObject::isMathRow() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
-        return false;
-    
-    return toRenderMathMLBlock(m_renderer)->isRenderMathMLRow();
+    return m_renderer && m_renderer->isRenderMathMLRow();
 }
 
 bool AccessibilityRenderObject::isMathUnderOver() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
-        return false;
-    
-    return toRenderMathMLBlock(m_renderer)->isRenderMathMLUnderOver();
+    return m_renderer && m_renderer->isRenderMathMLUnderOver();
 }
 
 bool AccessibilityRenderObject::isMathSquareRoot() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
-        return false;
-    
-    return toRenderMathMLBlock(m_renderer)->isRenderMathMLSquareRoot();
+    return m_renderer && m_renderer->isRenderMathMLSquareRoot();
 }
     
 bool AccessibilityRenderObject::isMathRoot() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
-        return false;
-    
-    return toRenderMathMLBlock(m_renderer)->isRenderMathMLRoot();
+    return m_renderer && m_renderer->isRenderMathMLRoot();
 }
 
 bool AccessibilityRenderObject::isMathOperator() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
+    if (!m_renderer || !m_renderer->isRenderMathMLOperator())
         return false;
-    
+
     // Ensure that this is actually a render MathML operator because
     // MathML will create MathMLBlocks and use the original node as the node
     // of this new block that is not tied to the DOM.
-    if (!toRenderMathMLBlock(m_renderer)->isRenderMathMLOperator())
-        return false;
-    
     return isMathElement() && node()->hasTagName(MathMLNames::moTag);
 }
 
 bool AccessibilityRenderObject::isMathFenceOperator() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
+    if (!m_renderer || !m_renderer->isRenderMathMLOperator())
         return false;
-    
-    if (!toRenderMathMLBlock(m_renderer)->isRenderMathMLOperator())
-        return false;
-    
-    RenderMathMLOperator* mathOperator = toRenderMathMLOperator(toRenderMathMLBlock(m_renderer));
-    return mathOperator->operatorType() == RenderMathMLOperator::Fence;
+
+    return toRenderMathMLOperator(*m_renderer).operatorType() == RenderMathMLOperator::Fence;
 }
 
 bool AccessibilityRenderObject::isMathSeparatorOperator() const
 {
-    if (!m_renderer || !m_renderer->isRenderMathMLBlock())
+    if (!m_renderer || !m_renderer->isRenderMathMLOperator())
         return false;
-    
-    if (!toRenderMathMLBlock(m_renderer)->isRenderMathMLOperator())
-        return false;
-    
-    RenderMathMLOperator* mathOperator = toRenderMathMLOperator(toRenderMathMLBlock(m_renderer));
-    return mathOperator->operatorType() == RenderMathMLOperator::Separator;
+
+    return toRenderMathMLOperator(*m_renderer).operatorType() == RenderMathMLOperator::Separator;
 }
     
 bool AccessibilityRenderObject::isMathText() const

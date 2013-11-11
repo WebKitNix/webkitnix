@@ -83,7 +83,7 @@ bool MathMLElement::isPresentationAttribute(const QualifiedName& name) const
     return StyledElement::isPresentationAttribute(name);
 }
 
-void MathMLElement::collectStyleForPresentationAttribute(const QualifiedName& name, const AtomicString& value, MutableStylePropertySet* style)
+void MathMLElement::collectStyleForPresentationAttribute(const QualifiedName& name, const AtomicString& value, MutableStylePropertySet& style)
 {
     if (name == mathbackgroundAttr)
         addPropertyToPresentationAttributeStyle(style, CSSPropertyBackgroundColor, value);
@@ -113,10 +113,10 @@ void MathMLElement::collectStyleForPresentationAttribute(const QualifiedName& na
     }
 }
 
-bool MathMLElement::childShouldCreateRenderer(const Node* child) const
+bool MathMLElement::childShouldCreateRenderer(const Node& child) const
 {
     // Only create renderers for MathML elements or text. MathML prohibits non-MathML markup inside a <math> element.
-    return child->isTextNode() || child->isMathMLElement();
+    return child.isTextNode() || child.isMathMLElement();
 }
 
 }

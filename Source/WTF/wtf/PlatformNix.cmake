@@ -3,6 +3,7 @@ list(APPEND WTF_SOURCES
     gobject/GOwnPtr.cpp
     gobject/GRefPtr.cpp
     gobject/GlibUtilities.cpp
+    nix/RunLoopNix.cpp
 )
 
 list(APPEND WTF_LIBRARIES

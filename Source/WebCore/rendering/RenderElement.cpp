@@ -71,6 +71,7 @@ RenderElement::RenderElement(Element& element, PassRef<RenderStyle> style, unsig
     , m_baseTypeFlags(baseTypeFlags)
     , m_ancestorLineBoxDirty(false)
     , m_hasInitializedStyle(false)
+    , m_renderInlineAlwaysCreatesLineBoxes(false)
     , m_firstChild(nullptr)
     , m_lastChild(nullptr)
     , m_style(std::move(style))
@@ -82,6 +83,7 @@ RenderElement::RenderElement(Document& document, PassRef<RenderStyle> style, uns
     , m_baseTypeFlags(baseTypeFlags)
     , m_ancestorLineBoxDirty(false)
     , m_hasInitializedStyle(false)
+    , m_renderInlineAlwaysCreatesLineBoxes(false)
     , m_firstChild(nullptr)
     , m_lastChild(nullptr)
     , m_style(std::move(style))
@@ -521,7 +523,7 @@ void RenderElement::addChild(RenderObject* newChild, RenderObject* beforeChild)
         toRenderLayerModelObject(newChild)->layer()->removeOnlyThisLayer();
 
 #if ENABLE(SVG)
-    SVGRenderSupport::childAdded(this, newChild);
+    SVGRenderSupport::childAdded(*this, *newChild);
 #endif
 }
 
@@ -940,7 +942,7 @@ void RenderElement::styleDidChange(StyleDifference diff, const RenderStyle* oldS
     if (s_noLongerAffectsParentBlock)
         removeAnonymousWrappersForInlinesIfNecessary();
 #if ENABLE(SVG)
-    SVGRenderSupport::styleChanged(this);
+    SVGRenderSupport::styleChanged(*this);
 #endif
 
     if (!m_parent)

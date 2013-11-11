@@ -47,20 +47,16 @@
 #include "Frame.h"
 #endif
 
-using namespace std;
-
 namespace WebCore {
 
 RenderInline::RenderInline(Element& element, PassRef<RenderStyle> style)
     : RenderBoxModelObject(element, std::move(style), RenderInlineFlag)
-    , m_alwaysCreateLineBoxes(false)
 {
     setChildrenInline(true);
 }
 
 RenderInline::RenderInline(Document& document, PassRef<RenderStyle> style)
     : RenderBoxModelObject(document, std::move(style), RenderInlineFlag)
-    , m_alwaysCreateLineBoxes(false)
 {
     setChildrenInline(true);
 }
@@ -194,13 +190,13 @@ void RenderInline::styleDidChange(StyleDifference diff, const RenderStyle* oldSt
         updateStyleOfAnonymousBlockContinuations(toRenderBlock(block), &newStyle, oldStyle);
     }
 
-    if (!m_alwaysCreateLineBoxes) {
+    if (!alwaysCreateLineBoxes()) {
         bool alwaysCreateLineBoxes = hasSelfPaintingLayer() || hasBoxDecorations() || newStyle.hasPadding() || newStyle.hasMargin() || hasOutline();
         if (oldStyle && alwaysCreateLineBoxes) {
             dirtyLineBoxes(false);
             setNeedsLayout();
         }
-        m_alwaysCreateLineBoxes = alwaysCreateLineBoxes;
+        setRenderInlineAlwaysCreatesLineBoxes(alwaysCreateLineBoxes);
     }
 }
 
@@ -208,7 +204,7 @@ void RenderInline::updateAlwaysCreateLineBoxes(bool fullLayout)
 {
     // Once we have been tainted once, just assume it will happen again. This way effects like hover highlighting that change the
     // background color will only cause a layout on the first rollover.
-    if (m_alwaysCreateLineBoxes)
+    if (alwaysCreateLineBoxes())
         return;
 
     RenderStyle* parentStyle = &parent()->style();
@@ -235,7 +231,7 @@ void RenderInline::updateAlwaysCreateLineBoxes(bool fullLayout)
     if (alwaysCreateLineBoxes) {
         if (!fullLayout)
             dirtyLineBoxes(false);
-        m_alwaysCreateLineBoxes = true;
+        setAlwaysCreateLineBoxes();
     }
 }
 
@@ -724,7 +720,7 @@ static LayoutUnit computeMargin(const RenderInline* renderer, const Length& marg
     if (margin.isFixed())
         return margin.value();
     if (margin.isPercent())
-        return minimumValueForLength(margin, max<LayoutUnit>(0, renderer->containingBlock()->availableLogicalWidth()));
+        return minimumValueForLength(margin, std::max<LayoutUnit>(0, renderer->containingBlock()->availableLogicalWidth()));
     if (margin.isViewportPercentage())
         return valueForLength(margin, 0, &renderer->view());
     return 0;
@@ -1019,8 +1015,8 @@ LayoutRect RenderInline::linesVisualOverflowBoundingBox() const
     LayoutUnit logicalLeftSide = LayoutUnit::max();
     LayoutUnit logicalRightSide = LayoutUnit::min();
     for (InlineFlowBox* curr = firstLineBox(); curr; curr = curr->nextLineBox()) {
-        logicalLeftSide = min(logicalLeftSide, curr->logicalLeftVisualOverflow());
-        logicalRightSide = max(logicalRightSide, curr->logicalRightVisualOverflow());
+        logicalLeftSide = std::min(logicalLeftSide, curr->logicalLeftVisualOverflow());
+        logicalRightSide = std::max(logicalRightSide, curr->logicalRightVisualOverflow());
     }
 
     const RootInlineBox& firstRootBox = firstLineBox()->root();
@@ -1475,8 +1471,8 @@ void RenderInline::paintOutline(PaintInfo& paintInfo, const LayoutPoint& paintOf
     rects.append(LayoutRect());
     for (InlineFlowBox* curr = firstLineBox(); curr; curr = curr->nextLineBox()) {
         const RootInlineBox& rootBox = curr->root();
-        LayoutUnit top = max<LayoutUnit>(rootBox.lineTop(), curr->logicalTop());
-        LayoutUnit bottom = min<LayoutUnit>(rootBox.lineBottom(), curr->logicalBottom());
+        LayoutUnit top = std::max<LayoutUnit>(rootBox.lineTop(), curr->logicalTop());
+        LayoutUnit bottom = std::min<LayoutUnit>(rootBox.lineBottom(), curr->logicalBottom());
         rects.append(LayoutRect(curr->x(), top, curr->logicalWidth(), bottom - top));
     }
     rects.append(LayoutRect());
@@ -1544,7 +1540,7 @@ void RenderInline::paintOutlineForLine(GraphicsContext* graphicsContext, const L
         drawLineForBoxSide(graphicsContext,
             pixelSnappedBox.x() - outlineWidth,
             pixelSnappedBox.y() - outlineWidth,
-            min(pixelSnappedBox.maxX() + outlineWidth, (lastline.isEmpty() ? 1000000 : pixelSnappedLastLine.x())),
+            std::min(pixelSnappedBox.maxX() + outlineWidth, (lastline.isEmpty() ? 1000000 : pixelSnappedLastLine.x())),
             pixelSnappedBox.y(),
             BSTop, outlineColor, outlineStyle,
             outlineWidth,
@@ -1553,7 +1549,7 @@ void RenderInline::paintOutlineForLine(GraphicsContext* graphicsContext, const L
     
     if (lastline.maxX() < thisline.maxX())
         drawLineForBoxSide(graphicsContext,
-            max(lastline.isEmpty() ? -1000000 : pixelSnappedLastLine.maxX(), pixelSnappedBox.x() - outlineWidth),
+            std::max(lastline.isEmpty() ? -1000000 : pixelSnappedLastLine.maxX(), pixelSnappedBox.x() - outlineWidth),
             pixelSnappedBox.y() - outlineWidth,
             pixelSnappedBox.maxX() + outlineWidth,
             pixelSnappedBox.y(),
@@ -1577,7 +1573,7 @@ void RenderInline::paintOutlineForLine(GraphicsContext* graphicsContext, const L
         drawLineForBoxSide(graphicsContext,
             pixelSnappedBox.x() - outlineWidth,
             pixelSnappedBox.maxY(),
-            min(pixelSnappedBox.maxX() + outlineWidth, !nextline.isEmpty() ? pixelSnappedNextLine.x() + 1 : 1000000),
+            std::min(pixelSnappedBox.maxX() + outlineWidth, !nextline.isEmpty() ? pixelSnappedNextLine.x() + 1 : 1000000),
             pixelSnappedBox.maxY() + outlineWidth,
             BSBottom, outlineColor, outlineStyle,
             outlineWidth,
@@ -1586,7 +1582,7 @@ void RenderInline::paintOutlineForLine(GraphicsContext* graphicsContext, const L
     
     if (nextline.maxX() < thisline.maxX())
         drawLineForBoxSide(graphicsContext,
-            max(!nextline.isEmpty() ? pixelSnappedNextLine.maxX() : -1000000, pixelSnappedBox.x() - outlineWidth),
+            std::max(!nextline.isEmpty() ? pixelSnappedNextLine.maxX() : -1000000, pixelSnappedBox.x() - outlineWidth),
             pixelSnappedBox.maxY(),
             pixelSnappedBox.maxX() + outlineWidth,
             pixelSnappedBox.maxY() + outlineWidth,

@@ -40,7 +40,6 @@ class FPRInfo {
 public:
     typedef FPRReg RegisterType;
     static const unsigned numberOfRegisters = 6;
-    static const unsigned numberOfArgumentRegisters = 8;
 
     // Temporary registers.
     static const FPRReg fpRegT0 = X86Registers::xmm0;
@@ -74,7 +73,10 @@ public:
     }
     static unsigned toIndex(FPRReg reg)
     {
-        return (unsigned)reg;
+        unsigned result = (unsigned)reg;
+        if (result >= numberOfRegisters)
+            return InvalidIndex;
+        return result;
     }
     
     static FPRReg toArgumentRegister(unsigned index)
@@ -102,6 +104,8 @@ public:
 #endif
         return nameForRegister[reg];
     }
+    
+    static const unsigned InvalidIndex = 0xffffffff;
 };
 
 #endif

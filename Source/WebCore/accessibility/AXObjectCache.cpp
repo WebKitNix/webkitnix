@@ -149,7 +149,7 @@ AccessibilityObject* AXObjectCache::focusedImageMapUIElement(HTMLAreaElement* ar
         if (!child->isImageMapLink())
             continue;
         
-        if (static_cast<AccessibilityImageMapLink*>(child)->areaElement() == areaElement)
+        if (toAccessibilityImageMapLink(child)->areaElement() == areaElement)
             return child;
     }    
     
@@ -329,9 +329,9 @@ AccessibilityObject* AXObjectCache::getOrCreate(Widget* widget)
     
     RefPtr<AccessibilityObject> newObj = 0;
     if (widget->isFrameView())
-        newObj = AccessibilityScrollView::create(static_cast<ScrollView*>(widget));
+        newObj = AccessibilityScrollView::create(toScrollView(widget));
     else if (widget->isScrollbar())
-        newObj = AccessibilityScrollbar::create(static_cast<Scrollbar*>(widget));
+        newObj = AccessibilityScrollbar::create(toScrollbar(widget));
 
     // Will crash later if we have two objects for the same widget.
     ASSERT(!get(widget));

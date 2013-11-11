@@ -348,19 +348,7 @@ private:
 #endif
 };
 
-inline RenderView& toRenderView(RenderObject& object)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(object.isRenderView());
-    return static_cast<RenderView&>(object);
-}
-
-inline const RenderView& toRenderView(const RenderObject& object)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(object.isRenderView());
-    return static_cast<const RenderView&>(object);
-}
-
-void toRenderView(const RenderView&);
+RENDER_OBJECT_TYPE_CASTS(RenderView, isRenderView());
 
 // Stack-based class to assist with LayoutState push/pop
 class LayoutStateMaintainer {
@@ -443,20 +431,6 @@ public:
     }
 private:
     RenderView* m_view;
-};
-
-class FragmentationDisabler {
-    WTF_MAKE_NONCOPYABLE(FragmentationDisabler);
-public:
-    FragmentationDisabler(RenderObject* root);
-    ~FragmentationDisabler();
-private:
-    RenderObject* m_root;
-    RenderObject::FlowThreadState m_flowThreadState;
-    bool m_fragmenting;
-#ifndef NDEBUG
-    LayoutState* m_layoutState;
-#endif
 };
 
 inline Frame& RenderObject::frame() const

@@ -28,6 +28,7 @@
 
 #if WK_API_ENABLED
 
+#import "WKNSURLExtras.h"
 #import <WebCore/ResourceRequest.h>
 #import <WebCore/ResourceResponse.h>
 
@@ -56,7 +57,7 @@ using namespace WebKit;
 
 - (NSURL *)destinationURL
 {
-    return [NSURL URLWithString:reinterpret_cast<WebNavigationData*>(&_data)->url()];
+    return [NSURL _web_URLWithWTFString:reinterpret_cast<WebNavigationData*>(&_data)->url() relativeToURL:nil];
 }
 
 - (NSURLResponse *)response

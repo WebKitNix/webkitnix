@@ -594,6 +594,9 @@
     <ClCompile Include="..\runtime\JSSet.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
+    <ClCompile Include="..\runtime\JSSetIterator.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
     <ClCompile Include="..\runtime\JSSegmentedVariableObject.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
@@ -711,7 +714,16 @@
     <ClCompile Include="..\runtime\SetPrototype.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
+    <ClCompile Include="..\runtime\SetIteratorPrototype.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\runtime\SetIteratorConstructor.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
     <ClCompile Include="..\runtime\SetConstructor.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\runtime\SetIteratorConstructor.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
     <ClCompile Include="..\runtime\SparseArrayValueMap.cpp">
@@ -1179,6 +1191,12 @@
     <ClCompile Include="..\runtime\ArgumentsIteratorPrototype.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
+    <ClCompile Include="..\runtime\MapIteratorConstructor.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\runtime\MapIteratorPrototype.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
     <ClCompile Include="..\jit\AssemblyHelpers.cpp">
       <Filter>jit</Filter>
     </ClCompile>
@@ -1186,6 +1204,9 @@
       <Filter>runtime</Filter>
     </ClCompile>
     <ClCompile Include="..\runtime\JSArgumentsIterator.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\runtime\JSMapIterator.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
     <ClCompile Include="..\jit\Repatch.cpp">
@@ -1469,6 +1490,9 @@
     <ClInclude Include="..\bytecompiler\RegisterID.h">
       <Filter>bytecodecompiler</Filter>
     </ClInclude>
+    <ClInclude Include="..\debugger\Breakpoint.h">
+      <Filter>debugger</Filter>
+    </ClInclude>
     <ClInclude Include="..\debugger\Debugger.h">
       <Filter>debugger</Filter>
     </ClInclude>
@@ -1476,6 +1500,9 @@
       <Filter>debugger</Filter>
     </ClInclude>
     <ClInclude Include="..\debugger\DebuggerCallFrame.h">
+      <Filter>debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\debugger\DebuggerPrimitives.h">
       <Filter>debugger</Filter>
     </ClInclude>
     <ClInclude Include="..\dfg\DFGDriver.h">
@@ -2592,6 +2619,9 @@
     <ClInclude Include="..\runtime\JSSet.h">
       <Filter>runtime</Filter>
     </ClInclude>
+    <ClInclude Include="..\runtime\JSSetIterator.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
     <ClInclude Include="..\llint\LLIntEntrypoint.h">
       <Filter>llint</Filter>
     </ClInclude>
@@ -2604,10 +2634,16 @@
     <ClInclude Include="..\runtime\SetPrototype.h">
       <Filter>runtime</Filter>
     </ClInclude>
+    <ClInclude Include="..\runtime\SetIteratorPrototype.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
     <ClInclude Include="..\runtime\MapPrototype.h">
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\SetConstructor.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\SetIteratorConstructor.h">
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\dfg\DFGAbstractHeap.h">
@@ -2991,6 +3027,12 @@
     <ClInclude Include="..\runtime\ArgumentsIteratorConstructor.h">
       <Filter>runtime</Filter>
     </ClInclude>
+    <ClInclude Include="..\runtime\MapIteratorPrototype.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\MapIteratorConstructor.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
     <ClInclude Include="..\jit\AssemblyHelpers.h">
       <Filter>jit</Filter>
     </ClInclude>
@@ -3013,6 +3055,9 @@
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\JSArgumentsIterator.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\JSMapIterator.h">
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\jit\Repatch.h">

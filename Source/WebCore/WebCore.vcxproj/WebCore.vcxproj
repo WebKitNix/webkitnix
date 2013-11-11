@@ -6543,7 +6543,7 @@
     <ClCompile Include="..\Modules\indexeddb\DOMWindowIndexedDatabase.cpp" />
     <ClCompile Include="..\Modules\indexeddb\IDBAny.cpp" />
     <ClCompile Include="..\Modules\indexeddb\IDBCursor.cpp" />
-    <ClCompile Include="..\Modules\indexeddb\IDBCursorBackendImpl.cpp" />
+    <ClCompile Include="..\Modules\indexeddb\IDBCursorBackend.cpp" />
     <ClCompile Include="..\Modules\indexeddb\IDBDatabase.cpp" />
     <ClCompile Include="..\Modules\indexeddb\IDBFactory.cpp" />
     <ClCompile Include="..\Modules\indexeddb\leveldb\IDBFactoryBackendLevelDB.cpp" />
@@ -7294,7 +7294,6 @@
     <ClCompile Include="..\platform\NotImplemented.cpp" />
     <ClCompile Include="..\platform\PlatformEvent.cpp" />
     <ClCompile Include="..\platform\PlatformStrategies.cpp" />
-    <ClCompile Include="..\platform\RunLoop.cpp" />
     <ClCompile Include="..\platform\RuntimeApplicationChecks.cpp" />
     <ClCompile Include="..\platform\SchemeRegistry.cpp" />
     <ClCompile Include="..\platform\ScrollableArea.cpp" />
@@ -7353,7 +7352,6 @@
     <ClCompile Include="..\platform\win\PlatformMouseEventWin.cpp" />
     <ClCompile Include="..\platform\win\PlatformScreenWin.cpp" />
     <ClCompile Include="..\platform\win\PopupMenuWin.cpp" />
-    <ClCompile Include="..\platform\win\RunLoopWin.cpp" />
     <ClCompile Include="..\platform\win\ScrollbarThemeSafari.cpp" />
     <ClCompile Include="..\platform\win\ScrollbarThemeWin.cpp" />
     <ClCompile Include="..\platform\win\SearchPopupMenuWin.cpp" />
@@ -15506,7 +15504,6 @@
     <ClCompile Include="..\html\track\WebVTTParser.cpp" />
     <ClCompile Include="..\html\track\WebVTTTokenizer.cpp" />
     <ClCompile Include="..\bindings\generic\ActiveDOMCallback.cpp" />
-    <ClCompile Include="..\bindings\generic\BindingSecurity.cpp" />
     <ClCompile Include="..\bindings\generic\RuntimeEnabledFeatures.cpp" />
     <ClCompile Include="..\bindings\js\ArrayValue.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -16743,6 +16740,20 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\bindings\js\JSSQLTransactionSyncCustom.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_WinCairo|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_WinCairo|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSuffix|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSuffix|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_WinCairo|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_WinCairo|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\bindings\js\JSRTCPeerConnectionCustom.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_WinCairo|Win32'">true</ExcludedFromBuild>
@@ -18445,11 +18456,9 @@
     <ClInclude Include="..\Modules\indexeddb\IDBAny.h" />
     <ClInclude Include="..\Modules\indexeddb\IDBCallbacks.h" />
     <ClInclude Include="..\Modules\indexeddb\IDBCursor.h" />
-    <ClInclude Include="..\Modules\indexeddb\IDBCursorBackendImpl.h" />
-    <ClInclude Include="..\Modules\indexeddb\IDBCursorBackendInterface.h" />
+    <ClInclude Include="..\Modules\indexeddb\IDBCursorBackend.h" />
     <ClInclude Include="..\Modules\indexeddb\IDBDatabase.h" />
-    <ClInclude Include="..\Modules\indexeddb\IDBDatabaseBackendImpl.h" />
-    <ClInclude Include="..\Modules\indexeddb\IDBDatabaseBackendInterface.h" />
+    <ClInclude Include="..\Modules\indexeddb\IDBDatabaseBackend.h" />
     <ClInclude Include="..\Modules\indexeddb\IDBDatabaseError.h" />
     <ClInclude Include="..\Modules\indexeddb\IDBDatabaseException.h" />
     <ClInclude Include="..\Modules\indexeddb\IDBFactory.h" />
@@ -18888,7 +18897,6 @@
     <ClInclude Include="..\platform\PopupMenuStyle.h" />
     <ClInclude Include="..\platform\PurgeableBuffer.h" />
     <ClInclude Include="..\platform\ReferrerPolicy.h" />
-    <ClInclude Include="..\platform\RunLoop.h" />
     <ClInclude Include="..\platform\RuntimeApplicationChecks.h" />
     <ClInclude Include="..\platform\SchemeRegistry.h" />
     <ClInclude Include="..\platform\ScrollableArea.h" />
@@ -20305,9 +20313,9 @@
     <ClInclude Include="..\html\track\WebVTTToken.h" />
     <ClInclude Include="..\html\track\WebVTTTokenizer.h" />
     <ClInclude Include="..\bindings\generic\ActiveDOMCallback.h" />
-    <ClInclude Include="..\bindings\generic\BindingSecurity.h" />
     <ClInclude Include="..\bindings\generic\RuntimeEnabledFeatures.h" />
     <ClInclude Include="..\bindings\js\ArrayValue.h" />
+    <ClInclude Include="..\bindings\js\BreakpointID.h" />
     <ClInclude Include="..\bindings\js\CachedScriptSourceProvider.h" />
     <ClInclude Include="..\bindings\js\CallbackFunction.h" />
     <ClInclude Include="..\bindings\js\Dictionary.h" />
@@ -20359,6 +20367,7 @@
     <ClInclude Include="..\bindings\js\ScriptValue.h" />
     <ClInclude Include="..\bindings\js\ScriptWrappable.h" />
     <ClInclude Include="..\bindings\js\SerializedScriptValue.h" />
+    <ClInclude Include="..\bindings\js\SourceID.h" />
     <ClInclude Include="..\bindings\js\WebCoreJSClientData.h" />
     <ClInclude Include="..\bindings\js\WorkerScriptController.h" />
     <ClInclude Include="..\plugins\DOMMimeType.h" />

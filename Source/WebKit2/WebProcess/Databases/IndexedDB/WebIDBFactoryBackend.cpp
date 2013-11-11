@@ -33,9 +33,9 @@
 #include "WebProcessIDBDatabaseBackend.h"
 #include "WebToDatabaseProcessConnection.h"
 #include <WebCore/IDBCallbacks.h>
-#include <WebCore/IDBCursorBackendInterface.h>
+#include <WebCore/IDBCursorBackend.h>
 #include <WebCore/IDBDatabaseCallbacks.h>
-#include <WebCore/IDBTransactionBackendInterface.h>
+#include <WebCore/IDBTransactionBackend.h>
 #include <WebCore/NotImplemented.h>
 #include <WebCore/SecurityOrigin.h>
 #include <wtf/MainThread.h>
@@ -100,13 +100,13 @@ void WebIDBFactoryBackend::removeIDBDatabaseBackend(const String&)
     notImplemented();
 }
 
-PassRefPtr<IDBTransactionBackendInterface> WebIDBFactoryBackend::maybeCreateTransactionBackend(IDBDatabaseBackendInterface*, int64_t transactionId, PassRefPtr<IDBDatabaseCallbacks>, const Vector<int64_t>&, IndexedDB::TransactionMode)
+PassRefPtr<IDBTransactionBackend> WebIDBFactoryBackend::maybeCreateTransactionBackend(IDBDatabaseBackend*, int64_t transactionId, PassRefPtr<IDBDatabaseCallbacks>, const Vector<int64_t>&, IndexedDB::TransactionMode)
 {
     notImplemented();
     return 0;
 }
 
-PassRefPtr<IDBCursorBackendInterface> WebIDBFactoryBackend::createCursorBackend(IDBTransactionBackendInterface&, IDBBackingStoreCursorInterface&, IndexedDB::CursorType, IDBDatabaseBackendInterface::TaskType, int64_t)
+PassRefPtr<IDBCursorBackend> WebIDBFactoryBackend::createCursorBackend(IDBTransactionBackend&, IDBBackingStoreCursorInterface&, IndexedDB::CursorType, IDBDatabaseBackend::TaskType, int64_t)
 {
     notImplemented();
     return 0;

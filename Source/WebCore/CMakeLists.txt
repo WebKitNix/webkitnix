@@ -761,10 +761,10 @@ set(WebCore_SOURCES
     Modules/indexeddb/DOMWindowIndexedDatabase.cpp
     Modules/indexeddb/IDBAny.cpp
     Modules/indexeddb/IDBCursor.cpp
-    Modules/indexeddb/IDBCursorBackendImpl.cpp
+    Modules/indexeddb/IDBCursorBackend.cpp
     Modules/indexeddb/IDBCursorWithValue.cpp
     Modules/indexeddb/IDBDatabase.cpp
-    Modules/indexeddb/IDBDatabaseBackendImpl.cpp
+    Modules/indexeddb/IDBDatabaseBackend.cpp
     Modules/indexeddb/IDBDatabaseCallbacksImpl.cpp
     Modules/indexeddb/IDBDatabaseException.cpp
     Modules/indexeddb/IDBEventDispatcher.cpp
@@ -780,7 +780,7 @@ set(WebCore_SOURCES
     Modules/indexeddb/IDBPendingTransactionMonitor.cpp
     Modules/indexeddb/IDBRequest.cpp
     Modules/indexeddb/IDBTransaction.cpp
-    Modules/indexeddb/IDBTransactionBackendImpl.cpp
+    Modules/indexeddb/IDBTransactionBackend.cpp
     Modules/indexeddb/IDBTransactionBackendOperations.cpp
     Modules/indexeddb/IDBTransactionCoordinator.cpp
     Modules/indexeddb/IDBVersionChangeEvent.cpp
@@ -969,7 +969,6 @@ set(WebCore_SOURCES
     accessibility/AccessibilityTableRow.cpp
 
     bindings/generic/ActiveDOMCallback.cpp
-    bindings/generic/BindingSecurity.cpp
     bindings/generic/RuntimeEnabledFeatures.cpp
 
     css/BasicShapeFunctions.cpp
@@ -1785,7 +1784,6 @@ set(WebCore_SOURCES
     platform/NotImplemented.cpp
     platform/PlatformEvent.cpp
     platform/PlatformStrategies.cpp
-    platform/RunLoop.cpp
     platform/RuntimeApplicationChecks.cpp
     platform/SchemeRegistry.cpp
     platform/ScrollAnimator.cpp

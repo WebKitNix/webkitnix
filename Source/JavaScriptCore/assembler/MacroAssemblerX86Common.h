@@ -34,11 +34,12 @@
 namespace JSC {
 
 class MacroAssemblerX86Common : public AbstractMacroAssembler<X86Assembler> {
-protected:
+public:
 #if CPU(X86_64)
     static const X86Registers::RegisterID scratchRegister = X86Registers::r11;
 #endif
 
+protected:
     static const int DoubleConditionBitInvert = 0x10;
     static const int DoubleConditionBitSpecial = 0x20;
     static const int DoubleConditionBits = DoubleConditionBitInvert | DoubleConditionBitSpecial;
@@ -95,13 +96,9 @@ public:
     static const RegisterID stackPointerRegister = X86Registers::esp;
     static const RegisterID framePointerRegister = X86Registers::ebp;
     
+    static bool canBlind() { return true; }
     static bool shouldBlindForSpecificArch(uint32_t value) { return value >= 0x00ffffff; }
-#if CPU(X86_64)
     static bool shouldBlindForSpecificArch(uint64_t value) { return value >= 0x00ffffff; }
-#if OS(DARWIN) // On 64-bit systems other than DARWIN uint64_t and uintptr_t are the same type so overload is prohibited.
-    static bool shouldBlindForSpecificArch(uintptr_t value) { return value >= 0x00ffffff; }
-#endif
-#endif
 
     // Integer arithmetic operations:
     //

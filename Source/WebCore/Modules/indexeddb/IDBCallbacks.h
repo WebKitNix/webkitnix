@@ -39,8 +39,8 @@
 
 namespace WebCore {
 class DOMStringList;
-class IDBCursorBackendInterface;
-class IDBDatabaseBackendInterface;
+class IDBCursorBackend;
+class IDBDatabaseBackend;
 
 struct IDBDatabaseMetadata;
 
@@ -52,7 +52,7 @@ public:
     // From IDBFactory.webkitGetDatabaseNames()
     virtual void onSuccess(PassRefPtr<DOMStringList>) = 0;
     // From IDBObjectStore/IDBIndex.openCursor(), IDBIndex.openKeyCursor()
-    virtual void onSuccess(PassRefPtr<IDBCursorBackendInterface>, PassRefPtr<IDBKey>, PassRefPtr<IDBKey> primaryKey, PassRefPtr<SharedBuffer>) = 0;
+    virtual void onSuccess(PassRefPtr<IDBCursorBackend>, PassRefPtr<IDBKey>, PassRefPtr<IDBKey> primaryKey, PassRefPtr<SharedBuffer>) = 0;
     // From IDBObjectStore.add()/put(), IDBIndex.getKey()
     virtual void onSuccess(PassRefPtr<IDBKey>) = 0;
     // From IDBObjectStore/IDBIndex.get()/count(), and various methods that yield null/undefined.
@@ -72,8 +72,8 @@ public:
     // From IDBFactory.open()/deleteDatabase()
     virtual void onBlocked(uint64_t /* existingVersion */) { ASSERT_NOT_REACHED(); }
     // From IDBFactory.open()
-    virtual void onUpgradeNeeded(uint64_t /* oldVersion */, PassRefPtr<IDBDatabaseBackendInterface>, const IDBDatabaseMetadata&) { ASSERT_NOT_REACHED(); }
-    virtual void onSuccess(PassRefPtr<IDBDatabaseBackendInterface>, const IDBDatabaseMetadata&) { ASSERT_NOT_REACHED(); }
+    virtual void onUpgradeNeeded(uint64_t /* oldVersion */, PassRefPtr<IDBDatabaseBackend>, const IDBDatabaseMetadata&) { ASSERT_NOT_REACHED(); }
+    virtual void onSuccess(PassRefPtr<IDBDatabaseBackend>, const IDBDatabaseMetadata&) { ASSERT_NOT_REACHED(); }
 };
 
 } // namespace WebCore

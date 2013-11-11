@@ -36,9 +36,9 @@
 #include "WebKit2Initialize.h"
 #include <WebCore/CoordinatedGraphicsLayer.h>
 #include <WebCore/ResourceHandle.h>
-#include <WebCore/RunLoop.h>
 #include <WebKit2/WebProcess.h>
 #include <unistd.h>
+#include <wtf/RunLoop.h>
 #include <wtf/gobject/GOwnPtr.h>
 #include <wtf/gobject/GRefPtr.h>
 

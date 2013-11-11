@@ -1,3 +1,50 @@
+2013-11-11  Tamas Gergely  <gertom@inf.u-szeged.hu>
+
+        The feeder queue will not feed patches older than one week.
+        https://bugs.webkit.org/show_bug.cgi?id=107152
+
+        Reviewed by Csaba Osztrogonác.
+
+        The feeder queue will not feed patches older than one week.
+        Unit test added to this scenario.
+
+        * Scripts/webkitpy/common/net/bugzilla/bugzilla.py:
+        (BugzillaQueries._parse_attachment_ids_request_query):
+          Handle date parameter.
+        (BugzillaQueries):
+        (BugzillaQueries._fetch_attachment_ids_request_query):
+          Propagate date.
+        (BugzillaQueries.fetch_attachment_ids_from_review_queue):
+          Propagate date.
+        * Scripts/webkitpy/common/net/bugzilla/bugzilla_mock.py:
+        (MockBugzillaQueries.fetch_attachment_ids_from_review_queue):
+          Handle date.
+        * Scripts/webkitpy/common/net/bugzilla/bugzilla_unittest.py:
+        (test_request_page_parsing):
+          Unit test added.
+        * Scripts/webkitpy/tool/bot/feeders.py:
+        (EWSFeeder.feed):
+          Query patch ids with date parameter (now - 1 week).
+
+2013-11-11  Tamas Gergely  <gertom@inf.u-szeged.hu>
+
+        Do not shut down ImageDiff server after every diff during the tests.
+        https://bugs.webkit.org/show_bug.cgi?id=124140
+
+        Reviewed by Csaba Osztrogonác.
+
+        There was a FIXME: There is no need to shut down the ImageDiff
+        server after every diff. Shutdown is removed from that point.
+
+        * Scripts/webkitpy/port/image_diff.py:
+        (ImageDiffer._read):
+
+2013-11-08  Matthew Hanson  <matthew_hanson@apple.com>
+
+        Unreviewed. Added myself as a contributor.
+
+        * Scripts/webkitpy/common/config/contributors.json:
+
 2013-11-08  Krzysztof Czech  <k.czech@samsung.com>
 
         [GTK] accessibility/aria-link-supports-press.html is failing

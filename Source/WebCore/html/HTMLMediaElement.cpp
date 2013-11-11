@@ -576,7 +576,7 @@ RenderElement* HTMLMediaElement::createRenderer(PassRef<RenderStyle> style)
     return new RenderMedia(*this, std::move(style));
 }
 
-bool HTMLMediaElement::childShouldCreateRenderer(const Node* child) const
+bool HTMLMediaElement::childShouldCreateRenderer(const Node& child) const
 {
 #if ENABLE(MEDIA_CONTROLS_SCRIPT)
     return hasShadowRootParent(child) && HTMLElement::childShouldCreateRenderer(child);
@@ -587,7 +587,7 @@ bool HTMLMediaElement::childShouldCreateRenderer(const Node* child) const
     // be rendered. So this should return false for most of the children.
     // One exception is a shadow tree built for rendering controls which should be visible.
     // So we let them go here by comparing its subtree root with one of the controls.
-    return &mediaControls()->treeScope() == &child->treeScope()
+    return &mediaControls()->treeScope() == &child.treeScope()
         && hasShadowRootParent(child)
         && HTMLElement::childShouldCreateRenderer(child);
 #endif
@@ -3663,18 +3663,18 @@ void HTMLMediaElement::mediaPlayerTimeChanged(MediaPlayer*)
     double now = currentTime();
     double dur = duration();
     
-    // When the current playback position reaches the end of the media resource when the direction of
-    // playback is forwards, then the user agent must follow these steps:
-    if (!std::isnan(dur) && dur && now >= dur && m_playbackRate > 0) {
+    // When the current playback position reaches the end of the media resource then the user agent must follow these steps:
+    if (!std::isnan(dur) && dur) {
         // If the media element has a loop attribute specified and does not have a current media controller,
-        if (loop() && !m_mediaController) {
+        if (loop() && !m_mediaController && m_playbackRate > 0) {
             m_sentEndEvent = false;
-            //  then seek to the earliest possible position of the media resource and abort these steps.
-            seek(0, IGNORE_EXCEPTION);
-        } else {
+            // then seek to the earliest possible position of the media resource and abort these steps when the direction of
+            // playback is forwards,
+            if (now >= dur)
+                seek(0, IGNORE_EXCEPTION);
+        } else if ((now <= 0 && m_playbackRate < 0) || (now >= dur && m_playbackRate > 0)) {
             // If the media element does not have a current media controller, and the media element
-            // has still ended playback, and the direction of playback is still forwards, and paused
-            // is false,
+            // has still ended playback and paused is false,
             if (!m_mediaController && !m_paused) {
                 // changes paused to true and fires a simple event named pause at the media element.
                 m_paused = true;
@@ -3688,7 +3688,8 @@ void HTMLMediaElement::mediaPlayerTimeChanged(MediaPlayer*)
             // If the media element has a current media controller, then report the controller state
             // for the media element's current media controller.
             updateMediaController();
-        }
+        } else
+            m_sentEndEvent = false;
     }
     else
         m_sentEndEvent = false;
@@ -4381,7 +4382,7 @@ void HTMLMediaElement::createMediaPlayerProxy()
     
     // Hang onto the proxy widget so it won't be destroyed if the plug-in is set to
     // display:none
-    m_proxyWidget = frame->loader().subframeLoader().loadMediaPlayerProxyPlugin(this, url, paramNames, paramValues);
+    m_proxyWidget = frame->loader().subframeLoader().loadMediaPlayerProxyPlugin(*this, url, paramNames, paramValues);
     if (m_proxyWidget)
         m_needWidgetUpdate = false;
 }
@@ -4398,7 +4399,7 @@ void HTMLMediaElement::updateWidget(PluginCreationOption)
     mediaElement->getPluginProxyParams(kurl, paramNames, paramValues);
     // FIXME: What if document().frame() is 0?
     SubframeLoader& loader = document().frame()->loader().subframeLoader();
-    loader.loadMediaPlayerProxyPlugin(mediaElement, kurl, paramNames, paramValues);
+    loader.loadMediaPlayerProxyPlugin(*mediaElement, kurl, paramNames, paramValues);
 }
 
 #endif // ENABLE(PLUGIN_PROXY_FOR_VIDEO)

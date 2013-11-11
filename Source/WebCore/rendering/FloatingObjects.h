@@ -33,9 +33,6 @@ namespace WebCore {
 class RenderBlockFlow;
 class RenderBox;
 
-// FIXME this should be removed once RenderBlockFlow::nextFloatLogicalBottomBelow doesn't need it anymore. (Bug 123931)
-enum ShapeOutsideFloatOffsetMode { ShapeOutsideFloatShapeOffset, ShapeOutsideFloatMarginBoxOffset };
-
 class FloatingObject {
     WTF_MAKE_NONCOPYABLE(FloatingObject); WTF_MAKE_FAST_ALLOCATED;
 public:
@@ -127,7 +124,7 @@ typedef HashMap<RenderBox*, std::unique_ptr<FloatingObject>> RendererToFloatInfo
 class FloatingObjects {
     WTF_MAKE_NONCOPYABLE(FloatingObjects); WTF_MAKE_FAST_ALLOCATED;
 public:
-    FloatingObjects(const RenderBlockFlow*, bool horizontalWritingMode);
+    FloatingObjects(const RenderBlockFlow&);
     ~FloatingObjects();
 
     void clear();
@@ -149,6 +146,9 @@ public:
     LayoutUnit logicalLeftOffsetForPositioningFloat(LayoutUnit fixedOffset, LayoutUnit logicalTop, LayoutUnit* heightRemaining);
     LayoutUnit logicalRightOffsetForPositioningFloat(LayoutUnit fixedOffset, LayoutUnit logicalTop, LayoutUnit* heightRemaining);
 
+    LayoutUnit findNextFloatLogicalBottomBelow(LayoutUnit logicalHeight);
+    LayoutUnit findNextFloatLogicalBottomBelowForBlock(LayoutUnit logicalHeight);
+
 private:
     void computePlacedFloatsTree();
     const FloatingObjectTree& placedFloatsTree();
@@ -161,7 +161,7 @@ private:
     unsigned m_leftObjectsCount;
     unsigned m_rightObjectsCount;
     bool m_horizontalWritingMode;
-    const RenderBlockFlow* m_renderer;
+    const RenderBlockFlow& m_renderer;
 };
 
 #ifndef NDEBUG
