@@ -30,18 +30,20 @@
 #include "SetSessionDescriptionObserver.h"
 
 #include "RTCVoidRequest.h"
+#include <wtf/Functional.h>
+#include <wtf/MainThread.h>
 
 namespace WebCore {
 
 void SetSessionDescriptionObserver::OnSuccess()
 {
-    m_webKitRequest->requestSucceeded();
+    callOnMainThread(bind(&RTCVoidRequest::requestSucceeded, m_webKitRequest.get()));
     m_webKitRequest.clear();
 }
 
 void SetSessionDescriptionObserver::OnFailure(const std::string& error)
 {
-    m_webKitRequest->requestFailed(WTF::String(error.c_str()));
+    callOnMainThread(bind(&RTCVoidRequest::requestFailed, m_webKitRequest.get(), error.c_str()));
     m_webKitRequest.clear();
 }
 

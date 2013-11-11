@@ -31,6 +31,8 @@
 
 #include "RTCSessionDescriptionDescriptor.h"
 #include "RTCSessionDescriptionRequest.h"
+#include <wtf/Functional.h>
+#include <wtf/MainThread.h>
 
 namespace WebCore {
 
@@ -40,13 +42,13 @@ void CreateSessionDescriptionObserver::OnSuccess(webrtc::SessionDescriptionInter
     desc->ToString(&sdp);
     RefPtr<RTCSessionDescriptionDescriptor> sessionDescriptor;
     sessionDescriptor = RTCSessionDescriptionDescriptor::create(WTF::String::fromUTF8(desc->type().c_str()), WTF::String(sdp.c_str()));
-    m_webKitRequest->requestSucceeded(sessionDescriptor);
+    callOnMainThread(bind(&RTCSessionDescriptionRequest::requestSucceeded, m_webKitRequest.get(), sessionDescriptor));
     m_webKitRequest.clear();
 }
 
 void CreateSessionDescriptionObserver::OnFailure(const std::string& error)
 {
-    m_webKitRequest->requestFailed(WTF::String(error.c_str()));
+    callOnMainThread(bind(&RTCSessionDescriptionRequest::requestFailed, m_webKitRequest.get(), error.c_str()));
     m_webKitRequest.clear();
 }
 

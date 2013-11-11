@@ -31,6 +31,8 @@
 
 #include "RTCStatsRequest.h"
 #include "RTCStatsResponseBase.h"
+#include <wtf/Functional.h>
+#include <wtf/MainThread.h>
 
 namespace WebCore {
 
@@ -40,7 +42,7 @@ void GetStatsObserver::OnComplete(const std::vector<webrtc::StatsReport>& report
     for (const webrtc::StatsReport& report : reports)
         response->addReport(report.id.c_str(), report.type.c_str(), report.timestamp);
 
-    m_webKitRequest->requestSucceeded(response);
+    callOnMainThread(bind(&RTCStatsRequest::requestSucceeded, m_webKitRequest.get(), response));
 }
 
 void GetStatsObserver::setWebKitRequest(PassRefPtr<RTCStatsRequest> request)
