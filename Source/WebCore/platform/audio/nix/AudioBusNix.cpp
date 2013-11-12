@@ -64,7 +64,7 @@ PassRefPtr<AudioBus> AudioBus::loadPlatformResource(const char* name, float samp
 
     WTF::Vector<char> fileContents;
     fileContents.resize(statData.st_size);
-    size_t bytesRead = fread(&fileContents[0], fileContents.size(), 1, file);
+    size_t bytesRead = fread(&fileContents[0], 1, fileContents.size(), file);
     fclose(file);
     if (bytesRead < fileContents.size())
         fileContents.resize(bytesRead);
