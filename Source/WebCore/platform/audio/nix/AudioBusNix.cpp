@@ -30,6 +30,7 @@
 #include "AudioBus.h"
 
 #include "AudioFileReader.h"
+#include "FileSystem.h"
 #include <cstdio>
 #include <public/MultiChannelPCMData.h>
 #include <public/Platform.h>
@@ -53,8 +54,10 @@ PassRefPtr<AudioBus> AudioBus::loadPlatformResource(const char* name, float samp
 {
     // FIXME: This assumes the file system uses latin1 or UTF-8 encoding, but this comment also assumes
     // that non-ascii file names would appear here.
-    const CString absoluteFilename(makeString(DATA_DIR, "/webaudio/resources/", name, ".wav").utf8());
+    CString absoluteFilename(makeString(DATA_DIR, "/webaudio/resources/", name, ".wav").utf8());
     struct stat statData;
+    if (::stat(absoluteFilename.data(), &statData) == -1)
+        absoluteFilename = makeString(UNINSTALLED_AUDIO_RESOURCES_DIR, "/", name, ".wav").utf8();
     if (::stat(absoluteFilename.data(), &statData) == -1)
         return nullptr;
 

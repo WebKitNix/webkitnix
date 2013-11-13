@@ -26,8 +26,9 @@
 #include "config.h"
 #include "InjectedBundleTest.h"
 #include "PlatformUtilities.h"
-#include <public/Platform.h>
+#include <public/FFTFrame.h>
 #include <public/MultiChannelPCMData.h>
+#include <public/Platform.h>
 #include <public/Rect.h>
 #include <public/Size.h>
 #include <WebKit2/WKRetainPtr.h>
@@ -58,11 +59,33 @@ public:
             std::memset(audioDataVector[i], 0, bufferSize * sizeof(float));
         }
         device->m_renderCallback->render(sourceDataVector, audioDataVector, bufferSize);
+
+        // Detect pulse ramp (0+,1..1023).
         bool shouldContinue = true;
-        if (audioDataVector[0][bufferSize - 1] == bufferSize - 1) {
-            WKBundlePostMessage(InjectedBundleController::shared().bundle(), Util::toWK("AudioDataVectorRendered").get(), 0);
-            shouldContinue = false;
+        static size_t correctSamples = 0;
+        size_t currentValue = 0;
+        for (size_t i = 0; i < bufferSize && shouldContinue; ++i) {
+
+            if (!Util::fuzzyCompare(audioDataVector[0][i], audioDataVector[1][i])) {
+                shouldContinue = false;
+                continue;
+            }
+
+            currentValue = static_cast<size_t>(audioDataVector[0][i]);
+
+            if (currentValue == 0 && (correctSamples == 0 || correctSamples == 1))
+                correctSamples = 1;
+            else if (currentValue == correctSamples)
+                correctSamples++;
+            else
+                shouldContinue = false;
+
+            if (correctSamples == bufferSize) {
+                WKBundlePostMessage(InjectedBundleController::shared().bundle(), Util::toWK("AudioDataVectorRendered").get(), 0);
+                shouldContinue = false;
+            }
         }
+
         for (size_t i = 0; i < audioDataVector.size(); ++i)
             delete[] audioDataVector[i];
         return shouldContinue;
@@ -76,20 +99,45 @@ public:
     Nix::AudioDevice::RenderCallback* m_renderCallback;
 };
 
+
+class FFTFrameTest : public Nix::FFTFrame {
+public:
+    FFTFrameTest(unsigned size) : m_size(size), m_dummyData(new float[size]){ }
+
+    virtual FFTFrame* copy() const { return new FFTFrameTest(m_size); }
+
+    virtual void doFFT(const float*) {}
+    virtual void doInverseFFT(float*) {}
+
+    virtual unsigned frequencyDomainSampleCount() const { return 0; }
+    virtual float* realData() const { return m_dummyData.get(); }
+    virtual float* imagData() const { return realData(); }
+
+private:
+    unsigned m_size;
+    std::unique_ptr<float> m_dummyData;
+};
+
 class TestWebAudioPlatform : public Nix::Platform {
 public:
     virtual float audioHardwareSampleRate() OVERRIDE { return 44100; }
     virtual size_t audioHardwareBufferSize() OVERRIDE { return 1024; }
     virtual unsigned audioHardwareOutputChannels() OVERRIDE { return 2; }
+    virtual Nix::FFTFrame* createFFTFrame(unsigned fftsize) {
+        return new FFTFrameTest(fftsize);
+    }
     virtual Nix::AudioDevice* createAudioDevice(const char*, size_t bufferSize, unsigned numberOfInputChannels, unsigned numberOfChannels, double sampleRate, Nix::AudioDevice::RenderCallback* renderCallback) OVERRIDE
     {
         return new MockAudioOutputDevice(bufferSize, numberOfInputChannels, numberOfChannels, sampleRate, renderCallback);
     }
     virtual Nix::MultiChannelPCMData* decodeAudioResource(const void* audioFileData, size_t dataSize, double sampleRate) OVERRIDE
     {
+        // HRTFElevation will break in debug if a different size is given.
+        // As we don't properly decode the file in the test, we fake it.
+        dataSize = 240 * 256;
         Nix::MultiChannelPCMData* bus = new Nix::MultiChannelPCMData(2, dataSize, sampleRate);
-        memcpy(bus->channelData(0), audioFileData, dataSize);
-        memcpy(bus->channelData(1), audioFileData, dataSize);
+        memcpy(bus->channelData(0), audioFileData, dataSize / 4);
+        memcpy(bus->channelData(1), audioFileData, dataSize / 4);
         return bus;
     }
 };
