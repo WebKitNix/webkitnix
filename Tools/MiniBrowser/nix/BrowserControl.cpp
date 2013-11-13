@@ -385,7 +385,7 @@ void BrowserControl::handleSizeChanged(int width, int height)
 {
     m_urlBar->resize(((width - urlBarRightOffset) > minimumUrlBarWidth) ? width - urlBarRightOffset : minimumUrlBarWidth, urlBarHeight);
     m_toolBar->resize(width, toolBarHeight);
-    m_webView->resize(width, height);
+    m_webView->resize(width, height - toolBarHeight);
 
     m_client->onWindowSizeChange(WKSizeMake(width, height - toolBarHeight));
 }
