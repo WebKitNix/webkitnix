@@ -48,8 +48,6 @@ _messages_file_contents = """# Copyright (C) 2010 Apple Inc. All rights reserved
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "config.h"
-
 #if ENABLE(WEBKIT2)
 
 messages -> WebPage LegacyReceiver {
@@ -73,7 +71,7 @@ messages -> WebPage LegacyReceiver {
 
     TestParameterAttributes([AttributeOne AttributeTwo] uint64_t foo, double bar, [AttributeThree] double baz)
 
-    TemplateTest(WTF::HashMap<String, std::pair<String, uint64_t>> a)
+    TemplateTest(HashMap<String, std::pair<String, uint64_t>> a)
 
 #if PLATFORM(MAC)
     DidCreateWebProcessConnection(CoreIPC::MachPort connectionIdentifier)
@@ -211,7 +209,7 @@ _expected_results = {
         {
             'name': 'TemplateTest',
             'parameters': (
-                ('WTF::HashMap<String, std::pair<String, uint64_t>>', 'a'),
+                ('HashMap<String, std::pair<String, uint64_t>>', 'a'),
             ),
             'conditions': (None),
         },
@@ -656,24 +654,24 @@ private:
 
 class TemplateTest {
 public:
-    typedef std::tuple<WTF::HashMap<String, std::pair<String, uint64_t>>> DecodeType;
+    typedef std::tuple<HashMap<String, std::pair<String, uint64_t>>> DecodeType;
 
     static CoreIPC::StringReference receiverName() { return messageReceiverName(); }
     static CoreIPC::StringReference name() { return CoreIPC::StringReference("TemplateTest"); }
     static const bool isSync = false;
 
-    explicit TemplateTest(const WTF::HashMap<String, std::pair<String, uint64_t>>& a)
+    explicit TemplateTest(const HashMap<String, std::pair<String, uint64_t>>& a)
         : m_arguments(a)
     {
     }
 
-    const std::tuple<const WTF::HashMap<String, std::pair<String, uint64_t>>&> arguments() const
+    const std::tuple<const HashMap<String, std::pair<String, uint64_t>>&> arguments() const
     {
         return m_arguments;
     }
 
 private:
-    std::tuple<const WTF::HashMap<String, std::pair<String, uint64_t>>&> m_arguments;
+    std::tuple<const HashMap<String, std::pair<String, uint64_t>>&> m_arguments;
 };
 
 #if PLATFORM(MAC)

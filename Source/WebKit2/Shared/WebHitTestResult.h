@@ -40,7 +40,7 @@ namespace WebKit {
 
 class WebFrame;
 
-class WebHitTestResult : public TypedAPIObject<APIObject::TypeHitTestResult> {
+class WebHitTestResult : public API::TypedObject<API::Object::Type::HitTestResult> {
 public:
     struct Data {
         String absoluteImageURL;

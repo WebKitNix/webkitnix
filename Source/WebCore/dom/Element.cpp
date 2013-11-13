@@ -1197,7 +1197,10 @@ void Element::classAttributeChanged(const AtomicString& newClassString)
 
     if (classStringHasClassName(newClassString)) {
         const bool shouldFoldCase = document().inQuirksMode();
-        const SpaceSplitString oldClasses = ensureUniqueElementData().classNames();
+        // Note: We'll need ElementData, but it doesn't have to be UniqueElementData.
+        if (!elementData())
+            ensureUniqueElementData();
+        const SpaceSplitString oldClasses = elementData()->classNames();
         elementData()->setClass(newClassString, shouldFoldCase);
         const SpaceSplitString& newClasses = elementData()->classNames();
         shouldInvalidateStyle = testShouldInvalidateStyle && checkSelectorForClassChange(oldClasses, newClasses, *styleResolver);
@@ -2165,12 +2168,6 @@ void Element::setStyleAffectedByEmpty()
     ensureElementRareData().setStyleAffectedByEmpty(true);
 }
 
-void Element::setChildrenAffectedByHover(bool value)
-{
-    if (value || hasRareData())
-        ensureElementRareData().setChildrenAffectedByHover(value);
-}
-
 void Element::setChildrenAffectedByActive(bool value)
 {
     if (value || hasRareData())
@@ -2181,21 +2178,6 @@ void Element::setChildrenAffectedByDrag(bool value)
 {
     if (value || hasRareData())
         ensureElementRareData().setChildrenAffectedByDrag(value);
-}
-
-void Element::setChildrenAffectedByFirstChildRules()
-{
-    ensureElementRareData().setChildrenAffectedByFirstChildRules(true);
-}
-
-void Element::setChildrenAffectedByLastChildRules()
-{
-    ensureElementRareData().setChildrenAffectedByLastChildRules(true);
-}
-
-void Element::setChildrenAffectedByDirectAdjacentRules()
-{
-    ensureElementRareData().setChildrenAffectedByDirectAdjacentRules(true);
 }
 
 void Element::setChildrenAffectedByForwardPositionalRules()
@@ -2218,14 +2200,13 @@ void Element::setChildIndex(unsigned index)
 
 bool Element::hasFlagsSetDuringStylingOfChildren() const
 {
+    if (childrenAffectedByHover() || childrenAffectedByFirstChildRules() || childrenAffectedByLastChildRules() || childrenAffectedByDirectAdjacentRules())
+        return true;
+
     if (!hasRareData())
         return false;
-    return rareDataChildrenAffectedByHover()
-        || rareDataChildrenAffectedByActive()
+    return rareDataChildrenAffectedByActive()
         || rareDataChildrenAffectedByDrag()
-        || rareDataChildrenAffectedByFirstChildRules()
-        || rareDataChildrenAffectedByLastChildRules()
-        || rareDataChildrenAffectedByDirectAdjacentRules()
         || rareDataChildrenAffectedByForwardPositionalRules()
         || rareDataChildrenAffectedByBackwardPositionalRules();
 }
@@ -2234,12 +2215,6 @@ bool Element::rareDataStyleAffectedByEmpty() const
 {
     ASSERT(hasRareData());
     return elementRareData()->styleAffectedByEmpty();
-}
-
-bool Element::rareDataChildrenAffectedByHover() const
-{
-    ASSERT(hasRareData());
-    return elementRareData()->childrenAffectedByHover();
 }
 
 bool Element::rareDataChildrenAffectedByActive() const
@@ -2252,24 +2227,6 @@ bool Element::rareDataChildrenAffectedByDrag() const
 {
     ASSERT(hasRareData());
     return elementRareData()->childrenAffectedByDrag();
-}
-
-bool Element::rareDataChildrenAffectedByFirstChildRules() const
-{
-    ASSERT(hasRareData());
-    return elementRareData()->childrenAffectedByFirstChildRules();
-}
-
-bool Element::rareDataChildrenAffectedByLastChildRules() const
-{
-    ASSERT(hasRareData());
-    return elementRareData()->childrenAffectedByLastChildRules();
-}
-
-bool Element::rareDataChildrenAffectedByDirectAdjacentRules() const
-{
-    ASSERT(hasRareData());
-    return elementRareData()->childrenAffectedByDirectAdjacentRules();
 }
 
 bool Element::rareDataChildrenAffectedByForwardPositionalRules() const

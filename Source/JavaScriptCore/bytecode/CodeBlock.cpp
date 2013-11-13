@@ -805,12 +805,12 @@ void CodeBlock::dumpBytecode(PrintStream& out, ExecState* exec, const Instructio
         }
         case op_inc: {
             int r0 = (++it)->u.operand;
-            printLocationOpAndRegisterOperand(out, exec, location, it, "pre_inc", r0);
+            printLocationOpAndRegisterOperand(out, exec, location, it, "inc", r0);
             break;
         }
         case op_dec: {
             int r0 = (++it)->u.operand;
-            printLocationOpAndRegisterOperand(out, exec, location, it, "pre_dec", r0);
+            printLocationOpAndRegisterOperand(out, exec, location, it, "dec", r0);
             break;
         }
         case op_to_number: {
@@ -1718,12 +1718,12 @@ CodeBlock::CodeBlock(ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlin
     if (size_t size = unlinkedCodeBlock->numberOfArrayProfiles())
         m_arrayProfiles.grow(size);
     if (size_t size = unlinkedCodeBlock->numberOfArrayAllocationProfiles())
-        m_arrayAllocationProfiles.grow(size);
+        m_arrayAllocationProfiles.resizeToFit(size);
     if (size_t size = unlinkedCodeBlock->numberOfValueProfiles())
-        m_valueProfiles.grow(size);
+        m_valueProfiles.resizeToFit(size);
 #endif
     if (size_t size = unlinkedCodeBlock->numberOfObjectAllocationProfiles())
-        m_objectAllocationProfiles.grow(size);
+        m_objectAllocationProfiles.resizeToFit(size);
 
     // Copy and translate the UnlinkedInstructions
     size_t instructionCount = unlinkedCodeBlock->instructions().size();
@@ -1919,6 +1919,7 @@ CodeBlock::CodeBlock(ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlin
 
     if (Options::dumpGeneratedBytecodes())
         dumpBytecode();
+
     m_heap->m_codeBlocks.add(this);
     m_heap->reportExtraMemoryCost(sizeof(CodeBlock) + m_instructions.size() * sizeof(Instruction));
 }

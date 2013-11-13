@@ -38,128 +38,128 @@
 OBJC_CLASS NSObject;
 #endif
 
-namespace WebKit {
+namespace API {
 
-class APIObject
+class Object
 #if !DELEGATE_REF_COUNTING_TO_COCOA
-    : public ThreadSafeRefCounted<APIObject>
+    : public ThreadSafeRefCounted<Object>
 #endif
 {
 public:
-    enum Type {
+    enum class Type {
         // Base types
-        TypeNull = 0,
-        TypeArray,
-        TypeAuthenticationChallenge,
-        TypeAuthenticationDecisionListener,
-        TypeCertificateInfo,
-        TypeConnection,
-        TypeContextMenuItem,
-        TypeCredential,
-        TypeData,
-        TypeDictionary,
-        TypeError,
-        TypeGraphicsContext,
-        TypeImage,
-        TypeProtectionSpace,
-        TypeRenderLayer,
-        TypeRenderObject,
-        TypeSecurityOrigin,
-        TypeSerializedScriptValue,
-        TypeString,
-        TypeURL,
-        TypeURLRequest,
-        TypeURLResponse,
-        TypeUserContentURLPattern,
-        TypeWebArchive,
-        TypeWebArchiveResource,
+        Null = 0,
+        Array,
+        AuthenticationChallenge,
+        AuthenticationDecisionListener,
+        CertificateInfo,
+        Connection,
+        ContextMenuItem,
+        Credential,
+        Data,
+        Dictionary,
+        Error,
+        GraphicsContext,
+        Image,
+        ProtectionSpace,
+        RenderLayer,
+        RenderObject,
+        SecurityOrigin,
+        SerializedScriptValue,
+        String,
+        URL,
+        URLRequest,
+        URLResponse,
+        UserContentURLPattern,
+        WebArchive,
+        WebArchiveResource,
 
         // Base numeric types
-        TypeBoolean,
-        TypeDouble,
-        TypeUInt64,
+        Boolean,
+        Double,
+        UInt64,
         
         // Geometry types
-        TypePoint,
-        TypeSize,
-        TypeRect,
+        Point,
+        Size,
+        Rect,
         
         // UIProcess types
-        TypeApplicationCacheManager,
-        TypeBackForwardList,
-        TypeBackForwardListItem,
-        TypeBatteryManager,
-        TypeBatteryStatus,
-        TypeCacheManager,
-        TypeColorPickerResultListener,
-        TypeContext,
-        TypeCookieManager,
-        TypeDatabaseManager,
-        TypeDownload,
-        TypeFormSubmissionListener,
-        TypeFrame,
-        TypeFramePolicyListener,
-        TypeFullScreenManager,
-        TypeGeolocationManager,
-        TypeGeolocationPermissionRequest,
-        TypeHitTestResult,
-        TypeGeolocationPosition,
-        TypeGrammarDetail,
-        TypeIconDatabase,
-        TypeInspector,
-        TypeKeyValueStorageManager,
-        TypeMediaCacheManager,
-        TypeNavigationData,
-        TypeNetworkInfo,
-        TypeNetworkInfoManager,
-        TypeNotification,
-        TypeNotificationManager,
-        TypeNotificationPermissionRequest,
-        TypeOpenPanelParameters,
-        TypeOpenPanelResultListener,
-        TypeOriginDataManager,
-        TypePage,
-        TypePageGroup,
-        TypePluginSiteDataManager,
-        TypePreferences,
-        TypeTextChecker,
-        TypeVibration,
-        TypeViewportAttributes,
+        ApplicationCacheManager,
+        BackForwardList,
+        BackForwardListItem,
+        BatteryManager,
+        BatteryStatus,
+        CacheManager,
+        ColorPickerResultListener,
+        Context,
+        CookieManager,
+        DatabaseManager,
+        Download,
+        FormSubmissionListener,
+        Frame,
+        FramePolicyListener,
+        FullScreenManager,
+        GeolocationManager,
+        GeolocationPermissionRequest,
+        HitTestResult,
+        GeolocationPosition,
+        GrammarDetail,
+        IconDatabase,
+        Inspector,
+        KeyValueStorageManager,
+        MediaCacheManager,
+        NavigationData,
+        NetworkInfo,
+        NetworkInfoManager,
+        Notification,
+        NotificationManager,
+        NotificationPermissionRequest,
+        OpenPanelParameters,
+        OpenPanelResultListener,
+        OriginDataManager,
+        Page,
+        PageGroup,
+        PluginSiteDataManager,
+        Preferences,
+        TextChecker,
+        Vibration,
+        ViewportAttributes,
 
         // Bundle types
-        TypeBundle,
-        TypeBundleBackForwardList,
-        TypeBundleBackForwardListItem,
-        TypeBundleDOMWindowExtension,
-        TypeBundleFrame,
-        TypeBundleHitTestResult,
-        TypeBundleInspector,
-        TypeBundleNavigationAction,
-        TypeBundleNodeHandle,
-        TypeBundlePage,
-        TypeBundlePageBanner,
-        TypeBundlePageGroup,
-        TypeBundlePageOverlay,
-        TypeBundleRangeHandle,
-        TypeBundleScriptWorld,
+        Bundle,
+        BundleBackForwardList,
+        BundleBackForwardListItem,
+        BundleDOMWindowExtension,
+        BundleFrame,
+        BundleHitTestResult,
+        BundleInspector,
+        BundleNavigationAction,
+        BundleNodeHandle,
+        BundlePage,
+        BundlePageBanner,
+        BundlePageGroup,
+        BundlePageOverlay,
+        BundleRangeHandle,
+        BundleScriptWorld,
 
         // Platform specific
-        TypeEditCommandProxy,
-        TypeObjCObjectGraph,
-        TypeView,
+        EditCommandProxy,
+        ObjCObjectGraph,
+        View,
 #if USE(SOUP)
-        TypeSoupRequestManager,
+        SoupRequestManager,
 #endif
 #if PLATFORM(EFL) || PLATFORM(NIX)
-        TypePopupMenuItem,
+        PopupMenuItem,
 #if ENABLE(TOUCH_EVENTS)
-        TypeTouchPoint,
-        TypeTouchEvent,
+        TouchPoint,
+        TouchEvent,
 #endif
 #endif
     };
 
-    virtual ~APIObject()
+    virtual ~Object()
     {
     }
 
@@ -173,7 +173,7 @@ public:
 #endif // DELEGATE_REF_COUNTING_TO_COCOA
 
 protected:
-    APIObject();
+    Object();
 
 #if DELEGATE_REF_COUNTING_TO_COCOA
     static void* newObject(size_t, Type);
@@ -186,17 +186,17 @@ private:
 #endif // DELEGATE_REF_COUNTING_TO_COCOA
 };
 
-template <APIObject::Type ArgumentType>
-class TypedAPIObject : public APIObject {
+template <Object::Type ArgumentType>
+class TypedObject : public Object {
 public:
     static const Type APIType = ArgumentType;
 
-    virtual ~TypedAPIObject()
+    virtual ~TypedObject()
     {
     }
 
 protected:
-    TypedAPIObject()
+    TypedObject()
     {
     }
 
@@ -207,7 +207,7 @@ protected:
 #endif
 };
 
-} // namespace WebKit
+} // namespace Object
 
 #undef DELEGATE_REF_COUNTING_TO_COCOA
 

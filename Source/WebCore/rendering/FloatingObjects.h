@@ -113,8 +113,8 @@ struct FloatingObjectHashTranslator {
 
 typedef ListHashSet<std::unique_ptr<FloatingObject>, 4, FloatingObjectHashFunctions> FloatingObjectSet;
 
-typedef PODInterval<int, FloatingObject*> FloatingObjectInterval;
-typedef PODIntervalTree<int, FloatingObject*> FloatingObjectTree;
+typedef PODInterval<LayoutUnit, FloatingObject*> FloatingObjectInterval;
+typedef PODIntervalTree<LayoutUnit, FloatingObject*> FloatingObjectTree;
 typedef PODFreeListArena<PODRedBlackTree<FloatingObjectInterval>::Node> IntervalArena;
 
 // FIXME: This is really the same thing as FloatingObjectSet.
@@ -124,7 +124,7 @@ typedef HashMap<RenderBox*, std::unique_ptr<FloatingObject>> RendererToFloatInfo
 class FloatingObjects {
     WTF_MAKE_NONCOPYABLE(FloatingObjects); WTF_MAKE_FAST_ALLOCATED;
 public:
-    FloatingObjects(const RenderBlockFlow&);
+    explicit FloatingObjects(const RenderBlockFlow&);
     ~FloatingObjects();
 
     void clear();
@@ -165,12 +165,12 @@ private:
 };
 
 #ifndef NDEBUG
-// These structures are used by PODIntervalTree for debugging purposes.
-template <> struct ValueToString<int> {
-    static String string(const int value);
-};
+// This helper is used by PODIntervalTree for debugging purposes.
 template<> struct ValueToString<FloatingObject*> {
-    static String string(const FloatingObject*);
+    static String string(const FloatingObject* floatingObject)
+    {
+        return String::format("%p (%ix%i %ix%i)", floatingObject, floatingObject->frameRect().x().toInt(), floatingObject->frameRect().y().toInt(), floatingObject->frameRect().maxX().toInt(), floatingObject->frameRect().maxY().toInt());
+    }
 };
 #endif
 

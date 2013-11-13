@@ -552,7 +552,7 @@ void WebChromeClient::scrollbarsModeDidChange() const
 
 void WebChromeClient::mouseDidMoveOverElement(const HitTestResult& hitTestResult, unsigned modifierFlags)
 {
-    RefPtr<APIObject> userData;
+    RefPtr<API::Object> userData;
 
     // Notify the bundle client.
     m_page->injectedBundleUIClient().mouseDidMoveOverElement(m_page, hitTestResult, static_cast<WebEvent::Modifiers>(modifierFlags), userData);
@@ -652,15 +652,6 @@ bool WebChromeClient::shouldReplaceWithGeneratedFileForUpload(const String& path
 String WebChromeClient::generateReplacementFile(const String& path)
 {
     return m_page->injectedBundleUIClient().generateFileForUpload(m_page, path);
-}
-
-bool WebChromeClient::paintCustomOverhangArea(GraphicsContext* context, const IntRect& horizontalOverhangArea, const IntRect& verticalOverhangArea, const IntRect& dirtyRect)
-{
-    if (!m_page->injectedBundleUIClient().shouldPaintCustomOverhangArea())
-        return false;
-
-    m_page->injectedBundleUIClient().paintCustomOverhangArea(m_page, context, horizontalOverhangArea, verticalOverhangArea, dirtyRect);
-    return true;
 }
 
 #if ENABLE(INPUT_TYPE_COLOR)

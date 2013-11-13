@@ -728,18 +728,13 @@ PassRefPtr<ImmutableArray> WebPage::trackedRepaintRects()
     if (!view)
         return ImmutableArray::create();
 
-    const Vector<IntRect>& rects = view->trackedRepaintRects();
-    size_t size = rects.size();
-    if (!size)
-        return ImmutableArray::create();
+    Vector<RefPtr<API::Object>> repaintRects;
+    repaintRects.reserveInitialCapacity(view->trackedRepaintRects().size());
 
-    Vector<RefPtr<APIObject>> vector;
-    vector.reserveInitialCapacity(size);
+    for (const auto& repaintRect : view->trackedRepaintRects())
+        repaintRects.uncheckedAppend(WebRect::create(toAPI(repaintRect)));
 
-    for (size_t i = 0; i < size; ++i)
-        vector.uncheckedAppend(WebRect::create(toAPI(rects[i])));
-
-    return ImmutableArray::adopt(vector);
+    return ImmutableArray::create(std::move(repaintRects));
 }
 
 PluginView* WebPage::focusedPluginViewForFrame(Frame& frame)
@@ -906,7 +901,7 @@ void WebPage::loadURLRequest(const ResourceRequest& request, const SandboxExtens
 {
     SendStopResponsivenessTimer stopper(this);
 
-    RefPtr<APIObject> userData;
+    RefPtr<API::Object> userData;
     InjectedBundleUserMessageDecoder userMessageDecoder(userData);
     if (!decoder.decode(userMessageDecoder))
         return;
@@ -925,7 +920,7 @@ void WebPage::loadDataImpl(PassRefPtr<SharedBuffer> sharedBuffer, const String& 
 {
     SendStopResponsivenessTimer stopper(this);
 
-    RefPtr<APIObject> userData;
+    RefPtr<API::Object> userData;
     InjectedBundleUserMessageDecoder userMessageDecoder(userData);
     if (!decoder.decode(userMessageDecoder))
         return;
@@ -1389,7 +1384,7 @@ void WebPage::postInjectedBundleMessage(const String& messageName, CoreIPC::Mess
     if (!injectedBundle)
         return;
 
-    RefPtr<APIObject> messageBody;
+    RefPtr<API::Object> messageBody;
     InjectedBundleUserMessageDecoder messageBodyDecoder(messageBody);
     if (!decoder.decode(messageBodyDecoder))
         return;

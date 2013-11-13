@@ -178,6 +178,7 @@ public:
     void setLoop(bool b);
     virtual void play() OVERRIDE;
     virtual void pause() OVERRIDE;
+    void fastSeek(double, ExceptionCode&);
 
 // captions
     bool webkitHasClosedCaptions() const;
@@ -536,6 +537,7 @@ private:
     void stopPeriodicTimers();
 
     void seek(double time, ExceptionCode&);
+    void seekWithTolerance(double time, double negativeTolerance, double positiveTolerance, ExceptionCode&);
     void finishSeek();
     void checkIfSeekNeeded();
     void addPlayedRange(double start, double end);
@@ -799,15 +801,7 @@ private:
 
 #if ENABLE(VIDEO_TRACK)
 #ifndef NDEBUG
-// Template specializations required by PodIntervalTree in debug mode.
-template <>
-struct ValueToString<double> {
-    static String string(const double value)
-    {
-        return String::number(value);
-    }
-};
-
+// Template specialization required by PodIntervalTree in debug mode.
 template <>
 struct ValueToString<TextTrackCue*> {
     static String string(TextTrackCue* const& cue)

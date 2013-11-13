@@ -48,35 +48,35 @@ class InjectedBundleUserMessageEncoder : public UserMessageEncoder<InjectedBundl
 public:
     typedef UserMessageEncoder<InjectedBundleUserMessageEncoder> Base;
 
-    InjectedBundleUserMessageEncoder(APIObject* root) 
+    InjectedBundleUserMessageEncoder(API::Object* root) 
         : Base(root)
     {
     }
 
     void encode(CoreIPC::ArgumentEncoder& encoder) const
     {
-        APIObject::Type type = APIObject::TypeNull;
+        API::Object::Type type = API::Object::Type::Null;
         if (baseEncode(encoder, type))
             return;
 
         switch (type) {
-        case APIObject::TypeBundlePage: {
+        case API::Object::Type::BundlePage: {
             WebPage* page = static_cast<WebPage*>(m_root);
             encoder << page->pageID();
             break;
         }
-        case APIObject::TypeBundleFrame: {
+        case API::Object::Type::BundleFrame: {
             WebFrame* frame = static_cast<WebFrame*>(m_root);
             encoder << frame->frameID();
             break;
         }
-        case APIObject::TypeBundlePageGroup: {
+        case API::Object::Type::BundlePageGroup: {
             WebPageGroupProxy* pageGroup = static_cast<WebPageGroupProxy*>(m_root);
             encoder << pageGroup->pageGroupID();
             break;
         }
 #if PLATFORM(MAC)
-        case APIObject::TypeObjCObjectGraph: {
+        case API::Object::Type::ObjCObjectGraph: {
             ObjCObjectGraph* objectGraph = static_cast<ObjCObjectGraph*>(m_root);
             encoder << InjectedBundleObjCObjectGraphEncoder(objectGraph);
             break;
@@ -98,41 +98,41 @@ class InjectedBundleUserMessageDecoder : public UserMessageDecoder<InjectedBundl
 public:
     typedef UserMessageDecoder<InjectedBundleUserMessageDecoder> Base;
 
-    InjectedBundleUserMessageDecoder(RefPtr<APIObject>& root)
+    InjectedBundleUserMessageDecoder(RefPtr<API::Object>& root)
         : Base(root)
     {
     }
 
-    InjectedBundleUserMessageDecoder(InjectedBundleUserMessageDecoder&, RefPtr<APIObject>& root)
+    InjectedBundleUserMessageDecoder(InjectedBundleUserMessageDecoder&, RefPtr<API::Object>& root)
         : Base(root)
     {
     }
 
     static bool decode(CoreIPC::ArgumentDecoder& decoder, InjectedBundleUserMessageDecoder& coder)
     {
-        APIObject::Type type = APIObject::TypeNull;
+        API::Object::Type type = API::Object::Type::Null;
         if (!Base::baseDecode(decoder, coder, type))
             return false;
 
-        if (coder.m_root || type == APIObject::TypeNull)
+        if (coder.m_root || type == API::Object::Type::Null)
             return true;
 
         switch (type) {
-        case APIObject::TypePage: {
+        case API::Object::Type::Page: {
             uint64_t pageID;
             if (!decoder.decode(pageID))
                 return false;
             coder.m_root = WebProcess::shared().webPage(pageID);
             break;
         }
-        case APIObject::TypeFrame: {
+        case API::Object::Type::Frame: {
             uint64_t frameID;
             if (!decoder.decode(frameID))
                 return false;
             coder.m_root = WebProcess::shared().webFrame(frameID);
             break;
         }
-        case APIObject::TypePageGroup: {
+        case API::Object::Type::PageGroup: {
             WebPageGroupData pageGroupData;
             if (!decoder.decode(pageGroupData))
                 return false;
@@ -140,7 +140,7 @@ public:
             break;
         }
 #if PLATFORM(MAC)
-        case APIObject::TypeObjCObjectGraph: {
+        case API::Object::Type::ObjCObjectGraph: {
             RefPtr<ObjCObjectGraph> objectGraph;
             InjectedBundleObjCObjectGraphDecoder objectGraphDecoder(objectGraph, &WebProcess::shared());
             if (!decoder.decode(objectGraphDecoder))

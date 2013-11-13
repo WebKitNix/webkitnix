@@ -100,7 +100,6 @@ WK_ADD_API_MAPPING(WKDoubleRef, WebDouble)
 WK_ADD_API_MAPPING(WKErrorRef, WebError)
 WK_ADD_API_MAPPING(WKGraphicsContextRef, WebGraphicsContext)
 WK_ADD_API_MAPPING(WKImageRef, WebImage)
-WK_ADD_API_MAPPING(WKMutableArrayRef, MutableArray)
 WK_ADD_API_MAPPING(WKMutableDictionaryRef, MutableDictionary)
 WK_ADD_API_MAPPING(WKPointRef, WebPoint)
 WK_ADD_API_MAPPING(WKRectRef, WebRect)
@@ -108,12 +107,14 @@ WK_ADD_API_MAPPING(WKSecurityOriginRef, WebSecurityOrigin)
 WK_ADD_API_MAPPING(WKSerializedScriptValueRef, WebSerializedScriptValue)
 WK_ADD_API_MAPPING(WKSizeRef, WebSize)
 WK_ADD_API_MAPPING(WKStringRef, WebString)
-WK_ADD_API_MAPPING(WKTypeRef, APIObject)
+WK_ADD_API_MAPPING(WKTypeRef, API::Object)
 WK_ADD_API_MAPPING(WKUInt64Ref, WebUInt64)
 WK_ADD_API_MAPPING(WKURLRef, WebURL)
 WK_ADD_API_MAPPING(WKURLRequestRef, WebURLRequest)
 WK_ADD_API_MAPPING(WKURLResponseRef, WebURLResponse)
 WK_ADD_API_MAPPING(WKUserContentURLPatternRef, WebUserContentURLPattern)
+
+template<> struct APITypeInfo<WKMutableArrayRef> { typedef ImmutableArray* ImplType; };
 
 #if PLATFORM(MAC)
 WK_ADD_API_MAPPING(WKWebArchiveRef, WebArchive)
@@ -281,7 +282,7 @@ inline WKPoint toAPI(const WebCore::IntPoint& point)
 
 /* Enum conversions */
 
-inline WKTypeID toAPI(APIObject::Type type)
+inline WKTypeID toAPI(API::Object::Type type)
 {
     return static_cast<WKTypeID>(type);
 }

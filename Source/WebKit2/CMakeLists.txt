@@ -5,6 +5,7 @@ set(WebKit2_INCLUDE_DIRECTORIES
     "${WEBKIT2_DIR}/NetworkProcess/FileAPI"
     "${WEBKIT2_DIR}/Platform"
     "${WEBKIT2_DIR}/Platform/CoreIPC"
+    "${WEBKIT2_DIR}/Platform/IPC"
     "${WEBKIT2_DIR}/PluginProcess"
     "${WEBKIT2_DIR}/Shared"
     "${WEBKIT2_DIR}/Shared/API"
@@ -168,7 +169,8 @@ set(WebKit2_SOURCES
     Platform/CoreIPC/MessageEncoder.cpp
     Platform/CoreIPC/MessageReceiverMap.cpp
     Platform/CoreIPC/MessageSender.cpp
-    Platform/CoreIPC/StringReference.cpp
+
+    Platform/IPC/StringReference.cpp
 
     PluginProcess/PluginControllerProxy.cpp
     PluginProcess/PluginCreationParameters.cpp
@@ -187,7 +189,6 @@ set(WebKit2_SOURCES
     Shared/FontInfo.cpp
     Shared/ImmutableArray.cpp
     Shared/ImmutableDictionary.cpp
-    Shared/MutableArray.cpp
     Shared/MutableDictionary.cpp
     Shared/OriginAndDatabases.cpp
     Shared/PlatformPopupMenuData.cpp
@@ -238,6 +239,7 @@ set(WebKit2_SOURCES
     Shared/API/c/WKConnectionRef.cpp
     Shared/API/c/WKContextMenuItem.cpp
     Shared/API/c/WKData.cpp
+    Shared/API/c/WKDeprecatedFunctions.cpp
     Shared/API/c/WKDictionary.cpp
     Shared/API/c/WKError.cpp
     Shared/API/c/WKGeometry.cpp
@@ -288,6 +290,7 @@ set(WebKit2_SOURCES
     UIProcess/BackingStore.cpp
     UIProcess/DrawingAreaProxy.cpp
     UIProcess/FindIndicator.cpp
+    UIProcess/FrameLoadState.cpp
     UIProcess/GeolocationPermissionRequestManagerProxy.cpp
     UIProcess/GeolocationPermissionRequestProxy.cpp
     UIProcess/ResponsivenessTimer.cpp

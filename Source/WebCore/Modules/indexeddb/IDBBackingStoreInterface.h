@@ -53,7 +53,7 @@ class IDBBackingStoreInterface : public RefCounted<IDBBackingStoreInterface> {
 public:
     virtual ~IDBBackingStoreInterface() { }
 
-    virtual std::unique_ptr<IDBBackingStoreTransactionInterface> createBackingStoreTransaction() = 0;
+    virtual void establishBackingStoreTransaction(int64_t transactionID) = 0;
 
     // New-style asynchronous callbacks
     typedef std::function<void (const IDBDatabaseMetadata&, bool success)> GetIDBDatabaseMetadataFunction;

@@ -281,6 +281,7 @@ set(WebCore_IDL_FILES
     Modules/websockets/WebSocket.idl
 
     crypto/CryptoKey.idl
+    crypto/CryptoKeyPair.idl
     crypto/SubtleCrypto.idl
 
     css/CSSCharsetRule.idl
@@ -792,6 +793,7 @@ set(WebCore_SOURCES
     Modules/indexeddb/leveldb/IDBBackingStoreTransactionLevelDB.cpp
     Modules/indexeddb/leveldb/IDBFactoryBackendLevelDB.cpp
     Modules/indexeddb/leveldb/IDBLevelDBCoding.cpp
+    Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.cpp
 
     Modules/mediasource/MediaSource.cpp
     Modules/mediasource/MediaSourceRegistry.cpp
@@ -1542,8 +1544,8 @@ set(WebCore_SOURCES
     inspector/InjectedScriptManager.cpp
     inspector/InjectedScriptModule.cpp
     inspector/InspectorAgent.cpp
+    inspector/InspectorAgentRegistry.cpp
     inspector/InspectorApplicationCacheAgent.cpp
-    inspector/InspectorBaseAgent.cpp
     inspector/InspectorCSSAgent.cpp
     inspector/InspectorCanvasAgent.cpp
     inspector/InspectorClient.cpp

@@ -1,3 +1,1698 @@
+2013-11-12  Jer Noble  <jer.noble@apple.com>
+
+        Add support for HTMLMediaElement.fastSeek()
+        https://bugs.webkit.org/show_bug.cgi?id=124262
+
+        Reviewed by Eric Carlson.
+
+        Test: media/video-fast-seek.html
+
+        Add the fastSeek() method to HTMLMediaElement, and use fastSeek() in
+        the JavaScript media controls.
+
+        Add the new fastSeek() method:
+        * html/HTMLMediaElement.cpp:
+        (HTMLMediaElement::fastSeek): Call seekWithTolerance.
+        (HTMLMediaElement::seek): Call seekWithTolerance with 0 tolerance.
+        (HTMLMediaElement::seekWithTolerance): Renamed from seek().
+        * html/HTMLMediaElement.h:
+        * html/HTMLMediaElement.idl:
+
+        Add seekWithTolerance() to MediaPlayer:
+        * platform/graphics/MediaPlayer.cpp:
+        (WebCore::MediaPlayer::seekWithTolerance): Pass to MediaPlayerPrivate.
+        * platform/graphics/MediaPlayer.h:
+        * platform/graphics/MediaPlayerPrivate.h:
+        (WebCore::MediaPlayerPrivateInterface::seekWithTolerance): Default implementation which
+            calls seek().
+        * platform/graphics/avfoundation/MediaPlayerPrivateAVFoundation.cpp:
+        (WebCore::MediaPlayerPrivateAVFoundation::seek): Call seekWithTolerance with 0 tolerance.
+        (WebCore::MediaPlayerPrivateAVFoundation::seekWithTolerance): Renamed from seek().
+        * platform/graphics/avfoundation/MediaPlayerPrivateAVFoundation.h:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateAVFoundationObjC.h:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateAVFoundationObjC.mm:
+        (WebCore::MediaPlayerPrivateAVFoundationObjC::seekToTime): Take tolerance parameters.
+
+        Use the new fastSeek() method while actively scrubbing.
+        * Modules/mediacontrols/mediaControlsApple.js:
+        (Controller.prototype.createControls): Add mouse up and down handlers.
+        (Controller.prototype.handleTimeUpdate): Only update the timeline when not scrubbing.
+        (Controller.prototype.handleTimelineChange): Use fastSeek().
+        (Controller.prototype.handleTimelineMouseDown): Start scrubbing.
+        (Controller.prototype.handleTimelineMouseUp): Stop scrubbing.
+
+2013-11-13  Andreas Kling  <akling@apple.com>
+
+        Generate casting helpers for scrolling tree classes.
+        <https://webkit.org/b/124286>
+
+        Added SCROLLING_STATE_NODE_TYPE_CASTS and used it to replace the
+        hand-written toFoo() casts for ScrollingStateNode subclasses.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-13  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] Determining if a line is inside of a shape should only happen in one place
+        https://bugs.webkit.org/show_bug.cgi?id=121708
+
+        Reviewed by Andreas Kling.
+
+        The ShapeInfo::lineOverlapsShapeBounds() methods now delegate to the Shape object. The
+        logic for the Shape overlap test is now the same for ShapeInsideInfo and ShapeOutsideInfo.
+
+        No new tests, this is just a refactoring of existing code.
+
+        * rendering/shapes/Shape.h:
+        (WebCore::Shape::lineOverlapsShapeMarginBounds): Apply lineOverlapsLayoutRect() to the shape-margin bounds LayoutRect.
+        (WebCore::Shape::lineOverlapsShapePaddingBounds): Apply lineOverlapsLayoutRect() to the shape-padding bounds LayoutRect.
+        (WebCore::Shape::lineOverlapsLayoutRect): The common code for checking if a line and a LayoutRect overlap.
+        * rendering/shapes/ShapeInsideInfo.h: Use lineOverlapsShapePaddingBounds() for lineOverlapShapeBounds().
+        * rendering/shapes/ShapeOutsideInfo.h: Use lineOverlapsShapeMarginBounds() for lineOverlapShapeBounds().
+
+2013-11-13  Jochen Eisinger  <jochen@chromium.org>
+
+        Restrict UserGestureIndicator to main thread
+        https://bugs.webkit.org/show_bug.cgi?id=124277
+
+        Reviewed by Andreas Kling.
+
+        Certain classes that interact with UserGestureIndicators, e.g.
+        the DOMTimer, can also live on worker threads. Since a
+        background thread cannot possible get a user gesture in the
+        first place, and to avoid races, we turn a UserGestureIndicator
+        on a background thread into a no-op.
+
+        * dom/UserGestureIndicator.cpp:
+        (WebCore::UserGestureIndicator::UserGestureIndicator):
+        (WebCore::UserGestureIndicator::~UserGestureIndicator):
+        (WebCore::UserGestureIndicator::processingUserGesture):
+        * dom/UserGestureIndicator.h:
+
+2013-11-13  Antti Koivisto  <antti@apple.com>
+
+        Factor simple line creation loop to function
+        https://bugs.webkit.org/show_bug.cgi?id=124279
+
+        Reviewed by Andreas Kling.
+
+        * rendering/SimpleLineLayout.cpp:
+        (WebCore::SimpleLineLayout::Style::Style):
+        
+            Capture style that affects line layout to a struct.
+
+        (WebCore::SimpleLineLayout::textWidth):
+        (WebCore::SimpleLineLayout::measureWord):
+        (WebCore::SimpleLineLayout::createLineRuns):
+        
+            Factor the line loop here.
+
+        (WebCore::SimpleLineLayout::createTextRuns):
+
+2013-11-12  Antti Koivisto  <antti@apple.com>
+
+        Support overflow-wrap:break-word on simple line path
+        https://bugs.webkit.org/show_bug.cgi?id=124206
+
+        Reviewed by Andreas Kling.
+
+        Pure text documents are rendered with break-word. It is also common in discussion board type sites.
+        
+        This also makes many <textarea>'s rendered using the simple line path.
+
+        Tests: fast/forms/basic-textareas-quirks-simple-lines.html
+               fast/forms/linebox-overflow-in-textarea-padding-simple-lines.html
+               fast/forms/negativeLineHeight-simple-lines.html
+               fast/forms/textAreaLineHeight-simple-lines.html
+
+        * rendering/RenderBlock.cpp:
+        (WebCore::RenderBlock::updateShapeInsideInfoAfterStyleChange):
+        (WebCore::RenderBlock::markShapeInsideDescendantsForLayout):
+        
+            Invalidate the cached line layout mode on shape-inside style change.
+
+        * rendering/SimpleLineLayout.cpp:
+        (WebCore::SimpleLineLayout::canUseForText):
+        (WebCore::SimpleLineLayout::canUseFor):
+        (WebCore::SimpleLineLayout::createTextRuns):
+
+2013-11-13  Andreas Kling  <akling@apple.com>
+
+        Turn some not-so-rare ElementRareData bits into Node flags.
+        <https://webkit.org/b/124275>
+
+        The following 4 bits seem to be the most commonly set:
+
+        - childrenAffectedByHover()
+        - childrenAffectedByFirstChildRules()
+        - childrenAffectedByLastChildRules()
+        - childrenAffectedByDirectAdjacentRules()
+
+        Turning them into Node flags means we don't have to allocate full
+        ElementRareData object in many cases. I also took this opportunity
+        to make Node's flag twiddling functions available to subclasses.
+
+        1.38 MB progression on HTML5-8266 locally.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-13  Tibor Meszaros  <mtibor@inf.u-szeged.hu>
+
+        Cleanup the build from unused parameters in WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=124199.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * css/CSSCursorImageValue.cpp:
+        (WebCore::CSSCursorImageValue::cachedOrPendingImage):
+        * dom/Document.cpp:
+        (WebCore::Document::scriptedAnimationControllerSetThrottled):
+        * fileapi/ThreadableBlobRegistry.cpp:
+        (WebCore::ThreadableBlobRegistry::registerBlobURL):
+        * html/HTMLAnchorElement.cpp:
+        (WebCore::shouldProhibitLinks):
+        * html/parser/XSSAuditor.cpp:
+        (WebCore::isSemicolonSeparatedAttribute):
+        * inspector/InspectorConsoleInstrumentation.h:
+        (WebCore::InspectorInstrumentation::addMessageToConsole):
+        * loader/DocumentThreadableLoader.cpp:
+        (WebCore::DocumentThreadableLoader::didReceiveData):
+        (WebCore::DocumentThreadableLoader::didFail):
+        (WebCore::DocumentThreadableLoader::preflightFailure):
+        * loader/cache/CachedImage.cpp:
+        (WebCore::CachedImage::imageSizeForRenderer):
+        * page/animation/ImplicitAnimation.cpp:
+        (WebCore::ImplicitAnimation::animate):
+        * page/animation/KeyframeAnimation.cpp:
+        (WebCore::KeyframeAnimation::animate):
+        * platform/graphics/WidthIterator.cpp:
+        (WebCore::applyFontTransforms):
+        * rendering/RenderView.cpp:
+        (WebCore::RenderView::setIsInWindow):
+        * rendering/style/RenderStyle.cpp:
+        (WebCore::RenderStyle::changeRequiresLayout):
+        (WebCore::RenderStyle::changeRequiresLayerRepaint):
+        (WebCore::RenderStyle::changeRequiresRecompositeLayer):
+        * testing/Internals.cpp:
+        (WebCore::Internals::setHeaderHeight):
+        (WebCore::Internals::setCaptionsStyleSheetOverride):
+
+2013-11-13  Andreas Kling  <akling@apple.com>
+
+        Refalize CSSCursorImageValue.
+        <https://webkit.org/b/124272>
+
+        Make CSSCursorImageValue constructor return a PassRef, and have it
+        take the image CSSValue as a PassRef (and store it internally in a
+        Ref<CSSValue>.)
+
+        Had to add a Ref version of compareCSSValuePtr() to make this work.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-13  Andreas Kling  <akling@apple.com>
+
+        RenderTableSection: Cell structures don't need allocation padding.
+        <https://webkit.org/b/124263>
+
+        The row structure data gets shrunk-to-fit once we get to layout,
+        but per-row cell structures get no such luxury. Fortuntely we know
+        ahead of time how many cells a row needs to accomodate, so we can
+        just use Vector::resizeToFit() instead of Vector::grow().
+
+        1.25 MB progression on HTML5-8266 locally.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-13  Andreas Kling  <akling@apple.com>
+
+        Avoid unnecessarily padding the FontDescription families vector.
+        <https://webkit.org/b/124267>
+
+        Use a bit of reserveInitialCapacity+uncheckedAppend grease to avoid
+        jumping all the way to capacity=16 when a style has more than just
+        a single font-family in it.
+
+        130 kB progression on HTML5-8266 locally.
+
+        Reviewed by Antti Koivisto.
+
+        * css/DeprecatedStyleBuilder.cpp:
+        (WebCore::ApplyPropertyFontFamily::applyValue):
+
+2013-11-13  Andreas Kling  <akling@apple.com>
+
+        Make remaining CSSPrimitiveValue constructors return PassRef.
+        <https://webkit.org/b/124270>
+
+        ..and same with the corresponding CSSValuePool functions.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-13  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement key generation and JWK import for RSASSA-PKCS1-v1_5
+        https://bugs.webkit.org/show_bug.cgi?id=124236
+
+        Reviewed by Sam Weinig.
+
+        Tests: crypto/subtle/rsassa-pkcs1-v1_5-generate-key.html
+               crypto/subtle/rsassa-pkcs1-v1_5-import-jwk.html
+
+        * WebCore.xcodeproj/project.pbxproj: Added new files.
+
+        * bindings/js/JSCryptoAlgorithmBuilder.cpp:
+        (WebCore::JSCryptoAlgorithmBuilder::add):
+        * bindings/js/JSCryptoAlgorithmBuilder.h:
+        * crypto/CryptoAlgorithmDescriptionBuilder.h:
+        Added a way to add an Uint8Array, as needed for RSA key.algorithm.publicExponent.
+
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::createAesCbcParams): Removed unneeded JSC prefixes.
+        (WebCore::createAesKeyGenParams): Ditto.
+        (WebCore::createHmacParams): Ditto.
+        (WebCore::createHmacKeyParams): Ditto.
+        (WebCore::createRsaKeyGenParams): Added. 
+        (WebCore::createRsaSsaKeyParams): Added. WebCrypto currently doesn't specify any
+        parameters for importKey, so the structure remains blank (unlike with JWK).
+        (WebCore::createRsaSsaParams): Added (currently unused, will be sued for sign/verify soon).
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForEncrypt): Removed unneeded JSC prefixes.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDecrypt): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForSign): Added support for RSAES_PKCS1_v1_5.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForVerify): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDigest): Removed unneeded JSC prefixes.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForGenerateKey): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveKey): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveBits): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForImportKey): Added support for RSAES_PKCS1_v1_5.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForExportKey): Removed unneeded JSC prefixes.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForWrapKey): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForUnwrapKey): Ditto.
+
+        * bindings/js/JSCryptoKeySerializationJWK.h:
+        * bindings/js/JSCryptoKeySerializationJWK.cpp:
+        (WebCore::getJSArrayFromJSON): Added.
+        (WebCore::getBigIntegerVectorFromJSON): Added.
+        (WebCore::createRSASSAKeyParameters): Create parameters for key import. The key
+        will remember which algorithm it's allowed to be used with.
+        (WebCore::JSCryptoKeySerializationJWK::reconcileAlgorithm): Added support for
+        RS256...RS512 (tha is, RSAES_PKCS1_v1_5 with SHA-256...SHA-512).
+        (WebCore::JSCryptoKeySerializationJWK::keyDataOctetSequence): Split out of keyData().
+        (WebCore::JSCryptoKeySerializationJWK::keyDataRSAComponents): Added code to read
+        RSA key components from JWK.
+        (WebCore::JSCryptoKeySerializationJWK::keyData): Call one of the above functions.
+
+        * crypto/CryptoAlgorithmRSASSA_PKCS1_v1_5Mac.cpp: Added.
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::sign):
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::verify):
+        Placeholders.
+
+        * crypto/CryptoKey.h: (WebCore::CryptoKeyClass): Added RSA key class for poor man's RTTI.
+
+        * crypto/CryptoKeyData.h: (WebCore::CryptoKeyData::FormatRSAComponents): Added RSAComponents
+        for poor man's RTTI.
+
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp: (WebCore::CryptoAlgorithmAES_CBC::importKey): 
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp: (WebCore::CryptoAlgorithmHMAC::importKey):
+        * crypto/keys/CryptoKeyAES.h:
+        (WebCore::isCryptoKeyAES):
+        (WebCore::toCryptoKeyAES):
+        * crypto/keys/CryptoKeyDataOctetSequence.h:
+        (WebCore::toCryptoKeyDataOctetSequence):
+        * crypto/keys/CryptoKeyHMAC.h:
+        (WebCore::isCryptoKeyHMAC):
+        (WebCore::toCryptoKeyHMAC):
+        * crypto/mac/CryptoAlgorithmAES_CBCMac.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::encrypt):
+        (WebCore::CryptoAlgorithmAES_CBC::decrypt):
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp:
+        (WebCore::CryptoAlgorithmHMAC::sign):
+        (WebCore::CryptoAlgorithmHMAC::verify):
+        Switched from "as" functions to "is" and "to" ones, as that's more idiomatic.
+
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.cpp: Added.
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.h: Added.
+        Glue code for importKey/generateKey for now.
+
+        * crypto/keys/CryptoKeyDataRSAComponents.cpp: Added.
+        (WebCore::CryptoKeyDataRSAComponents::CryptoKeyDataRSAComponents):
+        (WebCore::CryptoKeyDataRSAComponents::~CryptoKeyDataRSAComponents):
+        * crypto/keys/CryptoKeyDataRSAComponents.h: Added.
+        (WebCore::toCryptoKeyDataRSAComponents):
+        Added a structure to hold RSA key components, extracted from JWK or another format.
+
+        * crypto/keys/CryptoKeyRSA.h: Added.
+        * crypto/mac/CryptoKeyRSAMac.cpp: Added.
+
+        * crypto/mac/CryptoAlgorithmRegistryMac.cpp:
+        (WebCore::CryptoAlgorithmRegistry::platformRegisterAlgorithms):
+        Register RSASSA_PKCS1_v1_5.
+
+        * crypto/parameters/CryptoAlgorithmHmacKeyParams.h: Added a constructor to make
+        sure that hasLength is never left uninitialized, even when reading formats that
+        don't contain a length.
+
+        * crypto/parameters/CryptoAlgorithmRsaKeyGenParams.h: Added.
+        * crypto/parameters/CryptoAlgorithmRsaSsaKeyParams.h: Added.
+        * crypto/parameters/CryptoAlgorithmRsaSsaParams.h: Added.
+        Added parameter structures that are needed for RSASSA_PKCS1_v1_5.
+
+2013-11-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Disable WebCrypto on Mountain Lion
+        https://bugs.webkit.org/show_bug.cgi?id=124261
+
+        Rubber-stamped by Sam Weinig.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-11-12  Zan Dobersek  <zdobersek@igalia.com>
+
+        Manage XMLHttpRequestUpload, XSLImportRule, XMLErrors, XML pending callback classes through std::unique_ptr
+        https://bugs.webkit.org/show_bug.cgi?id=124224
+
+        Reviewed by Anders Carlsson.
+
+        Use std::unique_ptr to handle objects of various XML classes that were previously managed by OwnPtr.
+        This removes usage of OwnPtr and PassOwnPtr under Source/WebCore/xml/.
+
+        * xml/XMLHttpRequest.cpp:
+        (WebCore::XMLHttpRequest::upload):
+        * xml/XMLHttpRequest.h:
+        * xml/XMLHttpRequestUpload.h:
+        * xml/XSLImportRule.h:
+        * xml/XSLStyleSheet.h:
+        * xml/XSLStyleSheetLibxslt.cpp:
+        (WebCore::XSLStyleSheet::loadChildSheet):
+        * xml/parser/XMLDocumentParser.cpp:
+        (WebCore::XMLDocumentParser::handleError):
+        * xml/parser/XMLDocumentParser.h:
+        * xml/parser/XMLDocumentParserLibxml2.cpp:
+        (WebCore::PendingCallbacks::PendingCallbacks):
+        (WebCore::PendingCallbacks::appendStartElementNSCallback):
+        (WebCore::PendingCallbacks::appendEndElementNSCallback):
+        (WebCore::PendingCallbacks::appendCharactersCallback):
+        (WebCore::PendingCallbacks::appendProcessingInstructionCallback):
+        (WebCore::PendingCallbacks::appendCDATABlockCallback):
+        (WebCore::PendingCallbacks::appendCommentCallback):
+        (WebCore::PendingCallbacks::appendInternalSubsetCallback):
+        (WebCore::PendingCallbacks::appendErrorCallback):
+        (WebCore::PendingCallbacks::callAndRemoveFirstCallback):
+        (WebCore::XMLDocumentParser::XMLDocumentParser):
+
+2013-11-12  Brady Eidson  <beidson@apple.com>
+
+        Move basic IDBBackingStoreTransaction operations to IDBServerConnection
+        https://bugs.webkit.org/show_bug.cgi?id=124244
+
+        Reviewed by Tim Horton (and unofficially Anders Carlsson).
+
+        This patch:
+        - Makes IDBBackingStore the owner of an IDBBackingStoreTransaction.
+        - Adds the integer transaction ID to IDBBackingStoreTransaction for reference.
+        - Removes IDBTransactionBackend’s reliance on IDBBackingStoreTransaction by moving
+          necessary methods to IDBServerConnection.
+        - Renames the IDBTransactionBackend::backingStoreTransaction() accessor to
+          deprecatedBackingStoreTransaction to make it clear it’s on the way out.
+
+        * Modules/indexeddb/IDBBackingStoreInterface.h:
+
+        * Modules/indexeddb/IDBDatabaseBackend.cpp:
+        (WebCore::IDBDatabaseBackend::setIndexKeys):
+
+        * Modules/indexeddb/IDBServerConnection.h:
+
+        * Modules/indexeddb/IDBTransactionBackend.cpp:
+        (WebCore::IDBTransactionBackend::IDBTransactionBackend):
+        (WebCore::IDBTransactionBackend::~IDBTransactionBackend):
+        (WebCore::IDBTransactionBackend::deprecatedBackingStoreTransaction):
+        (WebCore::IDBTransactionBackend::scheduleTask):
+        (WebCore::IDBTransactionBackend::abort):
+        (WebCore::IDBTransactionBackend::commit):
+        (WebCore::IDBTransactionBackend::taskTimerFired):
+        * Modules/indexeddb/IDBTransactionBackend.h:
+
+        * Modules/indexeddb/IDBTransactionBackendOperations.cpp:
+        (WebCore::CreateObjectStoreOperation::perform):
+        (WebCore::CreateIndexOperation::perform):
+        (WebCore::DeleteIndexOperation::perform):
+        (WebCore::GetOperation::perform):
+        (WebCore::PutOperation::perform):
+        (WebCore::OpenCursorOperation::perform):
+        (WebCore::CountOperation::perform):
+        (WebCore::DeleteRangeOperation::perform):
+        (WebCore::ClearOperation::perform):
+        (WebCore::DeleteObjectStoreOperation::perform):
+        (WebCore::IDBDatabaseBackend::VersionChangeOperation::perform):
+
+        * Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.cpp:
+        (WebCore::IDBBackingStoreLevelDB::makeIndexWriters):
+        (WebCore::IDBBackingStoreLevelDB::generateKey):
+        (WebCore::IDBBackingStoreLevelDB::updateKeyGenerator):
+        (WebCore::IDBBackingStoreLevelDB::establishBackingStoreTransaction):
+        (WebCore::IDBBackingStoreLevelDB::deprecatedBackingStoreTransaction):
+        (WebCore::IDBBackingStoreLevelDB::removeBackingStoreTransaction):
+        * Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.h:
+
+        * Modules/indexeddb/leveldb/IDBBackingStoreTransactionLevelDB.cpp:
+        (WebCore::IDBBackingStoreTransactionLevelDB::IDBBackingStoreTransactionLevelDB):
+        (WebCore::IDBBackingStoreTransactionLevelDB::~IDBBackingStoreTransactionLevelDB):
+        (WebCore::IDBBackingStoreTransactionLevelDB::resetTransaction):
+        * Modules/indexeddb/leveldb/IDBBackingStoreTransactionLevelDB.h:
+
+        * Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.cpp:
+        (WebCore::IDBServerConnectionLevelDB::IDBServerConnectionLevelDB):
+        (WebCore::IDBServerConnectionLevelDB::deprecatedBackingStoreTransaction):
+        (WebCore::IDBServerConnectionLevelDB::openTransaction):
+        (WebCore::IDBServerConnectionLevelDB::beginTransaction):
+        (WebCore::IDBServerConnectionLevelDB::commitTransaction):
+        (WebCore::IDBServerConnectionLevelDB::resetTransaction):
+        (WebCore::IDBServerConnectionLevelDB::rollbackTransaction):
+        * Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.h:
+
+2013-11-12  Andy Estes  <aestes@apple.com>
+
+        Fix the Mountain Lion build after r159171.
+
+        * platform/mac/HTMLConverter.mm:
+        (_dateForString): +[NSCalendar calendarWithIdentifier:] only exists on
+        10.9. Use -[NSCalendar initWithIdentifier:] instead.
+
+2013-11-12  Andy Estes  <aestes@apple.com>
+
+        [Mac] Fix some deprecation warnings
+        https://bugs.webkit.org/show_bug.cgi?id=124252
+
+        Reviewed by Mark Rowe.
+
+        * loader/archive/cf/LegacyWebArchive.cpp:
+        (WebCore::LegacyWebArchive::create): Use CFPropertyListCreateWithData()
+        instead of CFPropertyListCreateFromXMLData().
+        (WebCore::LegacyWebArchive::rawDataRepresentation): Use
+        CFPropertyListWrite() instead of CFPropertyListWriteToStream().
+        * platform/mac/HTMLConverter.mm:
+        (_dateForString): Rewrite this method in terms of NSDateComponents and
+        NSCalendar instead of using CFGregorianDate.
+
+2013-11-12  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159160, r159161, and r159164.
+        http://trac.webkit.org/changeset/159160
+        http://trac.webkit.org/changeset/159161
+        http://trac.webkit.org/changeset/159164
+        https://bugs.webkit.org/show_bug.cgi?id=124253
+
+        Too many errors (make fewer) (Requested by ap on #webkit).
+
+        * WebCore.xcodeproj/project.pbxproj:
+        * bindings/js/JSCryptoAlgorithmBuilder.cpp:
+        * bindings/js/JSCryptoAlgorithmBuilder.h:
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::createAesCbcParams):
+        (WebCore::createAesKeyGenParams):
+        (WebCore::createHmacParams):
+        (WebCore::createHmacKeyParams):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForEncrypt):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDecrypt):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForSign):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForVerify):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDigest):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForGenerateKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveBits):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForImportKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForExportKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForWrapKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForUnwrapKey):
+        * bindings/js/JSCryptoKeySerializationJWK.cpp:
+        (WebCore::JSCryptoKeySerializationJWK::reconcileAlgorithm):
+        (WebCore::JSCryptoKeySerializationJWK::keyData):
+        * bindings/js/JSCryptoKeySerializationJWK.h:
+        * crypto/CryptoAlgorithmDescriptionBuilder.h:
+        * crypto/CryptoAlgorithmRSASSA_PKCS1_v1_5Mac.cpp: Removed.
+        * crypto/CryptoKey.h:
+        (WebCore::ENUM_CLASS):
+        * crypto/CryptoKeyData.h:
+        (WebCore::CryptoKeyData::ENUM_CLASS):
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::importKey):
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp:
+        (WebCore::CryptoAlgorithmHMAC::importKey):
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.cpp: Removed.
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.h: Removed.
+        * crypto/keys/CryptoKeyAES.h:
+        (WebCore::asCryptoKeyAES):
+        * crypto/keys/CryptoKeyDataOctetSequence.h:
+        (WebCore::asCryptoKeyDataOctetSequence):
+        * crypto/keys/CryptoKeyDataRSAComponents.cpp: Removed.
+        * crypto/keys/CryptoKeyDataRSAComponents.h: Removed.
+        * crypto/keys/CryptoKeyHMAC.h:
+        (WebCore::asCryptoKeyHMAC):
+        * crypto/keys/CryptoKeyRSA.h: Removed.
+        * crypto/mac/CryptoAlgorithmAES_CBCMac.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::encrypt):
+        (WebCore::CryptoAlgorithmAES_CBC::decrypt):
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp:
+        (WebCore::CryptoAlgorithmHMAC::sign):
+        (WebCore::CryptoAlgorithmHMAC::verify):
+        * crypto/mac/CryptoAlgorithmRegistryMac.cpp:
+        (WebCore::CryptoAlgorithmRegistry::platformRegisterAlgorithms):
+        * crypto/mac/CryptoKeyRSAMac.cpp: Removed.
+        * crypto/parameters/CryptoAlgorithmHmacKeyParams.h:
+        * crypto/parameters/CryptoAlgorithmRsaKeyGenParams.h: Removed.
+        * crypto/parameters/CryptoAlgorithmRsaSsaKeyParams.h: Removed.
+        * crypto/parameters/CryptoAlgorithmRsaSsaParams.h: Removed.
+
+2013-11-12  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        Make the placed floats tree use LayoutUnit instead of int
+        https://bugs.webkit.org/show_bug.cgi?id=124207
+
+        Reviewed by Alexandru Chiculita.
+
+        The dimensions of floats are in LayoutUnits, so it doesn't make sense
+        to be converting to ints for use in the placed floats tree.
+
+        Also add missed "explicit" to single argument FloatingObjects
+        constructor.
+
+        No new tests, no behavior change.
+
+        * rendering/FloatingObjects.cpp:
+        (WebCore::rangesIntersect):
+        (WebCore::ComputeFloatOffsetAdapter::ComputeFloatOffsetAdapter):
+        (WebCore::ComputeFloatOffsetAdapter::lowValue):
+        (WebCore::ComputeFloatOffsetAdapter::highValue):
+        (WebCore::FindNextFloatLogicalBottomAdapter::FindNextFloatLogicalBottomAdapter):
+        (WebCore::FindNextFloatLogicalBottomAdapter::lowValue):
+        (WebCore::FindNextFloatLogicalBottomAdapter::highValue):
+        * rendering/FloatingObjects.h:
+        * rendering/RenderFlowThread.h:
+
+2013-11-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement key generation and JWK import for RSASSA-PKCS1-v1_5
+        https://bugs.webkit.org/show_bug.cgi?id=124236
+
+        Build fix.
+
+        * crypto/mac/CryptoKeyRSAMac.cpp: (WebCore::CryptoKeyRSA::buildAlgorithmDescription):
+        ifdef out some code on Mountain Lion. Bug 124249 track fixing this.
+
+2013-11-12  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Extract InspectorAgentRegistry from InspectorBaseAgent
+        https://bugs.webkit.org/show_bug.cgi?id=124190
+
+        Reviewed by Timothy Hatcher.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * inspector/InspectorAgentRegistry.cpp: Added.
+        (WebCore::InspectorAgentRegistry::append):
+        (WebCore::InspectorAgentRegistry::setFrontend):
+        (WebCore::InspectorAgentRegistry::clearFrontend):
+        (WebCore::InspectorAgentRegistry::registerInDispatcher):
+        (WebCore::InspectorAgentRegistry::discardAgents):
+        * inspector/InspectorAgentRegistry.h: Added.
+        * inspector/InspectorAllInOne.cpp:
+        * inspector/InspectorBaseAgent.cpp: Removed.
+        * inspector/InspectorBaseAgent.h:
+        (WebCore::InspectorBaseAgentInterface::InspectorBaseAgentInterface):
+        (WebCore::InspectorBaseAgentInterface::~InspectorBaseAgentInterface):
+        * inspector/InspectorController.h:
+        * inspector/InspectorMemoryAgent.h:
+        * inspector/WorkerInspectorController.h:
+
+2013-11-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement key generation and JWK import for RSASSA-PKCS1-v1_5
+        https://bugs.webkit.org/show_bug.cgi?id=124236
+
+        Release build fix.
+
+        * bindings/js/JSCryptoAlgorithmBuilder.cpp: Include TypedArrayInlines.h
+
+2013-11-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement key generation and JWK import for RSASSA-PKCS1-v1_5
+        https://bugs.webkit.org/show_bug.cgi?id=124236
+
+        Reviewed by Sam Weinig.
+
+        Tests: crypto/subtle/rsassa-pkcs1-v1_5-generate-key.html
+               crypto/subtle/rsassa-pkcs1-v1_5-import-jwk.html
+
+        * WebCore.xcodeproj/project.pbxproj: Added new files.
+
+        * bindings/js/JSCryptoAlgorithmBuilder.cpp:
+        (WebCore::JSCryptoAlgorithmBuilder::add):
+        * bindings/js/JSCryptoAlgorithmBuilder.h:
+        * crypto/CryptoAlgorithmDescriptionBuilder.h:
+        Added a way to add an Uint8Array, as needed for RSA key.algorithm.publicExponent.
+
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::createAesCbcParams): Removed unneeded JSC prefixes.
+        (WebCore::createAesKeyGenParams): Ditto.
+        (WebCore::createHmacParams): Ditto.
+        (WebCore::createHmacKeyParams): Ditto.
+        (WebCore::createRsaKeyGenParams): Added. 
+        (WebCore::createRsaSsaKeyParams): Added. WebCrypto currently doesn't specify any
+        parameters for importKey, so the structure remains blank (unlike with JWK).
+        (WebCore::createRsaSsaParams): Added (currently unused, will be sued for sign/verify soon).
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForEncrypt): Removed unneeded JSC prefixes.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDecrypt): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForSign): Added support for RSAES_PKCS1_v1_5.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForVerify): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDigest): Removed unneeded JSC prefixes.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForGenerateKey): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveKey): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveBits): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForImportKey): Added support for RSAES_PKCS1_v1_5.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForExportKey): Removed unneeded JSC prefixes.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForWrapKey): Ditto.
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForUnwrapKey): Ditto.
+
+        * bindings/js/JSCryptoKeySerializationJWK.h:
+        * bindings/js/JSCryptoKeySerializationJWK.cpp:
+        (WebCore::getJSArrayFromJSON): Added.
+        (WebCore::getBigIntegerVectorFromJSON): Added.
+        (WebCore::createRSASSAKeyParameters): Create parameters for key import. The key
+        will remember which algorithm it's allowed to be used with.
+        (WebCore::JSCryptoKeySerializationJWK::reconcileAlgorithm): Added support for
+        RS256...RS512 (tha is, RSAES_PKCS1_v1_5 with SHA-256...SHA-512).
+        (WebCore::JSCryptoKeySerializationJWK::keyDataOctetSequence): Split out of keyData().
+        (WebCore::JSCryptoKeySerializationJWK::keyDataRSAComponents): Added code to read
+        RSA key components from JWK.
+        (WebCore::JSCryptoKeySerializationJWK::keyData): Call one of the above functions.
+
+        * crypto/CryptoAlgorithmRSASSA_PKCS1_v1_5Mac.cpp: Added.
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::sign):
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::verify):
+        Placeholders.
+
+        * crypto/CryptoKey.h: (WebCore::CryptoKeyClass): Added RSA key class for poor man's RTTI.
+
+        * crypto/CryptoKeyData.h: (WebCore::CryptoKeyData::FormatRSAComponents): Added RSAComponents
+        for poor man's RTTI.
+
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp: (WebCore::CryptoAlgorithmAES_CBC::importKey): 
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp: (WebCore::CryptoAlgorithmHMAC::importKey):
+        * crypto/keys/CryptoKeyAES.h:
+        (WebCore::isCryptoKeyAES):
+        (WebCore::toCryptoKeyAES):
+        * crypto/keys/CryptoKeyDataOctetSequence.h:
+        (WebCore::toCryptoKeyDataOctetSequence):
+        * crypto/keys/CryptoKeyHMAC.h:
+        (WebCore::isCryptoKeyHMAC):
+        (WebCore::toCryptoKeyHMAC):
+        * crypto/mac/CryptoAlgorithmAES_CBCMac.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::encrypt):
+        (WebCore::CryptoAlgorithmAES_CBC::decrypt):
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp:
+        (WebCore::CryptoAlgorithmHMAC::sign):
+        (WebCore::CryptoAlgorithmHMAC::verify):
+        Switched from "as" functions to "is" and "to" ones, as that's more idiomatic.
+
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.cpp: Added.
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.h: Added.
+        Glue code for importKey/generateKey for now.
+
+        * crypto/keys/CryptoKeyDataRSAComponents.cpp: Added.
+        (WebCore::CryptoKeyDataRSAComponents::CryptoKeyDataRSAComponents):
+        (WebCore::CryptoKeyDataRSAComponents::~CryptoKeyDataRSAComponents):
+        * crypto/keys/CryptoKeyDataRSAComponents.h: Added.
+        (WebCore::toCryptoKeyDataRSAComponents):
+        Added a structure to hold RSA key components, extracted from JWK or another format.
+
+        * crypto/keys/CryptoKeyRSA.h: Added.
+        * crypto/mac/CryptoKeyRSAMac.cpp: Added.
+
+        * crypto/mac/CryptoAlgorithmRegistryMac.cpp:
+        (WebCore::CryptoAlgorithmRegistry::platformRegisterAlgorithms):
+        Register RSASSA_PKCS1_v1_5.
+
+        * crypto/parameters/CryptoAlgorithmHmacKeyParams.h: Added a constructor to make
+        sure that hasLength is never left uninitialized, even when reading formats that
+        don't contain a length.
+
+        * crypto/parameters/CryptoAlgorithmRsaKeyGenParams.h: Added.
+        * crypto/parameters/CryptoAlgorithmRsaSsaKeyParams.h: Added.
+        * crypto/parameters/CryptoAlgorithmRsaSsaParams.h: Added.
+        Added parameter structures that are needed for RSASSA_PKCS1_v1_5.
+
+2013-11-12  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        Move ValueToString out to its own header file to remove duplication
+        https://bugs.webkit.org/show_bug.cgi?id=124237
+
+        Reviewed by Alexandru Chiculita.
+
+        The ValueToString struct is used in many places for debugging. Move it
+        out to its own header file to remove all the duplicated definitions
+        and make it possible for the specializations to be placed in the
+        header files with the implementation of the classes they print.
+
+        No new tests, no behavior change.
+
+        * GNUmakefile.list.am:
+        * WebCore.xcodeproj/project.pbxproj:
+        * html/HTMLMediaElement.h:
+        * platform/LayoutUnit.h:
+        * platform/PODInterval.h:
+        * platform/PODIntervalTree.h:
+        * platform/PODRedBlackTree.h:
+        * platform/ValueToString.h: Added.
+        * platform/graphics/FloatPolygon.h:
+        * rendering/FloatingObjects.cpp:
+        * rendering/FloatingObjects.h:
+        * rendering/RenderBlock.h:
+        * rendering/RenderBlockFlow.h:
+        * rendering/RenderFlowThread.h:
+
+2013-11-11  David Hyatt  <hyatt@apple.com>
+
+        Make RenderBlockRareData be in a hashtable instead of being a member variable.
+        https://bugs.webkit.org/show_bug.cgi?id=124056
+
+        Reviewed by Anders Carlsson.
+
+        Right now RenderBlock has 4 bytes taken up by a m_rareData member that is almost
+        never allocated. This is better off in a separate hash, so that RenderBlock can
+        get 4 bytes back.
+        
+        Since RenderBlockFlow's rare data member was recently removed and folded into
+        RenderBlock, we need to undo that change and put the rare data member back in
+        RenderBlockFlow. RenderBlockFlowRareData inheriting from RenderBlockRareData
+        was not a good idea anyway, since RenderBlockFlows also very rarely need the
+        RenderBlockRareData members, and were thus paying a heavier cost when the rare
+        data was created than was necessary.
+ 
+        * rendering/RenderBlock.cpp:
+        (WebCore::RenderBlockRareData::RenderBlockRareData):
+        (WebCore::RenderBlock::~RenderBlock):
+        (WebCore::RenderBlock::hasRareData):
+        (WebCore::getRareData):
+        (WebCore::ensureRareData):
+        (WebCore::RenderBlock::ensureShapeInsideInfo):
+        (WebCore::RenderBlock::shapeInsideInfo):
+        (WebCore::RenderBlock::setShapeInsideInfo):
+        (WebCore::RenderBlock::paginationStrut):
+        (WebCore::RenderBlock::pageLogicalOffset):
+        (WebCore::RenderBlock::setPaginationStrut):
+        (WebCore::RenderBlock::setPageLogicalOffset):
+        * rendering/RenderBlock.h:
+        * rendering/RenderBlockFlow.cpp:
+        (WebCore::RenderBlockFlow::setMaxMarginBeforeValues):
+        (WebCore::RenderBlockFlow::setMaxMarginAfterValues):
+        (WebCore::RenderBlockFlow::setMustDiscardMarginBefore):
+        (WebCore::RenderBlockFlow::setMustDiscardMarginAfter):
+        (WebCore::RenderBlockFlow::mustDiscardMarginBefore):
+        (WebCore::RenderBlockFlow::mustDiscardMarginAfter):
+        (WebCore::RenderBlockFlow::setBreakAtLineToAvoidWidow):
+        (WebCore::RenderBlockFlow::setDidBreakAtLineToAvoidWidow):
+        (WebCore::RenderBlockFlow::clearDidBreakAtLineToAvoidWidow):
+        (WebCore::RenderBlockFlow::clearShouldBreakAtLineToAvoidWidow):
+        (WebCore::RenderBlockFlow::setRenderNamedFlowFragment):
+        (WebCore::RenderBlockFlow::ensureRareBlockFlowData):
+        (WebCore::RenderBlockFlow::materializeRareBlockFlowData):
+        * rendering/RenderBlockFlow.h:
+        (WebCore::RenderBlockFlow::shouldBreakAtLineToAvoidWidow):
+        (WebCore::RenderBlockFlow::lineBreakToAvoidWidow):
+        (WebCore::RenderBlockFlow::didBreakAtLineToAvoidWidow):
+        (WebCore::RenderBlockFlow::lineGridBox):
+        (WebCore::RenderBlockFlow::setLineGridBox):
+        (WebCore::RenderBlockFlow::renderNamedFlowFragment):
+        (WebCore::RenderBlockFlow::maxPositiveMarginBefore):
+        (WebCore::RenderBlockFlow::maxNegativeMarginBefore):
+        (WebCore::RenderBlockFlow::maxPositiveMarginAfter):
+        (WebCore::RenderBlockFlow::maxNegativeMarginAfter):
+        (WebCore::RenderBlockFlow::initMaxMarginValues):
+        (WebCore::RenderBlockFlow::hasRareBlockFlowData):
+        (WebCore::RenderBlockFlow::rareBlockFlowData):
+
+2013-11-12  Alex Christensen  <achristensen@webkit.org>
+
+        Build GStreamer files on Windows.
+        https://bugs.webkit.org/show_bug.cgi?id=124180
+
+        Reviewed by Brent Fulgham.
+
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.vcxproj/copyForwardingHeaders.cmd:
+        Include gstreamer files in WinCairo build.
+
+2013-11-12  Brady Eidson  <beidson@apple.com>
+
+        Introduce IDBServerConnection (and start moving things to it).
+        https://bugs.webkit.org/show_bug.cgi?id=124193
+
+        Reviewed by Alexey Proskuryakov.
+
+        IDBServerConnection will be a purely asynchronous interface for database connections, transactions, and cursors.
+        Its interface will be 100% asynchronous and callback based - Perfect for an IPC divide.
+        Eventually none of the IDB<Foo>Backend classes will need IDBBackingStore<Foo> classes at all, 
+        and they’ll all use IDBServerConnection directly.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * WebCore.xcodeproj/project.pbxproj:
+
+        * Modules/indexeddb/IDBServerConnection.h: Added.
+        (WebCore::IDBServerConnection::~IDBServerConnection):
+
+        Concrete implementation that - for now - wraps an IDBBackingStoreLevelDB:
+        * Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.cpp: Added.
+        (WebCore::IDBServerConnectionLevelDB::IDBServerConnectionLevelDB):
+        (WebCore::IDBServerConnectionLevelDB::deprecatedBackingStore):
+        (WebCore::IDBServerConnectionLevelDB::isClosed):
+        (WebCore::IDBServerConnectionLevelDB::getOrEstablishIDBDatabaseMetadata):
+        (WebCore::IDBServerConnectionLevelDB::deleteDatabase):
+        (WebCore::IDBServerConnectionLevelDB::close):
+        * Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.h: Added.
+
+        LevelDB created databases get LevelDB server connections:
+        * Modules/indexeddb/leveldb/IDBFactoryBackendLevelDB.cpp:
+        (WebCore::IDBFactoryBackendLevelDB::deleteDatabase):
+        (WebCore::IDBFactoryBackendLevelDB::open):
+
+        Replace most uses of IDBBackingStore with server connection:
+        * Modules/indexeddb/IDBDatabaseBackend.cpp:
+        (WebCore::IDBDatabaseBackend::create):
+        (WebCore::IDBDatabaseBackend::IDBDatabaseBackend):
+        (WebCore::IDBDatabaseBackend::openInternalAsync):
+        (WebCore::IDBDatabaseBackend::setIndexKeys):
+        (WebCore::IDBDatabaseBackend::openConnectionInternal):
+        (WebCore::IDBDatabaseBackend::deleteDatabaseAsync):
+        (WebCore::IDBDatabaseBackend::close):
+        * Modules/indexeddb/IDBDatabaseBackend.h:
+        (WebCore::IDBDatabaseBackend::serverConnection):
+
+        Change all the operations to access their DatabaseBackend’s server connection instead
+        if hanging on to a backing store directly:
+        * Modules/indexeddb/IDBTransactionBackend.cpp:
+        (WebCore::IDBTransactionBackend::IDBTransactionBackend):
+        (WebCore::IDBTransactionBackend::scheduleCreateObjectStoreOperation):
+        (WebCore::IDBTransactionBackend::scheduleDeleteObjectStoreOperation):
+        (WebCore::IDBTransactionBackend::scheduleCreateIndexOperation):
+        (WebCore::IDBTransactionBackend::scheduleDeleteIndexOperation):
+        (WebCore::IDBTransactionBackend::scheduleGetOperation):
+        (WebCore::IDBTransactionBackend::schedulePutOperation):
+        (WebCore::IDBTransactionBackend::scheduleOpenCursorOperation):
+        (WebCore::IDBTransactionBackend::scheduleCountOperation):
+        (WebCore::IDBTransactionBackend::scheduleDeleteRangeOperation):
+        (WebCore::IDBTransactionBackend::scheduleClearOperation):
+        * Modules/indexeddb/IDBTransactionBackend.h:
+
+        * Modules/indexeddb/IDBTransactionBackendOperations.cpp:
+        (WebCore::CreateObjectStoreOperation::perform):
+        (WebCore::CreateIndexOperation::perform):
+        (WebCore::DeleteIndexOperation::perform):
+        (WebCore::GetOperation::perform):
+        (WebCore::PutOperation::perform):
+        (WebCore::OpenCursorOperation::perform):
+        (WebCore::CountOperation::perform):
+        (WebCore::DeleteRangeOperation::perform):
+        (WebCore::ClearOperation::perform):
+        (WebCore::DeleteObjectStoreOperation::perform):
+        (WebCore::IDBDatabaseBackend::VersionChangeOperation::perform):
+        * Modules/indexeddb/IDBTransactionBackendOperations.h:
+        (WebCore::CreateObjectStoreOperation::create):
+        (WebCore::CreateObjectStoreOperation::CreateObjectStoreOperation):
+        (WebCore::DeleteObjectStoreOperation::create):
+        (WebCore::DeleteObjectStoreOperation::DeleteObjectStoreOperation):
+        (WebCore::CreateIndexOperation::create):
+        (WebCore::CreateIndexOperation::CreateIndexOperation):
+        (WebCore::DeleteIndexOperation::create):
+        (WebCore::DeleteIndexOperation::DeleteIndexOperation):
+        (WebCore::GetOperation::create):
+        (WebCore::GetOperation::GetOperation):
+        (WebCore::PutOperation::create):
+        (WebCore::PutOperation::PutOperation):
+        (WebCore::OpenCursorOperation::create):
+        (WebCore::OpenCursorOperation::OpenCursorOperation):
+        (WebCore::CountOperation::create):
+        (WebCore::CountOperation::CountOperation):
+        (WebCore::DeleteRangeOperation::create):
+        (WebCore::DeleteRangeOperation::DeleteRangeOperation):
+        (WebCore::ClearOperation::create):
+        (WebCore::ClearOperation::ClearOperation):
+        * Modules/indexeddb/IDBTransactionCoordinator.h:
+
+2013-11-12  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Unreviewed gardening.
+
+        * WebCore.vcxproj/WebCore.vcxproj.filters: Correct filter file so that source
+        files show up in their proper directories in Visual Studio.
+
+2013-11-12  Alex Christensen  <achristensen@webkit.org>
+
+        [WinCairo] Preparation for ENABLE(VIDEO).
+        https://bugs.webkit.org/show_bug.cgi?id=57420
+
+        Reviewed by Martin Robinson.
+
+        * platform/FileSystem.h:
+        * platform/graphics/MediaPlayer.cpp:
+        * rendering/RenderMediaControls.cpp:
+        * rendering/RenderThemeWin.cpp:
+        (WebCore::RenderThemeWin::adjustSliderThumbSize):
+        Separated CG code from GStreamer code.
+
+2013-11-12  Tibor Meszaros  <mtibor@inf.u-szeged.hu>
+
+        Fix reported build warnings for GTK
+        https://bugs.webkit.org/show_bug.cgi?id=123439
+
+        Reviewed by Carlos Garcia Campos.
+
+        There was a void method, that has return value in it's documentation, so I removed it.
+
+        * bindings/gobject/WebKitDOMCustom.h:
+
+2013-11-12  Zan Dobersek  <zdobersek@igalia.com>
+
+        Manage StorageThread through std::unique_ptr
+        https://bugs.webkit.org/show_bug.cgi?id=124197
+
+        Reviewed by Anders Carlsson.
+
+        New StorageThread objects are crafted through std::make_unique. This removes the need for the static
+        StorageThread::create() method but requires that the StorageThread constructor is made public.
+
+        * storage/StorageSyncManager.cpp:
+        (WebCore::StorageSyncManager::StorageSyncManager):
+        * storage/StorageSyncManager.h:
+        * storage/StorageThread.cpp:
+        * storage/StorageThread.h:
+        * storage/StorageTracker.cpp:
+        (WebCore::StorageTracker::StorageTracker):
+        * storage/StorageTracker.h:
+
+2013-11-12  Zan Dobersek  <zdobersek@igalia.com>
+
+        Remove unnecessary PassOwnPtr.h header includes under Source/WebCore/fileapi
+        https://bugs.webkit.org/show_bug.cgi?id=124196
+
+        Reviewed by Anders Carlsson.
+
+        PassOwnPtr is not used anywhere under Source/WebCore/fileapi/, so PassOwnPtr.h inclusions can be removed.
+
+        * fileapi/Blob.h:
+        * fileapi/FileThread.h:
+        * fileapi/FileThreadTask.h:
+
+2013-11-12  Antti Koivisto  <antti@apple.com>
+
+        Text on simple lines sometimes paints one pixel off
+        https://bugs.webkit.org/show_bug.cgi?id=124200
+
+        Reviewed by Andreas Kling.
+
+        Test: fast/text/line-runs-simple-lines.html
+
+        * rendering/SimpleLineLayout.cpp:
+        (WebCore::SimpleLineLayout::adjustRunOffsets):
+        
+            Don't round on run construction time.
+
+        (WebCore::SimpleLineLayout::createTextRuns):
+        * rendering/SimpleLineLayoutResolver.h:
+        (WebCore::SimpleLineLayout::RunResolver::Run::rect):
+        
+            Instead round when generating rects.
+
+        (WebCore::SimpleLineLayout::RunResolver::Run::baseline):
+        
+            Provide the baseline (used by painting) as unrounded FloatPoint.
+
+2013-11-11  Andreas Kling  <akling@apple.com>
+
+        Elements with class names automatically get unique ElementData.
+        <https://webkit.org/b/124184>
+
+        We were calling Element::ensureUniqueElementData() for all Elements
+        with a non-empty list of class names. Doing that on parser-fresh
+        Elements caused us to upgrade them to UniqueElementData despite not
+        needing it (ElementData::setClass() is a const function for caching
+        the "cooked" class and can be called on ShareableElementData.)
+
+        1.09 MB progression on HTML5 spec at <http://whatwg.org/c>
+
+        Reviewed by Antti Koivisto.
+
+2013-11-12  Zan Dobersek  <zdobersek@igalia.com>
+
+        JSC bindings generator should generate deletable JSC functions
+        https://bugs.webkit.org/show_bug.cgi?id=122422
+
+        Reviewed by Geoffrey Garen.
+
+        The JSC functions that the JSC bindings generator generates should be deletable to conform to
+        the WebIDL specification, which instructs that the WebIDL operations must be configurable (which
+        translates to the JSC functions being deletable).
+
+        The generator will still produce a non-deletable JSC function for operations under almost all
+        Web-facing interfaces since they're annotated with the OperationsNotDeletable attribute. The
+        exception here is the Node interface that is having the attribute removed, with the provided
+        test case testing that all the functions on the Node prototype object are writable, enumerable
+        and configurable. This behavior conforms to the WebIDL specification and the behaviors of IE
+        and Firefox. Chrome at the moment still provides non-configurable functions.
+
+        Test: fast/dom/webidl-operations-on-node-prototype.html
+
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateImplementation): Enforce the non-deletable behavior of the JSC function if either the
+        operation's interface is annotated with the OperationsNotDeletable attribute or the operation itself
+        is annotated with the NotDeletable attribute.
+        * bindings/scripts/test/JS/JSTestActiveDOMObject.cpp: Update the JSC generator test baselines.
+        * bindings/scripts/test/JS/JSTestCustomNamedGetter.cpp: Ditto.
+        * bindings/scripts/test/JS/JSTestEventTarget.cpp: Ditto.
+        * bindings/scripts/test/JS/JSTestInterface.cpp: Ditto.
+        * bindings/scripts/test/JS/JSTestMediaQueryListListener.cpp: Ditto.
+        * bindings/scripts/test/JS/JSTestObj.cpp: Ditto.
+        * bindings/scripts/test/JS/JSTestTypedefs.cpp: Ditto.
+        * dom/Node.idl: Remove the OperationsNotDeletable attribute.
+
+2013-11-11  Brady Eidson  <beidson@apple.com>
+
+        Make IDBTransaction tasks asynchronous
+        https://bugs.webkit.org/show_bug.cgi?id=124183
+
+        Reviewed by Tim Horton.
+
+        This is an almost zero-change in behavior.
+
+        The one thing that is different is that previously, IDBTransactionBackends would synchronously
+        run through their entire set of IDBOperation’s without ever returning control to the runloop.
+
+        Now, they start one task and then wait for its completion to schedule the start of the next task.
+
+        Change IDBOperation’s perform() to take a completion handler so it can be asynchronous.
+        Add an IDBSynchronousOperation class to handle "Abort" tasks, which never need to perform i/o
+        and therefore can be entirely synchronous.
+        * Modules/indexeddb/IDBOperation.h:
+        (WebCore::IDBSynchronousOperation::~IDBSynchronousOperation):
+
+        * Modules/indexeddb/IDBTransactionBackend.cpp:
+        (WebCore::IDBTransactionBackend::scheduleTask): "Abort tasks" are now IDBSynchronousOperations.
+        (WebCore::IDBTransactionBackend::abort):
+        (WebCore::IDBTransactionBackend::taskTimerFired): Instead of running through the entire set of tasks,
+          perform a single task asynchronously. The completion handler for the task will reset the task timer
+          to asynchronously start the next task.
+        * Modules/indexeddb/IDBTransactionBackend.h:
+        (WebCore::IDBTransactionBackend::scheduleTask): "Abort tasks" are now IDBSynchronousOperations.
+
+        Update all operations to take completion handlers.
+        For now, perform things synchronously like before, calling the completion handler when complete.
+        * Modules/indexeddb/IDBCursorBackend.cpp:
+        (WebCore::CallOnDestruct::CallOnDestruct): Helper class to make sure completion callbacks are always called perform() exits.
+        (WebCore::CallOnDestruct::~CallOnDestruct):
+        (WebCore::IDBCursorBackend::CursorIterationOperation::create):
+        (WebCore::IDBCursorBackend::CursorAdvanceOperation::create):
+        (WebCore::IDBCursorBackend::CursorPrefetchIterationOperation::create):
+        (WebCore::IDBCursorBackend::CursorAdvanceOperation::perform):
+        (WebCore::IDBCursorBackend::CursorIterationOperation::perform):
+        (WebCore::IDBCursorBackend::CursorPrefetchIterationOperation::perform):
+
+        * Modules/indexeddb/IDBTransactionBackendOperations.cpp:
+        (WebCore::CallOnDestruct::CallOnDestruct): Helper class to make sure completion callbacks are always called when perform() exits.
+        (WebCore::CallOnDestruct::~CallOnDestruct):
+        (WebCore::CreateObjectStoreOperation::perform):
+        (WebCore::CreateIndexOperation::perform):
+        (WebCore::DeleteIndexOperation::perform):
+        (WebCore::GetOperation::perform):
+        (WebCore::PutOperation::perform):
+        (WebCore::SetIndexesReadyOperation::perform):
+        (WebCore::OpenCursorOperation::perform):
+        (WebCore::CountOperation::perform):
+        (WebCore::DeleteRangeOperation::perform):
+        (WebCore::ClearOperation::perform):
+        (WebCore::DeleteObjectStoreOperation::perform):
+        (WebCore::IDBDatabaseBackend::VersionChangeOperation::perform):
+
+        * Modules/indexeddb/IDBTransactionBackendOperations.h:
+        (WebCore::CreateObjectStoreOperation::create):
+        (WebCore::DeleteObjectStoreOperation::create):
+        (WebCore::IDBDatabaseBackend::VersionChangeOperation::create):
+        (WebCore::CreateObjectStoreAbortOperation::create):
+        (WebCore::DeleteObjectStoreAbortOperation::create):
+        (WebCore::IDBDatabaseBackend::VersionChangeAbortOperation::create):
+        (WebCore::CreateIndexOperation::create):
+        (WebCore::CreateIndexAbortOperation::create):
+        (WebCore::DeleteIndexOperation::create):
+        (WebCore::DeleteIndexAbortOperation::create):
+        (WebCore::GetOperation::create):
+        (WebCore::PutOperation::create):
+        (WebCore::SetIndexesReadyOperation::create):
+        (WebCore::OpenCursorOperation::create):
+        (WebCore::CountOperation::create):
+        (WebCore::DeleteRangeOperation::create):
+        (WebCore::ClearOperation::create):
+
+2013-11-11  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Remove some unused generated code
+        https://bugs.webkit.org/show_bug.cgi?id=124179
+
+        Reviewed by Timothy Hatcher.
+
+        * inspector/CodeGeneratorInspectorStrings.py:
+
+2013-11-11  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Clean up static_cast<Element*> usage
+        https://bugs.webkit.org/show_bug.cgi?id=124133
+
+        Reviewed by Andreas Kling.
+
+        We need to use toFoo cast function instead of static_cast<>. Though there is toElement(),
+        static_cast<Element*> is still being used.
+
+        No new tests, no behavior changes.
+
+        * bindings/gobject/WebKitDOMPrivate.cpp:
+        (WebKit::wrap):
+        * dom/ElementTraversal.h:
+        (WebCore::::lastWithinTemplate):
+        (WebCore::::nextTemplate):
+        (WebCore::::previousTemplate):
+
+2013-11-11  Anders Carlsson  <andersca@apple.com>
+
+        FrameFilter can just be an std::function instead
+        https://bugs.webkit.org/show_bug.cgi?id=124176
+
+        Reviewed by Tim Horton.
+
+        * WebCore.exp.in:
+        * loader/archive/cf/LegacyWebArchive.cpp:
+        (WebCore::LegacyWebArchive::create):
+        * loader/archive/cf/LegacyWebArchive.h:
+
+2013-11-11  Simon Fraser  <simon.fraser@apple.com>
+
+        REGRESSION (r155660): box-shadow causes overlay scrollbars to be in the wrong position when element is composited (85647)
+        https://bugs.webkit.org/show_bug.cgi?id=124090
+
+        Reviewed by Beth Dakin.
+        
+        After r155660 we did fewer layouts, so were left with overlay scrollbars in the
+        wrong locations because nothing would update them after RenderLayerBacking
+        computed a new offsetFromRenderer.
+        
+        First part of the fix is to wean positionOverflowControlsLayers() off of
+        an absolute offset from the root. Do this by not using Widget::frameRect()
+        to position the layers, but instead RenderLayer::rectFor{Horizontal|Vertical}Scrollbar
+        which is what we used to position the scrollbars in the first place.
+        
+        Second part of the fix is to call positionOverflowControlsLayers() from
+        RenderLayerBacking::updateGraphicsLayerGeometry() if the offsetFromRenderer
+        changed.
+
+        Test: compositing/overflow/overflow-scrollbar-layer-positions.html
+
+        * rendering/RenderLayer.cpp:
+        (WebCore::RenderLayer::positionOverflowControls):
+        * rendering/RenderLayerBacking.cpp:
+        (WebCore::RenderLayerBacking::updateGraphicsLayerGeometry):
+        (WebCore::RenderLayerBacking::positionOverflowControlsLayers):
+        * rendering/RenderLayerBacking.h:
+
+2013-11-11  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] m_isCompositeFontReference is uninitialized.
+        https://bugs.webkit.org/show_bug.cgi?id=124170
+
+        Reviewed by Tim Horton.
+
+        Initialize value to false, as is done in the other constructors for this data type.
+
+        * platform/graphics/win/FontPlatformDataCGWin.cpp:
+        (WebCore::FontPlatformData::FontPlatformData): 
+        * platform/graphics/win/FontPlatformDataCairoWin.cpp:
+        (WebCore::FontPlatformData::FontPlatformData):
+        * platform/graphics/win/FontPlatformDataWin.cpp:
+        (WebCore::FontPlatformData::FontPlatformData):
+
+2013-11-11  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        [Mac] Characters too close together in complex Arabic text
+        https://bugs.webkit.org/show_bug.cgi?id=124057
+
+        Reviewed by Darin Adler.
+
+        We weren't updating our total width variable with run's initial
+        advance information, leading to widths that were too narrow.
+
+        In addition, while initial advances for runs that aren't the first
+        run are accounted for by baking in the initial advances into the
+        previous character's advance, the initial advance for the first run
+        has to be accounted for in ComplexTextController::offsetForPosition.
+
+        Test: fast/text/complex-grapheme-cluster-with-initial-advance.html
+        Test: fast/text/selection-in-initial-advance-region.html
+
+        * platform/graphics/mac/ComplexTextController.cpp:
+        (WebCore::ComplexTextController::adjustGlyphsAndAdvances): Update
+        total width variable
+        (WebCore::ComplexTextController::offsetOfPosition): Account for
+        the first run's initial advance.
+
+2013-11-11  Brady Eidson  <beidson@apple.com>
+
+        Make IDBBackingStoreTransaction be RefCounted
+        https://bugs.webkit.org/show_bug.cgi?id=124168
+
+        Reviewed by Tim Horton.
+
+        This is necessarily to safely add a fully asynchronous interface into the IDB mechanism.
+
+        * Modules/indexeddb/IDBBackingStoreInterface.h:
+        * Modules/indexeddb/IDBBackingStoreTransactionInterface.h:
+        * Modules/indexeddb/IDBTransactionBackend.h:
+
+        * Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.cpp:
+        (WebCore::IDBBackingStoreLevelDB::createBackingStoreTransaction):
+        * Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.h:
+        * Modules/indexeddb/leveldb/IDBBackingStoreTransactionLevelDB.h:
+
+2013-11-11  Antti Koivisto  <antti@apple.com>
+
+        End of line whitespace should collapse with white-space:pre-wrap; overflow-wrap:break-word in all cases
+        https://bugs.webkit.org/show_bug.cgi?id=124158
+
+        Reviewed by Dave Hyatt.
+        
+        If a word just fits the line but the following space overflows we fail to collapse whitespaces 
+        at the end of the line. This happens because with break-word we end up taking word breaking
+        code path that does not have pre-wrap whitespace handling.
+        
+        This patch makes the behavior consistent and also matches Firefox.
+
+        Test: fast/text/break-word-pre-wrap.html
+
+        * rendering/RenderBlockLineLayout.cpp:
+        (WebCore::BreakingContext::handleText):
+        
+            Don't take the word break code path if we are pre-wrap and the current character is space.
+            Instead proceed to break the line normally as this is a valid break position.
+
+2013-11-11  Bear Travis  <betravis@adobe.com>
+
+        Web Inspector: [CSS Shapes] Highlight shape-outside when its element is selected in the Web Inspector
+        https://bugs.webkit.org/show_bug.cgi?id=124071
+
+        Reviewed by Timothy Hatcher.
+
+        Adding code to pass computed shape information (path and bounds) to the Inspector overlay
+        canvas, and the code to display it. The code creates a path based on ShapeInfo's computed
+        shape. The shape highlight draws whenever an element is highlighted, via selection in
+        the Inspector elements view.
+
+        Test: inspector-protocol/model/highlight-shape-outside.html
+
+        * inspector/InspectorOverlay.cpp:
+        (WebCore::localPointToRoot): Convert a local point to be relative to the root view.
+        (WebCore::appendPathCommandAndPoints): Helper for building a single segment's worth
+        of the overall path.
+        (WebCore::appendPathSegment): Build a single segment's worth of the overall path.
+        (WebCore::buildObjectForShapeOutside): Build an object to pass to the Inspector overlay
+        that represents the shape.
+        (WebCore::buildObjectForElementInfo): Call buildObjectForShapeOutside and pass the
+        resulting object along.
+        * inspector/InspectorOverlayPage.js:
+        (pathCommand): Draw a single path command.
+        (drawPath): Draw the overall path.
+        (_drawShapeHighlight): Draw the highlight for the given shapeInfo.
+        (drawNodeHighlight): Call _drawShapeHighlight.
+        * rendering/shapes/PolygonShape.h:
+        (WebCore::PolygonShape::polygon): Expose the underlying vertex information for a
+        PolygonShape.
+        * rendering/shapes/RasterShape.h:
+        * rendering/shapes/RectangleShape.h:
+        (WebCore::RectangleShape::logicalRx): Expose the logical radii for a shape.
+        (WebCore::RectangleShape::logicalRy): Ditto.
+        * rendering/shapes/Shape.h:
+        * rendering/shapes/ShapeInfo.h:
+        (WebCore::ShapeInfo::computedShapePhysicalBoundingBox): The physical bounds of a
+        shape in renderer coordinates.
+        (WebCore::ShapeInfo::shapeToRendererPoint): Convert shape coordinates to renderer
+        coordinates.
+        (WebCore::ShapeInfo::shapeToRendererSize): Ditto.
+        (WebCore::ShapeInfo::ShapeInfo):
+
+2013-11-11  Alexey Proskuryakov  <ap@apple.com>
+
+        Support WebCrypto KeyPair interface
+        https://bugs.webkit.org/show_bug.cgi?id=124161
+
+        Reviewed by Geoffrey Garen.
+
+        No new tests yet, will be tested once generateKey is implemented for any RSA algorithms.
+
+        * CMakeLists.txt:
+        * DerivedSources.make:
+        * GNUmakefile.list.am:
+        * WebCore.xcodeproj/project.pbxproj:
+        Added new files.
+
+        * bindings/js/JSDOMPromise.h: Support returning a key pair via a promise.
+
+        * bindings/js/JSCryptoKeyPairCustom.cpp: Added.
+        (WebCore::JSCryptoKeyPair::visitChildren):
+        * crypto/CryptoKey.idl:
+        CryptoKey wrapper is reachable through KeyPair, but it doesn't have (or need)
+        a back pointer.
+
+        * crypto/CryptoKeyPair.cpp: Added.
+        (WebCore::CryptoKeyPair::CryptoKeyPair):
+        (WebCore::CryptoKeyPair::~CryptoKeyPair):
+        * crypto/CryptoKeyPair.h: Added.
+        (WebCore::CryptoKeyPair::create):
+        (WebCore::CryptoKeyPair::publicKey):
+        (WebCore::CryptoKeyPair::privateKey):
+        * crypto/CryptoKeyPair.idl: Added.
+
+2013-11-11  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Fix build after r158967
+        https://bugs.webkit.org/show_bug.cgi?id=124160
+
+        Reviewed by Anders Carlsson.
+
+        After r158967, gcc debug builds with "-Werror=type-limits" enabled
+        fail. This patch fixes it.
+
+        * rendering/shapes/RasterShape.h:
+        (WebCore::RasterShapeIntervals::intervalsAt):
+
+2013-11-11  Zan Dobersek  <zdobersek@igalia.com>
+
+        Remove the OperationsNotDeletable attribute from most of the WebIDL interfaces
+        https://bugs.webkit.org/show_bug.cgi?id=124151
+
+        Reviewed by Geoffrey Garen.
+
+        The OperationsNotDeletable attribute currently doesn't have any effect, but will soon enforce
+        non-configurability of operations on the interface that uses the attribute. Non-configurability
+        of operations is the default behavior at the moment, but will be changed to follow the WebIDL
+        specification which requires that the operations are configurable (i.e. -- in JSC terms -- deletable).
+        IE and Firefox already exhibit this behavior in the majority of cases, while Chrome and Opera don't.
+
+        The attribute remains in use on the Location interface to mimic the Unforgeable attribute which
+        also makes operations of an interface non-configurable. Unforgeable attribute will be used instead
+        when support for it will be added to the JSC bindings generator.
+
+        * Modules/battery/BatteryManager.idl:
+        * Modules/encryptedmedia/MediaKeySession.idl:
+        * Modules/encryptedmedia/MediaKeys.idl:
+        * Modules/gamepad/GamepadList.idl:
+        * Modules/geolocation/Geolocation.idl:
+        * Modules/indexeddb/IDBCursor.idl:
+        * Modules/indexeddb/IDBDatabase.idl:
+        * Modules/indexeddb/IDBFactory.idl:
+        * Modules/indexeddb/IDBIndex.idl:
+        * Modules/indexeddb/IDBKeyRange.idl:
+        * Modules/indexeddb/IDBObjectStore.idl:
+        * Modules/indexeddb/IDBTransaction.idl:
+        * Modules/indexeddb/IDBVersionChangeEvent.idl:
+        * Modules/mediacontrols/MediaControlsHost.idl:
+        * Modules/mediasource/MediaSource.idl:
+        * Modules/mediasource/SourceBuffer.idl:
+        * Modules/mediasource/SourceBufferList.idl:
+        * Modules/mediastream/MediaStream.idl:
+        * Modules/mediastream/MediaStreamTrack.idl:
+        * Modules/mediastream/RTCDTMFSender.idl:
+        * Modules/mediastream/RTCDataChannel.idl:
+        * Modules/mediastream/RTCPeerConnection.idl:
+        * Modules/mediastream/RTCStatsReport.idl:
+        * Modules/mediastream/RTCStatsResponse.idl:
+        * Modules/networkinfo/NetworkInfoConnection.idl:
+        * Modules/notifications/Notification.idl:
+        * Modules/notifications/NotificationCenter.idl:
+        * Modules/proximity/DeviceProximityEvent.idl:
+        * Modules/quota/StorageInfo.idl:
+        * Modules/quota/StorageQuota.idl:
+        * Modules/speech/SpeechGrammarList.idl:
+        * Modules/speech/SpeechRecognition.idl:
+        * Modules/speech/SpeechRecognitionResult.idl:
+        * Modules/speech/SpeechRecognitionResultList.idl:
+        * Modules/speech/SpeechSynthesis.idl:
+        * Modules/webaudio/AnalyserNode.idl:
+        * Modules/webaudio/AudioBuffer.idl:
+        * Modules/webaudio/AudioBufferSourceNode.idl:
+        * Modules/webaudio/AudioContext.idl:
+        * Modules/webaudio/AudioListener.idl:
+        * Modules/webaudio/AudioNode.idl:
+        * Modules/webaudio/AudioParam.idl:
+        * Modules/webaudio/BiquadFilterNode.idl:
+        * Modules/webaudio/OscillatorNode.idl:
+        * Modules/webaudio/PannerNode.idl:
+        * Modules/webdatabase/Database.idl:
+        * Modules/webdatabase/DatabaseSync.idl:
+        * Modules/webdatabase/SQLResultSetRowList.idl:
+        * Modules/webdatabase/SQLTransaction.idl:
+        * Modules/webdatabase/SQLTransactionSync.idl:
+        * Modules/websockets/WebSocket.idl:
+        * crypto/CryptoKey.idl:
+        * crypto/SubtleCrypto.idl:
+        * css/CSSHostRule.idl:
+        * css/CSSMediaRule.idl:
+        * css/CSSPrimitiveValue.idl:
+        * css/CSSRuleList.idl:
+        * css/CSSStyleDeclaration.idl:
+        * css/CSSStyleSheet.idl:
+        * css/CSSSupportsRule.idl:
+        * css/CSSValueList.idl:
+        * css/DOMWindowCSS.idl:
+        * css/FontLoader.idl:
+        * css/MediaList.idl:
+        * css/MediaQueryList.idl:
+        * css/MediaQueryListListener.idl:
+        * css/StyleMedia.idl:
+        * css/StyleSheet.idl:
+        * css/StyleSheetList.idl:
+        * css/WebKitCSSFilterValue.idl:
+        * css/WebKitCSSKeyframesRule.idl:
+        * css/WebKitCSSMatrix.idl:
+        * css/WebKitCSSTransformValue.idl:
+        * dom/CharacterData.idl:
+        * dom/ChildNode.idl:
+        * dom/ClientRectList.idl:
+        * dom/Clipboard.idl:
+        * dom/CompositionEvent.idl:
+        * dom/CustomEvent.idl:
+        * dom/DOMCoreException.idl:
+        * dom/DOMImplementation.idl:
+        * dom/DOMNamedFlowCollection.idl:
+        * dom/DOMStringList.idl:
+        * dom/DOMStringMap.idl:
+        * dom/DataTransferItem.idl:
+        * dom/DataTransferItemList.idl:
+        * dom/DeviceMotionEvent.idl:
+        * dom/DeviceOrientationEvent.idl:
+        * dom/Document.idl:
+        * dom/DocumentFragment.idl:
+        * dom/DocumentType.idl:
+        * dom/Element.idl:
+        * dom/Event.idl:
+        * dom/EventException.idl:
+        * dom/EventListener.idl:
+        * dom/EventTarget.idl:
+        * dom/HashChangeEvent.idl:
+        * dom/KeyboardEvent.idl:
+        * dom/MessageEvent.idl:
+        * dom/MessagePort.idl:
+        * dom/MouseEvent.idl:
+        * dom/MutationEvent.idl:
+        * dom/MutationObserver.idl:
+        * dom/NamedNodeMap.idl:
+        * dom/Node.idl:
+        * dom/NodeFilter.idl:
+        * dom/NodeIterator.idl:
+        * dom/NodeList.idl:
+        * dom/Range.idl:
+        * dom/RangeException.idl:
+        * dom/ShadowRoot.idl:
+        * dom/Text.idl:
+        * dom/TextEvent.idl:
+        * dom/TouchEvent.idl:
+        * dom/TouchList.idl:
+        * dom/TreeWalker.idl:
+        * dom/UIEvent.idl:
+        * dom/WebKitNamedFlow.idl:
+        * dom/WheelEvent.idl:
+        * fileapi/Blob.idl:
+        * fileapi/FileException.idl:
+        * fileapi/FileList.idl:
+        * fileapi/FileReader.idl:
+        * fileapi/FileReaderSync.idl:
+        * html/DOMFormData.idl:
+        * html/DOMSettableTokenList.idl:
+        * html/DOMTokenList.idl:
+        * html/DOMURL.idl:
+        * html/HTMLAllCollection.idl:
+        * html/HTMLAnchorElement.idl:
+        * html/HTMLButtonElement.idl:
+        * html/HTMLCanvasElement.idl:
+        * html/HTMLCollection.idl:
+        * html/HTMLDocument.idl:
+        * html/HTMLElement.idl:
+        * html/HTMLEmbedElement.idl:
+        * html/HTMLFieldSetElement.idl:
+        * html/HTMLFormControlsCollection.idl:
+        * html/HTMLFormElement.idl:
+        * html/HTMLFrameElement.idl:
+        * html/HTMLIFrameElement.idl:
+        * html/HTMLInputElement.idl:
+        * html/HTMLKeygenElement.idl:
+        * html/HTMLMarqueeElement.idl:
+        * html/HTMLMediaElement.idl:
+        * html/HTMLObjectElement.idl:
+        * html/HTMLOptionsCollection.idl:
+        * html/HTMLOutputElement.idl:
+        * html/HTMLSelectElement.idl:
+        * html/HTMLTableElement.idl:
+        * html/HTMLTableRowElement.idl:
+        * html/HTMLTableSectionElement.idl:
+        * html/HTMLTextAreaElement.idl:
+        * html/HTMLVideoElement.idl:
+        * html/MediaController.idl:
+        * html/RadioNodeList.idl:
+        * html/TimeRanges.idl:
+        * html/canvas/CanvasGradient.idl:
+        * html/canvas/CanvasRenderingContext2D.idl:
+        * html/canvas/DOMPath.idl:
+        * html/canvas/EXTDrawBuffers.idl:
+        * html/canvas/OESVertexArrayObject.idl:
+        * html/canvas/WebGLDebugShaders.idl:
+        * html/canvas/WebGLLoseContext.idl:
+        * html/canvas/WebGLRenderingContext.idl:
+        * html/track/AudioTrackList.idl:
+        * html/track/TextTrack.idl:
+        * html/track/TextTrackCue.idl:
+        * html/track/TextTrackCueList.idl:
+        * html/track/TextTrackList.idl:
+        * html/track/TextTrackRegionList.idl:
+        * html/track/VideoTrackList.idl:
+        * loader/appcache/DOMApplicationCache.idl:
+        * page/Console.idl:
+        * page/Crypto.idl:
+        * page/DOMSecurityPolicy.idl:
+        * page/DOMSelection.idl:
+        * page/DOMWindow.idl:
+        * page/EventSource.idl:
+        * page/History.idl:
+        * page/Navigator.idl:
+        * page/Performance.idl:
+        * page/PerformanceEntryList.idl:
+        * page/SpeechInputResultList.idl:
+        * page/WindowBase64.idl:
+        * page/WindowTimers.idl:
+        * plugins/DOMMimeTypeArray.idl:
+        * plugins/DOMPlugin.idl:
+        * plugins/DOMPluginArray.idl:
+        * storage/Storage.idl:
+        * storage/StorageEvent.idl:
+        * svg/SVGAngle.idl:
+        * svg/SVGAnimationElement.idl:
+        * svg/SVGColor.idl:
+        * svg/SVGCursorElement.idl:
+        * svg/SVGDocument.idl:
+        * svg/SVGElement.idl:
+        * svg/SVGElementInstanceList.idl:
+        * svg/SVGException.idl:
+        * svg/SVGFEDropShadowElement.idl:
+        * svg/SVGFEGaussianBlurElement.idl:
+        * svg/SVGFEMorphologyElement.idl:
+        * svg/SVGFilterElement.idl:
+        * svg/SVGGraphicsElement.idl:
+        * svg/SVGLength.idl:
+        * svg/SVGLengthList.idl:
+        * svg/SVGMarkerElement.idl:
+        * svg/SVGMaskElement.idl:
+        * svg/SVGMatrix.idl:
+        * svg/SVGNumberList.idl:
+        * svg/SVGPaint.idl:
+        * svg/SVGPathElement.idl:
+        * svg/SVGPathSegList.idl:
+        * svg/SVGPatternElement.idl:
+        * svg/SVGPoint.idl:
+        * svg/SVGPointList.idl:
+        * svg/SVGSVGElement.idl:
+        * svg/SVGStringList.idl:
+        * svg/SVGTests.idl:
+        * svg/SVGTextContentElement.idl:
+        * svg/SVGTransform.idl:
+        * svg/SVGTransformList.idl:
+        * workers/DedicatedWorkerGlobalScope.idl:
+        * workers/Worker.idl:
+        * workers/WorkerGlobalScope.idl:
+        * workers/WorkerLocation.idl:
+        * xml/DOMParser.idl:
+        * xml/XMLHttpRequest.idl:
+        * xml/XMLHttpRequestException.idl:
+        * xml/XMLHttpRequestUpload.idl:
+        * xml/XMLSerializer.idl:
+        * xml/XPathEvaluator.idl:
+        * xml/XPathException.idl:
+        * xml/XPathExpression.idl:
+        * xml/XPathNSResolver.idl:
+        * xml/XPathResult.idl:
+        * xml/XSLTProcessor.idl:
+
+2013-11-11  Javier Fernandez  <jfernandez@igalia.com>
+
+        [CSS Regions] Selection focusNode set to the "region" block, instead of the "source" block
+        https://bugs.webkit.org/show_bug.cgi?id=120769
+
+        Reviewed by David Hyatt.
+
+        When a point hits a Region block, current positionForPoint algorithm determines its
+        position in the DOM and returns either the start or end offset for such block, since
+        Region blocks have no children in the DOM.
+
+        It's necessary to map the point into Flow Thread coordinates in order to determine
+        the DOM position of the specific element rendered by the Region.
+
+        Top margin, padding and border points should be mapped to the beginning of the Region
+        block, while bottom points are mapped to the block end. The Left coordinate its just
+        adjusted to fit in the Flow Thread boundaries, since its not affected by the Flow
+        direction.
+
+        Besides, when inspecting the Flow Thread blocks looking for the last candidate box,
+        the Region originally associated to the point might be taken into account. Only the
+        blocks/boxes rendered by the Region are potential candidates.
+
+        Tests: fast/regions/selection/position-for-point-1-vert-lr.html
+               fast/regions/selection/position-for-point-1-vert-rl.html
+               fast/regions/selection/position-for-point-1.html
+               fast/regions/selection/position-for-point-vert-lr.html
+               fast/regions/selection/position-for-point-vert-rl.html
+               fast/regions/selection/position-for-point.html
+
+        * rendering/RenderBlock.cpp:
+        (WebCore::isChildHitTestCandidate):
+        (WebCore::RenderBlock::positionForPoint):
+        * rendering/RenderBlockFlow.cpp:
+        (WebCore::RenderBlockFlow::positionForPoint): Added.
+        It just redirects the call to the associated RenderNamedFlowFragment instance.
+        * rendering/RenderBlockFlow.h:
+        * rendering/RenderRegion.cpp:
+        (WebCore::RenderRegion::mapRegionPointIntoFlowThreadCoordinates): Added.
+        It performs the coordinates mapping.
+        (WebCore::RenderRegion::positionForPoint): Added.
+        It determines the corresponding LayoutPoint in the FlowThread the Region
+        is associated to, forwarding the call to the RenderBlock class using the
+        FlowThread's first child block and such new point.
+        * rendering/RenderRegion.h:
+
 2013-11-11  Gergo Balogh  <geryxyz@inf.u-szeged.hu>
 
         [curl] Remove unused includes.

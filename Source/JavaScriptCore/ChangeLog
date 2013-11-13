@@ -1,3 +1,445 @@
+2013-11-13  Oliver Hunt  <oliver@apple.com>
+
+        REGRESSION (r158014): Many webpages throw stack overflow exceptions on iOS (because Parser::parseMemberExpression uses ~130K more stack)
+        https://bugs.webkit.org/show_bug.cgi?id=124177
+
+        Reviewed by Michael Saboff.
+
+        This patch pushes error handling into NEVER_INLINE functions to perform
+        the actual error message construction.  This dramatically reduces the
+        stack usage of the Parser.  For the large functions (such as parseMemberExpression)
+        the improvement is on the order of 2.5x reduction in stack usage.  For
+        smaller functions the reduction is in the order of 5-6x.
+
+        * parser/Parser.cpp:
+        (JSC::::logError):
+        * parser/Parser.h:
+
+2013-11-13  Julien Brianceau  <jbriance@cisco.com>
+
+        [sh4] Protect repatchCompact from flushConstantPool.
+        https://bugs.webkit.org/show_bug.cgi?id=124278
+
+        Reviewed by Michael Saboff.
+
+        Random crashes may occur with sh4 architecture, when a flushConstantPool occurs in
+        movlMemRegCompact. As in this case a branch opcode and the constant pool are put
+        before the movlMemRegCompact, the branch itself is patched when calling repatchCompact
+        instead of the mov instruction, which is really bad.
+
+        * assembler/SH4Assembler.h:
+        (JSC::SH4Assembler::repatchCompact): Handle this specific case and add an ASSERT.
+
+2013-11-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Disable WebCrypto on Mountain Lion
+        https://bugs.webkit.org/show_bug.cgi?id=124261
+
+        Rubber-stamped by Sam Weinig.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-11-12  Julien Brianceau  <jbriance@cisco.com>
+
+        [sh4] Fix load32WithUnalignedHalfWords function in baseline JIT.
+        https://bugs.webkit.org/show_bug.cgi?id=124233
+
+        Reviewed by Michael Saboff.
+
+        * assembler/MacroAssemblerSH4.h:
+        (JSC::MacroAssemblerSH4::load32WithUnalignedHalfWords): Do not claim scratch register too early.
+        Test already covered by fast/regex/pcre-test-1.
+
+2013-11-12  Filip Pizlo  <fpizlo@apple.com>
+
+        Liveness analysis should take less memory in CodeBlock when it is unused
+        https://bugs.webkit.org/show_bug.cgi?id=124225
+
+        Reviewed by Mark Hahnenberg.
+        
+        Basically, I turned CodeBlock::m_livenessAnalysis into a pointer that is null by
+        default.
+
+        * bytecode/BytecodeLivenessAnalysis.cpp:
+        (JSC::BytecodeLivenessAnalysis::BytecodeLivenessAnalysis):
+        (JSC::BytecodeLivenessAnalysis::runLivenessFixpoint):
+        (JSC::BytecodeLivenessAnalysis::operandIsLiveAtBytecodeOffset):
+        (JSC::BytecodeLivenessAnalysis::dumpResults):
+        (JSC::BytecodeLivenessAnalysis::compute):
+        * bytecode/BytecodeLivenessAnalysis.h:
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+        * bytecode/CodeBlock.h:
+        (JSC::CodeBlock::livenessAnalysis):
+
+2013-11-11  Oliver Hunt  <oliver@apple.com>
+
+        Support unprefixed deconstructing assignment
+        https://bugs.webkit.org/show_bug.cgi?id=124172
+
+        Reviewed by Mark Lam.
+
+        Add support for unprefixed descontructive assignment.
+
+        Happily non-reference types on the left hand side of an assignment
+        are a runtime error, so we're able to defer validation of the binding
+        pattern to codegen time when we're already doing a lot more work.
+
+        We're also able to predicate our attempt to parse on the existence of
+        '[' or '{' as they are not as common as other constructs. 
+
+        * bytecompiler/NodesCodegen.cpp:
+        (JSC::ArrayPatternNode::emitDirectBinding):
+        * parser/ASTBuilder.h:
+        * parser/Parser.cpp:
+        (JSC::::createBindingPattern):
+        (JSC::::tryParseDeconstructionPatternExpression):
+        (JSC::::parseDeconstructionPattern):
+        (JSC::::parseForStatement):
+        (JSC::::parseAssignmentExpression):
+        * parser/Parser.h:
+        (JSC::Parser::createSavePoint):
+        (JSC::Parser::restoreSavePoint):
+        * parser/SyntaxChecker.h:
+
+2013-11-12  Andy Estes  <aestes@apple.com>
+
+        Run JavaScriptCore Objective-C API tests on all supported platforms
+        https://bugs.webkit.org/show_bug.cgi?id=124214
+
+        Reviewed by Mark Hahnenberg.
+
+        Now that we support the API on iOS and on OS X 10.8, there's no reason
+        to limit the tests to OS X 10.9 (or greater).
+
+        * API/tests/CurrentThisInsideBlockGetterTest.h:
+        * API/tests/CurrentThisInsideBlockGetterTest.mm:
+        * API/tests/testapi.mm:
+
+2013-08-02  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        CodeBlocks should be able to determine bytecode liveness
+        https://bugs.webkit.org/show_bug.cgi?id=118546
+
+        Reviewed by Filip Pizlo.
+
+        This will simplify some things in the DFG related to OSR exits and determining 
+        which bytecode variables are live at which points during execution. It will
+        also be useful for making our conservative GC scan more precise. Currently it 
+        doesn't properly account for liveness while the DFG is running, so it will be 
+        off by default behing a runtime Options flag.
+
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * bytecode/BytecodeBasicBlock.cpp: Added.
+        (JSC::isBranch): Used to determine the end of basic blocks.
+        (JSC::isUnconditionalBranch): Used to determine when a branch at the end of a 
+        basic block can't possibly fall through to the next basic block in program order.
+        (JSC::isTerminal): Also used to detect the end of a block.
+        (JSC::isThrow):
+        (JSC::isJumpTarget): Used to correctly separate basic blocks. Any jump destination 
+        must be the head of its own basic block.
+        (JSC::linkBlocks): Links two blocks together in a bi-direcitonal fashion.
+        (JSC::computeBytecodeBasicBlocks): Creates a set of basic blocks given a particular 
+        CodeBlock and links them together.
+        * bytecode/BytecodeBasicBlock.h: Added.
+        (JSC::BytecodeBasicBlock::isEntryBlock): Entry blocks are a special basic blocks 
+        that indicate the beginning of the function.
+        (JSC::BytecodeBasicBlock::isExitBlock): Exit blocks are a special basic block that 
+        all blocks that exit the function have as a successor. Entry and exit blocks allows 
+        the various code paths to be more regular.
+        (JSC::BytecodeBasicBlock::leaderBytecodeOffset): The leader bytecode offset is the 
+        bytecode offset of the first instruction in the block.
+        (JSC::BytecodeBasicBlock::totalBytecodeLength): The total length of all the bytecodes 
+        in this block.
+        (JSC::BytecodeBasicBlock::bytecodeOffsets): The bytecode offsets in this particular 
+        basic block. This Vector allows us to iterate over the bytecodes in reverse order 
+        which wouldn't be possible normally since they are of variable size.
+        (JSC::BytecodeBasicBlock::addPredecessor): Links a block to a specified predecessor. 
+        Only creates one direction of the link.
+        (JSC::BytecodeBasicBlock::addSuccessor): Same as addPredecessor, but for successors.
+        (JSC::BytecodeBasicBlock::predecessors): Getter for predecessors.
+        (JSC::BytecodeBasicBlock::successors): Getter for successors.
+        (JSC::BytecodeBasicBlock::in): Getter for the liveness info at the head of the block.
+        (JSC::BytecodeBasicBlock::out): Getter for the liveness info at  the tail of the block.
+        (JSC::BytecodeBasicBlock::BytecodeBasicBlock):
+        (JSC::BytecodeBasicBlock::addBytecodeLength): When creating basic blocks we call 
+        this function when we want to add the next bytecode in program order to this block.
+        * bytecode/BytecodeLivenessAnalysis.cpp: Added.
+        (JSC::BytecodeLivenessAnalysis::BytecodeLivenessAnalysis):
+        (JSC::numberOfCapturedVariables): Convenience wrapper. Returns the
+        number of captured variables for a particular CodeBlock, or 0 if 
+        the CodeBlock has no SymbolTable.
+        (JSC::captureStart): Ditto, but for captureStart().
+        (JSC::captureEnd): Ditto, but for captureEnd().
+        (JSC::isValidRegisterForLiveness): Returns true if the liveness analysis should 
+        track the liveness of a particular operand. We ignore constants, arguments, and 
+        captured variables. We ignore arguments because they're live for the duration of 
+        a function call. We ignore captured variables because we also treat them as live 
+        for the duration of the function. This could probably be improved to be more precise, 
+        but it didn't seem worth it for now.
+        (JSC::setForOperand): Convenience wrapper that sets the bit in the provided bit 
+        vector for the provided operand. It handles skipping over captured variables.
+        (JSC::computeUsesForBytecodeOffset): Computes which operands are used by a particular bytecode.
+        (JSC::computeDefsForBytecodeOffset): Computes which operands are defined by a particular 
+        bytecode. Typically this is just the left-most operand.
+        (JSC::findBasicBlockWithLeaderOffset): 
+        (JSC::findBasicBlockForBytecodeOffset): Scans over basic blocks to find the block 
+        which contains a particular bytecode offset.
+        (JSC::computeLocalLivenessForBytecodeOffset): Computes block-local liveness from the 
+        bottom of the block until a specified bytecode offset is reached. 
+        (JSC::computeLocalLivenessForBlock): Computes liveness for the entire block and 
+        stores the resulting liveness at the head.
+        (JSC::BytecodeLivenessAnalysis::runLivenessFixpoint): Runs backward flow liveness 
+        analysis to fixpoint.
+        (JSC::BytecodeLivenessAnalysis::getLivenessInfoForNonCapturedVarsAtBytecodeOffset): 
+        Slow path to get liveness info for non-captured, non-argument variable.
+        (JSC::BytecodeLivenessAnalysis::operandIsLiveAtBytecodeOffset): 
+        (JSC::BytecodeLivenessAnalysis::getLivenessInfoAtBytecodeOffset): Returns the liveness 
+        info for both captured and non-captured vars at a particular bytecode offset.
+        (JSC::BytecodeLivenessAnalysis::dumpResults): Dumps the output of the liveness analysis. 
+        Controlled by new flag in Options.h/.cpp.
+        (JSC::BytecodeLivenessAnalysis::compute): Creates bytecode basic blocks and runs 
+        full liveness analysis.
+        * bytecode/BytecodeLivenessAnalysis.h: Added.
+        (JSC::BytecodeLivenessAnalysis::hasBeenComputed):
+        (JSC::BytecodeLivenessAnalysis::computeIfNecessary):
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+        * bytecode/CodeBlock.h:
+        (JSC::CodeBlock::livenessAnalysis):
+        * bytecode/PreciseJumpTargets.cpp: Refactored to be able to get the jump targets for 
+        a particular bytecode offset for use during bytecode basic block construction.
+        (JSC::getJumpTargetsForBytecodeOffset):
+        (JSC::computePreciseJumpTargets):
+        (JSC::findJumpTargetsForBytecodeOffset):
+        * bytecode/PreciseJumpTargets.h:
+        * runtime/Options.cpp:
+        (JSC::Options::initialize):
+        * runtime/Options.h:
+
+2013-11-11  Andy Estes  <aestes@apple.com>
+
+        [iOS] Define JSC_OBJC_API_ENABLED
+        https://bugs.webkit.org/show_bug.cgi?id=124192
+
+        Reviewed by Geoffrey Garen.
+
+        * API/JSBase.h: JSC_OBJC_API_ENABLED should evaluate to true if
+        TARGET_OS_IPHONE is true.
+        * API/JSValue.h: Ensure CG types referenced later in the file are defined.
+
+2013-11-12  Balazs Kilvady  <kilvadyb@homejinni.com>
+
+        Fix undefined reference issues in JavaScriptCore build.
+        https://bugs.webkit.org/show_bug.cgi?id=124152
+
+        Reviewed by Michael Saboff.
+
+        Missing includes added.
+
+        * runtime/SymbolTable.cpp:
+
+2013-11-12  Alexandru Chiculita  <achicu@adobe.com>
+
+        Web Inspector: Crash when closing the Inspector while debugging an exception inside a breakpoint condition.
+        https://bugs.webkit.org/show_bug.cgi?id=124078
+
+        Reviewed by Joseph Pecoraro.
+
+        The crash would happen because the Debugger is not designed to support nested
+        breaks. For example, when the debugger handles a breakpoint and the Inspector
+        executes a console command that would hit the breakpoint again, the Debugger
+        will just ignore the breakpoint.
+
+        There were no checks for conditions and actions. Because of that conditions and actions
+        could trigger exceptions and breakpoints. This patch disables that functionality as it
+        cannot be supported without a bigger rewrite of the code.
+
+        * debugger/Debugger.cpp:
+        (JSC::TemporaryPausedState::TemporaryPausedState):
+        (JSC::TemporaryPausedState::~TemporaryPausedState):
+        (JSC::Debugger::hasBreakpoint):
+        (JSC::Debugger::pauseIfNeeded):
+        * debugger/Debugger.h:
+
+2013-11-12  Julien Brianceau  <jbriance@cisco.com>
+
+        InvalidIndex shouldn't be private in GPRInfo and FPRInfo for sh4, mips and arm64 architectures.
+        https://bugs.webkit.org/show_bug.cgi?id=124156
+
+        Reviewed by Michael Saboff.
+
+        * jit/FPRInfo.h:
+        (JSC::FPRInfo::debugName):
+        * jit/GPRInfo.h:
+        (JSC::GPRInfo::debugName):
+
+2013-11-11  Andreas Kling  <akling@apple.com>
+
+        CodeBlock: Un-segment some Vectors.
+        <https://webkit.org/b/124188>
+
+        Turn some SegmentedVectors into Vectors where the final item count
+        is known at CodeBlock construction time. This removes unnecessary
+        allocation and indirection.
+
+        I've got ~4.5 MB below SegmentedVector<ValueProfile>::ensureSegment
+        on Membuster3 (peak, before pressure signal) so this should help
+        take a bit of the edge off there.
+
+        Reviewed by Geoffrey Garen.
+
+2013-11-11  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of the lastResultRegister optimization in the baseline JIT
+        https://bugs.webkit.org/show_bug.cgi?id=124171
+
+        Rubber stamped by Mark Hahnenberg.
+        
+        The baseline JIT no longer needs amazing throughput. And this optimization has caused
+        way too many OSR exit bugs. And it constrains how much we can do in the DFG/FTL. So,
+        I'm getting rid of it.
+
+        * dfg/DFGOSRExit.cpp:
+        (JSC::DFG::OSRExit::OSRExit):
+        (JSC::DFG::OSRExit::convertToForward):
+        * dfg/DFGOSRExit.h:
+        * dfg/DFGOSRExitCompiler32_64.cpp:
+        (JSC::DFG::OSRExitCompiler::compileExit):
+        * dfg/DFGOSRExitCompiler64.cpp:
+        (JSC::DFG::OSRExitCompiler::compileExit):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::SpeculativeJIT):
+        (JSC::DFG::SpeculativeJIT::compileMovHint):
+        (JSC::DFG::SpeculativeJIT::compileCurrentBlock):
+        * dfg/DFGSpeculativeJIT.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::LowerDFGToLLVM):
+        (JSC::FTL::LowerDFGToLLVM::compileZombieHint):
+        (JSC::FTL::LowerDFGToLLVM::compileInvalidationPoint):
+        (JSC::FTL::LowerDFGToLLVM::appendOSRExit):
+        (JSC::FTL::LowerDFGToLLVM::observeMovHint):
+        * ftl/FTLOSRExit.cpp:
+        (JSC::FTL::OSRExit::OSRExit):
+        (JSC::FTL::OSRExit::convertToForward):
+        * ftl/FTLOSRExit.h:
+        * ftl/FTLOSRExitCompiler.cpp:
+        (JSC::FTL::compileStub):
+        * jit/JIT.cpp:
+        (JSC::JIT::JIT):
+        (JSC::JIT::privateCompileMainPass):
+        (JSC::JIT::privateCompileSlowCases):
+        * jit/JIT.h:
+        (JSC::JIT::appendCall):
+        * jit/JITArithmetic32_64.cpp:
+        (JSC::JIT::emit_op_lshift):
+        (JSC::JIT::emitRightShift):
+        (JSC::JIT::emit_op_bitand):
+        (JSC::JIT::emit_op_bitor):
+        (JSC::JIT::emit_op_bitxor):
+        (JSC::JIT::emit_op_inc):
+        (JSC::JIT::emit_op_dec):
+        * jit/JITCall.cpp:
+        (JSC::JIT::emitPutCallResult):
+        (JSC::JIT::compileLoadVarargs):
+        * jit/JITInlines.h:
+        (JSC::JIT::emitGetFromCallFrameHeaderPtr):
+        (JSC::JIT::emitGetFromCallFrameHeader32):
+        (JSC::JIT::emitGetFromCallFrameHeader64):
+        (JSC::JIT::emitLoadTag):
+        (JSC::JIT::emitLoadPayload):
+        (JSC::JIT::emitLoad2):
+        (JSC::JIT::emitGetVirtualRegister):
+        (JSC::JIT::emitGetVirtualRegisters):
+        (JSC::JIT::emitPutVirtualRegister):
+        * jit/JITOpcodes.cpp:
+        (JSC::JIT::emit_op_mov):
+        (JSC::JIT::emit_op_catch):
+        (JSC::JIT::emit_op_new_func):
+        * jit/JITOpcodes32_64.cpp:
+        (JSC::JIT::emit_op_mov):
+        (JSC::JIT::emit_op_to_primitive):
+        (JSC::JIT::emit_op_to_number):
+        (JSC::JIT::emit_op_catch):
+        * jit/JITPropertyAccess.cpp:
+        (JSC::JIT::emit_op_resolve_scope):
+        (JSC::JIT::emit_op_get_from_scope):
+        (JSC::JIT::emit_op_put_to_scope):
+        * jit/JITPropertyAccess32_64.cpp:
+        (JSC::JIT::emit_op_get_by_val):
+        (JSC::JIT::emit_op_get_by_id):
+        (JSC::JIT::emit_op_get_by_pname):
+        (JSC::JIT::emitResolveClosure):
+        (JSC::JIT::emit_op_resolve_scope):
+        (JSC::JIT::emit_op_get_from_scope):
+        (JSC::JIT::emit_op_init_global_const):
+        * jit/SlowPathCall.h:
+        (JSC::JITSlowPathCall::call):
+
+2013-11-11  Filip Pizlo  <fpizlo@apple.com>
+
+        Remove ConstantFoldingPhase's weirdo compile-time optimization
+        https://bugs.webkit.org/show_bug.cgi?id=124169
+
+        Reviewed by Mark Hahnenberg.
+        
+        It turns out that this compile-time optimization doesn't optimize compile times
+        anymore. Kill it with fire.
+
+        * dfg/DFGConstantFoldingPhase.cpp:
+        (JSC::DFG::ConstantFoldingPhase::foldConstants):
+
+2013-11-11  Filip Pizlo  <fpizlo@apple.com>
+
+        Make bytecode dumping use the right opcode names for inc/dec.
+
+        Rubber stamped by Mark Hahnenberg.
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::dumpBytecode):
+
+2013-11-10  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG Int52 boxing code may clobber the source without telling anyone
+        https://bugs.webkit.org/show_bug.cgi?id=124137
+
+        Reviewed by Mark Hahnenberg.
+
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::boxInt52): This is called in places where source is expected to be unchanged. We never call this expecting super-amazing codegen. So, preserve the source's value the dumb way (by recovering it mathematically).
+        * jit/AssemblyHelpers.h: Document the invariant for boxInt52.
+        * jsc.cpp:
+        (GlobalObject::finishCreation): It's been super annoying that sometimes we say noInline() and sometimes we say neverInlineFunction(). The LayoutTests harnesses ensure that we have something called noInline(), but it's great to also ensure that the shell has it.
+
+2013-11-11  Oliver Hunt  <oliver@apple.com>
+
+        ExtJS breaks with modern Array.prototype.values API due to use of with()
+        https://bugs.webkit.org/show_bug.cgi?id=123440
+
+        Reviewed by Beth Dakin.
+
+        As with our attempt to make Arguments use the Array prototype, ExtJS has
+        a weird dependency on not adding new APIs to core types.  In this case
+        Array.prototype.values.  The fix is to remove it, and push for ES6 to drop
+        the API.
+
+        * runtime/ArrayPrototype.cpp:
+
+2013-11-11  Gabor Rapcsanyi  <rgabor@webkit.org>
+
+        Fix CPU(ARM_TRADITIONAL) build after r159039.
+        https://bugs.webkit.org/show_bug.cgi?id=124149
+
+        Reviewed by Geoffrey Garen.
+
+        * assembler/ARMAssembler.h:
+        (JSC::ARMAssembler::firstRegister):
+        (JSC::ARMAssembler::lastRegister):
+        (JSC::ARMAssembler::firstFPRegister):
+        (JSC::ARMAssembler::lastFPRegister):
+        * assembler/MacroAssemblerARM.h:
+        * jit/FPRInfo.h:
+
 2013-11-09  Filip Pizlo  <fpizlo@apple.com>
 
         Switch FTL GetById/PutById IC's over to using AnyRegCC

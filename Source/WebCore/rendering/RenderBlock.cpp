@@ -55,6 +55,7 @@
 #include "RenderIterator.h"
 #include "RenderLayer.h"
 #include "RenderMarquee.h"
+#include "RenderNamedFlowFragment.h"
 #include "RenderNamedFlowThread.h"
 #include "RenderRegion.h"
 #include "RenderTableCell.h"
@@ -85,7 +86,6 @@ namespace WebCore {
 using namespace HTMLNames;
 
 struct SameSizeAsRenderBlock : public RenderBox {
-    void* pointers[1];
     uint32_t bitfields;
 };
 
@@ -107,6 +107,28 @@ static int gDelayUpdateScrollInfo = 0;
 static DelayedUpdateScrollInfoSet* gDelayedUpdateScrollInfoSet = 0;
 
 static bool gColumnFlowSplitEnabled = true;
+
+// Allocated only when some of these fields have non-default values
+
+struct RenderBlockRareData {
+    WTF_MAKE_NONCOPYABLE(RenderBlockRareData); WTF_MAKE_FAST_ALLOCATED;
+public:
+    RenderBlockRareData() 
+        : m_paginationStrut(0)
+        , m_pageLogicalOffset(0)
+    { 
+    }
+
+    LayoutUnit m_paginationStrut;
+    LayoutUnit m_pageLogicalOffset;
+
+#if ENABLE(CSS_SHAPES)
+    OwnPtr<ShapeInsideInfo> m_shapeInsideInfo;
+#endif
+};
+
+typedef HashMap<const RenderBlock*, std::unique_ptr<RenderBlockRareData>> RenderBlockRareDataMap;
+static RenderBlockRareDataMap* gRareDataMap = 0;
 
 // This class helps dispatching the 'overflow' event on layout change. overflow can be set on RenderBoxes, yet the existing code
 // only works on RenderBlocks. If this change, this class should be shared with other RenderBoxes.
@@ -200,10 +222,17 @@ RenderBlock::~RenderBlock()
 {
     if (hasColumns())
         gColumnInfoMap->take(this);
+    if (gRareDataMap)
+        gRareDataMap->remove(this);
     if (gPercentHeightDescendantsMap)
         removeBlockFromDescendantAndContainerMaps(this, gPercentHeightDescendantsMap, gPercentHeightContainerMap);
     if (gPositionedDescendantsMap)
         removeBlockFromDescendantAndContainerMaps(this, gPositionedDescendantsMap, gPositionedContainerMap);
+}
+
+bool RenderBlock::hasRareData() const
+{
+    return gRareDataMap ? gRareDataMap->contains(this) : false;
 }
 
 void RenderBlock::willBeDestroyed()
@@ -1301,6 +1330,22 @@ void RenderBlock::layout()
     invalidateBackgroundObscurationStatus();
 }
 
+static RenderBlockRareData* getRareData(const RenderBlock* block)
+{
+    return gRareDataMap ? gRareDataMap->get(block) : 0;
+}
+
+static RenderBlockRareData& ensureRareData(const RenderBlock* block)
+{
+    if (!gRareDataMap)
+        gRareDataMap = new RenderBlockRareDataMap;
+    
+    auto& rareData = gRareDataMap->add(block, nullptr).iterator->value;
+    if (!rareData)
+        rareData = std::make_unique<RenderBlockRareData>();
+    return *rareData.get();
+}
+
 #if ENABLE(CSS_SHAPES)
 void RenderBlock::relayoutShapeDescendantIfMoved(RenderBlock* child, LayoutSize offset)
 {
@@ -1374,18 +1419,39 @@ void RenderBlock::updateShapeInsideInfoAfterStyleChange(const ShapeValue* shapeI
     if (shapeInside) {
         ShapeInsideInfo* shapeInsideInfo = ensureShapeInsideInfo();
         shapeInsideInfo->dirtyShapeSize();
-    } else {
+    } else
         setShapeInsideInfo(nullptr);
-        markShapeInsideDescendantsForLayout();
-    }
+    markShapeInsideDescendantsForLayout();
 }
 
+ShapeInsideInfo* RenderBlock::ensureShapeInsideInfo()
+{
+    RenderBlockRareData& rareData = ensureRareData(this);
+    if (!rareData.m_shapeInsideInfo)
+        setShapeInsideInfo(ShapeInsideInfo::createInfo(this));
+    return rareData.m_shapeInsideInfo.get();
+}
+
+ShapeInsideInfo* RenderBlock::shapeInsideInfo() const
+{
+    RenderBlockRareData* rareData = getRareData(this);
+    if (!rareData || !rareData->m_shapeInsideInfo)
+        return 0;
+    return ShapeInsideInfo::isEnabledFor(this) ? rareData->m_shapeInsideInfo.get() : 0;
+}
+
+void RenderBlock::setShapeInsideInfo(PassOwnPtr<ShapeInsideInfo> value)
+{
+    ensureRareData(this).m_shapeInsideInfo = value;
+}
+    
 void RenderBlock::markShapeInsideDescendantsForLayout()
 {
     if (!everHadLayout())
         return;
     if (childrenInline()) {
         setNeedsLayout();
+        invalidateLineLayoutPath();
         return;
     }
 
@@ -3465,9 +3531,20 @@ VisiblePosition RenderBlock::positionForPointWithInlineChildren(const LayoutPoin
     return VisiblePosition();
 }
 
-static inline bool isChildHitTestCandidate(RenderBox& box)
+static inline bool isChildHitTestCandidate(const RenderBox& box)
 {
     return box.height() && box.style().visibility() == VISIBLE && !box.isFloatingOrOutOfFlowPositioned();
+}
+
+// Valid candidates in a FlowThread must be rendered by the region.
+static inline bool isChildHitTestCandidate(const RenderBox& box, RenderRegion* region, const LayoutPoint& point)
+{
+    if (!isChildHitTestCandidate(box))
+        return false;
+    if (!region)
+        return true;
+    const RenderBlock& block = box.isRenderBlock() ? toRenderBlock(box) : *box.containingBlock();
+    return block.regionAtBlockOffset(point.y()) == region;
 }
 
 VisiblePosition RenderBlock::positionForPoint(const LayoutPoint& point)
@@ -3495,8 +3572,9 @@ VisiblePosition RenderBlock::positionForPoint(const LayoutPoint& point)
     if (childrenInline())
         return positionForPointWithInlineChildren(pointInLogicalContents);
 
+    RenderRegion* region = regionAtBlockOffset(pointInLogicalContents.y());
     RenderBox* lastCandidateBox = lastChildBox();
-    while (lastCandidateBox && !isChildHitTestCandidate(*lastCandidateBox))
+    while (lastCandidateBox && !isChildHitTestCandidate(*lastCandidateBox, region, pointInLogicalContents))
         lastCandidateBox = lastCandidateBox->previousSiblingBox();
 
     bool blocksAreFlipped = style().isFlippedBlocksWritingMode();
@@ -3506,11 +3584,11 @@ VisiblePosition RenderBlock::positionForPoint(const LayoutPoint& point)
             return positionForPointRespectingEditingBoundaries(*this, *lastCandidateBox, pointInContents);
 
         for (auto childBox = firstChildBox(); childBox; childBox = childBox->nextSiblingBox()) {
-            if (!isChildHitTestCandidate(*childBox))
+            if (!isChildHitTestCandidate(*childBox, region, pointInLogicalContents))
                 continue;
             LayoutUnit childLogicalBottom = logicalTopForChild(*childBox) + logicalHeightForChild(*childBox);
             // We hit child if our click is above the bottom of its padding box (like IE6/7 and FF3).
-            if (isChildHitTestCandidate(*childBox) && (pointInLogicalContents.y() < childLogicalBottom
+            if (isChildHitTestCandidate(*childBox, region, pointInLogicalContents) && (pointInLogicalContents.y() < childLogicalBottom
                 || (blocksAreFlipped && pointInLogicalContents.y() == childLogicalBottom)))
                 return positionForPointRespectingEditingBoundaries(*this, *childBox, pointInContents);
         }
@@ -4917,26 +4995,38 @@ void RenderBlock::updateFirstLetter()
     createFirstLetterRenderer(firstLetterBlock, toRenderText(descendant));
 }
 
+LayoutUnit RenderBlock::paginationStrut() const
+{
+    RenderBlockRareData* rareData = getRareData(this);
+    return rareData ? rareData->m_paginationStrut : LayoutUnit();
+}
+
+LayoutUnit RenderBlock::pageLogicalOffset() const
+{
+    RenderBlockRareData* rareData = getRareData(this);
+    return rareData ? rareData->m_pageLogicalOffset : LayoutUnit();
+}
+
 void RenderBlock::setPaginationStrut(LayoutUnit strut)
 {
-    if (!hasRareData()) {
+    RenderBlockRareData* rareData = getRareData(this);
+    if (!rareData) {
         if (!strut)
             return;
-        materializeRareData();
+        rareData = &ensureRareData(this);
     }
-
-    rareData()->m_paginationStrut = strut;
+    rareData->m_paginationStrut = strut;
 }
 
 void RenderBlock::setPageLogicalOffset(LayoutUnit logicalOffset)
 {
-    if (!hasRareData()) {
+    RenderBlockRareData* rareData = getRareData(this);
+    if (!rareData) {
         if (!logicalOffset)
             return;
-        materializeRareData();
+        rareData = &ensureRareData(this);
     }
-
-    rareData()->m_pageLogicalOffset = logicalOffset;
+    rareData->m_pageLogicalOffset = logicalOffset;
 }
 
 void RenderBlock::absoluteRects(Vector<IntRect>& rects, const LayoutPoint& accumulatedOffset) const
@@ -5542,24 +5632,5 @@ void RenderBlock::adjustComputedFontSizes(float size, float visibleWidth)
     }
 }
 #endif // ENABLE(IOS_TEXT_AUTOSIZING)
-
-RenderBlock::RenderBlockRareData& RenderBlock::ensureRareData()
-{
-    if (hasRareData())
-        return *m_rareData;
-
-    materializeRareData();
-    return *m_rareData;
-}
-
-void RenderBlock::materializeRareData()
-{
-    ASSERT(!hasRareData());
-
-    if (isRenderBlockFlow())
-        m_rareData = std::make_unique<RenderBlockFlow::RenderBlockFlowRareData>(toRenderBlockFlow(*this));
-    else
-        m_rareData = std::make_unique<RenderBlock::RenderBlockRareData>();
-}
 
 } // namespace WebCore

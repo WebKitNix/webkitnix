@@ -36,52 +36,52 @@
 #import "WKNSURL.h"
 #import "WKNavigationDataInternal.h"
 
-namespace WebKit {
+namespace API {
 
-void APIObject::ref()
+void Object::ref()
 {
     [wrapper() retain];
 }
 
-void APIObject::deref()
+void Object::deref()
 {
     [wrapper() release];
 }
 
-void* APIObject::newObject(size_t size, Type type)
+void* Object::newObject(size_t size, Type type)
 {
     NSObject <WKObject> *wrapper;
 
-    // Wrappers that inherit from WKObject store the APIObject in their extra bytes, so they are
+    // Wrappers that inherit from WKObject store the API::Object in their extra bytes, so they are
     // allocated using NSAllocatedObject. The other wrapper classes contain inline storage for the
-    // APIObject, so they are allocated using +alloc.
+    // API::Object, so they are allocated using +alloc.
 
     switch (type) {
-    case TypeArray:
+    case Type::Array:
         wrapper = [WKNSArray alloc];
         break;
 
-    case TypeBackForwardList:
+    case Type::BackForwardList:
         wrapper = [WKBackForwardList alloc];
         break;
 
-    case TypeBackForwardListItem:
+    case Type::BackForwardListItem:
         wrapper = [WKBackForwardListItem alloc];
         break;
 
-    case TypeDictionary:
+    case Type::Dictionary:
         wrapper = [WKNSDictionary alloc];
         break;
 
-    case TypeNavigationData:
+    case Type::NavigationData:
         wrapper = [WKNavigationData alloc];
         break;
 
-    case TypeString:
+    case Type::String:
         wrapper = NSAllocateObject([WKNSString class], size, nullptr);
         break;
 
-    case TypeURL:
+    case Type::URL:
         wrapper = NSAllocateObject([WKNSURL class], size, nullptr);
         break;
 
@@ -90,7 +90,7 @@ void* APIObject::newObject(size_t size, Type type)
         break;
     }
 
-    APIObject* object = &wrapper._apiObject;
+    Object* object = &wrapper._apiObject;
     object->m_wrapper = wrapper;
     return object;
 }

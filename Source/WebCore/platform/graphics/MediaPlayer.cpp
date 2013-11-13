@@ -61,7 +61,7 @@
 #elif OS(WINCE)
 #include "MediaPlayerPrivateWinCE.h"
 #define PlatformMediaEngineClassName MediaPlayerPrivate
-#elif PLATFORM(WIN)
+#elif PLATFORM(WIN) && !USE(GSTREAMER)
 #include "MediaPlayerPrivateQuickTimeVisualContext.h"
 #define PlatformMediaEngineClassName MediaPlayerPrivateQuickTimeVisualContext
 #if USE(AVFOUNDATION)
@@ -539,6 +539,11 @@ double MediaPlayer::initialTime() const
 double MediaPlayer::currentTime() const
 {
     return m_private->currentTimeDouble();
+}
+
+void MediaPlayer::seekWithTolerance(double time, double negativeTolerance, double positiveTolerance)
+{
+    m_private->seekWithTolerance(time, negativeTolerance, positiveTolerance);
 }
 
 void MediaPlayer::seek(double time)

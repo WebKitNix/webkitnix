@@ -26,7 +26,7 @@
 #import "config.h"
 #import "WKRemoteObjectCoder.h"
 
-#import "MutableArray.h"
+#import "ImmutableArray.h"
 #import "MutableDictionary.h"
 #import "WKRemoteObjectInterfaceInternal.h"
 #import "WebData.h"
@@ -59,7 +59,7 @@ static PassRefPtr<ImmutableDictionary> createEncodedObject(WKRemoteObjectEncoder
 
 @implementation WKRemoteObjectEncoder {
     RefPtr<MutableDictionary> _rootDictionary;
-    MutableArray* _objectStream;
+    ImmutableArray* _objectStream;
 
     MutableDictionary* _currentDictionary;
 }
@@ -94,7 +94,7 @@ static void ensureObjectStream(WKRemoteObjectEncoder *encoder)
     if (encoder->_objectStream)
         return;
 
-    RefPtr<MutableArray> objectStream = MutableArray::create();
+    RefPtr<ImmutableArray> objectStream = ImmutableArray::create();
     encoder->_objectStream = objectStream.get();
 
     encoder->_rootDictionary->set(objectStreamKey, objectStream.release());
@@ -105,11 +105,11 @@ static void encodeToObjectStream(WKRemoteObjectEncoder *encoder, id value)
     ensureObjectStream(encoder);
 
     size_t position = encoder->_objectStream->size();
-    encoder->_objectStream->append(nullptr);
+    encoder->_objectStream->elements().append(nullptr);
 
     RefPtr<ImmutableDictionary> encodedObject = createEncodedObject(encoder, value);
-    ASSERT(!encoder->_objectStream->entries()[position]);
-    encoder->_objectStream->entries()[position] = encodedObject.release();
+    ASSERT(!encoder->_objectStream->elements()[position]);
+    encoder->_objectStream->elements()[position] = encodedObject.release();
 }
 
 static void encodeInvocation(WKRemoteObjectEncoder *encoder, NSInvocation *invocation)

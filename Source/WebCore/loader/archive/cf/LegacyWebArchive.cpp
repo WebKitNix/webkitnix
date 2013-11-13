@@ -273,16 +273,17 @@ PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(const URL&, SharedBuffer* 
     if (!cfData)
         return 0;
         
-    CFStringRef errorString = 0;
+    CFErrorRef error = 0;
     
-    RetainPtr<CFDictionaryRef> plist = adoptCF(static_cast<CFDictionaryRef>(CFPropertyListCreateFromXMLData(0, cfData.get(), kCFPropertyListImmutable, &errorString)));
+    RetainPtr<CFDictionaryRef> plist = adoptCF(static_cast<CFDictionaryRef>(CFPropertyListCreateWithData(0, cfData.get(), kCFPropertyListImmutable, 0, &error)));
     if (!plist) {
 #ifndef NDEBUG
-        const char* cError = errorString ? CFStringGetCStringPtr(errorString, kCFStringEncodingUTF8) : "unknown error";
+        RetainPtr<CFStringRef> errorString = error ? adoptCF(CFErrorCopyDescription(error)) : 0;
+        const char* cError = errorString ? CFStringGetCStringPtr(errorString.get(), kCFStringEncodingUTF8) : "unknown error";
         LOG(Archives, "LegacyWebArchive - Error parsing PropertyList from archive data - %s", cError);
 #endif
-        if (errorString)
-            CFRelease(errorString);
+        if (error)
+            CFRelease(error);
         return 0;
     }
     
@@ -389,7 +390,7 @@ RetainPtr<CFDataRef> LegacyWebArchive::rawDataRepresentation()
     RetainPtr<CFWriteStreamRef> stream = adoptCF(CFWriteStreamCreateWithAllocatedBuffers(0, 0));
 
     CFWriteStreamOpen(stream.get());
-    CFPropertyListWriteToStream(propertyList.get(), stream.get(), kCFPropertyListBinaryFormat_v1_0, 0);
+    CFPropertyListWrite(propertyList.get(), stream.get(), kCFPropertyListBinaryFormat_v1_0, 0, 0);
 
     RetainPtr<CFDataRef> plistData = adoptCF(static_cast<CFDataRef>(CFWriteStreamCopyProperty(stream.get(), kCFStreamPropertyDataWritten)));
     ASSERT(plistData);
@@ -422,7 +423,7 @@ RetainPtr<CFDataRef> LegacyWebArchive::createPropertyListRepresentation(const Re
 
 #endif
 
-PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(Node* node, FrameFilter* filter)
+PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(Node* node, std::function<bool (Frame&)> frameFilter)
 {
     ASSERT(node);
     if (!node)
@@ -447,7 +448,7 @@ PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(Node* node, FrameFilter* f
     if (nodeType != Node::DOCUMENT_NODE && nodeType != Node::DOCUMENT_TYPE_NODE)
         markupString = documentTypeString(node->document()) + markupString;
 
-    return create(markupString, frame, nodeList, filter);
+    return create(markupString, frame, nodeList, std::move(frameFilter));
 }
 
 PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(Frame* frame)
@@ -496,7 +497,7 @@ PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(Range* range)
     return create(markupString, frame, nodeList, 0);
 }
 
-PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(const String& markupString, Frame* frame, const Vector<Node*>& nodes, FrameFilter* frameFilter)
+PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(const String& markupString, Frame* frame, const Vector<Node*>& nodes, std::function<bool (Frame&)> frameFilter)
 {
     ASSERT(frame);
     
@@ -520,7 +521,7 @@ PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(const String& markupString
         Frame* childFrame;
         if ((isHTMLFrameElement(node) || isHTMLIFrameElement(node) || isHTMLObjectElement(node))
             && (childFrame = toHTMLFrameOwnerElement(node).contentFrame())) {
-            if (frameFilter && !frameFilter->shouldIncludeSubframe(childFrame))
+            if (frameFilter && !frameFilter(*childFrame))
                 continue;
                 
             RefPtr<LegacyWebArchive> subframeArchive = create(childFrame->document(), frameFilter);

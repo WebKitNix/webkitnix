@@ -1,3 +1,102 @@
+2013-11-13  Anders Carlsson  <andersca@apple.com>
+
+        Add a Vector constructor that takes an std::initializer_list
+        https://bugs.webkit.org/show_bug.cgi?id=124287
+
+        Reviewed by Antti Koivisto.
+
+        * TestWebKitAPI/Tests/WTF/Vector.cpp:
+        (TestWebKitAPI::TEST):
+
+2013-11-13  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Unreviewed GTK gardening. Updated rebaseline unit tests to include WK2 bot.
+
+        * Scripts/webkitpy/tool/commands/rebaseline_unittest.py:
+        (TestRebaselineTest.test_baseline_directory): Updated.
+
+2013-11-13  Krzysztof Czech  <k.czech@samsung.com>
+
+        [ATK] Support compilation of EFL/GTK without accessibility
+        https://bugs.webkit.org/show_bug.cgi?id=122448
+
+        Reviewed by Chris Fleizach.
+
+        Added missing HAVE(ACCESSIBILITY) guards and stubs to ATK's related files,
+        so that in case of turning off the HAVE_ACCESSIBILITY macro EFL/GTK would compile properly.
+
+        * DumpRenderTree/AccessibilityController.h:
+        * DumpRenderTree/AccessibilityUIElement.h:
+        * DumpRenderTree/atk/AccessibilityCallbacks.h:
+        * DumpRenderTree/atk/AccessibilityNotificationHandlerAtk.cpp:
+        * DumpRenderTree/atk/AccessibilityNotificationHandlerAtk.h:
+        * WebKitTestRunner/InjectedBundle/AccessibilityController.cpp:
+        (WTR::AccessibilityController::rootElement):
+        (WTR::AccessibilityController::focusedElement):
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.cpp:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityControllerAtk.cpp:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityNotificationHandlerAtk.cpp:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityNotificationHandlerAtk.h:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        * WebKitTestRunner/PlatformEfl.cmake:
+
+2013-11-12  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Added libxss-dev to install-dependencies
+        https://bugs.webkit.org/show_bug.cgi?id=124254
+
+        Reviewed by Gyuyoung Kim.
+
+        libxss-dev is required to build EFL packages.
+        see building part in http://www.enlightenment.org/p.php?p=contribute
+
+        * efl/install-dependencies: Added libxss-dev to parameter of apt-get command.
+
+2013-11-12  Tim Horton  <timothy_horton@apple.com>
+
+        After http://trac.webkit.org/changeset/159109, update
+        rebaseline_unittest to use the new GTK bot names.
+
+        * Scripts/webkitpy/tool/commands/rebaseline_unittest.py:
+        (TestRebaselineTest.test_baseline_directory):
+
+2013-11-12  Denis Nomiyama  <d.nomiyama@samsung.com>
+
+        [GTK] Update GTK builders in Tools/Scripts/webkitpy/port/builders.py
+        https://bugs.webkit.org/show_bug.cgi?id=124144
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Updated the list of GTK builders in Tools/Scripts/webkitpy/port/builders.py
+        according to http://build.webkit.org/builders.
+
+        * Scripts/webkitpy/port/builders.py:
+
+2013-11-11  Samuel White  <samuel_white@apple.com>
+
+        AX: support helpText() in DumpRenderTree
+        https://bugs.webkit.org/show_bug.cgi?id=40194
+
+        Reviewed by Chris Fleizach.
+
+        Implemented stubbed helpText methods so we can move aria-help.html back to LayoutTests/accessibility.
+
+        * DumpRenderTree/win/AccessibilityUIElementWin.cpp:
+        (AccessibilityUIElement::helpText):
+
+2013-11-11  Anders Carlsson  <andersca@apple.com>
+
+        Remove block based APIs from the WebKit2 C API
+        https://bugs.webkit.org/show_bug.cgi?id=124157
+
+        Reviewed by Sam Weinig.
+
+        Update for WK2 changes.
+
+        * MiniBrowser/mac/WK2BrowserWindowController.m:
+        (dumpSource):
+        (-[WK2BrowserWindowController dumpSourceToConsole:]):
+
 2013-11-11  Tamas Gergely  <gertom@inf.u-szeged.hu>
 
         The feeder queue will not feed patches older than one week.

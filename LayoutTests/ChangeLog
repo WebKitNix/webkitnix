@@ -1,3 +1,514 @@
+2013-11-12  Jer Noble  <jer.noble@apple.com>
+
+        Add support for HTMLMediaElement.fastSeek()
+        https://bugs.webkit.org/show_bug.cgi?id=124262
+
+        Reviewed by Eric Carlson.
+
+        * media/video-fast-seek-expected.txt: Added.
+        * media/video-fast-seek.html: Added.
+
+2013-11-13  Antti Koivisto  <antti@apple.com>
+
+        * TestExpectations: Skip crypto/subtle/rsassa-pkcs1-v1_5-import-jwk.html
+
+2013-11-12  Antti Koivisto  <antti@apple.com>
+
+        Support overflow-wrap:break-word on simple line path
+        https://bugs.webkit.org/show_bug.cgi?id=124206
+
+        Reviewed by Andreas Kling.
+        
+        Force these to use line boxes, add ref test versions comparing the paths.
+
+        * fast/forms/basic-textareas-quirks-simple-lines-expected.html: Added.
+        * fast/forms/basic-textareas-quirks-simple-lines.html: Added.
+        * fast/forms/basic-textareas-quirks.html:
+        * fast/forms/linebox-overflow-in-textarea-padding-simple-lines-expected.html: Added.
+        * fast/forms/linebox-overflow-in-textarea-padding-simple-lines.html: Added.
+        * fast/forms/linebox-overflow-in-textarea-padding.html:
+        * fast/forms/negativeLineHeight-simple-lines-expected.html: Added.
+        * fast/forms/negativeLineHeight-simple-lines.html: Added.
+        * fast/forms/negativeLineHeight.html:
+        * fast/forms/textAreaLineHeight-simple-lines-expected.html: Added.
+        * fast/forms/textAreaLineHeight-simple-lines.html: Added.
+        * fast/forms/textAreaLineHeight.html:
+        * fast/parser/entity-comment-in-textarea.html: Made this independent of line layout mode.
+        * fast/replaced/width100percent-textarea.html:
+        * platform/mac/fast/parser/entity-comment-in-textarea-expected.txt:
+
+2013-11-13  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Removing fast/mediastream/constructors.html LayoutTest
+        https://bugs.webkit.org/show_bug.cgi?id=124259
+
+        Reviewed by Philippe Normand.
+
+        Apart from being wrong, it was testing the mediastream WebRTC objects constructors, which are already being
+        tested in each particular mediastream WebRTC object LayoutTest.
+
+        * fast/mediastream/constructors-expected.txt: Removed.
+        * fast/mediastream/constructors.html: Removed.
+
+2013-11-13  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement key generation and JWK import for RSASSA-PKCS1-v1_5
+        https://bugs.webkit.org/show_bug.cgi?id=124236
+
+        Reviewed by Sam Weinig.
+
+        * crypto/subtle/resources/common.js:
+        (hexToArrayBuffer): Fixed a typo
+        (Base64URL.stringify):
+        (Base64URL.parse):
+        Added helpers to deal with Base64URL, as needed for JWK.
+
+        * crypto/subtle/rsassa-pkcs1-v1_5-generate-key-expected.txt: Added.
+        * crypto/subtle/rsassa-pkcs1-v1_5-generate-key.html: Added.
+        * crypto/subtle/rsassa-pkcs1-v1_5-import-jwk-expected.txt: Added.
+        * crypto/subtle/rsassa-pkcs1-v1_5-import-jwk.html: Added.
+
+2013-11-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Disable WebCrypto on Mountain Lion
+        https://bugs.webkit.org/show_bug.cgi?id=124261
+
+        Rubber-stamped by Sam Weinig.
+
+        * platform/mac/TestExpectations:
+
+2013-11-12  Tim Horton  <timothy_horton@apple.com>
+
+        Revert r159140, as it is theoretically fixed by r159173.
+
+        * platform/mac-wk2/TestExpectations:
+
+2013-11-12  Roger Fong  <roger_fong@apple.com>
+
+        [Windows] Unreviewed. More edits to Windows test expectations following r159157.
+
+        * platform/win/editing/selection/extend-selection-home-end-expected.txt:
+        * platform/win/fast/canvas/canvas-draw-canvas-on-canvas-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-fillRect-gradient-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-scale-shadowBlur-expected.txt:
+        * platform/win/fast/canvas/canvas-scale-strokePath-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-strokePath-gradient-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-strokeRect-alpha-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-strokeRect-gradient-shadow-expected.txt:
+        * platform/win/fast/dom/horizontal-scrollbar-in-rtl-expected.txt:
+        * platform/win/fast/dom/vertical-scrollbar-in-rtl-expected.txt:
+        * platform/win/fast/forms/cursor-at-editable-content-boundary-expected.txt:
+        * platform/win/fast/forms/implicit-submission-expected.txt:
+        * platform/win/fast/forms/range: Added.
+        * platform/win/fast/forms/range/slider-mouse-events-expected.txt: Copied from platform/win/fast/forms/slider-mouse-events-expected.txt.
+        * platform/win/fast/forms/select-popup-pagekeys-expected.txt:
+        * platform/win/fast/forms/slider-mouse-events-expected.txt: Removed.
+
+2013-11-12  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159160, r159161, and r159164.
+        http://trac.webkit.org/changeset/159160
+        http://trac.webkit.org/changeset/159161
+        http://trac.webkit.org/changeset/159164
+        https://bugs.webkit.org/show_bug.cgi?id=124253
+
+        Too many errors (make fewer) (Requested by ap on #webkit).
+
+        * crypto/subtle/resources/common.js:
+        (hexToArrayBuffer):
+        * crypto/subtle/rsassa-pkcs1-v1_5-generate-key-expected.txt: Removed.
+        * crypto/subtle/rsassa-pkcs1-v1_5-generate-key.html: Removed.
+        * crypto/subtle/rsassa-pkcs1-v1_5-import-jwk-expected.txt: Removed.
+        * crypto/subtle/rsassa-pkcs1-v1_5-import-jwk.html: Removed.
+        * platform/mac/TestExpectations:
+
+2013-11-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement key generation and JWK import for RSASSA-PKCS1-v1_5
+        https://bugs.webkit.org/show_bug.cgi?id=124236
+
+        * platform/mac/TestExpectations: Update expectations for Mountain Lion.
+        I'll investigate this later.
+
+        * crypto/subtle/rsassa-pkcs1-v1_5-import-jwk.html: Quickly fail is promise is rejected.
+
+2013-11-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement key generation and JWK import for RSASSA-PKCS1-v1_5
+        https://bugs.webkit.org/show_bug.cgi?id=124236
+
+        Reviewed by Sam Weinig.
+
+        * crypto/subtle/resources/common.js:
+        (hexToArrayBuffer): Fixed a typo
+        (Base64URL.stringify):
+        (Base64URL.parse):
+        Added helpers to deal with Base64URL, as needed for JWK.
+
+        * crypto/subtle/rsassa-pkcs1-v1_5-generate-key-expected.txt: Added.
+        * crypto/subtle/rsassa-pkcs1-v1_5-generate-key.html: Added.
+        * crypto/subtle/rsassa-pkcs1-v1_5-import-jwk-expected.txt: Added.
+        * crypto/subtle/rsassa-pkcs1-v1_5-import-jwk.html: Added.
+
+2013-11-12  Roger Fong  <roger_fong@apple.com>
+
+        [Windows] Unreviewed gardening. Re-add someone Windows expections that were erroneously removed.
+
+        * platform/win/editing/selection/extend-selection-home-end-expected.txt: Added.
+        * platform/win/fast/canvas/canvas-draw-canvas-on-canvas-shadow-expected.txt: Added.
+        * platform/win/fast/canvas/canvas-fillRect-gradient-shadow-expected.txt: Added.
+        * platform/win/fast/canvas/canvas-render-layer-expected.txt: Added.
+        * platform/win/fast/canvas/canvas-scale-shadowBlur-expected.txt: Added.
+        * platform/win/fast/canvas/canvas-scale-strokePath-shadow-expected.txt: Added.
+        * platform/win/fast/canvas/canvas-strokePath-gradient-shadow-expected.txt: Added.
+        * platform/win/fast/canvas/canvas-strokeRect-alpha-shadow-expected.txt: Added.
+        * platform/win/fast/canvas/canvas-strokeRect-gradient-shadow-expected.txt: Added.
+        * platform/win/fast/dom/horizontal-scrollbar-in-rtl-expected.txt: Added.
+        * platform/win/fast/dom/vertical-scrollbar-in-rtl-expected.txt: Added.
+        * platform/win/fast/forms/cursor-at-editable-content-boundary-expected.txt: Added.
+        * platform/win/fast/forms/implicit-submission-expected.txt: Added.
+        * platform/win/fast/forms/select-popup-pagekeys-expected.txt: Added.
+        * platform/win/fast/forms/slider-mouse-events-expected.txt: Added.
+        * platform/win/media/media-can-play-wav-audio-expected.txt:
+
+2013-11-12  Tim Horton  <timothy_horton@apple.com>
+
+        Add fast/images/pdf-as-image-crop-box.html to the pile of tiny-color-mismatch tests.
+
+        * platform/mac-wk2/TestExpectations:
+
+2013-11-12  Tim Horton  <timothy_horton@apple.com>
+
+        fast/canvas/webgl/draw-arrays-out-of-bounds.html is flaky on Mavericks WK2 testers, fails about 20% of the time
+        https://bugs.webkit.org/show_bug.cgi?id=124223
+
+        Mark as flaky on Mac-Mavericks-WebKit2.
+
+        * platform/mac-wk2/TestExpectations:
+
+2013-11-11  Oliver Hunt  <oliver@apple.com>
+
+        Support unprefixed deconstructing assignment
+        https://bugs.webkit.org/show_bug.cgi?id=124172
+
+        Reviewed by Mark Lam.
+
+        Add and expand testing of destructuring assignment
+
+        * js/basic-for-of-expected.txt:
+        * js/destructuring-assignment-expected.txt:
+        * js/parser-syntax-check-expected.txt:
+        * js/script-tests/basic-for-of.js:
+        * js/script-tests/destructuring-assignment.js:
+        (testDestructuring):
+        * js/script-tests/parser-syntax-check.js:
+
+2013-11-12  Roger Fong  <roger_fong@apple.com>
+
+        [Windows] Unreviewed gardening of some media tests.
+
+        * platform/win/TestExpectations:
+
+2013-11-12  Tim Horton  <timothy_horton@apple.com>
+
+        "AVF info: hasOfflineRenderer, board-id check : true" in media/track/track-forced-subtitles-in-band.html
+        https://bugs.webkit.org/show_bug.cgi?id=124219
+
+        Logging that happens unpredictably underneath us; marking the test as flaky on Mavericks for now.
+
+        * platform/mac/TestExpectations:
+
+2013-11-12  Radu Stavila  <stavila@adobe.com>
+
+        Created test for testing repaint rects for elements inside relative-positioned regions.
+
+        [CSS Regions] clip rectangles are incorrectly computed in some positioned elements
+        https://bugs.webkit.org/show_bug.cgi?id=114722
+
+        Reviewed by Mihnea Ovidenie.
+
+        * fast/repaint/increasing-region-content-height-expected.txt: Added.
+        * fast/repaint/increasing-region-content-height.html: Added.
+
+2013-11-12  Tim Horton  <timothy_horton@apple.com>
+
+        Fix accessibility/aria-help after r159067.
+
+        It's failing everywhere because the path to its script is wrong.
+
+        * accessibility/aria-help.html:
+
+2013-11-12  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Skip media/media-source tests, as EFL port does not support MEDIA_SOURCE.
+
+        * platform/efl/TestExpectations:
+
+2013-11-12  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+
+        * platform/gtk/js/dom/global-constructors-attributes-expected.txt: Rebaseline after new constructors
+        were made available with enabling the Media Stream feature.
+
+2013-11-12  Alexandru Chiculita  <achicu@adobe.com>
+
+        Web Inspector: Crash when closing the Inspector while debugging an exception inside a breakpoint condition.
+        https://bugs.webkit.org/show_bug.cgi?id=124078
+
+        Reviewed by Joseph Pecoraro.
+
+        Checking that the debugger will not crash nor stall when exceptions are throw while the debugger
+        is already paused. The cases when that can happen include breakpoint conditions, actions, eval
+        or runtime object inspection.
+
+        The current behavior was to ignore the exceptions or breakpoints while executing "console commands"
+        when the debugger was already paused. I'm extending this mechanism to breakpoint conditions and
+        actions as the Debugger is not designed to support nested "debugger breaks".
+
+        * http/tests/inspector-protocol/resources/protocol-test.js:
+        (closeTest): Avoid having internals.closeDummyInspectorFrontend and testRunner.notifyDone
+        in the same function. The debugger will not have a chance to exit the temporary EventLoop
+        before loading the next test.
+        * inspector-protocol/debugger/breakpoint-action-detach-expected.txt: Added.
+        * inspector-protocol/debugger/breakpoint-action-detach.html: Added.
+        * inspector-protocol/debugger/breakpoint-action-with-exception-expected.txt: Added.
+        * inspector-protocol/debugger/breakpoint-action-with-exception.html: Added.
+        * inspector-protocol/debugger/breakpoint-condition-detach-expected.txt: Added.
+        * inspector-protocol/debugger/breakpoint-condition-detach.html: Added.
+        * inspector-protocol/debugger/breakpoint-condition-with-exception-expected.txt: Added.
+        * inspector-protocol/debugger/breakpoint-condition-with-exception.html: Added.
+        * inspector-protocol/debugger/breakpoint-eval-with-exception-expected.txt: Added.
+        * inspector-protocol/debugger/breakpoint-eval-with-exception.html: Added.
+        * inspector-protocol/debugger/breakpoint-inside-conditons-and-actions-expected.txt: Added.
+        * inspector-protocol/debugger/breakpoint-inside-conditons-and-actions.html: Added.
+
+2013-11-12  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Unreviewed GTK gardening. Share expectations for vertical text among WK1 and WK2.
+
+        * platform/gtk-wk2/fast/repaint/japanese-rl-selection-clear-expected.txt: Removed.
+        * platform/gtk-wk2/fast/repaint/japanese-rl-selection-repaint-expected.txt: Removed.
+        * platform/gtk-wk2/fast/repaint/repaint-across-writing-mode-boundary-expected.txt: Removed.
+        * platform/gtk-wk2/fast/text/international/vertical-text-glyph-test-expected.txt: Removed.
+        * platform/gtk-wk2/fast/text/justify-ideograph-vertical-expected.txt: Removed.
+
+2013-11-12  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Mark 73 tests as failing/skipped after r158954.
+
+        * platform/efl/TestExpectations:
+
+2013-11-12  Antti Koivisto  <antti@apple.com>
+
+        Text on simple lines sometimes paints one pixel off
+        https://bugs.webkit.org/show_bug.cgi?id=124200
+
+        Reviewed by Andreas Kling.
+
+        * fast/text/line-runs-rounding-simple-lines-expected.html: Added.
+        * fast/text/line-runs-rounding-simple-lines.html: Added.
+
+2013-11-12  Zan Dobersek  <zdobersek@igalia.com>
+
+        JSC bindings generator should generate deletable JSC functions
+        https://bugs.webkit.org/show_bug.cgi?id=122422
+
+        Reviewed by Geoffrey Garen.
+
+        Test that all the functions on the Node prototype object (apart from the constructor) are
+        writable, enumerable and configurable, as expected for WebIDL operations. This matches the
+        WebIDL specification as well as IE and Firefox.
+
+        Other affected test cases and baselines are updated to reflect the new behavior.
+
+        * fast/dom/webidl-operations-on-node-prototype-expected.txt: Added.
+        * fast/dom/webidl-operations-on-node-prototype.html: Added.
+        * js/dom/getOwnPropertyDescriptor-expected.txt:
+        * js/resources/getOwnPropertyDescriptor.js:
+        * platform/mac/canvas/philip/tests/type.prototype-expected.txt: Removed.
+
+2013-11-11  Simon Fraser  <simon.fraser@apple.com>
+
+        REGRESSION (r155660): box-shadow causes overlay scrollbars to be in the wrong position when element is composited (85647)
+        https://bugs.webkit.org/show_bug.cgi?id=124090
+
+        Reviewed by Beth Dakin.
+        
+        Test, but it doesn't actually test the fix until we enable overlay scrollbars
+        in tests (bug 60716).
+
+        * compositing/overflow/overflow-scrollbar-layer-positions-expected.txt: Added.
+        * compositing/overflow/overflow-scrollbar-layer-positions.html: Added.
+
+2013-11-11  Simon Fraser  <simon.fraser@apple.com>
+
+        Actually land a result for the test that I added (and make it a text test).
+
+        * compositing/tiling/tiled-in-iframe-expected.txt: Added.
+        * compositing/tiling/tiled-in-iframe.html:
+
+2013-11-11  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        [Mac] Characters too close together in complex Arabic text
+        https://bugs.webkit.org/show_bug.cgi?id=124057
+
+        Reviewed by Darin Adler.
+
+        complex-grapheme-cluster-with-initial-advance adds a span around a word in some
+        complex Arabic text, and expects that the word spacing is the same as without the
+        span.
+
+        selection-in-initial-advance-region simulates a mouse drag across a complex text run
+        with an initial advance. This makes sure that ComplexTextController::offsetForPosition
+        doesn't crash when there is an initial advance.
+
+        * fast/text/complex-grapheme-cluster-with-initial-advance-expected.html: Added.
+        * fast/text/complex-grapheme-cluster-with-initial-advance.html: Added.
+        * fast/text/selection-in-initial-advance-region-expected.txt: added
+        * fast/text/selection-in-initial-advance-region.html: added
+
+2013-11-11  Antti Koivisto  <antti@apple.com>
+
+        End of line whitespace should collapse with white-space:pre-wrap; overflow-wrap:break-word in all cases
+        https://bugs.webkit.org/show_bug.cgi?id=124158
+
+        Reviewed by Dave Hyatt.
+        
+        Added a specific test and updates the test results of some complex tests that demonstrate the same issue.
+
+        * fast/text/break-word-pre-wrap-expected.html: Added.
+        * fast/text/break-word-pre-wrap.html: Added.
+        * platform/mac/fast/forms/basic-textareas-expected.png:
+        * platform/mac/fast/forms/basic-textareas-expected.txt:
+        * platform/mac/fast/forms/basic-textareas-quirks-expected.png:
+        * platform/mac/fast/forms/basic-textareas-quirks-expected.txt:
+        * platform/mac-mountainlion/fast/forms/basic-textareas-expected.txt:
+        * platform/mac-mountainlion/fast/forms/basic-textareas-quirks-expected.txt:
+
+2013-11-11  Bear Travis  <betravis@adobe.com>
+
+        Web Inspector: [CSS Shapes] Highlight shape-outside when its element is selected in the Web Inspector
+        https://bugs.webkit.org/show_bug.cgi?id=124071
+
+        Reviewed by Timothy Hatcher.
+
+        Test that the information passed to the Inspector overlay properly corresponds to the
+        underlying shape. Retrieving the shape highlight information involves a series of
+        steps and has been abstracted into shape-info-helper.js, which supplies
+        Inspector.shapeOutsideInfo inside an Inspector test, and the ShapeInfoHelper.runShapesTest
+        method to begin a test.
+
+        * inspector-protocol/model/highlight-shape-outside-expected.txt: Added.
+        * inspector-protocol/model/highlight-shape-outside.html: Added.
+        * inspector-protocol/resources/shape-info-helper.js: Added.
+        (window.ShapeInfoHelper): Exposes ShapeInfoHelper.runShapesTest.
+
+2013-11-11  Samuel White  <samuel_white@apple.com>
+
+        AX: support helpText() in DumpRenderTree
+        https://bugs.webkit.org/show_bug.cgi?id=40194
+
+        Reviewed by Chris Fleizach.
+
+        Moving layout test back to its original location. Shouldn't be platform specific.
+
+        * accessibility/aria-help.html: Renamed from LayoutTests/platform/mac/accessibility/aria-help.html.
+
+2013-11-11  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Update test expectations after r158188.
+
+        * platform/efl/css2.1/t0804-c5507-padn-r-00-c-ag-expected.png:
+        * platform/efl/css2.1/t0804-c5507-padn-r-00-c-ag-expected.txt:
+        * platform/efl/css2.1/t0804-c5509-padn-l-00-b-ag-expected.png:
+        * platform/efl/css2.1/t0804-c5509-padn-l-00-b-ag-expected.txt:
+        * platform/efl/css2.1/t0804-c5510-padn-00-b-ag-expected.txt:
+
+2013-11-10  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG Int52 boxing code may clobber the source without telling anyone
+        https://bugs.webkit.org/show_bug.cgi?id=124137
+
+        Reviewed by Mark Hahnenberg.
+        
+        Write the test as a JSRegress test because we currently need a couple
+        recompiles to get the bug. JSRegress tests are meant to be longer-running
+        stress tests and they are usually run with different compilation thresholds, so
+        that ensures that we will actually hit the relevant code path.
+
+        * js/regress/int52-spill-expected.txt: Added.
+        * js/regress/int52-spill.html: Added.
+        * js/regress/script-tests/int52-spill.js: Added.
+        (bar):
+        (foo):
+
+2013-11-11  Oliver Hunt  <oliver@apple.com>
+
+        ExtJS breaks with modern Array.prototype.values API due to use of with()
+        https://bugs.webkit.org/show_bug.cgi?id=123440
+
+        Reviewed by Beth Dakin.
+
+        Update tests for removal of Array.prototype.values, and add test to ensure that
+        it's gone.
+
+        * js/Object-getOwnPropertyNames-expected.txt:
+        * js/array-iterators-expected.txt:
+        * js/basic-for-of-expected.txt:
+        * js/script-tests/Object-getOwnPropertyNames.js:
+        * js/script-tests/array-iterators.js:
+        * js/script-tests/basic-for-of.js:
+
+2013-11-11  Oliver Hunt  <oliver@apple.com>
+
+        Whoops, fix test post move
+
+        * js/basic-set.html:
+
+2013-11-11  Simon Fraser  <simon.fraser@apple.com>
+
+        Add a testcase for a tiled layer inside an iframe
+        https://bugs.webkit.org/show_bug.cgi?id=124159
+
+        Reviewed by Tim Horton.
+        
+        Add a test for a tiled compositing layer inside an iframe.
+
+        * compositing/tiling/resources/tiled-layer-tall.html: Added.
+        * compositing/tiling/tiled-in-iframe.html: Added.
+
+2013-11-11  Javier Fernandez  <jfernandez@igalia.com>
+
+        [CSS Regions] Selection focusNode set to the "region" block, instead of the "source" block
+        https://bugs.webkit.org/show_bug.cgi?id=120769
+
+        Reviewed by David Hyatt.
+
+        * fast/regions/resources/helper.js:
+        (selectContentFromIdToPos):
+        (selectContentFromIdToPosVert):
+        (.document.onmouseup):
+        (onMouseUpLogSelectionAndFocus):
+        * fast/regions/selection/position-for-point-1-expected.txt: Added.
+        * fast/regions/selection/position-for-point-1-vert-lr-expected.txt: Added.
+        * fast/regions/selection/position-for-point-1-vert-lr.html: Added.
+        * fast/regions/selection/position-for-point-1-vert-rl-expected.txt: Added.
+        * fast/regions/selection/position-for-point-1-vert-rl.html: Added.
+        * fast/regions/selection/position-for-point-1.html: Added.
+        * fast/regions/selection/position-for-point-expected.txt: Added.
+        * fast/regions/selection/position-for-point-vert-lr-expected.txt: Added.
+        * fast/regions/selection/position-for-point-vert-lr.html: Added.
+        * fast/regions/selection/position-for-point-vert-rl-expected.txt: Added.
+        * fast/regions/selection/position-for-point-vert-rl.html: Added.
+        * fast/regions/selection/position-for-point.html: Added.
+
 2013-11-10  Sun-woo Nam  <sunny.nam@samsung.com>
 
         [EFL] Layout tests with css1 box properties need to be rebaselined.

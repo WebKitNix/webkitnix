@@ -56,15 +56,15 @@ public:
     IndexedDB::TransactionMode mode() const  { return m_mode; }
     const HashSet<int64_t>& scope() const  { return m_objectStoreIds; }
 
-    void scheduleTask(PassOwnPtr<IDBOperation> task, PassOwnPtr<IDBOperation> abortTask = nullptr) { scheduleTask(IDBDatabaseBackend::NormalTask, task, abortTask); }
-    void scheduleTask(IDBDatabaseBackend::TaskType, PassOwnPtr<IDBOperation>, PassOwnPtr<IDBOperation> abortTask = nullptr);
+    void scheduleTask(PassRefPtr<IDBOperation> task, PassRefPtr<IDBSynchronousOperation> abortTask = nullptr) { scheduleTask(IDBDatabaseBackend::NormalTask, task, abortTask); }
+    void scheduleTask(IDBDatabaseBackend::TaskType, PassRefPtr<IDBOperation>, PassRefPtr<IDBSynchronousOperation> abortTask = nullptr);
 
     void registerOpenCursor(IDBCursorBackend*);
     void unregisterOpenCursor(IDBCursorBackend*);
 
     void addPreemptiveEvent()  { m_pendingPreemptiveEvents++; }
     void didCompletePreemptiveEvent()  { m_pendingPreemptiveEvents--; ASSERT(m_pendingPreemptiveEvents >= 0); }
-    IDBBackingStoreTransactionInterface& backingStoreTransaction() { return *m_backingStoreTransaction; }
+    IDBBackingStoreTransactionInterface& deprecatedBackingStoreTransaction();
 
     IDBDatabaseBackend& database() const  { return *m_database; }
 
@@ -89,7 +89,8 @@ private:
     IDBTransactionBackend(IDBDatabaseBackend*, int64_t id, PassRefPtr<IDBDatabaseCallbacks>, const HashSet<int64_t>& objectStoreIds, IndexedDB::TransactionMode);
 
     enum State {
-        Unused, // Created, but no tasks yet.
+        Unopened, // Backing store transaction not yet created.
+        Unused, // Backing store transaction created, but no tasks yet.
         StartPending, // Enqueued tasks, but backing store transaction not yet started.
         Running, // Backing store transaction started but not yet finished.
         Finished, // Either aborted or committed.
@@ -111,20 +112,16 @@ private:
     RefPtr<IDBDatabaseCallbacks> m_callbacks;
     RefPtr<IDBDatabaseBackend> m_database;
 
-    typedef Deque<OwnPtr<IDBOperation>> TaskQueue;
+    typedef Deque<RefPtr<IDBOperation>> TaskQueue;
     TaskQueue m_taskQueue;
     TaskQueue m_preemptiveTaskQueue;
-    TaskQueue m_abortTaskQueue;
-
-    std::unique_ptr<IDBBackingStoreTransactionInterface> m_backingStoreTransaction;
+    Deque<RefPtr<IDBSynchronousOperation>> m_abortTaskQueue;
 
     // FIXME: delete the timer once we have threads instead.
     Timer<IDBTransactionBackend> m_taskTimer;
     int m_pendingPreemptiveEvents;
 
     HashSet<IDBCursorBackend*> m_openCursors;
-    
-    RefPtr<IDBBackingStoreInterface> m_backingStore;
 
     int64_t m_id;
 };

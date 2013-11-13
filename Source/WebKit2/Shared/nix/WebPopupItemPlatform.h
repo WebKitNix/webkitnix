@@ -32,7 +32,7 @@
 
 namespace WebKit {
 
-class WebPopupItemPlatform : public TypedAPIObject<APIObject::TypePopupMenuItem> {
+class WebPopupItemPlatform : public API::TypedObject<API::Object::Type::PopupMenuItem> {
 public:
     static PassRefPtr<WebPopupItemPlatform> create(const WebPopupItem& data)
     {

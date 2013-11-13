@@ -37,7 +37,7 @@ namespace WebKit {
 
 class WebPageProxy;
 
-class WebColorPickerResultListenerProxy : public TypedAPIObject<APIObject::TypeColorPickerResultListener> {
+class WebColorPickerResultListenerProxy : public API::TypedObject<API::Object::Type::ColorPickerResultListener> {
 public:
     static PassRefPtr<WebColorPickerResultListenerProxy> create(WebPageProxy* page)
     {

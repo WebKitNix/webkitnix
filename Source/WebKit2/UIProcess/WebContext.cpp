@@ -574,7 +574,7 @@ WebProcessProxy* WebContext::createNewWebProcess()
     // Add any platform specific parameters
     platformInitializeWebProcess(parameters);
 
-    RefPtr<APIObject> injectedBundleInitializationUserData = m_injectedBundleClient.getInjectedBundleInitializationUserData(this);
+    RefPtr<API::Object> injectedBundleInitializationUserData = m_injectedBundleClient.getInjectedBundleInitializationUserData(this);
     if (!injectedBundleInitializationUserData)
         injectedBundleInitializationUserData = m_injectedBundleInitializationUserData;
     process->send(Messages::WebProcess::InitializeWebProcess(parameters, WebContextUserMessageEncoder(injectedBundleInitializationUserData.get())), 0);
@@ -586,7 +586,7 @@ WebProcessProxy* WebContext::createNewWebProcess()
 
     if (m_processModel == ProcessModelSharedSecondaryProcess) {
         for (size_t i = 0; i != m_messagesToInjectedBundlePostedToEmptyContext.size(); ++i) {
-            pair<String, RefPtr<APIObject>>& message = m_messagesToInjectedBundlePostedToEmptyContext[i];
+            pair<String, RefPtr<API::Object>>& message = m_messagesToInjectedBundlePostedToEmptyContext[i];
 
             CoreIPC::ArgumentEncoder messageData;
 
@@ -762,7 +762,7 @@ DownloadProxy* WebContext::download(WebPageProxy* initiatingPage, const Resource
     return downloadProxy;
 }
 
-void WebContext::postMessageToInjectedBundle(const String& messageName, APIObject* messageBody)
+void WebContext::postMessageToInjectedBundle(const String& messageName, API::Object* messageBody)
 {
     if (m_processes.isEmpty()) {
         if (m_processModel == ProcessModelSharedSecondaryProcess)
@@ -782,12 +782,12 @@ void WebContext::postMessageToInjectedBundle(const String& messageName, APIObjec
 
 // InjectedBundle client
 
-void WebContext::didReceiveMessageFromInjectedBundle(const String& messageName, APIObject* messageBody)
+void WebContext::didReceiveMessageFromInjectedBundle(const String& messageName, API::Object* messageBody)
 {
     m_injectedBundleClient.didReceiveMessageFromInjectedBundle(this, messageName, messageBody);
 }
 
-void WebContext::didReceiveSynchronousMessageFromInjectedBundle(const String& messageName, APIObject* messageBody, RefPtr<APIObject>& returnData)
+void WebContext::didReceiveSynchronousMessageFromInjectedBundle(const String& messageName, API::Object* messageBody, RefPtr<API::Object>& returnData)
 {
     m_injectedBundleClient.didReceiveSynchronousMessageFromInjectedBundle(this, messageName, messageBody, returnData);
 }
@@ -940,7 +940,7 @@ void WebContext::didReceiveMessage(CoreIPC::Connection* connection, CoreIPC::Mes
     if (decoder.messageReceiverName() == WebContextLegacyMessages::messageReceiverName()
         && decoder.messageName() == WebContextLegacyMessages::postMessageMessageName()) {
         String messageName;
-        RefPtr<APIObject> messageBody;
+        RefPtr<API::Object> messageBody;
         WebContextUserMessageDecoder messageBodyDecoder(messageBody, WebProcessProxy::fromConnection(connection));
         if (!decoder.decode(messageName))
             return;
@@ -966,14 +966,14 @@ void WebContext::didReceiveSyncMessage(CoreIPC::Connection* connection, CoreIPC:
         // FIXME: We should probably encode something in the case that the arguments do not decode correctly.
 
         String messageName;
-        RefPtr<APIObject> messageBody;
+        RefPtr<API::Object> messageBody;
         WebContextUserMessageDecoder messageBodyDecoder(messageBody, WebProcessProxy::fromConnection(connection));
         if (!decoder.decode(messageName))
             return;
         if (!decoder.decode(messageBodyDecoder))
             return;
 
-        RefPtr<APIObject> returnData;
+        RefPtr<API::Object> returnData;
         didReceiveSynchronousMessageFromInjectedBundle(messageName, messageBody.get(), returnData);
         replyEncoder->encode(WebContextUserMessageEncoder(returnData.get()));
         return;
@@ -1260,29 +1260,33 @@ void WebContext::pluginInfoStoreDidLoadPlugins(PluginInfoStore* store)
 #endif
     ASSERT(store == &m_pluginInfoStore);
 
-    Vector<RefPtr<APIObject>> pluginArray;
+    Vector<PluginModuleInfo> pluginModules = m_pluginInfoStore.plugins();
 
-    Vector<PluginModuleInfo> plugins = m_pluginInfoStore.plugins();
-    for (size_t i = 0; i < plugins.size(); ++i) {
-        PluginModuleInfo& plugin = plugins[i];
+    Vector<RefPtr<API::Object>> plugins;
+    plugins.reserveInitialCapacity(pluginModules.size());
+
+    for (const auto& pluginModule : pluginModules) {
         ImmutableDictionary::MapType map;
-        map.set(ASCIILiteral("path"), WebString::create(plugin.path));
-        map.set(ASCIILiteral("name"), WebString::create(plugin.info.name));
-        map.set(ASCIILiteral("file"), WebString::create(plugin.info.file));
-        map.set(ASCIILiteral("desc"), WebString::create(plugin.info.desc));
-        Vector<RefPtr<APIObject>> mimeArray;
-        for (size_t j = 0; j <  plugin.info.mimes.size(); ++j)
-            mimeArray.append(WebString::create(plugin.info.mimes[j].type));
-        map.set(ASCIILiteral("mimes"), ImmutableArray::adopt(mimeArray));
+        map.set(ASCIILiteral("path"), WebString::create(pluginModule.path));
+        map.set(ASCIILiteral("name"), WebString::create(pluginModule.info.name));
+        map.set(ASCIILiteral("file"), WebString::create(pluginModule.info.file));
+        map.set(ASCIILiteral("desc"), WebString::create(pluginModule.info.desc));
+
+        Vector<RefPtr<API::Object>> mimeTypes;
+        mimeTypes.reserveInitialCapacity(pluginModule.info.mimes.size());
+        for (const auto& mimeClassInfo : pluginModule.info.mimes)
+            mimeTypes.uncheckedAppend(WebString::create(mimeClassInfo.type));
+        map.set(ASCIILiteral("mimes"), ImmutableArray::create(std::move(mimeTypes)));
+
 #if PLATFORM(MAC)
-        map.set(ASCIILiteral("bundleId"), WebString::create(plugin.bundleIdentifier));
-        map.set(ASCIILiteral("version"), WebString::create(plugin.versionString));
+        map.set(ASCIILiteral("bundleId"), WebString::create(pluginModule.bundleIdentifier));
+        map.set(ASCIILiteral("version"), WebString::create(pluginModule.versionString));
 #endif
 
-        pluginArray.append(ImmutableDictionary::adopt(map));
+        plugins.uncheckedAppend(ImmutableDictionary::adopt(map));
     }
 
-    m_client.plugInInformationBecameAvailable(this, ImmutableArray::adopt(pluginArray).get());
+    m_client.plugInInformationBecameAvailable(this, ImmutableArray::create(std::move(plugins)).get());
 }
 #endif
 

@@ -29,6 +29,7 @@
 #include "FontCache.h"
 #include "Frame.h"
 #include "GraphicsContext.h"
+#include "HTMLTextFormControlElement.h"
 #include "HitTestLocation.h"
 #include "HitTestRequest.h"
 #include "HitTestResult.h"
@@ -38,6 +39,7 @@
 #include "RenderBlockFlow.h"
 #include "RenderStyle.h"
 #include "RenderText.h"
+#include "RenderTextControl.h"
 #include "RenderView.h"
 #include "Settings.h"
 #include "SimpleLineLayoutResolver.h"
@@ -52,6 +54,9 @@ namespace SimpleLineLayout {
 template <typename CharacterType>
 static bool canUseForText(const CharacterType* text, unsigned length, const SimpleFontData& fontData)
 {
+    // FIXME: <textarea maxlength=0> generates empty text node.
+    if (!length)
+        return false;
     for (unsigned i = 0; i < length; ++i) {
         UChar character = text[i];
         if (character == ' ')
@@ -113,6 +118,12 @@ bool canUseFor(const RenderBlockFlow& flow)
         return false;
     if (flow.parent()->isDeprecatedFlexibleBox())
         return false;
+    // FIXME: Implementation of wrap=hard looks into lineboxes.
+    if (flow.parent()->isTextArea() && flow.parent()->element()->fastHasAttribute(HTMLNames::wrapAttr))
+        return false;
+    // FIXME: Placeholders do something strange.
+    if (flow.parent()->isTextControl() && toRenderTextControl(*flow.parent()).textFormControlElement().placeholderElement())
+        return false;
     // These tests only works during layout. Outside layout this function may give false positives.
     if (flow.view().layoutState()) {
 #if ENABLE(CSS_SHAPES)
@@ -166,8 +177,6 @@ bool canUseFor(const RenderBlockFlow& flow)
         return false;
     if (style.hasTextCombine())
         return false;
-    if (style.overflowWrap() != NormalOverflowWrap)
-        return false;
     if (style.backgroundClip() == TextFillBox)
         return false;
     if (style.borderFit() == BorderFitLines)
@@ -194,6 +203,28 @@ bool canUseFor(const RenderBlockFlow& flow)
     return true;
 }
 
+struct Style {
+    Style(const RenderStyle& style)
+        : font(style.font())
+        , textAlign(style.textAlign())
+        , collapseWhitespace(style.collapseWhiteSpace())
+        , preserveNewline(style.preserveNewline())
+        , wrapLines(style.autoWrap())
+        , breakWordOnOverflow(style.overflowWrap() == BreakOverflowWrap && (wrapLines || preserveNewline))
+        , spaceWidth(font.width(TextRun(&space, 1)))
+        , tabWidth(collapseWhitespace ? 0 : style.tabSize())
+    {
+    }
+    const Font& font;
+    ETextAlign textAlign;
+    bool collapseWhitespace;
+    bool preserveNewline;
+    bool wrapLines;
+    bool breakWordOnOverflow;
+    float spaceWidth;
+    unsigned tabWidth;
+};
+
 static inline bool isWhitespace(UChar character, bool preserveNewline)
 {
     return character == ' ' || character == '\t' || (!preserveNewline && character == '\n');
@@ -210,33 +241,136 @@ static inline unsigned skipWhitespaces(const CharacterType* text, unsigned offse
 }
 
 template <typename CharacterType>
-static float textWidth(const RenderText& renderText, const CharacterType* text, unsigned textLength, unsigned from, unsigned to, float xPosition, const Font& font, float tabWidth)
+static float textWidth(const RenderText& renderText, const CharacterType* text, unsigned textLength, unsigned from, unsigned to, float xPosition, const Style& style)
 {
-    if (font.isFixedPitch() || (!from && to == textLength))
-        return renderText.width(from, to - from, font, xPosition, nullptr, nullptr);
+    if (style.font.isFixedPitch() || (!from && to == textLength))
+        return renderText.width(from, to - from, style.font, xPosition, nullptr, nullptr);
 
     TextRun run(text + from, to - from);
     run.setXPos(xPosition);
     run.setCharactersLength(textLength - from);
-    run.setTabSize(!!tabWidth, tabWidth);
+    run.setTabSize(!!style.tabWidth, style.tabWidth);
 
     ASSERT(run.charactersLength() >= run.length());
 
-    return font.width(run);
+    return style.font.width(run);
 }
 
 template <typename CharacterType>
-static float measureWord(const RenderText& textRenderer, const CharacterType* text, unsigned textLength, unsigned start, unsigned end, float lineWidth, bool collapseWhitespace, const Font& font, float tabWidth, float spaceWidth)
+static float measureWord(unsigned start, unsigned end, float lineWidth, const Style& style, const CharacterType* text, unsigned textLength, const RenderText& textRenderer)
 {
     if (text[start] == ' ' && end == start + 1)
-        return spaceWidth;
+        return style.spaceWidth;
 
-    bool measureWithEndSpace = collapseWhitespace && end < textLength && text[end] == ' ';
+    bool measureWithEndSpace = style.collapseWhitespace && end < textLength && text[end] == ' ';
     if (measureWithEndSpace)
         ++end;
-    float width = textWidth(textRenderer, text, textLength, start, end, lineWidth, font, collapseWhitespace ? 0 : tabWidth);
+    float width = textWidth(textRenderer, text, textLength, start, end, lineWidth, style);
 
-    return measureWithEndSpace ? width - spaceWidth : width;
+    return measureWithEndSpace ? width - style.spaceWidth : width;
+}
+
+template <typename CharacterType>
+Vector<Run, 4> createLineRuns(unsigned lineStart, LineWidth& lineWidth, LazyLineBreakIterator& lineBreakIterator, const Style& style, const CharacterType* text, unsigned textLength, const RenderText& textRenderer)
+{
+    Vector<Run, 4> lineRuns;
+    lineRuns.uncheckedAppend(Run(lineStart, 0));
+
+    unsigned wordEnd = lineStart;
+    while (wordEnd < textLength) {
+        ASSERT(!style.collapseWhitespace || !isWhitespace(text[wordEnd], style.preserveNewline));
+
+        unsigned wordStart = wordEnd;
+
+        if (style.preserveNewline && text[wordStart] == '\n') {
+            ++wordEnd;
+            // FIXME: This creates a dedicated run for newline. This is wasteful and unnecessary but it keeps test results unchanged.
+            if (wordStart > lineStart)
+                lineRuns.append(Run(wordStart, lineRuns.last().right));
+            lineRuns.last().right = lineRuns.last().left;
+            lineRuns.last().end = wordEnd;
+            break;
+        }
+
+        if (!style.collapseWhitespace && isWhitespace(text[wordStart], style.preserveNewline))
+            wordEnd = wordStart + 1;
+        else
+            wordEnd = nextBreakablePosition<CharacterType, false>(lineBreakIterator, text, textLength, wordStart + 1);
+
+        bool wordIsPrecededByWhitespace = style.collapseWhitespace && wordStart > lineStart && isWhitespace(text[wordStart - 1], style.preserveNewline);
+        if (wordIsPrecededByWhitespace)
+            --wordStart;
+
+        float wordWidth = measureWord(wordStart, wordEnd, lineWidth.committedWidth(), style, text, textLength, textRenderer);
+
+        lineWidth.addUncommittedWidth(wordWidth);
+
+        if (style.wrapLines) {
+            // Move to the next line if the current one is full and we have something on it.
+            if (!lineWidth.fitsOnLine() && lineWidth.committedWidth())
+                break;
+
+            // This is for white-space: pre-wrap which requires special handling for end line whitespace.
+            if (!style.collapseWhitespace && lineWidth.fitsOnLine() && wordEnd < textLength && isWhitespace(text[wordEnd], style.preserveNewline)) {
+                // Look ahead to see if the next whitespace would fit.
+                float whitespaceWidth = textWidth(textRenderer, text, textLength, wordEnd, wordEnd + 1, lineWidth.committedWidth(), style);
+                if (!lineWidth.fitsOnLineIncludingExtraWidth(whitespaceWidth)) {
+                    // If not eat away the rest of the whitespace on the line.
+                    unsigned whitespaceEnd = skipWhitespaces(text, wordEnd, textLength, style.preserveNewline);
+                    // Include newline to this run too.
+                    if (whitespaceEnd < textLength && text[whitespaceEnd] == '\n')
+                        ++whitespaceEnd;
+                    lineRuns.last().end = whitespaceEnd;
+                    lineRuns.last().right = lineWidth.availableWidth();
+                    break;
+                }
+            }
+        }
+
+        if (wordStart > lineRuns.last().end) {
+            // There were more than one consecutive whitespace.
+            ASSERT(wordIsPrecededByWhitespace);
+            // Include space to the end of the previous run.
+            lineRuns.last().end++;
+            lineRuns.last().right += style.spaceWidth;
+            // Start a new run on the same line.
+            lineRuns.append(Run(wordStart + 1, lineRuns.last().right));
+        }
+
+        if (!lineWidth.fitsOnLine() && style.breakWordOnOverflow) {
+            // Backtrack and start measuring character-by-character.
+            lineWidth.addUncommittedWidth(-lineWidth.uncommittedWidth());
+            unsigned splitEnd = wordStart;
+            for (; splitEnd < wordEnd; ++splitEnd) {
+                float charWidth = textWidth(textRenderer, text, textLength, splitEnd, splitEnd + 1, 0, style);
+                lineWidth.addUncommittedWidth(charWidth);
+                if (!lineWidth.fitsOnLine() && splitEnd > lineStart)
+                    break;
+                lineWidth.commit();
+            }
+            lineRuns.last().end = splitEnd;
+            lineRuns.last().right = lineWidth.committedWidth();
+            // To match line boxes, set single-space-only line width to zero.
+            if (text[lineRuns.last().start] == ' ' && lineRuns.last().start + 1 == lineRuns.last().end)
+                lineRuns.last().right = lineRuns.last().left;
+            break;
+        }
+
+        lineWidth.commit();
+
+        lineRuns.last().right = lineWidth.committedWidth();
+        lineRuns.last().end = wordEnd;
+
+        if (style.collapseWhitespace)
+            wordEnd = skipWhitespaces(text, wordEnd, textLength, style.preserveNewline);
+
+        if (!lineWidth.fitsOnLine() && style.wrapLines) {
+            // The first run on the line overflows.
+            ASSERT(lineRuns.size() == 1);
+            break;
+        }
+    }
+    return lineRuns;
 }
 
 static float computeLineLeft(ETextAlign textAlign, float remainingWidth)
@@ -260,128 +394,44 @@ static float computeLineLeft(ETextAlign textAlign, float remainingWidth)
     return 0;
 }
 
-static void adjustRunOffsets(Vector<Run, 4>& lineRuns, ETextAlign textAlign, float lineWidth, float availableWidth)
+static void adjustRunOffsets(Vector<Run, 4>& lineRuns, float adjustment)
 {
-    float lineLeft = computeLineLeft(textAlign, availableWidth - lineWidth);
+    if (!adjustment)
+        return;
     for (unsigned i = 0; i < lineRuns.size(); ++i) {
-        lineRuns[i].left = floor(lineLeft + lineRuns[i].left);
-        lineRuns[i].right = ceil(lineLeft + lineRuns[i].right);
+        lineRuns[i].left += adjustment;
+        lineRuns[i].right += adjustment;
     }
 }
 
 template <typename CharacterType>
 void createTextRuns(Layout::RunVector& runs, unsigned& lineCount, RenderBlockFlow& flow, RenderText& textRenderer)
 {
-    const RenderStyle& style = flow.style();
-
-    // These properties are supported.
-    const Font& font = style.font();
-    unsigned tabWidth = style.tabSize();
-    ETextAlign textAlign = style.textAlign(); // Not 'justify'.
-    bool collapseWhitespace = style.collapseWhiteSpace();
-    bool preserveNewline = style.preserveNewline();
-    bool wrapLines = style.autoWrap();
+    const Style style(flow.style());
 
     const CharacterType* text = textRenderer.text()->getCharacters<CharacterType>();
     const unsigned textLength = textRenderer.textLength();
 
-    float spaceWidth = font.width(TextRun(&space, 1));
-    LazyLineBreakIterator lineBreakIterator(textRenderer.text(), style.locale());
+    LazyLineBreakIterator lineBreakIterator(textRenderer.text(), flow.style().locale());
 
     unsigned lineEnd = 0;
     while (lineEnd < textLength) {
-        if (collapseWhitespace)
-            lineEnd = skipWhitespaces(text, lineEnd, textLength, preserveNewline);
+        if (style.collapseWhitespace)
+            lineEnd = skipWhitespaces(text, lineEnd, textLength, style.preserveNewline);
+
         unsigned lineStart = lineEnd;
-        unsigned wordEnd = lineEnd;
+
         LineWidth lineWidth(flow, false, DoNotIndentText);
+        auto lineRuns = createLineRuns(lineStart, lineWidth, lineBreakIterator, style, text, textLength, textRenderer);
 
-        Vector<Run, 4> lineRuns;
-        lineRuns.uncheckedAppend(Run(lineStart, 0));
-
-        while (wordEnd < textLength) {
-            ASSERT(!collapseWhitespace || !isWhitespace(text[wordEnd], preserveNewline));
-
-            unsigned wordStart = wordEnd;
-
-            if (preserveNewline && text[wordStart] == '\n') {
-                ++wordEnd;
-                // FIXME: This creates a dedicated run for newline. This is wasteful and unnecessary but it keeps test results unchanged.
-                if (wordStart > lineStart)
-                    lineRuns.append(Run(lineEnd, lineRuns.last().right));
-                lineRuns.last().right = lineRuns.last().left;
-                lineRuns.last().end = lineEnd + 1;
-                lineEnd = wordEnd;
-                break;
-            }
-
-            if (!collapseWhitespace && isWhitespace(text[wordStart], preserveNewline))
-                wordEnd = wordStart + 1;
-            else
-                wordEnd = nextBreakablePosition<CharacterType, false>(lineBreakIterator, text, textLength, wordStart + 1);
-
-            bool wordIsPrecededByWhitespace = collapseWhitespace && wordStart > lineStart && isWhitespace(text[wordStart - 1], preserveNewline);
-            if (wordIsPrecededByWhitespace)
-                --wordStart;
-
-            float wordWidth = measureWord(textRenderer, text, textLength, wordStart, wordEnd, lineWidth.committedWidth(), collapseWhitespace, font, tabWidth, spaceWidth);
-
-            lineWidth.addUncommittedWidth(wordWidth);
-
-            if (wrapLines) {
-                // Move to the next line if the current one is full and we have something on it.
-                if (!lineWidth.fitsOnLine() && lineWidth.committedWidth())
-                    break;
-
-                // This is for white-space: pre-wrap which requires special handling for end line whitespace.
-                if (!collapseWhitespace && lineWidth.fitsOnLine() && wordEnd < textLength && isWhitespace(text[wordEnd], preserveNewline)) {
-                    // Look ahead to see if the next whitespace would fit.
-                    float whitespaceWidth = textWidth(textRenderer, text, textLength, wordEnd, wordEnd + 1, lineWidth.committedWidth(), font, tabWidth);
-                    if (!lineWidth.fitsOnLineIncludingExtraWidth(whitespaceWidth)) {
-                        // If not eat away the rest of the whitespace on the line.
-                        unsigned whitespaceEnd = skipWhitespaces(text, wordEnd, textLength, preserveNewline);
-                        // Include newline to this run too.
-                        if (whitespaceEnd < textLength && text[whitespaceEnd] == '\n')
-                            ++whitespaceEnd;
-                        lineRuns.last().end = whitespaceEnd;
-                        lineRuns.last().right = lineWidth.availableWidth();
-                        lineEnd = whitespaceEnd;
-                        break;
-                    }
-                }
-            }
-
-            if (wordStart > lineEnd) {
-                // There were more than one consecutive whitespace.
-                ASSERT(wordIsPrecededByWhitespace);
-                // Include space to the end of the previous run.
-                lineRuns.last().end++;
-                lineRuns.last().right += spaceWidth;
-                // Start a new run on the same line.
-                lineRuns.append(Run(wordStart + 1, lineRuns.last().right));
-            }
-
-            lineWidth.commit();
-
-            lineRuns.last().right = lineWidth.committedWidth();
-            lineRuns.last().end = wordEnd;
-
-            lineEnd = wordEnd;
-            if (collapseWhitespace)
-                wordEnd = skipWhitespaces(text, wordEnd, textLength, preserveNewline);
-
-            if (wrapLines && !lineWidth.fitsOnLine()) {
-                // The first run on the line overflows.
-                ASSERT(lineRuns.size() == 1);
-                break;
-            }
-        }
+        lineEnd = lineRuns.last().end;
         if (lineStart == lineEnd)
             continue;
 
         lineRuns.last().isEndOfLine = true;
 
-        adjustRunOffsets(lineRuns, textAlign, lineWidth.committedWidth(), lineWidth.availableWidth());
+        float lineLeft = computeLineLeft(style.textAlign, lineWidth.availableWidth() - lineWidth.committedWidth());
+        adjustRunOffsets(lineRuns, lineLeft);
 
         for (unsigned i = 0; i < lineRuns.size(); ++i)
             runs.append(lineRuns[i]);

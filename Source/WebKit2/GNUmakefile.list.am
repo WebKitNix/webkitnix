@@ -287,10 +287,10 @@ webkit2platform_sources += \
 	Source/WebKit2/Platform/CoreIPC/MessageReceiverMap.h \
 	Source/WebKit2/Platform/CoreIPC/MessageSender.cpp \
 	Source/WebKit2/Platform/CoreIPC/MessageSender.h \
-	Source/WebKit2/Platform/CoreIPC/StringReference.cpp \
-	Source/WebKit2/Platform/CoreIPC/StringReference.h \
 	Source/WebKit2/Platform/CoreIPC/unix/AttachmentUnix.cpp \
 	Source/WebKit2/Platform/CoreIPC/unix/ConnectionUnix.cpp \
+	Source/WebKit2/Platform/IPC/StringReference.cpp \
+	Source/WebKit2/Platform/IPC/StringReference.h \
 	Source/WebKit2/Platform/gtk/LoggingGtk.cpp \
 	Source/WebKit2/Platform/gtk/ModuleGtk.cpp \
 	Source/WebKit2/Platform/gtk/WorkQueueGtk.cpp \
@@ -346,6 +346,7 @@ webkit2_sources += \
 	Source/WebKit2/Shared/API/c/WKData.cpp \
 	Source/WebKit2/Shared/API/c/WKData.h \
 	Source/WebKit2/Shared/API/c/WKDeclarationSpecifiers.h \
+	Source/WebKit2/Shared/API/c/WKDeprecatedFunctions.cpp \
 	Source/WebKit2/Shared/API/c/WKDictionary.cpp \
 	Source/WebKit2/Shared/API/c/WKDictionary.h \
 	Source/WebKit2/Shared/API/c/WKError.cpp \
@@ -444,8 +445,6 @@ webkit2_sources += \
 	Source/WebKit2/Shared/ImmutableDictionary.cpp \
 	Source/WebKit2/Shared/ImmutableDictionary.h \
 	Source/WebKit2/Shared/LayerTreeContext.h \
-	Source/WebKit2/Shared/MutableArray.cpp \
-	Source/WebKit2/Shared/MutableArray.h \
 	Source/WebKit2/Shared/MutableDictionary.cpp \
 	Source/WebKit2/Shared/MutableDictionary.h \
 	Source/WebKit2/Shared/NativeWebKeyboardEvent.h \
@@ -842,6 +841,8 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/DrawingAreaProxyImpl.h \
 	Source/WebKit2/UIProcess/FindIndicator.cpp \
 	Source/WebKit2/UIProcess/FindIndicator.h \
+	Source/WebKit2/UIProcess/FrameLoadState.cpp \
+	Source/WebKit2/UIProcess/FrameLoadState.h \
 	Source/WebKit2/UIProcess/GenericCallback.h \
 	Source/WebKit2/UIProcess/GeolocationPermissionRequestManagerProxy.cpp \
 	Source/WebKit2/UIProcess/GeolocationPermissionRequestManagerProxy.h \
