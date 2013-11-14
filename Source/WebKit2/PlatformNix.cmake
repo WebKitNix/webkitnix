@@ -302,7 +302,6 @@ set(WebKitNix_WebKit2_HEADERS
     Shared/API/c/WKEvent.h
     Shared/API/c/WKFindOptions.h
     Shared/API/c/WKGeometry.h
-    Shared/API/c/WKGraphicsContext.h
     Shared/API/c/WKImage.h
     Shared/API/c/WKMutableArray.h
     Shared/API/c/WKMutableDictionary.h
