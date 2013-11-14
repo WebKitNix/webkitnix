@@ -156,6 +156,7 @@ private:
     float m_viewportMaxScale;
     float m_viewportInitScale;
     bool m_viewportUserScalable;
+    bool m_viewShouldAutoZoom;
 
     std::string m_activeUrlText;
 

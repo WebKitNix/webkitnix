@@ -59,6 +59,7 @@ GLOffscreenBuffer::GLOffscreenBuffer(unsigned width, unsigned height)
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
         EGL_NONE
     };
+
     EGLConfig config;
     EGLint configCount;
     if (!eglChooseConfig(m_display, attributes, &config, 1, &configCount)) {
@@ -76,7 +77,12 @@ GLOffscreenBuffer::GLOffscreenBuffer(unsigned width, unsigned height)
         return;
     }
 
-    m_context = eglCreateContext(m_display, config, EGL_NO_CONTEXT, 0);
+    static const EGLint contextAttributes[] = {
+        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_NONE,
+    };
+
+    m_context = eglCreateContext(m_display, config, EGL_NO_CONTEXT, contextAttributes);
     if (!m_context) {
         cerr << "Error: eglCreateContext()\n";
         return;
@@ -87,6 +93,7 @@ GLOffscreenBuffer::GLOffscreenBuffer(unsigned width, unsigned height)
         EGL_HEIGHT, height,
         EGL_NONE
     };
+
     m_surface = eglCreatePbufferSurface(m_display, config, surfaceAttributes);
     if (!m_surface) {
         cerr << "Error: eglCreatePbufferSurface()\n";

@@ -53,6 +53,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     , m_viewportMaxScale(5)
     , m_viewportUserScalable(true)
     , m_viewportInitScale(1)
+    , m_viewShouldAutoZoom(true)
 {
     WKStringRef bundlePath = WKStringCreateWithUTF8CString(options.injectedBundle.empty() ? MINIBROWSER_INJECTEDBUNDLE_DIR "libMiniBrowserInjectedBundle.so" : options.injectedBundle.c_str());
     m_context = adoptWK(WKContextCreateWithInjectedBundlePath(bundlePath));
@@ -311,7 +312,13 @@ void MiniBrowser::onWindowSizeChange(WKSize size)
     m_viewRect.size.height = size.height - m_viewRect.origin.y;
     WKViewSetSize(m_view, m_viewRect.size);
 
-    if (isMobileMode())
+    // zoom factor after automatic zooming is always <= 1.0
+    // zoom factor after manual zooming is always >= 1.0
+    // if the current zoom isn't manual we enable automatic zooming
+    if(scale() <= 1.0)
+        m_viewShouldAutoZoom = true;
+
+    if (isMobileMode() && m_viewShouldAutoZoom)
         NIXViewScaleToFitContents(m_view);
 }
 
@@ -449,7 +456,7 @@ void MiniBrowser::didRenderFrame(WKViewRef view, WKSize contentsSize, WKRect cov
     MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
     mb->m_contentsSize = contentsSize;
 
-    if (mb->isMobileMode()) {
+    if (mb->isMobileMode() && mb->m_viewShouldAutoZoom) {
         NIXViewScaleToFitContents(mb->m_view);
         mb->adjustScrollPosition();
     }
@@ -612,6 +619,8 @@ void MiniBrowser::scaleAtPoint(const WKPoint& point, double scale, ScaleBehavior
 {
     if (!m_viewportUserScalable)
         return;
+
+    m_viewShouldAutoZoom = false;
 
     double minimumScale = double(WKViewGetSize(m_view).width) / m_contentsSize.width;
 
@@ -875,6 +884,7 @@ void MiniBrowser::didFinishDocumentLoadForFrame(WKPageRef page, WKFrameRef, WKTy
 {
     MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
     mb->updateActiveUrlText();
+    mb->m_viewShouldAutoZoom = true;
 }
 
 bool MiniBrowser::handleTLSError(WKErrorRef error)
