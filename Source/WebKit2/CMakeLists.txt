@@ -177,6 +177,7 @@ set(WebKit2_SOURCES
     PluginProcess/PluginProcess.cpp
     PluginProcess/WebProcessConnection.cpp
 
+    Shared/APIArray.cpp
     Shared/APIClientTraits.cpp
     Shared/APIObject.cpp
     Shared/ActivityAssertion.cpp
@@ -187,7 +188,6 @@ set(WebKit2_SOURCES
     Shared/DictionaryPopupInfo.cpp
     Shared/EditorState.cpp
     Shared/FontInfo.cpp
-    Shared/ImmutableArray.cpp
     Shared/ImmutableDictionary.cpp
     Shared/MutableDictionary.cpp
     Shared/OriginAndDatabases.cpp
@@ -211,7 +211,6 @@ set(WebKit2_SOURCES
     Shared/WebEvent.cpp
     Shared/WebEventConversion.cpp
     Shared/WebGeolocationPosition.cpp
-    Shared/WebGraphicsContext.cpp
     Shared/WebHitTestResult.cpp
     Shared/WebImage.cpp
     Shared/WebKeyboardEvent.cpp
@@ -243,7 +242,6 @@ set(WebKit2_SOURCES
     Shared/API/c/WKDictionary.cpp
     Shared/API/c/WKError.cpp
     Shared/API/c/WKGeometry.cpp
-    Shared/API/c/WKGraphicsContext.cpp
     Shared/API/c/WKImage.cpp
     Shared/API/c/WKMutableArray.cpp
     Shared/API/c/WKMutableDictionary.cpp

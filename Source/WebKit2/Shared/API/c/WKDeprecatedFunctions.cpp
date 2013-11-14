@@ -29,9 +29,22 @@
 
 // Deprecated functions that should be removed from the framework once nobody uses them.
 
+extern "C" {
 WK_EXPORT bool WKArrayIsMutable(WKArrayRef array);
+
+#if PLATFORM(MAC)
+WK_EXPORT CGContextRef WKGraphicsContextGetCGContext(WKGraphicsContextRef graphicsContext);
+#endif
+}
 
 bool WKArrayIsMutable(WKArrayRef array)
 {
     return false;
 }
+
+#if PLATFORM(MAC)
+CGContextRef WKGraphicsContextGetCGContext(WKGraphicsContextRef graphicsContext)
+{
+    return nullptr;
+}
+#endif

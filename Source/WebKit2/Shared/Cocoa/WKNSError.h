@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Apple Inc. All rights reserved.
+ * Copyright (C) 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,41 +23,18 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "ImmutableArray.h"
+#import "WKFoundation.h"
 
-#include "WebString.h"
+#if WK_API_ENABLED
+
+#import "WKObject.h"
+#import "WebError.h"
 
 namespace WebKit {
-
-PassRefPtr<ImmutableArray> ImmutableArray::create()
-{
-    return create(Vector<RefPtr<API::Object>>());
+inline NSError *wrapper(WebError& error) { ASSERT([error.wrapper() isKindOfClass:[NSError self]]); return (NSError *)error.wrapper(); }
 }
 
-PassRefPtr<ImmutableArray> ImmutableArray::create(Vector<RefPtr<API::Object>> elements)
-{
-    return adoptRef(new ImmutableArray(std::move(elements)));
-}
+@interface WKNSError : WKObject <NSCopying>
+@end
 
-PassRefPtr<ImmutableArray> ImmutableArray::createStringArray(const Vector<String>& strings)
-{
-    Vector<RefPtr<API::Object>> elements;
-    elements.reserveInitialCapacity(strings.size());
-
-    for (const auto& string : strings)
-        elements.uncheckedAppend(WebString::create(string));
-
-    return create(std::move(elements));
-}
-
-ImmutableArray::ImmutableArray(Vector<RefPtr<API::Object>> elements)
-    : m_elements(std::move(elements))
-{
-}
-
-ImmutableArray::~ImmutableArray()
-{
-}
-
-} // namespace WebKit
+#endif // WK_API_ENABLED

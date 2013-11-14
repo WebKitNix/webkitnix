@@ -26,9 +26,9 @@
 #include "config.h"
 #include "WebContext.h"
 
+#include "APIArray.h"
 #include "DownloadProxy.h"
 #include "DownloadProxyMessages.h"
-#include "ImmutableArray.h"
 #include "Logging.h"
 #include "MutableDictionary.h"
 #include "SandboxExtension.h"
@@ -1235,7 +1235,7 @@ void WebContext::setPlugInAutoStartOriginHashes(ImmutableDictionary& dictionary)
     m_plugInAutoStartProvider.setAutoStartOriginsTable(dictionary);
 }
 
-void WebContext::setPlugInAutoStartOrigins(ImmutableArray& array)
+void WebContext::setPlugInAutoStartOrigins(API::Array& array)
 {
     m_plugInAutoStartProvider.setAutoStartOriginsArray(array);
 }
@@ -1276,7 +1276,7 @@ void WebContext::pluginInfoStoreDidLoadPlugins(PluginInfoStore* store)
         mimeTypes.reserveInitialCapacity(pluginModule.info.mimes.size());
         for (const auto& mimeClassInfo : pluginModule.info.mimes)
             mimeTypes.uncheckedAppend(WebString::create(mimeClassInfo.type));
-        map.set(ASCIILiteral("mimes"), ImmutableArray::create(std::move(mimeTypes)));
+        map.set(ASCIILiteral("mimes"), API::Array::create(std::move(mimeTypes)));
 
 #if PLATFORM(MAC)
         map.set(ASCIILiteral("bundleId"), WebString::create(pluginModule.bundleIdentifier));
@@ -1286,7 +1286,7 @@ void WebContext::pluginInfoStoreDidLoadPlugins(PluginInfoStore* store)
         plugins.uncheckedAppend(ImmutableDictionary::adopt(map));
     }
 
-    m_client.plugInInformationBecameAvailable(this, ImmutableArray::create(std::move(plugins)).get());
+    m_client.plugInInformationBecameAvailable(this, API::Array::create(std::move(plugins)).get());
 }
 #endif
 

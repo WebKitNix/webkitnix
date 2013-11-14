@@ -1,3 +1,480 @@
+2013-11-14  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [WK2] Move Coordinated Graphics related code out of DrawingAreaProxy
+        https://bugs.webkit.org/show_bug.cgi?id=124328
+
+        Reviewed by Andreas Kling.
+
+        Refactored for DrawingAreaProxy not to include Coordinated Graphics specific code.
+
+        * PlatformEfl.cmake:
+        * UIProcess/CoordinatedGraphics/CoordinatedDrawingAreaProxy.cpp: Moved from DrawingAreaProxy.cpp.
+        (WebKit::CoordinatedDrawingAreaProxy::updateViewport):
+        (WebKit::CoordinatedDrawingAreaProxy::contentsRect):
+        * UIProcess/CoordinatedGraphics/CoordinatedDrawingAreaProxy.h: Ditto.
+        (WebKit::CoordinatedDrawingAreaProxy::coordinatedLayerTreeHostProxy): Refactored to return reference instead of pointer.
+        (WebKit::CoordinatedDrawingAreaProxy::viewportVisibleRect):
+        (WebKit::CoordinatedDrawingAreaProxy::page):
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.cpp:
+        (WebKit::CoordinatedLayerTreeHostProxy::CoordinatedLayerTreeHostProxy):
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.h:
+        * UIProcess/CoordinatedGraphics/PageViewportController.cpp:
+        Renamed from Source/WebKit2/UIProcess/PageViewportController.cpp because it depends on Coordinated Graphics.
+        (WebKit::fuzzyCompare):
+        (WebKit::PageViewportController::PageViewportController):
+        (WebKit::PageViewportController::innerBoundedViewportScale):
+        (WebKit::PageViewportController::outerBoundedViewportScale):
+        (WebKit::PageViewportController::deviceScaleFactor):
+        (WebKit::isIntegral):
+        (WebKit::PageViewportController::pixelAlignedFloatPoint):
+        (WebKit::PageViewportController::boundContentsPositionAtScale):
+        (WebKit::PageViewportController::boundContentsPosition):
+        (WebKit::PageViewportController::didCommitLoad):
+        (WebKit::PageViewportController::didChangeContentsSize):
+        (WebKit::PageViewportController::didRenderFrame):
+        (WebKit::PageViewportController::pageTransitionViewportReady):
+        (WebKit::PageViewportController::pageDidRequestScroll):
+        (WebKit::PageViewportController::didChangeViewportSize):
+        (WebKit::PageViewportController::didChangeContentsVisibility):
+        (WebKit::PageViewportController::syncVisibleContents): Added cast to access CoordinatedDrawingAreaProxy method.
+        (WebKit::PageViewportController::didChangeViewportAttributes):
+        (WebKit::PageViewportController::visibleContentsSize):
+        (WebKit::PageViewportController::applyScaleAfterRenderingContents):
+        (WebKit::PageViewportController::applyPositionAfterRenderingContents):
+        (WebKit::PageViewportController::updateMinimumScaleToFit):
+        * UIProcess/CoordinatedGraphics/PageViewportController.h:
+        Renamed from Source/WebKit2/UIProcess/PageViewportController.cpp because it depends on Coordinated Graphics.
+        (WebKit::PageViewportController::~PageViewportController):
+        (WebKit::PageViewportController::hadUserInteraction):
+        (WebKit::PageViewportController::allowsUserScaling):
+        (WebKit::PageViewportController::contentsLayoutSize):
+        (WebKit::PageViewportController::minimumScale):
+        (WebKit::PageViewportController::maximumScale):
+        (WebKit::PageViewportController::currentScale):
+        (WebKit::PageViewportController::setHadUserInteraction):
+        * UIProcess/CoordinatedGraphics/WebView.cpp: Added some casts to access CoordinatedDrawingAreaProxy methods.
+        (WebKit::WebView::coordinatedGraphicsScene): Simplified code using reference.
+        (WebKit::WebView::updateViewportSize):
+        * UIProcess/DrawingAreaProxy.cpp: Removed Coordinated Graphics macro and related codes.
+        * UIProcess/DrawingAreaProxy.h: Ditto.
+
+2013-11-13  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Rename some ImmutableArray leftovers
+        https://bugs.webkit.org/show_bug.cgi?id=124320
+
+        Reviewed by Anders Carlsson.
+
+        ImmutableArray has been renamed to API::Array in r159234.
+
+        * Shared/API/c/WKContextMenuItem.cpp:
+        * Shared/WebContextMenuItem.cpp:
+        * Shared/WebContextMenuItem.h:
+        * UIProcess/API/C/WKBackForwardListRef.cpp:
+        * UIProcess/API/Cocoa/WKBackForwardList.mm:
+        * UIProcess/API/gtk/WebKitBackForwardList.cpp:
+        * UIProcess/API/gtk/WebKitWebViewGroup.cpp:
+        * UIProcess/WebBackForwardList.cpp:
+        * UIProcess/WebBackForwardList.h:
+
+2013-11-13  Dan Bernstein  <mitz@apple.com>
+
+        REGRESSION (r159263): caused 50+ crashes on all mac webkit2 bots
+        https://bugs.webkit.org/show_bug.cgi?id=124327
+
+        Reviewed by Tim Horton.
+
+        * Shared/Cocoa/APIObject.mm:
+        (API::Object::newObject): Allocate extra memory for the WebError inside the WKNSError.
+
+2013-11-13  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Add WKNSError
+        https://bugs.webkit.org/show_bug.cgi?id=124295
+
+        Reviewed by Anders Carlsson.
+
+        * Shared/Cocoa/APIObject.mm:
+        (API::Object::newObject): Allocate a WKNSError if the object is a WebError.
+        * Shared/Cocoa/WKNSError.h: Added.
+        (WebKit::wrapper): Added. Returns a WebError’s wrapper as an NSError.
+        * Shared/Cocoa/WKNSError.mm: Added.
+        (-[WKNSError _web_createTarget]): Override this WKObject method to return a copy of the
+        underlying CFError.
+        (-[WKNSError copyWithZone:]): Retains self.
+        * WebKit2.xcodeproj/project.pbxproj: Added new files.
+
+2013-11-13  Simon Fraser  <simon.fraser@apple.com>
+
+        Tweak the property syntax after https://bugs.webkit.org/show_bug.cgi?id=124317
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/mac/WKViewPrivate.h:
+
+2013-11-13  Anders Carlsson  <andersca@apple.com>
+
+        Move more state tracking to FrameLoadState
+        https://bugs.webkit.org/show_bug.cgi?id=124316
+
+        Reviewed by Simon Fraser.
+
+        * UIProcess/FrameLoadState.cpp:
+        (WebKit::FrameLoadState::didStartProvisionalLoad):
+        (WebKit::FrameLoadState::didReceiveServerRedirectForProvisionalLoad):
+        (WebKit::FrameLoadState::didFailProvisionalLoad):
+        (WebKit::FrameLoadState::didCommitLoad):
+        (WebKit::FrameLoadState::didFinishLoad):
+        (WebKit::FrameLoadState::didFailLoad):
+        (WebKit::FrameLoadState::didSameDocumentNotification):
+        (WebKit::FrameLoadState::setUnreachableURL):
+        * UIProcess/FrameLoadState.h:
+        * UIProcess/WebFrameProxy.cpp:
+        (WebKit::WebFrameProxy::didCommitLoad):
+        (WebKit::WebFrameProxy::didFinishLoad):
+        (WebKit::WebFrameProxy::didFailLoad):
+        (WebKit::WebFrameProxy::didSameDocumentNavigation):
+        (WebKit::WebFrameProxy::setUnreachableURL):
+
+2013-11-13  Simon Fraser  <simon.fraser@apple.com>
+
+        Expose a private flag on WKView to indicate whether it's using a remote layer tree drawing area
+        https://bugs.webkit.org/show_bug.cgi?id=124317
+
+        Reviewed by Anders Carlsson.
+        
+        Expose isUsingUISideCompositing on WKView in the private header,
+        which returns YES if the view is using a DrawingAreaTypeRemoteLayerTree.
+
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView isUsingUISideCompositing]):
+        * UIProcess/API/mac/WKViewPrivate.h:
+
+2013-11-13  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Maybe the last attempt to fix the GTK build.
+
+        * UIProcess/API/gtk/WebKitBackForwardListPrivate.h:
+        * UIProcess/API/gtk/WebKitContextMenuPrivate.h:
+
+2013-11-13  Csaba Osztrogonác  <ossy@webkit.org>
+
+        One more attempt to fix the GTK build.
+
+        * UIProcess/API/gtk/WebKitWebViewPrivate.h:
+
+2013-11-13  Anders Carlsson  <andersca@apple.com>
+
+        Plug-in processes hang around for 10 sec after Safari quits
+        https://bugs.webkit.org/show_bug.cgi?id=124314
+        <rdar://problem/15460613>
+
+        Reviewed by Simon Fraser.
+
+        Call stopRunLoop instead of instead of RunLoop::stop().
+
+        * PluginProcess/PluginProcess.cpp:
+        (WebKit::PluginProcess::didClose):
+
+2013-11-13  Csaba Osztrogonác  <ossy@webkit.org>
+
+        URTBF after r159234.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * Shared/efl/WebEventFactory.cpp:
+        (WebKit::WebEventFactory::createWebTouchEvent):
+        * UIProcess/API/C/WKGrammarDetail.cpp:
+        * UIProcess/API/C/efl/WKEventEfl.cpp:
+        * UIProcess/API/gtk/WebKitBackForwardList.cpp:
+        (webkitBackForwardListCreateList):
+        (webkitBackForwardListChanged):
+        (webkit_back_forward_list_get_back_list_with_limit):
+        (webkit_back_forward_list_get_forward_list_with_limit):
+        * UIProcess/API/gtk/WebKitBackForwardListPrivate.h:
+        * UIProcess/API/gtk/WebKitContextMenu.cpp:
+        (webkitContextMenuCreate):
+        * UIProcess/API/gtk/WebKitContextMenuItem.cpp:
+        (webkitContextMenuItemCreate):
+        * UIProcess/API/gtk/WebKitContextMenuPrivate.h:
+        * UIProcess/API/gtk/WebKitCookieManager.cpp:
+        (webkitCookieManagerGetDomainsWithCookiesCallback):
+        * UIProcess/API/gtk/WebKitFileChooserRequest.cpp:
+        (webkit_file_chooser_request_get_mime_types):
+        (webkit_file_chooser_request_get_mime_types_filter):
+        (webkit_file_chooser_request_select_files):
+        (webkit_file_chooser_request_get_selected_files):
+        * UIProcess/API/gtk/WebKitWebView.cpp:
+        (webkitWebViewPopulateContextMenu):
+        * UIProcess/API/gtk/WebKitWebViewGroup.cpp:
+        (toImmutableArray):
+        (webkit_web_view_group_add_user_style_sheet):
+        * UIProcess/API/gtk/WebKitWebViewPrivate.h:
+        * UIProcess/WebGrammarDetail.cpp:
+        (WebKit::WebGrammarDetail::create):
+        (WebKit::WebGrammarDetail::WebGrammarDetail):
+        (WebKit::WebGrammarDetail::guesses):
+        * UIProcess/WebGrammarDetail.h:
+        * UIProcess/WebTextCheckerClient.cpp:
+        (WebKit::WebTextCheckerClient::checkGrammarOfString):
+        (WebKit::WebTextCheckerClient::guessesForWord):
+        * UIProcess/efl/WebUIPopupMenuClient.cpp:
+        (WebUIPopupMenuClient::showPopupMenu):
+
+2013-11-13  Anders Carlsson  <andersca@apple.com>
+
+        Fix build.
+
+        Not sure why these weren't added.
+
+        * Shared/APIArray.cpp: Added.
+        * Shared/APIArray.h: Added.
+
+2013-11-13  Anders Carlsson  <andersca@apple.com>
+
+        Rename ImmutableArray to API::Array
+        https://bugs.webkit.org/show_bug.cgi?id=124307
+
+        Reviewed by Andreas Kling.
+
+        * Shared/API/Cocoa/WKRemoteObjectCoder.mm:
+        (ensureObjectStream):
+        (-[WKRemoteObjectDecoder initWithInterface:rootObjectDictionary:WebKit::]):
+        * Shared/API/c/WKArray.cpp:
+        (WKArrayGetTypeID):
+        (WKArrayCreate):
+        (WKArrayCreateAdoptingValues):
+        * Shared/API/c/WKContextMenuItem.cpp:
+        * Shared/API/c/WKDictionary.cpp:
+        (WKDictionaryCopyKeys):
+        * Shared/API/c/WKMutableArray.cpp:
+        (WKMutableArrayCreate):
+        * Shared/API/c/WKRenderObject.cpp:
+        (WKRenderObjectGetChildren):
+        * Shared/API/c/WKSharedAPICast.h:
+        (WebKit::toImpl):
+        * Shared/API/c/mac/WKWebArchive.cpp:
+        (WKWebArchiveCopySubresources):
+        (WKWebArchiveCopySubframeArchives):
+        * Shared/APIArray.cpp: Renamed from Source/WebKit2/Shared/ImmutableArray.cpp.
+        (API::Array::create):
+        (API::Array::createStringArray):
+        (API::Array::Array):
+        (API::Array::~Array):
+        * Shared/APIArray.h: Renamed from Source/WebKit2/Shared/ImmutableArray.h.
+        * Shared/Cocoa/WKNSArray.h:
+        (wrapper):
+        * Shared/Cocoa/WKNSArray.mm:
+        (-[WKNSArray dealloc]):
+        (-[WKNSArray count]):
+        (-[WKNSArray objectAtIndex:]):
+        (-[WKNSArray API::]):
+        * Shared/ImmutableDictionary.cpp:
+        (WebKit::ImmutableDictionary::keys):
+        * Shared/ImmutableDictionary.h:
+        * Shared/SecurityOriginData.cpp:
+        (WebKit::performAPICallbackWithSecurityOriginDataVector):
+        * Shared/UserMessageCoders.h:
+        (WebKit::UserMessageEncoder::baseEncode):
+        (WebKit::UserMessageDecoder::baseDecode):
+        * Shared/WebArchive.cpp:
+        (WebKit::WebArchive::create):
+        (WebKit::WebArchive::WebArchive):
+        (WebKit::WebArchive::subresources):
+        (WebKit::WebArchive::subframeArchives):
+        * Shared/WebArchive.h:
+        * Shared/WebContextMenuItem.cpp:
+        (WebKit::WebContextMenuItem::create):
+        (WebKit::WebContextMenuItem::submenuItemsAsImmutableArray):
+        * Shared/WebContextMenuItem.h:
+        * Shared/WebOpenPanelParameters.cpp:
+        (WebKit::WebOpenPanelParameters::acceptMIMETypes):
+        (WebKit::WebOpenPanelParameters::selectedFileNames):
+        * Shared/WebOpenPanelParameters.h:
+        * Shared/WebRenderLayer.cpp:
+        (WebKit::WebRenderLayer::create):
+        (WebKit::WebRenderLayer::createArrayFromLayerList):
+        (WebKit::WebRenderLayer::WebRenderLayer):
+        * Shared/WebRenderLayer.h:
+        (WebKit::WebRenderLayer::negativeZOrderList):
+        (WebKit::WebRenderLayer::normalFlowList):
+        (WebKit::WebRenderLayer::positiveZOrderList):
+        * Shared/WebRenderObject.cpp:
+        (WebKit::WebRenderObject::create):
+        (WebKit::WebRenderObject::WebRenderObject):
+        (WebKit::WebRenderObject::~WebRenderObject):
+        * Shared/WebRenderObject.h:
+        (WebKit::WebRenderObject::children):
+        (WebKit::WebRenderObject::elementClassNames):
+        * UIProcess/API/C/WKBackForwardListRef.cpp:
+        * UIProcess/API/C/WKOpenPanelParameters.cpp:
+        * UIProcess/API/C/WKPage.cpp:
+        * UIProcess/API/C/mac/WKContextPrivateMac.mm:
+        (WKContextGetInfoForInstalledPlugIns):
+        * UIProcess/API/Cocoa/WKBackForwardList.mm:
+        (-[WKBackForwardList backListWithLimit:]):
+        (-[WKBackForwardList forwardListWithLimit:]):
+        * UIProcess/API/mac/WKBrowsingContextGroup.mm:
+        (createWKArray):
+        * UIProcess/Notifications/WebNotificationManagerProxy.cpp:
+        (WebKit::WebNotificationManagerProxy::populateCopyOfNotificationPermissions):
+        (WebKit::WebNotificationManagerProxy::providerDidCloseNotifications):
+        (WebKit::WebNotificationManagerProxy::providerDidRemoveNotificationPolicies):
+        * UIProcess/Notifications/WebNotificationManagerProxy.h:
+        * UIProcess/Notifications/WebNotificationProvider.cpp:
+        (WebKit::WebNotificationProvider::clearNotifications):
+        * UIProcess/Plugins/PlugInAutoStartProvider.cpp:
+        (WebKit::PlugInAutoStartProvider::setAutoStartOriginsArray):
+        * UIProcess/Plugins/PlugInAutoStartProvider.h:
+        * UIProcess/Plugins/WebPluginSiteDataManager.cpp:
+        (WebKit::WebPluginSiteDataManager::didGetSitesWithData):
+        (WebKit::WebPluginSiteDataManager::clearSiteData):
+        * UIProcess/Plugins/WebPluginSiteDataManager.h:
+        * UIProcess/StatisticsRequest.cpp:
+        (WebKit::StatisticsRequest::completedRequest):
+        * UIProcess/WebApplicationCacheManagerProxy.h:
+        * UIProcess/WebBackForwardList.cpp:
+        (WebKit::WebBackForwardList::backListAsImmutableArrayWithLimit):
+        (WebKit::WebBackForwardList::forwardListAsImmutableArrayWithLimit):
+        * UIProcess/WebBackForwardList.h:
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::setPlugInAutoStartOrigins):
+        (WebKit::WebContext::pluginInfoStoreDidLoadPlugins):
+        * UIProcess/WebContext.h:
+        * UIProcess/WebContextClient.cpp:
+        (WebKit::WebContextClient::plugInInformationBecameAvailable):
+        * UIProcess/WebContextClient.h:
+        * UIProcess/WebCookieManagerProxy.cpp:
+        (WebKit::WebCookieManagerProxy::didGetHostnamesWithCookies):
+        * UIProcess/WebCookieManagerProxy.h:
+        * UIProcess/WebDatabaseManagerProxy.cpp:
+        (WebKit::WebDatabaseManagerProxy::didGetDatabasesByOrigin):
+        (WebKit::WebDatabaseManagerProxy::didGetDatabaseOrigins):
+        * UIProcess/WebFindClient.cpp:
+        (WebKit::WebFindMatchesClient::didFindStringMatches):
+        * UIProcess/WebFindClient.h:
+        * UIProcess/WebFrameProxy.h:
+        * UIProcess/WebKeyValueStorageManager.cpp:
+        (WebKit::didGetKeyValueStorageOrigins):
+        * UIProcess/WebKeyValueStorageManager.h:
+        * UIProcess/WebLoaderClient.cpp:
+        (WebKit::WebLoaderClient::didChangeBackForwardList):
+        * UIProcess/WebMediaCacheManagerProxy.cpp:
+        (WebKit::WebMediaCacheManagerProxy::didGetHostnamesWithMediaCache):
+        * UIProcess/WebMediaCacheManagerProxy.h:
+        * UIProcess/WebOpenPanelResultListenerProxy.cpp:
+        (WebKit::WebOpenPanelResultListenerProxy::chooseFiles):
+        * UIProcess/WebOpenPanelResultListenerProxy.h:
+        * UIProcess/WebOriginDataManagerProxy.h:
+        * UIProcess/WebPageContextMenuClient.cpp:
+        (WebKit::WebPageContextMenuClient::getContextMenuFromProposedMenu):
+        (WebKit::WebPageContextMenuClient::showContextMenu):
+        * UIProcess/WebPageGroup.cpp:
+        (WebKit::toStringVector):
+        (WebKit::WebPageGroup::addUserStyleSheet):
+        (WebKit::WebPageGroup::addUserScript):
+        * UIProcess/WebPageGroup.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::relatedPages):
+        (WebKit::WebPageProxy::didFindStringMatches):
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebResourceCacheManagerProxy.cpp:
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/InjectedBundle/API/c/WKBundle.cpp:
+        (WKBundleCopyOriginsWithApplicationCache):
+        * WebProcess/InjectedBundle/API/c/WKBundleBackForwardListItem.cpp:
+        * WebProcess/InjectedBundle/API/c/WKBundleFrame.cpp:
+        * WebProcess/InjectedBundle/API/c/WKBundlePage.cpp:
+        (contextMenuItems):
+        * WebProcess/InjectedBundle/InjectedBundle.cpp:
+        (WebKit::InjectedBundle::originsWithApplicationCache):
+        (WebKit::toStringVector):
+        (WebKit::InjectedBundle::addUserScript):
+        (WebKit::InjectedBundle::addUserStyleSheet):
+        * WebProcess/InjectedBundle/InjectedBundle.h:
+        * WebProcess/InjectedBundle/InjectedBundleBackForwardListItem.cpp:
+        (WebKit::InjectedBundleBackForwardListItem::children):
+        * WebProcess/InjectedBundle/InjectedBundleBackForwardListItem.h:
+        * WebProcess/InjectedBundle/InjectedBundlePageContextMenuClient.cpp:
+        (WebKit::InjectedBundlePageContextMenuClient::getCustomMenuFromDefaultItems):
+        * WebProcess/InjectedBundle/InjectedBundlePageEditorClient.cpp:
+        (WebKit::InjectedBundlePageEditorClient::getPasteboardDataForRange):
+        * WebProcess/InjectedBundle/InjectedBundlePageFormClient.cpp:
+        (WebKit::InjectedBundlePageFormClient::didAssociateFormControls):
+        * WebProcess/InjectedBundle/InjectedBundlePageLoaderClient.cpp:
+        (WebKit::InjectedBundlePageLoaderClient::featuresUsedInPage):
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp:
+        (WebKit::findLargestFrameInFrameSet):
+        * WebProcess/WebPage/WebFrame.cpp:
+        (WebKit::WebFrame::childFrames):
+        * WebProcess/WebPage/WebFrame.h:
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::trackedRepaintRects):
+        * WebProcess/WebPage/WebPage.h:
+
+2013-11-13  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [GTK] Fix build after r159222
+        https://bugs.webkit.org/show_bug.cgi?id=124305
+
+        Reviewed by Tim Horton.
+
+        WebGraphicsContext and its API has been removed.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * Shared/API/c/gtk/WKGraphicsContextGtk.cpp: Removed.
+        * Shared/API/c/gtk/WKGraphicsContextGtk.h: Removed.
+
+2013-11-13  Tim Horton  <timothy_horton@apple.com>
+
+        Remove redundant return after r159173
+        https://bugs.webkit.org/show_bug.cgi?id=124303
+
+        Reviewed by Geoff Garen.
+
+        * WebProcess/WebCoreSupport/WebPlatformStrategies.cpp:
+        (WebKit::WebPlatformStrategies::loadResourceSynchronously):
+        Remove redundant return.
+
+2013-11-13  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL build fix after r159222.
+
+        * CMakeLists.txt:
+
+2013-11-13  Anders Carlsson  <andersca@apple.com>
+
+        Remove WebGraphicsContext
+        https://bugs.webkit.org/show_bug.cgi?id=124302
+
+        Reviewed by Dan Bernstein.
+
+        WebGraphicsContext and its API "object", WKGraphicsContextRef was only used
+        for the overhang paint callback which has been removed.
+
+        * Shared/API/c/WKDeprecatedFunctions.cpp:
+        (WKGraphicsContextGetCGContext):
+        * Shared/API/c/WKGraphicsContext.cpp: Removed.
+        * Shared/API/c/WKGraphicsContext.h: Removed.
+        * Shared/API/c/cg/WKGraphicsContextCG.cpp: Removed.
+        * Shared/API/c/cg/WKGraphicsContextCG.h: Removed.
+        * Shared/APIObject.h:
+        * Shared/WebGraphicsContext.cpp: Removed.
+        * Shared/WebGraphicsContext.h: Removed.
+        * UIProcess/API/C/WebKit2_C.h:
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.cpp:
+
+2013-11-13  Anders Carlsson  <andersca@apple.com>
+
+        WKArrayIsMutable should not be mangled
+        https://bugs.webkit.org/show_bug.cgi?id=124299
+
+        Reviewed by Andreas Kling.
+
+        * Shared/API/c/WKDeprecatedFunctions.cpp:
+
 2013-11-13  Anders Carlsson  <andersca@apple.com>
 
         Move provisional load state handling to FrameLoadState

@@ -39,7 +39,6 @@
 
 
 #define updateErrorMessage(shouldPrintToken, ...) do {\
-    ASSERT(!hasError());\
     logError(shouldPrintToken, __VA_ARGS__); \
 } while (0)
 
@@ -89,7 +88,6 @@ void Parser<LexerType>::logError(bool)
         return;
     StringPrintStream stream;
     printUnexpectedTokenText(stream);
-    stream.print(". ");
     setErrorMessage(stream.toString());
 }
 

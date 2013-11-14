@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Igalia SL All rights reserved.
+ * Copyright (C) 2010 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,21 +23,41 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef WKGraphicsContextGtk_h
-#define WKGraphicsContextGtk_h
+#include "config.h"
+#include "APIArray.h"
 
-#include <WebKit2/WKBase.h>
+#include "WebString.h"
 
-#include <cairo.h>
+namespace API {
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-WK_EXPORT cairo_t* WKGraphicsContextGetGtkContext(WKGraphicsContextRef);
-
-#ifdef __cplusplus
+PassRefPtr<Array> Array::create()
+{
+    return create(Vector<RefPtr<Object>>());
 }
-#endif
 
-#endif /* WKGraphicsContextGtk_h */
+PassRefPtr<Array> Array::create(Vector<RefPtr<Object>> elements)
+{
+    return adoptRef(new Array(std::move(elements)));
+}
+
+PassRefPtr<Array> Array::createStringArray(const Vector<String>& strings)
+{
+    Vector<RefPtr<Object>> elements;
+    elements.reserveInitialCapacity(strings.size());
+
+    for (const auto& string : strings)
+        elements.uncheckedAppend(WebKit::WebString::create(string));
+
+    return create(std::move(elements));
+}
+
+Array::Array(Vector<RefPtr<Object>> elements)
+    : m_elements(std::move(elements))
+{
+}
+
+Array::~Array()
+{
+}
+
+} // namespace API

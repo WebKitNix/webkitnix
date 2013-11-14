@@ -1,3 +1,135 @@
+2013-11-14  Sun-woo Nam  <sunny.nam@samsung.com>
+
+        [EFL] Layout tests with text areas need to be rebaselined.
+        https://bugs.webkit.org/show_bug.cgi?id=124337
+
+        Unreviewed, EFL gatdening.
+
+        EFL text areas rebaselined after r129492.
+
+        * platform/efl/TestExpectations:
+        * platform/efl/fast/forms/basic-textareas-expected.txt:
+        * platform/efl/fast/forms/basic-textareas-quirks-expected.txt:
+
+2013-11-13  Victor Costan  <costan@gmail.com>
+
+        Blob constructor accepts a sequence (array-like object) as first arg.
+        https://bugs.webkit.org/show_bug.cgi?id=124175
+
+        Reviewed by Christophe Dumez.
+
+
+        * crypto/subtle/argument-conversion-expected.txt: Updated sequence error expectations.
+        * fast/dom/Window/window-postmessage-args-expected.txt: Updated sequence error expectations.
+        * fast/events/constructors/message-event-constructor-expected.txt: Updated sequence error expectations.
+        * fast/events/message-port-multi-expected.txt: Updated sequence error expectations.
+        * fast/files/blob-constructor-expected.txt: Updated error text and added expectations.
+        * fast/files/script-tests/blob-constructor.js: Added sequence test cases.
+        * fast/workers/worker-context-multi-port-expected.txt: Updated sequence error expectations.
+        * fast/workers/worker-multi-port-expected.txt: Updated sequence error expectations.
+
+2013-11-13  Sun-woo Nam  <sunny.nam@samsung.com>
+
+        [EFL] Layout tests with css3 selectors3 properties need to be rebaselined.
+        https://bugs.webkit.org/show_bug.cgi?id=124266
+
+        Unreviewed, EFL gardening.
+
+        EFL css3 rebaselined after r111644.
+
+        * platform/efl-wk2/TestExpectations:
+        * platform/efl/css3/selectors3/html/css3-modsel-1-expected.txt:
+        * platform/efl/css3/selectors3/xhtml/css3-modsel-1-expected.txt:
+        * platform/efl/css3/selectors3/xml/css3-modsel-1-expected.txt:
+
+2013-11-13  Tim Horton  <timothy_horton@apple.com>
+
+        Layout Test animations/resume-after-page-cache.html is flaky
+        https://bugs.webkit.org/show_bug.cgi?id=124321
+
+        * platform/mac/TestExpectations:
+
+2013-11-13  Tim Horton  <timothy_horton@apple.com>
+
+        fullscreen/anonymous-block-merge-crash.html often times out in WebKit1
+        https://bugs.webkit.org/show_bug.cgi?id=124318
+
+        * platform/mac-wk2/TestExpectations:
+        * platform/mac/TestExpectations:
+        Mark test as timing out on WebKit1 only.
+
+2013-11-13  Tim Horton  <timothy_horton@apple.com>
+
+        compositing/regions/transform-transparent-positioned-video-inside-region.html is flaky on all bots
+        https://bugs.webkit.org/show_bug.cgi?id=124311
+
+        * platform/mac/TestExpectations:
+        Mark as flaky image fail.
+
+2013-11-13  Tim Horton  <timothy_horton@apple.com>
+
+        Remove a crash expectation from a test that seems fixed by r159218.
+
+        * platform/mac/TestExpectations:
+
+2013-11-13  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Modifying RTCSessionDescription object construction to match the spec
+        https://bugs.webkit.org/show_bug.cgi?id=124212
+
+        Reviewed by Eric Carlson.
+
+        According to the spec the RTCSessionDescriptionInit parameter in RTCSessionDescription constructor is optional,
+        which must not be nullable. If the 'type' and/or 'sdp' keys are not present, the string object that stores
+        them in the RTCSessionDescription class, must be null in those cases. Also, if an object that is not a
+        Dictionary is passed as argument to the constructor, an exception must be raised.
+
+        * fast/mediastream/RTCSessionDescription-expected.txt:
+        * fast/mediastream/RTCSessionDescription.html:
+
+2013-11-09  Martin Robinson  <mrobinson@igalia.com>
+
+        [MathML] The double bar vertical delimiter does not stretch properly
+        https://bugs.webkit.org/show_bug.cgi?id=123543
+
+        Reviewed by Chris Fleizach.
+
+        * mathml/presentation/mo-stretch.html: Add &DoubleVerticalBar; to this test,
+        which covers the other version of the vertical bar.
+        * platform/gtk/mathml/presentation/mo-stretch-expected.png:
+        * platform/gtk/mathml/presentation/mo-stretch-expected.txt:
+
+2013-11-13  Roger Fong  <roger_fong@apple.com>
+
+        [Windows] Unreviewed gardening of some canvas tests.
+
+        * platform/win/fast/canvas/canvas-draw-canvas-on-canvas-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-fillRect-gradient-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-render-layer-expected.txt:
+        * platform/win/fast/canvas/canvas-scale-shadowBlur-expected.txt:
+        * platform/win/fast/canvas/canvas-scale-strokePath-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-strokePath-gradient-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-strokeRect-alpha-shadow-expected.txt:
+        * platform/win/fast/canvas/canvas-strokeRect-gradient-shadow-expected.txt:
+        * platform/win/fast/forms/range/slider-mouse-events-expected.txt:
+
+2013-11-13  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Remove failure tests expectations after r159116.
+
+        * platform/efl/TestExpectations:
+
+2013-11-13  Alexey Proskuryakov  <ap@apple.com>
+
+        crypto/subtle/rsassa-pkcs1-v1_5-import-jwk.html is failing on Maverics release bot
+        https://bugs.webkit.org/show_bug.cgi?id=124280
+
+        Reviewed by Anders Carlsson.
+
+        * TestExpectations: Unskip.
+
 2013-11-12  Jer Noble  <jer.noble@apple.com>
 
         Add support for HTMLMediaElement.fastSeek()

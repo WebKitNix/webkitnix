@@ -28,6 +28,7 @@
 #include "WebViewNix.h"
 
 #include "DrawingAreaProxyImpl.h"
+#include "CoordinatedDrawingAreaProxy.h"
 #include "CoordinatedLayerTreeHostProxy.h"
 #include "NativeWebKeyboardEvent.h"
 #include "NativeWebMouseEvent.h"
@@ -173,7 +174,7 @@ void WebViewNix::didChangePageScaleFactor(double scaleFactor)
 
 void WebViewNix::didChangeContentPosition(const WebCore::FloatPoint& trajectoryVector)
 {
-    DrawingAreaProxy* drawingArea = page()->drawingArea();
+    CoordinatedDrawingAreaProxy* drawingArea = reinterpret_cast<CoordinatedDrawingAreaProxy*>(page()->drawingArea());
     if (!drawingArea)
         return;
     FloatRect visibleContentsRect(contentPosition(), visibleContentsSize());

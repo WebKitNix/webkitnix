@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Apple Inc. All rights reserved.
+ * Copyright (C) 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,20 +23,29 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef WKGraphicsContextCG_h
-#define WKGraphicsContextCG_h
+#import "config.h"
+#import "WKNSError.h"
 
-#include <CoreGraphics/CGContext.h>
-#include <WebKit2/WKBase.h>
+#if WK_API_ENABLED
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#import "WebError.h"
 
-WK_EXPORT CGContextRef WKGraphicsContextGetCGContext(WKGraphicsContextRef graphicsContext);
+using namespace WebKit;
 
-#ifdef __cplusplus
+@implementation WKNSError
+
+- (NSObject *)_web_createTarget
+{
+    return [(NSError *)static_cast<WebError*>(&self._apiObject)->platformError().cfError() copy];
 }
-#endif
 
-#endif /* WKGraphicsContextCG_h */
+#pragma mark NSCopying protocol implementation
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    return [self retain];
+}
+
+@end
+
+#endif // WK_API_ENABLED

@@ -1,3 +1,889 @@
+2013-11-14  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Generate toSVGPolyline|gonElement() to replace static_cast<>
+        https://bugs.webkit.org/show_bug.cgi?id=124341
+
+        Reviewed by Andreas Kling.
+
+        toSVGFoo() supports more plenty helper functions. So, toSVGFoo() needs
+        to be used instead of static_cast<>.
+
+        Additionally, cleanup other static_cast<> as well.
+
+        No new tests, no behavior changes.
+
+        * rendering/svg/SVGPathData.cpp:
+        (WebCore::updatePathFromEllipseElement):
+        (WebCore::updatePathFromLineElement):
+        (WebCore::updatePathFromPolygonElement):
+        (WebCore::updatePathFromPolylineElement):
+        * svg/SVGPolygonElement.h:
+        * svg/SVGPolylineElement.h:
+        * svg/svgtags.in: Add *generateTypeHelpers* keyword to polygon, polyline
+
+2013-11-14  Andreas Kling  <akling@apple.com>
+
+        FontDescription copies should share families list, not duplicate it.
+        <https://webkit.org/b/124338>
+
+        Turn FontDescription::m_families into a RefCountedArray<AtomicString>
+        instead of a Vector<AtomicString, 1>. This allows FontDescription to
+        share the families list between copies, instead of each object having
+        its own Vector.
+
+        Also, FontDescription itself shrinks by 16 bytes.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-14  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Introduce FILTER_TYPE_CASTS for child filter class
+        https://bugs.webkit.org/show_bug.cgi?id=124332
+
+        Reviewed by Andreas Kling.
+
+        To use TYPE_CASTS_BASE, define FILTER_TYPE_CASTS macro. Thanks to 
+        it, static_cast<SVGFilter*> can be replaced by toSVGFilter().
+
+        No new tests, no behavior changes.
+
+        * platform/graphics/filters/Filter.h:
+            Add isSVGFilter() to check if casting object is SVGFilter object.
+        (WebCore::Filter::isSVGFilter):
+        * rendering/svg/RenderSVGResourceFilterPrimitive.cpp:
+        (WebCore::RenderSVGResourceFilterPrimitive::determineFilterPrimitiveSubregion):
+        * svg/graphics/filters/SVGFEImage.cpp:
+        (WebCore::FEImage::determineAbsolutePaintRect):
+        (WebCore::FEImage::platformApplySoftware):
+        * svg/graphics/filters/SVGFilter.h:
+
+2013-11-13  Victor Costan  <costan@gmail.com>
+
+        Blob constructor accepts a sequence (array-like object) as first arg. 
+        https://bugs.webkit.org/show_bug.cgi?id=124175
+
+        Reviewed by Christophe Dumez.
+
+        Added test cases to fast/files/script-tests/blob-constructor.js.
+
+        * bindings/js/JSBlobCustom.cpp: Make the constructor work with sequences.
+        (WebCore::JSBlobConstructor::constructJSBlob):
+        * bindings/js/JSDOMBinding.h:
+        (WebCore::toJSSequence): Slightly better error message when conversion fails.
+        (WebCore::toJS): Whitespace.
+        (WebCore::jsArray): Whitespace.
+
+2013-11-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: InspectorBackendDispatcher improvements
+        https://bugs.webkit.org/show_bug.cgi?id=124330
+
+        Reviewed by Timothy Hatcher.
+
+        * inspector/InspectorBackendDispatcher.cpp:
+        (WebCore::InspectorBackendDispatcher::sendResponse):
+        (WebCore::InspectorBackendDispatcher::reportProtocolError):
+        * inspector/InspectorBackendDispatcher.h:
+        (WebCore::InspectorSupplementalBackendDispatcher::InspectorSupplementalBackendDispatcher):
+
+2013-11-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Unreviewed Windows Build Fix after r159268.
+
+        Missed adding InspectorBackendDispatcher.h and cpp to the Windows build.
+
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+
+2013-11-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Generate Individual InspectorBackendDispatchers, add base InspectorBackendDispatcher
+        https://bugs.webkit.org/show_bug.cgi?id=124296
+
+        Reviewed by Timothy Hatcher.
+
+        No new tests, this is just refactoring without changing functionality.
+        Set of changes made:
+
+          - Add inspector/InspectorBackendDispatcher.{h,cpp}. This used to be almost entirely
+            written in the code generator strings file, but make it actual source files
+            because there is nothing changing in the code. Also clean this up a bit.
+          - Give the base dispatcher a list of domain dispatchers and a way to register.
+          - Make InspectorBackendDispatcher::dispatch read the domain of incoming request
+            and pass the request on to the domain dispatcher.
+          - Create per-domain dispatcher classes named "InspectorFooBackendDispatcher"
+          - Convert "InspectorBackendDispatcher::FooCommandHandler" interfaces to
+            "InspectorFooBackendDispatcherHandler" interfaces.
+          - Convert all "InspectorBackendDispatcherImpl::FooDomain_fooMethod" methods to
+            "InspectorFooBackendDispatcher::fooMethod" methods. These can also remove their
+            "if (!agent)" checks because that can never be the case anymore.
+          - Remove InspectorBackendDispatcherImpl, now that there are base and domain dispatchers.
+          - Add ASCIILiteral in many places in generated code where possible.
+          - In all agents, create dispatchers in didCreateFrontendAndBackend and clear
+            them in willDestroyFrontendAndBackend, right alongside frontend dispatchers.
+
+        * inspector/CodeGeneratorInspector.py:
+        (DomainNameFixes.get_fixed_data.Res):
+        (TypeBindings.create_type_declaration_.EnumBinding.get_code_generator.CodeGenerator.generate_type_builder):
+        (Generator):
+        (Generator.go):
+        (Generator.process_command):
+        (Generator.generate_send_method):
+        * inspector/CodeGeneratorInspectorStrings.py:
+        (void):
+        (HashMap):
+        (InspectorBackendDispatchers_h):
+        * inspector/InspectorAgent.cpp:
+        (WebCore::InspectorAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorAgent.h:
+        * inspector/InspectorAllInOne.cpp:
+        * inspector/InspectorApplicationCacheAgent.cpp:
+        (WebCore::InspectorApplicationCacheAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorApplicationCacheAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorApplicationCacheAgent.h:
+        * inspector/InspectorBackendDispatcher.cpp: Added.
+        (WebCore::InspectorBackendDispatcher::CallbackBase::CallbackBase):
+        (WebCore::InspectorBackendDispatcher::CallbackBase::isActive):
+        (WebCore::InspectorBackendDispatcher::CallbackBase::sendFailure):
+        (WebCore::InspectorBackendDispatcher::CallbackBase::sendIfActive):
+        (WebCore::InspectorBackendDispatcher::create):
+        (WebCore::InspectorBackendDispatcher::registerDispatcherForDomain):
+        (WebCore::InspectorBackendDispatcher::dispatch):
+        (WebCore::InspectorBackendDispatcher::sendResponse):
+        (WebCore::InspectorBackendDispatcher::reportProtocolError):
+        (WebCore::InspectorBackendDispatcher::getPropertyValue):
+        (WebCore::AsMethodBridges::asInt):
+        (WebCore::AsMethodBridges::asDouble):
+        (WebCore::AsMethodBridges::asString):
+        (WebCore::AsMethodBridges::asBoolean):
+        (WebCore::AsMethodBridges::asObject):
+        (WebCore::AsMethodBridges::asArray):
+        (WebCore::InspectorBackendDispatcher::getInt):
+        (WebCore::InspectorBackendDispatcher::getDouble):
+        (WebCore::InspectorBackendDispatcher::getString):
+        (WebCore::InspectorBackendDispatcher::getBoolean):
+        (WebCore::InspectorBackendDispatcher::getObject):
+        (WebCore::InspectorBackendDispatcher::getArray):
+        * inspector/InspectorBackendDispatcher.h: Added.
+        (WebCore::InspectorSupplementalBackendDispatcher::InspectorSupplementalBackendDispatcher):
+        (WebCore::InspectorSupplementalBackendDispatcher::~InspectorSupplementalBackendDispatcher):
+        (WebCore::InspectorBackendDispatcher::~InspectorBackendDispatcher):
+        (WebCore::InspectorBackendDispatcher::clearFrontend):
+        (WebCore::InspectorBackendDispatcher::isActive):
+        (WebCore::InspectorBackendDispatcher::InspectorBackendDispatcher):
+        * inspector/InspectorCSSAgent.cpp:
+        (WebCore::InspectorCSSAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorCSSAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorCSSAgent.h:
+        * inspector/InspectorCanvasAgent.cpp:
+        (WebCore::InspectorCanvasAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorCanvasAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorCanvasAgent.h:
+        * inspector/InspectorConsoleAgent.cpp:
+        (WebCore::InspectorConsoleAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorConsoleAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorConsoleAgent.h:
+        * inspector/InspectorDOMAgent.cpp:
+        (WebCore::InspectorDOMAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDOMAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorDOMAgent.h:
+        * inspector/InspectorDOMDebuggerAgent.cpp:
+        (WebCore::InspectorDOMDebuggerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDOMDebuggerAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorDOMDebuggerAgent.h:
+        * inspector/InspectorDOMStorageAgent.cpp:
+        (WebCore::InspectorDOMStorageAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDOMStorageAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorDOMStorageAgent.h:
+        * inspector/InspectorDatabaseAgent.cpp:
+        (WebCore::InspectorDatabaseAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDatabaseAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorDatabaseAgent.h:
+        * inspector/InspectorDebuggerAgent.cpp:
+        (WebCore::InspectorDebuggerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDebuggerAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorDebuggerAgent.h:
+        * inspector/InspectorHeapProfilerAgent.cpp:
+        (WebCore::InspectorHeapProfilerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorHeapProfilerAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorHeapProfilerAgent.h:
+        * inspector/InspectorIndexedDBAgent.cpp:
+        (WebCore::InspectorIndexedDBAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorIndexedDBAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorIndexedDBAgent.h:
+        * inspector/InspectorInputAgent.cpp:
+        (WebCore::InspectorInputAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorInputAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorInputAgent.h:
+        * inspector/InspectorLayerTreeAgent.cpp:
+        (WebCore::InspectorLayerTreeAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorLayerTreeAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorLayerTreeAgent.h:
+        * inspector/InspectorMemoryAgent.cpp:
+        (WebCore::InspectorMemoryAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorMemoryAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorMemoryAgent.h:
+        * inspector/InspectorPageAgent.cpp:
+        (WebCore::InspectorPageAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorPageAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorPageAgent::getScriptExecutionStatus):
+        * inspector/InspectorPageAgent.h:
+        * inspector/InspectorProfilerAgent.cpp:
+        (WebCore::InspectorProfilerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorProfilerAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorProfilerAgent.h:
+        * inspector/InspectorResourceAgent.cpp:
+        (WebCore::InspectorResourceAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorResourceAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorResourceAgent.h:
+        * inspector/InspectorRuntimeAgent.h:
+        * inspector/InspectorTimelineAgent.cpp:
+        (WebCore::InspectorTimelineAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorTimelineAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorTimelineAgent.h:
+        * inspector/InspectorWorkerAgent.cpp:
+        (WebCore::InspectorWorkerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorWorkerAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorWorkerAgent.h:
+        * inspector/PageRuntimeAgent.cpp:
+        (WebCore::PageRuntimeAgent::didCreateFrontendAndBackend):
+        (WebCore::PageRuntimeAgent::willDestroyFrontendAndBackend):
+        * inspector/PageRuntimeAgent.h:
+        * inspector/WorkerRuntimeAgent.cpp:
+        (WebCore::WorkerRuntimeAgent::didCreateFrontendAndBackend):
+        (WebCore::WorkerRuntimeAgent::willDestroyFrontendAndBackend):
+        * inspector/WorkerRuntimeAgent.h:
+
+2013-11-13  Andy Estes  <aestes@apple.com>
+
+        Use NSCalendarIdentifierGregorian instead of NSGregorianCalendar on OS X 10.9 and iOS
+        https://bugs.webkit.org/show_bug.cgi?id=124323
+
+        Reviewed by Mark Rowe.
+
+        NSGregorianCalendar was deprecated in OS X 10.9 and iOS 7.
+
+        * platform/text/mac/LocaleMac.mm:
+        (WebCore::LocaleMac::LocaleMac):
+
+2013-11-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Rename InspectorBackendDispatcher.h to InspectorBackendDispatchers.h
+        https://bugs.webkit.org/show_bug.cgi?id=124257
+
+        Reviewed by Timothy Hatcher.
+
+        Soon each domain will generate its own dispatcher, and the generic
+        InspectorBackendDispatcher will no longer be generated, it will just
+        live in WebCore/inspector.
+
+        * CMakeLists.txt:
+        * GNUmakefile.am:
+        * GNUmakefile.list.am:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * inspector/CodeGeneratorInspector.py:
+        * inspector/CodeGeneratorInspectorStrings.py:
+        (InspectorBackendDispatchers_h):
+        * inspector/InspectorBaseAgent.h:
+        * inspector/InspectorController.cpp:
+        * inspector/InspectorFrontendClientLocal.cpp:
+        * inspector/WorkerInspectorController.cpp:
+
+2013-11-13  Andreas Kling  <akling@apple.com>
+
+        Remove Document::m_savedRenderView pointer.
+        <https://webkit.org/b/124310>
+
+        This pointer held a copy of m_renderView while the document was in
+        page cache, and null while it wasn't. It was not used for anything.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-13  Brady Eidson  <beidson@apple.com>
+
+        Move setIndexKeys() to the IDBServerConnection
+        https://bugs.webkit.org/show_bug.cgi?id=124301
+
+        Reviewed by Anders Carlsson.
+
+        This is a big step towards moving knowledge of the backing store out of the frontend.
+
+        * Modules/indexeddb/IDBBackingStoreInterface.h:
+
+        * Modules/indexeddb/IDBDatabaseBackend.cpp:
+        (WebCore::IDBDatabaseBackend::setIndexKeys):
+
+        * Modules/indexeddb/IDBServerConnection.h:
+        * Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.cpp:
+        (WebCore::IDBServerConnectionLevelDB::setIndexKeys):
+        * Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.h:
+
+        * Modules/indexeddb/IDBTransactionBackendOperations.cpp:
+        (WebCore::PutOperation::perform):
+
+        * Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.cpp:
+        (WebCore::IDBBackingStoreLevelDB::makeIndexWriters):
+        * Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.h:
+
+2013-11-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Extract InspectorFrontendDispatchers from InspectorFrontend
+        https://bugs.webkit.org/show_bug.cgi?id=124246
+
+        Reviewed by Timothy Hatcher.
+
+        No new tests, this is just refactoring without changing functionality.
+        Set of changes made:
+
+          - Remove "class InspectorFrontend" that currently does nothing but hold
+            sub-frontend dispatcher classes. Catches some stale code.
+          - Generate individual "class InspectorFooFrontendDispatcher" classes for
+            domains that have events. Catches some unnecessary classes.
+          - Simplify the Base Agent interface from optional set/clearFrontend/register
+            to required didCreateFrontendAndBackend/willDestroyFrontendAndBackend.
+            New agents must implement this and this will be their cue to setup
+            frontend and backend dispatchers.
+          - Base Agent no longer needs to be templated or have an Interface class.
+          - While we are changing subclass BaseAgent superclass calls, use ASCIILiteral
+          - In agents with events, convert "InspectorFrontend::Foo* m_frontend" to
+            "unique_ptr<InspectorFooFrontendDispatcher> m_frontendDispatcher" and
+            update uses as appropriate within the classes.
+          - In agents with events, create dispatchers in didCreateFrontendAndBackend
+            and clear them in willDestroyFrontendAndBackend.
+
+        * inspector/CodeGeneratorInspector.py:
+        (Generator):
+        (Generator.go):
+        (Generator.process_event):
+        * inspector/CodeGeneratorInspectorStrings.py:
+        (InspectorFrontendChannel):
+        * inspector/ConsoleMessage.cpp:
+        (WebCore::ConsoleMessage::addToFrontend):
+        (WebCore::ConsoleMessage::updateRepeatCountInConsole):
+        * inspector/ConsoleMessage.h:
+        * inspector/InjectedScriptHost.h:
+        * inspector/InspectorAgent.cpp:
+        (WebCore::InspectorAgent::InspectorAgent):
+        (WebCore::InspectorAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorAgent::enable):
+        (WebCore::InspectorAgent::evaluateForTestInFrontend):
+        (WebCore::InspectorAgent::inspect):
+        * inspector/InspectorAgent.h:
+        (WebCore::InspectorAgent::hasFrontend):
+        * inspector/InspectorAgentRegistry.cpp:
+        (WebCore::InspectorAgentRegistry::append):
+        (WebCore::InspectorAgentRegistry::didCreateFrontendAndBackend):
+        (WebCore::InspectorAgentRegistry::willDestroyFrontendAndBackend):
+        * inspector/InspectorAgentRegistry.h:
+        * inspector/InspectorApplicationCacheAgent.cpp:
+        (WebCore::InspectorApplicationCacheAgent::InspectorApplicationCacheAgent):
+        (WebCore::InspectorApplicationCacheAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorApplicationCacheAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorApplicationCacheAgent::updateApplicationCacheStatus):
+        (WebCore::InspectorApplicationCacheAgent::networkStateChanged):
+        * inspector/InspectorApplicationCacheAgent.h:
+        * inspector/InspectorBaseAgent.h:
+        (WebCore::InspectorBaseAgent::discardAgent):
+        (WebCore::InspectorBaseAgent::InspectorBaseAgent):
+        * inspector/InspectorCSSAgent.cpp:
+        (WebCore::InspectorCSSAgent::InspectorCSSAgent):
+        (WebCore::InspectorCSSAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorCSSAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorCSSAgent::mediaQueryResultChanged):
+        (WebCore::InspectorCSSAgent::didCreateNamedFlow):
+        (WebCore::InspectorCSSAgent::willRemoveNamedFlow):
+        (WebCore::InspectorCSSAgent::regionLayoutUpdated):
+        (WebCore::InspectorCSSAgent::regionOversetChanged):
+        (WebCore::InspectorCSSAgent::didRegisterNamedFlowContentElement):
+        (WebCore::InspectorCSSAgent::didUnregisterNamedFlowContentElement):
+        (WebCore::InspectorCSSAgent::stopSelectorProfilerImpl):
+        (WebCore::InspectorCSSAgent::styleSheetChanged):
+        * inspector/InspectorCSSAgent.h:
+        * inspector/InspectorCanvasAgent.cpp:
+        (WebCore::InspectorCanvasAgent::InspectorCanvasAgent):
+        (WebCore::InspectorCanvasAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorCanvasAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorCanvasAgent::notifyRenderingContextWasWrapped):
+        (WebCore::InspectorCanvasAgent::findFramesWithUninstrumentedCanvases):
+        (WebCore::InspectorCanvasAgent::frameNavigated):
+        * inspector/InspectorCanvasAgent.h:
+        * inspector/InspectorConsoleAgent.cpp:
+        (WebCore::InspectorConsoleAgent::InspectorConsoleAgent):
+        (WebCore::InspectorConsoleAgent::enable):
+        (WebCore::InspectorConsoleAgent::clearMessages):
+        (WebCore::InspectorConsoleAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorConsoleAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorConsoleAgent::addMessageToConsole):
+        (WebCore::InspectorConsoleAgent::didFinishXHRLoading):
+        (WebCore::InspectorConsoleAgent::addConsoleMessage):
+        * inspector/InspectorConsoleAgent.h:
+        * inspector/InspectorController.cpp:
+        (WebCore::InspectorController::InspectorController):
+        (WebCore::InspectorController::connectFrontend):
+        (WebCore::InspectorController::disconnectFrontend):
+        (WebCore::InspectorController::show):
+        (WebCore::InspectorController::close):
+        * inspector/InspectorController.h:
+        (WebCore::InspectorController::hasFrontend):
+        * inspector/InspectorDOMAgent.cpp:
+        (WebCore::InspectorDOMAgent::InspectorDOMAgent):
+        (WebCore::InspectorDOMAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDOMAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorDOMAgent::setDocument):
+        (WebCore::InspectorDOMAgent::pushChildNodesToFrontend):
+        (WebCore::InspectorDOMAgent::pushNodePathToFrontend):
+        (WebCore::InspectorDOMAgent::focusNode):
+        (WebCore::InspectorDOMAgent::mainFrameDOMContentLoaded):
+        (WebCore::InspectorDOMAgent::didCommitLoad):
+        (WebCore::InspectorDOMAgent::didInsertDOMNode):
+        (WebCore::InspectorDOMAgent::didRemoveDOMNode):
+        (WebCore::InspectorDOMAgent::didModifyDOMAttr):
+        (WebCore::InspectorDOMAgent::didRemoveDOMAttr):
+        (WebCore::InspectorDOMAgent::styleAttributeInvalidated):
+        (WebCore::InspectorDOMAgent::characterDataModified):
+        (WebCore::InspectorDOMAgent::didPushShadowRoot):
+        (WebCore::InspectorDOMAgent::willPopShadowRoot):
+        * inspector/InspectorDOMAgent.h:
+        * inspector/InspectorDOMDebuggerAgent.cpp:
+        (WebCore::InspectorDOMDebuggerAgent::InspectorDOMDebuggerAgent):
+        (WebCore::InspectorDOMDebuggerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDOMDebuggerAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorDOMDebuggerAgent::didInvalidateStyleAttr):
+        (WebCore::InspectorDOMDebuggerAgent::willInsertDOMNode):
+        (WebCore::InspectorDOMDebuggerAgent::willRemoveDOMNode):
+        (WebCore::InspectorDOMDebuggerAgent::willModifyDOMAttr):
+        (WebCore::InspectorDOMDebuggerAgent::pauseOnNativeEventIfNeeded):
+        (WebCore::InspectorDOMDebuggerAgent::willSendXMLHttpRequest):
+        * inspector/InspectorDOMDebuggerAgent.h:
+        * inspector/InspectorDOMStorageAgent.cpp:
+        (WebCore::InspectorDOMStorageAgent::InspectorDOMStorageAgent):
+        (WebCore::InspectorDOMStorageAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDOMStorageAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorDOMStorageAgent::didDispatchDOMStorageEvent):
+        * inspector/InspectorDOMStorageAgent.h:
+        * inspector/InspectorDatabaseAgent.cpp:
+        (WebCore::InspectorDatabaseAgent::didOpenDatabase):
+        (WebCore::InspectorDatabaseAgent::InspectorDatabaseAgent):
+        (WebCore::InspectorDatabaseAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDatabaseAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorDatabaseAgent::enable):
+        * inspector/InspectorDatabaseAgent.h:
+        * inspector/InspectorDatabaseResource.cpp:
+        (WebCore::InspectorDatabaseResource::bind):
+        * inspector/InspectorDatabaseResource.h:
+        * inspector/InspectorDebuggerAgent.cpp:
+        (WebCore::InspectorDebuggerAgent::InspectorDebuggerAgent):
+        (WebCore::InspectorDebuggerAgent::enable):
+        (WebCore::InspectorDebuggerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDebuggerAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorDebuggerAgent::addMessageToConsole):
+        (WebCore::InspectorDebuggerAgent::schedulePauseOnNextStatement):
+        (WebCore::InspectorDebuggerAgent::scriptExecutionBlockedByCSP):
+        (WebCore::InspectorDebuggerAgent::didParseSource):
+        (WebCore::InspectorDebuggerAgent::failedToParseSource):
+        (WebCore::InspectorDebuggerAgent::didPause):
+        (WebCore::InspectorDebuggerAgent::didContinue):
+        (WebCore::InspectorDebuggerAgent::breakProgram):
+        (WebCore::InspectorDebuggerAgent::clearBreakDetails):
+        (WebCore::InspectorDebuggerAgent::reset):
+        * inspector/InspectorDebuggerAgent.h:
+        * inspector/InspectorHeapProfilerAgent.cpp:
+        (WebCore::InspectorHeapProfilerAgent::InspectorHeapProfilerAgent):
+        (WebCore::InspectorHeapProfilerAgent::resetFrontendProfiles):
+        (WebCore::InspectorHeapProfilerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorHeapProfilerAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorHeapProfilerAgent::getHeapSnapshot):
+        (WebCore::InspectorHeapProfilerAgent::takeHeapSnapshot):
+        * inspector/InspectorHeapProfilerAgent.h:
+        * inspector/InspectorIndexedDBAgent.cpp:
+        (WebCore::InspectorIndexedDBAgent::InspectorIndexedDBAgent):
+        (WebCore::InspectorIndexedDBAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorIndexedDBAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorIndexedDBAgent.h:
+        * inspector/InspectorInputAgent.cpp:
+        (WebCore::InspectorInputAgent::InspectorInputAgent):
+        (WebCore::InspectorInputAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorInputAgent::willDestroyFrontendAndBackend):
+        * inspector/InspectorInputAgent.h:
+        * inspector/InspectorLayerTreeAgent.cpp:
+        (WebCore::InspectorLayerTreeAgent::InspectorLayerTreeAgent):
+        (WebCore::InspectorLayerTreeAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorLayerTreeAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorLayerTreeAgent::layerTreeDidChange):
+        * inspector/InspectorLayerTreeAgent.h:
+        * inspector/InspectorMemoryAgent.cpp:
+        (WebCore::InspectorMemoryAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorMemoryAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorMemoryAgent::InspectorMemoryAgent):
+        * inspector/InspectorMemoryAgent.h:
+        * inspector/InspectorPageAgent.cpp:
+        (WebCore::InspectorPageAgent::InspectorPageAgent):
+        (WebCore::InspectorPageAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorPageAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorPageAgent::didClearWindowObjectInWorld):
+        (WebCore::InspectorPageAgent::domContentEventFired):
+        (WebCore::InspectorPageAgent::loadEventFired):
+        (WebCore::InspectorPageAgent::frameNavigated):
+        (WebCore::InspectorPageAgent::frameDetached):
+        (WebCore::InspectorPageAgent::frameStartedLoading):
+        (WebCore::InspectorPageAgent::frameStoppedLoading):
+        (WebCore::InspectorPageAgent::frameScheduledNavigation):
+        (WebCore::InspectorPageAgent::frameClearedScheduledNavigation):
+        (WebCore::InspectorPageAgent::willRunJavaScriptDialog):
+        (WebCore::InspectorPageAgent::didRunJavaScriptDialog):
+        (WebCore::InspectorPageAgent::scriptsEnabled):
+        * inspector/InspectorPageAgent.h:
+        * inspector/InspectorProfilerAgent.cpp:
+        (WebCore::InspectorProfilerAgent::InspectorProfilerAgent):
+        (WebCore::InspectorProfilerAgent::addProfile):
+        (WebCore::InspectorProfilerAgent::addProfileFinishedMessageToConsole):
+        (WebCore::InspectorProfilerAgent::addStartProfilingMessageToConsole):
+        (WebCore::InspectorProfilerAgent::getHeapSnapshot):
+        (WebCore::InspectorProfilerAgent::resetFrontendProfiles):
+        (WebCore::InspectorProfilerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorProfilerAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorProfilerAgent::takeHeapSnapshot):
+        (WebCore::InspectorProfilerAgent::toggleRecordButton):
+        * inspector/InspectorProfilerAgent.h:
+        * inspector/InspectorResourceAgent.cpp:
+        (WebCore::InspectorResourceAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorResourceAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorResourceAgent::willSendRequest):
+        (WebCore::InspectorResourceAgent::markResourceAsCached):
+        (WebCore::InspectorResourceAgent::didReceiveResponse):
+        (WebCore::InspectorResourceAgent::didReceiveData):
+        (WebCore::InspectorResourceAgent::didFinishLoading):
+        (WebCore::InspectorResourceAgent::didFailLoading):
+        (WebCore::InspectorResourceAgent::didLoadResourceFromMemoryCache):
+        (WebCore::InspectorResourceAgent::didCreateWebSocket):
+        (WebCore::InspectorResourceAgent::willSendWebSocketHandshakeRequest):
+        (WebCore::InspectorResourceAgent::didReceiveWebSocketHandshakeResponse):
+        (WebCore::InspectorResourceAgent::didCloseWebSocket):
+        (WebCore::InspectorResourceAgent::didReceiveWebSocketFrame):
+        (WebCore::InspectorResourceAgent::didSendWebSocketFrame):
+        (WebCore::InspectorResourceAgent::didReceiveWebSocketFrameError):
+        (WebCore::InspectorResourceAgent::enable):
+        (WebCore::InspectorResourceAgent::InspectorResourceAgent):
+        * inspector/InspectorResourceAgent.h:
+        * inspector/InspectorRuntimeAgent.cpp:
+        (WebCore::InspectorRuntimeAgent::InspectorRuntimeAgent):
+        * inspector/InspectorRuntimeAgent.h:
+        * inspector/InspectorTimelineAgent.cpp:
+        (WebCore::InspectorTimelineAgent::~InspectorTimelineAgent):
+        (WebCore::InspectorTimelineAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorTimelineAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorTimelineAgent::start):
+        (WebCore::InspectorTimelineAgent::InspectorTimelineAgent):
+        (WebCore::InspectorTimelineAgent::sendEvent):
+        * inspector/InspectorTimelineAgent.h:
+        * inspector/InspectorWorkerAgent.cpp:
+        (WebCore::InspectorWorkerAgent::WorkerFrontendChannel::WorkerFrontendChannel):
+        (WebCore::InspectorWorkerAgent::WorkerFrontendChannel::dispatchMessageFromWorker):
+        (WebCore::InspectorWorkerAgent::InspectorWorkerAgent):
+        (WebCore::InspectorWorkerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorWorkerAgent::willDestroyFrontendAndBackend):
+        (WebCore::InspectorWorkerAgent::enable):
+        (WebCore::InspectorWorkerAgent::disable):
+        (WebCore::InspectorWorkerAgent::didStartWorkerGlobalScope):
+        (WebCore::InspectorWorkerAgent::workerGlobalScopeTerminated):
+        (WebCore::InspectorWorkerAgent::createWorkerFrontendChannel):
+        * inspector/InspectorWorkerAgent.h:
+        * inspector/PageRuntimeAgent.cpp:
+        (WebCore::PageRuntimeAgent::PageRuntimeAgent):
+        (WebCore::PageRuntimeAgent::didCreateFrontendAndBackend):
+        (WebCore::PageRuntimeAgent::willDestroyFrontendAndBackend):
+        (WebCore::PageRuntimeAgent::didCreateMainWorldContext):
+        (WebCore::PageRuntimeAgent::didCreateIsolatedContext):
+        (WebCore::PageRuntimeAgent::notifyContextCreated):
+        * inspector/PageRuntimeAgent.h:
+        * inspector/TimelineRecordFactory.h:
+        * inspector/WorkerInspectorController.cpp:
+        (WebCore::WorkerInspectorController::connectFrontend):
+        (WebCore::WorkerInspectorController::disconnectFrontend):
+        * inspector/WorkerInspectorController.h:
+        (WebCore::WorkerInspectorController::hasFrontend):
+        * inspector/WorkerRuntimeAgent.cpp:
+        (WebCore::WorkerRuntimeAgent::didCreateFrontendAndBackend):
+        (WebCore::WorkerRuntimeAgent::willDestroyFrontendAndBackend):
+        * inspector/WorkerRuntimeAgent.h:
+        * inspector/protocol/Input.json:
+
+2013-11-13  Simon Fraser  <simon.fraser@apple.com>
+
+        Rename FrameView's repaintFixedElementsAfterScrolling and updateFixedElementsAfterScrolling
+        https://bugs.webkit.org/show_bug.cgi?id=124306
+
+        Reviewed by Tim Horton.
+        
+        FrameView::repaintFixedElementsAfterScrolling() didn't do any repainting, and didn't
+        just apply to fixed elements. Rename it to updateLayerPositionsAfterScrolling().
+        
+        updateFixedElementsAfterScrolling() was also confusingly named; rename it
+        to updateCompositingLayersAfterScrolling().
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::setFixedVisibleContentRect):
+        (WebCore::FrameView::scrollPositionChangedViaPlatformWidget):
+        (WebCore::FrameView::updateLayerPositionsAfterScrolling):
+        (WebCore::FrameView::shouldUpdateCompositingLayersAfterScrolling):
+        (WebCore::FrameView::updateCompositingLayersAfterScrolling):
+        * page/FrameView.h:
+        * platform/ScrollView.cpp:
+        (WebCore::ScrollView::scrollTo):
+        * platform/ScrollView.h:
+        (WebCore::ScrollView::updateLayerPositionsAfterScrolling):
+        (WebCore::ScrollView::updateCompositingLayersAfterScrolling):
+
+2013-11-13  Andreas Kling  <akling@apple.com>
+
+        Generate casting helpers for SVGPaint and SVGColor.
+        <https://webkit.org/b/124285>
+
+        Use CSS_VALUE_TYPE_CASTS to generate type casting helpers for the
+        SVGPaint and SVGColor classes.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-13  Benjamin Poulain  <bpoulain@apple.com>
+
+        Update ResourceHandleCF to use the didReceiveBuffer() callback
+        https://bugs.webkit.org/show_bug.cgi?id=124256
+
+        Reviewed by Alexey Proskuryakov.
+
+        Use didReceiveBuffer() instead of didReceiveData() to pass data back to
+        the ResourceHandleClient. This unify the update code with the NSURLConnection loader.
+
+        * platform/network/cf/ResourceHandleCFNet.cpp:
+        (WebCore::didReceiveData):
+        (WebCore::ResourceHandle::handleDataArray):
+
+2013-11-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Split Inspector.json into individual domain json files
+        https://bugs.webkit.org/show_bug.cgi?id=124098
+
+        Reviewed by Timothy Hatcher.
+
+        Split the Inspector domains into their own json file. Generate a
+        combined Inspector.json from all of the json files at build time
+        so that the CodeGenerator is unchanged.
+
+        * .gitattributes:
+        * CMakeLists.txt:
+        * DerivedSources.make:
+        * GNUmakefile.am:
+        * WebCore.xcodeproj/project.pbxproj:
+        * inspector/CodeGeneratorInspector.py:
+        (TypeMap.__init__):
+        * inspector/Inspector.json: Removed.
+        * inspector/Scripts/generate-combined-inspector-json.py: Added.
+        * inspector/protocol/ApplicationCache.json: Added.
+        * inspector/protocol/CSS.json: Added.
+        * inspector/protocol/Canvas.json: Added.
+        * inspector/protocol/Console.json: Added.
+        * inspector/protocol/DOM.json: Added.
+        * inspector/protocol/DOMDebugger.json: Added.
+        * inspector/protocol/DOMStorage.json: Added.
+        * inspector/protocol/Database.json: Added.
+        * inspector/protocol/Debugger.json: Added.
+        * inspector/protocol/FileSystem.json: Added.
+        * inspector/protocol/HeapProfiler.json: Added.
+        * inspector/protocol/IndexedDB.json: Added.
+        * inspector/protocol/Input.json: Added.
+        * inspector/protocol/InspectorDomain.json: Added.
+        * inspector/protocol/LayerTree.json: Added.
+        * inspector/protocol/Memory.json: Added.
+        * inspector/protocol/Network.json: Added.
+        * inspector/protocol/Page.json: Added.
+        * inspector/protocol/Profiler.json: Added.
+        * inspector/protocol/Runtime.json: Added.
+        * inspector/protocol/Timeline.json: Added.
+        * inspector/protocol/Worker.json: Added.
+
+2013-11-13  Zalan Bujtas  <zalan@apple.com>
+
+        Code cleanup: change FrameView::doLayoutWithFrameFlattening() to make it more explicit.
+        https://bugs.webkit.org/show_bug.cgi?id=124238
+
+        Reviewed by Simon Fraser.
+
+        Rename doLayoutWithFrameFlattening() and change its signature so that it's inline with
+        what it does.
+
+        Covered by existing tests.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::layout):
+        (WebCore::FrameView::startLayoutAtMainFrameViewIfNeeded):
+        * page/FrameView.h:
+
+2013-11-13  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Modifying RTCSessionDescription object construction to match the spec
+        https://bugs.webkit.org/show_bug.cgi?id=124212
+
+        Reviewed by Eric Carlson.
+
+        According to the spec the RTCSessionDescriptionInit parameter in RTCSessionDescription constructor is optional,
+        which must not be nullable. If the 'type' and/or 'sdp' keys are not present, the string object that stores
+        them in the RTCSessionDescription class, must be null in those cases. Also, if an object that is not a
+        Dictionary is passed as argument to the constructor, an exception must be raised.
+
+        Existing test was updated.
+
+        * GNUmakefile.list.am:
+        * Modules/mediastream/RTCSessionDescription.cpp:
+        (WebCore::RTCSessionDescription::create):
+        * Modules/mediastream/RTCSessionDescription.idl:
+        * UseJSC.cmake:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * bindings/js/JSRTCSessionDescriptionCustom.cpp: Added.
+        (WebCore::JSRTCSessionDescriptionConstructor::constructJSRTCSessionDescription):
+
+2013-11-13  Tim Horton  <timothy_horton@apple.com>
+
+        Fix release build after r159224.
+
+        * WebCore.exp.in:
+
+2013-11-13  Anders Carlsson  <andersca@apple.com>
+
+        Remove ChromeClient::paintCustomOverhangArea
+        https://bugs.webkit.org/show_bug.cgi?id=124304
+
+        Reviewed by Beth Dakin.
+
+        This function always returns false now; get rid of it.
+
+        * page/Chrome.cpp:
+        * page/ChromeClient.h:
+        * page/FrameView.cpp:
+        (WebCore::FrameView::paintOverhangAreas):
+
+2013-11-09  Martin Robinson  <mrobinson@igalia.com>
+
+        [MathML] The double bar vertical delimiter does not stretch properly
+        https://bugs.webkit.org/show_bug.cgi?id=123543
+
+        Reviewed by Chris Fleizach.
+
+        * rendering/mathml/RenderMathMLOperator.cpp: Add stretching support for U+2225, which
+        is another version of the vertical bar.
+
+2013-11-13  Simon Fraser  <simon.fraser@apple.com>
+
+        ASSERTION FAILED: m_repaintRect == renderer().clippedOverflowRectForRepaint(renderer().containerForRepaint()) after r135816
+        https://bugs.webkit.org/show_bug.cgi?id=103432
+
+        Reviewed by Dave Hyatt.
+
+        RenderLayer caches repaint rects in m_repaintRect, and on updating layer
+        positions after scrolling, asserts that the cached rect is correct. However,
+        this assertion would sometimes fail if we were scrolling as a result of
+        doing adjustViewSize() in the middle of layout, because we haven't updated
+        layer positions post-layout yet.
+        
+        Fix by having the poorly named FrameView::repaintFixedElementsAfterScrolling()
+        skip the layer updating if this FrameView is inside of adjusetViewSize() in
+        layout.
+        
+        In order to know if we're inside view size adjusting, add a LayoutPhase
+        member to FrameView, replacing two existing bools that track laying out state.
+
+        Investigative work showed that there are many, many ways to re-enter FrameView::layout(),
+        which makes it hard (but desirable) to more assertions about state changes, but
+        indicated that saving and restoring the state (via TemporaryChange<LayoutPhase>)
+        was a good idea.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::FrameView):
+        (WebCore::FrameView::reset):
+        (WebCore::FrameView::updateCompositingLayersAfterStyleChange):
+        (WebCore::FrameView::layout):
+        (WebCore::FrameView::repaintFixedElementsAfterScrolling):
+        * page/FrameView.h:
+
+2013-11-13  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Delete unused TextPainter function
+        https://bugs.webkit.org/show_bug.cgi?id=124292
+
+        Reviewed by Tim Horton.
+
+        New tests are unnecessary since there is no behavior change
+
+        * rendering/TextPainter.cpp:
+        (WebCore::TextPainter::paintText):
+        * rendering/TextPainter.h:
+
+2013-11-13  Alexey Proskuryakov  <ap@apple.com>
+
+        Check WebCrypto parameter types when casting
+        https://bugs.webkit.org/show_bug.cgi?id=124297
+
+        Reviewed by Sam Weinig.
+
+        Also changed existing toCryptoXXX functions to use TYPE_CASTS_BASE mechanism.
+
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForImportKey):
+        And sure enough, there was a bug caught by the added checks.
+
+        * bindings/js/JSCryptoKeySerializationJWK.cpp:
+        (WebCore::JSCryptoKeySerializationJWK::reconcileAlgorithm):
+        * crypto/CryptoAlgorithmParameters.h:
+        (WebCore::CryptoAlgorithmParameters::ENUM_CLASS):
+        (WebCore::CryptoAlgorithmParameters::parametersClass):
+        * crypto/CryptoKey.h:
+        * crypto/CryptoKeyData.h:
+        * crypto/CryptoKeySerialization.h:
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::generateKey):
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp:
+        (WebCore::CryptoAlgorithmHMAC::generateKey):
+        (WebCore::CryptoAlgorithmHMAC::importKey):
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.cpp:
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::importKey):
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::generateKey):
+        * crypto/keys/CryptoKeyAES.h:
+        * crypto/keys/CryptoKeyDataOctetSequence.h:
+        (WebCore::isCryptoKeyDataOctetSequence):
+        * crypto/keys/CryptoKeyDataRSAComponents.h:
+        (WebCore::isCryptoKeyDataRSAComponents):
+        * crypto/keys/CryptoKeyHMAC.h:
+        * crypto/keys/CryptoKeyRSA.h:
+        * crypto/keys/CryptoKeySerializationRaw.h:
+        * crypto/mac/CryptoAlgorithmAES_CBCMac.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::encrypt):
+        (WebCore::CryptoAlgorithmAES_CBC::decrypt):
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp:
+        (WebCore::CryptoAlgorithmHMAC::sign):
+        (WebCore::CryptoAlgorithmHMAC::verify):
+        * crypto/parameters/CryptoAlgorithmAesCbcParams.h:
+        * crypto/parameters/CryptoAlgorithmAesKeyGenParams.h:
+        * crypto/parameters/CryptoAlgorithmHmacKeyParams.h:
+        * crypto/parameters/CryptoAlgorithmHmacParams.h:
+        * crypto/parameters/CryptoAlgorithmRsaKeyGenParams.h:
+        * crypto/parameters/CryptoAlgorithmRsaSsaKeyParams.h:
+        * crypto/parameters/CryptoAlgorithmRsaSsaParams.h:
+
+2013-11-13  Alexey Proskuryakov  <ap@apple.com>
+
+        crypto/subtle/rsassa-pkcs1-v1_5-import-jwk.html is failing on Maverics release bot
+        https://bugs.webkit.org/show_bug.cgi?id=124280
+
+        Reviewed by Anders Carlsson.
+
+        * crypto/mac/CryptoKeyRSAMac.cpp: (WebCore::CryptoKeyRSA::buildAlgorithmDescription):
+        Don't be a muppet, initialize your variables.
+
 2013-11-12  Jer Noble  <jer.noble@apple.com>
 
         Add support for HTMLMediaElement.fastSeek()

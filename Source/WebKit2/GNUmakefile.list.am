@@ -1,6 +1,5 @@
 webkit2_h_api += \
 	$(WebKit2)/Shared/API/c/gtk/WKBaseGtk.h \
-	$(WebKit2)/Shared/API/c/gtk/WKGraphicsContextGtk.h \
 	$(WebKit2)/Shared/API/c/soup/WKBaseSoup.h \
 	$(WebKit2)/Shared/API/c/WKArray.h \
 	$(WebKit2)/Shared/API/c/WKBase.h \
@@ -15,7 +14,6 @@ webkit2_h_api += \
 	$(WebKit2)/Shared/API/c/WKEvent.h \
 	$(WebKit2)/Shared/API/c/WKFindOptions.h \
 	$(WebKit2)/Shared/API/c/WKGeometry.h \
-	$(WebKit2)/Shared/API/c/WKGraphicsContext.h \
 	$(WebKit2)/Shared/API/c/WKImage.h \
 	$(WebKit2)/Shared/API/c/WKMutableArray.h \
 	$(WebKit2)/Shared/API/c/WKMutableDictionary.h \
@@ -324,14 +322,14 @@ webkit2_sources += \
 	Source/WebKit2/Shared/ResourceCachesToClear.h \
 	Source/WebKit2/Shared/ViewState.h \
 	Source/WebKit2/Shared/WebMemorySampler.h \
+	Source/WebKit2/Shared/APIArray.cpp \
+	Source/WebKit2/Shared/APIArray.h \
 	Source/WebKit2/Shared/APIClient.h \
 	Source/WebKit2/Shared/APIClientTraits.cpp \
 	Source/WebKit2/Shared/APIClientTraits.h \
 	Source/WebKit2/Shared/API/c/cairo/WKImageCairo.cpp \
 	Source/WebKit2/Shared/API/c/cairo/WKImageCairo.h \
 	Source/WebKit2/Shared/API/c/gtk/WKBaseGtk.h \
-	Source/WebKit2/Shared/API/c/gtk/WKGraphicsContextGtk.h \
-	Source/WebKit2/Shared/API/c/gtk/WKGraphicsContextGtk.cpp \
 	Source/WebKit2/Shared/API/c/soup/WKBaseSoup.h \
 	Source/WebKit2/Shared/API/c/WKArray.cpp \
 	Source/WebKit2/Shared/API/c/WKArray.h \
@@ -355,8 +353,6 @@ webkit2_sources += \
 	Source/WebKit2/Shared/API/c/WKFindOptions.h \
 	Source/WebKit2/Shared/API/c/WKGeometry.h \
 	Source/WebKit2/Shared/API/c/WKGeometry.cpp \
-	Source/WebKit2/Shared/API/c/WKGraphicsContext.cpp \
-	Source/WebKit2/Shared/API/c/WKGraphicsContext.h \
 	Source/WebKit2/Shared/API/c/WKImage.cpp \
 	Source/WebKit2/Shared/API/c/WKImage.h \
 	Source/WebKit2/Shared/API/c/WKMutableArray.cpp \
@@ -440,8 +436,6 @@ webkit2_sources += \
 	Source/WebKit2/Shared/gtk/WebEventFactory.cpp \
 	Source/WebKit2/Shared/gtk/WebEventFactory.h \
 	Source/WebKit2/Shared/ImageOptions.h \
-	Source/WebKit2/Shared/ImmutableArray.cpp \
-	Source/WebKit2/Shared/ImmutableArray.h \
 	Source/WebKit2/Shared/ImmutableDictionary.cpp \
 	Source/WebKit2/Shared/ImmutableDictionary.h \
 	Source/WebKit2/Shared/LayerTreeContext.h \
@@ -523,8 +517,6 @@ webkit2_sources += \
 	Source/WebKit2/Shared/WebGeolocationPosition.cpp \
 	Source/WebKit2/Shared/WebGeolocationPosition.h \
 	Source/WebKit2/Shared/WebGeometry.h \
-	Source/WebKit2/Shared/WebGraphicsContext.cpp \
-	Source/WebKit2/Shared/WebGraphicsContext.h \
 	Source/WebKit2/Shared/WebHitTestResult.cpp \
 	Source/WebKit2/Shared/WebHitTestResult.h \
 	Source/WebKit2/Shared/WebImage.cpp \

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Apple Inc. All rights reserved.
+ * Copyright (C) 2010 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,24 +23,46 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "WebGraphicsContext.h"
+#ifndef APIArray_h
+#define APIArray_h
 
-#if USE(CAIRO)
-#include <WebCore/PlatformContextCairo.h>
-#endif
+#include "APIObject.h"
+#include <wtf/Forward.h>
+#include <wtf/PassRefPtr.h>
+#include <wtf/Vector.h>
 
-using namespace WebCore;
+namespace API {
 
-namespace WebKit {
+class Array FINAL : public TypedObject<Object::Type::Array> {
+public:
+    static PassRefPtr<Array> create();
+    static PassRefPtr<Array> create(Vector<RefPtr<Object>> elements);
 
-WebGraphicsContext::WebGraphicsContext(GraphicsContext* graphicsContext)
-#if USE(CG)
-    : m_platformContext(graphicsContext->platformContext())
-#elif USE(CAIRO)
-    : m_platformContext(graphicsContext->platformContext()->cr())
-#endif
-{
-}
+    static PassRefPtr<Array> createStringArray(const Vector<String>&);
 
-} // namespace WebKit
+    virtual ~Array();
+
+    template<typename T>
+    T* at(size_t i) const
+    {
+        if (m_elements[i]->type() != T::APIType)
+            return nullptr;
+
+        return static_cast<T*>(m_elements[i].get());
+    }
+
+    Object* at(size_t i) const { return m_elements[i].get(); }
+    size_t size() const { return m_elements.size(); }
+
+    const Vector<RefPtr<Object>>& elements() const { return m_elements; }
+    Vector<RefPtr<Object>>& elements() { return m_elements; }
+
+private:
+    explicit Array(Vector<RefPtr<Object>> elements);
+
+    Vector<RefPtr<Object>> m_elements;
+};
+
+} // namespace API
+
+#endif // APIArray_h

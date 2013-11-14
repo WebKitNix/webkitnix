@@ -21,8 +21,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/HTMLNames.h \
 	DerivedSources/WebCore/InjectedScriptCanvasModuleSource.h \
 	DerivedSources/WebCore/InjectedScriptSource.h \
-	DerivedSources/WebCore/InspectorBackendDispatcher.cpp \
-	DerivedSources/WebCore/InspectorBackendDispatcher.h \
+	DerivedSources/WebCore/InspectorBackendDispatchers.cpp \
+	DerivedSources/WebCore/InspectorBackendDispatchers.h \
 	DerivedSources/WebCore/InspectorFrontend.cpp \
 	DerivedSources/WebCore/InspectorFrontend.h \
 	DerivedSources/WebCore/InspectorOverlayPage.h \
@@ -2389,6 +2389,7 @@ webcore_sources += \
 	Source/WebCore/bindings/js/JSSQLTransactionCustom.cpp \
 	Source/WebCore/bindings/js/JSSQLTransactionSyncCustom.cpp \
 	Source/WebCore/bindings/js/JSRTCPeerConnectionCustom.cpp \
+	Source/WebCore/bindings/js/JSRTCSessionDescriptionCustom.cpp \
 	Source/WebCore/bindings/js/JSRTCStatsResponseCustom.cpp \
 	Source/WebCore/bindings/js/JSSharedWorkerCustom.cpp \
 	Source/WebCore/bindings/js/JSStorageCustom.cpp \
@@ -3768,6 +3769,8 @@ webcore_sources += \
 	Source/WebCore/inspector/InspectorAgentRegistry.h \
 	Source/WebCore/inspector/InspectorApplicationCacheAgent.cpp \
 	Source/WebCore/inspector/InspectorApplicationCacheAgent.h \
+	Source/WebCore/inspector/InspectorBackendDispatcher.cpp \
+	Source/WebCore/inspector/InspectorBackendDispatcher.h \
 	Source/WebCore/inspector/InspectorBaseAgent.h \
 	Source/WebCore/inspector/InspectorCanvasAgent.cpp \
 	Source/WebCore/inspector/InspectorCanvasAgent.h \
