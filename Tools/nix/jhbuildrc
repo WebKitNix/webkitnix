@@ -47,19 +47,6 @@ else:
     checkoutroot = os.path.abspath(common.top_level_path('WebKitBuild','Dependencies', 'Source'))
     prefix = os.path.abspath(common.top_level_path('WebKitBuild','Dependencies', 'Root'))
 
-if not os.environ.has_key('JAVA_HOME'):
-    jvm_paths = [
-        '/usr/lib/jvm/java-7-oracle',
-        '/usr/lib/jvm/java-7-openjdk-amd64',
-        '/usr/lib/jvm/java-7-openjdk',
-        '/usr/lib/jvm/java-6-openjdk-amd64',
-        '/usr/lib/jvm/java-6-openjdk'
-    ]
-    for jvm_path in jvm_paths:
-        if os.path.exists(os.path.join(jvm_path, 'include/jni.h')):
-            os.environ['JAVA_HOME'] = jvm_path
-            break
-
 nonotify = True
 notrayicon = True
 if 'MAKEFLAGS' not in os.environ:
