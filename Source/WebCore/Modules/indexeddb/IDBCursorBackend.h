@@ -29,7 +29,7 @@
 
 #if ENABLE(INDEXED_DATABASE)
 
-#include "IDBBackingStoreInterface.h"
+#include "IDBBackingStoreCursorInterface.h"
 #include "IDBDatabaseBackend.h"
 #include "IDBTransactionBackend.h"
 #include "SharedBuffer.h"
@@ -66,12 +66,14 @@ public:
 
     void close();
 
+    IndexedDB::CursorType cursorType() const { return m_cursorType; }
+
+    IDBBackingStoreCursorInterface* deprecatedBackingStoreCursor() { return m_cursor.get(); }
+    void deprecatedSetBackingStoreCursor(PassRefPtr<IDBBackingStoreCursorInterface> cursor) { m_cursor = cursor; }
+    void deprecatedSetSavedBackingStoreCursor(PassRefPtr<IDBBackingStoreCursorInterface> cursor) { m_savedCursor = cursor; }
+
 private:
     IDBCursorBackend(PassRefPtr<IDBBackingStoreCursorInterface>, IndexedDB::CursorType, IDBDatabaseBackend::TaskType, IDBTransactionBackend*, int64_t objectStoreId);
-
-    class CursorIterationOperation;
-    class CursorAdvanceOperation;
-    class CursorPrefetchIterationOperation;
 
     IDBDatabaseBackend::TaskType m_taskType;
     IndexedDB::CursorType m_cursorType;

@@ -76,6 +76,7 @@ set(WebCore_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/text"
     "${WEBCORE_DIR}/plugins"
     "${WEBCORE_DIR}/rendering"
+    "${WEBCORE_DIR}/rendering/line"
     "${WEBCORE_DIR}/rendering/mathml"
     "${WEBCORE_DIR}/rendering/shapes"
     "${WEBCORE_DIR}/rendering/style"
@@ -788,6 +789,7 @@ set(WebCore_SOURCES
     Modules/indexeddb/IDBAny.cpp
     Modules/indexeddb/IDBCursor.cpp
     Modules/indexeddb/IDBCursorBackend.cpp
+    Modules/indexeddb/IDBCursorBackendOperations.cpp
     Modules/indexeddb/IDBCursorWithValue.cpp
     Modules/indexeddb/IDBDatabase.cpp
     Modules/indexeddb/IDBDatabaseBackend.cpp
@@ -797,7 +799,6 @@ set(WebCore_SOURCES
     Modules/indexeddb/IDBFactory.cpp
     Modules/indexeddb/IDBFactoryBackendInterface.cpp
     Modules/indexeddb/IDBIndex.cpp
-    Modules/indexeddb/IDBIndexWriter.cpp
     Modules/indexeddb/IDBKey.cpp
     Modules/indexeddb/IDBKeyPath.cpp
     Modules/indexeddb/IDBKeyRange.cpp
@@ -817,6 +818,7 @@ set(WebCore_SOURCES
     Modules/indexeddb/leveldb/IDBBackingStoreLevelDB.cpp
     Modules/indexeddb/leveldb/IDBBackingStoreTransactionLevelDB.cpp
     Modules/indexeddb/leveldb/IDBFactoryBackendLevelDB.cpp
+    Modules/indexeddb/leveldb/IDBIndexWriterLevelDB.cpp
     Modules/indexeddb/leveldb/IDBLevelDBCoding.cpp
     Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.cpp
 
@@ -1593,6 +1595,7 @@ set(WebCore_SOURCES
     inspector/InspectorInstrumentation.cpp
     inspector/InspectorLayerTreeAgent.cpp
     inspector/InspectorMemoryAgent.cpp
+    inspector/InspectorNodeFinder.cpp
     inspector/InspectorOverlay.cpp
     inspector/InspectorPageAgent.cpp
     inspector/InspectorProfilerAgent.cpp
@@ -2209,6 +2212,9 @@ set(WebCore_SOURCES
     rendering/TextPaintStyle.cpp
     rendering/TextPainter.cpp
     rendering/break_lines.cpp
+
+    rendering/line/LineBreaker.cpp
+    rendering/line/LineInfo.cpp
 
     rendering/mathml/RenderMathMLBlock.cpp
     rendering/mathml/RenderMathMLFenced.cpp

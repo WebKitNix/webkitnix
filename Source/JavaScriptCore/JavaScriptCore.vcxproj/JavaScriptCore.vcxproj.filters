@@ -261,9 +261,6 @@
     <ClCompile Include="..\heap\SuperRegion.cpp">
       <Filter>heap</Filter>
     </ClCompile>
-    <ClCompile Include="..\heap\VTableSpectrum.cpp">
-      <Filter>heap</Filter>
-    </ClCompile>
     <ClCompile Include="..\heap\Weak.cpp">
       <Filter>heap</Filter>
     </ClCompile>
@@ -1559,6 +1556,9 @@
     <ClInclude Include="..\heap\DeferGC.h">
       <Filter>heap</Filter>
     </ClInclude>
+    <ClInclude Include="..\heap\DelayedReleaseScpe.h">
+      <Filter>heap</Filter>
+    </ClInclude>
     <ClInclude Include="..\heap\GCAssertions.h">
       <Filter>heap</Filter>
     </ClInclude>
@@ -1662,9 +1662,6 @@
       <Filter>heap</Filter>
     </ClInclude>
     <ClInclude Include="..\heap\UnconditionalFinalizer.h">
-      <Filter>heap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\heap\VTableSpectrum.h">
       <Filter>heap</Filter>
     </ClInclude>
     <ClInclude Include="..\heap\Weak.h">

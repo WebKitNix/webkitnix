@@ -51,17 +51,21 @@ public:
     virtual ~CryptoKeyRSA();
 
     void restrictToHash(CryptoAlgorithmIdentifier);
+    bool isRestrictedToHash(CryptoAlgorithmIdentifier&) const;
 
-    static void generatePair(CryptoAlgorithmIdentifier, unsigned modulusLength, const Vector<char>& publicExponent, bool extractable, CryptoKeyUsage, std::unique_ptr<PromiseWrapper>);
+    size_t keySizeInBits() const;
 
-    virtual CryptoKeyClass keyClass() const OVERRIDE { return CryptoKeyClass::RSA; }
+    static void generatePair(CryptoAlgorithmIdentifier, unsigned modulusLength, const Vector<uint8_t>& publicExponent, bool extractable, CryptoKeyUsage, std::unique_ptr<PromiseWrapper>);
 
     PlatformRSAKey platformKey() const { return m_platformKey; }
 
-    virtual void buildAlgorithmDescription(CryptoAlgorithmDescriptionBuilder&) const OVERRIDE;
-
 private:
     CryptoKeyRSA(CryptoAlgorithmIdentifier, CryptoKeyType, PlatformRSAKey, bool extractable, CryptoKeyUsage);
+
+    virtual CryptoKeyClass keyClass() const OVERRIDE { return CryptoKeyClass::RSA; }
+
+    virtual void buildAlgorithmDescription(CryptoAlgorithmDescriptionBuilder&) const OVERRIDE;
+    virtual std::unique_ptr<CryptoKeyData> exportData() const OVERRIDE;
 
     PlatformRSAKey m_platformKey;
 

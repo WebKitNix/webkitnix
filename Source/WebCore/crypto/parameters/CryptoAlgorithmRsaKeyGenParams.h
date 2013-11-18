@@ -27,6 +27,7 @@
 #define CryptoAlgorithmRsaKeyGenParams_h
 
 #include "CryptoAlgorithmParameters.h"
+#include <wtf/Vector.h>
 
 #if ENABLE(SUBTLE_CRYPTO)
 
@@ -37,7 +38,7 @@ public:
     // The length, in bits, of the RSA modulus.
     unsigned modulusLength;
     // The RSA public exponent, encoded as BigInteger.
-    Vector<char> publicExponent;
+    Vector<uint8_t> publicExponent;
 
     virtual Class parametersClass() const OVERRIDE { return Class::RsaKeyGenParams; }
 };

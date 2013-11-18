@@ -1,3 +1,289 @@
+2013-11-18  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Add EWebKitConfig.cmake and EWebKit2Config.cmake
+        https://bugs.webkit.org/show_bug.cgi?id=124478
+
+        Reviewed by Gyuyoung Kim.
+
+        EWebKit is built using CMake but applications use *.pc to use it.
+        This patch provides EWebKitConfig.cmake and EWebKit2Config.cmake
+        for applications which use EWebkit and is compiled by CMake.
+
+        * PlatformEfl.cmake:
+        Configure and install EWebKit2Config.cmake and EWebKit2ConfigVersion.cmake
+        * efl/EWebKit2Config.cmake.in: Added.
+        * efl/EWebKit2ConfigVersion.cmake.in: Added.
+
+2013-11-18  Eunmi Lee  <eunmi15.lee@samsung.com>
+
+        [EFL][WK2] Process single tap using mouse move, down and up event.
+        https://bugs.webkit.org/show_bug.cgi?id=106864
+
+        Reviewed by Christophe Dumez.
+
+        Send mouse events to the web process to perform the clicking when
+        single tap gesture is recognized.
+        Additionally, add WKViewSendMouseDownEvent(), WKViewSendMouseUpEvent()
+        and WKViewSendMouseMoveEvent() to avoid using WK2 internals in the EFL
+        API implementation.
+
+        * UIProcess/API/C/efl/WKViewEfl.cpp:
+        (WKViewSendMouseDownEvent):
+        (WKViewSendMouseUpEvent):
+        (WKViewSendMouseMoveEvent):
+        * UIProcess/API/C/efl/WKViewEfl.h:
+        * UIProcess/API/efl/GestureRecognizer.cpp:
+        (WebKit::GestureHandler::handleSingleTap):
+        * UIProcess/efl/WebViewEfl.cpp:
+        (WebKit::WebViewEfl::sendMouseEvent):
+        * UIProcess/efl/WebViewEfl.h:
+
+2013-11-17  Dan Bernstein  <mitz@apple.com>
+
+        Try to fix the EFL build.
+
+        * UIProcess/efl/PagePolicyClientEfl.cpp:
+        (WebKit::PagePolicyClientEfl::decidePolicyForResponseCallback): No need to call
+        WKFrameCanShowMIMEType now that this information is passed in as a parameter.
+
+2013-11-16  Dan Bernstein  <mitz@apple.com>
+
+        No way for policy client to determine if a the response’s MIME type can be shown
+        https://bugs.webkit.org/show_bug.cgi?id=124445
+
+        Reviewed by Sam Weinig.
+
+        * Platform/CoreIPC/HandleMessage.h:
+        (CoreIPC::callMemberFunction): Added a fifth message parameter to this template.
+
+        * UIProcess/API/C/WKPage.h: Added a canShowMIMEType parameter to
+        WKPageDecidePolicyForResponseCallback and deprecated the old version.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (setUpPagePolicyClient): Include whether the response MIME type can be shown under a new key
+        in the action information dictionary.
+        * UIProcess/API/mac/WKBrowsingContextPolicyDelegate.h: Declared
+        WKActionCanShowMIMETypeKey.
+
+        * UIProcess/WebInspectorProxy.cpp:
+        (WebKit::WebInspectorProxy::createInspectorPage): Updated for changes in the policy client.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::decidePolicyForResponse): Added canShowMIMEType parameter, which is
+        passed to the policy client.
+        (WebKit::WebPageProxy::decidePolicyForResponseSync): Added canShowMIMEType parameter, which
+        is passed to the above function.
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebPageProxy.messages.in: Added canShowMIMEType paramter to
+        DecidePolicyForResponseSync.
+
+        * UIProcess/WebPolicyClient.cpp:
+        (WebKit::WebPolicyClient::decidePolicyForResponse): Added canShowMIMEType parameter, which
+        is passed to the client callback.
+        * UIProcess/WebPolicyClient.h:
+
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::dispatchDecidePolicyForResponse): Determine if the response
+        MIME type can be shown and pass this information along in the message to the UI process.
+
+2013-11-15  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Unreviewed EFL build fix after r159358.
+
+        * UIProcess/efl/PagePolicyClientEfl.cpp:
+        (WebKit::PagePolicyClientEfl::decidePolicyForNavigationAction):
+        * UIProcess/efl/PagePolicyClientEfl.h:
+
+2013-11-15  Brady Eidson  <beidson@apple.com>
+
+        Let IDBDatabaseBackend create IDBTransactionBackend's directly
+        https://bugs.webkit.org/show_bug.cgi?id=124438
+
+        Reviewed by Beth Dakin.
+
+        Remove maybeCreateTransactionBackend():
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.cpp:
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.h:
+
+2013-11-15  Brady Eidson  <beidson@apple.com>
+
+        Remove last vestiges of IDBBackingStore* from IDBTransactionBackend.
+        https://bugs.webkit.org/show_bug.cgi?id=124436
+
+        Reviewed by Tim Horton.
+
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.cpp: Removed createCursorBackend.
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.h:
+
+2013-11-15  Dan Bernstein  <mitz@apple.com>
+
+        Give the policy client the originating frame of a navigation action
+        https://bugs.webkit.org/show_bug.cgi?id=124431
+
+        Reviewed by Anders Carlsson.
+
+        * Platform/CoreIPC/HandleMessage.h:
+        (CoreIPC::callMemberFunction): Added a seventh message parameter to this template.
+
+        * Shared/APIClientTraits.cpp: Defined API traits for WKPagePolicyClient, which now has two
+        versions.
+        * Shared/APIClientTraits.h: Declared APIClientTraits<WKPagePolicyClient>.
+
+        * UIProcess/API/C/WKPage.h: Added an originatingFrame parameter to
+        WKPageDecidePolicyForNavigationActionCallback and deprecated the old version. Bumped the
+        policy client version to 1.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (setUpPagePolicyClient): Include the originating frame’s URL under a new key in the
+        action information dictionary.
+        * UIProcess/API/mac/WKBrowsingContextPolicyDelegate.h: Declared
+        WKActionOriginatingFrameURLKey.
+
+        * UIProcess/WebInspectorProxy.cpp:
+        (WebKit::decidePolicyForNavigationAction): Added originatingFrame parameter.
+        (WebKit::WebInspectorProxy::createInspectorPage): Updated to the new version of the policy
+        client interface.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::decidePolicyForNavigationAction): Added originatingFrameID parameter
+        and passing the originating frame to the policy client.
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebPageProxy.messages.in: Added originatingFrameID paremeter to
+        DecidePolicyForNavigationAction.
+
+        * UIProcess/WebPolicyClient.cpp:
+        (WebKit::WebPolicyClient::decidePolicyForNavigationAction): Added originatingFrame
+        parameter, which is passed to the client callback.
+        * UIProcess/WebPolicyClient.h:
+
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::dispatchDecidePolicyForNavigationAction): Determine the
+        originating frame for link activation and form submission actions and send its ID in the
+        DecidePolicyForNavigationAction message.
+
+2013-11-15  Brady Eidson  <beidson@apple.com>
+
+        Move execution of IDBTransactionBackendOperations to the IDBServerConnection
+        https://bugs.webkit.org/show_bug.cgi?id=124385
+
+        Reviewed by Tim Horton.
+
+        * WebProcess/Databases/IndexedDB/WebProcessIDBDatabaseBackend.h:
+
+2013-11-15  Peter Molnar  <pmolnar.u-szeged@partner.samsung.com>
+
+        Fixed incorrectly placed NETWORK_PROCESS guard in NetworkConnectionToWebProcess.cpp
+        https://bugs.webkit.org/show_bug.cgi?id=124398
+
+        Reviewed by Brady Eidson.
+
+        * NetworkProcess/NetworkConnectionToWebProcess.cpp:
+
+2013-11-15  Tibor Meszaros  <mtibor@inf.u-szeged.hu>
+
+        Cleanup the build from unused parameters in WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=124201
+
+        Reviewed by Darin Adler.
+
+        * Shared/Plugins/Netscape/PluginInformation.cpp:
+        (WebKit::getPluginModuleInformation):
+        * UIProcess/API/C/WKBatteryManager.cpp:
+        (WKBatteryManagerSetProvider):
+        (WKBatteryManagerProviderDidChangeBatteryStatus):
+        (WKBatteryManagerProviderUpdateBatteryStatus):
+        * UIProcess/API/C/WKBatteryStatus.cpp:
+        (WKBatteryStatusCreate):
+        * UIProcess/API/C/WKColorPickerResultListener.cpp:
+        (WKColorPickerResultListenerSetColor):
+        * UIProcess/API/C/WKContext.cpp:
+        (WKContextGetBatteryManager):
+        (WKContextGetDatabaseManager):
+        (WKContextGetNetworkInfoManager):
+        * UIProcess/API/C/WKDatabaseManager.cpp:
+        (WKDatabaseManagerSetClient):
+        (WKDatabaseManagerGetDatabasesByOrigin):
+        (WKDatabaseManagerGetDatabaseOrigins):
+        (WKDatabaseManagerDeleteDatabasesWithNameForOrigin):
+        (WKDatabaseManagerDeleteDatabasesForOrigin):
+        (WKDatabaseManagerDeleteAllDatabases):
+        (WKDatabaseManagerSetQuotaForOrigin):
+        * UIProcess/API/C/WKNetworkInfo.cpp:
+        (WKNetworkInfoCreate):
+        * UIProcess/API/C/WKNetworkInfoManager.cpp:
+        (WKNetworkInfoManagerSetProvider):
+        (WKNetworkInfoManagerProviderDidChangeNetworkInformation):
+        * UIProcess/API/C/WKOpenPanelParameters.cpp:
+        (WKOpenPanelParametersCopyCapture):
+        * UIProcess/API/C/WKVibration.cpp:
+        (WKVibrationSetProvider):
+        * UIProcess/API/efl/EwkView.cpp:
+        (EwkView::createNewPage):
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::setVisibilityState):
+        (WebKit::WebPageProxy::unavailablePluginButtonClicked):
+        * UIProcess/efl/ViewClientEfl.cpp:
+        (WebKit::ViewClientEfl::didChangeContentsPosition):
+        (WebKit::ViewClientEfl::didRenderFrame):
+        (WebKit::ViewClientEfl::didChangeViewportAttributes):
+        * WebProcess/InjectedBundle/InjectedBundle.cpp:
+        (WebKit::InjectedBundle::setDatabaseQuota):
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp:
+        (WebKit::WebChromeClient::createWindow):
+
+2013-11-14  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] WKBrowsingContextController's policy client implementation over-releases WKURLRequests and WKURLResponses
+        https://bugs.webkit.org/show_bug.cgi?id=124386
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (setUpPagePolicyClient): Changed to release the Cocoa objects we copy out of the WK objects
+        passed into the client callbacks, but not the WK objects themselves, which are not owned by
+        the callbacks.
+
+2013-11-14  Andy Estes  <aestes@apple.com>
+
+        Replace calls to deprecated CFPropertyList functions in WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=124384
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/cf/WebPageProxyCF.cpp:
+        (WebKit::WebPageProxy::sessionStateData): Replaced CFPropertyListWriteToStream() with CFPropertyListWrite().
+        (WebKit::WebPageProxy::restoreFromSessionStateData): Replaced CFPropertyListCreateFromXMLData() with CFPropertyListCreateWithData().
+
+2013-11-14  Gergo Balogh  <geryxyz@inf.u-szeged.hu>
+
+        generate-message-receiver.py can't handle nested #ifs
+        https://bugs.webkit.org/show_bug.cgi?id=121877
+
+        Reviewed by Darin Adler.
+
+        parser.py was modifieded to collect and combine conditions of nested #ifs.
+        messages_unittest.py extended to check these modifications.
+
+        * Scripts/webkit2/messages_unittest.py:
+        (LoadSomething):
+        (std):
+        (AddEvent):
+        (LoadSomethingElse):
+        * Scripts/webkit2/parser.py:
+        (combine_condition):
+        (bracket_if_needed):
+        (parse):
+
+2013-11-14  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] WKAction keys are not exported
+        https://bugs.webkit.org/show_bug.cgi?id=124378
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm: Made the keys constant pointers.
+        * UIProcess/API/mac/WKBrowsingContextPolicyDelegate.h: Exported the keys.
+
 2013-11-14  Ryuan Choi  <ryuan.choi@samsung.com>
 
         [WK2] Move Coordinated Graphics related code out of DrawingAreaProxy
