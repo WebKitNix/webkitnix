@@ -47,10 +47,8 @@ protected:
     Constraints m_optional;
 
 private:
-    bool isConstraintValid(const String&);
     void pushConstraint(const String& constraint, const String& value, webrtc::MediaConstraintsInterface::Constraints&);
     void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>&, webrtc::MediaConstraintsInterface::Constraints&);
-    const static String s_validConstraints[];
 };
 
 } // namespace WebCore

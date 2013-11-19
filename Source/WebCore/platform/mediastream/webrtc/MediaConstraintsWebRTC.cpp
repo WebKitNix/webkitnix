@@ -29,19 +29,12 @@
 
 #include "MediaConstraintsWebRTC.h"
 
+#include <algorithm>
+#include <array>
 #include <wtf/text/CString.h>
+#include <wtf/text/WTFString.h>
 
 namespace WebCore {
-
-const String MediaConstraintsWebRTC::s_validConstraints[] = {
-    "OfferToReceiveAudio",
-    "OfferToReceiveVideo",
-    "VoiceActivityDetection",
-    "IceTransports",
-    "IceRestart",
-    "RequestIdentity",
-    "" // Loop stop condition.
-};
 
 MediaConstraintsWebRTC::MediaConstraintsWebRTC(PassRefPtr<MediaConstraints> constraints)
 {
@@ -53,14 +46,18 @@ MediaConstraintsWebRTC::MediaConstraintsWebRTC(PassRefPtr<MediaConstraints> cons
     toMediaConstraintsWebRTC(optional, m_optional);
 }
 
-bool MediaConstraintsWebRTC::isConstraintValid(const String& constraint)
+static bool isConstraintValid(const String& constraint)
 {
-    for (unsigned i = 0; !s_validConstraints[i].isEmpty(); ++i) {
-        if (constraint == s_validConstraints[i])
-            return true;
-    }
-
-    return false;
+    // This is used on a binary search, so keep it alphabetically sorted
+    static std::array<ASCIILiteral, 6> validConstraints = {
+        ASCIILiteral("IceRestart"),
+        ASCIILiteral("IceTransports"),
+        ASCIILiteral("OfferToReceiveAudio"),
+        ASCIILiteral("OfferToReceiveVideo"),
+        ASCIILiteral("RequestIdentity"),
+        ASCIILiteral("VoiceActivityDetection")
+    };
+    return std::binary_search(validConstraints.begin(), validConstraints.end(), constraint, &WTF::codePointCompareLessThan);
 }
 
 void MediaConstraintsWebRTC::pushConstraint(const String& constraint, const String& value, webrtc::MediaConstraintsInterface::Constraints& webRTCConstraints)
