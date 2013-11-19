@@ -36,16 +36,6 @@
 
 namespace WebCore {
 
-MediaConstraintsWebRTC::MediaConstraintsWebRTC(PassRefPtr<MediaConstraints> constraints)
-{
-    Vector<MediaConstraint> mandatory;
-    constraints->getMandatoryConstraints(mandatory);
-    toMediaConstraintsWebRTC(mandatory, m_mandatory);
-    Vector<MediaConstraint> optional;
-    constraints->getOptionalConstraints(optional);
-    toMediaConstraintsWebRTC(optional, m_optional);
-}
-
 static bool isConstraintValid(const String& constraint)
 {
     // This is used on a binary search, so keep it alphabetically sorted
@@ -60,7 +50,7 @@ static bool isConstraintValid(const String& constraint)
     return std::binary_search(validConstraints.begin(), validConstraints.end(), constraint, &WTF::codePointCompareLessThan);
 }
 
-void MediaConstraintsWebRTC::pushConstraint(const String& constraint, const String& value, webrtc::MediaConstraintsInterface::Constraints& webRTCConstraints)
+static void pushConstraint(const String& constraint, const String& value, webrtc::MediaConstraintsInterface::Constraints& webRTCConstraints)
 {
     webrtc::MediaConstraintsInterface::Constraint newConstraint;
     newConstraint.key = constraint.utf8().data();
@@ -68,12 +58,22 @@ void MediaConstraintsWebRTC::pushConstraint(const String& constraint, const Stri
     webRTCConstraints.push_back(newConstraint);
 }
 
-void MediaConstraintsWebRTC::toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>& constraints, webrtc::MediaConstraintsInterface::Constraints& webRTCConstraints)
+static void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>& constraints, webrtc::MediaConstraintsInterface::Constraints& webRTCConstraints)
 {
     for (const MediaConstraint& constraint : constraints) {
         if (isConstraintValid(constraint.m_name))
             pushConstraint(constraint.m_name, constraint.m_value, webRTCConstraints);
     }
+}
+
+MediaConstraintsWebRTC::MediaConstraintsWebRTC(PassRefPtr<MediaConstraints> constraints)
+{
+    Vector<MediaConstraint> mandatory;
+    constraints->getMandatoryConstraints(mandatory);
+    toMediaConstraintsWebRTC(mandatory, m_mandatory);
+    Vector<MediaConstraint> optional;
+    constraints->getOptionalConstraints(optional);
+    toMediaConstraintsWebRTC(optional, m_optional);
 }
 
 const webrtc::MediaConstraintsInterface::Constraints& MediaConstraintsWebRTC::GetMandatory() const

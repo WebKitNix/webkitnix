@@ -45,10 +45,6 @@ public:
 protected:
     Constraints m_mandatory;
     Constraints m_optional;
-
-private:
-    void pushConstraint(const String& constraint, const String& value, webrtc::MediaConstraintsInterface::Constraints&);
-    void toMediaConstraintsWebRTC(const WTF::Vector<MediaConstraint>&, webrtc::MediaConstraintsInterface::Constraints&);
 };
 
 } // namespace WebCore
