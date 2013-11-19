@@ -3710,8 +3710,6 @@ editing/secure-input/password-input-focusing-to-different-frame.html
 editing/secure-input/password-input-focusing.html
 editing/secure-input/removed-password-input.html
 editing/secure-input/reset-state-on-navigation.html
-fast/regions/offsetLeft-offsetTop-in-multiple-regions.html
-fast/regions/offsetLeft-offsetTop-in-region-float-vert-rl.html
 fast/table/colspanMinWidth.html
 fast/table/spanOverlapRepaint.html
 http/tests/cache/willsendrequest-returns-null-for-memory-cache-load.html
