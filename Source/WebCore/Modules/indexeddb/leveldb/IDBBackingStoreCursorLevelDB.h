@@ -26,7 +26,6 @@
 #ifndef IDBBackingStoreCursorLevelDB_h
 #define IDBBackingStoreCursorLevelDB_h
 
-#include "IDBBackingStoreCursorInterface.h"
 #include "IDBKey.h"
 #include "IDBRecordIdentifier.h"
 #include "LevelDBIterator.h"
@@ -36,11 +35,16 @@
 
 namespace WebCore {
 
-class IDBBackingStoreInterface;
 class LevelDBTransaction;
+class SharedBuffer;
 
-class IDBBackingStoreCursorLevelDB : public IDBBackingStoreCursorInterface {
+class IDBBackingStoreCursorLevelDB : public RefCounted<IDBBackingStoreCursorLevelDB> {
 public:
+    enum IteratorState {
+        Ready = 0,
+        Seek
+    };
+
     struct CursorOptions {
         int64_t databaseId;
         int64_t objectStoreId;
@@ -53,21 +57,23 @@ public:
         bool unique;
     };
 
-    virtual PassRefPtr<IDBKey> key() const OVERRIDE { return m_currentKey; }
-    virtual bool continueFunction(const IDBKey* = 0, IteratorState = Seek) OVERRIDE;
-    virtual bool advance(unsigned long) OVERRIDE;
+    virtual PassRefPtr<IDBKey> key() const { return m_currentKey; }
+    virtual bool continueFunction(const IDBKey* = 0, IteratorState = Seek);
+    virtual bool advance(unsigned long);
     bool firstSeek();
 
-    virtual PassRefPtr<IDBBackingStoreCursorInterface> clone() OVERRIDE = 0;
-    virtual PassRefPtr<IDBKey> primaryKey() const OVERRIDE { return m_currentKey; }
-    virtual PassRefPtr<SharedBuffer> value() const OVERRIDE = 0;
-    virtual const IDBRecordIdentifier& recordIdentifier() const OVERRIDE { return *m_recordIdentifier; }
+    virtual PassRefPtr<IDBBackingStoreCursorLevelDB> clone() = 0;
+
+    virtual PassRefPtr<IDBKey> primaryKey() const { return m_currentKey; }
+    virtual PassRefPtr<SharedBuffer> value() const = 0;
+    virtual const IDBRecordIdentifier& recordIdentifier() const { return *m_recordIdentifier; }
     virtual ~IDBBackingStoreCursorLevelDB() { }
     virtual bool loadCurrentRow() = 0;
 
 protected:
-    IDBBackingStoreCursorLevelDB(LevelDBTransaction* transaction, const CursorOptions& cursorOptions)
-        : m_transaction(transaction)
+    IDBBackingStoreCursorLevelDB(int64_t cursorID, LevelDBTransaction* transaction, const CursorOptions& cursorOptions)
+        : m_cursorID(cursorID)
+        , m_transaction(transaction)
         , m_cursorOptions(cursorOptions)
         , m_recordIdentifier(IDBRecordIdentifier::create())
     {
@@ -79,6 +85,7 @@ protected:
     bool isPastBounds() const;
     bool haveEnteredRange() const;
 
+    int64_t m_cursorID;
     LevelDBTransaction* m_transaction;
     const CursorOptions m_cursorOptions;
     OwnPtr<LevelDBIterator> m_iterator;

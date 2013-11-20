@@ -34,6 +34,7 @@
 #include "GeolocationPermissionRequestManagerProxy.h"
 #include "LayerTreeContext.h"
 #include "NotificationPermissionRequestManagerProxy.h"
+#include "PageLoadState.h"
 #include "PlatformProcessIdentifier.h"
 #include "SandboxExtension.h"
 #include "ShareableBitmap.h"
@@ -622,7 +623,7 @@ public:
     PassRefPtr<API::Array> relatedPages() const;
 
     const String& urlAtProcessExit() const { return m_urlAtProcessExit; }
-    FrameLoadState::LoadState loadStateAtProcessExit() const { return m_loadStateAtProcessExit; }
+    FrameLoadState::State loadStateAtProcessExit() const { return m_loadStateAtProcessExit; }
 
 #if ENABLE(DRAG_SUPPORT)
     WebCore::DragSession dragSession() const { return m_currentDragSession; }
@@ -683,7 +684,7 @@ public:
     void drawPagesForPrinting(WebFrameProxy*, const PrintInfo&, PassRefPtr<PrintFinishedCallback>);
 #endif
 
-    const String& pendingAPIRequestURL() const { return m_pendingAPIRequestURL; }
+    PageLoadState& pageLoadState() { return m_pageLoadState; }
 
 #if PLATFORM(MAC)
     void handleAlternativeTextUIResult(const String& result);
@@ -983,9 +984,6 @@ private:
     void setPluginComplexTextInputState(uint64_t pluginComplexTextInputIdentifier, uint64_t complexTextInputState);
 #endif
 
-    void clearPendingAPIRequestURL() { m_pendingAPIRequestURL = String(); }
-    void setPendingAPIRequestURL(const String& pendingAPIRequestURL) { m_pendingAPIRequestURL = pendingAPIRequestURL; }
-
     bool maybeInitializeSandboxExtensionHandle(const WebCore::URL&, SandboxExtension::Handle&);
 
 #if PLATFORM(MAC)
@@ -1102,7 +1100,7 @@ private:
     String m_toolTip;
 
     String m_urlAtProcessExit;
-    FrameLoadState::LoadState m_loadStateAtProcessExit;
+    FrameLoadState::State m_loadStateAtProcessExit;
 
     EditorState m_editorState;
     bool m_temporarilyClosedComposition; // Editor state changed from hasComposition to !hasComposition, but that was only with shouldIgnoreCompositionSelectionChange yet.
@@ -1192,7 +1190,7 @@ private:
     WebCore::DragSession m_currentDragSession;
 #endif
 
-    String m_pendingAPIRequestURL;
+    PageLoadState m_pageLoadState;
 
     bool m_mainFrameHasHorizontalScrollbar;
     bool m_mainFrameHasVerticalScrollbar;

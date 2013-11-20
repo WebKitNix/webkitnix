@@ -1,3 +1,692 @@
+2013-11-20  Julien Brianceau  <jbriance@cisco.com>
+
+        [armv7][arm64] Speculative build fix after r159545.
+        https://bugs.webkit.org/show_bug.cgi?id=124646
+
+        Reviewed by Filip Pizlo.
+
+        * assembler/ARMv7Assembler.h:
+        * assembler/MacroAssemblerARM64.h:
+        (JSC::MacroAssemblerARM64::memoryFence):
+        * assembler/MacroAssemblerARMv7.h:
+        (JSC::MacroAssemblerARMv7::memoryFence):
+
+2013-11-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Enable HTMLTemplateElement on Mac port
+        https://bugs.webkit.org/show_bug.cgi?id=124637
+
+        Reviewed by Tim Horton.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-11-19  Filip Pizlo  <fpizlo@apple.com>
+
+        Unreviewed, remove completely bogus assertion.
+
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::addFunction):
+
+2013-11-19  Filip Pizlo  <fpizlo@apple.com>
+
+        Unreviewed, debug build fix.
+
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::addFunction):
+
+2013-11-19  Filip Pizlo  <fpizlo@apple.com>
+
+        Infer constant global variables
+        https://bugs.webkit.org/show_bug.cgi?id=124464
+
+        Reviewed by Sam Weinig.
+        
+        All global variables that are candidates for watchpoint-based constant inference (i.e.
+        not 'const' variables) will now have WatchpointSet's associated with them and those
+        are used to drive the inference by tracking three states of each variable:
+        
+        Uninitialized: the variable's value is Undefined and the WatchpointSet state is
+            ClearWatchpoint.
+        
+        Initialized: the variable's value was set to something (could even be explicitly set
+            to Undefined) and the WatchpointSet state is IsWatching.
+        
+        Invalidated: the variable's value was set to something else (could even be the same
+            thing as before but the point is that a put operation did execute again) and the
+            WatchpointSet is IsInvalidated.
+        
+        If the compiler tries to compile a GetGlobalVar and the WatchpointSet state is
+        IsWatching, then the current value of the variable can be folded in place of the get,
+        and a watchpoint on the variable can be registered.
+        
+        We handle race conditions between the mutator and compiler by mandating that:
+        
+        - The mutator changes the WatchpointSet state after executing the put.
+        
+        - There is no opportunity to install code or call functions between when the mutator
+          executes a put and changes the WatchpointSet state.
+        
+        - The compiler checks the WatchpointSet state prior to reading the value.
+        
+        The concrete algorithm used by the mutator is:
+        
+            1. Store the new value into the variable.
+            --- Execute a store-store fence.
+            2. Bump the state (ClearWatchpoing becomes IsWatching, IsWatching becomes
+               IsInvalidated); the IsWatching->IsInvalidated transition may end up firing
+               watchpoints.
+        
+        The concrete algorithm that the compiler uses is:
+        
+            1. Load the state. If it's *not* IsWatching, then give up on constant inference.
+            --- Execute a load-load fence.
+            2. Load the value of the variable and use that for folding, while also registering
+               a DesiredWatchpoint. The various parts of this step can be done in any order.
+        
+        The desired watchpoint registration will fail if the watchpoint set is already
+        invalidated. Now consider the following interesting interleavings:
+        
+        Uninitialized->M1->M2->C1->C2: Compiler sees IsWatching because of the mutator's store
+            operation, and the variable is folded. The fencing ensures that C2 sees the value
+            stored in M1 - i.e. we fold on the value that will actually be watchpointed. If
+            before the compilation is installed the mutator executes another store then we
+            will be sure that it will be a complete sequence of M1+M2 since compilations get
+            installed at safepoints and never "in the middle" of a put_to_scope. Hence that
+            compilation installation will be invalidated. If the M1+M2 sequence happens after
+            the code is installed, then the code will be invalidated by triggering a jettison.
+        
+        Uninitialized->M1->C1->C2->M2: Compiler sees Uninitialized and will not fold. This is
+            a sensible outcome since if the compiler read the variable's value, it would have
+            seen Undefined.
+        
+        Uninitialized->C1->C2->M1->M2: Compiler sees Uninitialized and will not fold.
+        Uninitialized->C1->M1->C2->M2: Compiler sees Uninitialized and will not fold.
+        Uninitialized->C1->M1->M2->C2: Compiler sees Uninitialized and will not fold.
+        Uninitialized->M1->C1->M2->C2: Compiler sees Uninitialized and will not fold.
+        
+        IsWatched->M1->M2->C1->C2: Compiler sees IsInvalidated and will not fold.
+        
+        IsWatched->M1->C1->C2->M2: Compiler will fold, but will also register a desired
+            watchpoint, and that watchpoint will get invalidated before the code is installed.
+        
+        IsWatched->M1->C1->M2->C2: As above, will fold but the code will get invalidated.
+        IsWatched->C1->C2->M1->M2: As above, will fold but the code will get invalidated.
+        IsWatched->C1->M1->C2->M2: As above, will fold but the code will get invalidated.
+        IsWatched->C1->M1->M2->C2: As above, will fold but the code will get invalidated.
+        
+        Note that this kind of reasoning shows why having the mutator first bump the state and
+        then store the new value would be wrong. If we had done that (M1 = bump state, M2 =
+        execute put) then we could have the following deadly interleavings:
+        
+        Uninitialized->M1->C1->C2->M2:
+        Uninitialized->M1->C1->M2->C2: Mutator bumps the state to IsWatched and then the
+            compiler folds Undefined, since M2 hasn't executed yet. Although C2 will set the
+            watchpoint, M1 didn't notify it - it mearly initiated watching. M2 then stores a
+            value other than Undefined, and you're toast.
+        
+        You could fix this sort of thing by making the Desired Watchpoints machinery more
+        sophisticated, for example having it track the value that was folded; if the global
+        variable's value was later found to be different then we could invalidate the
+        compilation. You could also fix it by having the compiler also check that the value of
+        the variable is not Undefined before folding. While those all sound great, I decided
+        to instead just use the right interleaving since that results in less code and feels
+        more intuitive.
+        
+        This is a 0.5% speed-up on SunSpider, mostly due to a 20% speed-up on math-cordic.
+        It's a 0.6% slow-down on LongSpider, mostly due to a 25% slow-down on 3d-cube. This is
+        because 3d-cube takes global variable assignment slow paths very often. Note that this
+        3d-cube slow-down doesn't manifest as much in SunSpider (only 6% there). This patch is
+        also a 1.5% speed-up on V8v7 and a 2.8% speed-up on Octane v1, mostly due to deltablue
+        (3.7%), richards (4%), and mandreel (26%). This is a 2% speed-up on Kraken, mostly due
+        to a 17.5% speed-up on imaging-gaussian-blur. Something that really illustrates the
+        slam-dunk-itude of this patch is the wide range of speed-ups on JSRegress. Casual JS
+        programming often leads to global-var-based idioms and those variables tend to be
+        assigned once, leading to excellent constant folding opportunities in an optimizing
+        JIT. This is very evident in the speed-ups on JSRegress.
+
+        * assembler/ARM64Assembler.h:
+        (JSC::ARM64Assembler::dmbSY):
+        * assembler/ARMv7Assembler.h:
+        (JSC::ARMv7Assembler::dmbSY):
+        * assembler/MacroAssemblerARM64.h:
+        (JSC::MacroAssemblerARM64::memfence):
+        * assembler/MacroAssemblerARMv7.h:
+        (JSC::MacroAssemblerARMv7::load8):
+        (JSC::MacroAssemblerARMv7::memfence):
+        * assembler/MacroAssemblerX86.h:
+        (JSC::MacroAssemblerX86::load8):
+        (JSC::MacroAssemblerX86::store8):
+        * assembler/MacroAssemblerX86Common.h:
+        (JSC::MacroAssemblerX86Common::getUnusedRegister):
+        (JSC::MacroAssemblerX86Common::store8):
+        (JSC::MacroAssemblerX86Common::memoryFence):
+        * assembler/MacroAssemblerX86_64.h:
+        (JSC::MacroAssemblerX86_64::load8):
+        (JSC::MacroAssemblerX86_64::store8):
+        * assembler/X86Assembler.h:
+        (JSC::X86Assembler::movb_rm):
+        (JSC::X86Assembler::movzbl_mr):
+        (JSC::X86Assembler::mfence):
+        (JSC::X86Assembler::X86InstructionFormatter::threeByteOp):
+        (JSC::X86Assembler::X86InstructionFormatter::oneByteOp8):
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+        * bytecode/Watchpoint.cpp:
+        (JSC::WatchpointSet::WatchpointSet):
+        (JSC::WatchpointSet::add):
+        (JSC::WatchpointSet::notifyWriteSlow):
+        * bytecode/Watchpoint.h:
+        (JSC::WatchpointSet::state):
+        (JSC::WatchpointSet::isStillValid):
+        (JSC::WatchpointSet::addressOfSetIsNotEmpty):
+        * dfg/DFGAbstractInterpreterInlines.h:
+        (JSC::DFG::::executeEffects):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::getJSConstantForValue):
+        (JSC::DFG::ByteCodeParser::getJSConstant):
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * dfg/DFGClobberize.h:
+        (JSC::DFG::clobberize):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        * dfg/DFGNode.h:
+        (JSC::DFG::Node::isStronglyProvedConstantIn):
+        (JSC::DFG::Node::hasIdentifierNumberForCheck):
+        (JSC::DFG::Node::hasRegisterPointer):
+        * dfg/DFGNodeFlags.h:
+        * dfg/DFGNodeType.h:
+        * dfg/DFGOperations.cpp:
+        * dfg/DFGOperations.h:
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSafeToExecute.h:
+        (JSC::DFG::safeToExecute):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileNotifyPutGlobalVar):
+        * dfg/DFGSpeculativeJIT.h:
+        (JSC::DFG::SpeculativeJIT::callOperation):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * ftl/FTLAbbreviatedTypes.h:
+        * ftl/FTLAbbreviations.h:
+        (JSC::FTL::buildFence):
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLIntrinsicRepository.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileNotifyPutGlobalVar):
+        * ftl/FTLOutput.h:
+        (JSC::FTL::Output::fence):
+        * jit/JIT.h:
+        * jit/JITOperations.h:
+        * jit/JITPropertyAccess.cpp:
+        (JSC::JIT::emitPutGlobalVar):
+        (JSC::JIT::emit_op_put_to_scope):
+        (JSC::JIT::emitSlow_op_put_to_scope):
+        * jit/JITPropertyAccess32_64.cpp:
+        (JSC::JIT::emitPutGlobalVar):
+        (JSC::JIT::emit_op_put_to_scope):
+        (JSC::JIT::emitSlow_op_put_to_scope):
+        * llint/LowLevelInterpreter32_64.asm:
+        * llint/LowLevelInterpreter64.asm:
+        * llvm/LLVMAPIFunctions.h:
+        * offlineasm/arm.rb:
+        * offlineasm/arm64.rb:
+        * offlineasm/cloop.rb:
+        * offlineasm/instructions.rb:
+        * offlineasm/x86.rb:
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::addGlobalVar):
+        (JSC::JSGlobalObject::addFunction):
+        * runtime/JSGlobalObject.h:
+        (JSC::JSGlobalObject::addVar):
+        (JSC::JSGlobalObject::addConst):
+        * runtime/JSScope.cpp:
+        (JSC::abstractAccess):
+        * runtime/JSSymbolTableObject.h:
+        (JSC::symbolTablePut):
+        (JSC::symbolTablePutWithAttributes):
+        * runtime/SymbolTable.cpp:
+        (JSC::SymbolTableEntry::couldBeWatched):
+        (JSC::SymbolTableEntry::prepareToWatch):
+        (JSC::SymbolTableEntry::notifyWriteSlow):
+        * runtime/SymbolTable.h:
+
+2013-11-19  Michael Saboff  <msaboff@apple.com>
+
+        REGRESSION(158384) ARMv7 point checks too restrictive for native calls to traditional ARM code
+        https://bugs.webkit.org/show_bug.cgi?id=124612
+
+        Reviewed by Geoffrey Garen.
+
+        Removed ASSERT checks (i.e. lower bit set) for ARM Thumb2 destination addresses related to
+        calls since we are calling native ARM traditional functions like sin() and cos().
+
+        * assembler/ARMv7Assembler.h:
+        (JSC::ARMv7Assembler::linkCall):
+        (JSC::ARMv7Assembler::relinkCall):
+        * assembler/MacroAssemblerCodeRef.h:
+
+2013-11-19  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159459.
+        http://trac.webkit.org/changeset/159459
+        https://bugs.webkit.org/show_bug.cgi?id=124616
+
+        tons of assertions on launch (Requested by thorton on
+        #webkit).
+
+        * API/JSContext.mm:
+        (-[JSContext setException:]):
+        (-[JSContext wrapperForObjCObject:]):
+        (-[JSContext wrapperForJSObject:]):
+        * API/JSContextRef.cpp:
+        (JSContextGroupRelease):
+        (JSGlobalContextRelease):
+        * API/JSManagedValue.mm:
+        (-[JSManagedValue initWithValue:]):
+        (-[JSManagedValue value]):
+        * API/JSObjectRef.cpp:
+        (JSObjectIsFunction):
+        (JSObjectCopyPropertyNames):
+        * API/JSValue.mm:
+        (containerValueToObject):
+        * API/JSWrapperMap.mm:
+        (tryUnwrapObjcObject):
+
+2013-11-19  Filip Pizlo  <fpizlo@apple.com>
+
+        Rename WatchpointSet::notifyWrite() should be renamed to WatchpointSet::fireAll()
+        https://bugs.webkit.org/show_bug.cgi?id=124609
+
+        Rubber stamped by Mark Lam.
+        
+        notifyWrite() is a thing that SymbolTable does. WatchpointSet uses that terminology
+        because it was original designed to match exactly SymbolTable's semantics. But now
+        it's a confusing term.
+
+        * bytecode/Watchpoint.cpp:
+        (JSC::WatchpointSet::fireAllSlow):
+        * bytecode/Watchpoint.h:
+        (JSC::WatchpointSet::fireAll):
+        (JSC::InlineWatchpointSet::fireAll):
+        * interpreter/Interpreter.cpp:
+        (JSC::Interpreter::execute):
+        * runtime/JSFunction.cpp:
+        (JSC::JSFunction::put):
+        (JSC::JSFunction::defineOwnProperty):
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::haveABadTime):
+        * runtime/Structure.h:
+        (JSC::Structure::notifyTransitionFromThisStructure):
+        * runtime/SymbolTable.cpp:
+        (JSC::SymbolTableEntry::notifyWriteSlow):
+
+2013-11-18  Michael Saboff  <msaboff@apple.com>
+
+        REGRESSION (r159395): Error compiling for ARMv7
+        https://bugs.webkit.org/show_bug.cgi?id=124552
+
+        Reviewed by Geoffrey Garen.
+
+        Fixed the implementation of branch8(RelationalCondition cond, AbsoluteAddress address, TrustedImm32 right)
+        to materialize and use address similar to other ARMv7 branchXX() functions.
+
+        * assembler/MacroAssemblerARMv7.h:
+        (JSC::MacroAssemblerARMv7::branch8):
+
+2013-11-19  Mark Lam  <mark.lam@apple.com>
+
+        Add tracking of endColumn for Executables.
+        https://bugs.webkit.org/show_bug.cgi?id=124245.
+
+        Reviewed by Geoffrey Garen.
+
+        1. Fixed computation of columns to take into account the startColumn from
+           <script> tags. Previously, we were only computing the column relative
+           to the char after the <script> tag. Now, the column number that JSC
+           computes is always the column number you'll see when viewing the source
+           in a text editor (assuming the first column position is 1, not 0).
+
+        2. Previously, unlinkedExecutables kept the a base-1 startColumn for
+           ProgramExecutables and EvalExecutables, but uses base-0 columns for
+           FunctionExecutables. This has been fixed so that they all use base-0
+           columns. When the executable gets linked, the column is adjusted into
+           a base-1 value.
+
+        3. In the UnlinkedFunctionExecutable, renamed m_functionStartOffset to
+           m_unlinkedFunctionNameStart because it actually points to the start
+           column in the name part of the function declaration.
+
+           Similarly, renamed m_functionStartColumn to m_unlinkedBodyStartColumn
+           because it points to the first character in the function body. This is
+           usually '{' except for functions created from "global code" which
+           excludes its braces. See FunctionExecutable::fromGlobalCode().
+
+               The exclusion of braces for the global code case is needed so that
+           computed start and end columns will more readily map to what a JS
+           developer would expect them to be. Otherwise, the first column of the
+           function source will not be 1 (includes prepended characters added in
+           constructFunctionSkippingEvalEnabledCheck()).
+
+           Also, similarly, a m_unlinkedBodyEndColumn has been added to track the
+           end column of the UnlinkedFunctionExecutable.
+
+        4. For unlinked executables, end column values are either:
+           a. Relative to the start of the last line if (last line != first line).
+           b. Relative to the start column position if (last line == first line).
+
+           The second case is needed so that we can add an appropriate adjustment
+           to the end column value (just like we do for the start column) when we
+           link the executable.
+
+        5. This is not new to this patch, but it worth noting that the lineCount
+           values used through this patch has the following meaning:
+           - a lineCount of 0 means the source for this code block is on 1 line.
+           - a lineCount of N means there are N + l lines of source.
+
+           This interpretation is janky, but was present before this patch. We can
+           clean that up later in another patch.
+
+
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        - In order to implement WebCore::Internals::parserMetaData(), we need to
+          move some seemingly unrelated header files from the Project section to
+          the Private section so that they can be #include'd by the forwarding
+          CodeBlock.h from WebCore.
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::sourceCodeForTools):
+        (JSC::CodeBlock::CodeBlock):
+        * bytecode/UnlinkedCodeBlock.cpp:
+        (JSC::generateFunctionCodeBlock):
+        (JSC::UnlinkedFunctionExecutable::UnlinkedFunctionExecutable):
+        - m_isFromGlobalCode is needed to support the exclusion of the open brace /
+          prepended code for functions created from "global code".
+        (JSC::UnlinkedFunctionExecutable::link):
+        (JSC::UnlinkedFunctionExecutable::fromGlobalCode):
+        (JSC::UnlinkedCodeBlock::UnlinkedCodeBlock):
+        * bytecode/UnlinkedCodeBlock.h:
+        (JSC::UnlinkedFunctionExecutable::create):
+        (JSC::UnlinkedFunctionExecutable::unlinkedFunctionNameStart):
+        (JSC::UnlinkedFunctionExecutable::unlinkedBodyStartColumn):
+        (JSC::UnlinkedFunctionExecutable::unlinkedBodyEndColumn):
+        (JSC::UnlinkedFunctionExecutable::recordParse):
+        (JSC::UnlinkedCodeBlock::recordParse):
+        (JSC::UnlinkedCodeBlock::endColumn):
+        * bytecompiler/NodesCodegen.cpp:
+        (JSC::FunctionBodyNode::emitBytecode):
+        * parser/ASTBuilder.h:
+        (JSC::ASTBuilder::createFunctionBody):
+        (JSC::ASTBuilder::setFunctionNameStart):
+        * parser/Lexer.cpp:
+        (JSC::::shiftLineTerminator):
+        - Removed an unused SourceCode Lexer<T>::sourceCode() function.
+        * parser/Lexer.h:
+        (JSC::Lexer::positionBeforeLastNewline):
+        (JSC::Lexer::prevTerminator):
+        - Added tracking of m_positionBeforeLastNewline in the Lexer to enable us
+          to exclude the close brace / appended code for functions created from "global
+          code".
+        * parser/Nodes.cpp:
+        (JSC::ProgramNode::ProgramNode):
+        (JSC::ProgramNode::create):
+        (JSC::EvalNode::EvalNode):
+        (JSC::EvalNode::create):
+        (JSC::FunctionBodyNode::FunctionBodyNode):
+        (JSC::FunctionBodyNode::create):
+        (JSC::FunctionBodyNode::setEndPosition):
+        - setEndPosition() is needed to fixed up the end position so that we can
+          exclude the close brace / appended code for functions created from "global
+          code".
+        * parser/Nodes.h:
+        (JSC::ProgramNode::startColumn):
+        (JSC::ProgramNode::endColumn):
+        (JSC::EvalNode::startColumn):
+        (JSC::EvalNode::endColumn):
+        (JSC::FunctionBodyNode::setFunctionNameStart):
+        (JSC::FunctionBodyNode::functionNameStart):
+        (JSC::FunctionBodyNode::endColumn):
+        * parser/Parser.cpp:
+        (JSC::::parseFunctionBody):
+        (JSC::::parseFunctionInfo):
+        * parser/Parser.h:
+        (JSC::Parser::positionBeforeLastNewline):
+        (JSC::::parse):
+        - Subtracted 1 from startColumn here to keep the node column values consistently
+          base-0. See note 2 above.
+        (JSC::parse):
+        * parser/SourceProviderCacheItem.h:
+        (JSC::SourceProviderCacheItem::SourceProviderCacheItem):
+        * parser/SyntaxChecker.h:
+        (JSC::SyntaxChecker::createFunctionBody):
+        (JSC::SyntaxChecker::setFunctionNameStart):
+        * runtime/CodeCache.cpp:
+        (JSC::CodeCache::getGlobalCodeBlock):
+        (JSC::CodeCache::getProgramCodeBlock):
+        (JSC::CodeCache::getEvalCodeBlock):
+        (JSC::CodeCache::getFunctionExecutableFromGlobalCode):
+        * runtime/CodeCache.h:
+        * runtime/Executable.cpp:
+        (JSC::ScriptExecutable::newCodeBlockFor):
+        (JSC::FunctionExecutable::FunctionExecutable):
+        (JSC::ProgramExecutable::initializeGlobalProperties):
+        (JSC::FunctionExecutable::fromGlobalCode):
+        * runtime/Executable.h:
+        (JSC::ExecutableBase::isEvalExecutable):
+        (JSC::ExecutableBase::isProgramExecutable):
+        (JSC::ScriptExecutable::ScriptExecutable):
+        (JSC::ScriptExecutable::endColumn):
+        (JSC::ScriptExecutable::recordParse):
+        (JSC::FunctionExecutable::create):
+        (JSC::FunctionExecutable::bodyIncludesBraces):
+        * runtime/FunctionConstructor.cpp:
+        (JSC::constructFunctionSkippingEvalEnabledCheck):
+        * runtime/FunctionPrototype.cpp:
+        (JSC::insertSemicolonIfNeeded):
+        (JSC::functionProtoFuncToString):
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::createProgramCodeBlock):
+        (JSC::JSGlobalObject::createEvalCodeBlock):
+
+2013-11-19  Dean Jackson  <dino@apple.com>
+
+        MarkedSpace::resumeAllocating needs to delay release
+        https://bugs.webkit.org/show_bug.cgi?id=124596
+
+        Reviewed by Geoffrey Garen.
+
+        * heap/MarkedSpace.cpp:
+        (JSC::MarkedSpace::resumeAllocating): Add DelayedReleaseScope protection.
+
+2013-11-19  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        IncrementalSweeper needs to use DelayedReleaseScope too
+        https://bugs.webkit.org/show_bug.cgi?id=124558
+
+        Reviewed by Filip Pizlo.
+
+        It does sweeping too, so it needs to use it. Also refactored an
+        ASSERT that should have caught this sooner.
+
+        * heap/DelayedReleaseScope.h:
+        (JSC::DelayedReleaseScope::isInEffectFor):
+        * heap/IncrementalSweeper.cpp:
+        (JSC::IncrementalSweeper::doSweep):
+        * heap/MarkedBlock.cpp:
+        (JSC::MarkedBlock::sweep):
+        * heap/MarkedSpace.cpp:
+        (JSC::MarkedSpace::sweep):
+
+2013-11-18  Michael Saboff  <msaboff@apple.com>
+
+        ARM64 CRASH: Debug builds crash in emitPointerValidation()
+        https://bugs.webkit.org/show_bug.cgi?id=124545
+
+        Reviewed by Filip Pizlo.
+
+        Changed emitPointerValidation() to use pushToSave() and popToRestore() as
+        all macro assemblers have an implementation of these functions.
+
+        * jit/ThunkGenerators.cpp:
+        (JSC::emitPointerValidation):
+
+2013-11-18  Michael Saboff  <msaboff@apple.com>
+
+        ARM64: Update getHostCallReturnValue() to use architected frame pointer register
+        https://bugs.webkit.org/show_bug.cgi?id=124520
+
+        Reviewed by Filip Pizlo.
+
+        Changed from using the prior JSC specific x25 callframe register to the ARM64
+        architected x29 (fp) register.  This change should have been done as part of
+        https://bugs.webkit.org/show_bug.cgi?id=123956.
+
+        * jit/JITOperations.cpp:
+
+2013-11-18  Filip Pizlo  <fpizlo@apple.com>
+
+        put_to_scope[5] should not point to the structure if it's a variable access, but it should point to the WatchpointSet
+        https://bugs.webkit.org/show_bug.cgi?id=124539
+
+        Reviewed by Mark Hahnenberg.
+        
+        This is in preparation for getting put_to_scope to directly invalidate the watchpoint set
+        on stores, which will allow us to run constant inference on all globals.
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+        (JSC::CodeBlock::finalizeUnconditionally):
+        * bytecode/Instruction.h:
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * runtime/JSScope.cpp:
+        (JSC::abstractAccess):
+        (JSC::JSScope::abstractResolve):
+        * runtime/JSScope.h:
+        (JSC::ResolveOp::ResolveOp):
+        * runtime/SymbolTable.h:
+        (JSC::SymbolTableEntry::watchpointSet):
+
+2013-11-18  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        APIEntryShims need some love
+        https://bugs.webkit.org/show_bug.cgi?id=124540
+
+        Reviewed by Filip Pizlo.
+
+        We were missing them in key places which some other hacking revealed. These could have manifested as
+        race conditions for VMs being used in multithreaded environments.
+
+        * API/JSContext.mm:
+        (-[JSContext setException:]):
+        (-[JSContext wrapperForObjCObject:]):
+        (-[JSContext wrapperForJSObject:]):
+        * API/JSContextRef.cpp:
+        (JSContextGroupRelease):
+        (JSGlobalContextRelease):
+        * API/JSManagedValue.mm:
+        (-[JSManagedValue initWithValue:]):
+        (-[JSManagedValue value]):
+        * API/JSObjectRef.cpp:
+        (JSObjectIsFunction):
+        (JSObjectCopyPropertyNames):
+        * API/JSValue.mm:
+        (containerValueToObject):
+        * API/JSWrapperMap.mm:
+        (tryUnwrapObjcObject):
+
+2013-11-18  Filip Pizlo  <fpizlo@apple.com>
+
+        Allow the FTL debug dumps to include the new size field
+        https://bugs.webkit.org/show_bug.cgi?id=124479
+
+        Reviewed by Mark Hahnenberg.
+
+        * ftl/FTLStackMaps.cpp:
+        (JSC::FTL::StackMaps::Location::parse):
+        (JSC::FTL::StackMaps::Location::dump):
+        * ftl/FTLStackMaps.h:
+
+2013-11-18  peavo@outlook.com  <peavo@outlook.com>
+
+        [Win] Link fails when DFG JIT is enabled.
+        https://bugs.webkit.org/show_bug.cgi?id=123614
+
+        Reviewed by Brent Fulgham.
+
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj: Added new files.
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters: Ditto.
+
+2013-11-18  Julien Brianceau  <jbriance@cisco.com>
+
+        [sh4] Add missing implementation in MacroAssembler to fix build (broken since r159395).
+        https://bugs.webkit.org/show_bug.cgi?id=124484
+
+        Reviewed by Michael Saboff.
+
+        * assembler/MacroAssemblerSH4.h:
+        (JSC::MacroAssemblerSH4::load8):
+        (JSC::MacroAssemblerSH4::branch8):
+
+2013-11-18  Michael Saboff  <msaboff@apple.com>
+
+        ARM64 CRASH: Improper offset in getHostCallReturnValue() to access callerFrame in CallFrame
+        https://bugs.webkit.org/show_bug.cgi?id=124481
+
+        Reviewed by Mark Lam.
+
+        Fixed the offset to access CallerFrame in the ARM64 version of getHostCallReturnValue() to be 0
+        to correspond with the change in CallFrame layout done in r158315.
+
+        * jit/JITOperations.cpp:
+
+2013-11-18  Michael Saboff  <msaboff@apple.com>
+
+        Crash in virtualForThunkGenerator generated code on ARM64
+        https://bugs.webkit.org/show_bug.cgi?id=124447
+
+        Reviewed by Geoffrey Garen.
+
+        The baseline JIT generates slow path call code with the caller in regT0.  The DFG
+        generates call code with the caller in nonArgGPR0.  The virtualForThunkGenerator
+        generates code with the caller in nonArgGPR0.  For X86 and X86_64, regT0 and nonArgGPR0
+        are the same CPU register, eax.  For other platforms this isn't the case.  The same
+        issue exists for JSVALUE32_64 ports as well, where there also is an issue with the callee
+        tag registers being regT1 and nonArgGPR1 in the various locations.
+
+        Changed nonArgGPR0, nonArgGPR1 and nonArgGPR2 for X86 and X86_64 to not match up with
+        regT0-2.  Changing these registers will cause a crash on all ports should we have a
+        similar problem in the future.  Changed the DFG call generating code to use regT0 and
+        regT1.  Now all slow path call code is generated using regT0 and for JSVALUE32_64 regT1.
+        Added r12 to X86_64 as a new temp register (regT9) and moved r13 down to regT10.
+        The new temp register decreases the likelihood of inadvertant register overlap.
+
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::emitCall):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::emitCall):
+        * jit/GPRInfo.h:
+        (JSC::GPRInfo::toRegister):
+        (JSC::GPRInfo::toIndex):
+        * jit/ThunkGenerators.cpp:
+        (JSC::virtualForThunkGenerator):
+
+2013-11-18  Balazs Kilvady  <kilvadyb@homejinni.com>
+
+        Add missing load8/branch8 with AbsoluteAddress parameter to MIPS port.
+
+        [MIPS] Build fails since r159395.
+        https://bugs.webkit.org/show_bug.cgi?id=124491
+
+        Reviewed by Michael Saboff.
+
+        * assembler/MacroAssemblerMIPS.h:
+        (JSC::MacroAssemblerMIPS::load8):
+        (JSC::MacroAssemblerMIPS::branch8):
+
 2013-11-18  Csaba Osztrogonác  <ossy@webkit.org>
 
         REGRESSION(r159351): It made zillion tests assert on !CF platforms

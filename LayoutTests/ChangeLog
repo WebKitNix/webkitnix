@@ -1,3 +1,289 @@
+2013-11-20  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        * platform/efl/TestExpectations: Add new test expectations for failing tests.
+
+2013-11-20  Andrzej Badowski  <a.badowski@samsung.com>
+
+        [EFL] <video> and <audio> should be accessible.
+        https://bugs.webkit.org/show_bug.cgi?id=124494
+
+        Reviewed by Gyuyoung Kim.
+
+        Added new accessibility baseline for accessibility/media-elemen.html.
+
+        * platform/efl-wk1/TestExpectations: test is no longer failing.
+        * platform/efl-wk2/TestExpectations: test is no longer failing.
+        * platform/efl/accessibility/media-element-expected.txt: Added.
+
+2013-11-20  Antoine Quint  <graouts@apple.com>
+
+        Cannot animate "points" attribute for <svg:polygon>
+        https://bugs.webkit.org/show_bug.cgi?id=21371
+
+        Reviewed by Antti Koivisto.
+
+        New tests covering the actual application of the animated value
+        for the "points" attribute of the SVG <polygon> and <polyline> elements.
+
+        * svg/animations/polygon-set-expected.svg: Added.
+        * svg/animations/polygon-set.svg: Added.
+        * svg/animations/polyline-set-expected.svg: Added.
+        * svg/animations/polyline-set.svg: Added.
+
+2013-11-20  Zan Dobersek  <zdobersek@igalia.com>
+
+        Configurability test of prototype's properties in fast/dom/webidl-operations-on-node-prototype.html is wrong
+        https://bugs.webkit.org/show_bug.cgi?id=124602
+
+        Reviewed by Darin Adler.
+
+        The test case landed in r159100 checks, among other tests, for configurability of properties on the Node's
+        interface prototype object. The test deletes the tested property from the prototype object and checks that
+        the property is undefined. This works for the Node's prototype object but is not technically correct since
+        there might be a property with the same identifier that's located upwards on the prototype chain.
+
+        Rather than testing that the property on the prototype object is undefined after it is deleted, a failure
+        should be reported if the value of the property remains the same even after it's deleted from the object.
+
+        * fast/dom/webidl-operations-on-node-prototype.html:
+
+2013-11-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Enable HTMLTemplateElement on Mac port
+        https://bugs.webkit.org/show_bug.cgi?id=124637
+
+        Reviewed by Tim Horton.
+
+        Unskip template element tests except fast/dom/HTMLTemplateElement/cycles-in-shadow.html
+        which depends on ENABLE(SHADOW_DOM).
+
+        * platform/mac/TestExpectations:
+
+2013-11-19  Filip Pizlo  <fpizlo@apple.com>
+
+        Infer constant global variables
+        https://bugs.webkit.org/show_bug.cgi?id=124464
+
+        Reviewed by Sam Weinig.
+
+        * js/regress/global-var-const-infer-expected.txt: Added.
+        * js/regress/global-var-const-infer-fire-from-opt-expected.txt: Added.
+        * js/regress/global-var-const-infer-fire-from-opt.html: Added.
+        * js/regress/global-var-const-infer.html: Added.
+        * js/regress/script-tests/global-var-const-infer-fire-from-opt.js: Added.
+        (foo):
+        (setA):
+        (setB):
+        (check):
+        * js/regress/script-tests/global-var-const-infer.js: Added.
+        (foo):
+        (check):
+
+2013-11-19  Sun-woo Nam  <sunny.nam@samsung.com>
+
+        [EFL] Layout tests need to be rebaselined.
+        https://bugs.webkit.org/show_bug.cgi?id=124622
+
+        Unreviewed, EFL rebaseline.
+
+        EFL tests are rebaselined after r106181, r128728 and r133754.
+
+        * platform/efl-wk2/TestExpectations:
+        * platform/efl/fast/replaced/applet-disabled-positioned-expected.txt:
+        * platform/efl/fast/replaced/applet-rendering-java-disabled-expected.txt:
+        * platform/efl/fast/text/shaping/shaping-script-order-expected.txt:
+        * platform/efl/fast/writing-mode/japanese-ruby-horizontal-bt-expected.txt:
+
+2013-11-19  Bear Travis  <betravis@adobe.com>
+
+        [CSS Shapes] Parse [<box> || <shape>] values
+        https://bugs.webkit.org/show_bug.cgi?id=124426
+
+        Reviewed by Dirk Schulze.
+
+        Test that <box> <shape> and <shape> <box> values are both supported and successfully parsed.
+        Currently, we order the parsed result as <shape> <box> when the value is output through
+        the CSSOM. Also test that other combinations with shapes and boxes are not parsed.
+
+        * fast/shapes/parsing/parsing-shape-inside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-inside.html:
+        * fast/shapes/parsing/parsing-shape-outside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-outside.html:
+        * fast/shapes/parsing/parsing-test-utils.js:
+
+2013-11-19  Mark Lam  <mark.lam@apple.com>
+
+        Add tracking of endColumn for Executables.
+        https://bugs.webkit.org/show_bug.cgi?id=124245.
+
+        Reviewed by Geoffrey Garen.
+
+        * fast/events/window-onerror2-expected.txt:
+        * inspector-protocol/debugger/setBreakpoint-actions-expected.txt:
+        * js/dom/script-start-end-locations-expected.txt: Added.
+        * js/dom/script-start-end-locations.html: Added.
+        * js/dom/script-tests/script-start-end-locations.js: Added.
+        * js/dom/stack-trace-expected.txt:
+        * js/dom/stack-trace.html:
+        - Changed tabs to spaces. The tabs were making it hard to visually confirm
+          the exected column values for 2 functions.
+
+2013-11-15  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Support fastSeek() in MediaSource.
+        https://bugs.webkit.org/show_bug.cgi?id=124422
+
+        Reviewed by Eric Carlson.
+
+        * media/media-source/media-source-fastseek-expected.txt: Added.
+        * media/media-source/media-source-fastseek.html: Added.
+        * media/media-source/mock-media-source.js:
+        (var):
+
+2013-11-19  Dean Jackson  <dino@apple.com>
+
+        fast/forms/form-associated-element-crash.html often times out on Mavericks WK1
+        https://bugs.webkit.org/show_bug.cgi?id=124593
+
+        Marked as occasionally timing out.
+
+        * platform/mac/TestExpectations:
+
+2013-11-19  Frédéric Wang  <fred.wang@free.fr>
+
+        Map the dir attribute to the CSS direction property.
+        https://bugs.webkit.org/show_bug.cgi?id=124572.
+
+        Reviewed by Darin Adler.
+
+        * mathml/presentation/direction-expected.html: add more tests.
+        * mathml/presentation/direction-overall-expected.html: Added.
+        * mathml/presentation/direction-overall.html: Added.
+        * mathml/presentation/direction-token-expected.html: Added.
+        * mathml/presentation/direction-token.html: Added.
+        * mathml/presentation/direction.html: add more tests.
+
+2013-11-19  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        * platform/efl/TestExpectations: Add new failure test expectations.
+
+2013-11-19  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed, EFL gardening. Adding a crash expectation.
+
+        * platform/efl/TestExpectations:
+
+2013-11-19  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed, EFL gardening. Adding a crash expectation for a test regarding
+        object-fit. 
+
+        * platform/efl/TestExpectations:
+
+2013-11-19  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed, EFL gardening. descent-clip-in-scaled-page.html is being passed
+        after enabling subpixel layout on EFL port.
+
+        * platform/efl/TestExpectations:
+
+2013-11-19  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening. Adding failure expectations for the remaining layout test failures.
+
+        * platform/gtk/TestExpectations:
+
+2013-11-18  Samuel White  <samuel_white@apple.com>
+
+        AX: aria-labelledby should be used in preference to aria-labeledby
+        https://bugs.webkit.org/show_bug.cgi?id=62351
+
+        Reviewed by Chris Fleizach.
+
+        Added test to make sure aria-labelledby overrides aria-labeledby correctly.
+
+        * accessibility/aria-labelledby-overrides-aria-labeledby-expected.txt: Added.
+        * accessibility/aria-labelledby-overrides-aria-labeledby.html: Added.
+
+2013-11-18  Zalan Bujtas  <zalan@apple.com>
+
+        use after free in WebCore::DocumentOrderedMap::remove / WebCore::TreeScope::removeElementById
+        https://bugs.webkit.org/show_bug.cgi?id=121324
+
+        Reviewed by Ryosuke Niwa.
+
+        Update the document ordered map for an image element before dispatching load or error events
+        when it's inserted into a document.
+
+        * fast/dom/modify-node-and-while-in-the-callback-too-crash-expected.txt: Added.
+        * fast/dom/modify-node-and-while-in-the-callback-too-crash.html: Added.
+
+2013-11-18  Sun-woo Nam  <sunny.nam@samsung.com>
+
+        [EFL] Layout tests need to be rebaselined.
+        https://bugs.webkit.org/show_bug.cgi?id=124477
+
+        Unreviewed, EFL rebaseline.
+
+        EFL tests are rebaselined after r126683 and r140149.
+
+        * platform/efl/fast/block/float/016-expected.txt:
+        * platform/efl/fast/forms/textAreaLineHeight-expected.txt:
+
+2013-11-18  Samuel White  <samuel_white@apple.com>
+
+        AX: Add ability to fetch only visible table rows.
+        https://bugs.webkit.org/show_bug.cgi?id=124430
+
+        Reviewed by Chris Fleizach.
+
+        Adding test to make sure AXVisibleRows behaves correctly.
+
+        * platform/mac/accessibility/table-visible-rows-expected.txt: Added.
+        * platform/mac/accessibility/table-visible-rows.html: Added.
+
+2013-11-18  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Simplify and reformat the output of performance tests inside test runners
+        https://bugs.webkit.org/show_bug.cgi?id=124496
+
+        Reviewed by Antti Koivisto.
+
+        Rebaseline the expected result now that the output has been simplified.
+
+        * fast/harness/perftests/runs-per-second-log-expected.txt:
+
+2013-11-18  David Hyatt  <hyatt@apple.com>
+
+        Add a quirk to not respect center text-align when positioning
+
+        <rdar://problem/15427571>
+        https://bugs.webkit.org/show_bug.cgi?id=124522
+
+        Reviewed by Simon Fraser.
+
+        Added fast/block/legacy-text-align-position-quirk.html
+
+        * fast/block/legacy-text-align-position-quirk-expected.html: Added.
+        * fast/block/legacy-text-align-position-quirk.html: Added.
+
+2013-11-18  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        * platform/efl/TestExpectations: Add failure expectations for CSS filters layout tests.
+
+2013-11-18  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+
+        * platform/gtk/TestExpectations: Adding failure expectations for the current set
+        of untriaged failures on the 64-bit WK2 builder.
+
 2013-11-18  Zan Dobersek  <zdobersek@igalia.com>
 
         Unreviewed GTK gardening.

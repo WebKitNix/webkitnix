@@ -1,3 +1,272 @@
+2013-11-20  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        Moved stray urls from svn.py and statusserver.py into common.config.urls
+        https://bugs.webkit.org/show_bug.cgi?id=124650
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitpy/common/checkout/scm/svn.py:
+        (SVNRepository):
+        * Scripts/webkitpy/common/config/urls.py:
+        * Scripts/webkitpy/common/net/statusserver.py:
+        (StatusServer.__init__):
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (_generate_results_dict):
+
+2013-11-20  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159496.
+        http://trac.webkit.org/changeset/159496
+        https://bugs.webkit.org/show_bug.cgi?id=124641
+
+        It caused warning and build break with cmake lower than 2.8.8
+        (Requested by ryuan on #webkit).
+
+        * MiniBrowser/efl/CMakeLists.txt:
+
+2013-11-20  Gabor Rapcsanyi  <rgabor@webkit.org>
+
+        [EFL] libseccomp-2.0.0 doesn't support ARM architecture
+        https://bugs.webkit.org/show_bug.cgi?id=124412
+
+        Reviewed by Gyuyoung Kim.
+
+        Update libseccomp to a newer 2.1.0 version.
+
+        * efl/jhbuild.modules:
+
+2013-11-19  Mark Rowe  <mrowe@apple.com>
+
+        <rdar://problem/15487072> Modernize WebKit.app's OS X version checking logic.
+
+        Gestalt is deprecated on recent OS X versions so we should switch off it.
+
+        Reviewed by Sam Weinig.
+
+        * WebKitLauncher/main.m:
+        (currentMacOSXVersion): Retrieve the version string from SystemVersion.plist.
+        (currentMacOSXMajorVersion): Split the version string at the periods, retrieve the first
+        two components, then join them back up.
+        (main): Switch to using currentMacOSXMajorVersion to make it clearer which part of
+        the version we care about.
+
+2013-11-19  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159538.
+        http://trac.webkit.org/changeset/159538
+        https://bugs.webkit.org/show_bug.cgi?id=124627
+
+        it broke run-jsc-stress-tests (Requested by mhahnenberg on
+        #webkit).
+
+        * Scripts/jsc-stress-test-helpers/check-mozilla-failure: Added.
+        * Scripts/run-javascriptcore-tests:
+        * Scripts/run-jsc-stress-tests:
+
+2013-11-19  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        run-jsc-stress-tests should be able to package its tests and move them places
+        https://bugs.webkit.org/show_bug.cgi?id=124549
+
+        Reviewed by Geoff Garen and Filip Pizlo.
+
+        * Scripts/jsc-stress-test-helpers/check-mozilla-failure: Removed. This script was just a ruby reimplementation 
+        of grep -i -q 
+        * Scripts/run-javascriptcore-tests: Pass through the --make-bundle flag.
+        * Scripts/run-jsc-stress-tests: Added the new concept of a "bundle", which is a collection of all tests and any
+        other files that those tests require to run in any environment along with a fixed root directory into which these
+        files and their expected directory structure are cloned. The default Bundle class is basically 
+        a no-op so that it functions like run-jsc-stress-tests prior to this patch. MovableBundle is a Bundle that knows 
+        how to translate local paths to bundle paths and does all the work of moving each test file into the right place 
+        inside the .tests directory. After all the test files have been created in jsc-stress-results MovableBundle 
+        creates a tarball of the entire directory for easy relocation. The --make-bundle flag causes run-jsc-stress-tests 
+        to use MovableBundle instead of just Bundle. 
+
+2013-11-19  Dan Bernstein  <mitz@apple.com>
+
+        <rdar://problem/15139479> Reenable the JSC Objective-C API tests on Mountain Lion once the bots are running Xcode 5
+
+        Rubber-stamped by Mark Rowe.
+
+        Reverted r156840.
+
+        * TestWebKitAPI/Tests/mac/WebViewDidCreateJavaScriptContext.mm:
+
+2013-11-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Yet another build fix. Just allow any character.
+        There are just too many special characters to be listed here.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTest._lines_to_ignore_in_parser_result):
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestPerfTest.test_parse_output_with_subtests)
+
+2013-11-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Another build fix. Allow ':' in subtest names.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTest._lines_to_ignore_in_parser_result):
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestPerfTest.test_parse_output_with_subtests)
+
+2013-11-19  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Use Config mode of find_package for EFL 1.8
+        https://bugs.webkit.org/show_bug.cgi?id=124555
+
+        Reviewed by Gyuyoung Kim.
+
+        * MiniBrowser/efl/CMakeLists.txt: Introduced a config mode to find elementary.
+
+2013-11-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Build fix. Subtest names need to be more permissive.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTest._lines_to_ignore_in_parser_result):
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestPerfTest.test_parse_output_with_subtests)
+
+2013-11-18  Mark Rowe  <mrowe@apple.com>
+
+        Use hw.activecpu for determining how many processes to spawn.
+
+        It's documented as the preferred way to determine the number of threads
+        or processes to create in a SMP aware application.
+
+        Rubber-stamped by Tim Horton.
+
+        * Scripts/copy-webkitlibraries-to-product-directory:
+        * Scripts/run-jsc-stress-tests:
+        * WebKitTestRunner/WebKitTestRunner.xcodeproj/project.pbxproj:
+
+2013-11-18  Tim Horton  <timothy_horton@apple.com>
+
+        build.webkit.org/dashboard builder headers should link to the builder page
+        https://bugs.webkit.org/show_bug.cgi?id=124553
+
+        Reviewed by Timothy Hatcher.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotQueue.js:
+        (BuildbotQueue.prototype.get overviewURL):
+        Add overviewURL(), which returns the URL to the builder overview page, with the last 50 builds shown.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotBuilderQueueView.js:
+        (BuildbotBuilderQueueView.prototype.update.appendBuildArchitecture):
+        (BuildbotBuilderQueueView.prototype.update):
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotTesterQueueView.js:
+        (BuildbotTesterQueueView.prototype.update.appendBuilderQueueStatus):
+        (BuildbotTesterQueueView.prototype.update.appendBuild):
+        (BuildbotTesterQueueView.prototype.update):
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/BuildbotQueueView.css:
+        (.queue-view .queueLabel):
+        (.queue-view .queueLabel:not(:first-child)):
+        Make the header a link instead of a label, and wire it up to overviewURL.
+
+2013-11-18  Samuel White  <samuel_white@apple.com>
+
+        AX: Add ability to fetch only visible table rows.
+        https://bugs.webkit.org/show_bug.cgi?id=124430
+
+        Reviewed by Chris Fleizach.
+
+        Adding method to fetch array of AccessibilityUIElements to help with test brevity and test breakage. Specifically, we
+        have a good deal of churn any time we add or update an element attribute. This happens because the number of tests
+        that rely on a simple element description text dump to verify a single attribute is non trivial. So any time you
+        change add an attribute, you have to update all the tests that are now implicitly verifying this new attribute. But
+        as the test guidelines state, our tests should be more focused and specific about what they test.
+
+        * DumpRenderTree/AccessibilityUIElement.cpp:
+        (uiElementArrayAttributeValueCallback):
+        (AccessibilityUIElement::uiElementArrayAttributeValue):
+        (AccessibilityUIElement::getJSClass):
+        * DumpRenderTree/AccessibilityUIElement.h:
+        * DumpRenderTree/mac/AccessibilityUIElementMac.mm:
+        (AccessibilityUIElement::uiElementArrayAttributeValue):
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.cpp:
+        (WTR::AccessibilityUIElement::uiElementArrayAttributeValue):
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.h:
+        * WebKitTestRunner/InjectedBundle/Bindings/AccessibilityUIElement.idl:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::uiElementArrayAttributeValue):
+        * WebKitTestRunner/InjectedBundle/mac/AccessibilityUIElementMac.mm:
+        (WTR::AccessibilityUIElement::getUIElementsWithAttribute):
+        (WTR::AccessibilityUIElement::uiElementArrayAttributeValue):
+
+2013-11-18  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Simplify and reformat the output of performance tests inside test runners
+        https://bugs.webkit.org/show_bug.cgi?id=124496
+
+        Reviewed by Antti Koivisto.
+
+        As a preparation to support subtests for Dromaeo and DoYouEvenBench, simplify the output
+        performance tests generate. Instead of spitting out noise in PerfTestRunner (runner.js)
+        and ignoring it in PerfTest._filter_output (perftest.py), simply avoid generating it in
+        the first place.
+
+        Also modernize the output to adopt "metric" concept better and make it forward compatible
+        with subtests.
+
+        With this patch, performance tests written using runner.js only produces empty lines or
+        lines of the following format inside test runners (DumpRenderTree and WebKitTestRunner):
+        <subtest name> -> [<value 1>, <value 2>, ...]
+        :<metric name> -> [<value 1>, <value 2>, ...]
+
+        This greatly simplifies the parsing logic inside PerfTest._run_with_driver.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTest): Removed a bunch of regular expressions that are no longer used.
+        (PerfTest._run_with_driver): Just parse the values and description and treat everything
+        else as errors.
+
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestPerfTest.test_parse_output): Removed the junk.
+        (TestPerfTest._assert_failed_on_line): Extracted from test_parse_output_with_failing_line,
+        which was removed in favor of the tests below.
+        (TestPerfTest.test_parse_output_with_running_five_times): Added.
+        (TestPerfTest.test_parse_output_with_detailed_info): Added.
+        (TestPerfTest.test_parse_output_with_statistics): Added.
+        (TestPerfTest.test_parse_output_with_description): Removed the junk.
+        (TestPerfTest.test_parse_output_with_subtests): Ditto.
+        (TestSingleProcessPerfTest.test_use_only_one_process): Ditto.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner_integrationtest.py:
+        (EventTargetWrapperTestData): Ditto.
+        (SomeParserTestData): Ditto.
+        (MemoryTestData): Ditto.
+
+2013-11-18  Tim Horton  <timothy_horton@apple.com>
+
+        Occasionally, hundreds of tests fail with small text diffs on Mavericks
+        https://bugs.webkit.org/show_bug.cgi?id=124312
+
+        Reviewed by Simon Fraser.
+
+        * Scripts/webkitpy/layout_tests/controllers/manager.py:
+        (Manager._set_up_run):
+        * Scripts/webkitpy/port/base.py:
+        (Port.to.reset_preferences):
+        * Scripts/webkitpy/port/mac.py:
+        (MacPort.reset_preferences):
+        Delete DumpRenderTree and WebKitTestRunner defaults domains before running tests,
+        returning some of the functionality of 158652 after 159364 removed it.
+
+2013-11-18  Tim Horton  <timothy_horton@apple.com>
+
+        Checkmarks are shifted down on iPhone at build.webkit.org/dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=122909
+
+        Reviewed by Alexey Proskuryakov.
+
+        Put the checkmark SVG in the CSS file as a data URI so it loads immediately.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/StatusLineView.css:
+        (.status-line .bubble):
+        (.status-line.good .bubble.pictogram):
+
 2013-11-18  Ryosuke Niwa  <rniwa@webkit.org>
 
         Remove _lines_to_ignore_in_stderr, which was only used in Chromium port

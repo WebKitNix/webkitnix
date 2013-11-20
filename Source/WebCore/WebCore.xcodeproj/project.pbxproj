@@ -1650,9 +1650,9 @@
 		510194401836D20800925523 /* IDBIndexWriterLevelDB.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5101943E1836D20800925523 /* IDBIndexWriterLevelDB.cpp */; };
 		510194411836D20800925523 /* IDBIndexWriterLevelDB.h in Headers */ = {isa = PBXBuildFile; fileRef = 5101943F1836D20800925523 /* IDBIndexWriterLevelDB.h */; };
 		510194441836F7E400925523 /* IDBCursorBackendOperations.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 510194421836F7E400925523 /* IDBCursorBackendOperations.cpp */; };
-		510194451836F7E500925523 /* IDBCursorBackendOperations.h in Headers */ = {isa = PBXBuildFile; fileRef = 510194431836F7E400925523 /* IDBCursorBackendOperations.h */; };
+		510194451836F7E500925523 /* IDBCursorBackendOperations.h in Headers */ = {isa = PBXBuildFile; fileRef = 510194431836F7E400925523 /* IDBCursorBackendOperations.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		51059DDD1820B17600DFF9B1 /* IDBTransactionBackendOperations.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51059DD91820B17600DFF9B1 /* IDBTransactionBackendOperations.cpp */; };
-		51059DDE1820B17600DFF9B1 /* IDBTransactionBackendOperations.h in Headers */ = {isa = PBXBuildFile; fileRef = 51059DDA1820B17600DFF9B1 /* IDBTransactionBackendOperations.h */; };
+		51059DDE1820B17600DFF9B1 /* IDBTransactionBackendOperations.h in Headers */ = {isa = PBXBuildFile; fileRef = 51059DDA1820B17600DFF9B1 /* IDBTransactionBackendOperations.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		510A326F18318431003C5326 /* IDBServerConnection.h in Headers */ = {isa = PBXBuildFile; fileRef = 510A326E18318431003C5326 /* IDBServerConnection.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		510B7DB7182D9F5D009BF957 /* IDBTransactionBackend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 510B7DB5182D9F5D009BF957 /* IDBTransactionBackend.cpp */; };
 		510B7DB8182D9F5D009BF957 /* IDBTransactionBackend.h in Headers */ = {isa = PBXBuildFile; fileRef = 510B7DB6182D9F5D009BF957 /* IDBTransactionBackend.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -1748,8 +1748,6 @@
 		51660AC11828C84600074CAD /* IDBBackingStoreCursorLevelDB.h in Headers */ = {isa = PBXBuildFile; fileRef = 51660ABD1828C84600074CAD /* IDBBackingStoreCursorLevelDB.h */; };
 		51660AC21828C84600074CAD /* IDBBackingStoreTransactionLevelDB.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51660ABE1828C84600074CAD /* IDBBackingStoreTransactionLevelDB.cpp */; };
 		51660AC31828C84600074CAD /* IDBBackingStoreTransactionLevelDB.h in Headers */ = {isa = PBXBuildFile; fileRef = 51660ABF1828C84600074CAD /* IDBBackingStoreTransactionLevelDB.h */; };
-		51660AC61828C86000074CAD /* IDBBackingStoreCursorInterface.h in Headers */ = {isa = PBXBuildFile; fileRef = 51660AC41828C86000074CAD /* IDBBackingStoreCursorInterface.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		51660AC71828C86000074CAD /* IDBBackingStoreTransactionInterface.h in Headers */ = {isa = PBXBuildFile; fileRef = 51660AC51828C86000074CAD /* IDBBackingStoreTransactionInterface.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		516730A3182D8FBB003FAF5C /* IDBCursorBackend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 516730A1182D8FBB003FAF5C /* IDBCursorBackend.cpp */; };
 		516730A4182D8FBB003FAF5C /* IDBCursorBackend.h in Headers */ = {isa = PBXBuildFile; fileRef = 516730A2182D8FBB003FAF5C /* IDBCursorBackend.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		516953971329A3C800B92D04 /* IconDatabaseBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 516953951329A3C800B92D04 /* IconDatabaseBase.cpp */; };
@@ -1847,7 +1845,6 @@
 		51E1ECC10C91C90400DC255B /* IconRecord.h in Headers */ = {isa = PBXBuildFile; fileRef = 51E1ECBB0C91C90400DC255B /* IconRecord.h */; };
 		51E1ECC20C91C90400DC255B /* PageURLRecord.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51E1ECBC0C91C90400DC255B /* PageURLRecord.cpp */; };
 		51E1ECC30C91C90400DC255B /* PageURLRecord.h in Headers */ = {isa = PBXBuildFile; fileRef = 51E1ECBD0C91C90400DC255B /* PageURLRecord.h */; };
-		51E337F418125AE30007A246 /* IDBBackingStoreInterface.h in Headers */ = {isa = PBXBuildFile; fileRef = 51E337F318125AE30007A246 /* IDBBackingStoreInterface.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		51E3F9C70DA059DC00250911 /* Storage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51E3F9C50DA059DC00250911 /* Storage.cpp */; };
 		51E3F9D60DA05E1D00250911 /* JSStorage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51E3F9D40DA05E1D00250911 /* JSStorage.cpp */; };
 		51E4143416A6596300C633C7 /* ResourceHandleTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 51E4143216A6595100C633C7 /* ResourceHandleTypes.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -5394,6 +5391,8 @@
 		CDC69DDB16371FD4007C38DF /* WebCoreFullScreenPlaceholderView.mm in Sources */ = {isa = PBXBuildFile; fileRef = CDC69DD916371FD3007C38DF /* WebCoreFullScreenPlaceholderView.mm */; };
 		CDC8B5AD1804AE5D0016E685 /* SourceBufferPrivateClient.h in Headers */ = {isa = PBXBuildFile; fileRef = CDC8B5AC1804AE5D0016E685 /* SourceBufferPrivateClient.h */; };
 		CDD525D7145B6DD0008D204D /* JSHTMLMediaElementCustom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDF65CCC145B6AFE00C4C7AA /* JSHTMLMediaElementCustom.cpp */; };
+		CDD7089618359F6F002B3DC6 /* SampleMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDD7089418359F6E002B3DC6 /* SampleMap.cpp */; };
+		CDD7089718359F6F002B3DC6 /* SampleMap.h in Headers */ = {isa = PBXBuildFile; fileRef = CDD7089518359F6F002B3DC6 /* SampleMap.h */; };
 		CDE3A85417F5FCE600C5BE20 /* AudioTrackPrivateAVF.h in Headers */ = {isa = PBXBuildFile; fileRef = CDE3A85217F5FCE600C5BE20 /* AudioTrackPrivateAVF.h */; };
 		CDE3A85717F6020400C5BE20 /* AudioTrackPrivateAVFObjC.mm in Sources */ = {isa = PBXBuildFile; fileRef = CDE3A85517F6020400C5BE20 /* AudioTrackPrivateAVFObjC.mm */; };
 		CDE3A85817F6020400C5BE20 /* AudioTrackPrivateAVFObjC.h in Headers */ = {isa = PBXBuildFile; fileRef = CDE3A85617F6020400C5BE20 /* AudioTrackPrivateAVFObjC.h */; };
@@ -8451,8 +8450,6 @@
 		51660ABD1828C84600074CAD /* IDBBackingStoreCursorLevelDB.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDBBackingStoreCursorLevelDB.h; sourceTree = "<group>"; };
 		51660ABE1828C84600074CAD /* IDBBackingStoreTransactionLevelDB.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IDBBackingStoreTransactionLevelDB.cpp; sourceTree = "<group>"; };
 		51660ABF1828C84600074CAD /* IDBBackingStoreTransactionLevelDB.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDBBackingStoreTransactionLevelDB.h; sourceTree = "<group>"; };
-		51660AC41828C86000074CAD /* IDBBackingStoreCursorInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDBBackingStoreCursorInterface.h; sourceTree = "<group>"; };
-		51660AC51828C86000074CAD /* IDBBackingStoreTransactionInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDBBackingStoreTransactionInterface.h; sourceTree = "<group>"; };
 		516730A1182D8FBB003FAF5C /* IDBCursorBackend.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IDBCursorBackend.cpp; sourceTree = "<group>"; };
 		516730A2182D8FBB003FAF5C /* IDBCursorBackend.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDBCursorBackend.h; sourceTree = "<group>"; };
 		516953951329A3C800B92D04 /* IconDatabaseBase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IconDatabaseBase.cpp; sourceTree = "<group>"; };
@@ -8569,7 +8566,6 @@
 		51E1ECBB0C91C90400DC255B /* IconRecord.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IconRecord.h; sourceTree = "<group>"; };
 		51E1ECBC0C91C90400DC255B /* PageURLRecord.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PageURLRecord.cpp; sourceTree = "<group>"; };
 		51E1ECBD0C91C90400DC255B /* PageURLRecord.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PageURLRecord.h; sourceTree = "<group>"; };
-		51E337F318125AE30007A246 /* IDBBackingStoreInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDBBackingStoreInterface.h; sourceTree = "<group>"; };
 		51E3F9C40DA059DC00250911 /* Storage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Storage.h; sourceTree = "<group>"; };
 		51E3F9C50DA059DC00250911 /* Storage.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Storage.cpp; sourceTree = "<group>"; };
 		51E3F9D10DA05D7100250911 /* Storage.idl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Storage.idl; sourceTree = "<group>"; };
@@ -12473,6 +12469,8 @@
 		CDC8B5AC1804AE5D0016E685 /* SourceBufferPrivateClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SourceBufferPrivateClient.h; sourceTree = "<group>"; };
 		CDCE5CD014633BC900D47CCA /* EventTargetFactory.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = EventTargetFactory.in; sourceTree = "<group>"; };
 		CDD1E525167BA56400CE820B /* TextTrackRepresentation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TextTrackRepresentation.h; sourceTree = "<group>"; };
+		CDD7089418359F6E002B3DC6 /* SampleMap.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SampleMap.cpp; sourceTree = "<group>"; };
+		CDD7089518359F6F002B3DC6 /* SampleMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SampleMap.h; sourceTree = "<group>"; };
 		CDE3A85217F5FCE600C5BE20 /* AudioTrackPrivateAVF.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AudioTrackPrivateAVF.h; sourceTree = "<group>"; };
 		CDE3A85517F6020400C5BE20 /* AudioTrackPrivateAVFObjC.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = AudioTrackPrivateAVFObjC.mm; path = objc/AudioTrackPrivateAVFObjC.mm; sourceTree = "<group>"; };
 		CDE3A85617F6020400C5BE20 /* AudioTrackPrivateAVFObjC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AudioTrackPrivateAVFObjC.h; path = objc/AudioTrackPrivateAVFObjC.h; sourceTree = "<group>"; };
@@ -13488,6 +13486,7 @@
 		FFD5B977135CC97800D5E92A /* PageVisibilityState.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PageVisibilityState.cpp; sourceTree = "<group>"; };
 		FFD5B978135CC97800D5E92A /* PageVisibilityState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PageVisibilityState.h; sourceTree = "<group>"; };
 		FFEFAB2918380DA000514534 /* LineLayoutState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LineLayoutState.h; sourceTree = "<group>"; };
+		FFEFAB2D183BCB6F00514534 /* LineInlineHeaders.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LineInlineHeaders.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -16996,9 +16995,6 @@
 				51D7196F181106DF0016DC51 /* IDBAny.cpp */,
 				51D71970181106DF0016DC51 /* IDBAny.h */,
 				51D71971181106DF0016DC51 /* IDBAny.idl */,
-				51660AC41828C86000074CAD /* IDBBackingStoreCursorInterface.h */,
-				51E337F318125AE30007A246 /* IDBBackingStoreInterface.h */,
-				51660AC51828C86000074CAD /* IDBBackingStoreTransactionInterface.h */,
 				51D71974181106DF0016DC51 /* IDBCallbacks.h */,
 				51D71975181106DF0016DC51 /* IDBCursor.cpp */,
 				51D71976181106DF0016DC51 /* IDBCursor.h */,
@@ -18471,6 +18467,8 @@
 				CD8B5A47180E1361008B8E65 /* TextTrackMediaSource.idl */,
 				CD8B5A45180DFF4E008B8E65 /* VideoTrackMediaSource.h */,
 				CD8B5A44180DD8D6008B8E65 /* VideoTrackMediaSource.idl */,
+				CDD7089418359F6E002B3DC6 /* SampleMap.cpp */,
+				CDD7089518359F6F002B3DC6 /* SampleMap.h */,
 			);
 			path = mediasource;
 			sourceTree = "<group>";
@@ -21909,6 +21907,7 @@
 		FFB698C81832F10B00158A31 /* line */ = {
 			isa = PBXGroup;
 			children = (
+				FFEFAB2D183BCB6F00514534 /* LineInlineHeaders.h */,
 				FFEFAB2918380DA000514534 /* LineLayoutState.h */,
 				FFB698CD1833F17600158A31 /* LineInfo.cpp */,
 				FFB698CE1833F17600158A31 /* LineInfo.h */,
@@ -22428,7 +22427,6 @@
 				A3BB59F41457A40D00AC56FE /* DocumentEventQueue.h in Headers */,
 				A8185F3D09765766005826D9 /* DocumentFragment.h in Headers */,
 				656D37360ADBA5DE00A4554D /* DocumentLoader.h in Headers */,
-				51660AC71828C86000074CAD /* IDBBackingStoreTransactionInterface.h in Headers */,
 				8A12E35D11FA33280025836A /* DocumentLoadTiming.h in Headers */,
 				ED2BA83C09A24B91006C0AC4 /* DocumentMarker.h in Headers */,
 				CE057FA61220731100A476D5 /* DocumentMarkerController.h in Headers */,
@@ -22847,7 +22845,6 @@
 				CDAB6D2917C7DE6C00C60B34 /* MediaControlsHost.h in Headers */,
 				418A06D0133C04D500CD379C /* EventDispatcher.h in Headers */,
 				BC60D90C0D2A17CE00B9918F /* EventException.h in Headers */,
-				51660AC61828C86000074CAD /* IDBBackingStoreCursorInterface.h in Headers */,
 				97665013144FAA4200F6BB51 /* EventFactory.h in Headers */,
 				51D719EC181106E00016DC51 /* IDBRequest.h in Headers */,
 				93C09A530B064DB3005ABD4D /* EventHandler.h in Headers */,
@@ -23300,7 +23297,6 @@
 				1C81BA0A0E97348300266E07 /* JavaScriptCallFrame.h in Headers */,
 				418F88050FF957AF0080F045 /* JSAbstractWorker.h in Headers */,
 				FDA15ECA12B03F50003A583A /* JSAnalyserNode.h in Headers */,
-				51E337F418125AE30007A246 /* IDBBackingStoreInterface.h in Headers */,
 				65DF31DB09D1C123000BE325 /* JSAttr.h in Headers */,
 				FDA15E9E12B03EE1003A583A /* JSAudioBuffer.h in Headers */,
 				FDF7E9C413AC21DB00A51EAC /* JSAudioBufferCallback.h in Headers */,
@@ -24399,6 +24395,7 @@
 				4998AED213FB224D0090B1AA /* ScriptedAnimationController.h in Headers */,
 				08A484780E5272C500C3FE76 /* ScriptElement.h in Headers */,
 				E11C9D9B0EB3681200E409DB /* ScriptExecutionContext.h in Headers */,
+				CDD7089718359F6F002B3DC6 /* SampleMap.h in Headers */,
 				41002CCD0F66EDEF009E660D /* ScriptFunctionCall.h in Headers */,
 				9F3B947E12241758005304E7 /* ScriptHeapSnapshot.h in Headers */,
 				41F066E40F64BCF600A07EAC /* ScriptObject.h in Headers */,
@@ -25502,7 +25499,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/DerivedSources/WebCore\"\ncd \"${BUILT_PRODUCTS_DIR}/DerivedSources/WebCore\"\n\n/bin/ln -sfh \"${SRCROOT}\" WebCore\nexport WebCore=\"WebCore\"\n\nif [ ! $CC ]; then\n    export CC=\"`xcrun -find clang`\"\nfi\n\nif [ ! $GPERF ]; then\n    export GPERF=\"`xcrun -find gperf`\"\nfi\n\nif [ \"${ACTION}\" = \"build\" -o \"${ACTION}\" = \"install\" -o \"${ACTION}\" = \"installhdrs\" ]; then\n    make  --no-builtin-rules -f \"WebCore/DerivedSources.make\" -j `/usr/sbin/sysctl -n hw.availcpu` SDKROOT=\"${SDKROOT}\"\nfi\n";
+			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/DerivedSources/WebCore\"\ncd \"${BUILT_PRODUCTS_DIR}/DerivedSources/WebCore\"\n\n/bin/ln -sfh \"${SRCROOT}\" WebCore\nexport WebCore=\"WebCore\"\n\nif [ ! $CC ]; then\n    export CC=\"`xcrun -find clang`\"\nfi\n\nif [ ! $GPERF ]; then\n    export GPERF=\"`xcrun -find gperf`\"\nfi\n\nif [ \"${ACTION}\" = \"build\" -o \"${ACTION}\" = \"install\" -o \"${ACTION}\" = \"installhdrs\" ]; then\n    make  --no-builtin-rules -f \"WebCore/DerivedSources.make\" -j `/usr/sbin/sysctl -n hw.activecpu` SDKROOT=\"${SDKROOT}\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -26170,6 +26167,7 @@
 				A75E8B8C0E1DE2D6007F2481 /* FEComponentTransfer.cpp in Sources */,
 				A75E8B8E0E1DE2D6007F2481 /* FEComposite.cpp in Sources */,
 				84730D781248F0B300D3A9C9 /* FEConvolveMatrix.cpp in Sources */,
+				CDD7089618359F6F002B3DC6 /* SampleMap.cpp in Sources */,
 				50D403C714768C9400D30BB5 /* FECustomFilter.cpp in Sources */,
 				84730D7A1248F0B300D3A9C9 /* FEDiffuseLighting.cpp in Sources */,
 				078E090B17D14CEE00420AA1 /* RTCPeerConnection.cpp in Sources */,

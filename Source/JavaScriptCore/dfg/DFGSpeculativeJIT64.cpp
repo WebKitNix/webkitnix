@@ -723,7 +723,7 @@ void SpeculativeJIT::emitCall(Node* node)
     
     slowPath.link(&m_jit);
     
-    m_jit.move(calleeGPR, GPRInfo::nonArgGPR0);
+    m_jit.move(calleeGPR, GPRInfo::regT0); // Callee needs to be in regT0
     JITCompiler::Call slowCall = m_jit.nearCall();
     
     done.link(&m_jit);
@@ -4366,6 +4366,11 @@ void SpeculativeJIT::compile(Node* node)
 #endif
         
         noResult(node);
+        break;
+    }
+        
+    case NotifyPutGlobalVar: {
+        compileNotifyPutGlobalVar(node);
         break;
     }
 

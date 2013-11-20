@@ -220,20 +220,15 @@ struct SymbolTableEntry {
     
     bool couldBeWatched();
     
-    // Notify an opportunity to create a watchpoint for a variable. This is
-    // idempotent and fail-silent. It is idempotent in the sense that if
-    // a watchpoint set had already been created, then another one will not
-    // be created. Hence two calls to this method have the same effect as
-    // one call. It is also fail-silent, in the sense that if a watchpoint
-    // set had been created and had already been invalidated, then this will
-    // just return. This means that couldBeWatched() may return false even
-    // immediately after a call to attemptToWatch().
-    void attemptToWatch();
+    enum WatchState { NotInitialized, AlreadyInitialized };
+    void prepareToWatch(WatchState);
     
     void addWatchpoint(Watchpoint*);
     
     WatchpointSet* watchpointSet()
     {
+        if (!isFat())
+            return 0;
         return fatEntry()->m_watchpoints.get();
     }
     

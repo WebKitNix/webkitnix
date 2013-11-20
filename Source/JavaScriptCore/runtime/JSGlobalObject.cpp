@@ -210,21 +210,31 @@ bool JSGlobalObject::defineOwnProperty(JSObject* object, ExecState* exec, Proper
     return Base::defineOwnProperty(thisObject, exec, propertyName, descriptor, shouldThrow);
 }
 
-int JSGlobalObject::addGlobalVar(const Identifier& ident, ConstantMode constantMode, FunctionMode functionMode)
+JSGlobalObject::NewGlobalVar JSGlobalObject::addGlobalVar(const Identifier& ident, ConstantMode constantMode)
 {
     ConcurrentJITLocker locker(symbolTable()->m_lock);
     int index = symbolTable()->size(locker);
     SymbolTableEntry newEntry(index, (constantMode == IsConstant) ? ReadOnly : 0);
-    if (functionMode == IsFunctionToSpecialize)
-        newEntry.attemptToWatch();
+    if (constantMode == IsVariable)
+        newEntry.prepareToWatch(SymbolTableEntry::NotInitialized);
     SymbolTable::Map::AddResult result = symbolTable()->add(locker, ident.impl(), newEntry);
     if (result.isNewEntry)
         addRegisters(1);
-    else {
-        result.iterator->value.notifyWrite();
+    else
         index = result.iterator->value.getIndex();
-    }
-    return index;
+    NewGlobalVar var;
+    var.registerNumber = index;
+    var.set = result.iterator->value.watchpointSet();
+    return var;
+}
+
+void JSGlobalObject::addFunction(ExecState* exec, const Identifier& propertyName, JSValue value)
+{
+    removeDirect(exec->vm(), propertyName); // Newly declared functions overwrite existing properties.
+    NewGlobalVar var = addGlobalVar(propertyName, IsVariable);
+    registerAt(var.registerNumber).set(exec->vm(), this, value);
+    if (var.set)
+        var.set->notifyWrite();
 }
 
 static inline JSObject* lastInPrototypeChain(JSObject* object)
@@ -521,7 +531,7 @@ void JSGlobalObject::haveABadTime(VM& vm)
     // Make sure that all allocations or indexed storage transitions that are inlining
     // the assumption that it's safe to transition to a non-SlowPut array storage don't
     // do so anymore.
-    m_havingABadTimeWatchpoint->notifyWrite();
+    m_havingABadTimeWatchpoint->fireAll();
     ASSERT(isHavingABadTime()); // The watchpoint is what tells us that we're having a bad time.
     
     // Make sure that all JSArray allocations that load the appropriate structure from
@@ -738,7 +748,7 @@ UnlinkedProgramCodeBlock* JSGlobalObject::createProgramCodeBlock(CallFrame* call
     JSParserStrictness strictness = executable->isStrictMode() ? JSParseStrict : JSParseNormal;
     DebuggerMode debuggerMode = hasDebugger() ? DebuggerOn : DebuggerOff;
     ProfilerMode profilerMode = hasProfiler() ? ProfilerOn : ProfilerOff;
-    UnlinkedProgramCodeBlock* unlinkedCode = vm().codeCache()->getProgramCodeBlock(vm(), executable, executable->source(), strictness, debuggerMode, profilerMode, error);
+    UnlinkedProgramCodeBlock* unlinkedCodeBlock = vm().codeCache()->getProgramCodeBlock(vm(), executable, executable->source(), strictness, debuggerMode, profilerMode, error);
 
     if (hasDebugger())
         debugger()->sourceParsed(callFrame, executable->source().provider(), error.m_line, error.m_message);
@@ -748,7 +758,7 @@ UnlinkedProgramCodeBlock* JSGlobalObject::createProgramCodeBlock(CallFrame* call
         return 0;
     }
     
-    return unlinkedCode;
+    return unlinkedCodeBlock;
 }
 
 UnlinkedEvalCodeBlock* JSGlobalObject::createEvalCodeBlock(CallFrame* callFrame, EvalExecutable* executable)
@@ -757,7 +767,7 @@ UnlinkedEvalCodeBlock* JSGlobalObject::createEvalCodeBlock(CallFrame* callFrame,
     JSParserStrictness strictness = executable->isStrictMode() ? JSParseStrict : JSParseNormal;
     DebuggerMode debuggerMode = hasDebugger() ? DebuggerOn : DebuggerOff;
     ProfilerMode profilerMode = hasProfiler() ? ProfilerOn : ProfilerOff;
-    UnlinkedEvalCodeBlock* unlinkedCode = vm().codeCache()->getEvalCodeBlock(vm(), executable, executable->source(), strictness, debuggerMode, profilerMode, error);
+    UnlinkedEvalCodeBlock* unlinkedCodeBlock = vm().codeCache()->getEvalCodeBlock(vm(), executable, executable->source(), strictness, debuggerMode, profilerMode, error);
 
     if (hasDebugger())
         debugger()->sourceParsed(callFrame, executable->source().provider(), error.m_line, error.m_message);
@@ -767,7 +777,7 @@ UnlinkedEvalCodeBlock* JSGlobalObject::createEvalCodeBlock(CallFrame* callFrame,
         return 0;
     }
 
-    return unlinkedCode;
+    return unlinkedCodeBlock;
 }
 
 } // namespace JSC

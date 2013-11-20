@@ -26,6 +26,7 @@
 #ifndef IDBServerConnection_h
 #define IDBServerConnection_h
 
+#include "IDBCursorBackendOperations.h"
 #include "IDBMetadata.h"
 #include "IDBTransactionBackendOperations.h"
 #include "IndexedDB.h"
@@ -38,8 +39,6 @@
 
 namespace WebCore {
 
-class IDBBackingStoreInterface;
-class IDBBackingStoreTransactionInterface;
 class IDBDatabaseError;
 class IDBKey;
 class IDBTransactionBackend;
@@ -54,18 +53,16 @@ class IDBServerConnection : public RefCounted<IDBServerConnection> {
 public:
     virtual ~IDBServerConnection() { }
 
-    // FIXME: For now, server connection provides a synchronous accessor to the in-process backing store objects.
-    // This is temporary and will be removed soon.
-    virtual IDBBackingStoreInterface* deprecatedBackingStore() = 0;
-
     virtual bool isClosed() = 0;
 
     typedef std::function<void (bool success)> BoolCallbackFunction;
 
+    // Factory-level operations
+    virtual void deleteDatabase(const String& name, BoolCallbackFunction successCallback) = 0;
+
     // Database-level operations
     typedef std::function<void (const IDBDatabaseMetadata&, bool success)> GetIDBDatabaseMetadataFunction;
-    virtual void getOrEstablishIDBDatabaseMetadata(const String& name, GetIDBDatabaseMetadataFunction) = 0;
-    virtual void deleteDatabase(const String& name, BoolCallbackFunction successCallback) = 0;
+    virtual void getOrEstablishIDBDatabaseMetadata(GetIDBDatabaseMetadataFunction) = 0;
     virtual void close() = 0;
 
     // Transaction-level operations
@@ -88,6 +85,12 @@ public:
     virtual void clearObjectStore(IDBTransactionBackend&, const ClearObjectStoreOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback) = 0;
     virtual void deleteObjectStore(IDBTransactionBackend&, const DeleteObjectStoreOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback) = 0;
     virtual void changeDatabaseVersion(IDBTransactionBackend&, const IDBDatabaseBackend::VersionChangeOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback) = 0;
+
+    // Cursor-level operations
+    virtual void cursorAdvance(IDBCursorBackend&, const CursorAdvanceOperation&, std::function<void()> completionCallback) = 0;
+    virtual void cursorIterate(IDBCursorBackend&, const CursorIterationOperation&, std::function<void()> completionCallback) = 0;
+    virtual void cursorPrefetchIteration(IDBCursorBackend&, const CursorPrefetchIterationOperation&, std::function<void()> completionCallback) = 0;
+    virtual void cursorPrefetchReset(IDBCursorBackend&, int usedPrefetches) = 0;
 };
 
 } // namespace WebCore

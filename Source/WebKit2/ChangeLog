@@ -1,3 +1,436 @@
+2013-11-20  Brady Eidson  <beidson@apple.com>
+
+        Cleanup getOrEstablishIDBDatabaseMetadata and stub it out in WK2
+        https://bugs.webkit.org/show_bug.cgi?id=124635
+
+        Reviewed by Tim Horton.
+
+        Stub out the message for getOrEstablishIDBDatabaseMetadata in the DatabaseProcess.
+
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.cpp:
+        (WebKit::DatabaseProcessIDBConnection::establishConnection):
+        (WebKit::DatabaseProcessIDBConnection::getOrEstablishIDBDatabaseMetadata):
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.h:
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.messages.in:
+
+        * Shared/SecurityOriginData.cpp:
+        (WebKit::SecurityOriginData::fromSecurityOrigin):
+        * Shared/SecurityOriginData.h:
+
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.cpp:
+        (WebKit::WebIDBServerConnection::WebIDBServerConnection):
+        (WebKit::WebIDBServerConnection::deleteDatabase):
+        (WebKit::WebIDBServerConnection::getOrEstablishIDBDatabaseMetadata):
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.h:
+
+2013-11-20  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Do not use deprecated callbacks in WebKitPolicyClient
+        https://bugs.webkit.org/show_bug.cgi?id=124648
+
+        Reviewed by Philippe Normand.
+
+        Fixes compile warnings for uninitialized callbacks.
+
+        * UIProcess/API/gtk/WebKitPolicyClient.cpp:
+        (decidePolicyForNavigationAction): Add originatingFrame parameter.
+        (decidePolicyForNewWindowAction): Renamed for consistency.
+        (decidePolicyForResponse): Add canShowMIMEType parameter.
+        (attachPolicyClientToView): Add new callbacks.
+
+2013-11-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Enable HTMLTemplateElement on Mac port
+        https://bugs.webkit.org/show_bug.cgi?id=124637
+
+        Reviewed by Tim Horton.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-11-19  Brady Eidson  <beidson@apple.com>
+
+        Add WebIDBServerConnection and DatabaseProcessIDBConnection stubs
+        https://bugs.webkit.org/show_bug.cgi?id=124562
+
+        Reviewed by Alexey Proskuryakov.
+
+        Also remove Web/DatabaseProcessDatabaseBackend stubs, as that is no longer the abstraction layer.
+
+        * DatabaseProcess/DatabaseToWebProcessConnection.cpp:
+        (WebKit::DatabaseToWebProcessConnection::didReceiveMessage):
+        (WebKit::DatabaseToWebProcessConnection::establishIDBConnection):
+        * DatabaseProcess/DatabaseToWebProcessConnection.h:
+        * DatabaseProcess/DatabaseToWebProcessConnection.messages.in:
+
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.cpp: Renamed from Source/WebKit2/DatabaseProcess/IndexedDB/DatabaseProcessIDBDatabaseBackend.cpp.
+        (WebKit::DatabaseProcessIDBConnection::DatabaseProcessIDBConnection):
+        (WebKit::DatabaseProcessIDBConnection::~DatabaseProcessIDBConnection):
+        (WebKit::DatabaseProcessIDBConnection::establishConnection):
+        (WebKit::DatabaseProcessIDBConnection::messageSenderConnection):
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.h: Renamed from Source/WebKit2/DatabaseProcess/IndexedDB/DatabaseProcessIDBDatabaseBackend.h.
+        (WebKit::DatabaseProcessIDBConnection::create):
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.messages.in: Renamed from Source/WebKit2/DatabaseProcess/IndexedDB/DatabaseProcessIDBDatabaseBackend.messages.in.
+
+        * Shared/Databases/IndexedDB/IDBUtilities.cpp:
+        (WebKit::uniqueDatabaseIdentifier): Modified to take two security origin arguments.
+        * Shared/Databases/IndexedDB/IDBUtilities.h:
+
+        * WebProcess/Databases/IndexedDB/WebIDBFactoryBackend.cpp:
+        (WebKit::WebIDBFactoryBackend::open):
+
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.cpp: Added. Stubbed out all the pure virtual methods.
+        (WebKit::generateBackendIdentifier):
+        (WebKit::WebIDBServerConnection::WebIDBServerConnection):
+        (WebKit::WebIDBServerConnection::~WebIDBServerConnection):
+        (WebKit::WebIDBServerConnection::isClosed):
+        (WebKit::WebIDBServerConnection::getOrEstablishIDBDatabaseMetadata):
+        (WebKit::WebIDBServerConnection::deleteDatabase):
+        (WebKit::WebIDBServerConnection::close):
+        (WebKit::WebIDBServerConnection::openTransaction):
+        (WebKit::WebIDBServerConnection::beginTransaction):
+        (WebKit::WebIDBServerConnection::commitTransaction):
+        (WebKit::WebIDBServerConnection::resetTransaction):
+        (WebKit::WebIDBServerConnection::rollbackTransaction):
+        (WebKit::WebIDBServerConnection::setIndexKeys):
+        (WebKit::WebIDBServerConnection::createObjectStore):
+        (WebKit::WebIDBServerConnection::createIndex):
+        (WebKit::WebIDBServerConnection::deleteIndex):
+        (WebKit::WebIDBServerConnection::get):
+        (WebKit::WebIDBServerConnection::put):
+        (WebKit::WebIDBServerConnection::openCursor):
+        (WebKit::WebIDBServerConnection::count):
+        (WebKit::WebIDBServerConnection::deleteRange):
+        (WebKit::WebIDBServerConnection::clearObjectStore):
+        (WebKit::WebIDBServerConnection::deleteObjectStore):
+        (WebKit::WebIDBServerConnection::changeDatabaseVersion):
+        (WebKit::WebIDBServerConnection::cursorAdvance):
+        (WebKit::WebIDBServerConnection::cursorIterate):
+        (WebKit::WebIDBServerConnection::cursorPrefetchIteration):
+        (WebKit::WebIDBServerConnection::cursorPrefetchReset):
+        (WebKit::WebIDBServerConnection::messageSenderConnection):
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.h: Added.
+
+        * WebProcess/Databases/IndexedDB/WebProcessIDBDatabaseBackend.cpp: Removed.
+        * WebProcess/Databases/IndexedDB/WebProcessIDBDatabaseBackend.h: Removed.
+
+        * WebProcess/Databases/WebToDatabaseProcessConnection.cpp:
+
+        * DerivedSources.make:
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-11-19  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL and GTK build fix attempt after r159507
+
+        * CMakeLists.txt: Changed Platform/CoreIPC/DataReference.cpp to Platform/IPC/DataReference.cpp
+        * GNUmakefile.list.am: Ditto
+
+2013-11-19  Anders Carlsson  <andersca@apple.com>
+
+        Move DataReference to Platform/IPC.
+
+        * Platform/IPC/DataReference.cpp: Renamed from Source/WebKit2/Platform/CoreIPC/DataReference.cpp.
+        * Platform/IPC/DataReference.h: Renamed from Source/WebKit2/Platform/CoreIPC/DataReference.h.
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-11-19  Anders Carlsson  <andersca@apple.com>
+
+        Add and call PageLoadState::reset
+        https://bugs.webkit.org/show_bug.cgi?id=124591
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::reset):
+        * UIProcess/PageLoadState.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::processDidCrash):
+
+2013-11-18  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Initialize efreet before getting directories
+        https://bugs.webkit.org/show_bug.cgi?id=124560
+
+        Reviewed by Gyuyoung Kim.
+
+        efreet is used to get several directories including home dierectory since
+        r123731, but it does not call efreet_init/efreet_shutdown explicitly.
+
+        * UIProcess/API/efl/ewk_main.cpp: Call efreet_init()/efreet_shutdown() explicitly.
+        (ewk_init):
+        (ewk_shutdown):
+
+2013-11-18  Mark Rowe  <mrowe@apple.com>
+
+        Use hw.activecpu for determining how many processes to spawn.
+
+        It's documented as the preferred way to determine the number of threads
+        or processes to create in a SMP aware application.
+
+        Rubber-stamped by Tim Horton.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        Let's try this again.
+
+        * UIProcess/PageLoadState.cpp:
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        Disable assertions in PageLoadState.cpp for now.
+
+        * UIProcess/PageLoadState.cpp:
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        TestWebKitAPI crashes when running under GuardMalloc
+        https://bugs.webkit.org/show_bug.cgi?id=124546
+
+        Reviewed by Tim Horton.
+
+        * UIProcess/Downloads/DownloadProxyMap.cpp:
+        (WebKit::DownloadProxyMap::downloadFinished):
+        Grab the download ID before removing the DownloadProxy from the map.
+
+2013-11-18  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Unreviewed build fix attempt on GTK and EFL port after r159461
+
+        * CMakeLists.txt: Added APINavigationData.cpp and removed WebNavigationData.cpp
+        * GNUmakefile.list.am: Ditto.
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        Rename WebNavigationData to API::NavigationData
+        https://bugs.webkit.org/show_bug.cgi?id=124542
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/C/WKAPICast.h:
+        * UIProcess/API/C/WKNavigationDataRef.cpp:
+        (WKNavigationDataGetTypeID):
+        * UIProcess/API/Cocoa/WKNavigationData.mm:
+        (-[WKNavigationData dealloc]):
+        (-[WKNavigationData title]):
+        (-[WKNavigationData originalRequest]):
+        (-[WKNavigationData destinationURL]):
+        (-[WKNavigationData response]):
+        * UIProcess/API/Cocoa/WKNavigationDataInternal.h:
+        (WebKit::wrapper):
+        * UIProcess/API/mac/WKProcessGroup.mm:
+        * UIProcess/APINavigationData.cpp: Renamed from Source/WebKit2/UIProcess/WebNavigationData.cpp.
+        (API::NavigationData::NavigationData):
+        (API::NavigationData::~NavigationData):
+        * UIProcess/APINavigationData.h: Renamed from Source/WebKit2/UIProcess/WebNavigationData.h.
+        (API::NavigationData::create):
+        (API::NavigationData::title):
+        (API::NavigationData::url):
+        (API::NavigationData::originalRequest):
+        (API::NavigationData::response):
+        * UIProcess/WebHistoryClient.cpp:
+        (WebKit::WebHistoryClient::didNavigateWithNavigationData):
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-11-18  David Hyatt  <hyatt@apple.com>
+
+        Add a quirk to not respect center text-align when positioning
+
+        <rdar://problem/15427571>
+        https://bugs.webkit.org/show_bug.cgi?id=124522
+
+        Reviewed by Simon Fraser.
+
+        Added fast/block/legacy-text-align-position-quirk.html
+
+        * Shared/WebPreferencesStore.h:
+        * UIProcess/API/C/WKPreferences.cpp:
+        (WKPreferencesUseLegacyTextAlignPositionedElementBehavior):
+        (WKPreferencesSetUseLegacyTextAlignPositionedElementBehavior):
+        * UIProcess/API/C/WKPreferencesPrivate.h:
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::updatePreferences):
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        Add State to PageLoadState
+        https://bugs.webkit.org/show_bug.cgi?id=124538
+
+        Reviewed by Tim Horton.
+
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::PageLoadState):
+        (WebKit::PageLoadState::didStartProvisionalLoad):
+        (WebKit::PageLoadState::didReceiveServerRedirectForProvisionalLoad):
+        (WebKit::PageLoadState::didFailProvisionalLoad):
+        (WebKit::PageLoadState::didCommitLoad):
+        (WebKit::PageLoadState::didFinishLoad):
+        (WebKit::PageLoadState::didSameDocumentNavigation):
+        * UIProcess/PageLoadState.h:
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        The PageLoadState object should keep track of the current URL
+        https://bugs.webkit.org/show_bug.cgi?id=124536
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::didCommitLoad):
+        (WebKit::PageLoadState::didFinishLoad):
+        (WebKit::PageLoadState::didFailLoad):
+        (WebKit::PageLoadState::didSameDocumentNavigation):
+        * UIProcess/PageLoadState.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::didFinishLoadForFrame):
+        (WebKit::WebPageProxy::didFailLoadForFrame):
+        (WebKit::WebPageProxy::didSameDocumentNavigationForFrame):
+
+2013-11-18  Csaba Osztrogonác  <ossy@webkit.org>
+
+        URTBF after r159444.
+
+        * GNUmakefile.list.am:
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        PageLoadState should keep track of the provisional URL
+        https://bugs.webkit.org/show_bug.cgi?id=124535
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::didStartProvisionalLoad):
+        (WebKit::PageLoadState::didReceiveServerRedirectForProvisionalLoad):
+        (WebKit::PageLoadState::didCommitLoad):
+        * UIProcess/PageLoadState.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::didReceiveServerRedirectForProvisionalLoadForFrame):
+        (WebKit::WebPageProxy::didFailProvisionalLoadForFrame):
+        (WebKit::WebPageProxy::didCommitLoadForFrame):
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        Move m_pendingAPIRequestURL to PageLoadState
+        https://bugs.webkit.org/show_bug.cgi?id=124531
+
+        Reviewed by Tim Horton.
+
+        * UIProcess/API/C/WKPage.cpp:
+        (WKPageCopyPendingAPIRequestURL):
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::pendingAPIRequestURL):
+        (WebKit::PageLoadState::setPendingAPIRequestURL):
+        (WebKit::PageLoadState::clearPendingAPIRequestURL):
+        * UIProcess/PageLoadState.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::loadURL):
+        (WebKit::WebPageProxy::loadURLRequest):
+        (WebKit::WebPageProxy::reload):
+        (WebKit::WebPageProxy::goForward):
+        (WebKit::WebPageProxy::goBack):
+        (WebKit::WebPageProxy::goToBackForwardItem):
+        (WebKit::WebPageProxy::activeURL):
+        (WebKit::WebPageProxy::receivedPolicyDecision):
+        (WebKit::WebPageProxy::estimatedProgress):
+        (WebKit::WebPageProxy::didStartProvisionalLoadForFrame):
+        (WebKit::WebPageProxy::didSameDocumentNavigationForFrame):
+        (WebKit::WebPageProxy::decidePolicyForNavigationAction):
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::pageLoadState):
+        * UIProcess/cf/WebPageProxyCF.cpp:
+        (WebKit::WebPageProxy::sessionStateData):
+        (WebKit::WebPageProxy::restoreFromSessionStateData):
+
+2013-11-18  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL build fix after r159444
+
+        * CMakeLists.txt: Added PageLoadState.cpp.
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        Add PageLoadState class
+        https://bugs.webkit.org/show_bug.cgi?id=124528
+
+        Reviewed by Dan Bernstein.
+
+        Trying to use the main frame load state as the page load state was a bad idea,
+        add a new PageLoadState and use it instead. Ultimately the long term plan is to
+        transition away from FrameLoadState entirely.
+
+        * UIProcess/PageLoadState.cpp: Added.
+        (WebKit::PageLoadState::PageLoadState):
+        (WebKit::PageLoadState::~PageLoadState):
+        (WebKit::PageLoadState::didStartProvisionalLoad):
+        * UIProcess/PageLoadState.h: Added.
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::didStartProvisionalLoadForFrame):
+        * UIProcess/WebPageProxy.h:
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-11-14  David Farler  <dfarler@apple.com>
+
+        [ASAN] WebKit2: Remove calls to dead DownloadAuthenticationClient code
+        https://bugs.webkit.org/show_bug.cgi?id=124367
+
+        Reviewed by Alexey Proskuryakov.
+
+        * Shared/Downloads/DownloadAuthenticationClient.cpp:
+        (WebKit::DownloadAuthenticationClient::receivedCredential):
+        (WebKit::DownloadAuthenticationClient::receivedRequestToContinueWithoutCredential):
+        (WebKit::DownloadAuthenticationClient::receivedCancellation):
+        Remove calls to nowhere:
+        WebKit::Download::cancelAuthenticationChallenge(WebCore::AuthenticationChallenge const&)
+        WebKit::Download::continueWithoutCredential(WebCore::AuthenticationChallenge const&)
+        WebKit::Download::useCredential(WebCore::AuthenticationChallenge const&, WebCore::Credential const&)
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        Use a strong enum for frame load states
+        https://bugs.webkit.org/show_bug.cgi?id=124524
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/C/WKFrame.cpp:
+        (WKFrameGetFrameLoadState):
+        * UIProcess/FrameLoadState.cpp:
+        (WebKit::FrameLoadState::FrameLoadState):
+        (WebKit::FrameLoadState::didStartProvisionalLoad):
+        (WebKit::FrameLoadState::didReceiveServerRedirectForProvisionalLoad):
+        (WebKit::FrameLoadState::didFailProvisionalLoad):
+        (WebKit::FrameLoadState::didCommitLoad):
+        (WebKit::FrameLoadState::didFinishLoad):
+        (WebKit::FrameLoadState::didFailLoad):
+        * UIProcess/FrameLoadState.h:
+        * UIProcess/WebFrameProxy.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::activeURL):
+        (WebKit::WebPageProxy::resetStateAfterProcessExited):
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::loadStateAtProcessExit):
+
+2013-11-18  Anders Carlsson  <andersca@apple.com>
+
+        Remove unnecessary COMPILER(CLANG) #ifdefs in Mac-only code
+        https://bugs.webkit.org/show_bug.cgi?id=124523
+
+        Reviewed by Dan Bernstein.
+
+        * PluginProcess/mac/PluginProcessMac.mm:
+        (WebKit::beginModal):
+        * PluginProcess/mac/PluginProcessShim.mm:
+        * Shared/Plugins/Netscape/NetscapePluginModule.cpp:
+        (WebKit::NetscapePluginModule::tryLoad):
+        * Shared/Plugins/Netscape/mac/NetscapePluginModuleMac.mm:
+        * UIProcess/Plugins/mac/PluginProcessProxyMac.mm:
+        (WebKit::PluginProcessProxy::getPluginProcessSerialNumber):
+        (WebKit::PluginProcessProxy::makePluginProcessTheFrontProcess):
+        (WebKit::PluginProcessProxy::makeUIProcessTheFrontProcess):
+        (WebKit::PluginProcessProxy::exitFullscreen):
+
 2013-11-18  Ryuan Choi  <ryuan.choi@samsung.com>
 
         [EFL] Add EWebKitConfig.cmake and EWebKit2Config.cmake

@@ -272,8 +272,6 @@ webkit2platform_sources += \
 	Source/WebKit2/Platform/CoreIPC/Attachment.h \
 	Source/WebKit2/Platform/CoreIPC/Connection.cpp \
 	Source/WebKit2/Platform/CoreIPC/Connection.h \
-	Source/WebKit2/Platform/CoreIPC/DataReference.cpp \
-	Source/WebKit2/Platform/CoreIPC/DataReference.h \
 	Source/WebKit2/Platform/CoreIPC/HandleMessage.h \
 	Source/WebKit2/Platform/CoreIPC/MessageDecoder.cpp \
 	Source/WebKit2/Platform/CoreIPC/MessageDecoder.h \
@@ -287,6 +285,8 @@ webkit2platform_sources += \
 	Source/WebKit2/Platform/CoreIPC/MessageSender.h \
 	Source/WebKit2/Platform/CoreIPC/unix/AttachmentUnix.cpp \
 	Source/WebKit2/Platform/CoreIPC/unix/ConnectionUnix.cpp \
+	Source/WebKit2/Platform/IPC/DataReference.cpp \
+	Source/WebKit2/Platform/IPC/DataReference.h \
 	Source/WebKit2/Platform/IPC/StringReference.cpp \
 	Source/WebKit2/Platform/IPC/StringReference.h \
 	Source/WebKit2/Platform/gtk/LoggingGtk.cpp \
@@ -819,6 +819,8 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/Authentication/WebCredential.h \
 	Source/WebKit2/UIProcess/Authentication/WebProtectionSpace.cpp \
 	Source/WebKit2/UIProcess/Authentication/WebProtectionSpace.h \
+	Source/WebKit2/UIProcess/APINavigationData.cpp \
+	Source/WebKit2/UIProcess/APINavigationData.h \
 	Source/WebKit2/UIProcess/BackingStore.cpp \
 	Source/WebKit2/UIProcess/BackingStore.h \
 	Source/WebKit2/UIProcess/DefaultUndoController.cpp \
@@ -840,6 +842,8 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/GeolocationPermissionRequestManagerProxy.h \
 	Source/WebKit2/UIProcess/GeolocationPermissionRequestProxy.cpp \
 	Source/WebKit2/UIProcess/GeolocationPermissionRequestProxy.h \
+	Source/WebKit2/UIProcess/PageLoadState.cpp \
+	Source/WebKit2/UIProcess/PageLoadState.h \
 	Source/WebKit2/UIProcess/cairo/BackingStoreCairo.cpp \
 	Source/WebKit2/UIProcess/gtk/ExperimentalFeatures.cpp \
 	Source/WebKit2/UIProcess/gtk/ExperimentalFeatures.h \
@@ -979,8 +983,6 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/WebMediaCacheManagerProxy.h \
 	Source/WebKit2/UIProcess/WebLoaderClient.cpp \
 	Source/WebKit2/UIProcess/WebLoaderClient.h \
-	Source/WebKit2/UIProcess/WebNavigationData.cpp \
-	Source/WebKit2/UIProcess/WebNavigationData.h \
 	Source/WebKit2/UIProcess/WebNetworkInfoManagerProxy.cpp \
 	Source/WebKit2/UIProcess/WebNetworkInfoManagerProxy.h \
 	Source/WebKit2/UIProcess/WebNetworkInfoProvider.cpp \

@@ -2255,6 +2255,11 @@ public:
     {
         m_assembler.nop();
     }
+    
+    void memoryFence()
+    {
+        m_assembler.dmbSY();
+    }
 
 
     // Misc helper functions.

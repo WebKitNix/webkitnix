@@ -239,7 +239,7 @@ WebPageProxy::WebPageProxy(PageClient* pageClient, PassRefPtr<WebProcessProxy> p
     , m_estimatedProgress(0)
     , m_viewState(ViewState::NoFlags)
     , m_backForwardList(WebBackForwardList::create(this))
-    , m_loadStateAtProcessExit(FrameLoadState::LoadStateFinished)
+    , m_loadStateAtProcessExit(FrameLoadState::State::Finished)
     , m_temporarilyClosedComposition(false)
     , m_textZoomFactor(1)
     , m_pageZoomFactor(1)
@@ -604,7 +604,7 @@ bool WebPageProxy::maybeInitializeSandboxExtensionHandle(const URL& url, Sandbox
 
 void WebPageProxy::loadURL(const String& url, API::Object* userData)
 {
-    setPendingAPIRequestURL(url);
+    m_pageLoadState.setPendingAPIRequestURL(url);
 
     if (!isValid())
         reattachToWebProcess();
@@ -619,7 +619,7 @@ void WebPageProxy::loadURL(const String& url, API::Object* userData)
 
 void WebPageProxy::loadURLRequest(WebURLRequest* urlRequest, API::Object* userData)
 {
-    setPendingAPIRequestURL(urlRequest->resourceRequest().url());
+    m_pageLoadState.setPendingAPIRequestURL(urlRequest->resourceRequest().url());
 
     if (!isValid())
         reattachToWebProcess();
@@ -725,7 +725,7 @@ void WebPageProxy::reload(bool reloadFromOrigin)
 
     if (m_backForwardList->currentItem()) {
         String url = m_backForwardList->currentItem()->url();
-        setPendingAPIRequestURL(url);
+        m_pageLoadState.setPendingAPIRequestURL(url);
 
         // We may not have an extension yet if back/forward list was reinstated after a WebProcess crash or a browser relaunch
         bool createdExtension = maybeInitializeSandboxExtensionHandle(URL(URL(), url), sandboxExtensionHandle);
@@ -751,7 +751,7 @@ void WebPageProxy::goForward()
     if (!forwardItem)
         return;
 
-    setPendingAPIRequestURL(forwardItem->url());
+    m_pageLoadState.setPendingAPIRequestURL(forwardItem->url());
 
     if (!isValid()) {
         reattachToWebProcessWithItem(forwardItem);
@@ -779,7 +779,7 @@ void WebPageProxy::goBack()
     if (!backItem)
         return;
 
-    setPendingAPIRequestURL(backItem->url());
+    m_pageLoadState.setPendingAPIRequestURL(backItem->url());
 
     if (!isValid()) {
         reattachToWebProcessWithItem(backItem);
@@ -805,7 +805,7 @@ void WebPageProxy::goToBackForwardItem(WebBackForwardListItem* item)
         return;
     }
     
-    setPendingAPIRequestURL(item->url());
+    m_pageLoadState.setPendingAPIRequestURL(item->url());
 
     m_process->send(Messages::WebPage::GoToBackForwardItem(item->itemID()), m_pageID);
     m_process->responsivenessTimer()->start();
@@ -849,8 +849,8 @@ String WebPageProxy::activeURL() const
     // If there is a currently pending url, it is the active URL,
     // even when there's no main frame yet, as it might be the
     // first API request.
-    if (!m_pendingAPIRequestURL.isNull())
-        return m_pendingAPIRequestURL;
+    if (!m_pageLoadState.pendingAPIRequestURL().isNull())
+        return m_pageLoadState.pendingAPIRequestURL();
 
     if (!m_mainFrame)
         return String();
@@ -858,11 +858,11 @@ String WebPageProxy::activeURL() const
     if (!m_mainFrame->unreachableURL().isEmpty())
         return m_mainFrame->unreachableURL();
 
-    switch (m_mainFrame->frameLoadState().m_loadState) {
-    case FrameLoadState::LoadStateProvisional:
+    switch (m_mainFrame->frameLoadState().m_state) {
+    case FrameLoadState::State::Provisional:
         return m_mainFrame->provisionalURL();
-    case FrameLoadState::LoadStateCommitted:
-    case FrameLoadState::LoadStateFinished:
+    case FrameLoadState::State::Committed:
+    case FrameLoadState::State::Finished:
         return m_mainFrame->url();
     }
 
@@ -1476,7 +1476,7 @@ void WebPageProxy::receivedPolicyDecision(PolicyAction action, WebFrameProxy* fr
         return;
 
     if (action == PolicyIgnore)
-        clearPendingAPIRequestURL();
+        m_pageLoadState.clearPendingAPIRequestURL();
 
     uint64_t downloadID = 0;
     if (action == PolicyDownload) {
@@ -1649,7 +1649,7 @@ void WebPageProxy::restoreFromSessionStateData(WebData* data)
         m_backForwardList->addItem(item);
         process()->registerNewWebBackForwardListItem(item);
         if (i == state.currentIndex())
-            setPendingAPIRequestURL(item->url());
+            m_pageLoadState.setPendingAPIRequestURL(item->url());
     }
 
     process()->send(Messages::WebPage::RestoreSessionAndNavigateToCurrentItem(state), m_pageID);
@@ -2166,8 +2166,9 @@ static const double initialProgressValue = 0.1;
 
 double WebPageProxy::estimatedProgress() const
 {
-    if (!pendingAPIRequestURL().isNull())
+    if (!m_pageLoadState.pendingAPIRequestURL().isNull())
         return initialProgressValue;
+
     return m_estimatedProgress; 
 }
 
@@ -2194,7 +2195,7 @@ void WebPageProxy::didFinishProgress()
 
 void WebPageProxy::didStartProvisionalLoadForFrame(uint64_t frameID, const String& url, const String& unreachableURL, CoreIPC::MessageDecoder& decoder)
 {
-    clearPendingAPIRequestURL();
+    m_pageLoadState.clearPendingAPIRequestURL();
 
     RefPtr<API::Object> userData;
     WebContextUserMessageDecoder messageDecoder(userData, m_process.get());
@@ -2205,9 +2206,12 @@ void WebPageProxy::didStartProvisionalLoadForFrame(uint64_t frameID, const Strin
     MESSAGE_CHECK(frame);
     MESSAGE_CHECK_URL(url);
 
-    frame->setUnreachableURL(unreachableURL);
+    if (frame->isMainFrame())
+        m_pageLoadState.didStartProvisionalLoad(url, unreachableURL);
 
+    frame->setUnreachableURL(unreachableURL);
     frame->didStartProvisionalLoad(url);
+
     m_loaderClient.didStartProvisionalLoadForFrame(this, frame, userData.get());
 }
 
@@ -2221,6 +2225,9 @@ void WebPageProxy::didReceiveServerRedirectForProvisionalLoadForFrame(uint64_t f
     WebFrameProxy* frame = m_process->webFrame(frameID);
     MESSAGE_CHECK(frame);
     MESSAGE_CHECK_URL(url);
+
+    if (frame->isMainFrame())
+        m_pageLoadState.didReceiveServerRedirectForProvisionalLoad(url);
 
     frame->didReceiveServerRedirectForProvisionalLoad(url);
 
@@ -2236,6 +2243,9 @@ void WebPageProxy::didFailProvisionalLoadForFrame(uint64_t frameID, const Resour
 
     WebFrameProxy* frame = m_process->webFrame(frameID);
     MESSAGE_CHECK(frame);
+
+    if (frame->isMainFrame())
+        m_pageLoadState.didFailProvisionalLoad();
 
     frame->didFailProvisionalLoad();
 
@@ -2264,6 +2274,9 @@ void WebPageProxy::didCommitLoadForFrame(uint64_t frameID, const String& mimeTyp
 
     WebFrameProxy* frame = m_process->webFrame(frameID);
     MESSAGE_CHECK(frame);
+
+    if (frame->isMainFrame())
+        m_pageLoadState.didCommitLoad();
 
 #if PLATFORM(MAC)
     // FIXME (bug 59111): didCommitLoadForFrame comes too late when restoring a page from b/f cache, making us disable secure event mode in password fields.
@@ -2313,6 +2326,9 @@ void WebPageProxy::didFinishLoadForFrame(uint64_t frameID, CoreIPC::MessageDecod
     WebFrameProxy* frame = m_process->webFrame(frameID);
     MESSAGE_CHECK(frame);
 
+    if (frame->isMainFrame())
+        m_pageLoadState.didFinishLoad();
+
     frame->didFinishLoad();
 
     m_loaderClient.didFinishLoadForFrame(this, frame, userData.get());
@@ -2330,6 +2346,9 @@ void WebPageProxy::didFailLoadForFrame(uint64_t frameID, const ResourceError& er
 
     clearLoadDependentCallbacks();
 
+    if (frame->isMainFrame())
+        m_pageLoadState.didFailLoad();
+
     frame->didFailLoad();
 
     m_loaderClient.didFailLoadWithErrorForFrame(this, frame, error, userData.get());
@@ -2346,7 +2365,10 @@ void WebPageProxy::didSameDocumentNavigationForFrame(uint64_t frameID, uint32_t 
     MESSAGE_CHECK(frame);
     MESSAGE_CHECK_URL(url);
 
-    clearPendingAPIRequestURL();
+    if (frame->isMainFrame())
+        m_pageLoadState.didSameDocumentNavigation(url);
+
+    m_pageLoadState.clearPendingAPIRequestURL();
     frame->didSameDocumentNavigation(url);
 
     m_loaderClient.didSameDocumentNavigationForFrame(this, frame, static_cast<SameDocumentNavigationType>(opaqueSameDocumentNavigationType), userData.get());
@@ -2477,8 +2499,8 @@ void WebPageProxy::decidePolicyForNavigationAction(uint64_t frameID, uint32_t op
     if (!decoder.decode(messageDecoder))
         return;
 
-    if (request.url() != pendingAPIRequestURL())
-        clearPendingAPIRequestURL();
+    if (request.url() != m_pageLoadState.pendingAPIRequestURL())
+        m_pageLoadState.clearPendingAPIRequestURL();
 
     WebFrameProxy* frame = m_process->webFrame(frameID);
     MESSAGE_CHECK(frame);
@@ -3767,6 +3789,10 @@ void WebPageProxy::processDidCrash()
 
     resetStateAfterProcessExited();
 
+    // FIXME: Consider calling reset after calling out to the loader client,
+    // having the page load state available could be useful.
+    m_pageLoadState.reset();
+
     m_pageClient->processDidCrash();
     m_loaderClient.processDidCrash(this);
 }
@@ -3861,7 +3887,7 @@ void WebPageProxy::resetStateAfterProcessExited()
 
     if (m_mainFrame) {
         m_urlAtProcessExit = m_mainFrame->url();
-        m_loadStateAtProcessExit = m_mainFrame->loadState();
+        m_loadStateAtProcessExit = m_mainFrame->frameLoadState().m_state;
     }
 
     resetState();

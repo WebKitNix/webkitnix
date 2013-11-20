@@ -2272,6 +2272,11 @@ void HTMLMediaElement::finishSeek()
 {
     LOG(Media, "HTMLMediaElement::finishSeek");
 
+#if ENABLE(MEDIA_SOURCE)
+    if (m_mediaSource)
+        m_mediaSource->monitorSourceBuffers();
+#endif
+
     // 4.8.10.9 Seeking
     // 14 - Set the seeking IDL attribute to false.
     m_seeking = false;
@@ -3509,7 +3514,7 @@ URL HTMLMediaElement::selectNextSourceChild(ContentType* contentType, String* ke
         if (node.parentNode() != this)
             continue;
 
-        source = static_cast<HTMLSourceElement*>(&node);
+        source = toHTMLSourceElement(&node);
 
         // If candidate does not have a src attribute, or if its src attribute's value is the empty string ... jump down to the failed step below
         mediaURL = source->getNonEmptyURLAttribute(srcAttr);
@@ -3547,6 +3552,9 @@ URL HTMLMediaElement::selectNextSourceChild(ContentType* contentType, String* ke
             parameters.url = mediaURL;
 #if ENABLE(ENCRYPTED_MEDIA)
             parameters.keySystem = system;
+#endif
+#if ENABLE(MEDIA_SOURCE)
+            parameters.isMediaSource = mediaURL.protocolIs(mediaSourceBlobProtocol);
 #endif
             if (!MediaPlayer::supportsType(parameters, this))
                 goto check_again;
