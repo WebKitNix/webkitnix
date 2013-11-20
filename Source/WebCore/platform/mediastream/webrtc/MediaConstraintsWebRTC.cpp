@@ -30,7 +30,6 @@
 #include "MediaConstraintsWebRTC.h"
 
 #include <algorithm>
-#include <array>
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
@@ -38,16 +37,16 @@ namespace WebCore {
 
 static bool isConstraintValid(const String& constraint)
 {
-    // This is used on a binary search, so keep it alphabetically sorted
-    static std::array<ASCIILiteral, 6> validConstraints = {
-        ASCIILiteral("IceRestart"),
-        ASCIILiteral("IceTransports"),
-        ASCIILiteral("OfferToReceiveAudio"),
-        ASCIILiteral("OfferToReceiveVideo"),
-        ASCIILiteral("RequestIdentity"),
-        ASCIILiteral("VoiceActivityDetection")
+    static const char* validConstraints[] = {
+        "IceRestart",
+        "IceTransports",
+        "OfferToReceiveAudio",
+        "OfferToReceiveVideo",
+        "RequestIdentity",
+        "VoiceActivityDetection"
     };
-    return std::binary_search(validConstraints.begin(), validConstraints.end(), constraint, &WTF::codePointCompareLessThan);
+    const char** last = validConstraints + sizeof(validConstraints) / sizeof(const char*);
+    return std::find(validConstraints, last, constraint) != last;
 }
 
 static void pushConstraint(const String& constraint, const String& value, webrtc::MediaConstraintsInterface::Constraints& webRTCConstraints)
