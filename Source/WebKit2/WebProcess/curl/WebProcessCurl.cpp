@@ -35,12 +35,12 @@
 
 namespace WebKit {
 
-void WebProcess::platformSetCacheModel(CacheModel cacheModel)
+void WebProcess::platformSetCacheModel(CacheModel)
 {
     // implement
 }
 
-void WebProcess::platformClearResourceCaches(ResourceCachesToClear cachesToClear)
+void WebProcess::platformClearResourceCaches(ResourceCachesToClear)
 {
     // implement
 }
