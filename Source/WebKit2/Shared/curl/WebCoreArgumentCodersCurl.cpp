@@ -39,35 +39,35 @@ using namespace WebKit;
 
 namespace CoreIPC {
 
-void ArgumentCoder<ResourceRequest>::encodePlatformData(ArgumentEncoder& encoder, const ResourceRequest& resourceRequest)
+void ArgumentCoder<ResourceRequest>::encodePlatformData(ArgumentEncoder&, const ResourceRequest&)
 {
     notImplemented();
 }
 
-bool ArgumentCoder<ResourceRequest>::decodePlatformData(ArgumentDecoder& decoder, ResourceRequest& resourceRequest)
-{
-    notImplemented();
-    return true;
-}
-
-
-void ArgumentCoder<ResourceResponse>::encodePlatformData(ArgumentEncoder& encoder, const ResourceResponse& resourceResponse)
-{
-    notImplemented();
-}
-
-bool ArgumentCoder<ResourceResponse>::decodePlatformData(ArgumentDecoder& decoder, ResourceResponse& resourceResponse)
+bool ArgumentCoder<ResourceRequest>::decodePlatformData(ArgumentDecoder&, ResourceRequest&)
 {
     notImplemented();
     return true;
 }
 
-void ArgumentCoder<ResourceError>::encodePlatformData(ArgumentEncoder& encoder, const ResourceError& resourceError)
+
+void ArgumentCoder<ResourceResponse>::encodePlatformData(ArgumentEncoder&, const ResourceResponse&)
 {
     notImplemented();
 }
 
-bool ArgumentCoder<ResourceError>::decodePlatformData(ArgumentDecoder& decoder, ResourceError& resourceError)
+bool ArgumentCoder<ResourceResponse>::decodePlatformData(ArgumentDecoder&, ResourceResponse&)
+{
+    notImplemented();
+    return true;
+}
+
+void ArgumentCoder<ResourceError>::encodePlatformData(ArgumentEncoder&, const ResourceError&)
+{
+    notImplemented();
+}
+
+bool ArgumentCoder<ResourceError>::decodePlatformData(ArgumentDecoder&, ResourceError&)
 {
     notImplemented();
     return true;
