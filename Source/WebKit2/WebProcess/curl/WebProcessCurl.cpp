@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010 Apple Inc. All rights reserved.
  * Portions Copyright (c) 2011 Motorola Mobility, Inc.  All rights reserved.
+ * Copyright (C) 2013 University of Szeged
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,6 +30,7 @@
 
 #include "WebProcessCreationParameters.h"
 #include <WebCore/CookieManager.h>
+#include <WebCore/CurlCacheManager.h>
 #include <WebCore/Language.h>
 
 namespace WebKit {
@@ -46,6 +48,10 @@ void WebProcess::platformClearResourceCaches(ResourceCachesToClear cachesToClear
 void WebProcess::platformInitializeWebProcess(const WebProcessCreationParameters& parameters, CoreIPC::MessageDecoder&)
 {
     WebCore::CookieManager::getInstance().setCookieJarPath(parameters.cookieStorageDirectory);
+
+    String cacheDirectory = parameters.diskCacheDirectory;
+    ASSERT(!cacheDirectory.isEmpty());
+    WebCore::CurlCacheManager::getInstance().setCacheDirectory(cacheDirectory);
 }
 
 void WebProcess::platformTerminate()

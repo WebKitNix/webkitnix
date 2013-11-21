@@ -296,6 +296,8 @@ if (WTF_USE_CURL)
         platform/network/curl/CookieNode.cpp
         platform/network/curl/CookieStorageCurl.cpp
         platform/network/curl/CredentialStorageCurl.cpp
+        platform/network/curl/CurlCacheEntry.cpp
+        platform/network/curl/CurlCacheManager.cpp
         platform/network/curl/DNSCurl.cpp
         platform/network/curl/FormDataStreamCurl.cpp
         platform/network/curl/MultipartHandle.cpp
