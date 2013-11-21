@@ -46,6 +46,13 @@ void WebViewClientNix::didFindZoomableArea(WebView* view, WKPoint target, WKRect
     m_client.didFindZoomableArea(toAPI(view), target, area, m_client.clientInfo);
 }
 
+void WebViewClientNix::setCursor(WebView* view, unsigned int shape)
+{
+    if (!m_client.setCursor)
+        return;
+    m_client.setCursor(toAPI(view), shape, m_client.clientInfo);
+}
+
 void WebViewClientNix::updateTextInputState(WebView* view, const EditorState& state)
 {
     if (!m_client.updateTextInputState)

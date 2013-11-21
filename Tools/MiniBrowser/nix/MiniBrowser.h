@@ -75,6 +75,7 @@ public:
     static void didChangeViewportAttributes(WKViewRef view, WKViewportAttributesRef attributes, const void* clientInfo);
     static void didFindZoomableArea(WKViewRef, WKPoint target, WKRect area, const void* clientInfo);
     static void doneWithTouchEvent(WKViewRef, const NIXTouchEvent* event, bool wasEventHandled, const void* clientInfo);
+    static void setCursor(WKViewRef, unsigned int shape, const void *clientInfo);
     static void updateTextInputState(WKViewRef, const NIXTextInputState* state, const void* clientInfo);
 
     // GestureRecognizerClient.

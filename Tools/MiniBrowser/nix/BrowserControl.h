@@ -89,6 +89,8 @@ public:
     void updateUrlText(const char*);
     bool isUrlBarFocused();
 
+    void setWebViewCursor(unsigned int);
+
     void passFocusToWebView();
     void passFocusToUrlBar();
 

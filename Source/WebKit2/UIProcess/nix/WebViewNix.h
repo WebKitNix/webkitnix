@@ -35,6 +35,7 @@
 #include "WebPopupItemPlatform.h"
 #include "WebPopupMenuListener.h"
 #include <WebCore/TransformationMatrix.h>
+#include <WebCore/Cursor.h>
 
 namespace WebCore {
 class CoordinatedGraphicsScene;
@@ -76,6 +77,7 @@ protected:
     virtual void didCommitLoadForFrame() OVERRIDE;
     virtual void notifyLoadIsBackForward() OVERRIDE;
     virtual void didStartedMainFrameLayout() OVERRIDE;
+
 #if ENABLE(TOUCH_EVENTS)
     virtual void doneWithTouchEvent(const NativeWebTouchEvent&, bool wasEventHandled) OVERRIDE;
 #endif
@@ -88,6 +90,8 @@ protected:
     float deviceScaleFactor() { return m_page->deviceScaleFactor(); }
 private:
     WebViewNix(WebContext* context, WebPageGroup* pageGroup);
+
+    void setCursor(const WebCore::Cursor&) OVERRIDE;
 
     WebViewClientNix m_viewClientNix;
     WebCore::IntPoint m_lastCursorPosition;

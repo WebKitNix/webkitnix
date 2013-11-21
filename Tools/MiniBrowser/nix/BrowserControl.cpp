@@ -394,3 +394,8 @@ void BrowserControl::handleClose()
 {
     m_client->onWindowClose();
 }
+
+void BrowserControl::setWebViewCursor(unsigned int shape)
+{
+    m_webView->setCursor(shape);
+}

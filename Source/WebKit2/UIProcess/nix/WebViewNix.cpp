@@ -68,6 +68,11 @@ WebViewNix::WebViewNix(WebContext* context, WebPageGroup* pageGroup)
 {
 }
 
+void WebViewNix::setCursor(const WebCore::Cursor& cursor) {
+    unsigned int shape = cursor.platformCursor();
+    m_viewClientNix.setCursor(this, shape);
+}
+
 void WebViewNix::setNixViewClient(const NIXViewClient* viewClient)
 {
     m_viewClientNix.initialize(viewClient);

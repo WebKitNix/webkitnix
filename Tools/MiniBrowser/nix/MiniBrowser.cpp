@@ -81,6 +81,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     nixViewClient.doneWithTouchEvent = MiniBrowser::doneWithTouchEvent;
     nixViewClient.didFindZoomableArea = MiniBrowser::didFindZoomableArea;
     nixViewClient.updateTextInputState = MiniBrowser::updateTextInputState;
+    nixViewClient.setCursor = MiniBrowser::setCursor;
     NIXViewSetNixViewClient(m_view, &nixViewClient);
 
     WKViewClient viewClient;
@@ -505,6 +506,12 @@ void MiniBrowser::doneWithTouchEvent(WKViewRef, const NIXTouchEvent* event, bool
     }
 
     mb->m_gestureRecognizer.handleTouchEvent(*event);
+}
+
+void MiniBrowser::setCursor(WKViewRef, unsigned int shape, const void* clientInfo)
+{
+    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    mb->m_control->setWebViewCursor(shape);
 }
 
 double MiniBrowser::scale()
