@@ -82,6 +82,8 @@ void WebContext::platformInitializeWebProcess(WebProcessCreationParameters& para
 
 #if USE(SOUP)
     parameters.ignoreTLSErrors = false;
+#else
+    UNUSED_PARAM(parameters);
 #endif
 }
 
