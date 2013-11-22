@@ -37,6 +37,7 @@
 
 #include <glib.h>
 #include <cstring>
+#include <algorithm>
 
 namespace TestWebKitAPI {
 
@@ -65,17 +66,21 @@ public:
         MockAudioOutputDevice* device = static_cast<MockAudioOutputDevice*>(userData);
         size_t bufferSize = device->m_bufferSize;
         std::vector<float*> sourceDataVector(2);
-        // Send a single "ramp" pulse and silence on the next iterations.
-        static bool first = true;
+        // This audio loop will start to run regardless of the underlying
+        // AudioContext being runnable (e.g. the HRTF database is still being
+        // loaded), returning zeroes (silence) by default in the audioDataVector and
+        // discarding the sourceDataVector.
+        // We send a sequence of ones to signal when the loopback is ready and
+        // once it's detected we can start sending the "ramp" pulse for the test.
+        static bool sendRamp = false;
         for (float*& data : sourceDataVector) {
             data = new float[bufferSize];
-            if (first) {
+            if (sendRamp) {
                 for (size_t j = 0; j < bufferSize; ++j)
                     data[j] = (float) j;
             } else
-                std::memset(data, 0, bufferSize * sizeof(float));
+                std::fill(data, data + bufferSize, 1.0);
         }
-        first = false;
 
         std::vector<float*> audioDataVector(2);
         for (float*& data : audioDataVector) {
@@ -84,21 +89,35 @@ public:
         }
         device->m_renderCallback->render(sourceDataVector, audioDataVector, bufferSize);
 
-        static bool shouldContinue = true;
-        static int count = 1;
-        for (size_t i = 0; i < bufferSize; ++i) {
-            if (audioDataVector[0][i]) {
-                if (Util::fuzzyCompare(audioDataVector[0][i], audioDataVector[1][i]) && Util::fuzzyCompare(audioDataVector[0][i], count))
-                    count += 1;
-                else
-                    shouldContinue = false;
+        // Detect pulse ramp (0*)(1+)(0..1023).
+        bool shouldContinue = true;
+        static size_t correctSamples = 0;
+        size_t currentValue = 0;
+        for (size_t i = 0; i < bufferSize && shouldContinue; ++i) {
+
+            if (!Util::fuzzyCompare(audioDataVector[0][i], audioDataVector[1][i])) {
+                shouldContinue = false;
+                continue;
+            }
+
+            currentValue = static_cast<size_t>(audioDataVector[0][i]);
+
+            if (!currentValue && !sendRamp) {
+                // System not initialized.
+                continue;
+            } else if (currentValue == 1 && !correctSamples)
+                sendRamp = true;
+            else if (currentValue == correctSamples)
+                correctSamples++;
+            else
+                shouldContinue = false;
+
+            if (correctSamples == bufferSize) {
+                WKBundlePostMessage(InjectedBundleController::shared().bundle(), Util::toWK("AudioDataVectorRendered").get(), 0);
+                shouldContinue = false;
             }
         }
 
-        if (shouldContinue && count == bufferSize) {
-            WKBundlePostMessage(InjectedBundleController::shared().bundle(), Util::toWK("AudioDataVectorRendered").get(), 0);
-            shouldContinue = false;
-        }
         for (size_t i = 0; i < sourceDataVector.size(); ++i)
             delete[] sourceDataVector[i];
         for (size_t i = 0; i < audioDataVector.size(); ++i)
