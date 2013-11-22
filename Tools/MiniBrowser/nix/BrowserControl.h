@@ -109,13 +109,15 @@ public:
     void handleSizeChanged(int, int);
     void handleClose();
 
+    void updateClickCount(const XButtonPressedEvent&);
+    unsigned clickCount() { return m_clickCount; }
+
 private:
     void init();
     void sendKeyboardEventToNix(const XEvent&);
     void createInputMethodAndInputContext();
     // XlibEventSource::Client.
     virtual void handleXEvent(const XEvent&);
-    void updateClickCount(const XButtonPressedEvent&);
 
     BrowserControlClient* m_client;
 

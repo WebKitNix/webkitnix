@@ -79,7 +79,7 @@ void UrlBar::handleEvent(const XEvent& event)
         break;
     case ButtonPress:
         addFocus();
-        initSelection(event.xbutton.x);
+        handleMultiClick(event.xbutton);
         break;
     case ButtonRelease:
         m_isMousePressed = false;
@@ -105,6 +105,69 @@ void UrlBar::initSelection(int clickX)
 
     m_selectedCharacterCount = 0;
     m_isMousePressed = true;
+}
+
+bool UrlBar::isSeparator(char c)
+{
+    // Based on RFC 2616
+    switch (c) {
+    case '(':
+    case ')':
+    case '<':
+    case '>':
+    case '@':
+    case '&':
+    case '#':
+    case '%':
+    case ',':
+    case ';':
+    case ':':
+    case '"':
+    case '\'':
+    case '/':
+    case '\\':
+    case '[':
+    case ']':
+    case '?':
+    case '=':
+    case '{':
+    case '}':
+    case ' ':
+    case '\t':
+    case '.':
+        return true;
+    default:
+        return false;
+    }
+}
+
+void UrlBar::selectWord()
+{
+    int rightCharPos = m_cursorPosition;
+    while (rightCharPos < m_url.length() && !isSeparator(m_url[rightCharPos])) {
+        rightCharPos++;
+        m_selectedCharacterCount++;
+    }
+    while (m_cursorPosition > 0 && !isSeparator(m_url[m_cursorPosition - 1])) {
+        m_cursorPosition--;
+        m_selectedCharacterCount++;
+    }
+}
+
+void UrlBar::handleMultiClick(const XButtonPressedEvent& pressEvent)
+{
+    m_control->updateClickCount(pressEvent);
+    switch (m_control->clickCount()) {
+    case 1:
+        initSelection(pressEvent.x);
+        break;
+    case 2:
+        selectWord();
+        break;
+    default:
+        m_cursorPosition = 0;
+        m_selectedCharacterCount = m_url.length();
+    }
 }
 
 void UrlBar::calculateSelectedCharacters(int mouseXPos)

@@ -65,6 +65,10 @@ private:
     int updateCursorPosition(int);
     void updateTextOffset();
 
+    bool isSeparator(char);
+    void selectWord();
+    void handleMultiClick(const XButtonPressedEvent&);
+
     void drawHighLight();
     void drawBackground();
     void drawCursor();
