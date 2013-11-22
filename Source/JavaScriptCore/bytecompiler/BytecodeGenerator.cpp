@@ -38,6 +38,7 @@
 #include "LowLevelInterpreter.h"
 #include "Operations.h"
 #include "Options.h"
+#include "StackAlignment.h"
 #include "StrongInlines.h"
 #include "UnlinkedCodeBlock.h"
 #include <wtf/StdLibExtras.h>
@@ -159,7 +160,6 @@ BytecodeGenerator::BytecodeGenerator(VM& vm, ProgramNode* programNode, UnlinkedP
 #ifndef NDEBUG
     , m_lastOpcodePosition(0)
 #endif
-    , m_stack(vm, wtfThreadData().stack())
     , m_usesExceptions(false)
     , m_expressionTooDeep(false)
 {
@@ -207,7 +207,6 @@ BytecodeGenerator::BytecodeGenerator(VM& vm, FunctionBodyNode* functionBody, Unl
 #ifndef NDEBUG
     , m_lastOpcodePosition(0)
 #endif
-    , m_stack(vm, wtfThreadData().stack())
     , m_usesExceptions(false)
     , m_expressionTooDeep(false)
 {
@@ -421,7 +420,6 @@ BytecodeGenerator::BytecodeGenerator(VM& vm, EvalNode* evalNode, UnlinkedEvalCod
 #ifndef NDEBUG
     , m_lastOpcodePosition(0)
 #endif
-    , m_stack(vm, wtfThreadData().stack())
     , m_usesExceptions(false)
     , m_expressionTooDeep(false)
 {
@@ -548,7 +546,9 @@ RegisterID* BytecodeGenerator::createLazyRegisterIfNecessary(RegisterID* reg)
 RegisterID* BytecodeGenerator::newRegister()
 {
     m_calleeRegisters.append(virtualRegisterForLocal(m_calleeRegisters.size()));
-    m_codeBlock->m_numCalleeRegisters = max<int>(m_codeBlock->m_numCalleeRegisters, m_calleeRegisters.size());
+    int numCalleeRegisters = max<int>(m_codeBlock->m_numCalleeRegisters, m_calleeRegisters.size());
+    numCalleeRegisters = WTF::roundUpToMultipleOf(stackAlignmentRegisters(), numCalleeRegisters);
+    m_codeBlock->m_numCalleeRegisters = numCalleeRegisters;
     return &m_calleeRegisters.last();
 }
 
@@ -1739,10 +1739,10 @@ RegisterID* BytecodeGenerator::emitCall(OpcodeID opcodeID, RegisterID* dst, Regi
     UnlinkedValueProfile profile = emitProfiledOpcode(opcodeID);
     ASSERT(dst);
     ASSERT(dst != ignoredResult());
-    instructions().append(dst->index()); // result
-    instructions().append(func->index()); // func
-    instructions().append(callArguments.argumentCountIncludingThis()); // argCount
-    instructions().append(callArguments.registerOffset()); // registerOffset
+    instructions().append(dst->index());
+    instructions().append(func->index());
+    instructions().append(callArguments.argumentCountIncludingThis());
+    instructions().append(callArguments.stackOffset());
 #if ENABLE(LLINT)
     instructions().append(m_codeBlock->addLLIntCallLinkInfo());
 #else
@@ -1853,9 +1853,9 @@ RegisterID* BytecodeGenerator::emitConstruct(RegisterID* dst, RegisterID* func, 
     UnlinkedValueProfile profile = emitProfiledOpcode(op_construct);
     ASSERT(dst != ignoredResult());
     instructions().append(dst->index());
-    instructions().append(func->index()); // func
-    instructions().append(callArguments.argumentCountIncludingThis()); // argCount
-    instructions().append(callArguments.registerOffset()); // registerOffset
+    instructions().append(func->index());
+    instructions().append(callArguments.argumentCountIncludingThis());
+    instructions().append(callArguments.stackOffset());
 #if ENABLE(LLINT)
     instructions().append(m_codeBlock->addLLIntCallLinkInfo());
 #else

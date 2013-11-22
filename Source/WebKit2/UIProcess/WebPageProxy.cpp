@@ -684,6 +684,8 @@ void WebPageProxy::loadAlternateHTMLString(const String& htmlString, const Strin
     if (!isValid())
         reattachToWebProcess();
 
+    m_pageLoadState.setUnreachableURL(unreachableURL);
+
     if (m_mainFrame)
         m_mainFrame->setUnreachableURL(unreachableURL);
 
@@ -842,55 +844,6 @@ void WebPageProxy::willGoToBackForwardListItem(uint64_t itemID, CoreIPC::Message
 
     if (WebBackForwardListItem* item = m_process->webBackForwardItem(itemID))
         m_loaderClient.willGoToBackForwardListItem(this, item, userData.get());
-}
-
-String WebPageProxy::activeURL() const
-{
-    // If there is a currently pending url, it is the active URL,
-    // even when there's no main frame yet, as it might be the
-    // first API request.
-    if (!m_pageLoadState.pendingAPIRequestURL().isNull())
-        return m_pageLoadState.pendingAPIRequestURL();
-
-    if (!m_mainFrame)
-        return String();
-
-    if (!m_mainFrame->unreachableURL().isEmpty())
-        return m_mainFrame->unreachableURL();
-
-    switch (m_mainFrame->frameLoadState().m_state) {
-    case FrameLoadState::State::Provisional:
-        return m_mainFrame->provisionalURL();
-    case FrameLoadState::State::Committed:
-    case FrameLoadState::State::Finished:
-        return m_mainFrame->url();
-    }
-
-    ASSERT_NOT_REACHED();
-    return String();
-}
-
-String WebPageProxy::provisionalURL() const
-{
-    if (!m_mainFrame)
-        return String();
-    return m_mainFrame->provisionalURL();
-}
-
-String WebPageProxy::committedURL() const
-{
-    if (!m_mainFrame)
-        return String();
-
-    return m_mainFrame->url();
-}
-
-String WebPageProxy::unreachableURL() const
-{
-    if (!m_mainFrame)
-        return String();
-
-    return m_mainFrame->unreachableURL();
 }
 
 bool WebPageProxy::canShowMIMEType(const String& mimeType) const
@@ -1508,16 +1461,6 @@ void WebPageProxy::receivedPolicyDecision(PolicyAction action, WebFrameProxy* fr
     }
     
     m_process->send(Messages::WebPage::DidReceivePolicyDecision(frame->frameID(), listenerID, action, downloadID), m_pageID);
-}
-
-String WebPageProxy::pageTitle() const
-{
-    // Return the null string if there is no main frame (e.g. nothing has been loaded in the page yet, WebProcess has
-    // crashed, page has been closed).
-    if (!m_mainFrame)
-        return String();
-
-    return m_mainFrame->title();
 }
 
 void WebPageProxy::setUserAgent(const String& userAgent)
@@ -2265,7 +2208,7 @@ void WebPageProxy::clearLoadDependentCallbacks()
     }
 }
 
-void WebPageProxy::didCommitLoadForFrame(uint64_t frameID, const String& mimeType, uint32_t opaqueFrameLoadType, const PlatformCertificateInfo& certificateInfo, CoreIPC::MessageDecoder& decoder)
+void WebPageProxy::didCommitLoadForFrame(uint64_t frameID, const String& mimeType, uint32_t opaqueFrameLoadType, const CertificateInfo& certificateInfo, CoreIPC::MessageDecoder& decoder)
 {
     RefPtr<API::Object> userData;
     WebContextUserMessageDecoder messageDecoder(userData, m_process.get());
@@ -2383,6 +2326,9 @@ void WebPageProxy::didReceiveTitleForFrame(uint64_t frameID, const String& title
 
     WebFrameProxy* frame = m_process->webFrame(frameID);
     MESSAGE_CHECK(frame);
+
+    if (frame->isMainFrame())
+        m_pageLoadState.setTitle(title);
 
     frame->didChangeTitle(title);
     

@@ -205,7 +205,7 @@ else ()
 
         # Uncomment it after https://bugs.webkit.org/show_bug.cgi?id=118343 is fixed and merged to Nix.
         # Shared/soup/CacheModelHelper.cpp
-        Shared/soup/PlatformCertificateInfo.cpp
+        Shared/soup/CertificateInfo.cpp
         Shared/soup/WebCoreArgumentCodersSoup.cpp
 
         UIProcess/API/C/soup/WKContextSoup.cpp

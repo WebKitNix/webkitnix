@@ -152,7 +152,6 @@ my (
     $webAudioSupport,
     $webSocketsSupport,
     $webTimingSupport,
-    $workersSupport,
     $xhrTimeoutSupport,
     $xsltSupport,
     $ftlJITSupport,
@@ -431,7 +430,7 @@ my @features = (
       define => "USE_SYSTEM_MALLOC", default => (isBlackBerry() || isWinCE()), value => \$systemMallocSupport },
 
     { option => "template-element", desc => "Toggle HTMLTemplateElement support",
-      define => "ENABLE_TEMPLATE_ELEMENT", default => (isEfl() || isGtk()), value => \$templateElementSupport },
+      define => "ENABLE_TEMPLATE_ELEMENT", default => (isAppleMacWebKit() || isEfl() || isGtk()), value => \$templateElementSupport },
 
     { option => "text-autosizing", desc => "Toggle Text Autosizing support",
       define => "ENABLE_TEXT_AUTOSIZING", default => isBlackBerry(), value => \$textAutosizingSupport },
@@ -477,9 +476,6 @@ my @features = (
 
     { option => "web-timing", desc => "Toggle Web Timing support",
       define => "ENABLE_WEB_TIMING", default => (isBlackBerry() || isGtk() || isEfl()), value => \$webTimingSupport },
-
-    { option => "workers", desc => "Toggle Workers support",
-      define => "ENABLE_WORKERS", default => (isAppleWebKit() || isGtk() || isBlackBerry() || isEfl()), value => \$workersSupport },
 
     { option => "xhr-timeout", desc => "Toggle XHR Timeout support",
       define => "ENABLE_XHR_TIMEOUT", default => (isEfl() || isGtk() || isAppleMacWebKit()), value => \$xhrTimeoutSupport },

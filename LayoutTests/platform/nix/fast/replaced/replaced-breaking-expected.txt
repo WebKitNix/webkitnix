@@ -47,13 +47,13 @@ layer at (0,0) size 785x602
         RenderBlock {INPUT} at (25,468) size 0x0
         RenderBlock {INPUT} at (5,474) size 0x0
         RenderText {#text} at (0,0) size 0x0
-        RenderPartObject {IFRAME} at (1,477) size 27x27 [border: (1px solid #000000)]
+        RenderIFrame {IFRAME} at (1,477) size 27x27 [border: (1px solid #000000)]
           layer at (0,0) size 25x25
             RenderView at (0,0) size 25x25
           layer at (0,0) size 25x25
             RenderBlock {HTML} at (0,0) size 25x25
               RenderBody {BODY} at (8,8) size 9x9
-        RenderPartObject {IFRAME} at (1,504) size 27x27 [border: (1px solid #000000)]
+        RenderIFrame {IFRAME} at (1,504) size 27x27 [border: (1px solid #000000)]
           layer at (0,0) size 25x25
             RenderView at (0,0) size 25x25
           layer at (0,0) size 25x25

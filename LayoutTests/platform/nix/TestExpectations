@@ -474,7 +474,6 @@ fast/dynamic/window-resize-scrollbars-test.html [ Skip ]
 fast/dom/52776.html [ Skip ]
 fast/dom/boolean-attribute-reflection.html [ Failure ]
 fast/dom/call-a-constructor-as-a-function.html [ Failure ]
-fast/dom/constructed-objects-prototypes.html [ Failure ]
 fast/dom/constructors-cached-navigate.html [ Failure ]
 fast/dom/constructors-cached.html [ Failure ]
 fast/dom/custom/document-register-basic.html [ Skip ]
@@ -2680,7 +2679,6 @@ http/tests/xmlhttprequest/access-control-preflight-async-not-supported.html [ Fa
 
 # Failures after merge (e8d006fb 568f5931)
 compositing/layer-creation/overlap-animation-container.html [ Failure ]
-fast/events/constructors/media-stream-event-constructor.html [ Failure ]
 fast/events/constructors/ui-event-constructor.html [ Failure ]
 fast/events/touch/gesture/touch-gesture-scroll-div-propagated.html [ Failure ]
 fast/events/touch/gesture/touch-gesture-scroll-div-twice-propagated.html [ Failure ]
@@ -2863,6 +2861,10 @@ fast/dom/HTMLTemplateElement/inertContents.html [ Failure ]
 fast/dom/HTMLTemplateElement/innerHTML.html [ Failure ]
 fast/dom/HTMLTemplateElement/ownerDocument.html [ Failure ]
 fast/dom/HTMLTemplateElement/ownerDocumentXHTML.xhtml [ Failure ]
+imported/w3c/html-templates [ Skip ]
+
+# We don't enable SUBTLE_CRYPTO yet
+crypto/subtle [ Skip ]
 
 http/tests/xmlhttprequest/access-control-preflight-async-header-denied.html [ Failure Pass ]
 http/tests/xmlhttprequest/cross-site-denied-response.html [ Failure Pass ]

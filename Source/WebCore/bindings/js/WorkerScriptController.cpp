@@ -26,9 +26,6 @@
  */
 
 #include "config.h"
-
-#if ENABLE(WORKERS)
-
 #include "WorkerScriptController.h"
 
 #include "JSDOMBinding.h"
@@ -236,5 +233,3 @@ WorkerScriptCallback WorkerScriptController::terminateScriptCallback()
 }
 
 } // namespace WebCore
-
-#endif // ENABLE(WORKERS)

@@ -64,16 +64,6 @@ static inline NSURL *autoreleased(WKURLRef url)
     return url ? CFBridgingRelease(WKURLCopyCFURL(kCFAllocatorDefault, adoptWK(url).get())) : nil;
 }
 
-static inline NSURLRequest *autoreleased(WKURLRequestRef urlRequest)
-{
-    return urlRequest ? CFBridgingRelease(WKURLRequestCopyNSURLRequest(adoptWK(urlRequest).get())) : nil;
-}
-
-static inline NSURLResponse *autoreleased(WKURLResponseRef urlResponse)
-{
-    return urlResponse ? CFBridgingRelease(WKURLResponseCopyNSURLResponse(adoptWK(urlResponse).get())) : nil;
-}
-
 NSString * const WKActionIsMainFrameKey = @"WKActionIsMainFrameKey";
 NSString * const WKActionNavigationTypeKey = @"WKActionNavigationTypeKey";
 NSString * const WKActionMouseButtonKey = @"WKActionMouseButtonKey";
@@ -335,7 +325,7 @@ static void releaseNSData(unsigned char*, const void* data)
 
 - (NSURL *)unreachableURL
 {
-    return [NSURL _web_URLWithWTFString:toImpl(_data->_pageRef.get())->unreachableURL() relativeToURL:nil];
+    return [NSURL _web_URLWithWTFString:toImpl(_data->_pageRef.get())->pageLoadState().unreachableURL() relativeToURL:nil];
 }
 
 - (double)estimatedProgress

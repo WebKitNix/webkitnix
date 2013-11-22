@@ -118,7 +118,7 @@ sub interfaceName=HTMLElement
 summary interfaceName=HTMLSummaryElement, JSInterfaceName=HTMLElement, conditional=DETAILS_ELEMENT, generateTypeHelpers
 sup interfaceName=HTMLElement
 table generateTypeHelpers
-tbody interfaceName=HTMLTableSectionElement, generateTypeHelpers
+tbody interfaceName=HTMLTableSectionElement
 td interfaceName=HTMLTableCellElement
 template conditional=TEMPLATE_ELEMENT, generateTypeHelpers
 textarea interfaceName=HTMLTextAreaElement, constructorNeedsFormElement, generateTypeHelpers

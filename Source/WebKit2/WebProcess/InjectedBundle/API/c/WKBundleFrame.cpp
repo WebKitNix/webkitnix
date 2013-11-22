@@ -119,13 +119,11 @@ static void localWorkerScriptInitCallback(JSC::ExecState* execState, bool isDedi
 
 void WKBundleFrameSetWorkerInitializeCallback(WKBundleFrameWorkerScriptCallback callback)
 {
-#if ENABLE(WORKERS)
     if (callback) {
         s_localWorkerScriptInitCallback = callback;
         WorkerScriptController::setInitScriptCallback(localWorkerScriptInitCallback);
     } else
         WorkerScriptController::setInitScriptCallback(0);
-#endif
 }
 
 static WKBundleFrameWorkerScriptCallback s_localWorkerScriptTerminateCallback;
@@ -137,13 +135,11 @@ static void localWorkerScriptTerminateCallback(JSC::ExecState* execState, bool i
 
 void WKBundleFrameSetWorkerTerminateCallback(WKBundleFrameWorkerScriptCallback callback)
 {
-#if ENABLE(WORKERS)
     if (callback) {
         s_localWorkerScriptTerminateCallback = callback;
         WorkerScriptController::setTerminateScriptCallback(localWorkerScriptTerminateCallback);
     } else
         WorkerScriptController::setTerminateScriptCallback(0);
-#endif
 }
 
 JSValueRef WKBundleFrameGetJavaScriptWrapperForNodeForWorld(WKBundleFrameRef frameRef, WKBundleNodeHandleRef nodeHandleRef, WKBundleScriptWorldRef worldRef)

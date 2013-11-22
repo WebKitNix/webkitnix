@@ -1,3 +1,341 @@
+2013-11-21  Filip Pizlo  <fpizlo@apple.com>
+
+        Fix a typo (requriements->requirements).
+
+        * runtime/StackAlignment.h:
+
+2013-11-21  Mark Lam  <mark.lam@apple.com>
+
+        CodeBlock::m_numCalleeRegisters need to honor native stack alignment.
+        https://bugs.webkit.org/show_bug.cgi?id=124754.
+
+        Reviewed by Filip Pizlo.
+
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::newRegister):
+        * dfg/DFGVirtualRegisterAllocationPhase.cpp:
+        (JSC::DFG::VirtualRegisterAllocationPhase::run):
+
+2013-11-21  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/124702> Stop overriding VALID_ARCHS.
+
+        All modern versions of Xcode set it appropriately for our needs.
+
+        Reviewed by Alexey Proskuryakov.
+
+        * Configurations/Base.xcconfig:
+
+2013-11-21  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/124701> Fix an error in a few Xcode configuration setting files.
+
+        Reviewed by Alexey Proskuryakov.
+
+        * Configurations/Base.xcconfig:
+
+2013-11-21  Michael Saboff  <msaboff@apple.com>
+
+        ARM64: Implement push/pop equivalents in LLInt
+        https://bugs.webkit.org/show_bug.cgi?id=124721
+
+        Reviewed by Filip Pizlo.
+
+        Added pushLRAndFP and popLRAndFP that push and pop the link register and frame pointer register.
+        These ops emit code just like what the compiler emits in the prologue and epilogue.  Also changed
+        pushCalleeSaves and popCalleeSaves to use the same store pair and load pair instructions to do
+        the actually pushing and popping.  Finally changed the implementation of push and pop to raise
+        an exception since we don't have (or need) a single register push or pop.
+
+        * llint/LowLevelInterpreter64.asm:
+        * offlineasm/arm64.rb:
+        * offlineasm/instructions.rb:
+
+2013-11-21  Michael Saboff  <msaboff@apple.com>
+
+        JSC: Removed unused opcodes from offline assembler
+        https://bugs.webkit.org/show_bug.cgi?id=124749
+
+        Reviewed by Mark Hahnenberg.
+
+        Removed the unused, X86 only peekq and pokeq.
+
+        * offlineasm/instructions.rb:
+        * offlineasm/x86.rb:
+
+2013-11-21  Michael Saboff  <msaboff@apple.com>
+
+        REGRESSION(159395) Fix branch8(…, AbsoluteAddress, …) in ARM64 MacroAssembler
+        https://bugs.webkit.org/show_bug.cgi?id=124688
+
+        Reviewed by Geoffrey Garen.
+
+        Changed handling of the address for the load8() in the branch8(AbsoluteAddress) to be like
+        the rest of the branchXX(AbsoluteAddress) fucntions.
+
+        * assembler/MacroAssemblerARM64.h:
+        (JSC::MacroAssemblerARM64::branch8):
+
+2013-11-21  Filip Pizlo  <fpizlo@apple.com>
+
+        BytecodeGenerator should align the stack according to native conventions
+        https://bugs.webkit.org/show_bug.cgi?id=124735
+
+        Reviewed by Mark Lam.
+
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::CallArguments::registerOffset):
+        (JSC::CallArguments::argumentCountIncludingThis):
+        * bytecompiler/NodesCodegen.cpp:
+        (JSC::CallArguments::CallArguments):
+
+2013-11-21  Filip Pizlo  <fpizlo@apple.com>
+
+        Unreviewed, preemptive build fix.
+
+        * runtime/StackAlignment.h:
+        (JSC::stackAlignmentBytes):
+        (JSC::stackAlignmentRegisters):
+
+2013-11-21  Filip Pizlo  <fpizlo@apple.com>
+
+        JSC should know what the stack alignment conventions are
+        https://bugs.webkit.org/show_bug.cgi?id=124736
+
+        Reviewed by Mark Lam.
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * runtime/StackAlignment.h: Added.
+        (JSC::stackAlignmentBytes):
+        (JSC::stackAlignmentRegisters):
+
+2013-11-21  Balazs Kilvady  <kilvadyb@homejinni.com>
+
+        [MIPS] Build fails since r159545.
+        https://bugs.webkit.org/show_bug.cgi?id=124716
+
+        Reviewed by Michael Saboff.
+
+        Add missing implementations in MacroAssembler and LLInt for MIPS.
+
+        * assembler/MIPSAssembler.h:
+        (JSC::MIPSAssembler::sync):
+        * assembler/MacroAssemblerMIPS.h:
+        (JSC::MacroAssemblerMIPS::store8):
+        (JSC::MacroAssemblerMIPS::memoryFence):
+        * offlineasm/mips.rb:
+
+2013-11-21  Julien Brianceau  <jbriance@cisco.com>
+
+        Fix sh4 build after r159545.
+        https://bugs.webkit.org/show_bug.cgi?id=124713
+
+        Reviewed by Michael Saboff.
+
+        Add missing implementations in macro assembler and LLINT for sh4.
+
+        * assembler/MacroAssemblerSH4.h:
+        (JSC::MacroAssemblerSH4::load8):
+        (JSC::MacroAssemblerSH4::store8):
+        (JSC::MacroAssemblerSH4::memoryFence):
+        * assembler/SH4Assembler.h:
+        (JSC::SH4Assembler::synco):
+        * offlineasm/sh4.rb: Handle "memfence" opcode.
+
+2013-11-20  Mark Lam  <mark.lam@apple.com>
+
+        Introducing VMEntryScope to update the VM stack limit.
+        https://bugs.webkit.org/show_bug.cgi?id=124634.
+
+        Reviewed by Geoffrey Garen.
+
+        1. Introduced USE(SEPARATE_C_AND_JS_STACK) (defined in Platform.h).
+           Currently, it is hardcoded to use separate C and JS stacks. Once we
+           switch to using the C stack for JS frames, we'll need to fix this to
+           only be enabled when ENABLE(LLINT_C_LOOP).
+
+        2. Stack limits are now tracked in the VM.
+
+           Logically, there are 2 stack limits:
+           a. m_stackLimit for the native C stack, and
+           b. m_jsStackLimit for the JS stack.
+
+           If USE(SEPARATE_C_AND_JS_STACK), then the 2 limits are the same
+           value, and are implemented as 2 fields in a union.
+
+        3. The VM native stackLimit is set as follows:
+           a. Initially, the VM sets it to the limit of the stack of the thread that
+              instantiated the VM. This allows the parser and bytecode generator to
+              run before we enter the VM to execute JS code.
+
+           b. Upon entry into the VM to execute JS code (via one of the
+              Interpreter::execute...() functions), we instantiate a VMEntryScope
+              that sets the VM's stackLimit to the limit of the current thread's
+              stack. The VMEntryScope will automatically restore the previous
+              entryScope and stack limit upon destruction.
+
+           If USE(SEPARATE_C_AND_JS_STACK), the JSStack's methods will set the VM's
+           jsStackLimit whenever it grows or shrinks.
+
+        4. The VM now provides a isSafeToRecurse() function that compares the
+           current stack pointer against its native stackLimit. This subsumes and
+           obsoletes the VMStackBounds class.
+
+        5. The VMEntryScope class also subsumes DynamicGlobalObjectScope for
+           tracking the JSGlobalObject that we last entered the VM with.
+
+        6. Renamed dynamicGlobalObject() to vmEntryGlobalObject() since that is
+           the value that the function retrieves.
+
+        7. Changed JIT and LLINT code to do stack checks against the jsStackLimit
+           in the VM class instead of the JSStack.
+
+        * API/JSBase.cpp:
+        (JSEvaluateScript):
+        (JSCheckScriptSyntax):
+        * API/JSContextRef.cpp:
+        (JSGlobalContextRetain):
+        (JSGlobalContextRelease):
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::BytecodeGenerator):
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::BytecodeGenerator::emitNode):
+        (JSC::BytecodeGenerator::emitNodeInConditionContext):
+        * debugger/Debugger.cpp:
+        (JSC::Debugger::detach):
+        (JSC::Debugger::recompileAllJSFunctions):
+        (JSC::Debugger::pauseIfNeeded):
+        * debugger/DebuggerCallFrame.cpp:
+        (JSC::DebuggerCallFrame::vmEntryGlobalObject):
+        * debugger/DebuggerCallFrame.h:
+        * dfg/DFGJITCompiler.cpp:
+        (JSC::DFG::JITCompiler::compileFunction):
+        * dfg/DFGOSREntry.cpp:
+        * ftl/FTLLink.cpp:
+        (JSC::FTL::link):
+        * ftl/FTLOSREntry.cpp:
+        * heap/Heap.cpp:
+        (JSC::Heap::lastChanceToFinalize):
+        (JSC::Heap::deleteAllCompiledCode):
+        * interpreter/CachedCall.h:
+        (JSC::CachedCall::CachedCall):
+        * interpreter/CallFrame.cpp:
+        (JSC::CallFrame::vmEntryGlobalObject):
+        * interpreter/CallFrame.h:
+        * interpreter/Interpreter.cpp:
+        (JSC::unwindCallFrame):
+        (JSC::Interpreter::unwind):
+        (JSC::Interpreter::execute):
+        (JSC::Interpreter::executeCall):
+        (JSC::Interpreter::executeConstruct):
+        (JSC::Interpreter::prepareForRepeatCall):
+        (JSC::Interpreter::debug):
+        * interpreter/JSStack.cpp:
+        (JSC::JSStack::JSStack):
+        (JSC::JSStack::growSlowCase):
+        * interpreter/JSStack.h:
+        * interpreter/JSStackInlines.h:
+        (JSC::JSStack::shrink):
+        (JSC::JSStack::grow):
+        - Moved these inlined functions here from JSStack.h. It reduces some
+          #include dependencies of JSSTack.h which had previously resulted
+          in some EWS bots' unhappiness with this patch.
+        (JSC::JSStack::updateStackLimit):
+        * jit/JIT.cpp:
+        (JSC::JIT::privateCompile):
+        * jit/JITCall.cpp:
+        (JSC::JIT::compileLoadVarargs):
+        * jit/JITCall32_64.cpp:
+        (JSC::JIT::compileLoadVarargs):
+        * jit/JITOperations.cpp:
+        * llint/LLIntSlowPaths.cpp:
+        * llint/LowLevelInterpreter.asm:
+        * parser/Parser.cpp:
+        (JSC::::Parser):
+        * parser/Parser.h:
+        (JSC::Parser::canRecurse):
+        * runtime/CommonSlowPaths.h:
+        * runtime/Completion.cpp:
+        (JSC::evaluate):
+        * runtime/FunctionConstructor.cpp:
+        (JSC::constructFunctionSkippingEvalEnabledCheck):
+        * runtime/JSGlobalObject.cpp:
+        * runtime/JSGlobalObject.h:
+        * runtime/StringRecursionChecker.h:
+        (JSC::StringRecursionChecker::performCheck):
+        * runtime/VM.cpp:
+        (JSC::VM::VM):
+        (JSC::VM::releaseExecutableMemory):
+        (JSC::VM::throwException):
+        * runtime/VM.h:
+        (JSC::VM::addressOfJSStackLimit):
+        (JSC::VM::jsStackLimit):
+        (JSC::VM::setJSStackLimit):
+        (JSC::VM::stackLimit):
+        (JSC::VM::setStackLimit):
+        (JSC::VM::isSafeToRecurse):
+        * runtime/VMEntryScope.cpp: Added.
+        (JSC::VMEntryScope::VMEntryScope):
+        (JSC::VMEntryScope::~VMEntryScope):
+        (JSC::VMEntryScope::requiredCapacity):
+        * runtime/VMEntryScope.h: Added.
+        (JSC::VMEntryScope::globalObject):
+        * runtime/VMStackBounds.h: Removed.
+
+2013-11-20  Michael Saboff  <msaboff@apple.com>
+
+        [Win] JavaScript JIT crash (with DFG enabled).
+        https://bugs.webkit.org/show_bug.cgi?id=124675
+
+        Reviewed by Geoffrey Garen.
+
+        Similar to the change in r159427, changed linkClosureCall to use regT0/regT1 (payload/tag) for the callee.
+        linkForThunkGenerator already expected the callee in regT0/regT1, but changed the comment to reflect that.
+
+        * jit/Repatch.cpp:
+        (JSC::linkClosureCall):
+        * jit/ThunkGenerators.cpp:
+        (JSC::linkForThunkGenerator):
+
+2013-11-20  Michael Saboff  <msaboff@apple.com>
+
+        ARMv7: Crash due to use after free of AssemblerBuffer
+        https://bugs.webkit.org/show_bug.cgi?id=124611
+
+        Reviewed by Geoffrey Garen.
+
+        Changed JITFinalizer constructor to take a MacroAssemblerCodePtr instead of a Label.
+        In finalizeFunction(), we use that value instead of calculating it from the label.
+
+        * assembler/MacroAssembler.cpp:
+        * dfg/DFGJITFinalizer.cpp:
+        (JSC::DFG::JITFinalizer::JITFinalizer):
+        (JSC::DFG::JITFinalizer::finalizeFunction):
+        * dfg/DFGJITFinalizer.h:
+
+2013-11-20  Julien Brianceau  <jbriance@cisco.com>
+
+        Fix CPU(ARM_TRADITIONAL) build after r159545.
+        https://bugs.webkit.org/show_bug.cgi?id=124649
+
+        Reviewed by Michael Saboff.
+
+        Add missing memoryFence, load8 and store8 implementations in macro assembler.
+
+        * assembler/ARMAssembler.h:
+        (JSC::ARMAssembler::dmbSY):
+        * assembler/MacroAssemblerARM.h:
+        (JSC::MacroAssemblerARM::load8):
+        (JSC::MacroAssemblerARM::store8):
+        (JSC::MacroAssemblerARM::memoryFence):
+
 2013-11-20  Julien Brianceau  <jbriance@cisco.com>
 
         [armv7][arm64] Speculative build fix after r159545.

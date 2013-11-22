@@ -113,7 +113,8 @@ public:
     bool parse4Values(CSSPropertyID, const CSSPropertyID* properties, bool important);
     bool parseContent(CSSPropertyID, bool important);
     bool parseQuotes(CSSPropertyID, bool important);
-
+    bool parseAlt(CSSPropertyID, bool important);
+    
 #if ENABLE(CSS_VARIABLES)
     static bool parseValue(MutableStylePropertySet*, CSSPropertyID, const String&, bool important, Document&);
     bool cssVariablesEnabled() const;
@@ -182,8 +183,10 @@ public:
 #endif
 
     PassRefPtr<CSSBasicShape> parseBasicShape();
+    PassRefPtr<CSSPrimitiveValue> parseShapeRadius(CSSParserValue*);
     PassRefPtr<CSSBasicShape> parseBasicShapeRectangle(CSSParserValueList*);
     PassRefPtr<CSSBasicShape> parseBasicShapeCircle(CSSParserValueList*);
+    PassRefPtr<CSSBasicShape> parseDeprecatedBasicShapeCircle(CSSParserValueList*);
     PassRefPtr<CSSBasicShape> parseBasicShapeEllipse(CSSParserValueList*);
     PassRefPtr<CSSBasicShape> parseBasicShapePolygon(CSSParserValueList*);
     PassRefPtr<CSSBasicShape> parseBasicShapeInsetRectangle(CSSParserValueList*);

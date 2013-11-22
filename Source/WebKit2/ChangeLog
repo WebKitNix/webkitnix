@@ -1,3 +1,550 @@
+2013-11-21  Sergio Correia  <sergio.correia@openbossa.org>
+
+        [EFL][WK2] Fix build after r159656
+        https://bugs.webkit.org/show_bug.cgi?id=124755
+
+        Reviewed by Gyuyoung Kim.
+
+        Page title was moved to page load state.
+
+        * UIProcess/InspectorServer/efl/WebInspectorServerEfl.cpp:
+        (WebKit::WebInspectorServer::buildPageList):
+
+2013-11-21  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/124702> Stop overriding VALID_ARCHS.
+
+        All modern versions of Xcode set it appropriately for our needs.
+
+        Reviewed by Alexey Proskuryakov.
+
+        * Configurations/Base.xcconfig:
+
+2013-11-21  Gwang Yoon Hwang  <ryumiel@company100.net>
+
+        [GTK] Unreviewed buildfix after r159614 and r159656.
+
+        * UIProcess/InspectorServer/gtk/WebInspectorServerGtk.cpp:
+        (WebKit::WebInspectorServer::buildPageList): Use the page load state to get page title.
+
+2013-11-21  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/124701> Fix an error in a few Xcode configuration setting files.
+
+        Reviewed by Alexey Proskuryakov.
+
+        * Configurations/Base.xcconfig:
+
+2013-11-21  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/124700> Fix some deprecation warnings.
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView namesOfPromisedFilesDroppedAtDestination:]): Move off a deprecated NSFileWrapper method.
+
+2013-11-21  Anders Carlsson  <andersca@apple.com>
+
+        Didn't mean to commit this.
+
+        * UIProcess/PageLoadState.h:
+
+2013-11-21  Anders Carlsson  <andersca@apple.com>
+
+        Move page title handling to the page load state
+        https://bugs.webkit.org/show_bug.cgi?id=124748
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/C/WKPage.cpp:
+        (WKPageCopyTitle):
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::reset):
+        (WebKit::PageLoadState::didCommitLoad):
+        (WebKit::PageLoadState::title):
+        (WebKit::PageLoadState::setTitle):
+        * UIProcess/PageLoadState.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::didReceiveTitleForFrame):
+        * UIProcess/WebPageProxy.h:
+
+2013-11-21  Daniel Bates  <dabates@apple.com>
+
+        Remove unused functions from WebCore and WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=124739
+
+        Reviewed by Alexey Proskuryakov.
+
+        Remove unused functions autoreleased({WKURLRequestRef, WKURLResponseRef}).
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+
+2013-11-21  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Rename PlatformCertificateInfo to CertificateInfo
+        https://bugs.webkit.org/show_bug.cgi?id=124150
+
+        Reviewed by Darin Adler.
+
+        * GNUmakefile.list.am:
+        * NetworkProcess/AsynchronousNetworkLoaderClient.cpp:
+        (WebKit::AsynchronousNetworkLoaderClient::didReceiveResponse):
+        * NetworkProcess/NetworkProcess.h:
+        * NetworkProcess/NetworkProcess.messages.in:
+        * NetworkProcess/NetworkResourceLoader.cpp:
+        * NetworkProcess/mac/NetworkProcessMac.mm:
+        (WebKit::NetworkProcess::allowSpecificHTTPSCertificateForHost):
+        * NetworkProcess/soup/NetworkProcessSoup.cpp:
+        (WebKit::NetworkProcess::allowSpecificHTTPSCertificateForHost):
+        * PlatformEfl.cmake:
+        * PlatformGTK.cmake:
+        * Shared/API/c/mac/WKCertificateInfoMac.mm:
+        (WKCertificateInfoCreateWithCertficateChain):
+        (WKCertificateInfoGetCertificateChain):
+        * Shared/Authentication/AuthenticationManager.cpp:
+        (WebKit::AuthenticationManager::tryUseCertificateInfoForChallenge):
+        (WebKit::AuthenticationManager::useCredentialForChallenge):
+        * Shared/Authentication/AuthenticationManager.h:
+        * Shared/Authentication/AuthenticationManager.messages.in:
+        * Shared/Authentication/mac/AuthenticationManager.mac.mm:
+        (WebKit::AuthenticationManager::tryUseCertificateInfoForChallenge):
+        * Shared/UserMessageCoders.h:
+        (WebKit::UserMessageEncoder::baseEncode):
+        (WebKit::UserMessageDecoder::baseDecode):
+        * Shared/WebCertificateInfo.h:
+        (WebKit::WebCertificateInfo::create):
+        (WebKit::WebCertificateInfo::certificateInfo):
+        (WebKit::WebCertificateInfo::WebCertificateInfo):
+        * Shared/mac/CertificateInfo.h: Renamed from Source/WebKit2/Shared/mac/PlatformCertificateInfo.h.
+        (WebKit::CertificateInfo::certificateChain):
+        * Shared/mac/CertificateInfo.mm: Renamed from Source/WebKit2/Shared/mac/PlatformCertificateInfo.mm.
+        (WebKit::CertificateInfo::CertificateInfo):
+        (WebKit::CertificateInfo::encode):
+        (WebKit::CertificateInfo::decode):
+        (WebKit::CertificateInfo::dump):
+        * Shared/mac/WebCoreArgumentCodersMac.mm:
+        (CoreIPC::::encodePlatformData):
+        (CoreIPC::::decodePlatformData):
+        * Shared/soup/CertificateInfo.cpp: Renamed from Source/WebKit2/Shared/soup/PlatformCertificateInfo.cpp.
+        (WebKit::CertificateInfo::CertificateInfo):
+        (WebKit::CertificateInfo::~CertificateInfo):
+        (WebKit::CertificateInfo::encode):
+        (WebKit::CertificateInfo::decode):
+        * Shared/soup/CertificateInfo.h: Renamed from Source/WebKit2/Shared/soup/PlatformCertificateInfo.h.
+        (WebKit::CertificateInfo::certificate):
+        (WebKit::CertificateInfo::tlsErrors):
+        * Shared/soup/WebCoreArgumentCodersSoup.cpp:
+        (CoreIPC::::encodePlatformData):
+        (CoreIPC::::decodePlatformData):
+        * UIProcess/API/gtk/WebKitCertificateInfo.cpp:
+        (webkitCertificateInfoGetCertificateInfo):
+        * UIProcess/API/gtk/WebKitCertificateInfoPrivate.h:
+        * UIProcess/API/gtk/WebKitWebView.cpp:
+        (webkit_web_view_get_tls_info):
+        * UIProcess/Authentication/AuthenticationChallengeProxy.cpp:
+        (WebKit::AuthenticationChallengeProxy::useCredential):
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::allowSpecificHTTPSCertificateForHost):
+        * UIProcess/WebFrameProxy.cpp:
+        (WebKit::WebFrameProxy::didCommitLoad):
+        * UIProcess/WebFrameProxy.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::didCommitLoadForFrame):
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebPageProxy.messages.in:
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/Network/WebResourceLoader.cpp:
+        (WebKit::WebResourceLoader::didReceiveResponseWithCertificateInfo):
+        * WebProcess/Network/WebResourceLoader.h:
+        * WebProcess/Network/WebResourceLoader.messages.in:
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::dispatchDidCommitLoad):
+        * WebProcess/WebProcess.h:
+        * WebProcess/WebProcess.messages.in:
+        * WebProcess/soup/WebProcessSoup.cpp:
+        (WebKit::WebProcess::allowSpecificHTTPSCertificateForHost):
+
+2013-11-21  Sergio Correia  <sergio.correia@openbossa.org>
+
+        [EFL][GTK][WK2] Build fix after r159641
+        https://bugs.webkit.org/show_bug.cgi?id=124742
+
+        Reviewed by Csaba Osztrogonác.
+
+        Should fetch activeURL from page load state.
+
+        * UIProcess/API/gtk/WebKitWebView.cpp:
+        (webkitWebViewUpdateURI):
+        * UIProcess/InspectorServer/efl/WebInspectorServerEfl.cpp:
+        (WebKit::WebInspectorServer::buildPageList):
+        * UIProcess/InspectorServer/gtk/WebInspectorServerGtk.cpp:
+        (WebKit::WebInspectorServer::buildPageList):
+
+2013-11-21  Anders Carlsson  <andersca@apple.com>
+
+        Fetch all page loading related URLs from the page load state
+        https://bugs.webkit.org/show_bug.cgi?id=124732
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/C/WKPage.cpp:
+        (WKPageCopyActiveURL):
+        (WKPageCopyProvisionalURL):
+        (WKPageCopyCommittedURL):
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController unreachableURL]):
+        * UIProcess/PageLoadState.h:
+        (WebKit::PageLoadState::provisionalURL):
+        (WebKit::PageLoadState::url):
+        (WebKit::PageLoadState::unreachableURL):
+        * UIProcess/WebPageProxy.cpp:
+        * UIProcess/WebPageProxy.h:
+
+2013-11-20  Brady Eidson  <beidson@apple.com>
+
+        Hook up WebProcess-side of getOrEstablishIDBDatabaseMetadata
+        https://bugs.webkit.org/show_bug.cgi?id=124698
+
+        Reviewed by Anders Carlsson.
+
+        With this change the IDB API in WebKit2 using the DatabaseProcess finally does something observable:
+        window.indexedDB.open() sends an error to Javascript.
+
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.cpp:
+        (WebKit::DatabaseProcessIDBConnection::getOrEstablishIDBDatabaseMetadata): Continue calling back to the
+          WebProcess with dummy data, but include the request ID for reference.
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.h:
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.messages.in:
+
+        Add a new class that wraps a completion callback function and gives it a unique integer identifier.
+        It also allows for wrapping an abort callback function (in case a connection is lost, for example).
+        It is templated to flexibly handle any callback function signature.
+        * Shared/AsyncRequest.cpp: Added.
+        (WebKit::generateRequestID):
+        (WebKit::AsyncRequest::AsyncRequest):
+        (WebKit::AsyncRequest::~AsyncRequest):
+        (WebKit::AsyncRequest::setAbortHandler):
+        (WebKit::AsyncRequest::requestAborted):
+        (WebKit::AsyncRequest::clearAbortHandler):
+        * Shared/AsyncRequest.h: Added.
+        (WebKit::AsyncRequest::requestID):
+        (WebKit::AsyncRequest::requestCompleted):
+
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.cpp:
+        (WebKit::WebIDBServerConnection::getOrEstablishIDBDatabaseMetadata): Wrap the completion handler in an
+          AsyncRequest and save off the request for later use.
+        (WebKit::WebIDBServerConnection::didGetOrEstablishIDBDatabaseMetadata): Send the results to the AsyncRequest.
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.h:
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.messages.in:
+
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-11-20  Anders Carlsson  <andersca@apple.com>
+
+        Move activeURL getter to PageLoadState
+        https://bugs.webkit.org/show_bug.cgi?id=124690
+
+        Reviewed by Tim Horton.
+
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::activeURL):
+        * UIProcess/PageLoadState.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::activeURL):
+
+2013-11-20  Simon Fraser  <simon.fraser@apple.com>
+
+        Clean up WebKit2 initialization
+        https://bugs.webkit.org/show_bug.cgi?id=124696
+
+        Reviewed by Sam Weinig.
+        
+        Call InitializeWebKit2() everywhere we need to do one-time
+        initialization in WebKit2, rather than having a hotch-potch
+        of init code.
+
+        * Shared/APIObject.cpp:
+        (API::Object::Object):
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView initWithFrame:contextRef:pageGroupRef:relatedToPage:]):
+        * UIProcess/Launcher/mac/ProcessLauncherMac.mm: Removed an unused #include.
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::create):
+
+2013-11-21  Dan Bernstein  <mitz@apple.com>
+
+        Reverted r159603, as it appears to have caused Safari’s Web processes to crash on launch.
+
+        Requested by Sam Weinig.
+
+        * Scripts/webkit2/messages.py:
+        (struct_or_class):
+        * Shared/UserMessageCoders.h:
+        (WebKit::UserMessageEncoder::baseEncode):
+        * Shared/WebPageCreationParameters.cpp:
+        (WebKit::WebPageCreationParameters::encode):
+        (WebKit::WebPageCreationParameters::decode):
+        * Shared/WebPageCreationParameters.h:
+        * Shared/mac/ObjCObjectGraphCoders.h:
+        * Shared/mac/ObjCObjectGraphCoders.mm:
+        (WebKit::ObjCObjectGraphEncoder::baseEncode):
+        (WebKit::WebContextObjCObjectGraphEncoderImpl::WebContextObjCObjectGraphEncoderImpl):
+        (WebKit::WebContextObjCObjectGraphEncoderImpl::encode):
+        (WebKit::InjectedBundleObjCObjectGraphEncoderImpl::encode):
+        (WebKit::WebContextObjCObjectGraphEncoder::WebContextObjCObjectGraphEncoder):
+        (WebKit::WebContextObjCObjectGraphEncoder::encode):
+        * UIProcess/WebConnectionToWebProcess.cpp:
+        (WebKit::WebConnectionToWebProcess::encodeMessageBody):
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::createNewWebProcess):
+        (WebKit::WebContext::createWebPage):
+        (WebKit::WebContext::postMessageToInjectedBundle):
+        (WebKit::WebContext::didReceiveSyncMessage):
+        * UIProcess/WebContextUserMessageCoders.h:
+        (WebKit::WebContextUserMessageEncoder::WebContextUserMessageEncoder):
+        (WebKit::WebContextUserMessageEncoder::encode):
+        (WebKit::WebContextUserMessageDecoder::decode):
+        * UIProcess/WebPageGroup.cpp:
+        * UIProcess/WebPageGroup.h:
+        (WebKit::WebPageGroup::sendToAllProcessesInGroup):
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::create):
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::initializeWebPage):
+        (WebKit::WebPageProxy::loadURL):
+        (WebKit::WebPageProxy::loadURLRequest):
+        (WebKit::WebPageProxy::loadFile):
+        (WebKit::WebPageProxy::loadData):
+        (WebKit::WebPageProxy::loadHTMLString):
+        (WebKit::WebPageProxy::loadAlternateHTMLString):
+        (WebKit::WebPageProxy::loadPlainTextString):
+        (WebKit::WebPageProxy::loadWebArchiveData):
+        (WebKit::WebPageProxy::postMessageToInjectedBundle):
+        (WebKit::WebPageProxy::initializeCreationParameters):
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::disconnect):
+        (WebKit::WebProcessProxy::createWebPage):
+        * UIProcess/WebProcessProxy.h:
+        * WebProcess/InjectedBundle/InjectedBundleUserMessageCoders.h:
+        (WebKit::InjectedBundleUserMessageEncoder::encode):
+        (WebKit::InjectedBundleUserMessageDecoder::decode):
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::webPageGroup):
+        * WebProcess/WebProcess.h:
+        * WebProcess/WebProcess.messages.in:
+
+2013-11-20  Brady Eidson  <beidson@apple.com>
+
+        Add more infrastructure for ServerConnection communication between Web and Database processes
+        https://bugs.webkit.org/show_bug.cgi?id=124693
+
+        Reviewed by Anders Carlsson.
+
+        * DatabaseProcess/DatabaseToWebProcessConnection.cpp:
+        (WebKit::DatabaseToWebProcessConnection::establishIDBConnection):
+        (WebKit::DatabaseToWebProcessConnection::removeDatabaseProcessIDBConnection): Added for WebProcess to be able
+          to invalidate the DatabaseProcess side of a server connection.
+        * DatabaseProcess/DatabaseToWebProcessConnection.h:
+        * DatabaseProcess/DatabaseToWebProcessConnection.messages.in:
+
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.cpp:
+        (WebKit::DatabaseProcessIDBConnection::DatabaseProcessIDBConnection):
+        (WebKit::DatabaseProcessIDBConnection::disconnectedFromWebProcess): Added for future cleanup.
+        (WebKit::DatabaseProcessIDBConnection::establishConnection):
+        (WebKit::DatabaseProcessIDBConnection::getOrEstablishIDBDatabaseMetadata): Callback to the WebProcess, even if
+          it is just dummy data for now.
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.h:
+        (WebKit::DatabaseProcessIDBConnection::create):
+
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.cpp:
+        (WebKit::WebIDBServerConnection::create): Register the new object with the WebToDatabaseProcessConnection.
+        (WebKit::WebIDBServerConnection::~WebIDBServerConnection): Remove from the WebToDatabaseProcessConnection.
+        (WebKit::WebIDBServerConnection::getOrEstablishIDBDatabaseMetadata):
+        (WebKit::WebIDBServerConnection::didGetOrEstablishIDBDatabaseMetadata): Callback from the DatabaseProcess,
+          a no-op for now.
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.h:
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.messages.in: Copied from Source/WebKit2/DatabaseProcess/DatabaseToWebProcessConnection.messages.in.
+
+        * WebProcess/Databases/WebToDatabaseProcessConnection.cpp:
+        (WebKit::WebToDatabaseProcessConnection::didReceiveMessage):
+        (WebKit::WebToDatabaseProcessConnection::didClose):
+        (WebKit::WebToDatabaseProcessConnection::registerWebIDBServerConnection): Hold a collection of all
+          server connections for messaging.
+        (WebKit::WebToDatabaseProcessConnection::removeWebIDBServerConnection): Remove a connection from the collection,
+          and also message the DatabaseProcess that it’s gone away.
+        * WebProcess/Databases/WebToDatabaseProcessConnection.h:
+
+        Project files, etc etc:
+        * DerivedSources.make:
+        * Scripts/webkit2/messages.py:
+        (struct_or_class):
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-11-18  Sam Weinig  <sam@webkit.org>
+
+        WebPageGroup's should keep track of what processes they are being used by
+        https://bugs.webkit.org/show_bug.cgi?id=124556
+
+        Reviewed by Dan Bernstein.
+
+        * Scripts/webkit2/messages.py:
+        (struct_or_class):
+        Mark WebPageGroupData as a struct.
+
+        * Shared/UserMessageCoders.h:
+        * Shared/mac/ObjCObjectGraphCoders.h:
+        * Shared/mac/ObjCObjectGraphCoders.mm:
+        * WebProcess/InjectedBundle/InjectedBundleUserMessageCoders.h:
+        * UIProcess/WebConnectionToWebProcess.cpp:
+        * UIProcess/WebContext.cpp:
+        * UIProcess/WebContextUserMessageCoders.h:
+        * UIProcess/WebPageProxy.cpp:
+        * UIProcess/WebPageProxy.h:
+        Pass the WebProcess/WebProcessProxy to both encode and decode.
+
+        * Shared/WebPageCreationParameters.h:
+        Pass the page group by ID when creating a page, as it will have had its own
+        creation message sent already.
+
+        * UIProcess/WebPageGroup.cpp:
+        * UIProcess/WebPageGroup.h:
+        Keep track of processes.
+
+        * UIProcess/WebProcessProxy.cpp:
+        * UIProcess/WebProcessProxy.h:
+        Keep track of the page groups used by the process.
+
+        * WebProcess/WebPage/WebPage.cpp:
+        Get the already created page group on creation.
+
+        * WebProcess/WebProcess.cpp:
+        * WebProcess/WebProcess.h:
+        * WebProcess/WebProcess.messages.in:
+        Explicitly create page groups in the WebProcess.
+
+2013-11-20  Brady Eidson  <beidson@apple.com>
+
+        IDB related cleanup in WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=124691
+
+        Reviewed by Enrica Casucci.
+
+        - WebIDBServerConnection.cpp should use the WebCore namespace and get rid of "WebCore::" throughout
+        - "backendIndentifier" should be renamed to "serverConnectionIdentifier" throughout
+
+        * DatabaseProcess/DatabaseToWebProcessConnection.cpp:
+        (WebKit::DatabaseToWebProcessConnection::establishIDBConnection):
+        * DatabaseProcess/DatabaseToWebProcessConnection.h:
+        * DatabaseProcess/DatabaseToWebProcessConnection.messages.in:
+
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.cpp:
+        (WebKit::DatabaseProcessIDBConnection::DatabaseProcessIDBConnection):
+        * DatabaseProcess/IndexedDB/DatabaseProcessIDBConnection.h:
+        (WebKit::DatabaseProcessIDBConnection::create):
+
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.cpp:
+        (WebKit::generateServerConnectionIdentifier):
+        (WebKit::WebIDBServerConnection::WebIDBServerConnection):
+        (WebKit::WebIDBServerConnection::openTransaction):
+        (WebKit::WebIDBServerConnection::setIndexKeys):
+        (WebKit::WebIDBServerConnection::createObjectStore):
+        (WebKit::WebIDBServerConnection::createIndex):
+        (WebKit::WebIDBServerConnection::deleteIndex):
+        (WebKit::WebIDBServerConnection::get):
+        (WebKit::WebIDBServerConnection::put):
+        (WebKit::WebIDBServerConnection::openCursor):
+        (WebKit::WebIDBServerConnection::count):
+        (WebKit::WebIDBServerConnection::deleteRange):
+        (WebKit::WebIDBServerConnection::clearObjectStore):
+        (WebKit::WebIDBServerConnection::deleteObjectStore):
+        (WebKit::WebIDBServerConnection::changeDatabaseVersion):
+        (WebKit::WebIDBServerConnection::cursorAdvance):
+        (WebKit::WebIDBServerConnection::cursorIterate):
+        (WebKit::WebIDBServerConnection::cursorPrefetchIteration):
+        (WebKit::WebIDBServerConnection::cursorPrefetchReset):
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.h:
+
+2013-11-20  Brady Eidson  <beidson@apple.com>
+
+        Add argument coders for IDBDatabaseMetadata classes
+        https://bugs.webkit.org/show_bug.cgi?id=124689
+
+        Reviewed by Anders Carlsson.
+
+        Add coders for:
+          - IDBDatabaseMetadata
+          - IDBIndexMetadata
+          - IDBKeyPath
+          - IDBObjectStoreMetadata
+
+        * Shared/WebCoreArgumentCoders.cpp:
+        (CoreIPC::::encode):
+        (CoreIPC::::decode):
+        * Shared/WebCoreArgumentCoders.h:
+
+2013-11-20  Anders Carlsson  <andersca@apple.com>
+
+        Enable PageLoadTest assertions again
+        https://bugs.webkit.org/show_bug.cgi?id=124681
+
+        Reviewed by Tim Horton.
+
+        Remove an overzealous assertion and re-enable assertions in PageLoadState again.
+
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::didCommitLoad):
+        Remove assertion - it's fine for a page to have a null URL.
+
+        (WebKit::PageLoadState::didFinishLoad):
+        Ditto.
+
+        (WebKit::PageLoadState::didFailLoad):
+        Update the state.
+
+2013-11-20  Anders Carlsson  <andersca@apple.com>
+
+        PageLoadState should keep track of unreachable URLs
+        https://bugs.webkit.org/show_bug.cgi?id=124677
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::reset):
+        (WebKit::PageLoadState::didStartProvisionalLoad):
+        (WebKit::PageLoadState::didFailProvisionalLoad):
+        (WebKit::PageLoadState::setUnreachableURL):
+        * UIProcess/PageLoadState.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::loadAlternateHTMLString):
+
+2013-11-20  Tim Horton  <timothy_horton@apple.com>
+
+        Remote Layer Tree: 100% repro crasher on the IPC thread when creating lots of layers
+        https://bugs.webkit.org/show_bug.cgi?id=124643
+
+        Reviewed by Anders Carlsson.
+
+        * Platform/CoreIPC/mac/ConnectionMac.cpp:
+        (CoreIPC::Connection::sendOutgoingMessage):
+        Dynamically allocate storage for the message if needed.
+
+2013-11-20  Tim Horton  <timothy_horton@apple.com>
+
+        machMessageSize uses sizeof(mach_msg_ool_ports_descriptor_t) for out-of-line *memory*
+        https://bugs.webkit.org/show_bug.cgi?id=124644
+
+        Reviewed by Anders Carlsson.
+
+        * Platform/CoreIPC/mac/ConnectionMac.cpp:
+        (CoreIPC::machMessageSize):
+        mach_msg_ool_descriptor_t is the correct type, given that
+        out-of-line memory descriptors use the mach_msg_ool_descriptor_t
+        member of the mach_msg_descriptor_t union.
+
 2013-11-20  Brady Eidson  <beidson@apple.com>
 
         Cleanup getOrEstablishIDBDatabaseMetadata and stub it out in WK2

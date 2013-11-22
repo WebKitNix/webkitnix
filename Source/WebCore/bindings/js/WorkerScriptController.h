@@ -28,7 +28,6 @@
 #ifndef WorkerScriptController_h
 #define WorkerScriptController_h
 
-#if ENABLE(WORKERS)
 #include <debugger/Debugger.h>
 #include <heap/Strong.h>
 #include <wtf/Forward.h>
@@ -107,7 +106,5 @@ namespace WebCore {
     };
 
 } // namespace WebCore
-
-#endif // ENABLE(WORKERS)
 
 #endif // WorkerScriptController_h

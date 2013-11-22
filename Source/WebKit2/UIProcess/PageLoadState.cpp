@@ -26,9 +26,6 @@
 #include "config.h"
 #include "PageLoadState.h"
 
-#undef ASSERT
-#define ASSERT(x) ((void)0)
-
 namespace WebKit {
 
 PageLoadState::PageLoadState()
@@ -46,6 +43,35 @@ void PageLoadState::reset()
     m_pendingAPIRequestURL = String();
     m_provisionalURL = String();
     m_url = String();
+
+    m_unreachableURL = String();
+    m_lastUnreachableURL = String();
+
+    m_title = String();
+}
+
+String PageLoadState::activeURL() const
+{
+    // If there is a currently pending URL, it is the active URL,
+    // even when there's no main frame yet, as it might be the
+    // first API request.
+    if (!m_pendingAPIRequestURL.isNull())
+        return m_pendingAPIRequestURL;
+
+    if (!m_unreachableURL.isEmpty())
+        return m_unreachableURL;
+
+    switch (m_state) {
+    case State::Provisional:
+        return m_provisionalURL;
+    case State::Committed:
+    case State::Finished:
+        return m_url;
+    }
+
+    ASSERT_NOT_REACHED();
+    return String();
+
 }
 
 const String& PageLoadState::pendingAPIRequestURL() const
@@ -70,7 +96,7 @@ void PageLoadState::didStartProvisionalLoad(const String& url, const String& unr
     m_state = State::Provisional;
     m_provisionalURL = url;
 
-    // FIXME: Do something with the unreachable URL.
+    setUnreachableURL(unreachableURL);
 }
 
 void PageLoadState::didReceiveServerRedirectForProvisionalLoad(const String& url)
@@ -86,23 +112,24 @@ void PageLoadState::didFailProvisionalLoad()
 
     m_state = State::Finished;
     m_provisionalURL = String();
+    m_unreachableURL = m_lastUnreachableURL;
 }
 
 void PageLoadState::didCommitLoad()
 {
     ASSERT(m_state == State::Provisional);
-    ASSERT(!m_provisionalURL.isEmpty());
 
     m_state = State::Committed;
     m_url = m_provisionalURL;
     m_provisionalURL = String();
+
+    m_title = String();
 }
 
 void PageLoadState::didFinishLoad()
 {
     ASSERT(m_state == State::Committed);
     ASSERT(m_provisionalURL.isEmpty());
-    ASSERT(!m_url.isEmpty());
 
     m_state = State::Finished;
 }
@@ -110,7 +137,8 @@ void PageLoadState::didFinishLoad()
 void PageLoadState::didFailLoad()
 {
     ASSERT(m_provisionalURL.isEmpty());
-    ASSERT(!m_url.isEmpty());
+
+    m_state = State::Finished;
 }
 
 void PageLoadState::didSameDocumentNavigation(const String& url)
@@ -118,6 +146,22 @@ void PageLoadState::didSameDocumentNavigation(const String& url)
     ASSERT(!m_url.isEmpty());
 
     m_url = url;
+}
+
+void PageLoadState::setUnreachableURL(const String& unreachableURL)
+{
+    m_lastUnreachableURL = m_unreachableURL;
+    m_unreachableURL = unreachableURL;
+}
+
+const String& PageLoadState::title() const
+{
+    return m_title;
+}
+
+void PageLoadState::setTitle(const String& title)
+{
+    m_title = title;
 }
 
 } // namespace WebKit

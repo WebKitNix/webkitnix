@@ -1877,6 +1877,7 @@ set(WebCore_SOURCES
     platform/graphics/FloatPolygon.cpp
     platform/graphics/FloatQuad.cpp
     platform/graphics/FloatRect.cpp
+    platform/graphics/FloatRoundedRect.cpp
     platform/graphics/FloatSize.cpp
     platform/graphics/Font.cpp
     platform/graphics/FontCache.cpp
@@ -2116,7 +2117,6 @@ set(WebCore_SOURCES
     rendering/InlineTextBox.cpp
     rendering/LayoutRepainter.cpp
     rendering/LayoutState.cpp
-    rendering/LineWidth.cpp
     rendering/OrderIterator.cpp
     rendering/PointerEventsHitRules.cpp
     rendering/RenderBlock.cpp
@@ -2215,6 +2215,7 @@ set(WebCore_SOURCES
 
     rendering/line/LineBreaker.cpp
     rendering/line/LineInfo.cpp
+    rendering/line/LineWidth.cpp
 
     rendering/mathml/RenderMathMLBlock.cpp
     rendering/mathml/RenderMathMLFenced.cpp
@@ -2228,6 +2229,7 @@ set(WebCore_SOURCES
     rendering/mathml/RenderMathMLSquareRoot.cpp
     rendering/mathml/RenderMathMLUnderOver.cpp
 
+    rendering/shapes/BoxShape.cpp
     rendering/shapes/PolygonShape.cpp
     rendering/shapes/RasterShape.cpp
     rendering/shapes/RectangleShape.cpp
@@ -2604,7 +2606,7 @@ set(WebCore_LIBRARIES
     WTF
 )
 
-if (ENABLE_SQL_DATABASE AND ENABLE_WORKERS)
+if (ENABLE_SQL_DATABASE)
     list(APPEND WebCore_SOURCES
         Modules/webdatabase/WorkerGlobalScopeWebDatabase.cpp
     )

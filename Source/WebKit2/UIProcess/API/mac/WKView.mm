@@ -59,6 +59,7 @@
 #import "WebContext.h"
 #import "WebEventFactory.h"
 #import "WebFullScreenManagerProxy.h"
+#import "WebKit2Initialize.h"
 #import "WebPage.h"
 #import "WebPageGroup.h"
 #import "WebPageProxy.h"
@@ -2720,9 +2721,9 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     // FIXME: Report an error if we fail to create a file.
     NSString *path = [[dropDestination path] stringByAppendingPathComponent:[wrapper.get() preferredFilename]];
     path = pathWithUniqueFilenameForPath(path);
-    if (![wrapper.get() writeToFile:path atomically:NO updateFilenames:YES])
-        LOG_ERROR("Failed to create image file via -[NSFileWrapper writeToFile:atomically:updateFilenames:]");
-    
+    if (![wrapper writeToURL:[NSURL fileURLWithPath:path] options:NSFileWrapperWritingWithNameUpdating originalContentsURL:nil error:nullptr])
+        LOG_ERROR("Failed to create image file via -[NSFileWrapper writeToURL:options:originalContentsURL:error:]");
+
     if (!_data->_promisedURL.isEmpty())
         WebCore::setMetadataURL(_data->_promisedURL, "", String(path));
     
@@ -2885,8 +2886,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
 
     [NSApp registerServicesMenuSendTypes:PasteboardTypes::forSelection() returnTypes:PasteboardTypes::forEditing()];
 
-    InitWebCoreSystemInterface();
-    RunLoop::initializeMainRunLoop();
+    InitializeWebKit2();
 
     // Legacy style scrollbars have design details that rely on tracking the mouse all the time.
     NSTrackingAreaOptions options = NSTrackingMouseMoved | NSTrackingMouseEnteredAndExited | NSTrackingInVisibleRect;

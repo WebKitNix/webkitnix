@@ -44,7 +44,6 @@
 #include "Nodes.h"
 #include "StaticPropertyAnalyzer.h"
 #include "UnlinkedCodeBlock.h"
-#include "VMStackBounds.h"
 
 #include <functional>
 
@@ -70,17 +69,16 @@ namespace JSC {
 
         RegisterID* thisRegister() { return m_argv[0].get(); }
         RegisterID* argumentRegister(unsigned i) { return m_argv[i + 1].get(); }
-        unsigned registerOffset() { return -m_argv.last()->index() + CallFrame::offsetFor(argumentCountIncludingThis()); }
-        unsigned argumentCountIncludingThis() { return m_argv.size(); }
+        unsigned stackOffset() { return -m_argv[0]->index() + JSStack::CallFrameHeaderSize; }
+        unsigned argumentCountIncludingThis() { return m_argv.size() - m_padding; }
         RegisterID* profileHookRegister() { return m_profileHookRegister.get(); }
         ArgumentsNode* argumentsNode() { return m_argumentsNode; }
 
     private:
-        void newArgument(BytecodeGenerator&);
-
         RefPtr<RegisterID> m_profileHookRegister;
         ArgumentsNode* m_argumentsNode;
         Vector<RefPtr<RegisterID>, 8, UnsafeVectorOverflow> m_argv;
+        unsigned m_padding;
     };
 
     struct FinallyContext {
@@ -233,7 +231,7 @@ namespace JSC {
         {
             // Node::emitCode assumes that dst, if provided, is either a local or a referenced temporary.
             ASSERT(!dst || dst == ignoredResult() || !dst->isTemporary() || dst->refCount());
-            if (!m_stack.isSafeToRecurse()) {
+            if (!m_vm->isSafeToRecurse()) {
                 emitThrowExpressionTooDeepException();
                 return;
             }
@@ -249,7 +247,7 @@ namespace JSC {
         {
             // Node::emitCode assumes that dst, if provided, is either a local or a referenced temporary.
             ASSERT(!dst || dst == ignoredResult() || !dst->isTemporary() || dst->refCount());
-            if (!m_stack.isSafeToRecurse())
+            if (!m_vm->isSafeToRecurse())
                 return emitThrowExpressionTooDeepException();
             return n->emitBytecode(*this, dst);
         }
@@ -261,7 +259,7 @@ namespace JSC {
 
         void emitNodeInConditionContext(ExpressionNode* n, Label* trueTarget, Label* falseTarget, FallThroughMode fallThroughMode)
         {
-            if (!m_stack.isSafeToRecurse()) {
+            if (!m_vm->isSafeToRecurse()) {
                 emitThrowExpressionTooDeepException();
                 return;
             }
@@ -638,8 +636,6 @@ namespace JSC {
 #ifndef NDEBUG
         size_t m_lastOpcodePosition;
 #endif
-
-        VMStackBounds m_stack;
 
         bool m_usesExceptions;
         bool m_expressionTooDeep;

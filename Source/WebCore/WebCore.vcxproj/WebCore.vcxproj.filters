@@ -1926,6 +1926,9 @@
     <ClCompile Include="..\platform\network\curl\SocketStreamHandleCurl.cpp">
       <Filter>platform\network\curl</Filter>
     </ClCompile>
+    <ClCompile Include="..\platform\network\curl\SSLHandle.cpp">
+      <Filter>platform\network\curl</Filter>
+    </ClCompile>
     <ClCompile Include="..\platform\sql\SQLiteAuthorizer.cpp">
       <Filter>platform\sql</Filter>
     </ClCompile>
@@ -5016,6 +5019,9 @@
     <ClCompile Include="..\platform\graphics\FloatRect.cpp">
       <Filter>platform\graphics</Filter>
     </ClCompile>
+    <ClCompile Include="..\platform\graphics\FloatRoundedRect.cpp">
+      <Filter>platform\graphics</Filter>
+    </ClCompile>
     <ClCompile Include="..\platform\graphics\FloatSize.cpp">
       <Filter>platform\graphics</Filter>
     </ClCompile>
@@ -6892,6 +6898,9 @@
     <ClCompile Include="..\rendering\shapes\ShapeOutsideInfo.cpp">
       <Filter>rendering\shapes</Filter>
     </ClCompile>
+    <ClCompile Include="..\rendering\shapes\BoxShape.cpp">
+      <Filter>rendering\shapes</Filter>
+    </ClCompile>
     <ClCompile Include="..\rendering\shapes\PolygonShape.cpp">
       <Filter>rendering\shapes</Filter>
     </ClCompile>
@@ -6904,7 +6913,7 @@
     <ClCompile Include="..\Modules\indexeddb\leveldb\IDBFactoryBackendLevelDB.cpp">
       <Filter>Modules\indexeddb\leveldb</Filter>
     </ClCompile>
-    <ClCompile Include="..\rendering\LineWidth.cpp">
+    <ClCompile Include="..\rendering\line\LineWidth.cpp">
       <Filter>rendering</Filter>
     </ClCompile>
     <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSBeforeUnloadEvent.cpp">
@@ -12646,6 +12655,9 @@
     <ClInclude Include="..\ForwardingHeaders\runtime\VM.h">
       <Filter>ForwardingHeaders\runtime</Filter>
     </ClInclude>
+    <ClInclude Include="..\ForwardingHeaders\runtime\VMEntryScope.h">
+      <Filter>ForwardingHeaders\runtime</Filter>
+    </ClInclude>
     <ClInclude Include="..\ForwardingHeaders\runtime\JSGlobalObject.h">
       <Filter>ForwardingHeaders\runtime</Filter>
     </ClInclude>
@@ -12797,6 +12809,9 @@
       <Filter>platform\graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\platform\graphics\FloatRect.h">
+      <Filter>platform\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\platform\graphics\FloatRoundedRect.h">
       <Filter>platform\graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\platform\graphics\FloatSize.h">
@@ -14657,6 +14672,9 @@
     <ClInclude Include="..\rendering\RenderElement.h">
       <Filter>rendering</Filter>
     </ClInclude>
+    <ClInclude Include="..\rendering\line\LineWidth.h">
+      <Filter>rendering\line</Filter>
+    </ClInclude>
     <ClInclude Include="..\platform\graphics\FloatPolygon.h">
       <Filter>platform\graphics</Filter>
     </ClInclude>
@@ -14675,6 +14693,9 @@
     <ClInclude Include="..\rendering\shapes\ShapeInterval.h">
       <Filter>rendering\shapes</Filter>
     </ClInclude>
+    <ClInclude Include="..\rendering\shapes\BoxShape.h">
+      <Filter>rendering\shapes</Filter>
+    </ClInclude>
     <ClInclude Include="..\rendering\shapes\RasterShape.h">
       <Filter>rendering\shapes</Filter>
     </ClInclude>
@@ -14683,9 +14704,6 @@
     </ClInclude>
     <ClInclude Include="..\rendering\shapes\RectangleShape.h">
       <Filter>rendering\shapes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\rendering\LineWidth.h">
-      <Filter>rendering</Filter>
     </ClInclude>
     <ClInclude Include="..\rendering\LineLayoutState.h">
       <Filter>rendering</Filter>
@@ -15084,6 +15102,9 @@
       <Filter>platform\network\curl</Filter>
     </CustomBuildStep>
     <CustomBuildStep Include="..\platform\network\curl\ResourceResponse.h">
+      <Filter>platform\network\curl</Filter>
+    </CustomBuildStep>
+    <CustomBuildStep Include="..\platform\network\curl\SSLHandle.h">
       <Filter>platform\network\curl</Filter>
     </CustomBuildStep>
     <CustomBuildStep Include="..\platform\image-decoders\gif\GIFImageDecoder.h">

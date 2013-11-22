@@ -47,6 +47,7 @@
 #include "ResourceError.h"
 #include "ResourceHandle.h"
 #include "ResourceHandleInternal.h"
+#include "SSLHandle.h"
 
 #if OS(WINDOWS)
 #include "WebCoreBundleWin.h"
@@ -594,7 +595,9 @@ void ResourceHandleManager::downloadTimerCallback(Timer<ResourceHandleManager>* 
             fprintf(stderr, "Curl ERROR for url='%s', error: '%s'\n", url, curl_easy_strerror(msg->data.result));
 #endif
             if (d->client()) {
-                d->client()->didFail(job, ResourceError(String(), msg->data.result, String(url), String(curl_easy_strerror(msg->data.result))));
+                ResourceError resourceError(String(), msg->data.result, String(url), String(curl_easy_strerror(msg->data.result)));
+                resourceError.setSSLErrors(d->m_sslErrors);
+                d->client()->didFail(job, resourceError);
                 CurlCacheManager::getInstance().didFail(job->firstRequest().url().string());
             }
         }
@@ -914,6 +917,8 @@ void ResourceHandleManager::initializeHandle(ResourceHandle* job)
     if (getenv("DEBUG_CURL"))
         curl_easy_setopt(d->m_handle, CURLOPT_VERBOSE, 1);
 #endif
+    curl_easy_setopt(d->m_handle, CURLOPT_SSL_VERIFYPEER, 1L);
+    curl_easy_setopt(d->m_handle, CURLOPT_SSL_VERIFYHOST, 2L);
     curl_easy_setopt(d->m_handle, CURLOPT_PRIVATE, job);
     curl_easy_setopt(d->m_handle, CURLOPT_ERRORBUFFER, m_curlErrorBuffer);
     curl_easy_setopt(d->m_handle, CURLOPT_WRITEFUNCTION, writeCallback);
@@ -931,6 +936,8 @@ void ResourceHandleManager::initializeHandle(ResourceHandle* job)
 
     if (ignoreSSLErrors || job->ignoreHTTPSCertificate())
         curl_easy_setopt(d->m_handle, CURLOPT_SSL_VERIFYPEER, false);
+    else
+        setSSLVerifyOptions(job);
 
     if (!m_certificatePath.isNull())
        curl_easy_setopt(d->m_handle, CURLOPT_CAINFO, m_certificatePath.data());

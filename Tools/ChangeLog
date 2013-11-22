@@ -1,3 +1,319 @@
+2013-11-21  Peter Molnar  <pmolnar.u-szeged@partner.samsung.com>
+
+        Remove ENABLE_WORKERS
+        https://bugs.webkit.org/show_bug.cgi?id=105784
+
+        Reviewed by Darin Adler.
+
+        * Scripts/webkitperl/FeatureList.pm:
+
+2013-11-21  Darin Adler  <darin@apple.com>
+
+        Try to fix buildbot Dashboard for people who have not hidden anything.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotQueue.js:
+        Add a null check for hidden platforms.
+
+2013-11-21  Peter Szanka  <h868064@stud.u-szeged.hu>
+
+        Remove chrome/chromium related things from webkitpy.
+        https://bugs.webkit.org/show_bug.cgi?id=124493
+
+        Reviewed by Darin Adler.
+
+        * Scripts/webkitpy/layout_tests/run_webkit_tests_integrationtest.py:
+        (PortTest.assert_mock_port_works):
+        * Scripts/webkitpy/port/base.py:
+        (Port.to.setup_environ_for_server):
+        * Scripts/webkitpy/port/mac_unittest.py:
+        (test_tests_for_other_platforms):
+        * Scripts/webkitpy/port/mock_drt.py:
+        (MockTestShell.output_for_test):
+        * Scripts/webkitpy/tool/bot/irc_command.py:
+        (Restart.execute):
+        * Scripts/webkitpy/tool/bot/ircbot_unittest.py:
+        (IRCBotTest.test_help):
+
+2013-11-21  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        In filereader.py, process_file() should throw instead of exiting directly when the file doesn't exist
+        https://bugs.webkit.org/show_bug.cgi?id=124717
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitpy/style/filereader.py:
+        (TextFileReader.process_file):
+        * Scripts/webkitpy/style/filereader_unittest.py:
+        (TextFileReaderTest.test_process_file__does_not_exist):
+
+2013-11-21  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/124702> Stop overriding VALID_ARCHS.
+
+        All modern versions of Xcode set it appropriately for our needs.
+
+        Reviewed by Alexey Proskuryakov.
+
+        * MiniBrowser/Configurations/Base.xcconfig:
+        * WebKitTestRunner/Configurations/Base.xcconfig:
+
+2013-11-21  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        webkitdirs::checkForArgumentAndRemoveFromArrayRef() removed wrong element
+        https://bugs.webkit.org/show_bug.cgi?id=124676
+
+        Reviewed by Daniel Bates.
+
+        checkForArgumentAndRemoveFromArrayRef functions was removing wrong
+        elements when there were more then one occurrence of that argument.
+        E.g: Checking for 'a' in {a, b, a, c}, the resulting array would be
+        {b, a}, when it should be {b, c}.
+
+        * Scripts/webkitdirs.pm:
+        (checkForArgumentAndRemoveFromArrayRef): bugfix mentioned above.
+        * Scripts/webkitperl/webkitdirs_unittest/checkForArgumentAndRemoveFromArrayRef.pl:
+        Added; Unit tests for webkitdirs::checkForArgumentAndRemoveFromArrayRef function.
+
+2013-11-21  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Update build-webkit after r159550.
+
+        * Scripts/webkitperl/FeatureList.pm:
+
+2013-11-21  Lucas Forschler  <lforschler@apple.com>
+
+        Bring a new bot online, replacing the previous ones.
+        
+        Unreviewed.
+
+        * BuildSlaveSupport/build.webkit.org-config/config.json:
+
+2013-11-21  Dean Jackson  <dino@apple.com>
+
+        Don't fetch hidden platforms on build.webkit.org/dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=124750
+
+        Reviewed by Tim Horton.
+
+        If a platform is hidden, don't fetch its data. If it
+        becomes unhidden, try to fetch immediately (unless
+        you've recently fetched).
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotQueue.js:
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotQueueView.js:
+
+2013-11-21  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159633.
+        http://trac.webkit.org/changeset/159633
+        https://bugs.webkit.org/show_bug.cgi?id=124726
+
+        it broke 10 webkitpy tests (Requested by dino_ on #webkit).
+
+        * Scripts/webkitpy/style/checker.py:
+        (check_webkit_style_configuration):
+        (CheckerDispatcher.dispatch):
+        (StyleProcessorConfiguration):
+        (StyleProcessorConfiguration.__init__):
+        (StyleProcessorConfiguration.write_style_error):
+
+2013-11-21  László Langó  <lango@inf.u-szeged.hu>
+
+        Remove the stderr_write attribute from StyleProcessorConfiguration.
+        https://bugs.webkit.org/show_bug.cgi?id=124703
+
+        Reviewed by Brent Fulgham.
+
+        * Scripts/webkitpy/style/checker.py:
+        (check_webkit_style_configuration):
+        (CheckerDispatcher.dispatch):
+        (StyleProcessorConfiguration):
+        (StyleProcessorConfiguration.__init__):
+        (StyleProcessorConfiguration.write_style_error):
+
+2013-11-21  Ryosuke Niwa  <rniwa@webkit.org>
+
+        PerfTestRunner._generate_results_dict shouldn't depend on test objects
+        https://bugs.webkit.org/show_bug.cgi?id=124623
+
+        Removed the dependency on test objects from results JSON generation.
+        This allows single test.run to return metrics for multiple tests
+
+        Reviewed by Antti Koivisto.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTestMetric.__init__): Takes the test path and test name.
+        (PerfTestMetric.path): Added.
+        (PerfTestMetric.test_file_name): Added.
+        (PerfTest.run): Accumulate PerfTestMetric objects instead of raw values.
+        (PerfTest._ensure_metrics): Instantiate PerfTestMetric with the test path and test name.
+        The path is going to have the names of subtests at the end once we support them.
+
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestPerfTestMetric.test_init_set_missing_unit): Specify the test path and test name.
+        (TestPerfTestMetric.test_init_set_time_metric): Ditto.
+        (TestPerfTestMetric.test_has_values): Ditto.
+        (TestPerfTestMetric.test_append): Ditto.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (_generate_results_dict): Only use metrics.
+        (_run_tests_set): Accumulate metrics as supposed to (test, metrics) pairs.
+
+2013-11-21  Manuel Rego Casasnovas  <rego@igalia.com>
+
+        REGRESSION(r159599): webkitdirs.pm spits out warnings at lines 851 and 852
+        https://bugs.webkit.org/show_bug.cgi?id=124697
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitdirs.pm:
+        (checkForArgumentAndRemoveFromARGVGettingValue): Fix check of array size
+        before trying to access to the first element.
+
+2013-11-21  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Mark all deprecated symbols in GObject DOM bindings
+        https://bugs.webkit.org/show_bug.cgi?id=124406
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * Scripts/webkitpy/style/checker.py: Add special case for
+        WebKitDOMDeprecated.
+        * gtk/generate-gtkdoc:
+        (get_webkit2_options): Use the prefix of the methods as namespace,
+        since this is what gtkdoc expects to sort the index.
+        (get_webkit1_options): Ditto.
+        (get_webkitdom_options): Ditto.
+        * gtk/generate-webkitdom-doc-files:
+        (WebKitDOMDocGenerator): Add a global list of deleted objects.
+        (WebKitDOMDocGenerator.write_deleted_classes): New method to write
+        the documentation for classes that are deprecated because they
+        have been removed.
+        (WebKitDOMDocGeneratorDocs.write_deleted_classes): Add sections
+        for deleted classes too.
+        (WebKitDOMDocGeneratorSections.__init__): Build a list of
+        deprecated symbols using the given symbols file.
+        (WebKitDOMDocGeneratorSections._deleted_class): Returns the
+        deleted class corresponding to the given function.
+        (WebKitDOMDocGeneratorSections._deprecated_symbols): Builds a
+        dictionary of deprecated symbols for every class.
+        (WebKitDOMDocGeneratorSections.write_section): Add also the
+        deprecated symbols in every section.
+        (WebKitDOMDocGeneratorSections.write_deleted_classes): Add
+        sections for deleted classes too.
+
+2013-11-20  László Langó  <lango@inf.u-szeged.hu>
+
+        check-webkit-style should support C++11 rvalue references.
+        https://bugs.webkit.org/show_bug.cgi?id=123406
+
+        Reviewed by Brent Fulgham.
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (check_style):
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py:
+        (Cpp11StyleTest):
+        (Cpp11StyleTest.test_rvaule_reference_at_end_of_line):
+
+2013-11-20  Dean Jackson  <dino@apple.com>
+
+        Allow settings to be shown/hidden on build.webkit.org/dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=124694
+
+        Reviewed by Tim Horton.
+
+        In preparation for more options/buttons, allow the page to
+        show or hide all the interactive things using a little gear icon
+        in the top left corner.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Main.js:
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Settings.js:
+        (Settings.prototype.toggleSettingsDisplay):
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/Main.css:
+        (div.cellButton.hide):
+        (div.cellButton.unhide):
+        (.settings-visible div.cellButton.hide, .settings-visible div.cellButton.unhide):
+        (.settings):
+        (.settings:hover):
+        (.settings-visible .settings):
+
+2013-11-20  Dean Jackson  <dino@apple.com>
+
+        No need to base64 SVG on build.webkit.org/dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=124687
+
+        Reviewed by Tim Horton.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/StatusLineView.css:
+        (.status-line.good .bubble.pictogram):
+
+2013-11-20  Dean Jackson  <dino@apple.com>
+
+        Make links look more like links on build.webkit.org/dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=124686
+
+        Reviewed by Tim Horton.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/BuildbotQueueView.css:
+        (.queue-view .queueLabel:hover):
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/StatusLineView.css:
+        (.status-line.linked .label:hover):
+
+2013-11-20  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Modify webkitdirs to reuse checkForArgumentAndRemoveFromARGV
+        https://bugs.webkit.org/show_bug.cgi?id=124581
+
+        Reviewed by Daniel Bates.
+
+        Some subroutines are replicating code from checkForArgument**
+        functions instead of reusing them as is being done by all other functions.
+
+        * Scripts/webkitdirs.pm:
+        (determineXcodeSDK): Added.
+        (determinePassedConfiguration): Added.
+        (determinePassedArchitecture): Added.
+        (checkForArgumentAndRemoveFromARGV): Added.
+        (checkForArgumentAndRemoveFromARGVGettingValue): Added.
+
+2013-11-20  Jozsef Berta  <jberta@inf.u-szeged.hu>
+
+        Delete baseline optimizer
+        https://bugs.webkit.org/show_bug.cgi?id=122333
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitpy/common/checkout/baselineoptimizer.py: Removed.
+        * Scripts/webkitpy/common/checkout/baselineoptimizer_unittest.py: Removed.
+        * Scripts/webkitpy/tool/commands/rebaseline.py:
+        (RebaselineTest.execute):
+        (AbstractParallelRebaselineCommand._files_to_add):
+        (AbstractParallelRebaselineCommand._rebaseline):
+        * Scripts/webkitpy/tool/commands/rebaseline_unittest.py:
+        (TestRebaselineJson.test_rebaseline_all):
+        (TestRebaselineJson.test_rebaseline_debug):
+        (TestRebaselineExpectations.disabled_test_overrides_are_included_correctly):
+
+2013-11-20  Anders Carlsson  <andersca@apple.com>
+
+        Enable PageLoadTest assertions again
+        https://bugs.webkit.org/show_bug.cgi?id=124681
+
+        Reviewed by Tim Horton.
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        Actually install all-content-in-one-iframe.html, noticed while debugging this assertion.
+
+2013-11-20  Mark Rowe  <mrowe@apple.com>
+
+        Remove some obsolete logic from WebKit.app.
+
+        Reviewed by Alexey Proskuryakov.
+
+        * WebKitLauncher/WebKitNightlyEnabler.m:
+        (poseAsWebKitApp): Remove a pre-10.6 codepath.
+        (enableWebKitNightlyBehaviour): Remove a 10.4-specific codepath.
+
 2013-11-20  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
 
         Moved stray urls from svn.py and statusserver.py into common.config.urls

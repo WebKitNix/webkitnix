@@ -30,17 +30,18 @@
 
 #if ENABLE(INDEXED_DATABASE) && ENABLE(DATABASE_PROCESS)
 
+#include "SecurityOriginData.h"
+#include <wtf/text/WTFString.h>
+
 namespace WebKit {
 
 class DatabaseToWebProcessConnection;
 
-struct SecurityOriginData;
-
 class DatabaseProcessIDBConnection : public RefCounted<DatabaseProcessIDBConnection>, public CoreIPC::MessageSender {
 public:
-    static RefPtr<DatabaseProcessIDBConnection> create(uint64_t backendIdentifier)
+    static RefPtr<DatabaseProcessIDBConnection> create(DatabaseToWebProcessConnection& connection, uint64_t serverConnectionIdentifier)
     {
-        return adoptRef(new DatabaseProcessIDBConnection(backendIdentifier));
+        return adoptRef(new DatabaseProcessIDBConnection(connection, serverConnectionIdentifier));
     }
 
     virtual ~DatabaseProcessIDBConnection();
@@ -48,19 +49,25 @@ public:
     // Message handlers.
     void didReceiveDatabaseProcessIDBConnectionMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&);
 
+    void disconnectedFromWebProcess();
+
 private:
-    DatabaseProcessIDBConnection(uint64_t backendIdentifier);
+    DatabaseProcessIDBConnection(DatabaseToWebProcessConnection&, uint64_t idbConnectionIdentifier);
 
     // CoreIPC::MessageSender
     virtual CoreIPC::Connection* messageSenderConnection() OVERRIDE;
-    virtual uint64_t messageSenderDestinationID() OVERRIDE { return m_backendIdentifier; }
+    virtual uint64_t messageSenderDestinationID() OVERRIDE { return m_serverConnectionIdentifier; }
 
     // Message handlers.
     void establishConnection(const String& databaseName, const SecurityOriginData& openingOrigin, const SecurityOriginData& mainFrameOrigin);
-    void getOrEstablishIDBDatabaseMetadata();
+    void getOrEstablishIDBDatabaseMetadata(uint64_t requestID);
 
-    RefPtr<DatabaseToWebProcessConnection> m_connection;
-    uint64_t m_backendIdentifier;
+    Ref<DatabaseToWebProcessConnection> m_connection;
+    uint64_t m_serverConnectionIdentifier;
+
+    String m_databaseName;
+    SecurityOriginData m_openingOrigin;
+    SecurityOriginData m_mainFrameOrigin;
 };
 
 } // namespace WebKit

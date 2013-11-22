@@ -1,3 +1,446 @@
+2013-11-18  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] Improve content-sized track layout
+        https://bugs.webkit.org/show_bug.cgi?id=124408
+
+        Reviewed by Dean Jackson.
+
+        From Blink r157633 by <jchaffraix@chromium.org>
+
+        New test to verify that grid items with percentage logical
+        {min|max}-height resolve their sizes properly.
+
+        * fast/css-grid-layout/grid-item-with-percent-min-max-height-dynamic-expected.txt: Added.
+        * fast/css-grid-layout/grid-item-with-percent-min-max-height-dynamic.html: Added.
+
+2013-11-08  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] Run the content-sized tracks sizing algorithm only when required
+        https://bugs.webkit.org/show_bug.cgi?id=124039
+
+        Reviewed by Dean Jackson.
+
+        From Blink r156028 and r156168 by <jchaffraix@chromium.org>.
+
+        Subtle baseline change due to grids triggering less layouts, which
+        changes the frame rects between 2 subsequent layouts thus changing
+        the repaint rectangles.
+
+        * fast/css-grid-layout/grid-item-change-column-repaint-expected.txt:
+        * fast/css-grid-layout/grid-item-change-row-repaint-expected.txt:
+
+2013-11-21  Frédéric Wang  <fred.wang@free.fr>
+
+        Map the dir attribute to the CSS direction property.
+        https://bugs.webkit.org/show_bug.cgi?id=124572.
+
+        Reviewed by Darin Adler.
+
+        * mathml/presentation/direction-overall-expected.html: test that dir does not apply to msqrt
+        * mathml/presentation/direction-overall.html:
+        * mathml/presentation/mstyle-css-attributes-expected.html: Added.
+        * mathml/presentation/mstyle-css-attributes.html: Added.
+
+        Add more tests for presentation attributes on mstyle.
+
+2013-11-21  Bear Travis  <betravis@adobe.com>
+
+        Web Inspector: [CSS Shapes] Refactor highlighting code to decrease Shapes API surface
+        https://bugs.webkit.org/show_bug.cgi?id=124737
+
+        Reviewed by Timothy Hatcher.
+
+        The shapes paths are now drawn in shape-coordinate space before being translated to
+        renderer space. With different writing modes, shapes may have their coordinates
+        translated. For example, a rectangle specified as four points [top left, top right,
+        bottom right, bottom left] in vertical-lr space would appear as [top left, bottom left,
+        bottom right, top right] in horizontal-tb space. Adjusting the previous tests, and
+        adding a test for the new box value.
+
+        * inspector-protocol/model/highlight-shape-outside-expected.txt:
+        * inspector-protocol/model/highlight-shape-outside.html:
+
+2013-11-21  Sun-woo Nam  <sunny.nam@samsung.com>
+
+        [EFL] Layout tests with editing need to be rebaselined.
+        https://bugs.webkit.org/show_bug.cgi?id=124751
+
+        Unreviewed, EFL rebaseline.
+
+        editing/input/reveal-caret-of-multiline-contenteditable.html test is rebaselined after r137239.
+        editing/selection/5354455-2.html test is rebaselined after r133000.
+        Rebaseline the expected results to suit editing-related performance in EFL.
+
+        * platform/efl-wk1/editing/input/reveal-caret-of-multiline-contenteditable-expected.txt:
+        * platform/efl/editing/selection/5354455-2-expected.txt:
+
+2013-11-21  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Import some W3C tests for HTML template element
+        https://bugs.webkit.org/show_bug.cgi?id=124699
+
+        Reviewed by Antti Koivisto.
+
+        * imported/w3c/: Added.
+        * platform/win/TestExpectations: Skip the imported tests since the template element is disabled on Windows.
+
+2013-11-21  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement WebCrypto wrapKey
+        https://bugs.webkit.org/show_bug.cgi?id=124738
+
+        Reviewed by Anders Carlsson.
+
+        * crypto/subtle/aes-cbc-wrap-rsa-expected.txt: Added.
+        * crypto/subtle/aes-cbc-wrap-rsa-non-extractable-expected.txt: Added.
+        * crypto/subtle/aes-cbc-wrap-rsa-non-extractable.html: Added.
+        * crypto/subtle/aes-cbc-wrap-rsa.html: Added.
+
+        * crypto/subtle/aes-export-key-expected.txt:
+        * crypto/subtle/hmac-export-key-expected.txt:
+        There is no longer a console message, the error is in an exception.
+
+2013-11-21  Radu Stavila  <stavila@adobe.com>
+
+        Added test for :hover and javascript events on the visual overflow of a region.
+
+        [CSS Regions] Content in a region's visible overflow does not trigger :hover state, nor JavaScript events
+        https://bugs.webkit.org/show_bug.cgi?id=112010
+
+        Reviewed by Antti Koivisto.
+
+        * fast/regions/hover-and-js-in-visual-overflow-expected.html: Added.
+        * fast/regions/hover-and-js-in-visual-overflow.html: Added.
+
+2013-11-21  Alexey Proskuryakov  <ap@apple.com>
+
+        Implement WebCrypto unwrapKey
+        https://bugs.webkit.org/show_bug.cgi?id=124725
+
+        Reviewed by Anders Carlsson.
+
+        * crypto/subtle/aes-cbc-unwrap-failure-expected.txt: Added.
+        * crypto/subtle/aes-cbc-unwrap-failure.html: Added.
+        * crypto/subtle/aes-cbc-unwrap-rsa-expected.txt: Added.
+        * crypto/subtle/aes-cbc-unwrap-rsa.html: Added.
+
+2013-11-21  Radu Stavila  <stavila@adobe.com>
+
+        Added test for the overflow of a region being painted across multiple tiles.
+        Added test for correct repainting of a region's overflow.
+
+        [CSS Regions] Overflow areas from regions do not redraw
+        https://bugs.webkit.org/show_bug.cgi?id=117329
+
+        Reviewed by Antti Koivisto.
+
+        * fast/regions/regions-overflow-tile-expected.html: Added.
+        * fast/regions/regions-overflow-tile.html: Added.
+        * fast/repaint/repaint-regions-overflow-expected.txt: Added.
+        * fast/repaint/repaint-regions-overflow.html: Added.
+
+2013-11-21  Radu Stavila  <stavila@adobe.com>
+
+        [CSS Regions] Float get sliced if its container has forced break and is less tall than float
+        https://bugs.webkit.org/show_bug.cgi?id=124205
+
+        Added test for the case when a float is overflowing a region due to a forced break.
+
+        Reviewed by Antti Koivisto.
+
+        * fast/regions/float-slicing-on-forced-break-expected.html: Added.
+        * fast/regions/float-slicing-on-forced-break.html: Added.
+
+2013-11-21  Mihai Maerean  <mmaerean@adobe.com>
+
+        Fix hover area for divs with css transforms
+        https://bugs.webkit.org/show_bug.cgi?id=124647
+
+        Reviewed by Allan Sandfeld Jensen.
+
+        * transforms/3d/hit-testing/hover-rotated-negative-z.html: Added.
+        * transforms/3d/hit-testing/hover-rotated-negative-z-expected.txt: Added.
+
+2013-11-21  Radu Stavila  <stavila@adobe.com>
+
+        Created test for positioned fragmented content which overflows the regions.
+
+        [CSS Regions] Fragmented content that is relatively positioned get sliced (and overflows in the next region)
+        https://bugs.webkit.org/show_bug.cgi?id=117122
+
+        Reviewed by Antti Koivisto.
+
+        * fast/regions/positioned-fragmented-content-expected.html: Added.
+        * fast/regions/positioned-fragmented-content.html: Added.
+
+2013-11-21  Radu Stavila  <stavila@adobe.com>
+
+        Added test for visual overflow with transformed content in regions.
+
+        [CSS Regions] Transform applied to content node causes overflow to be hidden
+        https://bugs.webkit.org/show_bug.cgi?id=116242
+
+        Reviewed by Antti Koivisto.
+
+        * fast/regions/region-visual-overflow-transform-expected.html: Added.
+        * fast/regions/region-visual-overflow-transform.html: Added.
+
+2013-11-21  Andrzej Badowski  <a.badowski@samsung.com>
+
+        [EFL] Fix accessibility media-element expectation
+        https://bugs.webkit.org/show_bug.cgi?id=124711
+
+        Unreviewed EFL gardening.
+
+        Changing main element AXRole AXUnknown -> AXEmbedded.
+
+        * platform/efl/accessibility/media-element-expected.txt:
+
+2013-11-21  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening.
+
+        Update baselines after r159575.
+
+        * platform/efl/fast/block/float/024-expected.txt:
+        * platform/efl/fast/block/margin-collapse/025-expected.txt:
+        * platform/efl/fast/block/margin-collapse/block-inside-inline/025-expected.txt:
+        * platform/efl/fast/block/margin-collapse/empty-clear-blocks-expected.txt:
+
+2013-11-21  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Fix Range.insertNode when the inserted node is in the same container as the Range
+        https://bugs.webkit.org/show_bug.cgi?id=123957
+
+        Reviewed by Antti Koivisto.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/fb6ca1f488703e8d4f20ce6449cc8ea210be6edb
+
+        Used better labels between divs, and added more evalAndLog and shouldBe so that
+        the expected result is self-explanatory.
+
+        * fast/dom/Range/range-insertNode-same-container-expected.txt: Added.
+        * fast/dom/Range/range-insertNode-same-container.html: Added.
+
+2013-11-21  Ryosuke Niwa  <rniwa@webkit.org>
+
+        nextBoundary and previousBoundary are very slow when there is a password field
+        https://bugs.webkit.org/show_bug.cgi?id=123973
+
+        Reviewed by Antti Koivisto.
+
+        * editing/deleting/password-delete-performance-expected.txt: Added.
+        * editing/deleting/password-delete-performance.html: Added.
+
+2013-11-21  Ryosuke Niwa  <rniwa@webkit.org>
+
+        HTML parser should not associate elements inside templates with forms
+        https://bugs.webkit.org/show_bug.cgi?id=117779
+
+        Reviewed by Antti Koivisto.
+
+        * fast/dom/HTMLTemplateElement/no-form-association-expected.txt: Added.
+        * fast/dom/HTMLTemplateElement/no-form-association.html: Added.
+
+2013-11-20  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Hoist <template> to head when found between </head> and <body> for consistency with <script>
+        https://bugs.webkit.org/show_bug.cgi?id=123949
+
+        Reviewed by Antti Koivisto.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/835fb468fd211054a920fb7612a6dc5043662495
+        and added two more test cases discussed in https://www.w3.org/Bugs/Public/show_bug.cgi?id=23002.
+
+        * html5lib/resources/template.dat:
+
+2013-11-20  Radu Stavila  <stavila@adobe.com>
+
+        [CSS Regions] Implement visual overflow for first & last regions
+        https://bugs.webkit.org/show_bug.cgi?id=118665
+
+        Rebased some tests due to regions layers changes.
+        Updated some tests to increase clarity. Some of them were only passing because two
+        regions were close together and the fact that an element was being painted
+        inside the wrong region was not visible. Floats are now also unsplittable.
+                - bottom-overflow-out-of-first-region
+                - float-pushed-width-change-2
+                - float-pushed-width-change
+                - webkit-flow-float-unable-to-push
+
+        Changed top-overflow-out-of-second-region to reftest.
+
+        Added new tests for testing the visual overflow in different situations 
+        (transformed, inline, opacity, floating).
+
+        Reviewed by David Hyatt.
+
+        * fast/regions/bottom-overflow-out-of-first-region-expected.html:
+        * fast/regions/bottom-overflow-out-of-first-region.html:
+        * fast/regions/counters/extract-ordered-lists-in-regions-explicit-counters-005-expected.html:
+        * fast/regions/counters/extract-ordered-lists-in-regions-explicit-counters-005.html:
+        * fast/regions/element-in-named-flow-absolute-from-fixed-expected.txt:
+        * fast/regions/element-in-named-flow-fixed-from-absolute-expected.txt:
+        * fast/regions/element-inflow-fixed-from-outflow-static-expected.txt:
+        * fast/regions/element-outflow-static-from-inflow-fixed-expected.txt:
+        * fast/regions/float-pushed-width-change-2-expected.html:
+        * fast/regions/float-pushed-width-change-2.html:
+        * fast/regions/float-pushed-width-change-expected.html:
+        * fast/regions/float-pushed-width-change.html:
+        * fast/regions/layers/dynamic-layer-added-with-no-layout-expected.txt: Added.
+        * fast/regions/layers/dynamic-layer-removed-with-no-layout-expected.txt: Added.
+        * fast/regions/layers/regions-promoted-to-layers-expected.txt: Added.
+        * fast/regions/layers/regions-promoted-to-layers-horizontal-bt-expected.txt: Added.
+        * fast/regions/layers/regions-promoted-to-layers-vertical-lr-expected.txt: Added.
+        * fast/regions/layers/regions-promoted-to-layers-vertical-rl-expected.txt: Added.
+        * fast/regions/outline-sides-in-region-expected.html:
+        * fast/regions/outline-sides-in-region.html:
+        * fast/regions/overflow-first-and-last-regions-expected.html: Added.
+        * fast/regions/overflow-first-and-last-regions-in-container-hidden-expected.html: Added.
+        * fast/regions/overflow-first-and-last-regions-in-container-hidden.html: Added.
+        * fast/regions/overflow-first-and-last-regions.html: Added.
+        * fast/regions/overflow-last-region-expected.html: Removed.
+        * fast/regions/overflow-last-region.html: Removed.
+        * fast/regions/overflow-nested-regions-expected.html: Added.
+        * fast/regions/overflow-nested-regions.html: Added.
+        * fast/regions/overflow-region-float-expected.html: Added.
+        * fast/regions/overflow-region-float.html: Added.
+        * fast/regions/overflow-region-inline-expected.html: Added.
+        * fast/regions/overflow-region-inline.html: Added.
+        * fast/regions/overflow-region-transform-expected.html: Added.
+        * fast/regions/overflow-region-transform.html: Added.
+        * fast/regions/overflow-scrollable-rotated-fragment-expected.html:
+        * fast/regions/overflow-scrollable-rotated-fragment.html:
+        * fast/regions/top-overflow-out-of-second-region-expected.html: Copied from LayoutTests/fast/regions/top-overflow-out-of-second-region.html.
+        * fast/regions/top-overflow-out-of-second-region.html:
+        * fast/regions/webkit-flow-float-unable-to-push-expected.html:
+        * fast/regions/webkit-flow-float-unable-to-push.html:
+        * platform/gtk/fast/regions/text-region-split-vertical-rl-expected.txt: Removed.
+        * platform/gtk/TestExpectations: Add new test expectations for failing tests.
+        * platform/efl/TestExpectations: Add new test expectations for failing tests.
+        * platform/mac-wk2/TestExpectations: 
+        * platform/mac/fast/regions/top-overflow-out-of-second-region-expected.png: Removed.
+        * platform/mac/fast/regions/top-overflow-out-of-second-region-expected.txt: Removed.
+
+2013-11-20  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Test a template element appearing after a closing body tag in html5lib
+        https://bugs.webkit.org/show_bug.cgi?id=123864
+
+        Reviewed by Antti Koivisto.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/019d5daa14314972ac6b3e42e9446823ad9cffd2
+
+        * html5lib/resources/template.dat:
+
+2013-11-20  Ryosuke Niwa  <rniwa@webkit.org>
+
+        [HTML parser] reset insertion mode appropriate must check for "in select in table" mode
+        https://bugs.webkit.org/show_bug.cgi?id=123850
+
+        Reviewed by Antti Koivisto.
+
+        * html5lib/resources/template.dat:
+
+2013-11-20  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Clear TemplateContentDocumentFragment::m_host when HTMLTemplateElement is destroyed
+        https://bugs.webkit.org/show_bug.cgi?id=122806
+
+        Reviewed by Antti Koivisto.
+
+        * fast/dom/HTMLTemplateElement/content-outlives-template-crash-expected.txt: Added.
+        * fast/dom/HTMLTemplateElement/content-outlives-template-crash.html: Added.
+
+2013-11-20  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: Implement CSS -webkit-alt property (text alternative for generated content pseudo-elements ::before and ::after)
+        https://bugs.webkit.org/show_bug.cgi?id=120188
+
+        Reviewed by Dean Jackson.
+
+        * platform/mac/accessibility/webkit-alt-for-css-content-expected.txt: Added.
+        * platform/mac/accessibility/webkit-alt-for-css-content.html: Added.
+
+2013-11-20  Dean Jackson  <dino@apple.com>
+
+        Unreviewed. Updated expected result following
+        https://bugs.webkit.org/show_bug.cgi?id=124666
+
+        * platform/mac/fast/block/margin-collapse/empty-clear-blocks-expected.png:
+        * platform/mac/fast/block/margin-collapse/empty-clear-blocks-expected.txt:
+
+2013-11-20  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        [css shapes] Parse new circle shape syntax
+        https://bugs.webkit.org/show_bug.cgi?id=124618
+
+        Reviewed by Antti Koivisto.
+
+        Test that the new circle shape syntax is properly parsed.
+
+        * fast/shapes/parsing/parsing-shape-inside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-outside-expected.txt:
+        * fast/shapes/parsing/parsing-test-utils.js:
+        * fast/masking/parsing-clip-path-shape-expected.txt:
+        * fast/masking/parsing-clip-path-shape.html:
+
+2013-11-20  Antti Koivisto  <antti@apple.com>
+
+        Simple line layout should support floats
+        https://bugs.webkit.org/show_bug.cgi?id=124666
+
+        Reviewed by Dave Hyatt.
+
+        * fast/text/simple-lines-float-compare-expected.html: Added.
+        * fast/text/simple-lines-float-compare.html: Added.
+        * fast/text/simple-lines-float-expected.html: Added.
+        * fast/text/simple-lines-float.html: Added.
+
+2013-11-20  Robert Hogan  <robert@webkit.org>
+
+        REGRESSION(r127163): Respect clearance set on ancestors when placing floats
+        https://bugs.webkit.org/show_bug.cgi?id=119979
+
+        Reviewed by David Hyatt.
+
+        * fast/block/float/clear-negative-margin-top-expected.html:
+        * fast/block/float/clear-negative-margin-top.html:
+        * fast/block/margin-collapse/self-collapsing-block-with-float-descendants-expected.html: Added.
+        * fast/block/margin-collapse/self-collapsing-block-with-float-descendants.html: Added.
+        * platform/mac/fast/block/float/024-expected.txt:
+        * platform/mac/fast/block/margin-collapse/025-expected.txt:
+        * platform/mac/fast/block/margin-collapse/block-inside-inline/025-expected.txt:
+        * platform/mac/fast/block/margin-collapse/empty-clear-blocks-expected.txt:
+
+2013-11-20  Dean Jackson  <dino@apple.com>
+
+        https://bugs.webkit.org/show_bug.cgi?id=124637
+
+        Unreviewed. Adding HTMLTemplateElement to global constructor
+        test, but this time for more platforms. I'm not sure if
+        GTK and EFL need this too.
+
+        * platform/mac-mountainlion/js/dom/global-constructors-attributes-expected.txt:
+        * platform/mac/js/dom/global-constructors-attributes-expected.txt:
+        * platform/win/js/dom/global-constructors-attributes-expected.txt:
+
+2013-11-20  Dean Jackson  <dino@apple.com>
+
+        https://bugs.webkit.org/show_bug.cgi?id=124637
+
+        Unreviewed. Adding HTMLTemplateElement to global constructor
+        test after r159550.
+
+        * js/dom/global-constructors-attributes-expected.txt:
+
+2013-11-20  Dean Jackson  <dino@apple.com>
+
+        Unreviewed. Trying to fix tests added in r159545.
+
+        * js/regress/global-var-const-infer-fire-from-opt.html:
+        * js/regress/global-var-const-infer.html:
+
 2013-11-20  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
 
         Unreviewed EFL gardening

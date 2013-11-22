@@ -29,35 +29,47 @@
 
 #if ENABLE(INDEXED_DATABASE) && ENABLE(DATABASE_PROCESS)
 
+#include "AsyncRequest.h"
 #include "DatabaseProcessIDBConnectionMessages.h"
 #include "DatabaseToWebProcessConnectionMessages.h"
 #include "SecurityOriginData.h"
 #include "WebProcess.h"
 #include "WebToDatabaseProcessConnection.h"
 
+#include <WebCore/IDBDatabaseMetadata.h>
 #include <WebCore/SecurityOrigin.h>
+
+using namespace WebCore;
 
 namespace WebKit {
 
-static uint64_t generateBackendIdentifier()
+static uint64_t generateServerConnectionIdentifier()
 {
     ASSERT(isMainThread());
     DEFINE_STATIC_LOCAL(uint64_t, identifier, (0));
     return ++identifier;
 }
 
-WebIDBServerConnection::WebIDBServerConnection(const String& databaseName, const WebCore::SecurityOrigin& openingOrigin, const WebCore::SecurityOrigin& mainFrameOrigin)
-    : m_backendIdentifier(generateBackendIdentifier())
+PassRefPtr<WebIDBServerConnection> WebIDBServerConnection::create(const String& databaseName, const SecurityOrigin& openingOrigin, const SecurityOrigin& mainFrameOrigin)
+{
+    RefPtr<WebIDBServerConnection> result = adoptRef(new WebIDBServerConnection(databaseName, openingOrigin, mainFrameOrigin));
+    WebProcess::shared().webToDatabaseProcessConnection()->registerWebIDBServerConnection(*result);
+    return result.release();
+}
+
+WebIDBServerConnection::WebIDBServerConnection(const String& databaseName, const SecurityOrigin& openingOrigin, const SecurityOrigin& mainFrameOrigin)
+    : m_serverConnectionIdentifier(generateServerConnectionIdentifier())
     , m_databaseName(databaseName)
     , m_openingOrigin(*openingOrigin.isolatedCopy())
     , m_mainFrameOrigin(*mainFrameOrigin.isolatedCopy())
 {
-    send(Messages::DatabaseToWebProcessConnection::EstablishIDBConnection(m_backendIdentifier));
+    send(Messages::DatabaseToWebProcessConnection::EstablishIDBConnection(m_serverConnectionIdentifier));
     send(Messages::DatabaseProcessIDBConnection::EstablishConnection(databaseName, SecurityOriginData::fromSecurityOrigin(&openingOrigin), SecurityOriginData::fromSecurityOrigin(&mainFrameOrigin)));
 }
 
 WebIDBServerConnection::~WebIDBServerConnection()
 {
+    WebProcess::shared().webToDatabaseProcessConnection()->removeWebIDBServerConnection(*this);
 }
 
 bool WebIDBServerConnection::isClosed()
@@ -71,14 +83,32 @@ void WebIDBServerConnection::deleteDatabase(const String& name, BoolCallbackFunc
 
 void WebIDBServerConnection::getOrEstablishIDBDatabaseMetadata(GetIDBDatabaseMetadataFunction completionCallback)
 {
-    send(Messages::DatabaseProcessIDBConnection::GetOrEstablishIDBDatabaseMetadata());
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<const IDBDatabaseMetadata&, bool>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        IDBDatabaseMetadata metadata;
+        completionCallback(metadata, false);
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    m_serverRequests.set(requestID, serverRequest.release());
+
+    send(Messages::DatabaseProcessIDBConnection::GetOrEstablishIDBDatabaseMetadata(requestID));
+}
+
+void WebIDBServerConnection::didGetOrEstablishIDBDatabaseMetadata(uint64_t requestID, bool success, const IDBDatabaseMetadata& metadata)
+{
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+    ASSERT(serverRequest);
+
+    serverRequest->requestCompleted(metadata, success);
 }
 
 void WebIDBServerConnection::close()
 {
 }
 
-void WebIDBServerConnection::openTransaction(int64_t transactionID, const HashSet<int64_t>& objectStoreIds, WebCore::IndexedDB::TransactionMode, BoolCallbackFunction successCallback)
+void WebIDBServerConnection::openTransaction(int64_t transactionID, const HashSet<int64_t>& objectStoreIds, IndexedDB::TransactionMode, BoolCallbackFunction successCallback)
 {
 }
 
@@ -98,67 +128,67 @@ void WebIDBServerConnection::rollbackTransaction(int64_t transactionID, std::fun
 {
 }
 
-void WebIDBServerConnection::setIndexKeys(int64_t transactionID, int64_t databaseID, int64_t objectStoreID, const WebCore::IDBObjectStoreMetadata&, WebCore::IDBKey& primaryKey, const Vector<int64_t>& indexIDs, const Vector<Vector<RefPtr<WebCore::IDBKey>>>& indexKeys, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::setIndexKeys(int64_t transactionID, int64_t databaseID, int64_t objectStoreID, const IDBObjectStoreMetadata&, IDBKey& primaryKey, const Vector<int64_t>& indexIDs, const Vector<Vector<RefPtr<IDBKey>>>& indexKeys, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::createObjectStore(WebCore::IDBTransactionBackend&, const WebCore::CreateObjectStoreOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::createObjectStore(IDBTransactionBackend&, const CreateObjectStoreOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::createIndex(WebCore::IDBTransactionBackend&, const WebCore::CreateIndexOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::createIndex(IDBTransactionBackend&, const CreateIndexOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::deleteIndex(WebCore::IDBTransactionBackend&, const WebCore::DeleteIndexOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::deleteIndex(IDBTransactionBackend&, const DeleteIndexOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::get(WebCore::IDBTransactionBackend&, const WebCore::GetOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::get(IDBTransactionBackend&, const GetOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::put(WebCore::IDBTransactionBackend&, const WebCore::PutOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::put(IDBTransactionBackend&, const PutOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::openCursor(WebCore::IDBTransactionBackend&, const WebCore::OpenCursorOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::openCursor(IDBTransactionBackend&, const OpenCursorOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::count(WebCore::IDBTransactionBackend&, const WebCore::CountOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::count(IDBTransactionBackend&, const CountOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::deleteRange(WebCore::IDBTransactionBackend&, const WebCore::DeleteRangeOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::deleteRange(IDBTransactionBackend&, const DeleteRangeOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::clearObjectStore(WebCore::IDBTransactionBackend&, const WebCore::ClearObjectStoreOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::clearObjectStore(IDBTransactionBackend&, const ClearObjectStoreOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::deleteObjectStore(WebCore::IDBTransactionBackend&, const WebCore::DeleteObjectStoreOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::deleteObjectStore(IDBTransactionBackend&, const DeleteObjectStoreOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 
 }
-void WebIDBServerConnection::changeDatabaseVersion(WebCore::IDBTransactionBackend&, const WebCore::IDBDatabaseBackend::VersionChangeOperation&, std::function<void(PassRefPtr<WebCore::IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::changeDatabaseVersion(IDBTransactionBackend&, const IDBDatabaseBackend::VersionChangeOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
 }
 
-void WebIDBServerConnection::cursorAdvance(WebCore::IDBCursorBackend&, const WebCore::CursorAdvanceOperation&, std::function<void()> completionCallback)
+void WebIDBServerConnection::cursorAdvance(IDBCursorBackend&, const CursorAdvanceOperation&, std::function<void()> completionCallback)
 {
 }
 
-void WebIDBServerConnection::cursorIterate(WebCore::IDBCursorBackend&, const WebCore::CursorIterationOperation&, std::function<void()> completionCallback)
+void WebIDBServerConnection::cursorIterate(IDBCursorBackend&, const CursorIterationOperation&, std::function<void()> completionCallback)
 {
 }
 
-void WebIDBServerConnection::cursorPrefetchIteration(WebCore::IDBCursorBackend&, const WebCore::CursorPrefetchIterationOperation&, std::function<void()> completionCallback)
+void WebIDBServerConnection::cursorPrefetchIteration(IDBCursorBackend&, const CursorPrefetchIterationOperation&, std::function<void()> completionCallback)
 {
 }
 
-void WebIDBServerConnection::cursorPrefetchReset(WebCore::IDBCursorBackend&, int usedPrefetches)
+void WebIDBServerConnection::cursorPrefetchReset(IDBCursorBackend&, int usedPrefetches)
 {
 }
 

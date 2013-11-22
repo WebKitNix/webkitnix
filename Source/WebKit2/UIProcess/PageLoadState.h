@@ -43,6 +43,12 @@ public:
 
     void reset();
 
+    const String& provisionalURL() const { return m_provisionalURL; }
+    const String& url() const { return m_url; }
+    const String& unreachableURL() const { return m_unreachableURL; }
+
+    String activeURL() const;
+
     const String& pendingAPIRequestURL() const;
     void setPendingAPIRequestURL(const String&);
     void clearPendingAPIRequestURL();
@@ -57,6 +63,11 @@ public:
 
     void didSameDocumentNavigation(const String& url);
 
+    void setUnreachableURL(const String&);
+
+    const String& title() const;
+    void setTitle(const String&);
+
 private:
     State m_state;
 
@@ -64,6 +75,11 @@ private:
 
     String m_provisionalURL;
     String m_url;
+
+    String m_unreachableURL;
+    String m_lastUnreachableURL;
+
+    String m_title;
 };
 
 } // namespace WebKit
