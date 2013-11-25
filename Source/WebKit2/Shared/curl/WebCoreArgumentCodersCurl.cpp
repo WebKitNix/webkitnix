@@ -26,7 +26,6 @@
 
 #include "config.h"
 #include "WebCoreArgumentCoders.h"
-
 #include "NotImplemented.h"
 #include <WebCore/ResourceError.h>
 #include <WebCore/ResourceRequest.h>
