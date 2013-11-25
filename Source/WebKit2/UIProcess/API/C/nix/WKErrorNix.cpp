@@ -33,7 +33,7 @@
 #include <gio/gio.h>
 #elif USE(CURL)
 #include "curl/ResourceError.h"
-#include <curl/curl.h>
+#include "curl/SSLHandle.h"
 #endif
 
 #if USE(SOUP)
@@ -56,6 +56,27 @@ static unsigned soupTlsErrorsToNixErrors(unsigned errors)
         nixErrors |= NIXTlsErrorCertificateGenericError;
     return nixErrors;
 }
+#elif USE(CURL)
+using namespace WebCore;
+static unsigned curlSSLErrorToNixError(unsigned sslError)
+{
+    unsigned nixErrors = 0;
+    if (sslError & SSL_CERTIFICATE_UNKNOWN_CA)
+        nixErrors |= NIXTlsErrorUnkownCA;
+    if (sslError & SSL_CERTIFICATE_BAD_IDENTITY)
+        nixErrors |= NIXTlsErrorCertificateBadIdentity;
+    if (sslError & SSL_CERTIFICATE_NOT_ACTIVATED)
+        nixErrors |= NIXTlsErrorCertificateNotActivated;
+    if (sslError & SSL_CERTIFICATE_EXPIRED)
+        nixErrors |= NIXTlsErrorCertificateExpired;
+    if (sslError & SSL_CERTIFICATE_REVOKED)
+        nixErrors |= NIXTlsErrorCertificateRevoked;
+    if (sslError & SSL_CERTIFICATE_INSECURE)
+        nixErrors |= NIXTlsErrorCertificateInsecure;
+    if (sslError & SSL_CERTIFICATE_GENERIC_ERROR)
+        nixErrors |= NIXTlsErrorCertificateGenericError;
+    return nixErrors;
+}
 #endif
 
 void WKErrorGetTLSErrors(WKErrorRef error, unsigned* tlsErrors)
@@ -64,9 +85,6 @@ void WKErrorGetTLSErrors(WKErrorRef error, unsigned* tlsErrors)
 #if USE(SOUP)
     *tlsErrors = soupTlsErrorsToNixErrors(resourceError.tlsErrors());
 #elif USE(CURL)
-    if (resourceError.errorCode() == CURLE_SSL_CACERT)
-        *tlsErrors = NIXTlsErrorUnkownCA | NIXTlsErrorCertificateGenericError;
-    else
-        *tlsErrors = 0;
+    *tlsErrors = curlSSLErrorToNixError(resourceError.sslErrors());
 #endif
 }

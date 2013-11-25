@@ -26,9 +26,8 @@
 
 #include "config.h"
 #include "WebCoreArgumentCoders.h"
-
-#include "NotImplemented.h"
 #include "PlatformCertificateInfo.h"
+#include "NotImplemented.h"
 #include <WebCore/ResourceError.h>
 #include <WebCore/ResourceRequest.h>
 #include <WebCore/ResourceResponse.h>
@@ -62,14 +61,17 @@ bool ArgumentCoder<ResourceResponse>::decodePlatformData(ArgumentDecoder&, Resou
     return true;
 }
 
-void ArgumentCoder<ResourceError>::encodePlatformData(ArgumentEncoder&, const ResourceError&)
+void ArgumentCoder<ResourceError>::encodePlatformData(ArgumentEncoder& encoder, const ResourceError& resourceError)
 {
-    notImplemented();
+    encoder << resourceError.sslErrors();
 }
 
-bool ArgumentCoder<ResourceError>::decodePlatformData(ArgumentDecoder&, ResourceError&)
+bool ArgumentCoder<ResourceError>::decodePlatformData(ArgumentDecoder& decoder, ResourceError& resourceError)
 {
-    notImplemented();
+    unsigned sslError;
+    if (!decoder.decode(sslError))
+        return false;
+    resourceError.setSSLErrors(sslError);
     return true;
 }
 
