@@ -23,8 +23,8 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PlatformCertificateInfo_h
-#define PlatformCertificateInfo_h
+#ifndef CertificateInfo_h
+#define CertificateInfo_h
 
 #include "ArgumentDecoder.h"
 #include "ArgumentEncoder.h"
@@ -32,13 +32,13 @@
 
 namespace WebKit {
 
-class PlatformCertificateInfo {
+class CertificateInfo {
 public:
-    PlatformCertificateInfo()
+    CertificateInfo()
     {
     }
 
-    explicit PlatformCertificateInfo(const WebCore::ResourceResponse&)
+    explicit CertificateInfo(const WebCore::ResourceResponse&)
     {
     }
 
@@ -46,7 +46,7 @@ public:
     {
     }
 
-    static bool decode(CoreIPC::ArgumentDecoder&, PlatformCertificateInfo&)
+    static bool decode(CoreIPC::ArgumentDecoder&, CertificateInfo&)
     {
         return true;
     }
@@ -54,4 +54,4 @@ public:
 
 } // namespace WebKit
 
-#endif // PlatformCertificateInfo_h
+#endif // CertificateInfo_h
