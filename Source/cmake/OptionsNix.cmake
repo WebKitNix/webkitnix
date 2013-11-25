@@ -46,6 +46,7 @@ WEBKIT_OPTION_DEFINE(WTF_USE_CURL "Use libCurl as network backend" OFF)
 
 if (WTF_USE_CURL)
     find_package(CURL REQUIRED)
+    find_package(OpenSSL REQUIRED)
     set(REQUIRED_NETWORK libcurl)
 else ()
     find_package(LibSoup 2.42.0 REQUIRED)

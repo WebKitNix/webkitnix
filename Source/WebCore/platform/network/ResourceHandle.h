@@ -188,9 +188,6 @@ public:
     static void setClientCertificate(const String& host, GTlsCertificate*);
     static void setIgnoreSSLErrors(bool);
 #endif
-#if PLATFORM(NIX) && USE(CURL)
-    bool ignoreHTTPSCertificate();
-#endif
 
     // Used to work around the fact that you don't get any more NSURLConnection callbacks until you return from the one you're in.
     static bool loadsBlocked();    

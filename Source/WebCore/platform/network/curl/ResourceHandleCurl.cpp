@@ -121,14 +121,6 @@ void ResourceHandle::setHostAllowsAnyHTTPSCertificate(const String& host)
     allowsAnyHTTPSCertificateHosts(host.lower());
 }
 
-#if PLATFORM(NIX)
-bool ResourceHandle::ignoreHTTPSCertificate()
-{
-    URL url = firstRequest().url();
-    return allowsAnyHTTPSCertificateHosts().contains(url.host());
-}
-#endif
-
 #if PLATFORM(WIN) && USE(CF)
 // FIXME:  The CFDataRef will need to be something else when
 // building without 
