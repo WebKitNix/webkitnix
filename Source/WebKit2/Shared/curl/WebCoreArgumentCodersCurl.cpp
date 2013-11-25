@@ -26,7 +26,6 @@
 
 #include "config.h"
 #include "WebCoreArgumentCoders.h"
-#include "PlatformCertificateInfo.h"
 #include "NotImplemented.h"
 #include <WebCore/ResourceError.h>
 #include <WebCore/ResourceRequest.h>
@@ -34,7 +33,6 @@
 #include <wtf/text/CString.h>
 
 using namespace WebCore;
-using namespace WebKit;
 
 namespace CoreIPC {
 
