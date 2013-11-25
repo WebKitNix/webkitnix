@@ -24,6 +24,7 @@
  */
 
 #include "config.h"
+#include "AudioUtilitiesNix.h"
 #include "InjectedBundleTest.h"
 #include "PlatformUtilities.h"
 #include <public/MediaConstraints.h>
@@ -255,9 +256,18 @@ public:
         return new MockAudioOutputDevice(inputDeviceId, bufferSize, numberOfInputChannels, numberOfChannels, sampleRate, renderCallback);
     }
 
+    virtual Nix::FFTFrame* createFFTFrame(unsigned fftsize)
+    {
+        return new Util::FFTFrameTest(fftsize);
+    }
+
     virtual Nix::MediaStreamCenter* createMediaStreamCenter() OVERRIDE
     {
         return new MockMediaStreamCenter();
+    }
+    virtual Nix::MultiChannelPCMData* decodeAudioResource(const void* audioFileData, size_t dataSize, double sampleRate) OVERRIDE
+    {
+        return Util::decodeAudioResource(audioFileData, dataSize, sampleRate);
     }
 };
 } // namespace TestMediaStreamAudioAPI

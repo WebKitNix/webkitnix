@@ -34,6 +34,7 @@ set(test_main_SOURCES
 )
 
 set(bundle_harness_SOURCES
+    ${TESTWEBKITAPI_DIR}/nix/AudioUtilitiesNix.cpp
     ${TESTWEBKITAPI_DIR}/nix/InjectedBundleControllerNix.cpp
     ${TESTWEBKITAPI_DIR}/nix/PlatformUtilitiesNix.cpp
     ${TESTWEBKITAPI_DIR}/nix/MainLoop.cpp
