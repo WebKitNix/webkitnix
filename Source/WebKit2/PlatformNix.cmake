@@ -364,8 +364,15 @@ set(WebKitNix_WebKit2_HEADERS
     UIProcess/API/C/WKOpenPanelParameters.h
     UIProcess/API/C/WKOpenPanelResultListener.h
     UIProcess/API/C/WKPage.h
+    UIProcess/API/C/WKPageContextMenuClient.h
+    UIProcess/API/C/WKPageFindClient.h
+    UIProcess/API/C/WKPageFindMatchesClient.h
+    UIProcess/API/C/WKPageFormClient.h
     UIProcess/API/C/WKPageGroup.h
+    UIProcess/API/C/WKPageLoaderClient.h
+    UIProcess/API/C/WKPagePolicyClient.h
     UIProcess/API/C/WKPagePrivate.h
+    UIProcess/API/C/WKPageUIClient.h
     UIProcess/API/C/WKPluginSiteDataManager.h
     UIProcess/API/C/WKPreferences.h
     UIProcess/API/C/WKPreferencesPrivate.h
