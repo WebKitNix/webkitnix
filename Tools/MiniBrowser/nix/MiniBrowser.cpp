@@ -71,6 +71,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     WKPreferencesSetDeveloperExtrasEnabled(preferences, true);
     WKPreferencesSetWebGLEnabled(preferences, true);
     WKPreferencesSetOfflineWebApplicationCacheEnabled(preferences, true);
+    WKPreferencesSetInteractiveFormValidationEnabled(preferences, true);
 
     m_view = WKViewCreate(m_context.get(), m_pageGroup.get());
 
