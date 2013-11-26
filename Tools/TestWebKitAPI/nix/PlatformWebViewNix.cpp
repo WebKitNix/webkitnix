@@ -29,16 +29,19 @@
 #include "NIXView.h"
 #include "NIXEvents.h"
 
-#define WEBVIEW_WIDTH   200
-#define WEBVIEW_HEIGHT  200
+const double WEBVIEW_WIDTH = 200;
+const double WEBVIEW_HEIGHT = 200;
+const double SCREEN_WIDTH = 1024;
+const double SCREEN_HEIGHT = 768;
 
 namespace TestWebKitAPI {
 
 PlatformWebView::PlatformWebView(WKContextRef context, WKPageGroupRef pageGroup)
 {
     m_view = WKViewCreate(context, pageGroup);
-    WKViewSetSize(m_view, WKSizeMake(WEBVIEW_WIDTH, WEBVIEW_HEIGHT));
     WKViewInitialize(m_view);
+    WKViewSetSize(m_view, WKSizeMake(WEBVIEW_WIDTH, WEBVIEW_HEIGHT));
+    NIXViewSetScreenRect(m_view, WKRectMake(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
     m_window = 0;
 }
 

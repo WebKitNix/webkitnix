@@ -1404,6 +1404,13 @@ void WebPageProxy::handleSingleTap(double timestamp, const WebPlatformTouchPoint
     m_process->send(Messages::WebPage::SingleTap(timestamp, point), m_pageID);
 }
 
+void WebPageProxy::setScreenRect(const WebCore::FloatRect& rect)
+{
+    if (!isValid())
+        return;
+    m_process->send(Messages::WebPage::SetScreenRect(rect), m_pageID);
+}
+
 #endif
 #endif // ENABLE(TOUCH_EVENTS)
 

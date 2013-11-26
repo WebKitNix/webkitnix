@@ -258,4 +258,9 @@ void WebViewNix::setAutoScaleToFitContents(bool enable)
         m_adjustScaleAfterFirstMainFrameRender = false;
 }
 
+void WebViewNix::setScreenRect(const WebCore::FloatRect& rect)
+{
+    m_page->setScreenRect(rect);
+}
+
 } // namespace WebKit

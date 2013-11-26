@@ -244,6 +244,9 @@ private:
 #if PLATFORM(MAC)
     virtual void makeFirstResponder() OVERRIDE;
 #endif
+#if PLATFORM(NIX)
+    virtual WebCore::FloatRect screenRect() const OVERRIDE;
+#endif
 
     virtual void enableSuddenTermination() OVERRIDE;
     virtual void disableSuddenTermination() OVERRIDE;

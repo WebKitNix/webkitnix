@@ -613,6 +613,11 @@ public:
     uint64_t nativeWindowHandle() { return m_nativeWindowHandle; }
 #endif
 
+#if PLATFORM(NIX)
+    void setScreenRect(const WebCore::FloatRect& rect) { m_screenRect = rect; }
+    WebCore::FloatRect screenRect() const { return m_screenRect; }
+#endif
+
     bool canPluginHandleResponse(const WebCore::ResourceResponse& response);
 
     bool asynchronousPluginInitializationEnabled() const { return m_asynchronousPluginInitializationEnabled; }
@@ -1040,6 +1045,10 @@ private:
     bool m_useThreadedScrolling;
 
     ViewState::Flags m_viewState;
+
+#if PLATFORM(NIX)
+    WebCore::FloatRect m_screenRect;
+#endif
 };
 
 } // namespace WebKit

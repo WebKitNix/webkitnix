@@ -94,6 +94,8 @@ WK_EXPORT void NIXViewSetNixViewClient(WKViewRef view, const NIXViewClient* view
 
 WK_EXPORT WKSize NIXViewVisibleContentsSize(WKViewRef view);
 
+WK_EXPORT void NIXViewSetScreenRect(WKViewRef, WKRect);
+
 WK_EXPORT void NIXViewFindZoomableAreaForPoint(WKViewRef view, WKPoint point, int horizontalRadius, int verticalRadius);
 
 WK_EXPORT void NIXViewSendMouseEvent(WKViewRef view, const NIXMouseEvent* event);

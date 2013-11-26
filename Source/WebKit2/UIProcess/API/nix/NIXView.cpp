@@ -65,6 +65,11 @@ WKSize NIXViewVisibleContentsSize(WKViewRef view)
     return WKSizeMake(visibleContentsSize.width(), visibleContentsSize.height());
 }
 
+void NIXViewSetScreenRect(WKViewRef view, WKRect rect)
+{
+    static_cast<WebViewNix*>(toImpl(view))->setScreenRect(WebCore::FloatRect(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height));
+}
+
 void NIXViewFindZoomableAreaForPoint(WKViewRef view, WKPoint point, int horizontalRadius, int verticalRadius)
 {
     static_cast<WebViewNix*>(toImpl(view))->findZoomableAreaForPoint(point, horizontalRadius, verticalRadius);

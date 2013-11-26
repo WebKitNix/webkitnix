@@ -64,6 +64,7 @@ public:
     float scaleToFitContents();
     void adjustScaleToFitContents();
     void setAutoScaleToFitContents(bool);
+    void setScreenRect(const WebCore::FloatRect&);
 protected:
     // WebKit::WebView
     virtual void didChangeContentScaleFactor(float) OVERRIDE;

@@ -149,6 +149,13 @@ void WebChromeClient::makeFirstResponder()
 }    
 #endif    
 
+#if PLATFORM(NIX)
+FloatRect WebChromeClient::screenRect() const
+{
+    return m_page->screenRect();
+}
+#endif
+
 bool WebChromeClient::canTakeFocus(FocusDirection)
 {
     notImplemented();

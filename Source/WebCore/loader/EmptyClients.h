@@ -191,6 +191,10 @@ public:
     virtual void AXFinishFrameLoad() OVERRIDE { }
 #endif
 
+#if PLATFORM(NIX)
+    virtual FloatRect screenRect() const OVERRIDE { return FloatRect(); }
+#endif
+
 #if PLATFORM(IOS)
     virtual bool isStopping() OVERRIDE { return false; }
 #endif

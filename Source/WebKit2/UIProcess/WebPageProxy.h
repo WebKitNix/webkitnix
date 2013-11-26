@@ -516,6 +516,7 @@ public:
     // let WebCore adjust the point position (the TOUCH_ADJUSTMENT feature)
     // to the best clickable node based on info provided by the touch point.
     void handleSingleTap(double timestamp, const WebPlatformTouchPoint&);
+    void setScreenRect(const WebCore::FloatRect&);
 #endif
 #endif // ENABLE(TOUCH_EVENTS)
 

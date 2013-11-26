@@ -313,6 +313,7 @@ messages -> WebPage LegacyReceiver {
 
 #if PLATFORM(NIX)
     SingleTap(double timestamp, WebKit::WebPlatformTouchPoint point);
+    SetScreenRect(WebCore::FloatRect rect);
 #endif
 
     SetMainFrameInViewSourceMode(bool inViewSourceMode)
