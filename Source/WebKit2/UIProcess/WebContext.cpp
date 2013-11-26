@@ -74,6 +74,11 @@
 #include "WebNetworkInfoManagerProxy.h"
 #endif
 
+#if ENABLE(DATABASE_PROCESS)
+#include "DatabaseProcessCreationParameters.h"
+#include "DatabaseProcessMessages.h"
+#endif
+
 #if ENABLE(NETWORK_PROCESS)
 #include "NetworkProcessCreationParameters.h"
 #include "NetworkProcessMessages.h"
@@ -119,6 +124,14 @@ const Vector<WebContext*>& WebContext::allContexts()
 {
     return contexts();
 }
+
+#if PLATFORM(IOS)
+WebContext* WebContext::sharedProcessContext()
+{
+    static WKContextRef sharedContextRef = WKContextCreate();
+    return toImpl(sharedContextRef);
+}
+#endif
 
 WebContext::WebContext(ProcessModel processModel, const String& injectedBundlePath)
     : m_processModel(processModel)
@@ -415,6 +428,16 @@ void WebContext::ensureDatabaseProcess()
         return;
 
     m_databaseProcess = DatabaseProcessProxy::create(this);
+
+    DatabaseProcessCreationParameters parameters;
+
+    // Indexed databases exist in a subdirectory of the "database directory path."
+    // Currently, the top level of that directory contains entities related to WebSQL databases.
+    // We should fix this, and move WebSQL into a subdirectory (https://bugs.webkit.org/show_bug.cgi?id=124807)
+    // In the meantime, an entity name prefixed with three underscores will not conflict with any WebSQL entities.
+    parameters.indexedDatabaseDirectory = pathByAppendingComponent(databaseDirectory(), "___IndexedDB");
+
+    m_databaseProcess->send(Messages::DatabaseProcess::InitializeDatabaseProcess(parameters), 0);
 }
 
 void WebContext::getDatabaseProcessConnection(PassRefPtr<Messages::WebProcessProxy::GetDatabaseProcessConnection::DelayedReply> reply)
@@ -1111,7 +1134,9 @@ void WebContext::allowSpecificHTTPSCertificateForHost(const WebCertificateInfo* 
 #endif
 #endif
 
+#if !PLATFORM(IOS)
     ASSERT_NOT_REACHED();
+#endif
 }
 
 void WebContext::setHTTPPipeliningEnabled(bool enabled)

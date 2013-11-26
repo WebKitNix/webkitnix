@@ -48,7 +48,7 @@ namespace WebKit {
 #define DEFAULT_WEBKIT_SCROLL_ANIMATOR_ENABLED false
 #endif
 
-#if PLATFORM(MAC) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+#if !PLATFORM(IOS) && PLATFORM(MAC) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
 #define DEFAULT_SCREEN_FONT_SUBSTITUTION_ENABLED false
 #else
 #define DEFAULT_SCREEN_FONT_SUBSTITUTION_ENABLED true
@@ -176,6 +176,7 @@ namespace WebKit {
     macro(MediaStreamEnabled, mediaStreamEnabled, Bool, bool, false) \
     macro(VideoPluginProxyEnabled, isVideoPluginProxyEnabled, Bool, bool, DEFAULT_VIDEO_PLUGIN_PROXY_ENABLED) \
     macro(UseLegacyTextAlignPositionedElementBehavior, useLegacyTextAlignPositionedElementBehavior, Bool, bool, false) \
+    macro(SpatialNavigationEnabled, spatialNavigationEnabled, Bool, bool, false) \
     \
 
 #define FOR_EACH_WEBKIT_DOUBLE_PREFERENCE(macro) \

@@ -46,7 +46,7 @@ SpeculativeJIT::SpeculativeJIT(JITCompiler& jit)
     , m_jit(jit)
     , m_currentNode(0)
     , m_indexInBlock(0)
-    , m_generationInfo(m_jit.codeBlock()->m_numCalleeRegisters)
+    , m_generationInfo(m_jit.graph().frameRegisterCount())
     , m_state(m_jit.graph())
     , m_interpreter(m_jit.graph(), m_state)
     , m_stream(&jit.jitCode()->variableEventStream)
@@ -3539,8 +3539,7 @@ void SpeculativeJIT::compileArithMod(Node* node)
         
         if (isInt32Constant(node->child2().node())) {
             int32_t divisor = valueOfInt32Constant(node->child2().node());
-            if (divisor > 0 && hasOneBitSet(divisor)) {
-                ASSERT(divisor != 1);
+            if (divisor > 1 && hasOneBitSet(divisor)) {
                 unsigned logarithm = WTF::fastLog2(divisor);
                 GPRReg dividendGPR = op1.gpr();
                 GPRTemporary result(this);

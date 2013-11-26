@@ -28,6 +28,14 @@
 
 #include "WebEvent.h"
 
+#if PLATFORM(IOS)
+#include <wtf/RetainPtr.h>
+#ifdef __OBJC__
+@class UIWebTouchEventsGestureRecognizer;
+#else
+class UIWebTouchEventsGestureRecognizer;
+#endif // __OBJC__
+#endif // PLATFORM(IOS)
 #if PLATFORM(MAC)
 #include <wtf/RetainPtr.h>
 OBJC_CLASS NSView;
@@ -66,6 +74,8 @@ public:
     const void* nativeEvent() const { return m_nativeEvent; }
 #elif PLATFORM(NIX)
     const NIXMouseEvent* nativeEvent() const { return &m_nativeEvent; }
+#elif PLATFORM(IOS)
+    const void* nativeEvent() const { return 0; }
 #endif
 
 private:

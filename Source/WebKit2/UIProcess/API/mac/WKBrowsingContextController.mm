@@ -26,6 +26,8 @@
 #import "config.h"
 #import "WKBrowsingContextControllerInternal.h"
 
+#if WK_API_ENABLED
+
 #import "ObjCObjectGraph.h"
 #import "WKBackForwardListInternal.h"
 #import "WKBackForwardListItemInternal.h"
@@ -54,6 +56,27 @@
 
 using namespace WebKit;
 
+class PageLoadStateObserver : public PageLoadState::Observer {
+public:
+    PageLoadStateObserver(WKBrowsingContextController *controller)
+        : m_controller(controller)
+    {
+    }
+
+private:
+    virtual void willChangeTitle() OVERRIDE
+    {
+        [m_controller willChangeValueForKey:@"title"];
+    }
+
+    virtual void didChangeTitle() OVERRIDE
+    {
+        [m_controller didChangeValueForKey:@"title"];
+    }
+
+    WKBrowsingContextController *m_controller;
+};
+
 static inline NSString *autoreleased(WKStringRef string)
 {
     return string ? CFBridgingRelease(WKStringCopyCFString(kCFAllocatorDefault, adoptWK(string).get())) : nil;
@@ -81,27 +104,27 @@ NSString * const WKActionCanShowMIMETypeKey = @"WKActionCanShowMIMETypeKey";
     
     // Delegate for load callbacks.
     id<WKBrowsingContextLoadDelegate> _loadDelegate;
+#if PLATFORM(IOS)
+    id <WKBrowsingContextLoadDelegateInternal> _loadDelegateInternal;
+#endif // PLATFORM(IOS)
 
-#if WK_API_ENABLED
     // Delegate for policy callbacks.
     id<WKBrowsingContextPolicyDelegate> _policyDelegate;
-#endif
+
+    std::unique_ptr<PageLoadStateObserver> _pageLoadStateObserver;
 }
 @end
 
 @implementation WKBrowsingContextControllerData
 @end
 
-
 @implementation WKBrowsingContextController
 
 - (void)dealloc
 {
+    toImpl(_data->_pageRef.get())->pageLoadState().removeObserver(*_data->_pageLoadStateObserver);
     WKPageSetPageLoaderClient(_data->_pageRef.get(), nullptr);
-
-#if WK_API_ENABLED
     WKPageSetPagePolicyClient(_data->_pageRef.get(), nullptr);
-#endif
 
     [_data release];
     [super dealloc];
@@ -124,7 +147,6 @@ NSString * const WKActionCanShowMIMETypeKey = @"WKActionCanShowMIMETypeKey";
     _data->_loadDelegate = loadDelegate;
 }
 
-#if WK_API_ENABLED
 - (id<WKBrowsingContextPolicyDelegate>)policyDelegate
 {
     return _data->_policyDelegate;
@@ -134,7 +156,6 @@ NSString * const WKActionCanShowMIMETypeKey = @"WKActionCanShowMIMETypeKey";
 {
     _data->_policyDelegate = policyDelegate;
 }
-#endif
 
 #pragma mark Loading
 
@@ -290,7 +311,6 @@ static void releaseNSData(unsigned char*, const void* data)
     return WKPageCanGoBack(self._pageRef);
 }
 
-#if WK_API_ENABLED
 - (void)goToBackForwardListItem:(WKBackForwardListItem *)item
 {
     toImpl(self._pageRef)->goToBackForwardItem(&item._item);
@@ -304,7 +324,6 @@ static void releaseNSData(unsigned char*, const void* data)
 
     return wrapper(*list);
 }
-#endif // WK_API_ENABLED
 
 #pragma mark Active Load Introspection
 
@@ -446,14 +465,10 @@ static void releaseNSData(unsigned char*, const void* data)
     return WKPageGetPageCount(self._pageRef);
 }
 
-#if WK_API_ENABLED
-
 - (WKBrowsingContextHandle *)handle
 {
     return [[[WKBrowsingContextHandle alloc] _initWithPageID:toImpl(self._pageRef)->pageID()] autorelease];
 }
-
-#endif
 
 @end
 
@@ -497,6 +512,10 @@ static void didCommitLoadForFrame(WKPageRef page, WKFrameRef frame, WKTypeRef us
         return;
 
     WKBrowsingContextController *browsingContext = (WKBrowsingContextController *)clientInfo;
+#if PLATFORM(IOS)
+    if ([browsingContext.loadDelegateInternal respondsToSelector:@selector(browsingContextControllerDidCommitLoad:)])
+        [browsingContext.loadDelegateInternal browsingContextControllerDidCommitLoad:browsingContext];
+#endif // PLATFORM(IOS)
     if ([browsingContext.loadDelegate respondsToSelector:@selector(browsingContextControllerDidCommitLoad:)])
         [browsingContext.loadDelegate browsingContextControllerDidCommitLoad:browsingContext];
 }
@@ -544,7 +563,6 @@ static void didFinishProgress(WKPageRef page, const void* clientInfo)
         [browsingContext.loadDelegate browsingContextControllerDidFinishProgress:browsingContext];
 }
 
-#if WK_API_ENABLED
 static void didChangeBackForwardList(WKPageRef page, WKBackForwardListItemRef addedItem, WKArrayRef removedItems, const void *clientInfo)
 {
     WKBrowsingContextController *browsingContext = (WKBrowsingContextController *)clientInfo;
@@ -555,7 +573,6 @@ static void didChangeBackForwardList(WKPageRef page, WKBackForwardListItemRef ad
     NSArray *removed = removedItems ? wrapper(*toImpl(removedItems)) : nil;
     [browsingContext.loadDelegate browsingContextControllerDidChangeBackForwardList:browsingContext addedItem:added removedItems:removed];
 }
-#endif // WK_API_ENABLED
 
 static void setUpPageLoaderClient(WKBrowsingContextController *browsingContext, WKPageRef pageRef)
 {
@@ -574,15 +591,11 @@ static void setUpPageLoaderClient(WKBrowsingContextController *browsingContext, 
     loaderClient.didStartProgress = didStartProgress;
     loaderClient.didChangeProgress = didChangeProgress;
     loaderClient.didFinishProgress = didFinishProgress;
-
-#if WK_API_ENABLED
     loaderClient.didChangeBackForwardList = didChangeBackForwardList;
-#endif
 
     WKPageSetPageLoaderClient(pageRef, &loaderClient);
 }
 
-#if WK_API_ENABLED
 static WKPolicyDecisionHandler makePolicyDecisionBlock(WKFramePolicyListenerRef listener)
 {
     WKRetain(listener); // Released in the decision handler below.
@@ -672,7 +685,18 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
 
     WKPageSetPagePolicyClient(pageRef, &policyClient);
 }
-#endif
+
+#if PLATFORM(IOS)
+- (id <WKBrowsingContextLoadDelegateInternal>)loadDelegateInternal
+{
+    return _data->_loadDelegateInternal;
+}
+
+- (void)setLoadDelegateInternal:(id <WKBrowsingContextLoadDelegateInternal>)loadDelegateInternal
+{
+    _data->_loadDelegateInternal = loadDelegateInternal;
+}
+#endif // PLATFORM(IOS)
 
 /* This should only be called from associate view. */
 
@@ -685,11 +709,11 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
     _data = [[WKBrowsingContextControllerData alloc] init];
     _data->_pageRef = pageRef;
 
-    setUpPageLoaderClient(self, pageRef);
+    _data->_pageLoadStateObserver = std::make_unique<PageLoadStateObserver>(self);
+    toImpl(_data->_pageRef.get())->pageLoadState().addObserver(*_data->_pageLoadStateObserver);
 
-#if WK_API_ENABLED
+    setUpPageLoaderClient(self, pageRef);
     setUpPagePolicyClient(self, pageRef);
-#endif
 
     return self;
 }
@@ -706,3 +730,5 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
 }
  
 @end
+
+#endif // WK_API_ENABLED

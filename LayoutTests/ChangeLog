@@ -1,3 +1,987 @@
+2013-11-25  Dean Jackson  <dino@apple.com>
+
+        RenderTableSection Blink merge asserting
+        https://bugs.webkit.org/show_bug.cgi?id=124857
+
+        Skipping these tests for now, since Ossy + Laszlo checked
+        in a lot of rebaselines and I didn't want to roll
+        everything out.
+
+        * TestExpectations:
+
+2013-11-25  Robert Hogan  <robert@webkit.org>
+
+        Add complex line layout path version of empty-clear-blocks.html
+        https://bugs.webkit.org/show_bug.cgi?id=124808
+
+        Reviewed by Sam Weinig.
+
+        * fast/block/margin-collapse/empty-clear-blocks-complex-expected.html: Added.
+        * fast/block/margin-collapse/empty-clear-blocks-complex.html: Added.
+
+2013-11-25  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Vertical border spacing is doubled between table row groups
+        https://bugs.webkit.org/show_bug.cgi?id=20040
+
+        Reviewed by Csaba Osztrogonác.
+
+        Rebaseline the rest of EFL and GTK tests.
+
+        * platform/efl/tables/mozilla/bugs/bug10296-1-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug26178-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug27038-1-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug278385-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug55789-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug106966-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug85016-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug91057-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/core/backgrounds-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/core/captions1-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/dom/insertTbodyExpand1-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/dom/insertTbodyRebuild1-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-column-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_layers-show-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/other/test4-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_valign_bottom-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_valign_bottom-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_valign_bottom-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_valign_bottom-expected.txt:
+
+2013-11-25  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Vertical border spacing is doubled between table row groups
+        https://bugs.webkit.org/show_bug.cgi?id=20040
+
+        Reviewed by Csaba Osztrogonác.
+
+        Rebaseline efl tests (+mac corrections).
+
+        * platform/efl/fast/forms/input-align-expected.png:
+        * platform/efl/fast/forms/input-align-expected.txt:
+        * platform/efl/fast/forms/input-value-expected.png:
+        * platform/efl/fast/forms/input-value-expected.txt:
+        * platform/efl/fast/table/border-collapsing/004-vertical-expected.png:
+        * platform/efl/fast/table/border-collapsing/004-vertical-expected.txt:
+        * platform/efl/fast/table/floating-th-expected.png:
+        * platform/efl/fast/table/floating-th-expected.txt:
+        * platform/efl/fast/table/frame-and-rules-expected.png:
+        * platform/efl/fast/table/frame-and-rules-expected.txt:
+        * platform/efl/fast/table/multiple-captions-display-expected.png:
+        * platform/efl/fast/table/multiple-captions-display-expected.txt:
+        * platform/efl/fast/table/rowindex-expected.png:
+        * platform/efl/fast/table/rowindex-expected.txt:
+        * platform/efl/fast/table/table-display-types-expected.png:
+        * platform/efl/fast/table/table-display-types-expected.txt:
+        * platform/efl/fast/table/table-display-types-strict-expected.png:
+        * platform/efl/fast/table/table-display-types-strict-expected.txt:
+        * platform/efl/fast/table/table-display-types-vertical-expected.png:
+        * platform/efl/fast/table/table-display-types-vertical-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug119786-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug119786-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug13118-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug13118-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug19061-1-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug19061-1-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug19061-2-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug19061-2-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug220536-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug220536-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug27038-2-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug27038-2-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug27038-3-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug27038-3-expected.txt: Added.
+        * platform/efl/tables/mozilla/bugs/bug30418-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug30418-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug3263-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug3263-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug38916-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug38916-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug46268-3-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug46268-3-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug46268-5-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug46268-5-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug46268-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug46268-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug46924-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug46924-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug57378-expected.png:
+        * platform/efl/tables/mozilla/bugs/bug57378-expected.txt:
+        * platform/efl/tables/mozilla/dom/appendTbodyExpand1-expected.png:
+        * platform/efl/tables/mozilla/dom/appendTbodyExpand1-expected.txt:
+        * platform/efl/tables/mozilla/marvin/backgr_layers-opacity-expected.png:
+        * platform/efl/tables/mozilla/marvin/backgr_layers-opacity-expected.txt:
+        * platform/efl/tables/mozilla/marvin/backgr_position-table-expected.png:
+        * platform/efl/tables/mozilla/marvin/backgr_position-table-expected.txt:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-cell-expected.png:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-cell-expected.txt:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-column-expected.png:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-column-expected.txt:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-column-group-expected.png:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-column-group-expected.txt:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-expected.png:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-expected.txt:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-row-expected.png:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-row-expected.txt:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-row-group-expected.png:
+        * platform/efl/tables/mozilla/marvin/backgr_simple-table-row-group-expected.txt:
+        * platform/efl/tables/mozilla/marvin/body_tfoot-expected.png:
+        * platform/efl/tables/mozilla/marvin/body_tfoot-expected.txt:
+        * platform/efl/tables/mozilla/marvin/body_thead-expected.png:
+        * platform/efl/tables/mozilla/marvin/body_thead-expected.txt:
+        * platform/efl/tables/mozilla/marvin/table_rules_groups-expected.png:
+        * platform/efl/tables/mozilla/marvin/table_rules_groups-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_align_center-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_align_center-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_align_char-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_align_char-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_align_justify-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_align_justify-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_align_left-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_align_left-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_align_right-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_align_right-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_char-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_char-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_valign_baseline-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_valign_baseline-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_valign_bottom-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_valign_bottom-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_valign_middle-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_valign_middle-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tbody_valign_top-expected.png:
+        * platform/efl/tables/mozilla/marvin/tbody_valign_top-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_center-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_center-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_char-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_char-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_justify-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_justify-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_left-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_left-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_right-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_align_right-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_char-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_char-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_valign_baseline-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_valign_baseline-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_valign_bottom-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_valign_bottom-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_valign_middle-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_valign_middle-expected.txt:
+        * platform/efl/tables/mozilla/marvin/tfoot_valign_top-expected.png:
+        * platform/efl/tables/mozilla/marvin/tfoot_valign_top-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_align_center-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_align_center-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_align_char-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_align_char-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_align_justify-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_align_justify-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_align_left-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_align_left-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_align_right-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_align_right-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_char-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_char-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_valign_baseline-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_valign_baseline-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_valign_bottom-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_valign_bottom-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_valign_middle-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_valign_middle-expected.txt:
+        * platform/efl/tables/mozilla/marvin/thead_valign_top-expected.png:
+        * platform/efl/tables/mozilla/marvin/thead_valign_top-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_table-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_table-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_table_border-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_table_border-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_table_border_none-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_table_border_none-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_table_border_px-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_table_border_px-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_table_frame_void-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_table_frame_void-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_center-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_center-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_char-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_char-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_justify-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_justify-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_left-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_left-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_right-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tbody_align_right-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tbody_valign_baseline-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tbody_valign_baseline-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tbody_valign_bottom-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tbody_valign_bottom-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tbody_valign_middle-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tbody_valign_middle-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tbody_valign_top-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tbody_valign_top-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_center-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_center-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_char-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_char-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_justify-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_justify-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_left-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_left-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_right-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_align_right-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_class-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_class-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_id-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_id-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_style-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_style-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_valign_baseline-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_valign_baseline-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_valign_bottom-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_valign_bottom-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_valign_middle-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_valign_middle-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_valign_top-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_tfoot_valign_top-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_center-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_center-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_char-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_char-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_justify-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_justify-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_left-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_left-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_right-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_align_right-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_class-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_class-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_id-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_id-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_style-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_style-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_valign_baseline-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_valign_baseline-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_valign_bottom-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_valign_bottom-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_valign_middle-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_valign_middle-expected.txt:
+        * platform/efl/tables/mozilla/marvin/x_thead_valign_top-expected.png:
+        * platform/efl/tables/mozilla/marvin/x_thead_valign_top-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug4294-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug4294-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug46268-4-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug46268-4-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug51000-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug51000-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug8499-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/bugs/bug8499-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-cell-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-cell-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-column-group-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-column-group-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-quirks-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-quirks-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-row-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-row-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-row-group-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_border-table-row-group-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_fixed-bg-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_fixed-bg-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_layers-hide-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_layers-hide-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-cell-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-cell-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-column-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-column-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-column-group-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-column-group-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-row-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-row-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-row-group-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/backgr_position-table-row-group-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_tbody_sibling-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_tbody_sibling-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_above-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_above-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_below-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_below-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_border-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_border-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_box-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_box-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_hsides-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_hsides-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_lhs-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_lhs-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_rhs-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_rhs-expected.txt:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_vsides-expected.png:
+        * platform/efl/tables/mozilla_expected_failures/marvin/x_table_frame_vsides-expected.txt:
+        * platform/mac-mountainlion/fast/forms/input-value-expected.txt:
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug26178-expected.txt:
+        * platform/mac/fast/forms/input-value-expected.txt:
+
+2013-11-25  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Vertical border spacing is doubled between table row groups
+        https://bugs.webkit.org/show_bug.cgi?id=20040
+
+        Reviewed by Csaba Osztrogonác.
+
+        Rebase GTK results after r159747.
+
+        * platform/gtk/fast/forms/input-value-expected.png:
+        * platform/gtk/fast/forms/input-value-expected.txt:
+        * platform/gtk/fast/table/011-expected.txt:
+        * platform/gtk/fast/table/border-collapsing/004-expected.txt:
+        * platform/gtk/fast/table/border-collapsing/004-vertical-expected.png:
+        * platform/gtk/fast/table/border-collapsing/004-vertical-expected.txt:
+        * platform/gtk/fast/table/floating-th-expected.png:
+        * platform/gtk/fast/table/floating-th-expected.txt:
+        * platform/gtk/fast/table/frame-and-rules-expected.png:
+        * platform/gtk/fast/table/frame-and-rules-expected.txt:
+        * platform/gtk/fast/table/rowindex-expected.png:
+        * platform/gtk/fast/table/rowindex-expected.txt:
+        * platform/gtk/fast/table/table-display-types-expected.png:
+        * platform/gtk/fast/table/table-display-types-expected.txt:
+        * platform/gtk/fast/table/table-display-types-strict-expected.png:
+        * platform/gtk/fast/table/table-display-types-strict-expected.txt:
+        * platform/gtk/fast/table/table-display-types-vertical-expected.png:
+        * platform/gtk/fast/table/table-display-types-vertical-expected.txt:
+        * platform/gtk/fast/table/tableInsideCaption-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug10296-1-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug119786-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug119786-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug13118-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug13118-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug19061-1-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug19061-1-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug19061-2-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug19061-2-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug220536-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug220536-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug26178-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug26178-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug27038-1-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug27038-2-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug27038-2-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug27038-3-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug27038-3-expected.txt: Added.
+        * platform/gtk/tables/mozilla/bugs/bug278385-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug30418-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug30418-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug3263-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug3263-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug38916-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug38916-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug46268-3-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug46268-3-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug46268-5-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug46268-5-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug46268-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug46268-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug46924-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug46924-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug55789-expected.txt:
+        * platform/gtk/tables/mozilla/bugs/bug57378-expected.png:
+        * platform/gtk/tables/mozilla/bugs/bug57378-expected.txt:
+        * platform/gtk/tables/mozilla/dom/appendTbodyExpand1-expected.png:
+        * platform/gtk/tables/mozilla/dom/appendTbodyExpand1-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/backgr_layers-opacity-expected.png:
+        * platform/gtk/tables/mozilla/marvin/backgr_layers-opacity-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/backgr_position-table-expected.png:
+        * platform/gtk/tables/mozilla/marvin/backgr_position-table-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-cell-expected.png:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-cell-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-column-expected.png:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-column-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-column-group-expected.png:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-column-group-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-expected.png:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-row-expected.png:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-row-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-row-group-expected.png:
+        * platform/gtk/tables/mozilla/marvin/backgr_simple-table-row-group-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/body_tfoot-expected.png:
+        * platform/gtk/tables/mozilla/marvin/body_tfoot-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/body_thead-expected.png:
+        * platform/gtk/tables/mozilla/marvin/body_thead-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/table_rules_groups-expected.png:
+        * platform/gtk/tables/mozilla/marvin/table_rules_groups-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_center-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_center-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_char-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_char-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_justify-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_justify-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_left-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_left-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_right-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_align_right-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_char-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_char-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_valign_baseline-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_valign_baseline-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_valign_bottom-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_valign_bottom-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_valign_middle-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_valign_middle-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tbody_valign_top-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tbody_valign_top-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_center-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_center-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_char-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_char-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_justify-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_justify-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_left-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_left-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_right-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_align_right-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_char-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_char-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_valign_baseline-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_valign_baseline-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_valign_bottom-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_valign_bottom-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_valign_middle-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_valign_middle-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/tfoot_valign_top-expected.png:
+        * platform/gtk/tables/mozilla/marvin/tfoot_valign_top-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_align_center-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_align_center-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_align_char-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_align_char-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_align_justify-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_align_justify-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_align_left-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_align_left-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_align_right-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_align_right-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_char-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_char-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_valign_baseline-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_valign_baseline-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_valign_middle-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_valign_middle-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/thead_valign_top-expected.png:
+        * platform/gtk/tables/mozilla/marvin/thead_valign_top-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_table-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_table-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_table_border-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_table_border-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_table_border_none-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_table_border_none-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_table_border_px-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_table_border_px-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_table_frame_void-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_table_frame_void-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_center-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_center-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_char-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_char-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_justify-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_justify-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_left-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_left-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_right-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_align_right-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_valign_baseline-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_valign_baseline-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_valign_bottom-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_valign_bottom-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_valign_middle-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_valign_middle-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_valign_top-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tbody_valign_top-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_center-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_center-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_char-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_char-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_justify-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_justify-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_left-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_left-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_right-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_align_right-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_class-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_class-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_id-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_id-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_style-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_style-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_valign_baseline-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_valign_baseline-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_valign_bottom-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_valign_bottom-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_valign_middle-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_valign_middle-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_valign_top-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_tfoot_valign_top-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_center-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_center-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_char-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_char-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_justify-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_justify-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_left-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_left-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_right-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_align_right-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_class-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_class-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_id-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_id-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_style-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_style-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_valign_baseline-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_valign_baseline-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_valign_middle-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_valign_middle-expected.txt:
+        * platform/gtk/tables/mozilla/marvin/x_thead_valign_top-expected.png:
+        * platform/gtk/tables/mozilla/marvin/x_thead_valign_top-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug106966-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug4294-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug4294-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug46268-4-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug46268-4-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug51000-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/bugs/bug51000-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/core/backgrounds-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/core/captions1-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/dom/insertTbodyExpand1-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/dom/insertTbodyExpand1-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/dom/insertTbodyRebuild1-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/dom/insertTbodyRebuild1-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-cell-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-cell-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-column-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-column-group-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-column-group-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-quirks-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-quirks-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-row-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-row-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-row-group-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_border-table-row-group-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_fixed-bg-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_fixed-bg-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_layers-hide-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_layers-hide-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_layers-show-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-cell-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-cell-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-column-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-column-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-column-group-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-column-group-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-row-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-row-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-row-group-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/backgr_position-table-row-group-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_tbody_sibling-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_tbody_sibling-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_above-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_above-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_below-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_below-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_border-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_border-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_box-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_box-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_hsides-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_hsides-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_lhs-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_lhs-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_rhs-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_rhs-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_vsides-expected.png:
+        * platform/gtk/tables/mozilla_expected_failures/marvin/x_table_frame_vsides-expected.txt:
+        * platform/gtk/tables/mozilla_expected_failures/other/test4-expected.txt:
+
+2013-11-25  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Vertical border spacing is doubled between table row groups
+        https://bugs.webkit.org/show_bug.cgi?id=20040
+
+        Reviewed by Csaba Osztrogonác.
+
+        Rebase Mac results after r159747.
+
+        * platform/mac/tables/mozilla/bugs/bug119786-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug19061-2-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug220536-expected.txt: Added.
+        * platform/mac/tables/mozilla/bugs/bug26178-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug27038-1-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug27038-2-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug27038-3-expected.txt: Added.
+        * platform/mac/tables/mozilla/bugs/bug278385-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug30418-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug38916-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug46268-3-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug46268-5-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug46268-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug46924-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug55789-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug57378-expected.txt:
+        * platform/mac/tables/mozilla/marvin/table_rules_groups-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_align_center-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_align_char-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_align_justify-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_align_left-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_align_right-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_char-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_valign_baseline-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_valign_bottom-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_valign_middle-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tbody_valign_top-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_align_center-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_align_char-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_align_justify-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_align_left-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_align_right-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_char-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_valign_baseline-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_valign_bottom-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_valign_middle-expected.txt:
+        * platform/mac/tables/mozilla/marvin/tfoot_valign_top-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_align_center-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_align_char-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_align_justify-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_align_left-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_align_right-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_char-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_valign_baseline-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_valign_bottom-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_valign_middle-expected.txt:
+        * platform/mac/tables/mozilla/marvin/thead_valign_top-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_table-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_table_border-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_table_border_none-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_table_border_px-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_table_frame_void-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tbody_align_center-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tbody_align_char-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tbody_align_justify-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tbody_align_left-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tbody_align_right-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tbody_valign_baseline-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tbody_valign_bottom-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tbody_valign_middle-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tbody_valign_top-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_align_center-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_align_char-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_align_justify-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_align_left-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_align_right-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_class-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_id-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_style-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_valign_baseline-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_valign_bottom-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_valign_middle-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_tfoot_valign_top-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_align_center-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_align_char-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_align_justify-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_align_left-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_align_right-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_class-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_id-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_style-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_valign_baseline-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_valign_bottom-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_valign_middle-expected.txt:
+        * platform/mac/tables/mozilla/marvin/x_thead_valign_top-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/bugs/bug106966-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/bugs/bug4294-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/bugs/bug46268-4-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/bugs/bug51000-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/core/backgrounds-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/core/captions1-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/dom/insertTbodyExpand1-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/dom/insertTbodyRebuild1-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_border-table-cell-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_border-table-column-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_border-table-column-group-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_border-table-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_border-table-quirks-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_border-table-row-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_border-table-row-group-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_fixed-bg-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_layers-hide-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_layers-show-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_position-table-cell-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_position-table-column-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_position-table-column-group-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_position-table-row-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/backgr_position-table-row-group-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/table_overflow_style_reflow_tbody_sibling-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/x_table_frame_above-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/x_table_frame_below-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/x_table_frame_border-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/x_table_frame_box-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/x_table_frame_hsides-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/x_table_frame_lhs-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/x_table_frame_rhs-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/marvin/x_table_frame_vsides-expected.txt:
+        * platform/mac/tables/mozilla_expected_failures/other/test4-expected.txt:
+
+2013-11-25  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Vertical border spacing is doubled between table row groups
+        https://bugs.webkit.org/show_bug.cgi?id=20040
+
+        Reviewed by Csaba Osztrogonác.
+
+        First tuple of rebaselined tests for mac. Rebaseline needed for table related tests (100+).
+
+        * fast/table/anonymous-table-section-removed.html:
+        * platform/mac/accessibility/table-detection-expected.txt:
+        * platform/mac/editing/deleting/deletionUI-single-instance-expected.txt:
+        * platform/mac/fast/forms/input-value-expected.txt:
+        * platform/mac/fast/table/011-expected.txt:
+        * platform/mac/fast/table/border-collapsing/004-expected.txt:
+        * platform/mac/fast/table/border-collapsing/004-vertical-expected.txt:
+        * platform/mac/fast/table/floating-th-expected.txt:
+        * platform/mac/fast/table/frame-and-rules-expected.txt:
+        * platform/mac/fast/table/multiple-captions-display-expected.txt:
+        * platform/mac/fast/table/rowindex-expected.txt:
+        * platform/mac/fast/table/table-display-types-expected.txt:
+        * platform/mac/fast/table/table-display-types-strict-expected.txt:
+        * platform/mac/fast/table/table-display-types-vertical-expected.txt:
+        * platform/mac/fast/table/tableInsideCaption-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug10296-1-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug13118-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug19061-1-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug3263-expected.txt:
+        * platform/mac/tables/mozilla/dom/appendTbodyExpand1-expected.txt:
+        * platform/mac/tables/mozilla/marvin/backgr_layers-opacity-expected.txt:
+        * platform/mac/tables/mozilla/marvin/backgr_position-table-expected.txt:
+        * platform/mac/tables/mozilla/marvin/backgr_simple-table-cell-expected.txt:
+        * platform/mac/tables/mozilla/marvin/backgr_simple-table-column-expected.txt:
+        * platform/mac/tables/mozilla/marvin/backgr_simple-table-column-group-expected.txt:
+        * platform/mac/tables/mozilla/marvin/backgr_simple-table-expected.txt:
+        * platform/mac/tables/mozilla/marvin/backgr_simple-table-row-expected.txt:
+        * platform/mac/tables/mozilla/marvin/backgr_simple-table-row-group-expected.txt:
+        * platform/mac/tables/mozilla/marvin/body_tfoot-expected.txt:
+        * platform/mac/tables/mozilla/marvin/body_thead-expected.txt:
+
+2013-11-25  Andres Gomez  <agomez@igalia.com>
+
+        [GStreamer] Seeking fails on media content provided by servers not supporting Range requests
+        https://bugs.webkit.org/show_bug.cgi?id=85994
+
+        Reviewed by Philippe Normand.
+
+        Added test to check that seeking media files on http servers not
+        supporting "Range" requests doesn't trigger an error.
+
+        * http/tests/media/media-seeking-no-ranges-server-expected.txt: Added.
+        * http/tests/media/media-seeking-no-ranges-server.html: Added.
+        * http/tests/media/resources/load-video.php: Added support for new
+        "ranges" paramenter.
+        * http/tests/media/resources/serve-video.php: Added support for
+        new "ranges" paramenter. When "ranges" is "no" we always answer
+        the HTTP status "200 OK" and send the whole file.
+        * platform/mac/TestExpectations: New test skipped in Mac port as
+        media playback download control is passed to AVFoundation that
+        doesn't like fancy PHP URLs like the one used in the test and, in
+        addition, they won't care about HTTP servers not supporting
+        "Range" requests.
+
+2013-11-25  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Unreviewed GTK gardening. Removed expectations for test that is no
+        longer failing for the GTK bots, according to the flakiness dashboard.
+
+        * platform/gtk-wk2/TestExpectations: Removed expectation.
+        * platform/gtk/TestExpectations: Ditto.
+
+2013-11-25  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+        Managing current failures and removing redundant baselines.
+
+        * platform/gtk-wk2/TestExpectations:
+        * platform/gtk/TestExpectations:
+        * platform/gtk/fast/dom/gc-attribute-node-expected.txt: Removed.
+        * platform/gtk/fast/repaint/increasing-region-content-height-expected.txt: Removed.
+
+2013-11-25  Jongwoo Choi  <jw0330.choi@samsung.com>
+
+        [EFL] Need to update EFL TestExpectations file
+        https://bugs.webkit.org/show_bug.cgi?id=124825
+
+        Unreviewed, EFL gardening.
+
+        webgl/1.0.2/conformance/extensions/webgl-compressed-texture-s3tc.html
+        webgl/conformance/extensions/webgl-compressed-texture-s3tc.html
+        Above two tests are passed in Webkit2 layout test after r158798.
+
+        * platform/efl-wk1/TestExpectations:
+        * platform/efl/TestExpectations:
+
+2013-11-24  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        Unreviewed EFL gardening. Rebaselining various tests under fast/
+
+        * platform/efl/fast/backgrounds/background-position-parsing-expected.png:
+        * platform/efl/fast/backgrounds/background-position-parsing-expected.txt:
+        * platform/efl/fast/backgrounds/size/contain-and-cover-zoomed-expected.png:
+        * platform/efl/fast/backgrounds/size/contain-and-cover-zoomed-expected.txt: Added.
+        * platform/efl/fast/css/empty-pseudo-class-expected.png:
+        * platform/efl/fast/css/empty-pseudo-class-expected.txt:
+        * platform/efl/fast/css/fieldset-display-row-expected.txt:
+        * platform/efl/fast/css/first-child-pseudo-class-expected.png:
+        * platform/efl/fast/css/first-child-pseudo-class-expected.txt:
+        * platform/efl/fast/css/last-child-pseudo-class-expected.png:
+        * platform/efl/fast/css/last-child-pseudo-class-expected.txt:
+        * platform/efl/fast/css/only-child-pseudo-class-expected.png:
+        * platform/efl/fast/css/only-child-pseudo-class-expected.txt:
+
+2013-11-24  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        Unreviewed EFL gardening. Rebaselining after r159579.
+
+        * platform/efl/css1/formatting_model/vertical_formatting-expected.txt:
+        * platform/efl/css2.1/t080301-c411-vt-mrgn-00-b-expected.txt:
+        * platform/efl/css2.1/t0905-c414-flt-wrap-00-e-expected.txt:
+
+2013-11-23  Filip Pizlo  <fpizlo@apple.com>
+
+        Fix more fallout from failed attempts at div/mod DFG strength reductions
+        https://bugs.webkit.org/show_bug.cgi?id=124813
+
+        Reviewed by Geoffrey Garen.
+
+        * js/dfg-mod-1-int.html: Added.
+        * js/dfg-mod-1-int-expected.txt: Added.
+        * js/script-tests/dfg-mod-1-int.js: Added.
+        (foo):
+
+2013-11-23  Robert Hogan  <robert@webkit.org>
+
+        Remove lint from expected result.
+
+        Unreviewed.
+
+        * platform/gtk/fast/block/margin-collapse/empty-clear-blocks-expected.txt:
+
+2013-11-23  Robert Hogan  <robert@webkit.org>
+
+        Rebaseline empty-clear-blocks.html after r159575
+
+        Unreviewed, rebaselining.
+
+        * platform/gtk/fast/block/margin-collapse/empty-clear-blocks-expected.txt:
+
+2013-11-22  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Layout Test editing/deleting/password-delete-performance.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=124781
+
+        Reviewed by Alexey Proskuryakov.
+
+        Removed the test that has been timing out.
+
+        * TestExpectations:
+        * editing/deleting/password-delete-performance.html: Removed.
+
+2013-11-22  Brendan Long  <b.long@cablelabs.com>
+
+        Fire "change" event on TextTrackList when a TextTrack's mode changes
+        https://bugs.webkit.org/show_bug.cgi?id=124789
+
+        Reviewed by Eric Carlson.
+
+        * media/track/track-change-event-expected.txt: Added.
+        * media/track/track-change-event.html: Added.
+
+2013-11-22  Brendan Long  <b.long@cablelabs.com>
+
+        Add TextTrackList::getTrackById().
+        https://bugs.webkit.org/show_bug.cgi?id=124785
+
+        Reviewed by Eric Carlson.
+
+        Update this test to make it more interesting. It now checks that the "id"
+        changes when the <track> id changes, makes sure TextTrack::id is readonly,
+        and looks the track up by id with getTrackById().
+
+        * media/track/track-id-expected.txt:
+        * media/track/track-id.html:
+
+2013-11-22  Filip Pizlo  <fpizlo@apple.com>
+
+        BytecodeGenerator should align the stack according to native conventions
+        https://bugs.webkit.org/show_bug.cgi?id=124735
+
+        Reviewed by Mark Lam.
+
+        * platform/mac/fast/dom/gc-attribute-node-expected.txt: Removed.
+
+2013-11-22  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] When the <box> value is set, derive radii from border-radius
+        https://bugs.webkit.org/show_bug.cgi?id=124228
+
+        Reviewed by Dean Jackson.
+
+        * fast/shapes/shape-outside-floats/shape-outside-rounded-boxes-001-expected.txt: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-rounded-boxes-001.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-rounded-boxes-002-expected.txt: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-rounded-boxes-002.html: Added.
+
+2013-11-22  Alexey Proskuryakov  <ap@apple.com>
+
+        Layout Test editing/deleting/password-delete-performance.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=124781
+
+        * TestExpectations: Skipped it, running a test that almost always times out makes little sense.
+
+2013-11-21  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Import more W3C tests for parsing template elements
+        https://bugs.webkit.org/show_bug.cgi?id=124763
+
+        Reviewed by Antti Koivisto.
+
+        Updated the testharness.js/css to bc4639ba51b62158d94bb4fc6884b23453f3f7a1.
+
+        * resources/testharness.css:
+        * resources/testharness.js:
+        * resources/testharnessreport.js: Use innerText instead of innerHTML to avoid interpreting markup inside
+        the status and message as HTML.
+
+2013-11-22  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+        Rebaselining after r159575 and r159579.
+
+        * platform/gtk/css1/formatting_model/vertical_formatting-expected.txt:
+        * platform/gtk/css2.1/t0905-c414-flt-wrap-00-e-expected.txt:
+        * platform/gtk/editing/deleting/delete-by-word-001-expected.txt: Added.
+        * platform/gtk/editing/deleting/delete-by-word-002-expected.txt: Added.
+        * platform/gtk/editing/input/option-page-up-down-expected.txt: Added.
+        * platform/gtk/editing/input/scroll-viewport-page-up-down-expected.txt: Added.
+        * platform/gtk/editing/undo/undo-deleteWord-expected.txt: Added.
+        * platform/gtk/fast/block/float/024-expected.txt:
+        * platform/gtk/fast/block/margin-collapse/025-expected.txt:
+        * platform/gtk/fast/block/margin-collapse/block-inside-inline/025-expected.txt:
+
+2013-11-22  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+        Adding failure expectations for tests that regressed with r159572.
+
+        * platform/gtk/TestExpectations:
+
 2013-11-18  Sergio Villar Senin  <svillar@igalia.com>
 
         [CSS Grid Layout] Improve content-sized track layout

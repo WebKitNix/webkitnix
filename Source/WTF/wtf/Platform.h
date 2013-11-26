@@ -496,7 +496,6 @@
 #define WTF_USE_SOUP 1
 #define WTF_USE_WEBP 1
 #define ENABLE_GLOBAL_FASTMALLOC_NEW 0
-#define GST_API_VERSION_1 1
 #endif
 
 /* On Windows, use QueryPerformanceCounter by default */
@@ -1050,6 +1049,10 @@
 
 #if PLATFORM(MAC) || PLATFORM(IOS)
 #define WTF_USE_AUDIO_SESSION 1
+#endif
+
+#if PLATFORM(MAC) && !PLATFORM(IOS_SIMULATOR)
+#define WTF_USE_IOSURFACE 1
 #endif
 
 #if PLATFORM(GTK) || PLATFORM(EFL)

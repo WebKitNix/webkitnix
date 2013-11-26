@@ -29,10 +29,12 @@
 #if ENABLE(DATABASE_PROCESS)
 
 #include "ChildProcess.h"
+#include "UniqueIDBDatabaseIdentifier.h"
 
 namespace WebKit {
 
 class DatabaseToWebProcessConnection;
+class UniqueIDBDatabase;
 
 struct DatabaseProcessCreationParameters;
 
@@ -40,6 +42,11 @@ class DatabaseProcess : public ChildProcess  {
     WTF_MAKE_NONCOPYABLE(DatabaseProcess);
 public:
     static DatabaseProcess& shared();
+
+    const String& indexedDatabaseDirectory() const { return m_indexedDatabaseDirectory; }
+
+    PassRefPtr<UniqueIDBDatabase> getOrCreateUniqueIDBDatabase(const UniqueIDBDatabaseIdentifier&);
+    void removeUniqueIDBDatabase(const UniqueIDBDatabase&);
 
 private:
     DatabaseProcess();
@@ -58,9 +65,14 @@ private:
     virtual void didReceiveInvalidMessage(CoreIPC::Connection*, CoreIPC::StringReference messageReceiverName, CoreIPC::StringReference messageName) OVERRIDE;
 
     // Message Handlers
+    void initializeDatabaseProcess(const DatabaseProcessCreationParameters&);
     void createDatabaseToWebProcessConnection();
 
     Vector<RefPtr<DatabaseToWebProcessConnection>> m_databaseToWebProcessConnections;
+
+    String m_indexedDatabaseDirectory;
+
+    HashMap<UniqueIDBDatabaseIdentifier, RefPtr<UniqueIDBDatabase>> m_idbDatabases;
 };
 
 } // namespace WebKit

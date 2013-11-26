@@ -31,11 +31,13 @@
 #if ENABLE(INDEXED_DATABASE) && ENABLE(DATABASE_PROCESS)
 
 #include "SecurityOriginData.h"
+#include "UniqueIDBDatabaseIdentifier.h"
 #include <wtf/text/WTFString.h>
 
 namespace WebKit {
 
 class DatabaseToWebProcessConnection;
+class UniqueIDBDatabase;
 
 class DatabaseProcessIDBConnection : public RefCounted<DatabaseProcessIDBConnection>, public CoreIPC::MessageSender {
 public:
@@ -65,9 +67,7 @@ private:
     Ref<DatabaseToWebProcessConnection> m_connection;
     uint64_t m_serverConnectionIdentifier;
 
-    String m_databaseName;
-    SecurityOriginData m_openingOrigin;
-    SecurityOriginData m_mainFrameOrigin;
+    RefPtr<UniqueIDBDatabase> m_uniqueIDBDatabase;
 };
 
 } // namespace WebKit

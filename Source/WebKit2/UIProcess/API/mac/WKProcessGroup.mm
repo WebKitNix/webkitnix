@@ -24,8 +24,9 @@
  */
 
 #import "config.h"
-#import "WKProcessGroup.h"
 #import "WKProcessGroupPrivate.h"
+
+#if WK_API_ENABLED
 
 #import "APINavigationData.h"
 #import "ObjCObjectGraph.h"
@@ -42,12 +43,22 @@
 #import "WebFrameProxy.h"
 #import <wtf/RetainPtr.h>
 
+#if PLATFORM(IOS)
+#import "WKAPICast.h"
+#import "WKGeolocationProviderIOS.h"
+#import <WebCore/WebCoreThreadSystemInterface.h>
+#endif
+
 using namespace WebKit;
 
 @interface WKProcessGroupData : NSObject {
 @public
     // Underlying context object.
     WKRetainPtr<WKContextRef> _contextRef;
+
+#if PLATFORM(IOS)
+    RetainPtr<WKGeolocationProviderIOS> _geolocationProvider;
+#endif // PLATFORM(IOS)
 
     // Delegate for callbacks.
     id<WKProcessGroupDelegate> _delegate;
@@ -104,8 +115,6 @@ static void setUpInectedBundleClient(WKProcessGroup *processGroup, WKContextRef 
     WKContextSetInjectedBundleClient(contextRef, &injectedBundleClient);
 }
 
-#if WK_API_ENABLED
-
 static void didNavigateWithNavigationData(WKContextRef, WKPageRef pageRef, WKNavigationDataRef navigationDataRef, WKFrameRef frameRef, const void*)
 {
     if (!toImpl(frameRef)->isMainFrame())
@@ -161,8 +170,6 @@ static void setUpHistoryClient(WKProcessGroup *processGroup, WKContextRef contex
     WKContextSetHistoryClient(contextRef, &historyClient);
 }
 
-#endif // WK_API_ENABLED
-
 - (id)init
 {
     return [self initWithInjectedBundleURL:nil];
@@ -176,6 +183,11 @@ static void setUpHistoryClient(WKProcessGroup *processGroup, WKContextRef contex
 
     _data = [[WKProcessGroupData alloc] init];
     
+#if PLATFORM(IOS)
+    // FIXME: Remove once <rdar://problem/15256572>  is fixed.
+    InitWebCoreThreadSystemInterface();
+#endif
+
     if (bundleURL)
         _data->_contextRef = adoptWK(WKContextCreateWithInjectedBundlePath(adoptWK(WKStringCreateWithCFString((CFStringRef)[bundleURL path])).get()));
     else
@@ -183,9 +195,7 @@ static void setUpHistoryClient(WKProcessGroup *processGroup, WKContextRef contex
 
     setUpConnectionClient(self, _data->_contextRef.get());
     setUpInectedBundleClient(self, _data->_contextRef.get());
-#if WK_API_ENABLED
     setUpHistoryClient(self, _data->_contextRef.get());
-#endif
 
     return self;
 }
@@ -219,4 +229,15 @@ static void setUpHistoryClient(WKProcessGroup *processGroup, WKContextRef contex
     return _data->_contextRef.get();
 }
 
+#if PLATFORM(IOS)
+- (WKGeolocationProviderIOS *)_geolocationProvider
+{
+    if (!_data->_geolocationProvider)
+        _data->_geolocationProvider = adoptNS([[WKGeolocationProviderIOS alloc] initWithContext:toImpl(_data->_contextRef.get())]);
+    return _data->_geolocationProvider.get();
+}
+#endif // PLATFORM(IOS)
+
 @end
+
+#endif // WK_API_ENABLED

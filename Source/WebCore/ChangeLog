@@ -1,3 +1,594 @@
+2013-11-25  peavo@outlook.com  <peavo@outlook.com>
+
+        [WinCairo] Compile fails when GSTREAMER is not used.
+        https://bugs.webkit.org/show_bug.cgi?id=124853
+
+        Reviewed by Philippe Normand.
+
+        * platform/graphics/gstreamer/GStreamerUtilities.cpp: Don't include GStreamerUtilities.h when GSTREAMER is not used.
+
+2013-11-25  Andreas Kling  <akling@apple.com>
+
+        Deduplicate shortish Text node strings during tree construction.
+        <https://webkit.org/b/124855>
+
+        Let HTMLConstructionSite keep a hash set of already seen strings over
+        its lifetime. Use this to deduplicate the strings inside Text nodes
+        for any string up to 64 characters of length.
+
+        This optimization already sort-of existed for whitespace-only Texts,
+        but those are laundered in the AtomicString table which we definitely
+        don't want to pollute with every single Text. It might be a good idea
+        to stop using the AtomicString table for all-whitespace Text too.
+
+        3.82 MB progression on HTML5-8266 locally.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-25  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Remove unnecessary MediaStreamTrackDescriptor forward declaration
+        https://bugs.webkit.org/show_bug.cgi?id=124854
+
+        Reviewed by Eric Carlson.
+
+        No new tests needed. No behavior changed.
+
+        * Modules/mediastream/VideoStreamTrack.h:
+
+2013-11-25  Robert Hogan  <robert@webkit.org>
+
+        Remove code now unnecessary after r159575
+        https://bugs.webkit.org/show_bug.cgi?id=124809
+
+        Reviewed by Antti Koivisto.
+
+        Covered by existing tests fast/block/margin-collapse/self-collapsing-block-with-float*
+
+        * rendering/line/LineBreaker.cpp:
+        (WebCore::LineBreaker::skipLeadingWhitespace):
+
+2013-11-25  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Vertical border spacing is doubled between table row groups
+        https://bugs.webkit.org/show_bug.cgi?id=20040
+
+        Reviewed by Csaba Osztrogonác.
+
+        Based on Chromium fix https://chromium.googlesource.com/chromium/blink/+/eb615069267f895c59bc576f9d65b3fa5add41e9
+
+        Rebaseline needed for table related tests (100+).
+
+        * rendering/RenderTableSection.cpp:
+        (WebCore::RenderTableSection::calcRowLogicalHeight):
+
+2013-11-25  Andres Gomez  <agomez@igalia.com>
+
+        [GStreamer] Seeking fails on media content provided by servers not supporting Range requests
+        https://bugs.webkit.org/show_bug.cgi?id=85994
+
+        Reviewed by Philippe Normand.
+
+        Based on the patch written by Andre Moreira Magalhaes.
+
+        When the GStreamer web source was doing a "Range" request we were
+        expecting to receive a 206 status reply with the "Content-Range"
+        header and just the requested data. Supporting "Range" requests is
+        not mandatory so, for the servers not supporting it they will be
+        replying with a 200 status and the whole content of the media
+        element. Now, we are properly handling these replies too.
+
+        Test: http/tests/media/media-seeking-no-ranges-server.html
+
+        * platform/graphics/gstreamer/WebKitWebSourceGStreamer.cpp:
+        (StreamingClient::handleResponseReceived): Do not fail when
+        receiving 200 as response for HTTP range requests.
+        (StreamingClient::handleDataReceived): Manually seek on stream
+        when receiving the full data after a seek.
+
+2013-11-25  Radu Stavila  <stavila@adobe.com>
+
+        Removed obsolete FIXME after the landing of visual overflow patch (https://bugs.webkit.org/show_bug.cgi?id=118665).
+        https://bugs.webkit.org/show_bug.cgi?id=124833
+
+        Reviewed by Mihnea Ovidenie.
+
+        * rendering/RenderRegion.cpp:
+        (WebCore::RenderRegion::layoutBlock):
+
+2013-11-18  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] Cache several vectors to avoid malloc/free churn
+        https://bugs.webkit.org/show_bug.cgi?id=123995
+
+        Reviewed by Dean Jackson.
+
+        From Blink r158228 by <jchaffraix@chromium.org>
+
+        Laying-out the grid items means a lot of calls to
+        distributeSpaceToTracks() and
+        resolveContentBasedTrackSizingFunctionsForItems() as they're
+        called in a loop. This means that there is a lot of malloc/free
+        going on there. By moving the vectors used by these methods to a
+        new class which is kept during the whole layout process we save a
+        lot of those calls.
+
+        This obviously mean that the price we pay for a significant
+        perfomance improvement is that we keep the maximum allocation till
+        the end of each layout, but it's an amount of memory that we have
+        to allocate anyway. The improvement in the
+        auto-grid-lots-of-data.html perf test is ~24% (165 runs/s vs 207
+        runs/s).
+
+        No new tests required as we're just refactoring code to a new
+        helper class. Nevertheless the performance improvement is backed
+        by the perf test mentioned above.
+
+        * rendering/RenderGrid.cpp:
+        (WebCore::RenderGrid::GridSizingData::GridSizingData):
+        (WebCore::RenderGrid::computedUsedBreadthOfGridTracks):
+        (WebCore::RenderGrid::resolveContentBasedTrackSizingFunctions):
+        (WebCore::RenderGrid::resolveContentBasedTrackSizingFunctionsForItems):
+        (WebCore::RenderGrid::distributeSpaceToTracks):
+        (WebCore::RenderGrid::layoutGridItems):
+        (WebCore::RenderGrid::findChildLogicalPosition):
+        * rendering/RenderGrid.h:
+
+2013-11-24  Brady Eidson  <beidson@apple.com>
+
+        DatabaseProcess: Add "UniqueIDBDatabase" that multiple WebProcesses can connect to
+        https://bugs.webkit.org/show_bug.cgi?id=124819
+
+        Reviewed by Dan Bernstein.
+
+        * Modules/indexeddb/IDBDatabaseBackend.cpp:
+        (WebCore::IDBDatabaseBackend::~IDBDatabaseBackend): Unregister from the IDBFactory.
+
+2013-11-24  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Generate toHTMLMarquee|OListElement() to cleanup static_cast<>
+        https://bugs.webkit.org/show_bug.cgi?id=124707
+
+        Reviewed by Darin Adler.
+
+        As a step to use toFoo(), we need to generate toHTMLMarquee|OListElement().
+        Besides this patch cleans up remaining static_cast<> usage.
+
+        No new tests, no behavior changes.
+
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::State::initElement):
+        (WebCore::StyleResolver::locateCousinList):
+        (WebCore::StyleResolver::findSiblingForStyleSharing):
+        * dom/Attr.cpp:
+        (WebCore::Attr::style):
+        * dom/Element.cpp:
+        (WebCore::Element::removeAttribute):
+        * editing/ApplyStyleCommand.cpp:
+        (WebCore::ApplyStyleCommand::removeEmbeddingUpToEnclosingBlock):
+        (WebCore::ApplyStyleCommand::pushDownInlineStyleAroundNode):
+        * editing/EditingStyle.cpp:
+        (WebCore::EditingStyle::wrappingStyleForSerialization):
+        * editing/Editor.cpp:
+        (WebCore::Editor::applyEditingStyleToElement):
+        * editing/ReplaceSelectionCommand.cpp:
+        (WebCore::ReplaceSelectionCommand::removeRedundantStylesAndKeepStyleSpanInline):
+        * html/HTMLMarqueeElement.h:
+        * html/HTMLOListElement.h:
+        * html/HTMLTagNames.in:
+        * inspector/InspectorCSSAgent.cpp:
+        (WebCore::InspectorCSSAgent::buildObjectForAttributesStyle):
+        * inspector/InspectorOverlay.cpp:
+        (WebCore::buildObjectForElementInfo):
+        * page/PageSerializer.cpp:
+        (WebCore::PageSerializer::serializeFrame):
+        * rendering/RenderCounter.cpp:
+        (WebCore::planCounter):
+        * rendering/RenderLayer.cpp:
+        (WebCore::RenderLayer::resize):
+        * rendering/RenderListItem.cpp:
+        (WebCore::RenderListItem::calcValue):
+        (WebCore::RenderListItem::updateListMarkerNumbers):
+        * rendering/RenderMarquee.cpp:
+        (WebCore::RenderMarquee::marqueeSpeed):
+
+2013-11-24  Tim Horton  <timothy_horton@apple.com>
+
+        REGRESSION (r156291): TileController tiles don't always repaint when they resize
+        https://bugs.webkit.org/show_bug.cgi?id=124796
+
+        Reviewed by Simon Fraser.
+
+        In removing platformCALayerDidCreateTiles, r156291 also removed
+        the call to setNeedsDisplay when tiles are resized, without
+        putting it somewhere else.
+
+        * platform/graphics/ca/mac/TileController.mm:
+        (WebCore::TileController::setNeedsDisplay):
+        Use hasStaleContent when invalidating a whole tile, just
+        like we do for partial tile repaints.
+
+        (WebCore::TileController::setTileNeedsDisplayInRect):
+        Mark hasStaleContent for any unparented layers, so they'll be painted
+        when they are reparented.
+
+        (WebCore::TileController::ensureTilesForRect):
+        Invalidate the whole tile when it changes size.
+
+2013-11-23  Xabier Rodriguez Calvar  <calvaris@igalia.com>
+
+        [GStreamer] Remove 0.10 codepath
+        https://bugs.webkit.org/show_bug.cgi?id=124534
+
+        Reviewed by Philippe Normand.
+
+        All GStreamer ports are using 1.0 now so we remove the 0.10
+        codepath.
+
+        * GNUmakefile.list.am:
+        * PlatformEfl.cmake:
+        * PlatformGTK.cmake:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters: Removed
+        GStreamerVersioning.
+        * platform/audio/gstreamer/AudioDestinationGStreamer.cpp:
+        (onGStreamerWavparsePadAddedCallback): Removed.
+        (WebCore::AudioDestinationGStreamer::AudioDestinationGStreamer):
+        Replaced webkitGstPipelineGetBus and removed 0.10 codepath.
+        (WebCore::AudioDestinationGStreamer::~AudioDestinationGStreamer):
+        Replaced webkitGstPipelineGetBus.
+        * platform/audio/gstreamer/AudioFileReaderGStreamer.cpp:
+        (WebCore::copyGstreamerBuffersToAudioChannel):
+        (WebCore::onAppsinkPullRequiredCallback): Removed 0.10 codepath.
+        (WebCore::AudioFileReader::~AudioFileReader): Replaced
+        webkitGstPipelineGetBus and removed 0.10 codepath.
+        (WebCore::AudioFileReader::handleSample): Left as only codepath.
+        (WebCore::AudioFileReader::handleBuffer): Removed.
+        (WebCore::AudioFileReader::handleNewDeinterleavePad): Removed 0.10
+        codepath.
+        (WebCore::AudioFileReader::plugDeinterleave): Replaced
+        getGstAudioCaps.
+        (WebCore::AudioFileReader::decodeAudioForBusCreation): Replaced
+        webkitGstPipelineGetBus.
+        (WebCore::AudioFileReader::createBus): Removed 0.10 codepath.
+        * platform/audio/gstreamer/WebKitWebAudioSourceGStreamer.cpp:
+        (getGStreamerMonoAudioCaps):
+        (webKitWebAudioGStreamerChannelPosition): Removed 0.10 codepath.
+        (webkit_web_audio_src_class_init): Replaced
+        setGstElementClassMetadata.
+        (webkit_web_audio_src_init):
+        (webKitWebAudioSrcConstructed):
+        (webKitWebAudioSrcFinalize):
+        (webKitWebAudioSrcLoop): Removed 0.10 codepath.
+        * platform/graphics/gstreamer/AudioTrackPrivateGStreamer.cpp:
+        * platform/graphics/gstreamer/AudioTrackPrivateGStreamer.h:
+        Removed checks for 1.0 as it is the only codepath now.
+        * platform/graphics/gstreamer/GRefPtrGStreamer.cpp:
+        (WTF::GstElement):
+        (WTF::GstPad):
+        (WTF::GstPadTemplate):
+        (WTF::GstTask):
+        (WTF::GstBus):
+        (WTF::GstElementFactory):
+        (WTF::adoptGRef): Replaced gstObjectIsFloating.
+        (WTF::refGRef): Replaced webkitGstObjectRefSink.
+        (WTF::GstTagList):
+        (WTF::GstSample): Removed checks for 1.0 as it is the only
+        codepath now.
+        * platform/graphics/gstreamer/GRefPtrGStreamer.h: Removed checks
+        for 1.0 as it is the only codepath now.
+        * platform/graphics/gstreamer/GStreamerUtilities.cpp:
+        (WebCore::webkitGstGhostPadFromStaticTemplate):
+        (WebCore::getVideoSizeAndFormatFromCaps):
+        (WebCore::createGstBuffer):
+        (WebCore::createGstBufferForData):
+        (WebCore::getGstBufferDataPointer):
+        (WebCore::mapGstBuffer):
+        (WebCore::unmapGstBuffer): Moved here from GstVersioning and added
+        to WebCore namespace.
+        * platform/graphics/gstreamer/GStreamerUtilities.h:
+        (WebCore::webkitGstCheckVersion): Moved here from GstVersioning
+        and added to WebCore namespace.
+        * platform/graphics/gstreamer/GStreamerVersioning.cpp: Removed.
+        * platform/graphics/gstreamer/GStreamerVersioning.h: Removed.
+        * platform/graphics/gstreamer/ImageGStreamer.h: Removed checks for
+        1.0 as it is the only codepath now.
+        * platform/graphics/gstreamer/ImageGStreamerCairo.cpp:
+        (ImageGStreamer::ImageGStreamer): Removed 0.10 codepath.
+        (ImageGStreamer::~ImageGStreamer): Removed checks for 1.0 as it is
+        the only codepath now.
+        * platform/graphics/gstreamer/InbandMetadataTextTrackPrivateGStreamer.h:
+        * platform/graphics/gstreamer/InbandTextTrackPrivateGStreamer.cpp:
+        * platform/graphics/gstreamer/InbandTextTrackPrivateGStreamer.h:
+        Removed checks for 1.0 as it is the only codepath now.
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp:
+        (WebCore::setAudioStreamPropertiesCallback): Removed 0.10 codepath.
+        (WebCore::mediaPlayerPrivateTextChangedCallback): Removed checks
+        for 1.0 as it is the only codepath now.
+        (WebCore::MediaPlayerPrivateGStreamer::isAvailable): Replaced
+        gPlaybinName.
+        (WebCore::MediaPlayerPrivateGStreamer::~MediaPlayerPrivateGStreamer):
+        Removed checks for 1.0 and replaced webkitGstPipelineGetBus.
+        (WebCore::MediaPlayerPrivateGStreamer::duration): Removed 0.10
+        codepath.
+        (WebCore::MediaPlayerPrivateGStreamer::notifyPlayerOfVideo):
+        (WebCore::MediaPlayerPrivateGStreamer::notifyPlayerOfAudio):
+        (WebCore::MediaPlayerPrivateGStreamer::textChanged):
+        Removed checks for 1.0 as it is the only codepath now.
+        (WebCore::MediaPlayerPrivateGStreamer::buffered): Replaced
+        gPercentMax.
+        (WebCore::MediaPlayerPrivateGStreamer::handleMessage): Removed
+        0.10 codepath.
+        (WebCore::MediaPlayerPrivateGStreamer::processTableOfContents):
+        Removed checks for 1.0 as it is the only codepath now.
+        (WebCore::MediaPlayerPrivateGStreamer::totalBytes): Removed 0.10
+        codepath.
+        (WebCore::MediaPlayerPrivateGStreamer::createGSTPlayBin): Replaced
+        gPlaybinName and webkitGstPipelineGetBus and removed checks for
+        1.0.
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.h:
+        Removed checks for 1.0 as it is the only codepath now.
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp:
+        (WebCore::MediaPlayerPrivateGStreamerBase::naturalSize):
+        (WebCore::MediaPlayerPrivateGStreamerBase::updateTexture):
+        (WebCore::MediaPlayerPrivateGStreamerBase::paint): Removed 0.10
+        codepath.
+        * platform/graphics/gstreamer/TextCombinerGStreamer.cpp:
+        * platform/graphics/gstreamer/TextCombinerGStreamer.h:
+        * platform/graphics/gstreamer/TextSinkGStreamer.cpp:
+        * platform/graphics/gstreamer/TextSinkGStreamer.h:
+        * platform/graphics/gstreamer/TrackPrivateBaseGStreamer.cpp:
+        * platform/graphics/gstreamer/TrackPrivateBaseGStreamer.h: Removed
+        checks for 1.0 as it is the only codepath now.
+        * platform/graphics/gstreamer/VideoSinkGStreamer.cpp:
+        (webkitVideoSinkRender): Removed 0.10 codepath and added WebCore
+        as createGstBuffer namespace.
+        (webkitVideoSinkSetCaps): Removed 0.10 codepath.
+        (webkitVideoSinkProposeAllocation): Removed checks for 1.0 as it
+        is the only codepath now.
+        (webkitVideoSinkMarshalVoidAndMiniObject): Removed as it was 0.10.
+        (webkit_video_sink_class_init): Removed 0.10 codepath and replaced
+        setGstElementClassMetadata.
+        * platform/graphics/gstreamer/VideoTrackPrivateGStreamer.cpp:
+        * platform/graphics/gstreamer/VideoTrackPrivateGStreamer.h:
+        Removed checks for 1.0 as it is the only codepath now.
+        * platform/graphics/gstreamer/WebKitMediaSourceGStreamer.cpp:
+        (webkit_media_src_class_init): Replaced
+        setGstElementClassMetadata.
+        (webKitMediaSrcAddSrc): Added WebCore namespace to
+        webkitGstGhostPadFromStaticTemplate.
+        (MediaSourceClientGstreamer::didReceiveData): Added WebCore
+        namespace to createGstBufferForData.
+        * platform/graphics/gstreamer/WebKitWebSourceGStreamer.cpp:
+        Removed 0.10 codepath.
+        (webKitWebSrcQuery): Removed as it was 0.10 only.
+        (void webkit_web_src_class_init): Replaced setGstElementClassMetadata.
+        (webkit_web_src_init): Removed haveAppSrc27 private attribute and
+        0.10 codepath.
+        (webKitWebSrcStop): Removed checks for 1.0 as it is the only
+        codepath now.
+        (webKitWebSrcSetProperty):
+        (webKitWebSrcUriGetType):
+        (webKitWebSrcGetProtocols):
+        (webKitWebSrcGetUri):
+        (webKitWebSrcSetUri): Removed 0.10 codepath.
+        (StreamingClient::createReadBuffer): Removed checks for 1.0 and
+        replaced getGstBufferSize.
+        (StreamingClient::handleResponseReceived): Removed 0.10 codepath
+        and replaced notifyGstTagsOnPad.
+        (StreamingClient::handleDataReceived): Removed 0.10 codepath and
+        replaced setGstBufferSize and gst_buffer_get_size.
+
+2013-11-22  Jer Noble  <jer.noble@apple.com>
+
+        [Mac] Can't drag full-screen video to another monitor
+        https://bugs.webkit.org/show_bug.cgi?id=124798
+
+        Reviewed by Geoffrey Garen.
+
+        Make full screen windows movable by default. Previously, we wanted non-movable full screen
+        windows since they were in the same space and were just placed atop non-full screen windows.
+        Now that all our supported Mac platforms have explicit full screen support, we can remove this
+        non-movable restriction.
+
+        * platform/mac/WebCoreFullScreenWindow.mm:
+        (-[WebCoreFullScreenWindow initWithContentRect:styleMask:backing:defer:]):
+
+2013-11-22  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Clean up ColorSpace handling in Windows code
+        https://bugs.webkit.org/show_bug.cgi?id=124795
+
+        Reviewed by Tim Horton.
+
+        Functionality covered by existing fast/css/color test suite.
+
+        * platform/graphics/cg/GraphicsContextCG.cpp:
+        (WebCore::safeRGBColorSpaceRef): Handle case of Windows CG implementation not
+        handling sRGB correctly.
+        (WebCore::sRGBColorSpaceRef): Use new helper function.
+        * platform/graphics/win/FontCGWin.cpp:
+        (WebCore::Font::drawGlyphs): Pass correct color space to fill functions.
+        * platform/graphics/win/GraphicsContextCGWin.cpp:
+        (WebCore::GraphicsContext::platformInit): Initialize color space to value passed
+        via the style to the constructor.
+
+2013-11-22  Alexey Proskuryakov  <ap@apple.com>
+
+        WebCrypto algorithms should check that key algorithm matches
+        https://bugs.webkit.org/show_bug.cgi?id=123628
+
+        Reviewed by Anders Carlsson.
+
+        No change in behavior yet, because we have one algorithm per key class.
+        Will be tested once more algorithms are added.
+
+        * WebCore.xcodeproj/project.pbxproj: Updated for file renames.
+
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::createRsaKeyParamsWithHash):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForImportKey):
+        * bindings/js/JSCryptoKeySerializationJWK.cpp:
+        (WebCore::createRSAKeyParametersWithHash):
+        (WebCore::JSCryptoKeySerializationJWK::reconcileAlgorithm):
+        * crypto/CryptoAlgorithmParameters.h:
+        (WebCore::CryptoAlgorithmParameters::ENUM_CLASS):
+        * crypto/parameters/CryptoAlgorithmRsaKeyParamsWithHash.h: Copied from Source/WebCore/crypto/parameters/CryptoAlgorithmRsaSsaKeyParams.h.
+        * crypto/parameters/CryptoAlgorithmRsaSsaKeyParams.h: Removed.
+        Renamed RsaSsaKeyParams to RsaKeyParamsWithHash, because other algorithms (like RSA-OAEP)
+        are in the same boat. Depending on where the spec goes, we might need to introduce
+        algorithm specific RSA parameter classes later, but let's reduce copy/pasted code at
+        least for now.
+
+        * crypto/CryptoAlgorithmRSASSA_PKCS1_v1_5Mac.cpp: Moved to the correct directory.
+        * crypto/mac/CryptoAlgorithmRSASSA_PKCS1_v1_5Mac.cpp: Copied from Source/WebCore/crypto/CryptoAlgorithmRSASSA_PKCS1_v1_5Mac.cpp.
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::platformSign): Factored out Mac specific
+        code, leaving type casting to cross-platform files.
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::platformVerify): Ditto.
+
+        * crypto/CryptoAlgorithmRegistry.h:
+        (WebCore::CryptoAlgorithmRegistry::registerAlgorithm):
+        * crypto/mac/CryptoAlgorithmRegistryMac.cpp:
+        (WebCore::CryptoAlgorithmRegistry::platformRegisterAlgorithms):
+        Reduce copy/pasting in registration code.
+
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::keyAlgorithmMatches): Check key type and algorithm.
+        (WebCore::CryptoAlgorithmAES_CBC::encrypt): Cross platform type casting code.
+        Maybe we'll find a way to autogenerate or eliminate it one day.
+        (WebCore::CryptoAlgorithmAES_CBC::decrypt): Ditto.
+
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.h:
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp:
+        (WebCore::CryptoAlgorithmHMAC::keyAlgorithmMatches):
+        (WebCore::CryptoAlgorithmHMAC::sign):
+        (WebCore::CryptoAlgorithmHMAC::verify):
+        * crypto/algorithms/CryptoAlgorithmHMAC.h:
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.cpp:
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::keyAlgorithmMatches):
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::sign):
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::verify):
+        (WebCore::CryptoAlgorithmRSASSA_PKCS1_v1_5::importKey):
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.h:
+        * crypto/mac/CryptoAlgorithmAES_CBCMac.cpp:
+        (WebCore::CryptoAlgorithmAES_CBC::platformEncrypt):
+        (WebCore::CryptoAlgorithmAES_CBC::platformDecrypt):
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp:
+        (WebCore::CryptoAlgorithmHMAC::platformSign):
+        (WebCore::CryptoAlgorithmHMAC::platformVerify):
+        Same changes for all algorithms that have keys.
+
+2013-11-22  Brendan Long  <b.long@cablelabs.com>
+
+        Fire "change" event on TextTrackList when a TextTrack's mode changes
+        https://bugs.webkit.org/show_bug.cgi?id=124789
+
+        Reviewed by Eric Carlson.
+
+        Since AudioTrackList and VideoTrackList already have this event, the
+        interesting bits are in TrackListBase::scheduleChangeEvent(), and we
+        just need to call it for TextTrackList changes.
+
+        Test: media/track/track-change-event.html
+
+        * html/HTMLMediaElement.cpp:
+        (HTMLMediaElement::textTrackModeChanged): Call TrackListBase::scheduleChangeEvent().
+        * html/track/TextTrackList.idl: Add onchange event listener.
+
+2013-11-22  Brendan Long  <b.long@cablelabs.com>
+
+        Add TextTrackList::getTrackById().
+        https://bugs.webkit.org/show_bug.cgi?id=124785
+
+        Reviewed by Eric Carlson.
+
+        Test: media/track/track-id.html
+
+        * html/track/TextTrackList.cpp: Add getTrackById()
+        (TextTrackList::getTrackById):
+        * html/track/TextTrackList.h: Same.
+        * html/track/TextTrackList.idl: Same.
+
+2013-11-22  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] When the <box> value is set, derive radii from border-radius
+        https://bugs.webkit.org/show_bug.cgi?id=124228
+
+        Reviewed by Dean Jackson.
+
+        Add support for BoxShape elliptical corners.
+
+        Tests: fast/shapes/shape-outside-floats/shape-outside-rounded-boxes-001.html
+               fast/shapes/shape-outside-floats/shape-outside-rounded-boxes-002.html
+
+        * platform/graphics/FloatRoundedRect.h:
+        (WebCore::FloatRoundedRect::bottomLeftCorner): Corrected a copy-and-pasteO.
+        * rendering/shapes/BoxShape.cpp:
+        (WebCore::BoxShape::getExcludedIntervals): Returned interval now depends on the top and bottom of the line.
+        * rendering/shapes/Shape.cpp:
+        (WebCore::Shape::createShape): Rounded rect parameters are now specified with a RoundedRect parameter.
+        * rendering/shapes/Shape.h:
+        * rendering/shapes/ShapeInfo.cpp:
+        (WebCore::::computedShape): Pass style's rounded border to createShape().
+
+2013-11-22  Andres Gomez  <agomez@igalia.com>
+
+        Several missing/incorrect guards for LOG_DISABLED=0 against Release build (Mac)
+        https://bugs.webkit.org/show_bug.cgi?id=78735
+
+        Reviewed by Mario Sanchez Prada.
+
+        In a "Debug" build the CString.h header comes from another
+        indirect dependency. Now, we explicitly add this missing include.
+
+        * page/CaptionUserPreferencesMediaAF.cpp: Explicitly adding
+        missing include.
+
+2013-11-22  Robert Sipka  <sipka@inf.u-szeged.hu>
+
+        [curl] Fix of SSL certificate chain storage
+        https://bugs.webkit.org/show_bug.cgi?id=124768
+
+        Reviewed by Brent Fulgham.
+
+        Change the certificates storage type into ListHashSet
+        from HashSet to keep the chain order in each case.
+        This ensures that there is no difference between the stored
+        and the recieved certificate chain.
+
+        * platform/network/curl/SSLHandle.cpp:
+        (WebCore::allowsAnyHTTPSCertificateHosts):
+        (WebCore::sslIgnoreHTTPSCertificate):
+        (WebCore::pemData):
+        (WebCore::certVerifyCallback):
+
+2013-11-22  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Avoid deadlock when interacting with some AVFoundationCF content
+        <rdar://problem/15482977> and https://bugs.webkit.org/show_bug.cgi?id=124752
+
+        Prevent deadlock caused by conflict over the "mapLock" mutex. Notification handling in the file,
+        which modify assets and make other changes, are required to happen on the main thread. This
+        patch enforces this requirement.
+
+        Reviewed by Eric Carlson.
+
+        * platform/graphics/avfoundation/cf/MediaPlayerPrivateAVFoundationCF.cpp:
+        (WebCore::NotificationCallbackData::NotificationCallbackData): Added
+        (WebCore::AVFWrapper::processNotification): Moved logic from 'notificationCallback', which was
+        sometimes happening on a background thread.
+        (WebCore::AVFWrapper::notificationCallback): Dispatch calls to main thread.
+
+2013-11-22  peavo@outlook.com  <peavo@outlook.com>
+
+        [WinCairo] Compile error when ACCELERATED_COMPOSITING is not used.
+        https://bugs.webkit.org/show_bug.cgi?id=124773
+
+        Reviewed by Brent Fulgham.
+
+        * rendering/RenderView.cpp:
+        (WebCore::RenderView::paintBoxDecorations): Added USE(ACCELERATED_COMPOSITING) guard.
+
 2013-11-18  Sergio Villar Senin  <svillar@igalia.com>
 
         [CSS Grid Layout] Improve content-sized track layout

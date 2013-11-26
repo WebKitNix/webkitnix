@@ -1,3 +1,233 @@
+2013-11-25  Julien Brianceau  <jbriance@cisco.com>
+
+        [arm][mips] Fix crash in dfg-arrayify-elimination layout jsc test.
+        https://bugs.webkit.org/show_bug.cgi?id=124839
+
+        Reviewed by Michael Saboff.
+
+        In ARM EABI and MIPS, 64-bit values have to be aligned on stack too.
+
+        * jit/CCallHelpers.h:
+        (JSC::CCallHelpers::setupArgumentsWithExecState):
+        * jit/JITInlines.h:
+        (JSC::JIT::callOperation): Add missing EABI_32BIT_DUMMY_ARG.
+
+2013-11-23  Filip Pizlo  <fpizlo@apple.com>
+
+        Fix more fallout from failed attempts at div/mod DFG strength reductions
+        https://bugs.webkit.org/show_bug.cgi?id=124813
+
+        Reviewed by Geoffrey Garen.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileArithMod):
+
+2013-11-22  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        JSC Obj-C API should have real documentation
+        https://bugs.webkit.org/show_bug.cgi?id=124805
+
+        Reviewed by Geoffrey Garen.
+
+        Massaging the header comments into proper headerdocs.
+
+        * API/JSContext.h:
+        * API/JSExport.h:
+        * API/JSManagedValue.h:
+        * API/JSValue.h:
+        * API/JSVirtualMachine.h:
+
+2013-11-22  Filip Pizlo  <fpizlo@apple.com>
+
+        CodeBlock::m_numCalleeRegisters shouldn't also mean frame size, frame size needed for exit, or any other unrelated things
+        https://bugs.webkit.org/show_bug.cgi?id=124793
+
+        Reviewed by Mark Hahnenberg.
+        
+        Now m_numCalleeRegisters always refers to the number of locals that the attached
+        bytecode uses. It never means anything else.
+        
+        For frame size, we now have it lazily computed from m_numCalleeRegisters for the
+        baseline engines and we have it stored in DFG::CommonData for the optimizing JITs.
+        
+        For frame-size-needed-at-exit, we store that in DFG::CommonData, too.
+        
+        The code no longer implies that there is any arithmetic relationship between
+        m_numCalleeRegisters and frameSize. Previously it implied that the latter is greater
+        than the former.
+        
+        The code no longer implies that there is any arithmetic relationship between the
+        frame Size and the frame-size-needed-at-exit. Previously it implied that the latter
+        is greater that the former.
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::frameRegisterCount):
+        * bytecode/CodeBlock.h:
+        * dfg/DFGCommonData.h:
+        (JSC::DFG::CommonData::CommonData):
+        (JSC::DFG::CommonData::requiredRegisterCountForExecutionAndExit):
+        * dfg/DFGGraph.cpp:
+        (JSC::DFG::Graph::frameRegisterCount):
+        (JSC::DFG::Graph::requiredRegisterCountForExit):
+        (JSC::DFG::Graph::requiredRegisterCountForExecutionAndExit):
+        * dfg/DFGGraph.h:
+        * dfg/DFGJITCompiler.cpp:
+        (JSC::DFG::JITCompiler::link):
+        (JSC::DFG::JITCompiler::compileFunction):
+        * dfg/DFGOSREntry.cpp:
+        (JSC::DFG::prepareOSREntry):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::SpeculativeJIT):
+        * dfg/DFGVirtualRegisterAllocationPhase.cpp:
+        (JSC::DFG::VirtualRegisterAllocationPhase::run):
+        * ftl/FTLLink.cpp:
+        (JSC::FTL::link):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileCallOrConstruct):
+        * ftl/FTLOSREntry.cpp:
+        (JSC::FTL::prepareOSREntry):
+        * interpreter/CallFrame.cpp:
+        (JSC::CallFrame::frameExtentInternal):
+        * interpreter/JSStackInlines.h:
+        (JSC::JSStack::pushFrame):
+        * jit/JIT.h:
+        (JSC::JIT::frameRegisterCountFor):
+        * jit/JITOperations.cpp:
+        * llint/LLIntEntrypoint.cpp:
+        (JSC::LLInt::frameRegisterCountFor):
+        * llint/LLIntEntrypoint.h:
+
+2013-11-21  Filip Pizlo  <fpizlo@apple.com>
+
+        Combine SymbolTable and SharedSymbolTable
+        https://bugs.webkit.org/show_bug.cgi?id=124761
+
+        Reviewed by Geoffrey Garen.
+        
+        SymbolTable was never used directly; we now always used SharedSymbolTable. So, this
+        gets rid of SymbolTable and renames SharedSymbolTable to SymbolTable.
+
+        * bytecode/CodeBlock.h:
+        (JSC::CodeBlock::symbolTable):
+        * bytecode/UnlinkedCodeBlock.h:
+        (JSC::UnlinkedFunctionExecutable::symbolTable):
+        (JSC::UnlinkedCodeBlock::symbolTable):
+        (JSC::UnlinkedCodeBlock::finishCreation):
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::BytecodeGenerator::symbolTable):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGStackLayoutPhase.cpp:
+        (JSC::DFG::StackLayoutPhase::run):
+        * jit/AssemblyHelpers.h:
+        (JSC::AssemblyHelpers::symbolTableFor):
+        * runtime/Arguments.h:
+        (JSC::Arguments::finishCreation):
+        * runtime/Executable.h:
+        (JSC::FunctionExecutable::symbolTable):
+        * runtime/JSActivation.h:
+        (JSC::JSActivation::create):
+        (JSC::JSActivation::JSActivation):
+        (JSC::JSActivation::registersOffset):
+        (JSC::JSActivation::allocationSize):
+        * runtime/JSSymbolTableObject.h:
+        (JSC::JSSymbolTableObject::symbolTable):
+        (JSC::JSSymbolTableObject::JSSymbolTableObject):
+        (JSC::JSSymbolTableObject::finishCreation):
+        * runtime/JSVariableObject.h:
+        (JSC::JSVariableObject::JSVariableObject):
+        * runtime/SymbolTable.cpp:
+        (JSC::SymbolTable::destroy):
+        (JSC::SymbolTable::SymbolTable):
+        * runtime/SymbolTable.h:
+        (JSC::SymbolTable::create):
+        (JSC::SymbolTable::createStructure):
+        * runtime/VM.cpp:
+        (JSC::VM::VM):
+        * runtime/VM.h:
+
+2013-11-22  Mark Lam  <mark.lam@apple.com>
+
+        Remove residual references to "dynamicGlobalObject".
+        https://bugs.webkit.org/show_bug.cgi?id=124787.
+
+        Reviewed by Filip Pizlo.
+
+        * JavaScriptCore.order:
+        * interpreter/CallFrame.h:
+
+2013-11-22  Mark Lam  <mark.lam@apple.com>
+
+        Ensure that arity fixups honor stack alignment requirements.
+        https://bugs.webkit.org/show_bug.cgi?id=124756.
+
+        Reviewed by Geoffrey Garen.
+
+        The LLINT and all the JITs rely on CommonSlowPaths::arityCheckFor() to
+        compute the arg count adjustment for the arity fixup. We take advantage
+        of this choke point and introduce the stack alignment padding there in
+        the guise of additional args.
+
+        The only cost of this approach is that the padding will also be
+        initialized to undefined values as if they were args. Since arity fixups
+        are considered a slow path that is rarely taken, this cost is not a
+        concern.
+
+        * runtime/CommonSlowPaths.h:
+        (JSC::CommonSlowPaths::arityCheckFor):
+        * runtime/VM.h:
+        (JSC::VM::isSafeToRecurse):
+
+2013-11-21  Filip Pizlo  <fpizlo@apple.com>
+
+        BytecodeGenerator should align the stack according to native conventions
+        https://bugs.webkit.org/show_bug.cgi?id=124735
+
+        Reviewed by Mark Lam.
+        
+        Rolling this back in because it actually fixed fast/dom/gc-attribute-node.html, but
+        our infrastructure misleads peole into thinking that fixing a test constitutes
+        breaking it.
+
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::CallArguments::registerOffset):
+        (JSC::CallArguments::argumentCountIncludingThis):
+        * bytecompiler/NodesCodegen.cpp:
+        (JSC::CallArguments::CallArguments):
+
+2013-11-21  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of CodeBlock::dumpStatistics()
+        https://bugs.webkit.org/show_bug.cgi?id=124762
+
+        Reviewed by Mark Hahnenberg.
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+        (JSC::CodeBlock::~CodeBlock):
+        * bytecode/CodeBlock.h:
+
+2013-11-22  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159652.
+        http://trac.webkit.org/changeset/159652
+        https://bugs.webkit.org/show_bug.cgi?id=124778
+
+        broke fast/dom/gc-attribute-node.html (Requested by ap on
+        #webkit).
+
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::emitCall):
+        (JSC::BytecodeGenerator::emitConstruct):
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::CallArguments::registerOffset):
+        (JSC::CallArguments::argumentCountIncludingThis):
+        * bytecompiler/NodesCodegen.cpp:
+        (JSC::CallArguments::CallArguments):
+        (JSC::CallArguments::newArgument):
+
 2013-11-21  Filip Pizlo  <fpizlo@apple.com>
 
         Fix a typo (requriements->requirements).

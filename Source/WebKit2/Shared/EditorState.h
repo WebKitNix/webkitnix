@@ -47,6 +47,9 @@ struct EditorState {
         , anchorPosition(0)
         , inputMethodHints(0)
 #endif
+#if PLATFORM(IOS)
+    , selectedTextLength(0)
+#endif
     {
     }
 
@@ -59,6 +62,7 @@ struct EditorState {
     bool isInPasswordField;
     bool isInPlugin;
     bool hasComposition;
+
 #if PLATFORM(NIX)
     // The anchor, cursor represent either the selection or composition, depending
     // whether a composition exists or not.
@@ -74,6 +78,15 @@ struct EditorState {
     WTF::String surroundingText;
     WTF::String submitLabel;
 #endif
+
+#if PLATFORM(IOS)
+    WebCore::IntRect caretRectAtStart;
+    WebCore::IntRect caretRectAtEnd;
+    Vector<WebCore::SelectionRect> selectionRects;
+    uint64_t selectedTextLength;
+    String wordAtSelection;
+#endif
+
 #if PLATFORM(GTK) || PLATFORM(NIX)
     WebCore::IntRect cursorRect;
 #endif

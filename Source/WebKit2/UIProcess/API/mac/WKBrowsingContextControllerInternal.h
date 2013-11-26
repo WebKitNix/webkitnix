@@ -25,7 +25,20 @@
 
 #import "WKBrowsingContextControllerPrivate.h"
 
+#if WK_API_ENABLED
+
+#if PLATFORM(IOS)
+@protocol WKBrowsingContextLoadDelegateInternal <NSObject>
+@optional
+- (void)browsingContextControllerDidCommitLoad:(WKBrowsingContextController *)sender;
+@end
+#endif // PLATFORM(IOS)
+
 @interface WKBrowsingContextController (Internal)
+
+#if PLATFORM(IOS)
+@property (assign) id <WKBrowsingContextLoadDelegateInternal> loadDelegateInternal;
+#endif // PLATFORM(IOS)
 
 /* This should only be called from associate view. */
 - (id)_initWithPageRef:(WKPageRef)pageRef;
@@ -36,3 +49,5 @@
 + (NSMutableSet *)customSchemes;
 
 @end
+
+#endif // WK_API_ENABLED

@@ -31,8 +31,12 @@
 #include <WebCore/PlatformWheelEvent.h>
 
 #if ENABLE(TOUCH_EVENTS)
+#if PLATFORM(IOS)
+#include <WebCore/PlatformTouchEventIOS.h>
+#else
 #include <WebCore/PlatformTouchEvent.h>
 #include <WebCore/PlatformTouchPoint.h>
+#endif
 #endif
 
 namespace WebKit {
@@ -52,8 +56,10 @@ WebCore::PlatformKeyboardEvent platform(const WebKeyboardEvent&);
 
 #if ENABLE(TOUCH_EVENTS)
 WebCore::PlatformTouchEvent platform(const WebTouchEvent&);
+#if PLATFORM(NIX)
 WebCore::PlatformTouchPoint platform(const WebPlatformTouchPoint&);
-#endif
+#endif // PLATFORM(NIX)
+#endif // ENABLE(TOUCH_EVENTS)
 
 } // namespace WebKit
 

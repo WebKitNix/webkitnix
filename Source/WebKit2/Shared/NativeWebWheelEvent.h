@@ -64,6 +64,8 @@ public:
     const Evas_Event_Mouse_Wheel* nativeEvent() const { return m_nativeEvent; }
 #elif PLATFORM(NIX)
     const NIXWheelEvent* nativeEvent() const { return &m_nativeEvent; }
+#elif PLATFORM(IOS)
+    const void* nativeEvent() const { return 0; }
 #endif
 
 private:

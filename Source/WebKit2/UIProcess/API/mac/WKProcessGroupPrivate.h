@@ -24,10 +24,22 @@
  */
 
 #import <WebKit2/WKProcessGroup.h>
+
+#if WK_API_ENABLED
+
 #import <WebKit2/WKBase.h>
+
+#if TARGET_OS_IPHONE
+@class WKGeolocationProviderIOS;
+#endif
 
 @interface WKProcessGroup (Private)
 
 @property(readonly) WKContextRef _contextRef;
+#if TARGET_OS_IPHONE
+@property(readonly) WKGeolocationProviderIOS *_geolocationProvider;
+#endif
 
 @end
+
+#endif // WK_API_ENABLED

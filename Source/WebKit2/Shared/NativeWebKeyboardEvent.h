@@ -58,6 +58,8 @@ public:
     NativeWebKeyboardEvent(const Evas_Event_Key_Up*);
 #elif PLATFORM(NIX)
     NativeWebKeyboardEvent(const NIXKeyEvent& event);
+#elif PLATFORM(IOS)
+    NativeWebKeyboardEvent(WebIOSEvent *);
 #endif
 
 #if USE(APPKIT)
@@ -71,6 +73,8 @@ public:
     bool isFiltered() const { return m_isFiltered; }
 #elif PLATFORM(NIX)
     const NIXKeyEvent* nativeEvent() const { return &m_nativeEvent; }
+#elif PLATFORM(IOS)
+    WebIOSEvent* nativeEvent() const { return m_nativeEvent.get(); }
 #endif
 
 private:
@@ -85,6 +89,8 @@ private:
     bool m_isFiltered;
 #elif PLATFORM(NIX)
     NIXKeyEvent m_nativeEvent;
+#elif PLATFORM(IOS)
+    RetainPtr<WebIOSEvent> m_nativeEvent;
 #endif
 };
 

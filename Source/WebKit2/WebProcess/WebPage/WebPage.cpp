@@ -137,6 +137,7 @@
 #include <WebCore/SubstituteData.h>
 #include <WebCore/TextIterator.h>
 #include <WebCore/VisiblePosition.h>
+#include <WebCore/VisibleUnits.h>
 #include <WebCore/markup.h>
 #include <runtime/JSCJSValue.h>
 #include <runtime/JSLock.h>
@@ -277,6 +278,9 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     , m_isShowingContextMenu(false)
 #endif
     , m_willGoToBackForwardItemCallbackEnabled(true)
+#if PLATFORM(IOS)
+    , m_shouldReturnWordAtSelection(false)
+#endif
 #if ENABLE(PAGE_VISIBILITY_API)
     , m_visibilityState(WebCore::PageVisibilityStateVisible)
 #endif
@@ -444,10 +448,12 @@ WebPage::~WebPage()
     for (HashSet<PluginView*>::const_iterator it = m_pluginViews.begin(), end = m_pluginViews.end(); it != end; ++it)
         (*it)->webPageDestroyed();
 
+#if !PLATFORM(IOS)
     if (m_headerBanner)
         m_headerBanner->detachFromPage();
     if (m_footerBanner)
         m_footerBanner->detachFromPage();
+#endif // !PLATFORM(IOS)
 
     WebProcess::shared().removeMessageReceiver(Messages::WebPage::messageReceiverName(), m_pageID);
 
@@ -596,7 +602,7 @@ PassRefPtr<Plugin> WebPage::createPlugin(WebFrame* frame, HTMLPlugInElement* plu
 
 #endif // ENABLE(NETSCAPE_PLUGIN_API)
 
-#if PLATFORM(QT) || PLATFORM(NIX)
+#if PLATFORM(NIX)
 uint64_t getInputMethodHint(HTMLInputElement*);
 #endif
 
@@ -676,6 +682,21 @@ EditorState WebPage::editorState() const
             if (defaultButton && defaultButton->hasTagName(HTMLNames::inputTag))
                 result.submitLabel = static_cast<HTMLInputElement*>(defaultButton)->value();
         }
+    }
+#endif
+#if PLATFORM(IOS)
+    FrameSelection& selection = frame.selection();
+    if (selection.isCaret()) {
+        result.caretRectAtStart = selection.absoluteCaretBounds();
+        result.caretRectAtEnd = result.caretRectAtStart;
+        if (m_shouldReturnWordAtSelection)
+            result.wordAtSelection = plainText(wordRangeFromPosition(selection.start()).get());
+    } else if (selection.isRange()) {
+        result.caretRectAtStart = VisiblePosition(selection.start()).absoluteCaretBounds();
+        result.caretRectAtEnd = VisiblePosition(selection.end()).absoluteCaretBounds();
+        RefPtr<Range> selectedRange = selection.toNormalizedRange();
+        selectedRange->collectSelectionRects(result.selectionRects);
+        result.selectedTextLength = plainText(selectedRange.get(), TextIteratorDefaultBehavior, true).length();
     }
 #endif
 #if PLATFORM(GTK)
@@ -1270,7 +1291,7 @@ void WebPage::setDeviceScaleFactor(float scaleFactor)
     m_page->setDeviceScaleFactor(scaleFactor);
 
     // Tell all our plug-in views that the device scale factor changed.
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
     for (HashSet<PluginView*>::const_iterator it = m_pluginViews.begin(), end = m_pluginViews.end(); it != end; ++it)
         (*it)->setDeviceScaleFactor(scaleFactor);
 
@@ -1425,6 +1446,7 @@ void WebPage::uninstallPageOverlay(PageOverlay* pageOverlay, bool shouldFadeOut)
     m_drawingArea->didUninstallPageOverlay(pageOverlay);
 }
 
+#if !PLATFORM(IOS)
 void WebPage::setHeaderPageBanner(PassRefPtr<PageBanner> pageBanner)
 {
     if (m_headerBanner)
@@ -1472,6 +1494,7 @@ void WebPage::showPageBanners()
     if (m_footerBanner)
         m_footerBanner->showIfHidden();
 }
+#endif // !PLATFORM(IOS)
 
 PassRefPtr<WebImage> WebPage::scaledSnapshotWithOptions(const IntRect& rect, double scaleFactor, SnapshotOptions options)
 {
@@ -1667,10 +1690,12 @@ void WebPage::mouseEvent(const WebMouseEvent& mouseEvent)
                 break;
     }
 
+#if !PLATFORM(IOS)
     if (!handled && m_headerBanner)
         handled = m_headerBanner->mouseEvent(mouseEvent);
     if (!handled && m_footerBanner)
         handled = m_footerBanner->mouseEvent(mouseEvent);
+#endif // !PLATFORM(IOS)
 
     if (!handled && canHandleUserEvents()) {
         CurrentEvent currentEvent(mouseEvent);
@@ -1697,10 +1722,12 @@ void WebPage::mouseEventSyncForTesting(const WebMouseEvent& mouseEvent, bool& ha
             if ((handled = (*it)->mouseEvent(mouseEvent)))
                 break;
     }
+#if !PLATFORM(IOS)
     if (!handled && m_headerBanner)
         handled = m_headerBanner->mouseEvent(mouseEvent);
     if (!handled && m_footerBanner)
         handled = m_footerBanner->mouseEvent(mouseEvent);
+#endif // !PLATFORM(IOS)
 
     if (!handled) {
         CurrentEvent currentEvent(mouseEvent);
@@ -2037,7 +2064,7 @@ void WebPage::setCanStartMediaTimerFired()
         m_page->setCanStartMedia(true);
 }
 
-#if !PLATFORM(MAC)
+#if !PLATFORM(MAC) || PLATFORM(IOS)
 void WebPage::didUpdateViewStateTimerFired()
 {
     send(Messages::WebPageProxy::DidUpdateViewState());
@@ -2474,6 +2501,8 @@ void WebPage::updatePreferences(const WebPreferencesStore& store)
     settings.setScrollAnimatorEnabled(store.getBoolValueForKey(WebPreferencesKey::scrollAnimatorEnabledKey()));
 #endif
     settings.setInteractiveFormValidationEnabled(store.getBoolValueForKey(WebPreferencesKey::interactiveFormValidationEnabledKey()));
+    settings.setSpatialNavigationEnabled(store.getBoolValueForKey(WebPreferencesKey::spatialNavigationEnabledKey()));
+
 
 #if ENABLE(SQL_DATABASE)
     DatabaseManager::manager().setIsAvailable(store.getBoolValueForKey(WebPreferencesKey::databasesEnabledKey()));
@@ -2891,11 +2920,13 @@ void WebPage::didReceiveNotificationPermissionDecision(uint64_t notificationID, 
     notificationPermissionRequestManager()->didReceiveNotificationPermissionDecision(notificationID, allowed);
 }
 
+#if !PLATFORM(IOS)
 void WebPage::advanceToNextMisspelling(bool startBeforeSelection)
 {
     Frame& frame = m_page->focusController().focusedOrMainFrame();
     frame.editor().advanceToNextMisspelling(startBeforeSelection);
 }
+#endif
 
 void WebPage::changeSpellingToWord(const String& word)
 {
@@ -3306,7 +3337,7 @@ void WebPage::stopSpeaking()
 
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
 RetainPtr<PDFDocument> WebPage::pdfDocumentForPrintingFrame(Frame* coreFrame)
 {
     Document* document = coreFrame->document();
@@ -3334,7 +3365,7 @@ void WebPage::beginPrinting(uint64_t frameID, const PrintInfo& printInfo)
     if (!coreFrame)
         return;
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
     if (pdfDocumentForPrintingFrame(coreFrame))
         return;
 #endif // PLATFORM(MAC)

@@ -146,8 +146,6 @@ public:
 
     void visitAggregate(SlotVisitor&);
 
-    static void dumpStatistics();
-
     void dumpBytecode(PrintStream& = WTF::dataFile());
     void dumpBytecode(PrintStream&, unsigned bytecodeOffset);
     void printStructures(PrintStream&, const Instruction*);
@@ -724,7 +722,7 @@ public:
     StringJumpTable& stringSwitchJumpTable(int tableIndex) { RELEASE_ASSERT(m_rareData); return m_rareData->m_stringSwitchJumpTables[tableIndex]; }
 
 
-    SharedSymbolTable* symbolTable() const { return m_unlinkedCode->symbolTable(); }
+    SymbolTable* symbolTable() const { return m_unlinkedCode->symbolTable(); }
 
     EvalCodeCache& evalCodeCache() { createRareDataIfNecessary(); return m_rareData->m_evalCodeCache; }
 
@@ -899,6 +897,8 @@ public:
 #if ENABLE(VERBOSE_VALUE_PROFILE)
     void dumpValueProfiles();
 #endif
+    
+    unsigned frameRegisterCount();
 
     // FIXME: Make these remaining members private.
 
