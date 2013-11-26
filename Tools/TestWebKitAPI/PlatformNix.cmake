@@ -93,6 +93,18 @@ set(test_webcore_BINARIES
 )
 
 set(test_webkit2_api_BINARIES
+    ../nix/OverflowScroll
+    ../nix/SuspendResume
+    ../nix/WKCoordinatedSceneLockState
+    ../nix/WebAudio
+    ../nix/WebThemeEngine
+    ../nix/WebViewFindZoomableArea
+    ../nix/WebViewPaintToCurrentGLContext
+    ../nix/WebViewTranslated
+    ../nix/WebViewTranslatedScaled
+    ../nix/WebViewUpdateTextInputState
+    ../nix/WebViewViewport
+
     AboutBlankLoad
     CloseThenTerminate
     CookieManager
@@ -138,19 +150,9 @@ set(test_webkit2_api_BINARIES
     WebWorker
     WillSendSubmitEvent
     WKPageGetScaleFactorNotZero
+
     CoordinatedGraphics/WebViewWebProcessCrashed
     CoordinatedGraphics/WKViewUserViewportToContents
-    ../nix/OverflowScroll
-    ../nix/SuspendResume
-    ../nix/WebAudio
-    ../nix/WebThemeEngine
-    ../nix/WebViewFindZoomableArea
-    ../nix/WebViewPaintToCurrentGLContext
-    ../nix/WebViewTranslated
-    ../nix/WebViewTranslatedScaled
-    ../nix/WebViewUpdateTextInputState
-    ../nix/WebViewViewport
-    ../nix/WKCoordinatedSceneLockState
 )
 
 if (ENABLE_MEDIA_STREAM)
