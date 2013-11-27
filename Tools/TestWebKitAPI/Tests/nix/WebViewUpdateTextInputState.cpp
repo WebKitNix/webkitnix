@@ -25,6 +25,8 @@
 
 #include "config.h"
 
+#include "GLUtilities.h"
+#include "PageLoader.h"
 #include "PlatformUtilities.h"
 #include <WebKit2/WKContext.h>
 #include <WebKit2/WKPage.h>
@@ -32,54 +34,52 @@
 #include <WebKit2/WKString.h>
 #include "NIXView.h"
 
+static bool operator!=(const WKRect& a, const WKRect& b)
+{
+    return a.origin.x != b.origin.x || a.origin.y != b.origin.y || a.size.width != b.size.width || a.size.height != b.size.height;
+}
+
+// Needed by gtest.
+std::ostream& operator<<(std::ostream& stream, const WKRect& rect)
+{
+    return stream << '[' << rect.origin.x << ", " << rect.origin.y << ' ' << rect.size.width << 'x' << rect.size.height << ']';
+}
+
 namespace TestWebKitAPI {
 
-static bool didFinishLoad = false;
 static bool didUpdateTextInputState = false;
-static NIXTextInputState stateReceived;
-static const WKRect invalidRectState = WKRectMake(0, 0, 0, 0);
 
-static bool WKRectIsEqual(const WKRect& a, const WKRect& b)
-{
-    return a.origin.x == b.origin.x && a.origin.y == b.origin.y && a.size.width == b.size.width && a.size.height == b.size.height;
-}
-
-static void didFinishLoadForFrame(WKPageRef page, WKFrameRef, WKTypeRef, const void*)
-{
-    didFinishLoad = true;
-}
-
-static void updateTextInputState(WKViewRef, const NIXTextInputState* state, const void*)
+static void updateTextInputState(WKViewRef, const NIXTextInputState* state, const void* clientInfo)
 {
     didUpdateTextInputState = true;
 
-    memcpy(&stateReceived, state, sizeof(NIXTextInputState));
-    WKRetain(stateReceived.surroundingText);
-    WKRetain(stateReceived.submitLabel);
+    memcpy(const_cast<void*>(clientInfo), state, sizeof(NIXTextInputState));
+    WKRetain(state->surroundingText);
+    WKRetain(state->submitLabel);
 }
 
 TEST(WebKitNix, WebViewUpdateTextInputState)
 {
-    memset(&stateReceived, 0, sizeof(stateReceived));
-    WKRetainPtr<WKContextRef> context = adoptWK(WKContextCreate());
-    WKRetainPtr<WKViewRef> view(AdoptWK, WKViewCreate(context.get(), 0));
+    const WKSize size = WKSizeMake(200, 200);
+    ToolsNix::GLOffscreenBuffer offscreenBuffer(size.width, size.height);
+    ASSERT_TRUE(offscreenBuffer.makeCurrent());
 
+    WKRetainPtr<WKContextRef> context = adoptWK(WKContextCreate());
+    WKRetainPtr<WKViewRef> view = adoptWK(WKViewCreate(context.get(), 0));
+
+    NIXTextInputState stateReceived;
+    memset(&stateReceived, 0, sizeof(NIXTextInputState));
     NIXViewClient nixViewClient;
     memset(&nixViewClient, 0, sizeof(NIXViewClient));
     nixViewClient.version = kNIXViewClientCurrentVersion;
+    nixViewClient.clientInfo = &stateReceived;
     nixViewClient.updateTextInputState = updateTextInputState;
     NIXViewSetNixViewClient(view.get(), &nixViewClient);
 
     WKViewInitialize(view.get());
-
-    WKPageLoaderClient pageLoaderClient;
-    memset(&pageLoaderClient, 0, sizeof(WKPageLoaderClient));
-    pageLoaderClient.version = kWKPageLoaderClientCurrentVersion;
-    pageLoaderClient.didFinishLoadForFrame = didFinishLoadForFrame;
-    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &pageLoaderClient);
-
-    const WKSize size = WKSizeMake(100, 100);
     WKViewSetSize(view.get(), size);
+
+    Util::ForceRepaintClient forceRepaintClient(view.get());
 
     NIXMouseEvent nixEvent;
     memset(&nixEvent, 0, sizeof(NIXMouseEvent));
@@ -94,35 +94,31 @@ TEST(WebKitNix, WebViewUpdateTextInputState)
     nixEvent.timestamp = 0;
 
     // Simple test on content editable.
-    WKRetainPtr<WKURLRef> editableContentUrl = adoptWK(Util::createURLForResource("../nix/single-tap-on-editable-content", "html"));
-    WKPageLoadURL(WKViewGetPage(view.get()), editableContentUrl.get());
-    Util::run(&didFinishLoad);
+    Util::PageLoader loader(view.get());
+    loader.waitForLoadURLAndRepaint("../nix/single-tap-on-editable-content");
     NIXViewSendMouseEvent(view.get(), &nixEvent);
     nixEvent.type = kNIXInputEventTypeMouseUp;
     NIXViewSendMouseEvent(view.get(), &nixEvent);
 
     Util::run(&didUpdateTextInputState);
 
-    ASSERT_TRUE(didFinishLoad);
-    ASSERT_TRUE(didUpdateTextInputState);
-    ASSERT_TRUE(stateReceived.isContentEditable);
+    EXPECT_TRUE(didUpdateTextInputState);
+    EXPECT_TRUE(stateReceived.isContentEditable);
 
-    ASSERT_TRUE(WKStringIsEqualToUTF8CString(stateReceived.surroundingText, "foobar"));
+    EXPECT_WK_STREQ(stateReceived.surroundingText, "foobar");
     WKRelease(stateReceived.surroundingText);
-    ASSERT_TRUE(WKStringIsEmpty(stateReceived.submitLabel));
+    EXPECT_WK_STREQ(stateReceived.submitLabel, "");
     WKRelease(stateReceived.submitLabel);
-    ASSERT_FALSE(stateReceived.inputMethodHints & NIXImhSensitiveData);
-    ASSERT_TRUE(!WKRectIsEqual(stateReceived.cursorRect, invalidRectState));
-    ASSERT_TRUE(!WKRectIsEqual(stateReceived.editorRect, invalidRectState));
-    ASSERT_TRUE(!WKRectIsEqual(stateReceived.cursorRect, stateReceived.editorRect));
+    EXPECT_FALSE(stateReceived.inputMethodHints & NIXImhSensitiveData);
+    const WKRect invalidRectState = WKRectMake(0, 0, 0, 0);
+    EXPECT_NE(invalidRectState, stateReceived.cursorRect);
+    EXPECT_NE(stateReceived.editorRect, invalidRectState);
+    EXPECT_NE(stateReceived.cursorRect, stateReceived.editorRect);
 
     // Test on a form field.
-    didFinishLoad = false;
     memset(&stateReceived, 0, sizeof(stateReceived));
 
-    editableContentUrl = adoptWK(Util::createURLForResource("../nix/single-tap-on-form-field", "html"));
-    WKPageLoadURL(WKViewGetPage(view.get()), editableContentUrl.get());
-    Util::run(&didFinishLoad);
+    loader.waitForLoadURLAndRepaint("../nix/single-tap-on-form-field");
     nixEvent.type = kNIXInputEventTypeMouseDown;
     NIXViewSendMouseEvent(view.get(), &nixEvent);
     nixEvent.type = kNIXInputEventTypeMouseUp;
@@ -132,11 +128,10 @@ TEST(WebKitNix, WebViewUpdateTextInputState)
     Util::run(&didUpdateTextInputState);
 
     WKRelease(stateReceived.surroundingText);
-    ASSERT_TRUE(didFinishLoad);
-    ASSERT_TRUE(didUpdateTextInputState);
-    ASSERT_TRUE(WKStringIsEqualToUTF8CString(stateReceived.submitLabel, "submitLabelValue"));
+    EXPECT_TRUE(didUpdateTextInputState);
+    EXPECT_WK_STREQ(stateReceived.submitLabel, "submitLabelValue");
     WKRelease(stateReceived.submitLabel);
-    ASSERT_TRUE(stateReceived.inputMethodHints & NIXImhSensitiveData);
+    EXPECT_TRUE(stateReceived.inputMethodHints & NIXImhSensitiveData);
 }
 
 } // TestWebKitAPI
