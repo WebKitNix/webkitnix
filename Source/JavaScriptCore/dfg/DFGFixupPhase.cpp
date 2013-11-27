@@ -98,8 +98,23 @@ private:
             return;
         }
             
+        case BitOr: {
+            // Optimize X|0 -> X.
+            if (node->child2()->isConstant()) {
+                JSValue C2 = m_graph.valueOfJSConstant(node->child2().node());
+                if (C2.isInt32() && !C2.asInt32()) {
+                    m_insertionSet.insertNode(m_indexInBlock, SpecNone, Phantom, node->codeOrigin,
+                        Edge(node->child2().node(), KnownInt32Use));
+                    node->children.removeEdge(1);
+                    node->convertToIdentity();
+                    break;
+                }
+            }
+            fixIntEdge(node->child1());
+            fixIntEdge(node->child2());
+            break;
+        }
         case BitAnd:
-        case BitOr:
         case BitXor:
         case BitRShift:
         case BitLShift:
@@ -903,8 +918,8 @@ private:
         case GetClosureVar:
         case GetGlobalVar:
         case PutGlobalVar:
-        case NotifyPutGlobalVar:
-        case GlobalVarWatchpoint:
+        case NotifyWrite:
+        case VariableWatchpoint:
         case VarInjectionWatchpoint:
         case AllocationProfileWatchpoint:
         case Call:

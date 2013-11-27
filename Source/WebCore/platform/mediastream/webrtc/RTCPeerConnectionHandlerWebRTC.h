@@ -53,8 +53,8 @@ public:
     virtual bool addStream(PassRefPtr<MediaStreamPrivate>, PassRefPtr<MediaConstraints>) OVERRIDE;
     virtual void removeStream(PassRefPtr<MediaStreamPrivate>) OVERRIDE;
     virtual void getStats(PassRefPtr<RTCStatsRequest>) OVERRIDE;
-    virtual PassOwnPtr<RTCDataChannelHandler> createDataChannel(const String&, const RTCDataChannelInit&) OVERRIDE;
-    virtual PassOwnPtr<RTCDTMFSenderHandler> createDTMFSender(PassRefPtr<MediaStreamSource>) OVERRIDE;
+    virtual std::unique_ptr<RTCDataChannelHandler> createDataChannel(const String&, const RTCDataChannelInit&) OVERRIDE;
+    virtual std::unique_ptr<RTCDTMFSenderHandler> createDTMFSender(PassRefPtr<MediaStreamSource>) OVERRIDE;
     virtual void stop() OVERRIDE;
     RTCPeerConnectionHandlerWebRTC(RTCPeerConnectionHandlerClient*);
     ~RTCPeerConnectionHandlerWebRTC() { }

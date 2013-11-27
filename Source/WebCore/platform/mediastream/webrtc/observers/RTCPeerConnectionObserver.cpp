@@ -154,7 +154,8 @@ void RTCPeerConnectionObserver::OnIceCandidate(const webrtc::IceCandidateInterfa
 
 void RTCPeerConnectionObserver::OnDataChannel(webrtc::DataChannelInterface* dataChannel)
 {
-    callOnMainThread(bind(&RTCPeerConnectionHandlerClient::didAddRemoteDataChannel, m_client, adoptPtr(new RTCDataChannelHandlerWebRTC(dataChannel))));
+    // FIXME: call callOnMainThread instead of directly calling the function
+    m_client->didAddRemoteDataChannel(std::make_unique<RTCDataChannelHandlerWebRTC>(dataChannel));
 }
 
 } // namespace WebCore

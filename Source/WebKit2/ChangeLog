@@ -1,3 +1,241 @@
+2013-11-27  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Remove Qt-specific .qrc files
+        https://bugs.webkit.org/show_bug.cgi?id=124944
+
+        Reviewed by Andreas Kling.
+
+        * WebKit2.qrc: Removed.
+
+2013-11-27  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Programs/WebKit2APITests/TestWebKitSettings unit test is failing
+        https://bugs.webkit.org/show_bug.cgi?id=124924
+
+        Reviewed by Carlos Garcia Campos.
+
+        'Chrome'/'Chromium' substrings were removed from the user agent string in r159572, meaning the unit
+        test shouldn't check for those two substrings anymore. Instead, 'Safari' (as until now) and 'AppleWebKit'
+        substrings should be checked for.
+
+        * UIProcess/API/gtk/tests/TestWebKitSettings.cpp:
+        (testWebKitSettingsUserAgent):
+
+2013-11-26  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [MediaStream API] HTMLMediaElement should be able to use MediaStream as source
+        https://bugs.webkit.org/show_bug.cgi?id=121943
+
+        Reviewed by Eric Carlson.
+
+        Add mediastream module and platform to cmake include directories.
+
+        * CMakeLists.txt:
+
+2013-11-26  Dan Bernstein  <mitz@apple.com>
+
+        Some WebKit2 headers are not self-contained
+        https://bugs.webkit.org/show_bug.cgi?id=124884
+
+        Reviewed by Anders Carlsson.
+
+        * Shared/API/Cocoa/WKRemoteObjectInterface.h: Added import.
+        * Shared/API/Cocoa/WKRemoteObjectRegistry.h: Ditto.
+        * Shared/API/c/WKContextMenuItemTypes.h: Added include.
+        * Shared/API/c/WKFindOptions.h: Ditto.
+        * Shared/API/c/WKMutableArray.h: Ditto.
+        * Shared/API/c/WKPageLoadTypes.h: Ditto.
+        * Shared/API/c/WKPageVisibilityTypes.h: Ditto.
+
+        * Shared/API/c/WKPluginInformation.cpp:
+        (WKPluginInformationBundleIdentifierKey): Made this API function always be defined. When
+        the Netscape plug-in API is not enabled, it returns 0.
+        (WKPluginInformationBundleVersionKey): Ditto.
+        (WKPluginInformationBundleShortVersionKey): Ditto.
+        (WKPluginInformationPathKey): Ditto.
+        (WKPluginInformationDisplayNameKey): Ditto.
+        (WKPluginInformationDefaultLoadPolicyKey): Ditto.
+        (WKPluginInformationUpdatePastLastBlockedVersionIsKnownAvailableKey): Ditto.
+        (WKPluginInformationHasSandboxProfileKey): Ditto.
+        (WKPluginInformationFrameURLKey): Ditto.
+        (WKPluginInformationMIMETypeKey): Ditto.
+        (WKPluginInformationPageURLKey): Ditto.
+        (WKPluginInformationPluginspageAttributeURLKey): Ditto.
+        (WKPluginInformationPluginURLKey): Ditto.
+        (WKPlugInInformationReplacementObscuredKey): Ditto.
+
+        * Shared/API/c/WKString.h: Added include.
+        * UIProcess/API/C/WKCredentialTypes.h: Ditto.
+        * UIProcess/API/C/WKPageContextMenuClient.h: Ditto.
+        * UIProcess/API/C/WKPageLoaderClient.h: Added includes.
+        * UIProcess/API/C/WKPagePolicyClient.h: Ditto.
+        * UIProcess/API/C/WKPageUIClient.h: Ditto.
+
+        * UIProcess/API/C/WKPluginSiteDataManager.cpp:
+        (WKPluginSiteDataManagerGetTypeID): Fixed the !ENABLE(NETSCAPE_PLUGIN_API) build.
+
+        * UIProcess/API/C/mac/WKContextPrivateMac.h: Removed use of ENABLE() from this private
+        header.
+        * UIProcess/API/C/mac/WKContextPrivateMac.mm:
+        (WKContextCopyPlugInInfoForBundleIdentifier): Made this API function always be defined.
+        When the Netscape plug-in API is not enabled, it returns 0.
+        (WKContextGetInfoForInstalledPlugIns): Made this API function always be defined.
+
+        * UIProcess/API/C/mac/WKInspectorPrivateMac.h: Added imports.
+        * UIProcess/API/C/mac/WKPagePrivateMac.h: Added include.
+        * UIProcess/API/Cocoa/WKBackForwardListItem.h: Added import.
+        * UIProcess/API/Cocoa/WKNavigationData.h: Ditto.
+        * UIProcess/API/cpp/WKRetainPtr.h: Replaced use of WARN_UNUSED_RETURN in this private header
+        with an equivalent macro defined in the header.
+
+        * WebProcess/InjectedBundle/API/c/WKBundleFramePrivate.h: Added include.
+        * WebProcess/InjectedBundle/API/c/WKBundleInspector.cpp:
+        (WKBundleInspectorGetTypeID): Made this API function always be defined. When the Inspector
+        is not enabled, it returns the Null type.
+        (WKBundleInspectorShow): Made this API function always be defined.
+        (WKBundleInspectorClose): Ditto.
+        (WKBundleInspectorEvaluateScriptForTest): Ditto.
+        (WKBundleInspectorSetPageProfilingEnabled): Ditto.
+        * WebProcess/InjectedBundle/API/c/WKBundleInspector.h: Removed use of ENABLE() from this
+        private header.
+
+        * WebProcess/InjectedBundle/API/c/WKBundlePagePrivate.h: Added includes.
+        * WebProcess/InjectedBundle/API/c/WKBundlePrivate.h: Added include.
+
+        * WebProcess/Plugins/Netscape/mac/WKNPAPIPlugInContainer.mm:
+        (-[WKNPAPIPlugInContainer openPlugInPreferencePane]): Fixed the !ENABLE(NETSCAPE_PLUGIN_API)
+        build.
+
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::createJavaAppletWidget): Ditto.
+
+        * WebProcess/WebPage/mac/WebInspectorMac.mm: Fixed the !ENABLE(INSPECTOR) build.
+
+2013-11-25  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Use class extensions for IPI
+        https://bugs.webkit.org/show_bug.cgi?id=124870
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm: Reordered methods so that the Private
+        cateogry isn’t stuck between the API methods and the internal methods.
+        (-[WKBrowsingContextController setPaginationMode:]):
+        (-[WKBrowsingContextController paginationMode]):
+        (-[WKBrowsingContextController setPaginationBehavesLikeColumns:]):
+        (-[WKBrowsingContextController paginationBehavesLikeColumns]):
+        (-[WKBrowsingContextController setPageLength:]):
+        (-[WKBrowsingContextController pageLength]):
+        (-[WKBrowsingContextController setGapBetweenPages:]):
+        (-[WKBrowsingContextController gapBetweenPages]):
+        (-[WKBrowsingContextController pageCount]):
+        (-[WKBrowsingContextController handle]):
+        * UIProcess/API/mac/WKBrowsingContextControllerInternal.h: Changed Internal category into
+        a class extension.
+
+        * UIProcess/API/mac/WKConnection.mm:
+        * UIProcess/API/mac/WKConnectionInternal.h: Changed Internal category into a class
+        extension.
+
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugIn.mm:
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInInternal.h: Ditto.
+
+2013-11-25  Dan Bernstein  <mitz@apple.com>
+
+        Fixed the iOS build.
+
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController loadDelegateInternal]):
+        (-[WKBrowsingContextController setLoadDelegateInternal:]):
+
+2013-11-25  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Remove some indirection that was only necessary for supporting the legacy Objective-C runtime
+        https://bugs.webkit.org/show_bug.cgi?id=123065
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/mac/WKBrowsingContextController.h: Removed _data ivar and
+        WKBrowsingContextControllerData class declaration.
+        * UIProcess/API/mac/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController dealloc]): Removed
+        WKBrowsingContextControllerData class and moved ivars directly into
+        WKBrowsingContextController, declaring them in the @implementation. Removed ivar and
+        accessors for the delegate properties, letting the compiler synthesize them.
+        (-[WKBrowsingContextController _pageRef]): Removed indirection via _data.
+        (-[WKBrowsingContextController loadRequest:userData:]): Removed indirection via -_pageRef.
+        (-[WKBrowsingContextController loadFileURL:restrictToFilesWithin:userData:]): Ditto.
+        (-[WKBrowsingContextController loadHTMLString:baseURL:userData:]): Ditto.
+        (-[WKBrowsingContextController loadData:MIMEType:textEncodingName:baseURL:userData:]): Ditto.
+        (-[WKBrowsingContextController stopLoading]): Ditto.
+        (-[WKBrowsingContextController reload]): Ditto.
+        (-[WKBrowsingContextController reloadFromOrigin]): Ditto.
+        (-[WKBrowsingContextController goForward]): Ditto.
+        (-[WKBrowsingContextController canGoForward]): Ditto.
+        (-[WKBrowsingContextController goBack]): Ditto.
+        (-[WKBrowsingContextController canGoBack]): Ditto.
+        (-[WKBrowsingContextController goToBackForwardListItem:]): Ditto.
+        (-[WKBrowsingContextController backForwardList]): Ditto.
+        (-[WKBrowsingContextController activeURL]): Ditto.
+        (-[WKBrowsingContextController provisionalURL]): Ditto.
+        (-[WKBrowsingContextController committedURL]): Ditto.
+        (-[WKBrowsingContextController unreachableURL]): Removed idirection via _data.
+        (-[WKBrowsingContextController estimatedProgress]): Removed indirection via -_pageRef.
+        (-[WKBrowsingContextController title]): Ditto.
+        (-[WKBrowsingContextController textZoom]): Ditto.
+        (-[WKBrowsingContextController setTextZoom:]): Ditto.
+        (-[WKBrowsingContextController pageZoom]): Ditto.
+        (-[WKBrowsingContextController setPageZoom:]): Ditto.
+        (-[WKBrowsingContextController setPaginationMode:]): Ditto.
+        (-[WKBrowsingContextController paginationMode]): Ditto.
+        (-[WKBrowsingContextController setPaginationBehavesLikeColumns:]): Ditto.
+        (-[WKBrowsingContextController paginationBehavesLikeColumns]): Ditto.
+        (-[WKBrowsingContextController setPageLength:]): Ditto.
+        (-[WKBrowsingContextController pageLength]): Ditto.
+        (-[WKBrowsingContextController setGapBetweenPages:]): Ditto.
+        (-[WKBrowsingContextController gapBetweenPages]): Ditto.
+        (-[WKBrowsingContextController pageCount]): Ditto.
+        (-[WKBrowsingContextController handle]): Ditto.
+        (-[WKBrowsingContextController _initWithPageRef:]): Removed indirection via _data.
+
+        * UIProcess/API/mac/WKBrowsingContextGroup.h: Removed _data ivar and
+        WKBrowsingContextGroupData class declaration.
+        * UIProcess/API/mac/WKBrowsingContextGroup.mm: Removed WKBrowsingContextGroupData class and
+        moved _pageGroupRef ivar directly into WKBrowsingContextGroup, declaring it in the
+        @implementation.
+        (-[WKBrowsingContextGroup initWithIdentifier:]): Removed indirection via _data.
+        (-[WKBrowsingContextGroup allowsJavaScript]): Removed indirection via -_pageGroupRef.
+        (-[WKBrowsingContextGroup setAllowsJavaScript:]): Ditto.
+        (-[WKBrowsingContextGroup allowsJavaScriptMarkup]): Ditto.
+        (-[WKBrowsingContextGroup setAllowsJavaScriptMarkup:]): Ditto.
+        (-[WKBrowsingContextGroup allowsPlugIns]): Ditto.
+        (-[WKBrowsingContextGroup setAllowsPlugIns:]): Ditto.
+        (-[WKBrowsingContextGroup addUserStyleSheet:baseURL:whitelistedURLPatterns:blacklistedURLPatterns:mainFrameOnly:]): Ditto.
+        (-[WKBrowsingContextGroup removeAllUserStyleSheets]): Ditto.
+        (-[WKBrowsingContextGroup addUserScript:baseURL:whitelistedURLPatterns:blacklistedURLPatterns:injectionTime:mainFrameOnly:]): Ditto.
+        (-[WKBrowsingContextGroup removeAllUserScripts]): Ditto.
+        (-[WKBrowsingContextGroup _pageGroupRef]): Removed indirection via _data.
+
+        * UIProcess/API/mac/WKConnection.h: Removed _data ivar and WKConnectionData class declaration.
+        * UIProcess/API/mac/WKConnection.mm: Removed WKConnectionData class and moved _connectionRef
+        ivar directly into WKConnection, declaring it in the @implementation. Removed ivar and
+        accessors for the delegate property, letting the compiler synthesize them.
+        (-[WKConnection dealloc]): Removed indirection via _data.
+        (-[WKConnection sendMessageWithName:body:]): Ditto.
+        (-[WKConnection remoteObjectRegistry]): Ditto.
+        (didReceiveMessage): Ditto.
+        (-[WKConnection _initWithConnectionRef:]): Ditto.
+
+        * UIProcess/API/mac/WKProcessGroup.h: Replaced forward declaration of WKConnection with an
+        import. Removed _data ivar and WKProcessGroupData class declaration.
+        * UIProcess/API/mac/WKProcessGroup.mm: Removed WKProcessGroupData class and moved
+        _contextRef ivar directly into WKProcessGroup, declaring it in the @implementation. Removed
+        ivar and accessors for the delegate property, letting the compiler synthesize them.
+        (-[WKProcessGroup initWithInjectedBundleURL:]): Removed indirection via _data.
+        (-[WKProcessGroup dealloc]): Ditto.
+        (-[WKProcessGroup _contextRef]): Ditto.
+        (-[WKProcessGroup _geolocationProvider]): Ditto.
+
 2013-11-25  Commit Queue  <commit-queue@webkit.org>
 
         Unreviewed, rolling out r159740.

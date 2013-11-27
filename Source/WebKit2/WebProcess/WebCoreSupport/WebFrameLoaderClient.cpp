@@ -1385,7 +1385,7 @@ PassRefPtr<Widget> WebFrameLoaderClient::createJavaAppletWidget(const IntSize& p
     return plugin.release();
 #else
     return 0;
-#endif // ENABLE(NETSCAPE_PLUGIN_API)
+#endif
 }
 
 #if ENABLE(PLUGIN_PROXY_FOR_VIDEO)

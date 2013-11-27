@@ -1,8 +1,8 @@
 set(Platform_INCLUDES
     nix
+    ${CMAKE_BINARY_DIR} # For cmakeconfig.h
     ${WEBCORE_DIR}/platform/graphics/ # For IntRect.h
     ${WTF_DIR} # For config.h
-    ${CMAKE_BINARY_DIR} # For cmakeconfig.h
 )
 
 set(Platform_HEADERS
@@ -29,8 +29,8 @@ set(Platform_HEADERS
 )
 
 set(Platform_SOURCES
-    nix/src/Platform.cpp
     nix/src/DefaultWebThemeEngine.cpp
+    nix/src/Platform.cpp
 )
 
 install(FILES ${Platform_HEADERS} DESTINATION include/${WebKit2_OUTPUT_NAME}-${PROJECT_VERSION_MAJOR}/NixPlatform)

@@ -1,3 +1,247 @@
+2013-11-27  Andres Gomez  <agomez@igalia.com>
+
+        [GTK] Tools/Scripts/update-webkitgtk-libs fails due to missing fontutils dependencies for building the "xserver" module
+        https://bugs.webkit.org/show_bug.cgi?id=124940
+
+        Reviewed by Martin Robinson.
+
+        xserver-font-utils is needed for building gtk port dependencies
+        with jhbuild.
+
+        * gtk/install-dependencies: Added xserver-font-utils to jhbuild
+        dependecies.
+
+2013-11-27  Andres Gomez  <agomez@igalia.com>
+
+        [GTK] Tools/Scripts/update-webkitgtk-libs unsorted and fails because of missing "git"
+        https://bugs.webkit.org/show_bug.cgi?id=124938
+
+        Reviewed by Philippe Normand.
+
+        Added needed git dependency for building the gtk port with
+        jhbuild. Also, the dependencies needed for building the gtk port
+        are now sorted alphabetically.
+
+        * gtk/install-dependencies: Added git as jhbuild dependency and
+        sorted dependencies alphabetically.
+
+2013-11-27  Jozsef Berta  <jberta@inf.u-szeged.hu>
+
+        run_webkit_tests.py: error: no such option: --wincairo
+        https://bugs.webkit.org/show_bug.cgi?id=124927
+
+        Reviewed by Ryosuke Niwa.
+
+        * BuildSlaveSupport/build.webkit.org-config/config.json: The run_webkit_tests.py doesn't supports
+        the layout testing on wincairo, so it is turned off.
+
+2013-11-26  Marcelo Lira  <marcelo.lira@openbossa.org>
+
+        Nix upstreaming - Adding build files and supporting scripts
+        https://bugs.webkit.org/show_bug.cgi?id=118367
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/build-webkit:
+        * Scripts/run-nix-tests: Added.
+        * Scripts/run-webkit-tests:
+        * Scripts/update-webkit-libs-jhbuild:
+        * Scripts/update-webkitnix-libs: Added.
+        * Scripts/webkitdirs.pm:
+        (determineArchitecture):
+        (argumentsForConfiguration):
+        (jscProductDir):
+        (builtDylibPathForName):
+        (determineIsNix):
+        (isNix):
+        (isAppleWebKit):
+        (launcherPath):
+        (launcherName):
+        (checkRequiredSystemConfig):
+        (copyInspectorFrontendFiles):
+        (jhbuildWrapperPrefixIfNeeded):
+        (buildCMakeProjectOrExit):
+        (cmakeBasedPortName):
+        * Scripts/webkitpy/common/config/ports.py:
+        (DeprecatedPort.port):
+        (EflWK2Port.build_webkit_command):
+        (NixPort):
+        (NixPort.build_webkit_command):
+        * Scripts/webkitpy/port/factory.py:
+        (platform_options):
+        (PortFactory):
+        * Scripts/webkitpy/port/nix.py: Added.
+        (NixPort):
+        (NixPort._wk2_port_name):
+        (NixPort.determine_full_port_name):
+        (NixPort.__init__):
+        (NixPort._port_flag_for_scripts):
+        (NixPort.setup_test_run):
+        (NixPort.setup_environ_for_server):
+        (NixPort.default_timeout_ms):
+        (NixPort.clean_up_test_run):
+        (NixPort._generate_all_test_configurations):
+        (NixPort._path_to_driver):
+        (NixPort._path_to_image_diff):
+        (NixPort._image_diff_command):
+        (NixPort._search_paths):
+        (NixPort.show_results_html_file):
+        (NixPort._port_specific_expectations_files):
+        (NixPort.default_baseline_search_path):
+        * Scripts/webkitpy/port/nix_unittest.py: Added.
+        (NixPortTest):
+        (NixPortTest._assert_search_path):
+        (NixPortTest._assert_expectations_files):
+        (NixPortTest.test_baseline_search_path):
+        (NixPortTest.test_expectations_files):
+        (NixPortTest.test_default_timeout_ms):
+        * jhbuild/jhbuild-wrapper:
+        (determine_platform):
+        * nix/common.py: Added.
+        (script_path):
+        (top_level_path):
+        * nix/jhbuild.modules: Added.
+        * nix/jhbuildrc: Added.
+
+2013-11-26  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Record subtest values in Dromaeo tests
+        https://bugs.webkit.org/show_bug.cgi?id=124498
+
+        Reviewed by Andreas Kling.
+
+        Supported parsing subtest results.
+
+        * Scripts/webkitpy/performance_tests/perftest.py: Replaced _metrics with an ordered list of subtests, each of
+        which contains a dictionary with its name and an ordered list of subtest's metrics.
+        (PerfTest.__init__): Initialize _metrics as a list.
+        (PerfTest.run): Go through each subtest and its metrics to create a list of TestMetrics.
+        (PerfTest._run_with_driver):
+        (PerfTest._ensure_metrics): Look for a subtest then a metric in _metrics.
+
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestPerfTest._assert_results_are_correct): Updated the assertions per changes to _metrics.
+        (TestPerfTest.test_parse_output): Ditto.
+        (TestPerfTest.test_parse_output_with_subtests): Added the metric and the unit on each subtest result as well as
+        assertions to ensure subtest results are parsed properly.
+        (TestReplayPerfTest.test_run_with_driver_accumulates_results): Updated the assertions per changes to _metrics.
+        (TestReplayPerfTest.test_run_with_driver_accumulates_memory_results): Dittp.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (_generate_results_dict): When the metric for a subtest is processed before that of the main test, the url is
+        incorrectly suffixed with '/'. Fix this later by re-computing the url with TestPerfMetric.test_file_name when
+        adding new results.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner_integrationtest.py:
+        (TestWithSubtestsData): Added.
+        (TestDriver.run_test):
+        (MainTest.test_run_test_with_subtests): Added.
+
+2013-11-26  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Enable HTML template element on Windows ports
+        https://bugs.webkit.org/show_bug.cgi?id=124758
+
+        Reviewed by Andreas Kling.
+
+        * Scripts/webkitperl/FeatureList.pm:
+
+2013-11-26  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Remove replay performance tests as it's not actively maintained
+        https://bugs.webkit.org/show_bug.cgi?id=124764
+
+        Reviewed by Andreas Kling.
+
+        Removed the feature.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (SingleProcessPerfTest.__init__):
+        (PerfTestFactory):
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (PerfTestsRunner._parse_args):
+        (PerfTestsRunner._collect_tests):
+        * Scripts/webkitpy/performance_tests/perftestsrunner_unittest.py:
+        (MainTest.test_collect_tests_with_ignored_skipped_list):
+        (MainTest.test_default_args):
+        * Scripts/webkitpy/thirdparty/__init__.py:
+        (AutoinstallImportHook.find_module):
+        (AutoinstallImportHook._install_unittest2):
+        * Scripts/webkitpy/thirdparty/__init___unittest.py:
+        (ThirdpartyTest.test_imports):
+
+2013-11-26  Filip Pizlo  <fpizlo@apple.com>
+
+        Enable aggressive DFG validation in testing
+        https://bugs.webkit.org/show_bug.cgi?id=124911
+
+        Rubber stamped by Ryosuke Niwa.
+        
+        This enables validation testing in non-concurrent-JIT runs.
+
+        * Scripts/run-jsc-stress-tests:
+
+2013-11-26  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        Moved methods which belong to Checkout into checkout.py
+        https://bugs.webkit.org/show_bug.cgi?id=124889
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitpy/common/checkout/checkout.py:
+        (Checkout.scripts_directory):
+        (Checkout):
+        (Checkout.script_path):
+        (Checkout.commit_message_for_this_commit):
+        (Checkout.apply_patch):
+        * Scripts/webkitpy/common/checkout/checkout_unittest.py:
+        (test_commit_message_for_this_commit):
+        (CheckoutTest.test_apply_patch):
+        * Scripts/webkitpy/common/checkout/scm/scm.py:
+        (SCM.absolute_path):
+        * Scripts/webkitpy/common/checkout/scm/scm_unittest.py:
+        (SCMTest._setup_webkittools_scripts_symlink):
+        * Scripts/webkitpy/common/checkout/scm/svn.py:
+        (SVN.create_patch):
+
+2013-11-25  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Use Config mode of find_package for EFL 1.8
+        https://bugs.webkit.org/show_bug.cgi?id=124555
+
+        Reviewed by Gyuyoung Kim.
+
+        * MiniBrowser/efl/CMakeLists.txt:
+        Added optional config mode and made version requirement optional.
+
+2013-11-25  Andres Gomez  <agomez@igalia.com>
+
+        [GTK] Search functionality in MiniBrowser provides feedback on search fail
+        https://bugs.webkit.org/show_bug.cgi?id=122681
+
+        Reviewed by Mario Sanchez Prada.
+
+        When using the search functionality in MiniBrowser, if the search
+        fails, the entry background color gets red to report the user
+        about the failing condition. When the entry is cleaned or the
+        search is again succesful the background turns back to its
+        original color.
+
+        * MiniBrowser/gtk/BrowserSearchBar.c:
+        (setFailedStyleForEntry): Added.
+        (doSearch): Sets the entry's background to its original style if
+        there is no text to search.
+        (findControllerFailedToFindTextCallback): Added.
+        (findControllerFoundTextCallback): Added.
+        (browser_search_bar_init): Creates and adds a new CSS provider to
+        the text entry so we can change its style based on the success
+        condition of the search.
+        (browserSearchBarFinalize): Frees the new CSS provider.
+        (browser_search_bar_new): Connects the two new handlers to the
+        "failed-to-find-text" and "found-text" signals emitted by the
+        WebKitFindController.
+
 2013-11-25  Dan Bernstein  <mitz@apple.com>
 
         [Cocoa] Put most of the Cocoa API behind WK_API_ENABLED guards

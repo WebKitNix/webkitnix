@@ -112,6 +112,7 @@
 #endif
 
 #if ENABLE(MEDIA_STREAM)
+#include "MediaStream.h"
 #include "MediaStreamRegistry.h"
 #endif
 
@@ -320,6 +321,9 @@ HTMLMediaElement::HTMLMediaElement(const QualifiedName& tagName, Document& docum
     , m_audioSessionManagerToken(AudioSessionManagerToken::create(tagName == videoTag ? AudioSessionManager::Video : AudioSessionManager::Audio))
 #endif
     , m_reportedExtraMemoryCost(0)
+#if ENABLE(MEDIA_STREAM)
+    , m_mediaStreamSrcObject(nullptr)
+#endif
 {
     LOG(Media, "HTMLMediaElement::HTMLMediaElement");
     setHasCustomStyleResolveCallbacks();
@@ -746,6 +750,20 @@ void HTMLMediaElement::setSrc(const String& url)
     setAttribute(srcAttr, url);
 }
 
+#if ENABLE(MEDIA_STREAM)
+void HTMLMediaElement::setSrcObject(MediaStream* mediaStream)
+{
+    // FIXME: Setting the srcObject attribute may cause other changes to the media element's internal state:
+    // Specifically, if srcObject is specified, the UA must use it as the source of media, even if the src
+    // attribute is also set or children are present. If the value of srcObject is replaced or set to null
+    // the UA must re-run the media element load algorithm.
+    //
+    // https://bugs.webkit.org/show_bug.cgi?id=124896
+
+    m_mediaStreamSrcObject = mediaStream;
+}
+#endif
+
 HTMLMediaElement::NetworkState HTMLMediaElement::networkState() const
 {
     return m_networkState;
@@ -815,6 +833,7 @@ void HTMLMediaElement::prepareForLoad()
     m_completelyLoaded = false;
     m_havePreparedToPlay = false;
     m_displayMode = Unknown;
+    m_currentSrc = URL();
 
     // 1 - Abort any already-running instance of the resource selection algorithm for this element.
     m_loadState = WaitingForSource;
@@ -1087,7 +1106,7 @@ void HTMLMediaElement::loadResource(const URL& initialURL, ContentType& contentT
     LOG(Media, "HTMLMediaElement::loadResource - m_currentSrc -> %s", urlForLoggingMedia(m_currentSrc).utf8().data());
 
 #if ENABLE(MEDIA_STREAM)
-    if (MediaStreamRegistry::registry().lookupMediaStreamPrivate(url.string()))
+    if (MediaStreamRegistry::registry().lookup(url.string()))
         removeBehaviorRestriction(RequireUserGestureForRateChangeRestriction);
 #endif
 

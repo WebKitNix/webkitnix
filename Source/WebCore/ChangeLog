@@ -1,3 +1,492 @@
+2013-11-27  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Remove Qt-specific .qrc files
+        https://bugs.webkit.org/show_bug.cgi?id=124944
+
+        Reviewed by Andreas Kling.
+
+        No new tests needed.
+
+        * WebCore.qrc: Removed.
+
+2013-11-27  Xabier Rodriguez Calvar  <calvaris@igalia.com>
+
+        [GStreamer] Invalid command line error when visiting www.chessbase.com
+        https://bugs.webkit.org/show_bug.cgi?id=124715
+
+        Reviewed by Philippe Normand.
+
+        We were not handling the HTTP errors in the WebKit GStreamer
+        source and therefore the 404 error page was being 'decoded'. As no
+        decoder could be found (for obvious reasons), playback failed, but
+        it should be failing for the source not being found instead of the
+        decoding problem.
+
+        Test: http/tests/media/video-error-does-not-exist.html
+
+        * platform/graphics/gstreamer/WebKitWebSourceGStreamer.cpp:
+        (StreamingClient::handleResponseReceived): Handle HTTP errors in
+        the source and raise a GStreamer error to the pipeline.
+
+2013-11-14  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] Fix positioning of grid items with margins
+        https://bugs.webkit.org/show_bug.cgi?id=124345
+
+        Reviewed by David Hyatt.
+
+        From Blink r157925 and r158041 by <jchaffraix@chromium.org>
+
+        Test: fast/css-grid-layout/grid-item-margin-resolution.html
+
+        Adds margin start/before to the positions of grid items (removing
+        several FIXME's in the current code). This means calling
+        findChildLogicalPosition() after the layout in order to have the
+        right values for the margins.
+
+        In order to match flexbox and author's intents we're also
+        including the margins of grid items in the intrinsic size of the
+        grid. That's why flexbox's marginLogicalPositionForChild() is
+        moved up to RenderBlock in order to share it with RenderGrid.
+
+        * rendering/RenderBlock.cpp:
+        (WebCore::RenderBlock::marginIntrinsicLogicalWidthForChild): Moved
+        from RenderFlexibleBox::marginLogicalWidthForChild().
+        * rendering/RenderBlock.h:
+        * rendering/RenderFlexibleBox.cpp:
+        (WebCore::RenderFlexibleBox::computeIntrinsicLogicalWidths):
+        * rendering/RenderGrid.cpp:
+        (WebCore::RenderGrid::computePreferredTrackWidth):
+        (WebCore::RenderGrid::layoutGridItems):
+        (WebCore::RenderGrid::findChildLogicalPosition):
+
+2013-11-26  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] Support grid-definition-{rows|columns} repeat() syntax
+        https://bugs.webkit.org/show_bug.cgi?id=103312
+
+        Reviewed by Andreas Kling.
+
+        Added support for the repeat() syntax inside
+        grid-definition-{rows|columns} by just adding the repeated values
+        to our list of column|row definitions.
+
+        The parsing of <track-name> was refactored in a new function as
+        it's used now in three different places. The <track-size> parsing
+        was also refactored to share it with the repeat() parsing.
+
+        Test: fast/css-grid-layout/grid-element-repeat-get-set.html
+
+        * css/CSSParser.cpp:
+        (WebCore::CSSParser::parseValue):
+        (WebCore::CSSParser::parseGridTrackNames):
+        (WebCore::CSSParser::parseGridTrackList):
+        (WebCore::CSSParser::parseGridTrackRepeatFunction):
+        (WebCore::CSSParser::parseGridTrackSize):
+        * css/CSSParser.h:
+
+2013-11-26  Marcelo Lira  <marcelo.lira@openbossa.org>
+
+        Nix upstreaming - Adding build files and supporting scripts
+        https://bugs.webkit.org/show_bug.cgi?id=118367
+
+        Reviewed by Ryosuke Niwa.
+
+        No new tests needed.
+
+        * CMakeLists.txt:
+        * PlatformNix.cmake: Added.
+
+2013-11-26  Tim Horton  <timothy_horton@apple.com>
+
+        Don't parent the TileController root layer in two places
+        https://bugs.webkit.org/show_bug.cgi?id=124873
+
+        Reviewed by Brent Fulgham.
+
+        * platform/graphics/ca/mac/TileController.mm:
+        (WebCore::TileController::TileController):
+        The TileController's layer is already parented by callers of
+        TileController::create, and in a special way. TileController
+        shouldn't parent itself, anyway...
+
+2013-11-26  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [MediaStream API] HTMLMediaElement should be able to use MediaStream as source
+        https://bugs.webkit.org/show_bug.cgi?id=121943
+
+        Reviewed by Eric Carlson.
+
+        Implement MediaStream direct assignment to Media Elements using the new 'srcObject'
+        attribute: http://www.w3.org/TR/mediacapture-streams/#direct-assignment-to-media-elements
+
+        Test: fast/mediastream/MediaStream-MediaElement-srcObject.html
+
+        * CMakeLists.txt: Added new HTMLMediaElementMediaStream.h and .cpp to cmake build.
+        * DerivedSources.make: Added HTMLMediaElementMediaStream.idl.
+        * GNUmakefile.list.am: Added new HTMLMediaElementMediaStream* to autotools build.
+        * WebCore.xcodeproj/project.pbxproj: Added new files.
+        * Modules/mediastream/HTMLMediaElementMediaStream.cpp: Added.
+        (WebCore::HTMLMediaElementMediaStream::srcObject): implements srcObject getter.
+        (WebCore::HTMLMediaElementMediaStream::setSrcObject): implements srcObject setter.
+        * Modules/mediastream/HTMLMediaElementMediaStream.h: Added.
+        * Modules/mediastream/HTMLMediaElementMediaStream.idl: Added.
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::setSrcObject): This is an initial implementation, and
+        is still incomplete, that will be addressed in a separate bug: https://webkit.org/b/124896
+        * html/HTMLMediaElement.h: Added m_mediaStreamSrcObject class variable
+        and its corresponding getter.
+
+2013-11-26  Andreas Kling  <akling@apple.com>
+
+        Use child iterator to find operators in RenderMathMLRow::layout().
+        <https://webkit.org/b/124108>
+
+        Replace manual children walk with childrenOfType<RenderMathMLBlock>.
+        Minor update to fix build.
+
+        Reviewed by Martin Robinson.
+
+2013-11-26  Andreas Kling  <akling@apple.com>
+
+        RenderObject: Inline isBody() and isHR().
+        <https://webkit.org/b/124901>
+
+        Together these account for ~0.3% of samples on HTML5-8266.
+        Almost all of it is call overhead.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-26  Bear Travis  <betravis@adobe.com>
+
+        [CSS Shapes] Layout using [<box> || <shape>] value
+        https://bugs.webkit.org/show_bug.cgi?id=124428
+
+        Reviewed by David Hyatt.
+
+        When a box value is supplied, use it to size and position the shape. Otherwise,
+        use a default value (content-box for shape-inside, margin-box for shape-outside).
+        This patch extends the sizing and positioning code used for the box patch (Bug 124227)
+        to also apply to shapes. With this patch, we also no longer use the box-sizing
+        property to size and position shapes.
+
+        Tests: fast/shapes/shape-outside-floats/shape-outside-shape-boxes-001.html
+               fast/shapes/shape-outside-floats/shape-outside-shape-boxes-002.html
+               fast/shapes/shape-outside-floats/shape-outside-shape-boxes-003.html
+
+        * css/CSSComputedStyleDeclaration.cpp:
+        (WebCore::ComputedStyleExtractor::propertyValue): Adjust for ShapeValues storing
+        BasicShape::ReferenceBox as their box value, rather than a CSSValueID.
+        * css/DeprecatedStyleBuilder.cpp:
+        (WebCore::ApplyPropertyShape::applyValue): Ditto.
+        * rendering/shapes/ShapeInfo.h:
+        (WebCore::ShapeInfo::setShapeSize): Adjust for BasicShapes with reference boxes
+        as well as plain box values. Also, remove old box-sizing code.
+        (WebCore::ShapeInfo::logicalTopOffset): Ditto.
+        (WebCore::ShapeInfo::logicalLeftOffset): Ditto.
+        * rendering/shapes/ShapeInsideInfo.h:
+        * rendering/shapes/ShapeOutsideInfo.h:
+        * rendering/style/ShapeValue.h:
+        (WebCore::ShapeValue::createBoxValue): Adjust for boxes being stored as
+        BasicShape::ReferenceBoxes.
+        (WebCore::ShapeValue::box): Ditto.
+        (WebCore::ShapeValue::ShapeValue): Ditto.
+
+2013-11-26  Brian J. Burg  <burg@cs.washington.edu>
+
+        ImageBuffer::create should return a std::unique_ptr instead of OwnPtr.
+        https://bugs.webkit.org/show_bug.cgi?id=124822
+
+        Reviewed by Andreas Kling.
+
+        Replace all uses of OwnPtr<ImageBuffer> and PassOwnPtr<ImageBuffer> with
+        std::unique_ptr<ImageBuffer>. Replace calls to OwnPtr::clear() and
+        OwnPtr::release() with reset() and std::move(). Remove unnecessary includes.
+
+        No new tests. This is a mechanical refactoring.
+
+        * css/CSSFilterImageValue.cpp:
+        (WebCore::CSSFilterImageValue::image):
+        * html/HTMLCanvasElement.cpp:
+        (WebCore::HTMLCanvasElement::setSurfaceSize):
+        * html/HTMLCanvasElement.h:
+        * html/canvas/CanvasRenderingContext2D.cpp:
+        (WebCore::CanvasRenderingContext2D::createCompositingBuffer):
+        (WebCore::CanvasRenderingContext2D::fullCanvasCompositedDrawImage):
+        (WebCore::CanvasRenderingContext2D::fullCanvasCompositedFill):
+        (WebCore::CanvasRenderingContext2D::drawTextInternal):
+        * html/canvas/CanvasRenderingContext2D.h:
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::LRUImageBufferCache::LRUImageBufferCache):
+        (WebCore::WebGLRenderingContext::LRUImageBufferCache::imageBuffer):
+        * html/canvas/WebGLRenderingContext.h:
+        * html/shadow/MediaControlElements.cpp:
+        (WebCore::MediaControlTextTrackContainerElement::createTextTrackRepresentationImage):
+        * page/Frame.cpp:
+        (WebCore::Frame::nodeImage):
+        (WebCore::Frame::dragImageForSelection):
+        * platform/graphics/BitmapImage.cpp:
+        (WebCore::BitmapImage::drawPattern):
+        * platform/graphics/CrossfadeGeneratedImage.cpp:
+        (WebCore::CrossfadeGeneratedImage::drawPattern):
+        * platform/graphics/GradientImage.h:
+        * platform/graphics/GraphicsContext.cpp:
+        (WebCore::GraphicsContext::createCompatibleBuffer):
+        * platform/graphics/GraphicsContext.h:
+        * platform/graphics/ImageBuffer.cpp:
+        (WebCore::ImageBuffer::createCompatibleBuffer):
+        * platform/graphics/ImageBuffer.h:
+        (WebCore::ImageBuffer::create):
+        * platform/graphics/ShadowBlur.cpp:
+        * platform/graphics/cg/ImageBufferCG.cpp:
+        (WebCore::ImageBuffer::putByteArray):
+        * platform/graphics/cg/PDFDocumentImage.h:
+        * platform/graphics/filters/FETile.cpp:
+        (WebCore::FETile::platformApplySoftware):
+        * platform/graphics/filters/Filter.h:
+        (WebCore::Filter::setSourceImage):
+        * platform/graphics/filters/FilterEffect.cpp:
+        (WebCore::FilterEffect::clearResult):
+        * platform/graphics/filters/FilterEffect.h:
+        * platform/graphics/texmap/TextureMapper.cpp:
+        (WebCore::BitmapTexture::updateContents):
+        * platform/graphics/texmap/TextureMapperImageBuffer.h:
+        * rendering/InlineTextBox.cpp:
+        (WebCore::InlineTextBox::paintDecoration):
+        * rendering/RenderBoxModelObject.cpp:
+        (WebCore::RenderBoxModelObject::paintFillLayerExtended):
+        * rendering/RenderThemeMac.mm:
+        (WebCore::RenderThemeMac::paintProgressBar):
+        * rendering/shapes/Shape.cpp:
+        (WebCore::Shape::createShape):
+        * rendering/svg/RenderSVGImage.cpp:
+        (WebCore::RenderSVGImage::invalidateBufferedForeground):
+        * rendering/svg/RenderSVGImage.h:
+        * rendering/svg/RenderSVGResourceClipper.cpp:
+        (WebCore::RenderSVGResourceClipper::applyClippingToContext):
+        * rendering/svg/RenderSVGResourceClipper.h:
+        * rendering/svg/RenderSVGResourceFilter.cpp:
+        (WebCore::RenderSVGResourceFilter::applyResource):
+        (WebCore::RenderSVGResourceFilter::postApplyResource):
+        * rendering/svg/RenderSVGResourceFilter.h:
+        * rendering/svg/RenderSVGResourceGradient.cpp: Remove method parameter wrapping/indentation.
+        (WebCore::createMaskAndSwapContextForTextGradient):
+        (WebCore::clipToTextMask):
+        (WebCore::RenderSVGResourceGradient::applyResource):
+        * rendering/svg/RenderSVGResourceGradient.h:
+        * rendering/svg/RenderSVGResourceMasker.cpp:
+        (WebCore::RenderSVGResourceMasker::applyResource):
+        * rendering/svg/RenderSVGResourceMasker.h:
+        * rendering/svg/RenderSVGResourcePattern.cpp: Remove method parameter wrapping/indentation.
+        (WebCore::RenderSVGResourcePattern::buildPattern):
+        (WebCore::RenderSVGResourcePattern::createTileImage):
+        * rendering/svg/RenderSVGResourcePattern.h: Remove method parameter wrapping/indentation.
+        * rendering/svg/SVGRenderingContext.cpp:
+        (WebCore::SVGRenderingContext::createImageBuffer):
+        (WebCore::SVGRenderingContext::createImageBufferForPattern):
+        (WebCore::SVGRenderingContext::clipToImageBuffer):
+        (WebCore::SVGRenderingContext::bufferForeground):
+        * rendering/svg/SVGRenderingContext.h:
+        * svg/graphics/SVGImage.cpp:
+        (WebCore::SVGImage::nativeImageForCurrentFrame):
+        (WebCore::SVGImage::drawPatternForContainer):
+
+2013-11-26  Eric Carlson  <eric.carlson@apple.com>
+
+        video.currentSrc should return empty when no resource is loaded
+        https://bugs.webkit.org/show_bug.cgi?id=124898
+
+        Reviewed by Dan Bernstein.
+
+        Test: media/video-currentsrc-cleared.html
+
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::prepareForLoad): Set m_currentSrc to empty in 
+            preparation for attempting to load a new url.
+
+2013-11-26  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] Support for shape-margin in BoxShape
+        https://bugs.webkit.org/show_bug.cgi?id=124788
+
+        Reviewed by Andreas Kling.
+
+        Corrected BoxShape's internal shape-margin/padding bounds FloatRoundedRect
+        initialization. Tests for the padding bounds will be added when the rest of
+        shape-padding for box shapes implementation is ready.
+
+        Tests: fast/shapes/shape-outside-floats/shape-outside-margin-boxes-001.html
+               fast/shapes/shape-outside-floats/shape-outside-margin-boxes-002.html
+
+        * rendering/shapes/BoxShape.cpp: Use constructor shape-margin,shape-padding parameters.
+        (WebCore::BoxShape::BoxShape):
+        * rendering/shapes/BoxShape.h:
+        * rendering/shapes/Shape.cpp:
+        (WebCore::createBoxShape): Pass the shape-margin and shape-padding values along to the BoxShape constructor.
+        (WebCore::Shape::createShape): Ditto.
+
+2013-11-26  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Remove unnecessary webaudio include from MediaStreamSource header
+        https://bugs.webkit.org/show_bug.cgi?id=124897
+
+        Reviewed by Eric Carlson.
+
+        AudioDestinationConsumer.h is included but not used anywhere in
+        MediaStreamSource implementation.
+
+        * platform/mediastream/MediaStreamSource.h:
+
+2013-11-26  Andreas Kling  <akling@apple.com>
+
+        Avoid unnecessary copy-on-write in FillLayer style application.
+        <https://webkit.org/b/124878>
+
+        We ended up with a lot of cloned StyleBackgroundData objects on
+        HTML5-8266. This happened because we always forced a copy-on-write
+        when applying background-image:inherit / background-image:initial.
+
+        This patch adds early returns to both functions. In the "inherit"
+        case, we bail early if the target style already has the same fill
+        layer data as its parent style.
+
+        In the "initial" case, we optimize for the single-FillLayer case
+        and add an early return if the relevant value is either unset or
+        equal to the templatized initial value.
+
+        2.46 MB progression on HTML5-8266 locally.
+
+        Reviewed by Antti Koivisto.
+
+2013-11-26  Antoine Quint  <graouts@apple.com>
+
+        Web Inspector: Allow showing a context menu on all mouse events.
+        https://bugs.webkit.org/show_bug.cgi?id=124747
+
+        Reviewed by Joseph Pecoraro.
+
+        Add a new InspectorFrontendHost::dispatchEventAsContextMenuEvent(Event*) method
+        to let the inspector front-end dispatch a native contextmenu event that will allow
+        for a context menu to be shown from within a non-contextmenu event handler.
+
+        * inspector/InspectorFrontendHost.cpp:
+        (WebCore::InspectorFrontendHost::dispatchEventAsContextMenuEvent):
+        Check that we're dealing with a mouse event, get the frame for the event target
+        and the event's location to call ContextMenuController::showContextMenuAt()
+        which will handle the new contextmenu event dispatch to the original event target.
+
+        * inspector/InspectorFrontendHost.h:
+        * inspector/InspectorFrontendHost.idl:
+
+2013-11-25  Sam Weinig  <sam@webkit.org>
+
+        Convert some Shape code to use references
+        https://bugs.webkit.org/show_bug.cgi?id=124876
+
+        Reviewed by Andreas Kling.
+
+        * inspector/InspectorOverlay.cpp:
+        * rendering/FloatingObjects.cpp:
+        * rendering/LayoutState.cpp:
+        * rendering/RenderBlock.cpp:
+        * rendering/RenderBlock.h:
+        * rendering/RenderBlockLineLayout.cpp:
+        * rendering/RenderBox.cpp:
+        * rendering/RenderBox.h:
+        * rendering/line/BreakingContextInlineHeaders.h:
+        * rendering/line/LineWidth.cpp:
+        * rendering/shapes/ShapeInfo.cpp:
+        * rendering/shapes/ShapeInfo.h:
+        * rendering/shapes/ShapeInsideInfo.cpp:
+        * rendering/shapes/ShapeInsideInfo.h:
+        * rendering/shapes/ShapeOutsideInfo.cpp:
+        * rendering/shapes/ShapeOutsideInfo.h:
+        Replace yet more pointers with references.
+
+2013-11-25  Simon Pena  <simon.pena@samsung.com>
+
+        [EFL] X11Helper::createPixmap doesn't initialise out value handleId
+        https://bugs.webkit.org/show_bug.cgi?id=124722
+
+        Reviewed by Gyuyoung Kim.
+
+        The overloaded functions X11Helper::createPixmap don't initialise out
+        value handleId, and they do early returns on error situations. Since
+        the functions are void and they don't communicate their failure in any
+        way, returning an out value without initialising it could make the
+        error go farther unnoticed. With the variable being initialised, it can
+        be reliably checked for errors when the function returns.
+
+        * platform/graphics/surfaces/glx/X11Helper.cpp:
+        (WebCore::X11Helper::createPixmap): Initialise handleId to 0.
+
+2013-11-25  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Mark URLRegistry's lookup() as const and its child classes as final
+        https://bugs.webkit.org/show_bug.cgi?id=124865
+
+        Reviewed by Eric Carlson.
+
+        No new tests needed. No behavior changes.
+
+        * Modules/mediasource/MediaSourceRegistry.cpp:
+        (WebCore::MediaSourceRegistry::lookup): marked as const.
+        * Modules/mediasource/MediaSourceRegistry.h: MediaSourceRegistry
+        marked as final.
+        * Modules/mediastream/MediaStreamRegistry.cpp:
+        (WebCore::MediaStreamRegistry::lookup): marked as const.
+        * Modules/mediastream/MediaStreamRegistry.h: MediaStreamRegistry
+        marked as final.
+        * fileapi/Blob.cpp:
+        * html/URLRegistry.h: lookup() marked as const.
+        (WebCore::URLRegistry::lookup): marked as const.
+
+2013-11-25  Sergio Correia  <sergio.correia@openbossa.org>
+
+        [MediaStream] Use std::unique_ptr instead of OwnPtr/PassOwnPtr
+        https://bugs.webkit.org/show_bug.cgi?id=124858
+
+        Reviewed by Eric Carlson.
+
+        Another step of the OwnPtr/PassOwnPtr => std::unique_ptr conversion,
+        now targeting mediastream-related code.
+
+        No new tests, covered by existing ones.
+
+        * Modules/mediastream/RTCDTMFSender.cpp:
+        * Modules/mediastream/RTCDTMFSender.h:
+        * Modules/mediastream/RTCDataChannel.cpp:
+        * Modules/mediastream/RTCDataChannel.h:
+        * Modules/mediastream/RTCPeerConnection.cpp:
+        * Modules/mediastream/RTCPeerConnection.h:
+        * platform/mediastream/MediaStreamSource.cpp:
+        * platform/mediastream/RTCPeerConnectionHandler.cpp:
+        * platform/mediastream/RTCPeerConnectionHandler.h:
+        * platform/mediastream/RTCPeerConnectionHandlerClient.h:
+        * platform/mock/RTCNotifiersMock.cpp:
+        * platform/mock/RTCPeerConnectionHandlerMock.cpp:
+        * platform/mock/RTCPeerConnectionHandlerMock.h:
+
+2013-11-25  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        MediaStreamRegistry should store MediaStreams instead of MediaStreamPrivates
+        https://bugs.webkit.org/show_bug.cgi?id=124860
+
+        Reviewed by Eric Carlson.
+
+        MediaStreamRegistry::lookup() should return a MediaStream instead of MediaStreamPrivate.
+
+        No new tests needed. No behavior changes.
+
+        * Modules/mediastream/MediaStreamRegistry.cpp:
+        (WebCore::MediaStreamRegistry::registerURL): m_privateStreams -> m_mediaStreams
+        (WebCore::MediaStreamRegistry::unregisterURL): Ditto.
+        (WebCore::MediaStreamRegistry::lookup): Override URLRegistry::lookup() instead of add a
+        new method MediaStream::lookupMediaStreamPrivate().
+        * Modules/mediastream/MediaStreamRegistry.h:
+        * html/HTMLMediaElement.cpp:
+        (HTMLMediaElement::loadResource): call lookup() instead of lookupMediaStreamPrivate()
+
 2013-11-25  peavo@outlook.com  <peavo@outlook.com>
 
         [WinCairo] Compile fails when GSTREAMER is not used.
