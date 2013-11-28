@@ -386,9 +386,9 @@ public:
 #endif
 
 #if ENABLE(CSS_SHAPES)
-    ShapeInsideInfo* ensureShapeInsideInfo();
+    ShapeInsideInfo& ensureShapeInsideInfo();
     ShapeInsideInfo* shapeInsideInfo() const;
-    void setShapeInsideInfo(PassOwnPtr<ShapeInsideInfo> value);
+    void setShapeInsideInfo(std::unique_ptr<ShapeInsideInfo>);
     
     void markShapeInsideDescendantsForLayout();
     ShapeInsideInfo* layoutShapeInsideInfo() const;
@@ -408,6 +408,8 @@ protected:
 
     void layoutPositionedObjects(bool relayoutChildren, bool fixedPositionObjectsOnly = false);
     void markFixedPositionObjectForLayoutIfNeeded(RenderObject& child);
+
+    LayoutUnit marginIntrinsicLogicalWidthForChild(RenderBox&) const;
 
     virtual void paint(PaintInfo&, const LayoutPoint&) OVERRIDE;
     virtual void paintObject(PaintInfo&, const LayoutPoint&) OVERRIDE;

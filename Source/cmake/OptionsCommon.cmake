@@ -4,7 +4,6 @@ if (NOT PORT STREQUAL "Nix")
     add_definitions(-DHAVE_CONFIG_H=1)
 endif ()
 
-
 if (WTF_OS_UNIX)
     add_definitions(-DXP_UNIX)
     #TODO: check for X11 target

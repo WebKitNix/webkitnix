@@ -249,7 +249,7 @@ void RTCPeerConnectionHandlerWebRTC::getStats(PassRefPtr<RTCStatsRequest> reques
     }
 }
 
-PassOwnPtr<RTCDataChannelHandler> RTCPeerConnectionHandlerWebRTC::createDataChannel(const String& label, const RTCDataChannelInit& init)
+std::unique_ptr<RTCDataChannelHandler> RTCPeerConnectionHandlerWebRTC::createDataChannel(const String& label, const RTCDataChannelInit& init)
 {
     webrtc::DataChannelInit config;
     config.ordered = init.ordered;
@@ -264,13 +264,13 @@ PassOwnPtr<RTCDataChannelHandler> RTCPeerConnectionHandlerWebRTC::createDataChan
     if (!channel)
         return 0;
 
-    return adoptPtr(new RTCDataChannelHandlerWebRTC(channel));
+    return std::make_unique<RTCDataChannelHandlerWebRTC>(channel);
 }
 
-PassOwnPtr<RTCDTMFSenderHandler> RTCPeerConnectionHandlerWebRTC::createDTMFSender(PassRefPtr<MediaStreamSource>)
+std::unique_ptr<RTCDTMFSenderHandler> RTCPeerConnectionHandlerWebRTC::createDTMFSender(PassRefPtr<MediaStreamSource>)
 {
     notImplemented();
-    return 0;
+    return nullptr;
 }
 
 void RTCPeerConnectionHandlerWebRTC::stop()

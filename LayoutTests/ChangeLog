@@ -1,3 +1,190 @@
+2013-11-27  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Add test expectations for flaky tests.
+
+        * platform/efl-wk2/TestExpectations:
+        * platform/efl/TestExpectations:
+
+2013-11-27  Xabier Rodriguez Calvar  <calvaris@igalia.com>
+
+        [GStreamer] Invalid command line error when visiting www.chessbase.com
+        https://bugs.webkit.org/show_bug.cgi?id=124715
+
+        Reviewed by Philippe Normand.
+
+        Copied and adapted for HTTP from
+        media/video-error-does-not-exist.html.
+
+        * http/tests/media/video-error-does-not-exist-expected.txt: Added.
+        * http/tests/media/video-error-does-not-exist.html: Added.
+
+2013-11-14  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] Fix positioning of grid items with margins
+        https://bugs.webkit.org/show_bug.cgi?id=124345
+
+        Reviewed by David Hyatt.
+
+        From Blink r157925 and r158041 by <jchaffraix@chromium.org>
+
+        New test case for grid items margin resolution. Extended the
+        preferred logical widths checks with grid items with margins.
+
+        * fast/css-grid-layout/grid-item-margin-resolution-expected.txt: Added.
+        * fast/css-grid-layout/grid-item-margin-resolution.html: Added.
+        * fast/css-grid-layout/grid-preferred-logical-widths-expected.txt:
+        * fast/css-grid-layout/grid-preferred-logical-widths.html:
+
+2013-11-26  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] Support grid-definition-{rows|columns} repeat() syntax
+        https://bugs.webkit.org/show_bug.cgi?id=103312
+
+        Reviewed by Andreas Kling.
+
+        Based on Blink r153155 by <jchaffraix@chromium.org>. Some code was
+        refactored in a helper function to have a more compact test.
+
+        * fast/css-grid-layout/grid-element-repeat-get-set-expected.txt: Added.
+        * fast/css-grid-layout/grid-element-repeat-get-set.html: Added.
+
+2013-11-26  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Windows rebaselines after r158547.
+
+        * platform/win/editing/selection/collapse-selection-in-bidi-expected.txt: Added.
+        * platform/win/editing/selection/drag-text-delay-expected.txt: Added.
+        * platform/win/editing/selection/extend-selection-home-end-expected.txt:
+
+2013-11-26  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Record subtest values in Dromaeo tests
+        https://bugs.webkit.org/show_bug.cgi?id=124498
+
+        Reviewed by Andreas Kling.
+
+        Rebaselined the test.
+
+        * fast/harness/perftests/runs-per-second-log-expected.txt:
+
+2013-11-26  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [MediaStream API] HTMLMediaElement should be able to use MediaStream as source
+        https://bugs.webkit.org/show_bug.cgi?id=121943
+
+        Reviewed by Eric Carlson.
+
+        Add layout tests to MediaStream direct assignment to HTMLMediaElement
+        using brand new srcObject attribute.
+
+        * fast/mediastream/MediaStream-MediaElement-srcObject-expected.txt: Added.
+        * fast/mediastream/MediaStream-MediaElement-srcObject.html: Added.
+
+2013-11-26  Bear Travis  <betravis@adobe.com>
+
+        [CSS Shapes] Layout using [<box> || <shape>] value
+        https://bugs.webkit.org/show_bug.cgi?id=124428
+
+        Reviewed by David Hyatt.
+
+        Adding tests to make sure that shapes properly size and position themselves across box values
+        and writing modes. Some shape-outside tests needed to be updated to explicitly size themselves
+        to content-box, as they were relying on that being the default value. Some shape-inside tests
+        needed to be adjusted as box-sizing no longer affects the shape size and position.
+
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-circle-001.html:
+        Explicitly size to content-box.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-001.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-002.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-003.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-004.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-010.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-011.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-012.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-014.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-015.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-016.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-017.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-018.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-margin-021.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-001.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-002.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-003.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-padding-004.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-polygon-000.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-polygon-001.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-polygon-002.html: Ditto.
+        * csswg/contributors/adobe/submitted/shapes/shape-outside/shape-outside-floats-square-border-000.html: Ditto.
+        * fast/shapes/shape-inside/shape-inside-box-sizing-expected.html: Small test cleanup.
+        * fast/shapes/shape-inside/shape-inside-box-sizing.html: Modify shapes to provide their sizing box.
+        * fast/shapes/shape-inside/shape-inside-empty-expected.html: Small test cleanup.
+        * fast/shapes/shape-inside/shape-inside-empty.html: Modify shapes to provide their sizing box.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-different-writing-modes.html: Ditto.
+        * fast/shapes/shape-outside-floats/shape-outside-shape-boxes-001-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-shape-boxes-001.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-shape-boxes-002-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-shape-boxes-002.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-shape-boxes-003-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-shape-boxes-003.html: Added.
+        * inspector-protocol/model/highlight-shape-outside.html: Modify shapes to provide their sizing box.
+
+2013-11-26  Oliver Hunt  <oliver@apple.com>
+
+        Crash in JSC::ASTBuilder::Expression JSC::Parser<JSC::Lexer<unsigned char> >::parseUnaryExpression<JSC::ASTBuilder>(JSC::ASTBuilder&)
+        https://bugs.webkit.org/show_bug.cgi?id=124886
+
+        Reviewed by Sam Weinig.
+
+        Add tests
+
+        * js/parser-syntax-check-expected.txt:
+        * js/script-tests/parser-syntax-check.js:
+
+2013-11-26  Eric Carlson  <eric.carlson@apple.com>
+
+        video.currentSrc should return empty when no resource is loaded
+        https://bugs.webkit.org/show_bug.cgi?id=124898
+
+        Reviewed by Dan Bernstein.
+
+        * media/video-currentsrc-cleared-expected.txt: Added.
+        * media/video-currentsrc-cleared.html: Added.
+
+2013-11-26  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] Support for shape-margin in BoxShape
+        https://bugs.webkit.org/show_bug.cgi?id=124788
+
+        Verify that shape-margin has the expected effect on the four possible shape-outside box values
+        for left and right floats.
+
+        Reviewed by Andreas Kling.
+
+        * fast/shapes/shape-outside-floats/shape-outside-margin-boxes-001-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-margin-boxes-001.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-margin-boxes-002-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-margin-boxes-002.html: Added.
+
+2013-11-26  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Add test expectations for failing accessibility tests.
+
+        * platform/efl/TestExpectations:
+
+2013-11-26  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed ATK gardening
+
+        Rebaseline accessibility tests after r159747.
+
+        * platform/efl-wk1/accessibility/table-detection-expected.txt:
+        * platform/efl-wk2/accessibility/table-detection-expected.txt:
+        * platform/gtk/accessibility/table-detection-expected.txt:
+
 2013-11-25  Dean Jackson  <dino@apple.com>
 
         RenderTableSection Blink merge asserting

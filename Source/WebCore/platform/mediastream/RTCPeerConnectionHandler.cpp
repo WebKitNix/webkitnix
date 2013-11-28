@@ -43,10 +43,10 @@
 namespace WebCore {
 class RTCPeerConnectionHandlerClient;
 
-static PassOwnPtr<RTCPeerConnectionHandler> createHandler(RTCPeerConnectionHandlerClient* client)
+static std::unique_ptr<RTCPeerConnectionHandler> createHandler(RTCPeerConnectionHandlerClient* client)
 {
 #if USE(WEBRTCLIB)
-    return adoptPtr(new RTCPeerConnectionHandlerWebRTC(client));
+    return std::make_unique<RTCPeerConnectionHandlerWebRTC>(client);
 #else
     UNUSED_PARAM(client);
     return nullptr;

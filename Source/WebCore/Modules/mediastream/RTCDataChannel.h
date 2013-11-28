@@ -48,7 +48,7 @@ class RTCPeerConnectionHandler;
 
 class RTCDataChannel FINAL : public RefCounted<RTCDataChannel>, public ScriptWrappable, public EventTargetWithInlineData, public RTCDataChannelHandlerClient {
 public:
-    static PassRefPtr<RTCDataChannel> create(ScriptExecutionContext*, PassOwnPtr<RTCDataChannelHandler>);
+    static PassRefPtr<RTCDataChannel> create(ScriptExecutionContext*, std::unique_ptr<RTCDataChannelHandler>);
     static PassRefPtr<RTCDataChannel> create(ScriptExecutionContext*, RTCPeerConnectionHandler*, const String& , const Dictionary&, ExceptionCode&);
     ~RTCDataChannel();
 
@@ -87,7 +87,7 @@ public:
     using RefCounted<RTCDataChannel>::deref;
 
 private:
-    RTCDataChannel(ScriptExecutionContext*, PassOwnPtr<RTCDataChannelHandler>);
+    RTCDataChannel(ScriptExecutionContext*, std::unique_ptr<RTCDataChannelHandler>);
 
     void scheduleDispatchEvent(PassRefPtr<Event>);
     void scheduledEventTimerFired(Timer<RTCDataChannel>*);
@@ -104,7 +104,7 @@ private:
     virtual void didReceiveRawData(const char*, size_t) OVERRIDE;
     virtual void didDetectError() OVERRIDE;
 
-    OwnPtr<RTCDataChannelHandler> m_handler;
+    std::unique_ptr<RTCDataChannelHandler> m_handler;
 
     bool m_stopped;
 

@@ -46,10 +46,10 @@
 
 namespace WebCore {
 
-static PassOwnPtr<Shape> createBoxShape(const FloatRoundedRect& bounds)
+static PassOwnPtr<Shape> createBoxShape(const FloatRoundedRect& bounds, float shapeMargin, float shapePadding)
 {
     ASSERT(bounds.rect().width() >= 0 && bounds.rect().height() >= 0);
-    return adoptPtr(new BoxShape(bounds));
+    return adoptPtr(new BoxShape(bounds, shapeMargin, shapePadding));
 }
 
 static PassOwnPtr<Shape> createRectangleShape(const FloatRect& bounds, const FloatSize& radii)
@@ -225,7 +225,7 @@ PassOwnPtr<Shape> Shape::createShape(const StyleImage* styleImage, float thresho
 
     OwnPtr<RasterShapeIntervals> intervals = adoptPtr(new RasterShapeIntervals(imageSize.height()));
 
-    OwnPtr<ImageBuffer> imageBuffer = ImageBuffer::create(imageSize);
+    std::unique_ptr<ImageBuffer> imageBuffer = ImageBuffer::create(imageSize);
     if (imageBuffer) {
         GraphicsContext* graphicsContext = imageBuffer->context();
         graphicsContext->drawImage(image, ColorSpaceDeviceRGB, IntPoint());
@@ -263,11 +263,13 @@ PassOwnPtr<Shape> Shape::createShape(const RoundedRect& roundedRect, WritingMode
 {
     FloatRect rect(0, 0, roundedRect.rect().width(), roundedRect.rect().height());
     FloatRoundedRect bounds(rect, roundedRect.radii().topLeft(), roundedRect.radii().topRight(), roundedRect.radii().bottomLeft(), roundedRect.radii().bottomRight());
+    float shapeMargin = floatValueForLength(margin, 0);
+    float shapePadding = floatValueForLength(padding, 0);
 
-    OwnPtr<Shape> shape = createBoxShape(bounds);
+    OwnPtr<Shape> shape = createBoxShape(bounds, shapeMargin, shapePadding);
     shape->m_writingMode = writingMode;
-    shape->m_margin = floatValueForLength(margin, 0);
-    shape->m_padding = floatValueForLength(padding, 0);
+    shape->m_margin = shapeMargin;
+    shape->m_padding = shapePadding;
 
     return shape.release();
 }
