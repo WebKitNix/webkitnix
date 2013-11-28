@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (C) 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -45,11 +45,7 @@ void GetStatsObserver::OnComplete(const std::vector<webrtc::StatsReport>& report
     callOnMainThread(bind(&RTCStatsRequest::requestSucceeded, m_webKitRequest.get(), response));
 }
 
-void GetStatsObserver::setWebKitRequest(PassRefPtr<RTCStatsRequest> request)
-{
-    m_webKitRequest = request;
-}
-
 } // namespace WebCore
 
 #endif // ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
+

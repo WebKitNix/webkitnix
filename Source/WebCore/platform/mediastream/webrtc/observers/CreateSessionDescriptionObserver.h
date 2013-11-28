@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (C) 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,6 +28,7 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
+#include "WebRTCObserver.h"
 #include "libwebrtc.h"
 #include <wtf/PassRefPtr.h>
 #include <wtf/RefPtr.h>
@@ -36,15 +37,13 @@ namespace WebCore {
 
 class RTCSessionDescriptionRequest;
 
-class CreateSessionDescriptionObserver : public webrtc::CreateSessionDescriptionObserver {
+class CreateSessionDescriptionObserver : public WebRTCObserver<RTCSessionDescriptionRequest>, public webrtc::CreateSessionDescriptionObserver {
 public:
     virtual void OnSuccess(webrtc::SessionDescriptionInterface*) OVERRIDE;
     virtual void OnFailure(const std::string&) OVERRIDE;
-    void setWebKitRequest(PassRefPtr<RTCSessionDescriptionRequest>);
 
 private:
     webrtc::SessionDescriptionInterface* m_sessionDescription;
-    RefPtr<RTCSessionDescriptionRequest> m_webKitRequest;
 };
 
 } // namespace WebCore
@@ -52,3 +51,4 @@ private:
 #endif // ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
 #endif // CreateSessionDescriptionObserver_h
+

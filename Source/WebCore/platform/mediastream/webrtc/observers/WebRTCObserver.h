@@ -23,28 +23,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GetStatsObserver_h
-#define GetStatsObserver_h
+#ifndef WebRTCObserver_h
+#define WebRTCObserver_h
 
 #if ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#include "WebRTCObserver.h"
 #include "libwebrtc.h"
 #include <wtf/PassRefPtr.h>
 #include <wtf/RefPtr.h>
 
 namespace WebCore {
 
-class RTCStatsRequest;
-
-class GetStatsObserver : public WebRTCObserver<RTCStatsRequest>, public webrtc::StatsObserver {
+template<typename T>
+class WebRTCObserver {
 public:
-    virtual void OnComplete(const std::vector<webrtc::StatsReport>& = std::vector<webrtc::StatsReport>()) OVERRIDE;
+    void setWebKitRequest(PassRefPtr<T> request)
+    {
+        m_webKitRequest = request;
+    }
+
+protected:
+    RefPtr<T> m_webKitRequest;
 };
 
 } // namespace WebCore
 
 #endif // ENABLE(MEDIA_STREAM) && USE(WEBRTCLIB)
 
-#endif // GetStatsObserver_h
+#endif // WebRTCObserver_h
 
