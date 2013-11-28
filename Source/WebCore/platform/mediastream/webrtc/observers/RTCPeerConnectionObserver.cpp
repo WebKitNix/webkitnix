@@ -90,38 +90,38 @@ PassRefPtr<MediaStreamPrivate> RTCPeerConnectionObserver::mediaStreamDescriptorF
 
     // FIXME: Handle video.
 
-    RefPtr<MediaStreamPrivate> descriptor = MediaStreamPrivate::create(audioTrackVector, videoTrackVector);
+    RefPtr<MediaStreamPrivate> privateStream = MediaStreamPrivate::create(audioTrackVector, videoTrackVector);
 
-    RefPtr<MediaStreamWebRTCObserver> streamObserver = adoptRef(new MediaStreamWebRTCObserver(stream, descriptor.get(), audioTrackObservers, videoTrackObservers));
+    RefPtr<MediaStreamWebRTCObserver> streamObserver = adoptRef(new MediaStreamWebRTCObserver(stream, privateStream.get(), audioTrackObservers, videoTrackObservers));
     stream->RegisterObserver(streamObserver.get());
     m_streamObservers.append(streamObserver);
 
-    return descriptor.release();
+    return privateStream.release();
 }
 
 void RTCPeerConnectionObserver::OnAddStream(webrtc::MediaStreamInterface* stream)
 {
-    RefPtr<MediaStreamPrivate> descriptor = mediaStreamDescriptorFromMediaStreamInterface(stream);
-    callOnMainThread(bind(&RTCPeerConnectionHandlerClient::didAddRemoteStream, m_client, descriptor.release()));
+    RefPtr<MediaStreamPrivate> privateStream = mediaStreamDescriptorFromMediaStreamInterface(stream);
+    callOnMainThread(bind(&RTCPeerConnectionHandlerClient::didAddRemoteStream, m_client, privateStream.release()));
 }
 
 void RTCPeerConnectionObserver::OnRemoveStream(webrtc::MediaStreamInterface* stream)
 {
-    MediaStreamPrivate* descriptor = 0;
+    MediaStreamPrivate* privateStream = 0;
     for (unsigned i = 0; i < m_streamObservers.size(); ++i) {
         if (m_streamObservers[i]->webRTCStream() != stream)
             continue;
 
-        descriptor = m_streamObservers[i]->descriptor();
+        privateStream = m_streamObservers[i]->privateStream();
         m_streamObservers[i]->webRTCStream()->UnregisterObserver(m_streamObservers[i].get());
         m_streamObservers.remove(i);
         break;
     }
 
-    if (!descriptor)
+    if (!privateStream)
         return;
 
-    callOnMainThread(bind(&RTCPeerConnectionHandlerClient::didRemoveRemoteStream, m_client, descriptor));
+    callOnMainThread(bind(&RTCPeerConnectionHandlerClient::didRemoveRemoteStream, m_client, privateStream));
 }
 
 void RTCPeerConnectionObserver::OnRenegotiationNeeded()

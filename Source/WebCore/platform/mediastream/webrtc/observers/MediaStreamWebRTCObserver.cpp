@@ -35,9 +35,9 @@
 
 namespace WebCore {
 
-MediaStreamWebRTCObserver::MediaStreamWebRTCObserver(webrtc::MediaStreamInterface* stream, MediaStreamPrivate* descriptor, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& audioTracks, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& videoTracks)
+MediaStreamWebRTCObserver::MediaStreamWebRTCObserver(webrtc::MediaStreamInterface* stream, MediaStreamPrivate* privateStream, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& audioTracks, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>& videoTracks)
     : m_stream(stream)
-    , m_descriptor(descriptor)
+    , m_private(privateStream)
     , m_audioTrackObservers(audioTracks)
     , m_videoTrackObservers(videoTracks)
 {
@@ -52,9 +52,9 @@ void MediaStreamWebRTCObserver::OnChanged()
 
     // The only changes in MediaStreamInterface that can fire events are in adding or removing tracks.
     const webrtc::AudioTrackVector& audioTracks = m_stream->GetAudioTracks();
-    if (m_descriptor->numberOfAudioTracks() < audioTracks.size())
+    if (m_private->numberOfAudioTracks() < audioTracks.size())
         findAndAddTrack(audioTracks, m_audioTrackObservers);
-    else if (m_descriptor->numberOfAudioTracks() > audioTracks.size())
+    else if (m_private->numberOfAudioTracks() > audioTracks.size())
         findAndRemoveTrack(m_audioTrackObservers);
 
     // FIXME: Handle video.
@@ -73,7 +73,7 @@ void MediaStreamWebRTCObserver::findAndAddTrack(const T& tracks, Vector<RefPtr<M
         RefPtr<MediaStreamTrackWebRTCObserver> trackObserver = adoptRef(new MediaStreamTrackWebRTCObserver(webRTCTrack, track));
         webRTCTrack->RegisterObserver(trackObserver.get());
         observers.append(trackObserver);
-        m_descriptor->addRemoteTrack(track.get());
+        m_private->addRemoteTrack(track.get());
         return;
     }
 }
@@ -89,7 +89,7 @@ void MediaStreamWebRTCObserver::findAndRemoveTrack(Vector<RefPtr<MediaStreamTrac
             continue;
 
         observers.remove(i);
-        m_descriptor->removeRemoteTrack(track);
+        m_private->removeRemoteTrack(track);
         return;
     }
 }

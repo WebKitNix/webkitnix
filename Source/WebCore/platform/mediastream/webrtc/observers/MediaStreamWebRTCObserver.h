@@ -43,7 +43,7 @@ public:
     virtual ~MediaStreamWebRTCObserver() { }
 
     void OnChanged();
-    MediaStreamPrivate* descriptor() { return m_descriptor; }
+    MediaStreamPrivate* privateStream() { return m_private; }
     webrtc::MediaStreamInterface* webRTCStream() { return m_stream.get(); }
 
 private:
@@ -54,7 +54,7 @@ private:
 
     bool haveTrackObserver(const std::string&, const Vector<RefPtr<MediaStreamTrackWebRTCObserver>>&);
     talk_base::scoped_refptr<webrtc::MediaStreamInterface> m_stream;
-    MediaStreamPrivate* m_descriptor;
+    MediaStreamPrivate* m_private;
     Vector<RefPtr<MediaStreamTrackWebRTCObserver>> m_audioTrackObservers;
     Vector<RefPtr<MediaStreamTrackWebRTCObserver>> m_videoTrackObservers;
 };
