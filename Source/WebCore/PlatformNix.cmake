@@ -22,7 +22,6 @@ list(APPEND WebCore_SOURCES
     platform/Cursor.cpp
     platform/ContextMenuNone.cpp
     platform/ContextMenuItemNone.cpp
-    platform/LocalizedStrings.cpp
     platform/nix/CursorNix.cpp
     platform/nix/DragDataNix.cpp
     platform/nix/DragImageNix.cpp
