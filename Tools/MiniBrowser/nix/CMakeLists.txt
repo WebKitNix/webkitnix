@@ -1,7 +1,7 @@
 find_package(X11 REQUIRED)
 
 set(MiniBrowser_DIR "${TOOLS_DIR}/MiniBrowser/nix")
-    
+
 set(MINIBROWSER_INJECTEDBUNDLE_DIR ${CMAKE_BINARY_DIR}/lib/)
 add_definitions(-std=c++0x -DMINIBROWSER_INJECTEDBUNDLE_DIR="${MINIBROWSER_INJECTEDBUNDLE_DIR}")
 
@@ -61,7 +61,7 @@ endif ()
 
 include_directories(${MiniBrowser_INCLUDE_DIRECTORIES})
 
-add_definitions(-DMINIBROWSER_ICON_DIR="${MiniBrowser_DIR}/Components/icons")
+add_definitions(-DMINIBROWSER_ICON_DIR="${MiniBrowser_DIR}/Components/icons/")
 add_executable(MiniBrowser ${MiniBrowser_SOURCES})
 target_link_libraries(MiniBrowser ${MiniBrowser_LIBRARIES})
 set_target_properties(MiniBrowser PROPERTIES FOLDER "Tools")

@@ -116,6 +116,7 @@ private:
     void init();
     void sendKeyboardEventToNix(const XEvent&);
     void createInputMethodAndInputContext();
+    Button* createXButton(int, int, const char*, ButtonFunction);
     // XlibEventSource::Client.
     virtual void handleXEvent(const XEvent&);
 

@@ -54,14 +54,24 @@ BrowserControl::BrowserControl(BrowserControlClient * client, int width, int hei
     m_webView = new WebView(m_display, m_browserWindow->window(), m_context, this, WKRectMake(0, toolBarHeight, width, height - toolBarHeight));
 
     // create navigation buttons
-    m_backButton = new Button(m_display, m_toolBar->window(), m_context, this, WKRectMake(backButtonX, toolBarElementY, buttonWidth, buttonHeight), Button::Back);
-    m_forwardButton = new Button(m_display, m_toolBar->window(), m_context, this, WKRectMake(forwardButtonX, toolBarElementY, buttonWidth, buttonHeight), Button::Forward);
-    m_refreshButton = new Button(m_display, m_toolBar->window(), m_context, this, WKRectMake(refreshButtonX, toolBarElementY, buttonWidth, buttonHeight), Button::Refresh);
+    m_backButton = createXButton(backButtonX, toolBarElementY, "previous.png", std::bind(&BrowserControl::pageGoBack, this));
+    m_forwardButton = createXButton(forwardButtonX, toolBarElementY, "next.png", std::bind(&BrowserControl::pageGoForward, this));
+    m_refreshButton = createXButton(refreshButtonX, toolBarElementY, "refresh.png", std::bind(&BrowserControl::pageReload, this));
 
     // create a simple urlbar
     m_urlBar = new UrlBar(m_display, m_toolBar->window(), m_context, this, WKRectMake(urlBarX, toolBarElementY, width - urlBarRightOffset, urlBarHeight), url);
 
     createInputMethodAndInputContext();
+}
+
+Button* BrowserControl::createXButton(int x, int y, const char* imageName, ButtonFunction callback)
+{
+    WKRect buttonRect = WKRectMake(x, y, buttonWidth, buttonHeight);
+    std::string imagePath(MINIBROWSER_ICON_DIR);
+    imagePath.append(imageName);
+
+    Button* button = new Button(m_display, m_toolBar->window(), m_context, this, buttonRect, imagePath.c_str(), callback);
+    return button;
 }
 
 BrowserControl::~BrowserControl()

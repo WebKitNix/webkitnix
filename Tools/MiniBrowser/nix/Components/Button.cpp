@@ -29,14 +29,14 @@
 
 #include "../BrowserControl.h"
 
-Button::Button(Display* display, Window parent, XContext context, BrowserControl* control, WKRect size, ButtonType type)
+Button::Button(Display* display, Window parent, XContext context, BrowserControl* control, WKRect size, const char* image, ButtonFunction callback)
     : VisualComponent(display, control, size)
-    , m_type(type)
+    , m_onClick(callback)
 {
     createXWindow(parent, context);
 
     m_surface = cairo_xlib_surface_create(display, m_window, DefaultVisual(display, 0), m_size.size.width, m_size.size.height);
-    m_image = cairo_image_surface_create_from_png(imagePath(type));
+    m_image = cairo_image_surface_create_from_png(image);
     m_cairo = cairo_create(m_surface);
 }
 
@@ -56,19 +56,16 @@ void Button::createXWindow(Window parent, XContext context)
     XMapWindow(m_display, m_window);
 }
 
-const char* Button::imagePath(ButtonType type)
+void Button::drawImage()
 {
-    switch (type) {
-    case Back:
-        return MINIBROWSER_ICON_DIR "/previous.png";
-    case Forward:
-        return MINIBROWSER_ICON_DIR "/next.png";
-        break;
-    case Refresh:
-        return MINIBROWSER_ICON_DIR "/refresh.png";
-    default:
-        return 0;
-    }
+    int imageWidth = cairo_image_surface_get_width(m_image);
+    int imageHeight = cairo_image_surface_get_height(m_image);
+
+    int x = (m_size.size.width - imageWidth) / 2;
+    int y = (m_size.size.height - imageHeight) / 2;
+
+    cairo_set_source_surface(m_cairo, m_image, x, y);
+    cairo_paint(m_cairo);
 }
 
 void Button::handleEvent(const XEvent& event)
@@ -78,28 +75,8 @@ void Button::handleEvent(const XEvent& event)
         drawImage();
         break;
     case ButtonRelease:
-        navigate();
-        break;
-    }
-}
-
-void Button::drawImage()
-{
-    cairo_set_source_surface(m_cairo, m_image, 1, 1);
-    cairo_paint(m_cairo);
-}
-
-void Button::navigate()
-{
-    switch (m_type) {
-    case Back:
-        m_control->pageGoBack();
-        break;
-    case Forward:
-        m_control->pageGoForward();
-        break;
-    case Refresh:
-        m_control->pageReload();
+        if (m_onClick)
+            m_onClick();
         break;
     }
 }

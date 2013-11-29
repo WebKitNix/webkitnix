@@ -31,28 +31,22 @@
 #include "VisualComponent.h"
 
 #include <cairo-xlib.h>
+#include <functional>
+
+typedef std::function<void()> ButtonFunction;
 
 class Button : public VisualComponent {
 public:
-    enum ButtonType {
-         Back,
-         Forward,
-         Refresh
-    };
-
-    Button(Display*, Window, XContext, BrowserControl*, WKRect, ButtonType);
+    Button(Display*, Window, XContext, BrowserControl*, WKRect, const char*, ButtonFunction);
     virtual ~Button();
 
     virtual void handleEvent(const XEvent&);
 
 private:
     virtual void createXWindow(Window parent, XContext);
-    const char* imagePath(ButtonType);
-
     void drawImage();
-    void navigate();
+    ButtonFunction m_onClick;
 
-    ButtonType m_type;
     cairo_t* m_cairo;
     cairo_surface_t* m_surface;
     cairo_surface_t* m_image;
