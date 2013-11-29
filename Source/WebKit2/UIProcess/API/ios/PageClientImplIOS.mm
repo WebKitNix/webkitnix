@@ -42,20 +42,15 @@ using namespace WebCore;
 
 namespace WebKit {
 
-PassOwnPtr<PageClientImpl> PageClientImpl::create(WKContentView *view)
+PageClientImpl::PageClientImpl(WKContentView *view)
+    : m_view(view)
 {
-    return adoptPtr(new PageClientImpl(view));
 }
 
 PageClientImpl::~PageClientImpl()
 {
 }
-    
-PageClientImpl::PageClientImpl(WKContentView *view)
-    : m_view(view)
-{
-}
-    
+
 std::unique_ptr<DrawingAreaProxy> PageClientImpl::createDrawingAreaProxy()
 {
     return [m_view _createDrawingAreaProxy];
@@ -142,6 +137,17 @@ void PageClientImpl::preferencesDidChange()
 void PageClientImpl::toolTipChanged(const String&, const String&)
 {
     notImplemented();
+}
+
+bool PageClientImpl::decidePolicyForGeolocationPermissionRequest(WebFrameProxy& frame, WebSecurityOrigin& origin, GeolocationPermissionRequestProxy& request)
+{
+    [m_view _decidePolicyForGeolocationRequestFromOrigin:origin frame:frame request:request];
+    return true;
+}
+
+void PageClientImpl::didCommitLoadForMainFrame()
+{
+    [m_view _didCommitLoadForMainFrame];
 }
 
 void PageClientImpl::didChangeContentSize(const IntSize& contentsSize)
@@ -312,7 +318,7 @@ void PageClientImpl::setAcceleratedCompositingRootLayer(CALayer *rootLayer)
 
 void PageClientImpl::mainDocumentDidReceiveMobileDocType()
 {
-    [m_view _mainDocumentDidReceiveMobileDocType];
+    [m_view _didReceiveMobileDocTypeForMainFrame];
 }
 
 void PageClientImpl::didGetTapHighlightGeometries(uint64_t requestID, const WebCore::Color& color, const Vector<WebCore::FloatQuad>& highlightedQuads, const WebCore::IntSize& topLeftRadius, const WebCore::IntSize& topRightRadius, const WebCore::IntSize& bottomLeftRadius, const WebCore::IntSize& bottomRightRadius)

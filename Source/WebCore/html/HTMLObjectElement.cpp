@@ -89,7 +89,7 @@ bool HTMLObjectElement::isPresentationAttribute(const QualifiedName& name) const
     return HTMLPlugInImageElement::isPresentationAttribute(name);
 }
 
-void HTMLObjectElement::collectStyleForPresentationAttribute(const QualifiedName& name, const AtomicString& value, MutableStylePropertySet& style)
+void HTMLObjectElement::collectStyleForPresentationAttribute(const QualifiedName& name, const AtomicString& value, MutableStyleProperties& style)
 {
     if (name == borderAttr)
         applyBorderAttributeToStyle(value, style);
@@ -307,8 +307,9 @@ void HTMLObjectElement::updateWidget(PluginCreationOption pluginCreationOption)
     if (!renderer()) // Do not load the plugin if beforeload removed this element or its renderer.
         return;
 
-    SubframeLoader& loader = document().frame()->loader().subframeLoader();
-    bool success = beforeLoadAllowedLoad && hasValidClassId() && loader.requestObject(*this, url, getNameAttribute(), serviceType, paramNames, paramValues);
+    bool success = beforeLoadAllowedLoad && hasValidClassId();
+    if (success)
+        success = requestObject(url, serviceType, paramNames, paramValues);
     if (!success && hasFallbackContent())
         renderFallbackContent();
 }

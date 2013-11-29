@@ -1,3 +1,283 @@
+2013-11-29  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Accessibility rebaselines after r159848.
+
+        * platform/efl-wk1/accessibility/table-detection-expected.txt:
+        * platform/efl-wk2/accessibility/table-detection-expected.txt:
+
+2013-11-29  Krzysztof Czech  <k.czech@samsung.com>
+
+        [ATK] Added support for isAttributeSettable in AccessibilityUIElementAtk
+        https://bugs.webkit.org/show_bug.cgi?id=124923
+
+        Reviewed by Mario Sanchez Prada.
+
+        Test could be reused by EFL and GTK as well.
+
+        * accessibility/content-editable-expected.txt: Renamed from LayoutTests/platform/mac/accessibility/content-editable-expected.txt.
+        * accessibility/content-editable.html: Renamed from LayoutTests/platform/mac/accessibility/content-editable.html.
+
+2013-11-28  Antti Koivisto  <antti@apple.com>
+
+        Remove an oddly named css variables test
+        
+        Rubber-stamped by Andreas Kling.
+
+        * css3/filters/reference-filter-update-after-remove-expected.txt: Removed.
+        * css3/filters/reference-filter-update-after-remove.html: Removed.
+
+2013-11-28  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        RenderTableSection Blink merge asserting
+        https://bugs.webkit.org/show_bug.cgi?id=124857
+
+        Rebase EFL results (and the remaining Mac) after r159848.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * fast/table/anonymous-table-section-removed.html: Updated.
+        * platform/efl/accessibility/table-attributes-expected.txt: Added.
+        * platform/efl/accessibility/table-sections-expected.txt: Added.
+        * platform/efl/fast/forms/input-value-expected.png:
+        * platform/efl/fast/forms/input-value-expected.txt:
+        * platform/efl/fast/table/[...]:
+        * platform/efl/tables/[...]:
+        * platform/mac/editing/deleting/deletionUI-single-instance-expected.txt:
+        * platform/mac-mountainlion/fast/forms/input-value-expected.txt: 
+        * platform/mac-mountainlion/tables/mozilla/bugs/bug26178-expected.txt:
+
+2013-11-28  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        RenderTableSection Blink merge asserting
+        https://bugs.webkit.org/show_bug.cgi?id=124857
+
+        Rebase Mac results after r159848.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * platform/mac/accessibility/table-detection-expected.txt:
+        * platform/mac/fast/forms/input-value-expected.txt:
+        * platform/mac/fast/table/[...]:
+        * platform/mac/tables/[...]:
+
+2013-11-28  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        RenderTableSection Blink merge asserting
+        https://bugs.webkit.org/show_bug.cgi?id=124857
+
+        Rebase GTK results after r159848.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * platform/gtk/accessibility/table-detection-expected.txt:
+        * platform/gtk/fast/forms/input-value-expected.png:
+        * platform/gtk/fast/forms/input-value-expected.txt:
+        * platform/gtk/fast/table/[...]:
+        * platform/gtk/tables/[...]:
+
+2013-11-28  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        RenderTableSection Blink merge asserting
+        https://bugs.webkit.org/show_bug.cgi?id=124857
+
+        Reviewed by Csaba Osztrogonác.
+
+        Skipped tests enabled.
+
+        * TestExpectations:
+
+2013-11-28  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        * platform/efl/TestExpectations: Added test expectations for failing tests.
+        * platform/efl/fast/forms/search/search-size-with-decorations-expected.png: Added.
+        * platform/efl/fast/forms/search/search-size-with-decorations-expected.txt: Added.
+
+2013-11-28  Antti Koivisto  <antti@apple.com>
+
+        No need to skip css variables tests as they were removed.
+
+        * platform/mac/TestExpectations:
+        * platform/win/TestExpectations:
+
+2013-11-28  Antti Koivisto  <antti@apple.com>
+
+        Remove feature: CSS variables
+        https://bugs.webkit.org/show_bug.cgi?id=114119
+
+        Reviewed by Andreas Kling.
+
+        * fast/css/variables: Removed.
+        * fast/css/variables/border-width-expected.html: Removed.
+        * fast/css/variables/border-width.html: Removed.
+        * fast/css/variables/build-supports-variables-expected.txt: Removed.
+        * fast/css/variables/build-supports-variables.html: Removed.
+        * fast/css/variables/calc-expected.html: Removed.
+        * fast/css/variables/calc-inside-calc-expected.html: Removed.
+        * fast/css/variables/calc-inside-calc.html: Removed.
+        * fast/css/variables/calc-invalid-value-expected.html: Removed.
+        * fast/css/variables/calc-invalid-value.html: Removed.
+        * fast/css/variables/calc-invalid-variable-expected.html: Removed.
+        * fast/css/variables/calc-invalid-variable.html: Removed.
+        * fast/css/variables/calc-negated-variable-expected.html: Removed.
+        * fast/css/variables/calc-negated-variable.html: Removed.
+        * fast/css/variables/calc-vw-crash-expected.txt: Removed.
+        * fast/css/variables/calc-vw-crash.html: Removed.
+        * fast/css/variables/calc.html: Removed.
+        * fast/css/variables/case-sensitive-expected.html: Removed.
+        * fast/css/variables/case-sensitive.html: Removed.
+        * fast/css/variables/colors-test-expected.html: Removed.
+        * fast/css/variables/colors-test.html: Removed.
+        * fast/css/variables/complex-cycle-expected.html: Removed.
+        * fast/css/variables/complex-cycle.html: Removed.
+        * fast/css/variables/computed-style-expected.html: Removed.
+        * fast/css/variables/computed-style.html: Removed.
+        * fast/css/variables/deferred-image-load-from-variable-expected.txt: Removed.
+        * fast/css/variables/deferred-image-load-from-variable.html: Removed.
+        * fast/css/variables/inherited-values-expected.html: Removed.
+        * fast/css/variables/inherited-values.html: Removed.
+        * fast/css/variables/inline-styles-expected.html: Removed.
+        * fast/css/variables/inline-styles.html: Removed.
+        * fast/css/variables/invalid-font-reference-expected.txt: Removed.
+        * fast/css/variables/invalid-font-reference.html: Removed.
+        * fast/css/variables/invalid-shorthand-expected.html: Removed.
+        * fast/css/variables/invalid-shorthand.html: Removed.
+        * fast/css/variables/invalid-value-list-crash-expected.txt: Removed.
+        * fast/css/variables/invalid-value-list-crash.html: Removed.
+        * fast/css/variables/invalid-variable-value-expected.html: Removed.
+        * fast/css/variables/invalid-variable-value.html: Removed.
+        * fast/css/variables/multi-level-cycle-expected.html: Removed.
+        * fast/css/variables/multi-level-cycle.html: Removed.
+        * fast/css/variables/redefinition-expected.html: Removed.
+        * fast/css/variables/redefinition.html: Removed.
+        * fast/css/variables/root-background-size-expected.html: Removed.
+        * fast/css/variables/root-background-size.html: Removed.
+        * fast/css/variables/shorthand-expected.html: Removed.
+        * fast/css/variables/shorthand.html: Removed.
+        * fast/css/variables/simple-cycle-expected.html: Removed.
+        * fast/css/variables/simple-cycle.html: Removed.
+        * fast/css/variables/transform-test-expected.html: Removed.
+        * fast/css/variables/transform-test.html: Removed.
+        * fast/css/variables/undefined-expected.html: Removed.
+        * fast/css/variables/undefined.html: Removed.
+        * fast/css/variables/use-before-defined-expected.html: Removed.
+        * fast/css/variables/use-before-defined.html: Removed.
+        * fast/css/variables/var-filter-expected.txt: Removed.
+        * fast/css/variables/var-filter.html: Removed.
+        * fast/css/variables/var-inside-box-reflect-expected.html: Removed.
+        * fast/css/variables/var-inside-box-reflect.html: Removed.
+        * fast/css/variables/var-inside-pair-expected.html: Removed.
+        * fast/css/variables/var-inside-pair.html: Removed.
+        * fast/css/variables/var-inside-quad-expected.html: Removed.
+        * fast/css/variables/var-inside-quad.html: Removed.
+        * fast/css/variables/var-inside-shape-expected.html: Removed.
+        * fast/css/variables/var-inside-shape.html: Removed.
+        * fast/css/variables/var-inside-shorthand-expected.html: Removed.
+        * fast/css/variables/var-inside-shorthand.html: Removed.
+        * fast/css/variables/variable-chain-expected.html: Removed.
+        * fast/css/variables/variable-chain.html: Removed.
+        * fast/css/variables/variable-unparseable-value-crash-expected.txt: Removed.
+        * fast/css/variables/variable-unparseable-value-crash.html: Removed.
+
+2013-11-28  Jongwoo Choi  <jw0330.choi@samsung.com>
+
+        [EFL] Layout tests need to be rebaselined.
+        https://bugs.webkit.org/show_bug.cgi?id=124879
+
+        Unreviewed, EFL rebaseline.
+
+        EFL tests need to be rebaselined after r159747
+
+        * platform/efl/fast/table/011-expected.txt:
+        * platform/efl/fast/table/border-collapsing/004-expected.txt:
+        * platform/efl/fast/table/tableInsideCaption-expected.txt:
+
+2013-11-27  Gustavo Noronha Silva  <gustavo.noronha@collabora.com>
+
+        [GTK] Support custom types for drag and drop data
+        https://bugs.webkit.org/show_bug.cgi?id=124659
+
+        Reviewed by Martin Robinson.
+
+        * platform/gtk/TestExpectations: remove failure expectation for test that now passes.
+
+2013-11-27  Filip Pizlo  <fpizlo@apple.com>
+
+        Infer one-time scopes
+        https://bugs.webkit.org/show_bug.cgi?id=124812
+
+        Reviewed by Oliver Hunt.
+
+        * js/regress/infer-one-time-closure-expected.txt: Added.
+        * js/regress/infer-one-time-closure-ten-vars-expected.txt: Added.
+        * js/regress/infer-one-time-closure-ten-vars.html: Added.
+        * js/regress/infer-one-time-closure-two-vars-expected.txt: Added.
+        * js/regress/infer-one-time-closure-two-vars.html: Added.
+        * js/regress/infer-one-time-closure.html: Added.
+        * js/regress/infer-one-time-deep-closure-expected.txt: Added.
+        * js/regress/infer-one-time-deep-closure.html: Added.
+        * js/regress/script-tests/infer-one-time-closure-ten-vars.js: Added.
+        * js/regress/script-tests/infer-one-time-closure-two-vars.js: Added.
+        * js/regress/script-tests/infer-one-time-closure.js: Added.
+        * js/regress/script-tests/infer-one-time-deep-closure.js: Added.
+
+2013-11-27  Eric Carlson  <eric.carlson@apple.com>
+
+        Allow the QuickTime plug-in to be replaced by script in an isolated word
+        https://bugs.webkit.org/show_bug.cgi?id=124900
+
+        Reviewed by Dean Jackson.
+
+        * platform/efl/TestExpectations: Skip the new test.
+        * platform/gtk/TestExpectations: Ditto.
+        * platform/wincairo/TestExpectations: Ditto.
+        * plugins/quicktime-plugin-replacement.html: Added.
+        * plugins/quicktime-plugin-replacement-expected.txt: Added.
+        * plugins/resources/orange.mov: Replace movie compressed with ancient (and deprecated) 
+            animated gif codec with one compressed with H.264 codec.
+
+2013-11-27  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Adding MediaConstraintsMock class
+        https://bugs.webkit.org/show_bug.cgi?id=124902
+
+        Reviewed by Eric Carlson.
+
+        Validate constraints used in RTCPeerConnection LayoutTests
+
+        * fast/mediastream/RTCPeerConnection-expected.txt:
+
+2013-11-27  Bear Travis  <betravis@adobe.com>
+
+        [CSS Shapes] Shape-Inside Should Default to 'auto'
+        https://bugs.webkit.org/show_bug.cgi?id=124851
+
+        Reviewed by Alexandru Chiculita.
+
+        Update tests to reflect a default shape-inside value of 'auto'.
+
+        * fast/shapes/css-shapes-disabled-expected.txt:
+        * fast/shapes/css-shapes-disabled.html:
+        * fast/shapes/parsing/parsing-shape-inside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-inside.html:
+        * fast/shapes/parsing/parsing-shape-lengths-expected.txt:
+        * fast/shapes/parsing/parsing-shape-lengths.html:
+
+2013-11-27  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] shape-inside rectangle layout can fail
+        https://bugs.webkit.org/show_bug.cgi?id=124784
+
+        Reviewed by Andreas Kling.
+
+        Regression test.
+
+        * fast/shapes/shape-inside/shape-inside-subpixel-rectangle-top-expected.html: Added.
+        * fast/shapes/shape-inside/shape-inside-subpixel-rectangle-top.html: Added.
+
 2013-11-27  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
 
         Unreviewed EFL gardening

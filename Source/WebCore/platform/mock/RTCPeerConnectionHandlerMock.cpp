@@ -29,6 +29,7 @@
 
 #include "RTCPeerConnectionHandlerMock.h"
 
+#include "MediaConstraintsMock.h"
 #include "NotImplemented.h"
 #include "RTCDTMFSenderHandler.h"
 #include "RTCDataChannelHandler.h"
@@ -40,16 +41,22 @@
 
 namespace WebCore {
 
+std::unique_ptr<RTCPeerConnectionHandler> RTCPeerConnectionHandlerMock::create(RTCPeerConnectionHandlerClient* client)
+{
+    return std::make_unique<RTCPeerConnectionHandlerMock>(client);
+}
+
 RTCPeerConnectionHandlerMock::RTCPeerConnectionHandlerMock(RTCPeerConnectionHandlerClient* client)
     : m_client(client)
 {
 }
 
-bool RTCPeerConnectionHandlerMock::initialize(PassRefPtr<RTCConfiguration>, PassRefPtr<MediaConstraints>)
+bool RTCPeerConnectionHandlerMock::initialize(PassRefPtr<RTCConfiguration>, PassRefPtr<MediaConstraints> constraints)
 {
-    // FIXME: once there is support in RTCPeerConnection + constraints, this should be taken into account here
-    // and a LayouTest for that must be added.
-    // https://bugs.webkit.org/show_bug.cgi?id=123093
+    String invalidQuery = MediaConstraintsMock::verifyConstraints(constraints);
+    if (!invalidQuery.isEmpty())
+        return false;
+
     RefPtr<IceConnectionNotifier> notifier = adoptRef(new IceConnectionNotifier(m_client, RTCPeerConnectionHandlerClient::IceConnectionStateCompleted, RTCPeerConnectionHandlerClient::IceGatheringStateComplete));
     m_timerEvents.append(adoptRef(new TimerEvent(this, notifier)));
     return true;

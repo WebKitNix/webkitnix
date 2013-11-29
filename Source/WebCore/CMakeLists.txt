@@ -11,6 +11,7 @@ set(WebCore_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/Modules/navigatorcontentutils"
     "${WEBCORE_DIR}/Modules/networkinfo"
     "${WEBCORE_DIR}/Modules/notifications"
+    "${WEBCORE_DIR}/Modules/plugins"
     "${WEBCORE_DIR}/Modules/proximity"
     "${WEBCORE_DIR}/Modules/quota"
     "${WEBCORE_DIR}/Modules/vibration"
@@ -1086,7 +1087,7 @@ set(WebCore_SOURCES
     css/SelectorFilter.cpp
     css/StyleInvalidationAnalysis.cpp
     css/StyleMedia.cpp
-    css/StylePropertySet.cpp
+    css/StyleProperties.cpp
     css/StylePropertyShorthand.cpp
     css/StyleResolver.cpp
     css/StyleRule.cpp
@@ -2029,6 +2030,7 @@ set(WebCore_SOURCES
     platform/mock/DeviceMotionClientMock.cpp
     platform/mock/DeviceOrientationClientMock.cpp
     platform/mock/GeolocationClientMock.cpp
+    platform/mock/MediaConstraintsMock.cpp
     platform/mock/MockMediaStreamCenter.cpp
     platform/mock/RTCDataChannelHandlerMock.cpp
     platform/mock/RTCNotifiersMock.cpp

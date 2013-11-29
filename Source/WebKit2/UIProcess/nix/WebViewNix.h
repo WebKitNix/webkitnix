@@ -75,7 +75,7 @@ protected:
 
     // PageClient.
     virtual void didFindZoomableArea(const WebCore::IntPoint& target, const WebCore::IntRect& area) OVERRIDE;
-    virtual void didCommitLoadForFrame() OVERRIDE;
+    virtual void didCommitLoadForMainFrame() OVERRIDE;
     virtual void notifyLoadIsBackForward() OVERRIDE;
     virtual void didStartedMainFrameLayout() OVERRIDE;
 

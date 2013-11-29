@@ -1977,6 +1977,7 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/notifications/NotificationPermissionCallback.h \
 	Source/WebCore/Modules/notifications/WorkerGlobalScopeNotifications.cpp \
 	Source/WebCore/Modules/notifications/WorkerGlobalScopeNotifications.h \
+	Source/WebCore/Modules/plugins/PluginReplacement.h \
 	Source/WebCore/Modules/proximity/DeviceProximityClient.h \
 	Source/WebCore/Modules/proximity/DeviceProximityController.cpp \
 	Source/WebCore/Modules/proximity/DeviceProximityController.h \
@@ -2621,7 +2622,6 @@ webcore_sources += \
 	Source/WebCore/css/CSSValueList.h \
 	Source/WebCore/css/CSSValuePool.cpp \
 	Source/WebCore/css/CSSValuePool.h \
-	Source/WebCore/css/CSSVariableValue.h \
 	Source/WebCore/css/DOMWindowCSS.cpp \
 	Source/WebCore/css/DOMWindowCSS.h \
 	Source/WebCore/css/DashboardRegion.h \
@@ -2674,8 +2674,8 @@ webcore_sources += \
 	Source/WebCore/css/StyleInvalidationAnalysis.h \
 	Source/WebCore/css/StyleMedia.cpp \
 	Source/WebCore/css/StyleMedia.h \
-	Source/WebCore/css/StylePropertySet.cpp \
-	Source/WebCore/css/StylePropertySet.h \
+	Source/WebCore/css/StyleProperties.cpp \
+	Source/WebCore/css/StyleProperties.h \
 	Source/WebCore/css/StylePropertyShorthand.cpp \
 	Source/WebCore/css/StylePropertyShorthand.h \
 	Source/WebCore/css/StyleResolver.cpp \
@@ -4639,7 +4639,6 @@ webcore_sources += \
 	Source/WebCore/rendering/style/StyleSurroundData.h \
 	Source/WebCore/rendering/style/StyleTransformData.cpp \
 	Source/WebCore/rendering/style/StyleTransformData.h \
-	Source/WebCore/rendering/style/StyleVariableData.h \
 	Source/WebCore/rendering/style/StyleVisualData.cpp \
 	Source/WebCore/rendering/style/StyleVisualData.h \
 	Source/WebCore/rendering/TableLayout.h \
@@ -5449,6 +5448,8 @@ webcore_platform_sources += \
 	Source/WebCore/platform/mock/DeviceOrientationClientMock.h \
 	Source/WebCore/platform/mock/GeolocationClientMock.cpp \
 	Source/WebCore/platform/mock/GeolocationClientMock.h \
+	Source/WebCore/platform/mock/MediaConstraintsMock.cpp \
+	Source/WebCore/platform/mock/MediaConstraintsMock.h \
 	Source/WebCore/platform/mock/MockMediaStreamCenter.cpp \
 	Source/WebCore/platform/mock/MockMediaStreamCenter.h \
 	Source/WebCore/platform/mock/RTCDataChannelHandlerMock.cpp \

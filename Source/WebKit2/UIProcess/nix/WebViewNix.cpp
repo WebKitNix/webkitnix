@@ -192,7 +192,7 @@ void WebViewNix::didFindZoomableArea(const IntPoint& target, const IntRect& area
     m_viewClientNix.didFindZoomableArea(this, toAPI(target), toAPI(area));
 }
 
-void WebViewNix::didCommitLoadForFrame()
+void WebViewNix::didCommitLoadForMainFrame()
 {
     m_duringFrameRendering = true;
     m_pendingScaleOrPositionChange = false;

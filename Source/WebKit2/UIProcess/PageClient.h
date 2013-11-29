@@ -121,11 +121,18 @@ public:
     virtual void toolTipChanged(const String&, const String&) = 0;
 
 #if PLATFORM(NIX)
-    virtual void didCommitLoadForFrame() = 0;
     virtual void didChangePageScaleFactor(double scaleFactor) = 0;
     virtual void notifyLoadIsBackForward() = 0;
     virtual void didStartedMainFrameLayout() = 0;
 #endif
+
+    virtual bool decidePolicyForGeolocationPermissionRequest(WebFrameProxy&, WebSecurityOrigin&, GeolocationPermissionRequestProxy&)
+    {
+        return false;
+    }
+
+    virtual void didCommitLoadForMainFrame() = 0;
+
 #if USE(TILED_BACKING_STORE)
     virtual void pageDidRequestScroll(const WebCore::IntPoint&) = 0;
     virtual void didRenderFrame(const WebCore::IntSize& contentsSize, const WebCore::IntRect& coveredRect) = 0;

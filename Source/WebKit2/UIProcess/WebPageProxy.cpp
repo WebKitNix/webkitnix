@@ -2225,8 +2225,10 @@ void WebPageProxy::didCommitLoadForFrame(uint64_t frameID, const String& mimeTyp
     WebFrameProxy* frame = m_process->webFrame(frameID);
     MESSAGE_CHECK(frame);
 
-    if (frame->isMainFrame())
+    if (frame->isMainFrame()) {
         m_pageLoadState.didCommitLoad();
+        m_pageClient->didCommitLoadForMainFrame();
+    }
 
 #if USE(APPKIT)
     // FIXME (bug 59111): didCommitLoadForFrame comes too late when restoring a page from b/f cache, making us disable secure event mode in password fields.
@@ -2247,9 +2249,6 @@ void WebPageProxy::didCommitLoadForFrame(uint64_t frameID, const String& mimeTyp
     if (frame->isMainFrame() && static_cast<FrameLoadType>(opaqueFrameLoadType) == FrameLoadTypeStandard)
         m_pageScaleFactor = 1;
 
-#if PLATFORM(NIX)
-    m_pageClient->didCommitLoadForFrame();
-#endif
     m_loaderClient.didCommitLoadForFrame(this, frame, userData.get());
 }
 
@@ -4004,8 +4003,13 @@ void WebPageProxy::requestGeolocationPermissionForFrame(uint64_t geolocationID, 
     RefPtr<WebSecurityOrigin> origin = WebSecurityOrigin::createFromDatabaseIdentifier(originIdentifier);
     RefPtr<GeolocationPermissionRequestProxy> request = m_geolocationPermissionRequestManager.createRequest(geolocationID);
 
-    if (!m_uiClient.decidePolicyForGeolocationPermissionRequest(this, frame, origin.get(), request.get()))
-        request->deny();
+    if (m_uiClient.decidePolicyForGeolocationPermissionRequest(this, frame, origin.get(), request.get()))
+        return;
+
+    if (m_pageClient->decidePolicyForGeolocationPermissionRequest(*frame, *origin, *request))
+        return;
+
+    request->deny();
 }
 
 void WebPageProxy::requestNotificationPermission(uint64_t requestID, const String& originString)

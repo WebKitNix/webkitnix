@@ -33,9 +33,10 @@
 #import "WKBrowsingContextControllerInternal.h"
 #import "WKBrowsingContextGroupPrivate.h"
 #import "WKGeolocationProviderIOS.h"
-#import "WKProcessGroupPrivate.h"
 #import "WKInteractionView.h"
+#import "WKProcessGroupInternal.h"
 #import "WebContext.h"
+#import "WebFrameProxy.h"
 #import "WebPageGroup.h"
 #import "WebSystemInterface.h"
 #import <QuartzCore/CALayerHost.h>
@@ -47,13 +48,8 @@
 using namespace WebCore;
 using namespace WebKit;
 
-@interface WKContentView (Internal) <WKBrowsingContextLoadDelegateInternal>
-@end
-
 @implementation WKContentView {
-    RetainPtr<WKProcessGroup> _processGroup;
-    RetainPtr<WKBrowsingContextGroup> _browsingContextGroup;
-    OwnPtr<PageClientImpl> _pageClient;
+    std::unique_ptr<PageClientImpl> _pageClient;
     RefPtr<WebPageProxy> _page;
 
     RetainPtr<WKBrowsingContextController> _browsingContextController;
@@ -64,16 +60,9 @@ using namespace WebKit;
 
 - (id)initWithCoder:(NSCoder *)coder
 {
-    if (!(self = [super initWithCoder:coder]))
-        return nil;
-
-    [self _commonInitWithProcessGroup:nil browsingContextGroup:nil];
-    return self;
-}
-
-- (id)initWithFrame:(CGRect)frame
-{
-    return [self initWithFrame:frame processGroup:nil browsingContextGroup:nil];
+    // FIXME: Implement.
+    [self release];
+    return nil;
 }
 
 - (id)initWithFrame:(CGRect)frame processGroup:(WKProcessGroup *)processGroup browsingContextGroup:(WKBrowsingContextGroup *)browsingContextGroup
@@ -81,7 +70,7 @@ using namespace WebKit;
     if (!(self = [super initWithFrame:frame]))
         return nil;
 
-    [self _commonInitWithProcessGroup:processGroup browsingContextGroup:browsingContextGroup];
+    [self _commonInitializationWithContextRef:processGroup._contextRef pageGroupRef:browsingContextGroup._pageGroupRef relatedToPage:nullptr];
     return self;
 }
 
@@ -115,6 +104,8 @@ using namespace WebKit;
 
 - (WKBrowsingContextController *)browsingContextController
 {
+    if (!_browsingContextController)
+        _browsingContextController = adoptNS([[WKBrowsingContextController alloc] _initWithPageRef:toAPI(_page.get())]);
     return _browsingContextController.get();
 }
 
@@ -147,15 +138,9 @@ using namespace WebKit;
     _page->didFinishZooming(scale);
 }
 
-static void decidePolicyForGeolocationPermissionRequest(WKPageRef page, WKFrameRef frame, WKSecurityOriginRef origin, WKGeolocationPermissionRequestRef permissionRequest, const void* clientInfo)
-{
-    WKContentView *view = reinterpret_cast<WKContentView *>(const_cast<void*>(clientInfo));
-    ASSERT([view isKindOfClass:[WKContentView class]]);
+#pragma mark Internal
 
-    [[view->_processGroup _geolocationProvider] decidePolicyForGeolocationRequestFromOrigin:origin frame:frame request:permissionRequest window:[view window]];
-}
-
-- (void)_commonInitWithProcessGroup:(WKProcessGroup *)processGroup browsingContextGroup:(WKBrowsingContextGroup *)browsingContextGroup
+- (void)_commonInitializationWithContextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef relatedToPage:(WKPageRef)relatedPage
 {
     // FIXME: This should not be necessary, find why hit testing does not work otherwise.
     // <rdar://problem/12287363>
@@ -165,69 +150,11 @@ static void decidePolicyForGeolocationPermissionRequest(WKPageRef page, WKFrameR
     InitWebCoreSystemInterface();
     RunLoop::initializeMainRunLoop();
 
-    _processGroup = processGroup ? processGroup : adoptNS([[WKProcessGroup alloc] init]);
-    _browsingContextGroup = browsingContextGroup ? browsingContextGroup : adoptNS([[WKBrowsingContextGroup alloc] initWithIdentifier:nil]);
-    _pageClient = PageClientImpl::create(self);
-    WebContext* processContext = toImpl([_processGroup _contextRef]);
-    _page = processContext->createWebPage(_pageClient.get(), toImpl([_browsingContextGroup _pageGroupRef]));
+    _pageClient = std::make_unique<PageClientImpl>(self);
+    _page = toImpl(contextRef)->createWebPage(_pageClient.get(), toImpl(pageGroupRef), toImpl(relatedPage));
     _page->initializeWebPage();
     _page->setIntrinsicDeviceScaleFactor([UIScreen mainScreen].scale);
     _page->setUseFixedLayout(true);
-
-    WKPageUIClient pageUIClient = {
-        kWKPageUIClientCurrentVersion,
-        self,
-        0, // createNewPage_deprecatedForUseWithV0
-        0, // showPage
-        0, // closeOtherPage
-        0, // takeFocus
-        0, // focus
-        0, // unfocus
-        0, // runJavaScriptAlert
-        0, // runJavaScriptConfirm
-        0, // runJavaScriptPrompt
-        0, // setStatusText
-        0, // mouseDidMoveOverElement_deprecatedForUseWithV0
-        0, // missingPluginButtonClicked
-        0, // didNotHandleKeyEvent
-        0, // didNotHandleWheelEvent
-        0, // toolbarsAreVisible
-        0, // setToolbarsAreVisible
-        0, // menuBarIsVisible
-        0, // setMenuBarIsVisible
-        0, // statusBarIsVisible
-        0, // setStatusBarIsVisible
-        0, // isResizable
-        0, // setIsResizable
-        0, // getWindowFrameOtherPage
-        0, // setWindowFrameOtherPage
-        0, // runBeforeUnloadConfirmPanel
-        0, // didDraw
-        0, // pageDidScroll
-        0, // exceededDatabaseQuota
-        0, // runOpenPanel
-        decidePolicyForGeolocationPermissionRequest,
-        0, // headerHeight
-        0, // footerHeight
-        0, // drawHeader
-        0, // drawFooter
-        0, // printFrame
-        0, // runModal
-        0, // didCompleteRubberBandForMainFrame
-        0, // saveDataToFileInDownloadsFolder
-        0, // shouldInterruptJavaScript
-        0, // createOtherPage
-        0, // mouseDidMoveOverElement
-        0, // decidePolicyForNotificationPermissionRequest
-        0, // unavailablePluginButtonClicked
-        0, // showColorPicker
-        0, // hideColorPicker
-        0, // unavailablePluginButtonClicked
-    };
-    WKPageSetPageUIClient(toAPI(_page.get()), &pageUIClient);
-
-    _browsingContextController = adoptNS([[WKBrowsingContextController alloc] _initWithPageRef:toAPI(_page.get())]);
-    [_browsingContextController setLoadDelegateInternal:self];
 
     WebContext::statistics().wkViewCount++;
 
@@ -256,17 +183,6 @@ static void decidePolicyForGeolocationPermissionRequest(WKPageRef page, WKFrameR
     _page->setIntrinsicDeviceScaleFactor(screen.scale);
 }
 
-- (void)_didChangeViewportArguments:(const WebCore::ViewportArguments&)arguments
-{
-    if ([_delegate respondsToSelector:@selector(contentView:didChangeViewportArgumentsSize:initialScale:minimumScale:maximumScale:allowsUserScaling:)])
-        [_delegate contentView:self
-didChangeViewportArgumentsSize:CGSizeMake(arguments.width, arguments.height)
-                  initialScale:arguments.zoom
-                  minimumScale:arguments.minZoom
-                  maximumScale:arguments.maxZoom
-             allowsUserScaling:arguments.userZoom];
-}
-
 #pragma mark PageClientImpl methods
 
 - (std::unique_ptr<DrawingAreaProxy>)_createDrawingAreaProxy
@@ -284,11 +200,10 @@ didChangeViewportArgumentsSize:CGSizeMake(arguments.width, arguments.height)
     // FIXME: Implement.
 }
 
-- (void)browsingContextControllerDidCommitLoad:(WKBrowsingContextController *)sender
+- (void)_didCommitLoadForMainFrame
 {
-    ASSERT(sender == _browsingContextController);
-    if ([_delegate respondsToSelector:@selector(contentViewdidCommitLoadForMainFrame:)])
-        [_delegate contentViewdidCommitLoadForMainFrame:self];
+    if ([_delegate respondsToSelector:@selector(contentViewDidCommitLoadForMainFrame:)])
+        [_delegate contentViewDidCommitLoadForMainFrame:self];
 }
 
 - (void)_didChangeContentSize:(CGSize)contentsSize
@@ -301,11 +216,16 @@ didChangeViewportArgumentsSize:CGSizeMake(arguments.width, arguments.height)
         [_delegate contentView:self contentsSizeDidChange:contentsSize];
 }
 
-- (void)_mainDocumentDidReceiveMobileDocType
+- (void)_didReceiveMobileDocTypeForMainFrame
 {
     if ([_delegate respondsToSelector:@selector(contentViewDidReceiveMobileDocType:)])
         [_delegate contentViewDidReceiveMobileDocType:self];
+}
 
+- (void)_didChangeViewportArguments:(const WebCore::ViewportArguments&)arguments
+{
+    if ([_delegate respondsToSelector:@selector(contentView:didChangeViewportArgumentsSize:initialScale:minimumScale:maximumScale:allowsUserScaling:)])
+        [_delegate contentView:self didChangeViewportArgumentsSize:CGSizeMake(arguments.width, arguments.height) initialScale:arguments.zoom minimumScale:arguments.minZoom maximumScale:arguments.maxZoom allowsUserScaling:arguments.userZoom];
 }
 
 - (void)_didGetTapHighlightForRequest:(uint64_t)requestID color:(const Color&)color quads:(const Vector<FloatQuad>&)highlightedQuads topLeftRadius:(const IntSize&)topLeftRadius topRightRadius:(const IntSize&)topRightRadius bottomLeftRadius:(const IntSize&)bottomLeftRadius bottomRightRadius:(const IntSize&)bottomRightRadius
@@ -337,6 +257,34 @@ didChangeViewportArgumentsSize:CGSizeMake(arguments.width, arguments.height)
 - (BOOL)_interpretKeyEvent:(WebIOSEvent *)theEvent isCharEvent:(BOOL)isCharEvent
 {
     return [_interactionView _interpretKeyEvent:theEvent isCharEvent:isCharEvent];
+}
+
+- (void)_decidePolicyForGeolocationRequestFromOrigin:(WebSecurityOrigin&)origin frame:(WebFrameProxy&)frame request:(GeolocationPermissionRequestProxy&)permissionRequest
+{
+    [[wrapper(*_page->process()->context()) _geolocationProvider] decidePolicyForGeolocationRequestFromOrigin:toAPI(&origin) frame:toAPI(&frame) request:toAPI(&permissionRequest) window:[self window]];
+}
+
+@end
+
+@implementation WKContentView (Private)
+
+- (WKPageRef)_pageRef
+{
+    return toAPI(_page.get());
+}
+
+- (id)initWithFrame:(CGRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef
+{
+    return [self initWithFrame:frame contextRef:contextRef pageGroupRef:pageGroupRef relatedToPage:nullptr];
+}
+
+- (id)initWithFrame:(CGRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef relatedToPage:(WKPageRef)relatedPage
+{
+    if (!(self = [super initWithFrame:frame]))
+        return nil;
+
+    [self _commonInitializationWithContextRef:contextRef pageGroupRef:pageGroupRef relatedToPage:relatedPage];
+    return self;
 }
 
 @end

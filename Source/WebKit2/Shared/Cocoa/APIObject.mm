@@ -30,6 +30,8 @@
 
 #import "WKBackForwardListInternal.h"
 #import "WKBackForwardListItemInternal.h"
+#import "WKBrowsingContextGroupInternal.h"
+#import "WKProcessGroupInternal.h"
 #import "WKNSArray.h"
 #import "WKNSDictionary.h"
 #import "WKNSError.h"
@@ -70,6 +72,10 @@ void* Object::newObject(size_t size, Type type)
         wrapper = [WKBackForwardListItem alloc];
         break;
 
+    case Type::Context:
+        wrapper = [WKProcessGroup alloc];
+        break;
+
     case Type::Dictionary:
         wrapper = [WKNSDictionary alloc];
         break;
@@ -80,6 +86,10 @@ void* Object::newObject(size_t size, Type type)
 
     case Type::NavigationData:
         wrapper = [WKNavigationData alloc];
+        break;
+
+    case Type::PageGroup:
+        wrapper = [WKBrowsingContextGroup alloc];
         break;
 
     case Type::String:
@@ -95,11 +105,12 @@ void* Object::newObject(size_t size, Type type)
         break;
     }
 
-    Object* object = &wrapper._apiObject;
-    object->m_wrapper = wrapper;
-    return object;
+    Object& object = wrapper._apiObject;
+    object.m_wrapper = wrapper;
+
+    return &object;
 }
 
-} // namespace WebKit
+} // namespace API
 
 #endif // WK_API_ENABLED

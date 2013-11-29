@@ -1,3 +1,136 @@
+2013-11-29  Gergo Balogh  <geryxyz@inf.u-szeged.hu>
+
+        check-webkit-style should check for extraneous newline between config.h and primary header.
+        https://bugs.webkit.org/show_bug.cgi?id=124821
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (check_include_line):
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py:
+        (OrderOfIncludesTest.test_check_line_break_after_own_header):
+        (OrderOfIncludesTest):
+        (OrderOfIncludesTest.test_check_line_break_before_own_header):
+
+2013-11-29  Jozsef Berta  <jberta@inf.u-szeged.hu>
+
+        test-webkit-scripts should show the failing tests and use an appropriate exit code
+        https://bugs.webkit.org/show_bug.cgi?id=124840
+
+        Reviewed by Ryosuke Niwa.
+
+        A fixme in test-webkit-scripts asked that the script should display success or failiure
+        and exit with a 0 or 1 value accordingly after all of the tests have completed.
+
+        * Scripts/test-webkit-scripts:
+        (ScriptsTester.run_test_script):
+        The outcome of the currently run script is returned to the main as a boolean value. A boolean is returned,
+        because at this point we don't need to pass on more information other than success or failiure.
+        (ScriptsTester.main):
+        The return values are now stored for each script and when all tests have completed successfully,
+        the script indicates success and returns 0. Otherwise it will display the name(s) of the failing script(s) and return 1.
+
+2013-11-29  Krzysztof Czech  <k.czech@samsung.com>
+
+        [ATK] Added support for isAttributeSettable in AccessibilityUIElementAtk
+        https://bugs.webkit.org/show_bug.cgi?id=124923
+
+        Reviewed by Mario Sanchez Prada.
+
+        Added missing implementation of isAttributeSettable. Using
+        ATK_STATE_EDITABLE for checking whether attribute is settable.
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::isAttributeSettable):
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::isAttributeSettable):
+
+2013-11-28  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159839.
+        http://trac.webkit.org/changeset/159839
+        https://bugs.webkit.org/show_bug.cgi?id=124974
+
+        run-webkit-tests doesn't generate pretty diff (Requested by
+        Ossy on #webkit).
+
+        * Scripts/webkitpy/common/prettypatch.py:
+        (PrettyPatch.__init__):
+        (PrettyPatch.pretty_diff):
+        * Scripts/webkitpy/layout_tests/controllers/test_result_writer.py:
+        (TestResultWriter.create_text_diff_and_write_result):
+        * Scripts/webkitpy/layout_tests/models/test_run_results.py:
+        (summarize_results):
+        * Scripts/webkitpy/port/base.py:
+        (Port.__init__):
+        (Port.pretty_patch_available):
+        (Port.check_pretty_patch):
+        (Port.variable):
+        (Port.variable.pretty_patch_text):
+        * Scripts/webkitpy/port/base_unittest.py:
+        (PortTest.test_pretty_patch_os_error):
+        (PortTest.test_pretty_patch_script_error):
+
+2013-11-28  Antti Koivisto  <antti@apple.com>
+
+        Remove feature: CSS variables
+        https://bugs.webkit.org/show_bug.cgi?id=114119
+
+        Reviewed by Andreas Kling.
+
+        * Scripts/webkitperl/FeatureList.pm:
+
+2013-11-28  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        Move PrettyPatch related code to prettypatch.py
+        https://bugs.webkit.org/show_bug.cgi?id=124937
+
+        Reviewed by Ryosuke Niwa.
+
+        This code seems to have a better place here than in Port, since PrettyPatch already knows
+        pretty_patch_path, and this also unifies the usage of PrettyPatch
+
+        * Scripts/webkitpy/common/prettypatch.py:
+        (PrettyPatch.__init__):
+        (PrettyPatch.pretty_diff):
+        (PrettyPatch):
+        (PrettyPatch.pretty_patch_available):
+        (PrettyPatch.check_pretty_patch):
+        (PrettyPatch.pretty_patch_text):
+        * Scripts/webkitpy/layout_tests/controllers/test_result_writer.py:
+        (TestResultWriter.create_text_diff_and_write_result):
+        * Scripts/webkitpy/layout_tests/models/test_run_results.py:
+        (summarize_results):
+        * Scripts/webkitpy/port/base.py:
+        (Port.__init__):
+        (Port.wdiff_available):
+        (Port.check_image_diff):
+        (Port.wdiff_text):
+        * Scripts/webkitpy/port/base_unittest.py:
+        (PortTest.test_pretty_patch_os_error):
+        (PortTest.test_pretty_patch_script_error):
+
+2013-11-28  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        Checkout should own the scm object in Host
+        https://bugs.webkit.org/show_bug.cgi?id=124943
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitpy/common/host.py:
+        (Host.__init__):
+        (Host.initialize_scm):
+        (Host.scm):
+
+2013-11-26  Filip Pizlo  <fpizlo@apple.com>
+
+        Do bytecode validation as part of testing
+        https://bugs.webkit.org/show_bug.cgi?id=124913
+
+        Reviewed by Oliver Hunt.
+
+        * Scripts/run-jsc-stress-tests:
+
 2013-11-27  Andres Gomez  <agomez@igalia.com>
 
         [GTK] Tools/Scripts/update-webkitgtk-libs fails due to missing fontutils dependencies for building the "xserver" module

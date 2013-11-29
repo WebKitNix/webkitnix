@@ -33,8 +33,6 @@
 #include "PageLoadClientEfl.h"
 #include "PagePolicyClientEfl.h"
 #include "PageUIClientEfl.h"
-#include "PageViewportController.h"
-#include "PageViewportControllerClientEfl.h"
 #include "SnapshotImageGL.h"
 #include "ViewClientEfl.h"
 #include "WKArray.h"
@@ -282,8 +280,8 @@ EwkView::EwkView(WKViewRef view, Evas_Object* evasObject)
     , m_displayTimer(this, &EwkView::displayTimerFired)
     , m_inputMethodContext(InputMethodContextEfl::create(this, smartData()->base.evas))
 #if USE(ACCELERATED_COMPOSITING)
-    , m_pageViewportControllerClient(std::make_unique<PageViewportControllerClientEfl>(this))
-    , m_pageViewportController(std::make_unique<PageViewportController>(page(), m_pageViewportControllerClient.get()))
+    , m_pageViewportControllerClient(this)
+    , m_pageViewportController(page(), &m_pageViewportControllerClient)
 #endif
     , m_isAccelerated(true)
 {
@@ -580,7 +578,7 @@ void EwkView::displayTimerFired(Timer<EwkView>*)
     WKViewPaintToCurrentGLContext(wkView());
 #endif
     // sd->image is tied to a native surface, which is in the parent's coordinates.
-    evas_object_image_data_update_add(sd->image, sd->view.x, sd->view.y, sd->view.w, sd->view.h);
+    evas_object_image_data_update_add(sd->image, 0, 0, sd->view.w, sd->view.h);
 }
 
 void EwkView::scheduleUpdateDisplay()
@@ -820,8 +818,11 @@ bool EwkView::createGLSurface()
         EVAS_GL_MULTISAMPLE_NONE
     };
 
+    Ewk_View_Smart_Data* sd = smartData();
+    IntSize viewSize(sd->view.w, sd->view.h);
+
     // Recreate to current size: Replaces if non-null, and frees existing surface after (OwnPtr).
-    m_evasGLSurface = EvasGLSurface::create(m_evasGL.get(), &evasGLConfig, deviceSize());
+    m_evasGLSurface = EvasGLSurface::create(m_evasGL.get(), &evasGLConfig, viewSize);
     if (!m_evasGLSurface)
         return false;
 
@@ -833,8 +834,7 @@ bool EwkView::createGLSurface()
 
     Evas_GL_API* gl = evas_gl_api_get(m_evasGL.get());
 
-    WKPoint boundsEnd = WKViewUserViewportToScene(wkView(), WKPointMake(deviceSize().width(), deviceSize().height()));
-    gl->glViewport(0, 0, boundsEnd.x, boundsEnd.y);
+    gl->glViewport(0, 0, viewSize.width(), viewSize.height());
     gl->glClearColor(1.0, 1.0, 1.0, 0);
     gl->glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1196,7 +1196,6 @@ void EwkView::handleEvasObjectCalculate(Evas_Object* evasObject)
         smartData->view.x = x;
         smartData->view.y = y;
         evas_object_move(smartData->image, x, y);
-        WKViewSetUserViewportTranslation(self->wkView(), x, y);
     }
 
     if (smartData->changed.size) {
@@ -1207,7 +1206,7 @@ void EwkView::handleEvasObjectCalculate(Evas_Object* evasObject)
         WKViewSetSize(self->wkView(), WKSizeMake(width, height));
 #if USE(ACCELERATED_COMPOSITING)
         if (WKPageUseFixedLayout(self->wkPage()))
-            self->pageViewportController()->didChangeViewportSize(self->size());
+            self->pageViewportController().didChangeViewportSize(self->size());
 
         self->setNeedsSurfaceResize();
 #endif
@@ -1403,8 +1402,8 @@ bool EwkView::scrollBy(const IntSize& offset)
     // Update new position to the PageViewportController.
     float contentScale = WKViewGetContentScaleFactor(wkView());
     newPosition.scale(1 / contentScale, 1 / contentScale);
-    newPosition = m_pageViewportController->boundContentsPositionAtScale(newPosition, contentScale);
-    m_pageViewportController->didChangeContentsVisibility(newPosition, contentScale);
+    newPosition = m_pageViewportController.boundContentsPositionAtScale(newPosition, contentScale);
+    m_pageViewportController.didChangeContentsVisibility(newPosition, contentScale);
 
     // Update new position to the WKView.
     WKPoint position = WKPointMake(newPosition.x() * contentScale, newPosition.y() * contentScale);

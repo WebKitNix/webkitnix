@@ -1,3 +1,411 @@
+2013-11-29  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        Remove Symbian specific code.
+        https://bugs.webkit.org/show_bug.cgi?id=124939
+
+        Reviewed by Zoltan Herczeg.
+
+        Symbian is not supported, remove leftover code.
+
+        * plugins/npapi.h:
+
+2013-11-28  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Rename InlineIterator::m_obj and make it private
+        https://bugs.webkit.org/show_bug.cgi?id=124837
+
+        Reviewed by Antti Koivisto.
+
+        InlineIterator has been exported m_obj as public though there is a getter function.
+        Besides *object* name isn't ambigious. So, changed it with m_renderer and renderer().
+        Additionally, setRenderer() is added as well.
+
+        No new tests, no behavior changes.
+
+        * rendering/InlineIterator.h:
+        (WebCore::InlineIterator::setObject):
+        (WebCore::operator==):
+        (WebCore::operator!=):
+        (WebCore::InlineBidiResolver::appendRun):
+        * rendering/RenderBlockLineLayout.cpp:
+        (WebCore::RenderBlockFlow::appendRunsForObject):
+        (WebCore::constructBidiRunsForLine):
+        (WebCore::RenderBlockFlow::createLineBoxesFromBidiRuns):
+        (WebCore::RenderBlockFlow::layoutRunsAndFloatsInRange):
+        (WebCore::RenderBlockFlow::matchedEndLine):
+        * rendering/line/BreakingContextInlineHeaders.h:
+        (WebCore::TrailingObjects::updateMidpointsForTrailingBoxes):
+        (WebCore::BreakingContext::BreakingContext):
+        (WebCore::BreakingContext::currentObject):
+        (WebCore::BreakingContext::initializeForCurrentObject):
+        (WebCore::BreakingContext::handleBR):
+        (WebCore::BreakingContext::handleOutOfFlowPositioned):
+        (WebCore::BreakingContext::handleFloat):
+        (WebCore::BreakingContext::handleEmptyInline):
+        (WebCore::BreakingContext::handleReplaced):
+        (WebCore::iteratorIsBeyondEndOfRenderCombineText):
+        (WebCore::ensureCharacterGetsLineBox):
+        (WebCore::BreakingContext::handleText):
+        (WebCore::BreakingContext::canBreakAtThisPosition):
+        (WebCore::BreakingContext::commitAndUpdateLineBreakIfNeeded):
+        (WebCore::checkMidpoints):
+        (WebCore::BreakingContext::handleEndOfLine):
+        * rendering/line/LineBreaker.cpp:
+        (WebCore::LineBreaker::skipTrailingWhitespace):
+        (WebCore::LineBreaker::skipLeadingWhitespace):
+        * rendering/line/LineInlineHeaders.h:
+        (WebCore::skipNonBreakingSpace):
+        (WebCore::requiresLineBox):
+
+2013-11-28  Antti Koivisto  <antti@apple.com>
+
+        Rename StylePropertySet to StyleProperties
+        https://bugs.webkit.org/show_bug.cgi?id=124990
+        
+        Reviewed by Andreas Kling.
+
+        "Set" does not add useful information here. Use less clunky plural name.
+
+2013-11-28  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Nix Upstream: Adding EditorNix to WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=124984
+
+        Reviewed by Csaba Osztrogonác.
+
+        No new tests needed.
+
+        * PlatformNix.cmake:
+        * editing/nix/EditorNix.cpp: Added.
+
+2013-11-28  Zoltan Horvath  <zoltan@webkit.org>
+
+        [Win] Update vcxproj.filters, since LineInfo.h and LineLayoutState.h have been moved to rendering/line
+        https://bugs.webkit.org/show_bug.cgi?id=124959
+
+        Reviewed by Brent Fulgham.
+
+        Update WebCore.vcxproj.filters, since LineInfo.h (r155628) and LineLayoutState.h (158121) have been moved to rendering/line.
+
+        No new tests, no behavior change.
+
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+
+2013-11-28  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        RenderTableSection Blink merge asserting
+        https://bugs.webkit.org/show_bug.cgi?id=124857
+
+        Reviewed by Csaba Osztrogonác.
+
+        Use border spacing at the end of all sections.
+
+        * rendering/RenderTableSection.cpp:
+        (WebCore::RenderTableSection::calcRowLogicalHeight):
+
+2013-11-28  Antti Koivisto  <antti@apple.com>
+
+        Remove feature: CSS variables
+        https://bugs.webkit.org/show_bug.cgi?id=114119
+
+        Reviewed by Andreas Kling.
+        
+        The feature is unmaintained and it is getting in the way of refactoring. Code quality is not up to
+        WebKit standards either.
+
+        * Configurations/FeatureDefines.xcconfig:
+        * GNUmakefile.list.am:
+        * WebCore.xcodeproj/project.pbxproj:
+        * css/CSSBasicShapes.cpp:
+        * css/CSSBasicShapes.h:
+        * css/CSSCalculationValue.cpp:
+        (WebCore::unitCategory):
+        (WebCore::hasDoubleValue):
+        (WebCore::CSSCalcPrimitiveValue::toCalcValue):
+        (WebCore::CSSCalcPrimitiveValue::computeLengthPx):
+        (WebCore::determineCategory):
+        (WebCore::CSSCalcBinaryOperation::primitiveType):
+        * css/CSSCalculationValue.h:
+        * css/CSSComputedStyleDeclaration.cpp:
+        (WebCore::ComputedStyleExtractor::propertyValue):
+        * css/CSSGrammar.y.in:
+        * css/CSSParser.cpp:
+        (WebCore::CSSParserContext::CSSParserContext):
+        (WebCore::operator==):
+        (WebCore::filterProperties):
+        (WebCore::CSSParser::createStylePropertySet):
+        (WebCore::CSSParser::addProperty):
+        (WebCore::CSSParser::validCalculationUnit):
+        (WebCore::CSSParser::validUnit):
+        (WebCore::CSSParser::createPrimitiveNumericValue):
+        (WebCore::CSSParser::parseValidPrimitive):
+        (WebCore::CSSParser::parseValue):
+        (WebCore::CSSParser::parseReflect):
+        (WebCore::CSSParser::detectDashToken):
+        (WebCore::CSSParser::realLex):
+        * css/CSSParser.h:
+        * css/CSSParserMode.h:
+        * css/CSSParserValues.cpp:
+        (WebCore::CSSParserValue::createCSSValue):
+        * css/CSSParserValues.h:
+        * css/CSSPrimitiveValue.cpp:
+        (WebCore::isValidCSSUnitTypeForDoubleConversion):
+        (WebCore::CSSPrimitiveValue::primitiveType):
+        (WebCore::CSSPrimitiveValue::cleanup):
+        (WebCore::CSSPrimitiveValue::getStringValue):
+        (WebCore::CSSPrimitiveValue::customCSSText):
+        (WebCore::CSSPrimitiveValue::equals):
+        * css/CSSPrimitiveValue.h:
+        * css/CSSPrimitiveValueMappings.h:
+        (WebCore::CSSPrimitiveValue::convertToLength):
+        * css/CSSProperty.cpp:
+        * css/CSSProperty.h:
+        (WebCore::CSSProperty::CSSProperty):
+        * css/CSSReflectValue.cpp:
+        * css/CSSReflectValue.h:
+        * css/CSSValue.cpp:
+        (WebCore::CSSValue::equals):
+        (WebCore::CSSValue::cssText):
+        (WebCore::CSSValue::destroy):
+        * css/CSSValue.h:
+        (WebCore::CSSValue::setCssText):
+        * css/CSSValueList.cpp:
+        * css/CSSValueList.h:
+        * css/CSSVariableValue.h: Removed.
+        * css/Pair.h:
+        * css/Rect.h:
+        * css/StylePropertySet.cpp:
+        (WebCore::StylePropertySet::asText):
+        (WebCore::StylePropertySet::PropertyReference::cssName):
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::styleForPage):
+        (WebCore::StyleResolver::applyProperties):
+        (WebCore::StyleResolver::applyMatchedProperties):
+        (WebCore::StyleResolver::applyProperty):
+        * css/StyleResolver.h:
+        * css/WebKitCSSTransformValue.cpp:
+        * css/WebKitCSSTransformValue.h:
+        (WebCore::WebKitCSSTransformValue::equals):
+        * css/makeprop.pl:
+        * page/Settings.cpp:
+        (WebCore::Settings::Settings):
+        * page/Settings.h:
+        * rendering/style/RenderStyle.h:
+        * rendering/style/StyleRareInheritedData.cpp:
+        (WebCore::StyleRareInheritedData::StyleRareInheritedData):
+        (WebCore::StyleRareInheritedData::operator==):
+        * rendering/style/StyleRareInheritedData.h:
+        * rendering/style/StyleVariableData.h: Removed.
+        * testing/InternalSettings.cpp:
+        (WebCore::InternalSettings::Backup::Backup):
+        (WebCore::InternalSettings::Backup::restoreTo):
+        * testing/InternalSettings.h:
+        * testing/InternalSettings.idl:
+
+2013-11-28  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Updating RTCPeerConnectionHandlerMock after r159769
+        https://bugs.webkit.org/show_bug.cgi?id=124947
+
+        Reviewed by Philippe Normand.
+
+        Adding its create function back, in order to run RTCPeerConnection LayoutTests.
+
+        No new tests needed.
+
+        * platform/mock/RTCPeerConnectionHandlerMock.cpp:
+        (WebCore::RTCPeerConnectionHandlerMock::create):
+        * platform/mock/RTCPeerConnectionHandlerMock.h:
+
+2013-11-27  Gustavo Noronha Silva  <gustavo.noronha@collabora.com>
+
+        [GTK] Support custom types for drag and drop data
+        https://bugs.webkit.org/show_bug.cgi?id=124659
+
+        Reviewed by Martin Robinson.
+
+        Covered by fast/events/drag-customData.html.
+
+        * platform/gtk/DataObjectGtk.cpp:
+        (WebCore::DataObjectGtk::unknownTypes): returns a hash map with all custom types set.
+        (WebCore::DataObjectGtk::clearAllExceptFilenames): clear custom types.
+        * platform/gtk/DataObjectGtk.h:
+        (WebCore::DataObjectGtk::hasUnknownTypeData): returns whether custom types are set.
+        (WebCore::DataObjectGtk::unknownTypeData): returns the data for a custom type.
+        (WebCore::DataObjectGtk::setUnknownTypeData): sets the data for a custom type.
+        * platform/gtk/PasteboardGtk.cpp:
+        (WebCore::Pasteboard::writeString): handle unknown types as custom.
+        (WebCore::Pasteboard::writePasteboard): ditto.
+        (WebCore::Pasteboard::hasData): also check for custom types.
+        (WebCore::Pasteboard::types): also obtain the list of custom types.
+        (WebCore::Pasteboard::readString): handle unknown types as custom.
+        * platform/gtk/PasteboardHelper.cpp:
+        (WebCore::initGdkAtoms): new unknown atom.
+        (WebCore::PasteboardHelper::PasteboardHelper): add custom type to the list of targets.
+        (WebCore::PasteboardHelper::fillSelectionData): turns any custom types' data into a GVariant, which
+        is in turn serialized to a single string for GtkSelectionData to hold.
+        (WebCore::PasteboardHelper::targetListForDataObject): add custom data to the target list if any is
+        set.
+        (WebCore::PasteboardHelper::fillDataObjectFromDropData): retrieve the custom types and their data
+        from the serialized GVariant string held by GtkSelectionData.
+        (WebCore::PasteboardHelper::dropAtomsForContext): handle custom types.
+
+2013-11-27  Eric Carlson  <eric.carlson@apple.com>
+
+        Allow the QuickTime plug-in to be replaced by script in an isolated word
+        https://bugs.webkit.org/show_bug.cgi?id=124900
+
+        Reviewed by Dean Jackson.
+
+        Test: plugins/quicktime-plugin-replacement.html
+
+        * CMakeLists.txt: Add new Modules path.
+        * DerivedSources.make: Add new files.
+        * GNUmakefile.am: Add new Modules path.
+        * GNUmakefile.list.am: Add new header.
+        * WebCore.vcxproj/WebCore.vcxproj: Add new header.
+        * WebCore.vcxproj/WebCoreCommon.props: Add new Modules path.
+        * WebCore.xcodeproj/project.pbxproj: Add new files.
+
+        * Modules/plugins: Added.
+        * Modules/plugins/PluginReplacement.h: Added. Defines the interface for a plug-in replacement.
+
+        Create a replacement for the QuickTime plug-in.
+        * Modules/plugins/QuickTimePluginReplacement.cpp: Added.
+        * Modules/plugins/QuickTimePluginReplacement.css: Added.
+        * Modules/plugins/QuickTimePluginReplacement.h: Added.
+        * Modules/plugins/QuickTimePluginReplacement.idl: Added.
+        * Modules/plugins/QuickTimePluginReplacement.js: Added.
+
+        Allow plug-in replacement to be enabled at runtime.
+        * bindings/generic/RuntimeEnabledFeatures.h:
+        (WebCore::RuntimeEnabledFeatures::setPluginReplacementEnabled):
+        (WebCore::RuntimeEnabledFeatures::pluginReplacementEnabled):
+
+        * bindings/js/JSDOMBinding.h:
+        (WebCore::toJS): Add toJS(... const String& ...).
+
+        * bindings/js/JSPluginElementFunctions.cpp:
+        (WebCore::pluginScriptObject): Give a plug-in replacement a first shot at defining the
+            script interface.
+
+        * html/HTMLEmbedElement.cpp:
+        (WebCore::HTMLEmbedElement::updateWidget): Call base class requestObject.
+
+        * html/HTMLMediaElement.cpp:
+        (HTMLMediaElement::fileSize): New, passthrough to media engine.
+        * html/HTMLMediaElement.h:
+
+        * html/HTMLObjectElement.cpp:
+        (WebCore::HTMLObjectElement::updateWidget): Call base class requestObject.
+
+        Moved some logic that was previously used only for creating a plug-in snapshot to the base
+        class so it can be shared by a plug-in replacement.
+        * html/HTMLPlugInElement.cpp:
+        (WebCore::HTMLPlugInElement::HTMLPlugInElement): Initialize timer used to swap renderers.
+        (WebCore::HTMLPlugInElement::createRenderer): Allow plug-in replacement to create the renderer.
+        (WebCore::HTMLPlugInElement::swapRendererTimerFired): Create a shadow root.
+        (WebCore::HTMLPlugInElement::setDisplayState): Set the new state, prime the swap renderer 
+            timer if necessary.
+        (WebCore::HTMLPlugInElement::didAddUserAgentShadowRoot): Tell the plug-in replacement to
+            install itself in the new shadow DOM.
+        (WebCore::registeredPluginReplacements): Return vector of all registered plug-in replacements.
+        (WebCore::registerPluginReplacement): Add a plug-in replacement.
+        (WebCore::pluginReplacementForType): Find a plug-in replacement for a MIME type.
+        (WebCore::HTMLPlugInElement::requestObject): If there is a plug-in replacement for the MIME type,
+            create it and set the display state.
+        (WebCore::HTMLPlugInElement::scriptObjectForPluginReplacement): Return the script object for 
+            the current plug-in replacement, if any.
+        * html/HTMLPlugInElement.h:
+
+        Move some plug-in snapshot code into the base class.
+        * html/HTMLPlugInImageElement.cpp:
+        (WebCore::HTMLPlugInImageElement::HTMLPlugInImageElement): No need to initialize timer.
+        (WebCore::HTMLPlugInImageElement::setDisplayState): Call base class.
+        (WebCore::HTMLPlugInImageElement::createRenderer): Ditto.
+        (WebCore::HTMLPlugInImageElement::didAddUserAgentShadowRoot): Ditto.
+        (WebCore::HTMLPlugInImageElement::userDidClickSnapshot): Remove unnecessary class name.
+        (WebCore::HTMLPlugInImageElement::requestObject): New.
+        * html/HTMLPlugInImageElement.h:
+
+        * html/HTMLVideoElement.h: Make createRenderer public so the QuickTime plug-in replacement can
+            call it.
+
+        * platform/graphics/MediaPlayer.cpp:
+        (WebCore::MediaPlayer::fileSize): New.
+        * platform/graphics/MediaPlayer.h:
+        * platform/graphics/MediaPlayerPrivate.h:
+
+        * platform/graphics/avfoundation/MediaPlayerPrivateAVFoundation.cpp:
+        (WebCore::MediaPlayerPrivateAVFoundation::extraMemoryCost): totalBytes returns an unsigned long long.
+        * platform/graphics/avfoundation/MediaPlayerPrivateAVFoundation.h:
+        (WebCore::MediaPlayerPrivateAVFoundation::fileSize):
+
+        * platform/graphics/avfoundation/cf/MediaPlayerPrivateAVFoundationCF.cpp:
+        (WebCore::MediaPlayerPrivateAVFoundationCF::totalBytes): Return an unsigned long long.
+        * platform/graphics/avfoundation/cf/MediaPlayerPrivateAVFoundationCF.h:
+
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateAVFoundationObjC.h:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateAVFoundationObjC.mm:
+        (WebCore::MediaPlayerPrivateAVFoundationObjC::totalBytes): Ditto.
+
+        * testing/InternalSettings.cpp:
+        (WebCore::InternalSettings::Backup::Backup): Backup the plug-in replacement runtime setting.
+        (WebCore::InternalSettings::Backup::restoreTo): Restore it.
+        (WebCore::InternalSettings::setPluginReplacementEnabled): Set it.
+        * testing/InternalSettings.h:
+        * testing/InternalSettings.idl:
+
+2013-11-27  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Adding MediaConstraintsMock class
+        https://bugs.webkit.org/show_bug.cgi?id=124902
+
+        Reviewed by Eric Carlson.
+
+        Validate constraints used in RTCPeerConnection LayoutTests
+
+        Existing test was updated.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * platform/mock/MediaConstraintsMock.cpp: Added.
+        * platform/mock/MediaConstraintsMock.h: Added.
+        * platform/mock/MockMediaStreamCenter.cpp:
+        (WebCore::MockMediaStreamCenter::validateRequestConstraints): Now using MediaConstraintsMock
+        (WebCore::MockMediaStreamCenter::createMediaStream): Ditto.
+        * platform/mock/RTCPeerConnectionHandlerMock.cpp:
+        (WebCore::RTCPeerConnectionHandlerMock::initialize): Ditto.
+
+2013-11-27  Bear Travis  <betravis@adobe.com>
+
+        [CSS Shapes] Shape-Inside Should Default to 'auto'
+        https://bugs.webkit.org/show_bug.cgi?id=124851
+
+        Reviewed by Alexandru Chiculita.
+
+        The current shape-inside specification has the property default to the 'auto'
+        value, not 'outside-shape'.
+
+        Updated tests are under fast/shapes.
+
+        * rendering/style/RenderStyle.cpp:
+        * rendering/style/RenderStyle.h:
+
+2013-11-27  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] shape-inside rectangle layout can fail
+        https://bugs.webkit.org/show_bug.cgi?id=124784
+
+        Reviewed by Andreas Kling.
+
+        Apply LayoutUnit::fromFloatCeil() consistently in RectangleShape::firstIncludedIntervalLogicalTop().
+
+        Test: fast/shapes/shape-inside/shape-inside-subpixel-rectangle-top.html
+
+        * rendering/shapes/RectangleShape.cpp:
+        (WebCore::RectangleShape::firstIncludedIntervalLogicalTop):
+
 2013-11-27  Nick Diego Yamane  <nick.yamane@openbossa.org>
 
         Remove Qt-specific .qrc files
