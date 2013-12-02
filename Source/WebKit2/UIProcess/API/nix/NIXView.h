@@ -27,6 +27,7 @@
 #define NIXView_h
 
 #include "NIXEvents.h"
+#include <WebKit2/WKBase.h>
 #include <WebKit2/WKContext.h>
 #include <WebKit2/WKContextMenuItem.h>
 #include <WebKit2/WKPage.h>
