@@ -64,6 +64,7 @@ public:
     virtual void addFocus() { WKViewSetIsFocused(m_view, true); }
     virtual void releaseFocus() { WKViewSetIsFocused(m_view, false); }
     virtual std::string activeUrl();
+    virtual void setPopupItem(int);
 
     // ViewsClient.
     static void viewNeedsDisplay(WKViewRef, WKRect area, const void* clientInfo);
@@ -162,6 +163,8 @@ private:
     std::string m_activeUrlText;
 
     static gboolean callUpdateDisplay(gpointer);
+
+    WKPopupMenuListenerRef m_menuListenerRef;
 };
 
 #endif

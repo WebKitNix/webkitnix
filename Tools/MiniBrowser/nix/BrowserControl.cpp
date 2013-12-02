@@ -41,6 +41,8 @@ BrowserControl::BrowserControl(BrowserControlClient * client, int width, int hei
     , m_lastClickY(-1)
     , m_lastClickButton(kWKEventMouseButtonNoButton)
     , m_clickCount(0)
+    , m_popupMessage(0)
+    , m_popupMenu(0)
 {
     init();
 
@@ -60,6 +62,8 @@ BrowserControl::BrowserControl(BrowserControlClient * client, int width, int hei
 
     // create a simple urlbar
     m_urlBar = new UrlBar(m_display, m_toolBar->window(), m_context, this, WKRectMake(urlBarX, toolBarElementY, width - urlBarRightOffset, urlBarHeight), url);
+
+    m_popupMessage = XInternAtom(m_display, "MenuEntry", False);
 
     createInputMethodAndInputContext();
 }
@@ -134,6 +138,31 @@ void BrowserControl::handleXEvent(const XEvent& event)
     // Send event to the appropriate component that will be handle
     if (component)
         component->handleEvent(event);
+    else
+        defaultEventHandler(event);
+}
+
+void BrowserControl::defaultEventHandler(const XEvent& event)
+{
+    if (event.type == ClientMessage) {
+        if (!strcmp(XGetAtomName(m_display, event.xclient.message_type), XGetAtomName(m_display, m_popupMessage)))
+            removePopupMenu(event.xclient.data.s[0]);
+    }
+}
+
+void BrowserControl::removePopupMenu(int itemValue)
+{
+    if (!m_popupMenu)
+        return;
+
+    m_client->setPopupItem(itemValue);
+    delete m_popupMenu;
+    m_popupMenu = 0;
+}
+
+void BrowserControl::createPopupMenu(WKRect& rect, std::vector<std::string> *menuitems)
+{
+    m_popupMenu = new PopupMenu(m_display, m_webView->window(), m_context, this, WKRectMake(rect.origin.x, rect.origin.y + rect.size.height, rect.size.width, rect.size.height), menuitems);
 }
 
 void BrowserControl::makeCurrent()
@@ -169,6 +198,7 @@ void BrowserControl::passFocusToWebView()
 
 void BrowserControl::passFocusToUrlBar()
 {
+    removePopupMenu();
     m_client->releaseFocus();
 }
 
@@ -323,6 +353,9 @@ void BrowserControl::updateClickCount(const XButtonPressedEvent& event)
 
 void BrowserControl::handleButtonPressEvent(const XButtonPressedEvent& event)
 {
+    removePopupMenu();
+    passFocusToWebView();
+
     if (event.button == 4 || event.button == 5) {
         const float pixelsPerStep = 40.0f;
 
@@ -352,8 +385,6 @@ void BrowserControl::handleButtonPressEvent(const XButtonPressedEvent& event)
     ev.modifiers = convertXEventModifiersToNativeModifiers(event.state);
     ev.timestamp = convertXEventTimeToNixTimestamp(event.time);
     m_client->handleMousePress(&ev);
-
-    passFocusToWebView();
 }
 
 void BrowserControl::handleButtonReleaseEvent(const XButtonReleasedEvent& event)

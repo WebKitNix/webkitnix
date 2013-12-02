@@ -28,12 +28,14 @@
 #include "Button.h"
 
 #include "../BrowserControl.h"
+#include <X11/cursorfont.h>
 
 Button::Button(Display* display, Window parent, XContext context, BrowserControl* control, WKRect size, const char* image, ButtonFunction callback)
     : VisualComponent(display, control, size)
     , m_onClick(callback)
 {
     createXWindow(parent, context);
+    XDefineCursor(display, m_window, XCreateFontCursor(display, XC_left_ptr));
 
     m_surface = cairo_xlib_surface_create(display, m_window, DefaultVisual(display, 0), m_size.size.width, m_size.size.height);
     m_image = cairo_image_surface_create_from_png(image);
