@@ -36,21 +36,22 @@
 #include <sys/utsname.h>
 #include <wtf/text/StringBuilder.h>
 
+#define STRINGFY(VALUE) #VALUE
+#define GET_WEBKIT_VERSION(MAJOR, MINOR) STRINGFY(MAJOR) "." STRINGFY(MINOR)
+#define UA_WEBKIT_VERSION GET_WEBKIT_VERSION(WEBKIT_MAJOR_VERSION, WEBKIT_MINOR_VERSION)
+
+#if PLATFORM(X11)
+#define UA_PLATFORM "X11"
+#else
+#define UA_PLATFORM "Unknown"
+#endif
+
 namespace WebKit {
 
 String WebPageProxy::standardUserAgent(const String& applicationName)
 {
-    WTF::String platform;
-    WTF::String version;
     WTF::String osVersion;
 
-#if PLATFORM(X11)
-    platform = "X11";
-#else
-    platform = "Unknown";
-#endif
-
-    version = String::number(WEBKIT_MAJOR_VERSION) + '.' + String::number(WEBKIT_MINOR_VERSION);
     struct utsname name;
     if (uname(&name) != -1)
         osVersion = WTF::String(name.sysname) + " " + WTF::String(name.machine);
@@ -58,19 +59,14 @@ String WebPageProxy::standardUserAgent(const String& applicationName)
         osVersion = "Unknown";
 
     WTF::StringBuilder userAgent;
-    userAgent.append("Mozilla/5.0 (");
-    userAgent.append(platform);
-    userAgent.append("; ");
+    userAgent.appendLiteral("Mozilla/5.0 (" UA_PLATFORM "; ");
     userAgent.append(osVersion);
-    userAgent.append(") AppleWebKit/");
-    userAgent.append(version);
-    userAgent.append(" (KHTML, like Gecko)");
+    userAgent.appendLiteral(") AppleWebKit/" UA_WEBKIT_VERSION " (KHTML, like Gecko)");
     if (!applicationName.isEmpty()) {
-        userAgent.append(" ");
+        userAgent.appendLiteral(" ");
         userAgent.append(applicationName);
     }
-    userAgent.append(" Safari/");
-    userAgent.append(version);
+    userAgent.appendLiteral(" Safari/" UA_WEBKIT_VERSION);
 
     return userAgent.toString();
 }
