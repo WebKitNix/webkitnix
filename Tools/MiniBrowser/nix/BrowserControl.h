@@ -30,6 +30,7 @@
 
 #include "Components/BrowserWindow.h"
 #include "Components/Button.h"
+#include "Components/PopupMenu.h"
 #include "Components/UrlBar.h"
 #include "Components/WebView.h"
 #include "NIXEvents.h"
@@ -57,6 +58,7 @@ public:
     virtual void addFocus() = 0;
     virtual void releaseFocus() = 0;
     virtual std::string activeUrl() = 0;
+    virtual void setPopupItem(int) = 0;
 };
 
 class BrowserControl : public XlibEventSource::Client {
@@ -112,6 +114,10 @@ public:
     void updateClickCount(const XButtonPressedEvent&);
     unsigned clickCount() { return m_clickCount; }
 
+    void defaultEventHandler(const XEvent&);
+    void createPopupMenu(WKRect&, std::vector<std::string>*);
+    void removePopupMenu(int itemValue = 0);
+
 private:
     void init();
     void sendKeyboardEventToNix(const XEvent&);
@@ -133,6 +139,7 @@ private:
     int m_lastClickY;
     WKEventMouseButton m_lastClickButton;
     unsigned m_clickCount;
+    Atom m_popupMessage;
 
     // Visual components
     BrowserWindow* m_browserWindow;
@@ -140,6 +147,7 @@ private:
     Button* m_backButton;
     Button* m_forwardButton;
     Button* m_refreshButton;
+    PopupMenu* m_popupMenu;
     UrlBar* m_urlBar;
     WebView* m_webView;
 };

@@ -54,7 +54,7 @@ void BrowserWindow::createXWindow(Window parent, XContext context)
     wmDeleteMessageAtom = XInternAtom(m_display, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(m_display, m_window, &wmDeleteMessageAtom, 1);
 
-    XSelectInput(m_display, m_window, ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask);
+    XSelectInput(m_display, m_window, ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask | FocusChangeMask | ButtonPressMask | ButtonReleaseMask);
     XSaveContext(m_display, m_window, context, (XPointer)this);
     XMapWindow(m_display, m_window);
 }
@@ -62,6 +62,10 @@ void BrowserWindow::createXWindow(Window parent, XContext context)
 void BrowserWindow::handleEvent(const XEvent& event)
 {
     switch (event.type) {
+    case ButtonPress:
+    case FocusOut:
+        m_control->removePopupMenu();
+        break;
     case KeyPress:
         m_control->handleKeyPressEvent(event);
         break;
@@ -69,6 +73,7 @@ void BrowserWindow::handleEvent(const XEvent& event)
         m_control->handleKeyReleaseEvent(event);
         break;
     case ConfigureNotify:
+        m_control->removePopupMenu();
         updateSizeIfNeeded(event.xconfigure.width, event.xconfigure.height);
         break;
     case ClientMessage:
