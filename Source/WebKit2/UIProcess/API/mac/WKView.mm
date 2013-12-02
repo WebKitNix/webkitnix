@@ -153,9 +153,6 @@ struct WKViewInterpretKeyEventsParameters {
 @public
     std::unique_ptr<PageClientImpl> _pageClient;
     RefPtr<WebPageProxy> _page;
-    
-    // Cache of the associated WKBrowsingContextController.
-    RetainPtr<WKBrowsingContextController> _browsingContextController;
 
     // For ToolTips.
     NSToolTipTag _lastToolTipTag;
@@ -300,9 +297,7 @@ struct WKViewInterpretKeyEventsParameters {
 
 - (WKBrowsingContextController *)browsingContextController
 {
-    if (!_data->_browsingContextController)
-        _data->_browsingContextController = adoptNS([[WKBrowsingContextController alloc] _initWithPageRef:[self pageRef]]);
-    return _data->_browsingContextController.get();
+    return wrapper(*_data->_page);
 }
 
 #endif // WK_API_ENABLED
@@ -921,7 +916,7 @@ static void speakString(WKStringRef string, WKErrorRef error, void*)
     bool spellCheckingEnabled = !TextChecker::state().isContinuousSpellCheckingEnabled;
     TextChecker::setContinuousSpellCheckingEnabled(spellCheckingEnabled);
 
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (BOOL)isGrammarCheckingEnabled
@@ -935,7 +930,7 @@ static void speakString(WKStringRef string, WKErrorRef error, void*)
         return;
     
     TextChecker::setGrammarCheckingEnabled(flag);
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (IBAction)toggleGrammarChecking:(id)sender
@@ -943,14 +938,14 @@ static void speakString(WKStringRef string, WKErrorRef error, void*)
     bool grammarCheckingEnabled = !TextChecker::state().isGrammarCheckingEnabled;
     TextChecker::setGrammarCheckingEnabled(grammarCheckingEnabled);
 
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (IBAction)toggleAutomaticSpellingCorrection:(id)sender
 {
     TextChecker::setAutomaticSpellingCorrectionEnabled(!TextChecker::state().isAutomaticSpellingCorrectionEnabled);
 
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (void)orderFrontSubstitutionsPanel:(id)sender
@@ -985,13 +980,13 @@ static void speakString(WKStringRef string, WKErrorRef error, void*)
         return;
 
     TextChecker::setAutomaticQuoteSubstitutionEnabled(flag);
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (void)toggleAutomaticQuoteSubstitution:(id)sender
 {
     TextChecker::setAutomaticQuoteSubstitutionEnabled(!TextChecker::state().isAutomaticQuoteSubstitutionEnabled);
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (BOOL)isAutomaticDashSubstitutionEnabled
@@ -1005,13 +1000,13 @@ static void speakString(WKStringRef string, WKErrorRef error, void*)
         return;
 
     TextChecker::setAutomaticDashSubstitutionEnabled(flag);
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (void)toggleAutomaticDashSubstitution:(id)sender
 {
     TextChecker::setAutomaticDashSubstitutionEnabled(!TextChecker::state().isAutomaticDashSubstitutionEnabled);
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (BOOL)isAutomaticLinkDetectionEnabled
@@ -1025,13 +1020,13 @@ static void speakString(WKStringRef string, WKErrorRef error, void*)
         return;
 
     TextChecker::setAutomaticLinkDetectionEnabled(flag);
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (void)toggleAutomaticLinkDetection:(id)sender
 {
     TextChecker::setAutomaticLinkDetectionEnabled(!TextChecker::state().isAutomaticLinkDetectionEnabled);
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (BOOL)isAutomaticTextReplacementEnabled
@@ -1045,13 +1040,13 @@ static void speakString(WKStringRef string, WKErrorRef error, void*)
         return;
 
     TextChecker::setAutomaticTextReplacementEnabled(flag);
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (void)toggleAutomaticTextReplacement:(id)sender
 {
     TextChecker::setAutomaticTextReplacementEnabled(!TextChecker::state().isAutomaticTextReplacementEnabled);
-    _data->_page->process()->updateTextCheckerState();
+    _data->_page->process().updateTextCheckerState();
 }
 
 - (void)uppercaseWord:(id)sender
@@ -1825,7 +1820,7 @@ static void createSandboxExtensionsForFileUpload(NSPasteboard *pasteboard, Sandb
     SandboxExtension::Handle sandboxExtensionHandle;
     bool createdExtension = maybeCreateSandboxExtensionFromPasteboard([draggingInfo draggingPasteboard], sandboxExtensionHandle);
     if (createdExtension)
-        _data->_page->process()->willAcquireUniversalFileReadSandboxExtension();
+        _data->_page->process().willAcquireUniversalFileReadSandboxExtension();
 
     SandboxExtension::HandleArray sandboxExtensionForUpload;
     createSandboxExtensionsForFileUpload([draggingInfo draggingPasteboard], sandboxExtensionForUpload);
@@ -2100,8 +2095,8 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
     // needs to be updated with the pid of the remote process. If the process is going
     // away, that information is not present in WebProcess
     pid_t pid = 0;
-    if (registerProcess && _data->_page->process())
-        pid = _data->_page->process()->processIdentifier();
+    if (registerProcess)
+        pid = _data->_page->process().processIdentifier();
     else if (!registerProcess) {
         pid = WKAXRemoteProcessIdentifier(_data->_remoteAccessibilityChild.get());
         _data->_remoteAccessibilityChild = nil;
@@ -2277,7 +2272,7 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 
 - (void)_preferencesDidChange
 {
-    BOOL needsViewFrameInWindowCoordinates = _data->_page->pageGroup()->preferences()->pluginsEnabled();
+    BOOL needsViewFrameInWindowCoordinates = _data->_page->pageGroup().preferences()->pluginsEnabled();
 
     if (!!needsViewFrameInWindowCoordinates == !!_data->_needsViewFrameInWindowCoordinates)
         return;
@@ -2913,7 +2908,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     _data = [[WKViewData alloc] init];
 
     _data->_pageClient = std::make_unique<PageClientImpl>(self);
-    _data->_page = toImpl(contextRef)->createWebPage(_data->_pageClient.get(), toImpl(pageGroupRef), toImpl(relatedPage));
+    _data->_page = toImpl(contextRef)->createWebPage(*_data->_pageClient, toImpl(pageGroupRef), toImpl(relatedPage));
     _data->_page->setIntrinsicDeviceScaleFactor([self _intrinsicDeviceScaleFactor]);
     _data->_page->initializeWebPage();
 #if ENABLE(FULLSCREEN_API)
@@ -2927,7 +2922,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
 
     _data->_intrinsicContentSize = NSMakeSize(NSViewNoInstrinsicMetric, NSViewNoInstrinsicMetric);
 
-    _data->_needsViewFrameInWindowCoordinates = _data->_page->pageGroup()->preferences()->pluginsEnabled();
+    _data->_needsViewFrameInWindowCoordinates = _data->_page->pageGroup().preferences()->pluginsEnabled();
     _data->_frameOrigin = NSZeroPoint;
     _data->_contentAnchor = WKContentAnchorTopLeft;
     

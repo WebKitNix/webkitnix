@@ -52,8 +52,6 @@ using namespace WebKit;
     std::unique_ptr<PageClientImpl> _pageClient;
     RefPtr<WebPageProxy> _page;
 
-    RetainPtr<WKBrowsingContextController> _browsingContextController;
-
     RetainPtr<UIView> _rootContentView;
     RetainPtr<WKInteractionView> _interactionView;
 }
@@ -104,9 +102,7 @@ using namespace WebKit;
 
 - (WKBrowsingContextController *)browsingContextController
 {
-    if (!_browsingContextController)
-        _browsingContextController = adoptNS([[WKBrowsingContextController alloc] _initWithPageRef:toAPI(_page.get())]);
-    return _browsingContextController.get();
+    return wrapper(*_page);
 }
 
 - (WKContentType)contentType
@@ -151,7 +147,7 @@ using namespace WebKit;
     RunLoop::initializeMainRunLoop();
 
     _pageClient = std::make_unique<PageClientImpl>(self);
-    _page = toImpl(contextRef)->createWebPage(_pageClient.get(), toImpl(pageGroupRef), toImpl(relatedPage));
+    _page = toImpl(contextRef)->createWebPage(*_pageClient, toImpl(pageGroupRef), toImpl(relatedPage));
     _page->initializeWebPage();
     _page->setIntrinsicDeviceScaleFactor([UIScreen mainScreen].scale);
     _page->setUseFixedLayout(true);
@@ -261,7 +257,7 @@ using namespace WebKit;
 
 - (void)_decidePolicyForGeolocationRequestFromOrigin:(WebSecurityOrigin&)origin frame:(WebFrameProxy&)frame request:(GeolocationPermissionRequestProxy&)permissionRequest
 {
-    [[wrapper(*_page->process()->context()) _geolocationProvider] decidePolicyForGeolocationRequestFromOrigin:toAPI(&origin) frame:toAPI(&frame) request:toAPI(&permissionRequest) window:[self window]];
+    [[wrapper(_page->process().context()) _geolocationProvider] decidePolicyForGeolocationRequestFromOrigin:toAPI(&origin) frame:toAPI(&frame) request:toAPI(&permissionRequest) window:[self window]];
 }
 
 @end

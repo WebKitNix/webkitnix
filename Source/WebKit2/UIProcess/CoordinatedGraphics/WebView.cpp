@@ -52,15 +52,15 @@ WebView::WebView(WebContext* context, WebPageGroup* pageGroup)
     , m_opacity(1.0)
 {
     // Need to call createWebPage after other data members, specifically m_visible, are initialized.
-    m_page = context->createWebPage(this, pageGroup);
+    m_page = context->createWebPage(*this, pageGroup);
 
-    m_page->pageGroup()->preferences()->setAcceleratedCompositingEnabled(true);
-    m_page->pageGroup()->preferences()->setForceCompositingMode(true);
+    m_page->pageGroup().preferences()->setAcceleratedCompositingEnabled(true);
+    m_page->pageGroup().preferences()->setForceCompositingMode(true);
 
     char* debugVisualsEnvironment = getenv("WEBKIT_SHOW_COMPOSITING_DEBUG_VISUALS");
     bool showDebugVisuals = debugVisualsEnvironment && !strcmp(debugVisualsEnvironment, "1");
-    m_page->pageGroup()->preferences()->setCompositingBordersVisible(showDebugVisuals);
-    m_page->pageGroup()->preferences()->setCompositingRepaintCountersVisible(showDebugVisuals);
+    m_page->pageGroup().preferences()->setCompositingBordersVisible(showDebugVisuals);
+    m_page->pageGroup().preferences()->setCompositingRepaintCountersVisible(showDebugVisuals);
 }
 
 WebView::~WebView()
@@ -373,7 +373,7 @@ void WebView::toolTipChanged(const String&, const String& newToolTip)
 
 void WebView::didCommitLoadForMainFrame()
 {
-    notImplemented();
+    m_contentsSize = IntSize();
 }
 
 void WebView::setCursor(const WebCore::Cursor&)

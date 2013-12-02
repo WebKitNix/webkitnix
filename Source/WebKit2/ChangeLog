@@ -1,3 +1,700 @@
+2013-12-01  ChangSeok Oh  <changseok.oh@collabora.com>
+
+        Unreviewed Gtk port Build fix after r159903
+
+        * UIProcess/DrawingAreaProxyImpl.cpp:
+        (WebKit::DrawingAreaProxyImpl::layerHostingModeDidChange):
+        (WebKit::DrawingAreaProxyImpl::update):
+        (WebKit::DrawingAreaProxyImpl::didUpdateBackingStoreState):
+        (WebKit::DrawingAreaProxyImpl::sendUpdateBackingStoreState):
+        (WebKit::DrawingAreaProxyImpl::waitForAndDispatchDidUpdateBackingStoreState):
+        * UIProcess/gtk/WebFullScreenManagerProxyGtk.cpp:
+        (WebKit::WebFullScreenManagerProxy::invalidate):
+        * UIProcess/gtk/WebInspectorProxyGtk.cpp:
+        (WebKit::WebInspectorProxy::platformCreateInspectorPage):
+        * UIProcess/gtk/WebPageProxyGtk.cpp:
+        (WebKit::WebPageProxy::setAcceleratedCompositingWindowId):
+
+2013-12-01  Sam Weinig  <sam@webkit.org>
+
+        Give UserMessageEncoders WebProcessProxy reference (like the decoders already have)
+        https://bugs.webkit.org/show_bug.cgi?id=125053
+
+        Reviewed by Dan Bernstein.
+
+        - Give the UserMessageEncoders a process reference.
+        - Switch UserMessageDecoders to storing a process reference, rather than pointer.
+
+        * Shared/UserMessageCoders.h:
+        * Shared/mac/ObjCObjectGraphCoders.h:
+        * Shared/mac/ObjCObjectGraphCoders.mm:
+        * UIProcess/WebConnectionToWebProcess.cpp:
+        * UIProcess/WebContext.cpp:
+        * UIProcess/WebContextUserMessageCoders.h:
+        * UIProcess/WebPageProxy.cpp:
+        * WebProcess/InjectedBundle/InjectedBundleUserMessageCoders.h:
+
+2013-12-01  Sam Weinig  <sam@webkit.org>
+
+        [Cocoa] The PageLoadState::Observer is not being set on iOS
+        https://bugs.webkit.org/show_bug.cgi?id=125051
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/ios/WebPageProxyIOS.mm:
+        (WebKit::WebPageProxy::platformInitialize):
+        Add missing call to _finishInitialization.
+
+2013-12-01  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Unreviewed EFL Build fix attempt after r159903
+
+        * UIProcess/CoordinatedGraphics/CoordinatedDrawingAreaProxy.cpp:
+        (WebKit::CoordinatedDrawingAreaProxy::layerHostingModeDidChange):
+        (WebKit::CoordinatedDrawingAreaProxy::update):
+        (WebKit::CoordinatedDrawingAreaProxy::didUpdateBackingStoreState):
+        (WebKit::CoordinatedDrawingAreaProxy::sendUpdateBackingStoreState):
+        (WebKit::CoordinatedDrawingAreaProxy::waitForAndDispatchDidUpdateBackingStoreState):
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.cpp:
+        (WebKit::CoordinatedLayerTreeHostProxy::CoordinatedLayerTreeHostProxy):
+        (WebKit::CoordinatedLayerTreeHostProxy::~CoordinatedLayerTreeHostProxy):
+        (WebKit::CoordinatedLayerTreeHostProxy::setVisibleContentsRect):
+        (WebKit::CoordinatedLayerTreeHostProxy::renderNextFrame):
+        (WebKit::CoordinatedLayerTreeHostProxy::purgeBackingStores):
+        (WebKit::CoordinatedLayerTreeHostProxy::commitScrollOffset):
+        * UIProcess/WebTextChecker.cpp:
+        (WebKit::WebTextChecker::checkSpelling):
+        (WebKit::WebTextChecker::changeSpellingToWord):
+        * UIProcess/WebTextChecker.h:
+        * UIProcess/WebVibrationProxy.cpp:
+        (WebKit::WebVibrationProxy::WebVibrationProxy):
+        (WebKit::WebVibrationProxy::~WebVibrationProxy):
+        * UIProcess/efl/WebFullScreenManagerProxyEfl.cpp:
+        (WebKit::WebFullScreenManagerProxy::invalidate):
+        * UIProcess/efl/WebInspectorProxyEfl.cpp:
+        (WebKit::WebInspectorProxy::platformCreateInspectorPage):
+        * UIProcess/efl/WebPageProxyEfl.cpp:
+        (WebKit::WebPageProxy::setThemePath):
+        (WebKit::WebPageProxy::confirmComposition):
+        (WebKit::WebPageProxy::setComposition):
+        (WebKit::WebPageProxy::cancelComposition):
+
+2013-12-01  Sam Weinig  <sam@webkit.org>
+
+        Fix the iOS build.
+
+        * UIProcess/API/ios/WKContentView.mm:
+        * UIProcess/API/ios/WKInteractionView.mm:
+        * UIProcess/ios/WebPageProxyIOS.mm:
+
+2013-12-01  Sam Weinig  <sam@webkit.org>
+
+        [CTTE] The WebPageProxy's WebProcessProxy is never null so it should be stored in a Ref
+        https://bugs.webkit.org/show_bug.cgi?id=125047
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/C/WKPage.cpp:
+        * UIProcess/API/C/mac/WKPagePrivateMac.cpp:
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        * UIProcess/API/mac/WKView.mm:
+        * UIProcess/Downloads/DownloadProxy.cpp:
+        * UIProcess/Downloads/DownloadProxy.h:
+        * UIProcess/Downloads/DownloadProxyMap.cpp:
+        * UIProcess/Downloads/DownloadProxyMap.h:
+        * UIProcess/DrawingAreaProxy.cpp:
+        * UIProcess/GeolocationPermissionRequestManagerProxy.cpp:
+        * UIProcess/Network/NetworkProcessProxy.cpp:
+        * UIProcess/Network/NetworkProcessProxy.h:
+        * UIProcess/Notifications/NotificationPermissionRequestManagerProxy.cpp:
+        * UIProcess/Notifications/WebNotificationManagerProxy.cpp:
+        * UIProcess/WebContext.cpp:
+        * UIProcess/WebContext.h:
+        * UIProcess/WebEditCommandProxy.cpp:
+        * UIProcess/WebFrameProxy.cpp:
+        * UIProcess/WebFullScreenManagerProxy.cpp:
+        * UIProcess/WebInspectorProxy.cpp:
+        * UIProcess/WebPageGroup.h:
+        * UIProcess/WebPageProxy.cpp:
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebProcessProxy.cpp:
+        * UIProcess/WebProcessProxy.h:
+        * UIProcess/cf/WebPageProxyCF.cpp:
+        * UIProcess/mac/RemoteLayerTreeDrawingAreaProxy.mm:
+        * UIProcess/mac/RemoteLayerTreeHost.mm:
+        * UIProcess/mac/TiledCoreAnimationDrawingAreaProxy.mm:
+        * UIProcess/mac/WebFullScreenManagerProxyMac.mm:
+        * UIProcess/mac/WebInspectorProxyMac.mm:
+        * UIProcess/mac/WebPageProxyMac.mm:
+
+2013-12-01  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL][CoordinatedGraphics] Clear m_contentsSize when new contents are loaded
+        https://bugs.webkit.org/show_bug.cgi?id=125033
+
+        Reviewed by Gyuyoung Kim.
+
+        m_contentsSize should be cleared when new contents are loaded so that PageViewportController
+        would take care of newly loaded contents with same size as previous one.
+        It's because PageViewportController is cleared not to make wrong behaviour
+        while loading when new contents are committed.
+
+        * UIProcess/API/efl/tests/test_ewk2_view.cpp:
+        (TEST_F):
+        Improve tests to check contents,size,changed signal when loaded contents having
+        same size with previous one.
+        * UIProcess/CoordinatedGraphics/WebView.cpp:
+        (WebKit::WebView::didCommitLoadForMainFrame): Cleared m_contentsSize.
+
+2013-12-01  Philippe Normand  <pnormand@igalia.com>
+
+        Unreviewed GTK build fix after r159896.
+
+        * UIProcess/API/gtk/WebKitWebContext.cpp:
+        (webkitWebContextCreatePageForWebView):
+        * UIProcess/API/gtk/WebKitWebView.cpp:
+        (webkitWebViewConstructed):
+        * UIProcess/API/gtk/WebKitWebViewBase.cpp:
+        (webkitWebViewBaseUpdatePreferences):
+
+2013-12-01  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Unreviewed build fix after r159896.
+
+        * UIProcess/API/efl/ewk_settings.cpp:
+        (EwkSettings::preferences):
+        * UIProcess/CoordinatedGraphics/CoordinatedDrawingAreaProxy.cpp:
+        (WebKit::CoordinatedDrawingAreaProxy::CoordinatedDrawingAreaProxy):
+        * UIProcess/CoordinatedGraphics/WebView.cpp:
+        (WebKit::WebView::WebView):
+
+2013-11-30  Sam Weinig  <sam@webkit.org>
+
+        [CTTE] The WebPageProxy's WebPageGroup is never null so it should be stored in a Ref
+        https://bugs.webkit.org/show_bug.cgi?id=125038
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/C/WKPage.cpp:
+        (WKPageGetPageGroup):
+        * UIProcess/API/C/mac/WKPagePrivateMac.cpp:
+        (WKPageIsURLKnownHSTSHost):
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController browsingContextGroup]):
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView _preferencesDidChange]):
+        (-[WKView initWithFrame:contextRef:pageGroupRef:relatedToPage:]):
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::WebContext):
+        (WebKit::WebContext::createWebPage):
+        * UIProcess/WebContext.h:
+        * UIProcess/WebInspectorProxy.cpp:
+        (WebKit::WebInspectorPageGroups::inspectorLevel):
+        (WebKit::WebInspectorPageGroups::isInspectorPageGroup):
+        (WebKit::WebInspectorPageGroups::inspectorPageGroupLevel):
+        (WebKit::WebInspectorProxy::isInspectorPage):
+        * UIProcess/WebInspectorProxy.h:
+        * UIProcess/WebPageGroup.cpp:
+        (WebKit::WebPageGroup::createNonNull):
+        * UIProcess/WebPageGroup.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::create):
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::maybeInitializeSandboxExtensionHandle):
+        (WebKit::WebPageProxy::preferencesDidChange):
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::pageGroup):
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::createWebPage):
+        * UIProcess/WebProcessProxy.h:
+        * UIProcess/mac/WebInspectorProxyMac.mm:
+        (WebKit::WebInspectorProxy::createInspectorWindow):
+        (WebKit::WebInspectorProxy::platformCreateInspectorPage):
+        (WebKit::WebInspectorProxy::windowFrameDidChange):
+        * UIProcess/mac/WebProcessProxyMac.mm:
+        (WebKit::WebProcessProxy::pageIsProcessSuppressible):
+
+2013-11-30  Dan Bernstein  <mitz@apple.com>
+
+        Added a version of +[NSURL _web_URLWithWTFString:relativeToURL:] that doesn’t take a base URL and switched all callers to it.
+        https://bugs.webkit.org/show_bug.cgi?id=125040
+
+        Reviewed by Sam Weinig.
+
+        * Shared/Cocoa/WKNSURLExtras.h: Declared new method.
+        * Shared/Cocoa/WKNSURLExtras.mm:
+        (urlWithWTFString): Added helper function.
+        (+[NSURL _web_URLWithWTFString:]): Added.
+        (+[NSURL _web_URLWithWTFString:relativeToURL:]): Changed to use helper function.
+        * UIProcess/API/Cocoa/WKBackForwardListItem.mm:
+        (-[WKBackForwardListItem URL]): Changed to call new method.
+        (-[WKBackForwardListItem originalURL]): Ditto.
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController activeURL]): Ditto.
+        (-[WKBrowsingContextController provisionalURL]): Ditto.
+        (-[WKBrowsingContextController committedURL]): Ditto.
+        (-[WKBrowsingContextController unreachableURL]): Ditto.
+        (setUpPagePolicyClient): Ditto.
+        * UIProcess/API/Cocoa/WKNavigationData.mm:
+        (-[WKNavigationData destinationURL]): Ditto.
+
+2013-11-30  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Stop using the WKPageRef API in WKBrowsingContextController
+        https://bugs.webkit.org/show_bug.cgi?id=125036
+
+        Reviewed by Sam Weinig.
+
+        * Shared/Cocoa/WKNSURLExtras.h: Declared new method.
+        * Shared/Cocoa/WKNSURLExtras.mm:
+        (-[NSURL _web_originalDataAsWTFString]): Added. Returns a WTF::String with the receiver’s
+        bytes.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController loadRequest:userData:]):
+        (-[WKBrowsingContextController loadFileURL:restrictToFilesWithin:userData:]):
+        (-[WKBrowsingContextController loadHTMLString:baseURL:userData:]):
+        (-[WKBrowsingContextController loadAlternateHTMLString:baseURL:forUnreachableURL:]):
+        (-[WKBrowsingContextController loadData:MIMEType:textEncodingName:baseURL:userData:]):
+        (-[WKBrowsingContextController stopLoading]):
+        (-[WKBrowsingContextController reload]):
+        (-[WKBrowsingContextController reloadFromOrigin]):
+        (-[WKBrowsingContextController goForward]):
+        (-[WKBrowsingContextController canGoForward]):
+        (-[WKBrowsingContextController goBack]):
+        (-[WKBrowsingContextController canGoBack]):
+        (-[WKBrowsingContextController activeURL]):
+        (-[WKBrowsingContextController provisionalURL]):
+        (-[WKBrowsingContextController committedURL]):
+        (-[WKBrowsingContextController title]):
+        (-[WKBrowsingContextController textZoom]):
+        (-[WKBrowsingContextController setTextZoom:]):
+        (-[WKBrowsingContextController pageZoom]):
+        (-[WKBrowsingContextController setPageZoom:]):
+        (setUpPageLoaderClient):
+        (setUpPagePolicyClient):
+        (-[WKBrowsingContextController setLoadDelegate:]):
+        (-[WKBrowsingContextController setPolicyDelegate:]):
+        (-[WKBrowsingContextController _pageRef]):
+        (-[WKBrowsingContextController setPaginationMode:]):
+        (-[WKBrowsingContextController paginationMode]):
+        (-[WKBrowsingContextController setPaginationBehavesLikeColumns:]):
+        (-[WKBrowsingContextController paginationBehavesLikeColumns]):
+        (-[WKBrowsingContextController setPageLength:]):
+        (-[WKBrowsingContextController pageLength]):
+        (-[WKBrowsingContextController setGapBetweenPages:]):
+        (-[WKBrowsingContextController gapBetweenPages]):
+        (-[WKBrowsingContextController pageCount]):
+
+2013-11-30  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159865.
+        http://trac.webkit.org/changeset/159865
+        https://bugs.webkit.org/show_bug.cgi?id=125037
+
+        the position of mouse events are wrong at MiniBrowser/efl
+        (Requested by ryuan on #webkit).
+
+        * UIProcess/API/efl/EwkView.cpp:
+        (EwkView::displayTimerFired):
+        (EwkView::createGLSurface):
+        (EwkView::handleEvasObjectCalculate):
+
+2013-11-30  Sam Weinig  <sam@webkit.org>
+
+        [CTTE] The WebPageProxy's WebBackForwardList is never null so it should be stored in a Ref
+        https://bugs.webkit.org/show_bug.cgi?id=125035
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/C/WKPage.cpp:
+        (WKPageGetBackForwardList):
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController backForwardList]): Remove null check.
+        * UIProcess/WebBackForwardList.cpp:
+        (WebKit::WebBackForwardList::WebBackForwardList):
+        (WebKit::WebBackForwardList::currentItem): Constify.
+        (WebKit::WebBackForwardList::backItem): Constify.
+        (WebKit::WebBackForwardList::forwardItem): Constify.
+        (WebKit::WebBackForwardList::itemAtIndex): Constify.
+        * UIProcess/WebBackForwardList.h:
+        (WebKit::WebBackForwardList::create):
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::backForwardList):
+
+2013-11-30  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK build fix after r159889.
+
+        * UIProcess/gtk/WebPageProxyGtk.cpp:
+        (WebKit::WebPageProxy::viewWidget): Adjust the static cast of the PageClient reference to PageClientImpl.
+
+2013-11-30  Sam Weinig  <sam@webkit.org>
+
+        [CTTE] WebPageProxy should store the PageClient as a reference
+        https://bugs.webkit.org/show_bug.cgi?id=125030
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/gtk/WebKitWebViewBase.cpp:
+        (webkitWebViewBaseCreateWebPage):
+        * UIProcess/API/ios/WKContentView.mm:
+        (-[WKContentView _commonInitializationWithContextRef:pageGroupRef:relatedToPage:]):
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView initWithFrame:contextRef:pageGroupRef:relatedToPage:]):
+        * UIProcess/CoordinatedGraphics/WebPageProxyCoordinatedGraphics.cpp:
+        (WebKit::WebPageProxy::didFindZoomableArea):
+        * UIProcess/CoordinatedGraphics/WebView.cpp:
+        (WebKit::WebView::WebView):
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::createWebPage):
+        * UIProcess/WebContext.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::create):
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::reattachToWebProcess):
+        (WebKit::WebPageProxy::initializeWebPage):
+        (WebKit::WebPageProxy::close):
+        (WebKit::WebPageProxy::setViewNeedsDisplay):
+        (WebKit::WebPageProxy::displayView):
+        (WebKit::WebPageProxy::canScrollView):
+        (WebKit::WebPageProxy::scrollView):
+        (WebKit::WebPageProxy::updateViewState):
+        (WebKit::WebPageProxy::viewStateDidChange):
+        (WebKit::WebPageProxy::viewSize):
+        (WebKit::WebPageProxy::startDrag):
+        (WebKit::WebPageProxy::handleTouchEvent):
+        (WebKit::WebPageProxy::preferencesDidChange):
+        (WebKit::WebPageProxy::didCommitLoadForFrame):
+        (WebKit::WebPageProxy::closePage):
+        (WebKit::WebPageProxy::setWindowFrame):
+        (WebKit::WebPageProxy::getWindowFrame):
+        (WebKit::WebPageProxy::screenToWindow):
+        (WebKit::WebPageProxy::windowToScreen):
+        (WebKit::WebPageProxy::pageDidRequestScroll):
+        (WebKit::WebPageProxy::pageTransitionViewportReady):
+        (WebKit::WebPageProxy::didRenderFrame):
+        (WebKit::WebPageProxy::didChangeViewportProperties):
+        (WebKit::WebPageProxy::handleDownloadRequest):
+        (WebKit::WebPageProxy::didChangeContentSize):
+        (WebKit::WebPageProxy::showColorPicker):
+        (WebKit::WebPageProxy::editorStateChanged):
+        (WebKit::WebPageProxy::canUndoRedo):
+        (WebKit::WebPageProxy::executeUndoRedo):
+        (WebKit::WebPageProxy::clearAllEditCommands):
+        (WebKit::WebPageProxy::setFindIndicator):
+        (WebKit::WebPageProxy::showPopupMenu):
+        (WebKit::WebPageProxy::internalShowContextMenu):
+        (WebKit::WebPageProxy::registerEditCommand):
+        (WebKit::WebPageProxy::setToolTip):
+        (WebKit::WebPageProxy::setCursor):
+        (WebKit::WebPageProxy::setCursorHiddenUntilMouseMoves):
+        (WebKit::WebPageProxy::didReceiveEvent):
+        (WebKit::WebPageProxy::processDidCrash):
+        (WebKit::WebPageProxy::resetStateAfterProcessExited):
+        (WebKit::WebPageProxy::initializeCreationParameters):
+        (WebKit::WebPageProxy::enterAcceleratedCompositingMode):
+        (WebKit::WebPageProxy::exitAcceleratedCompositingMode):
+        (WebKit::WebPageProxy::updateAcceleratedCompositingMode):
+        (WebKit::WebPageProxy::requestGeolocationPermissionForFrame):
+        (WebKit::WebPageProxy::recommendedScrollbarStyleDidChange):
+        (WebKit::WebPageProxy::updateBackingStoreDiscardableState):
+        (WebKit::WebPageProxy::showCorrectionPanel):
+        (WebKit::WebPageProxy::dismissCorrectionPanel):
+        (WebKit::WebPageProxy::dismissCorrectionPanelSoon):
+        (WebKit::WebPageProxy::recordAutocorrectionResponse):
+        (WebKit::WebPageProxy::showDictationAlternativeUI):
+        (WebKit::WebPageProxy::removeDictationAlternatives):
+        (WebKit::WebPageProxy::dictationAlternatives):
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::createWebPage):
+        * UIProcess/WebProcessProxy.h:
+        * UIProcess/gtk/WebPageProxyGtk.cpp:
+        (WebKit::WebPageProxy::getEditorCommandsForKeyEvent):
+        * UIProcess/ios/WebPageProxyIOS.mm:
+        (WebKit::WebPageProxy::interpretKeyEvent):
+        (WebKit::WebPageProxy::mainDocumentDidReceiveMobileDocType):
+        (WebKit::WebPageProxy::didGetTapHighlightGeometries):
+        (WebKit::WebPageProxy::didChangeViewportArguments):
+        (WebKit::WebPageProxy::startAssistingNode):
+        (WebKit::WebPageProxy::stopAssistingNode):
+        (WebKit::WebPageProxy::setAcceleratedCompositingRootLayer):
+        * UIProcess/mac/WebPageProxyMac.mm:
+        (WebKit::WebPageProxy::windowAndViewFramesChanged):
+        (WebKit::WebPageProxy::insertDictatedText):
+        (WebKit::WebPageProxy::setDragImage):
+        (WebKit::WebPageProxy::setPromisedData):
+        (WebKit::WebPageProxy::interpretQueuedKeyEvent):
+        (WebKit::WebPageProxy::didPerformDictionaryLookup):
+        (WebKit::WebPageProxy::registerWebProcessAccessibilityToken):
+        (WebKit::WebPageProxy::makeFirstResponder):
+        (WebKit::WebPageProxy::colorSpace):
+        (WebKit::WebPageProxy::pluginFocusOrWindowFocusChanged):
+        (WebKit::WebPageProxy::setPluginComplexTextInputState):
+        (WebKit::WebPageProxy::executeSavedCommandBySelector):
+        (WebKit::WebPageProxy::wkView):
+        (WebKit::WebPageProxy::intrinsicContentSizeDidChange):
+        (WebKit::WebPageProxy::setAcceleratedCompositingRootLayer):
+
+2013-11-30  Sam Weinig  <sam@webkit.org>
+
+        [RTTE] The PermissionRequestManagerProxies should use WebPageProxy references.
+        https://bugs.webkit.org/show_bug.cgi?id=125029
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/GeolocationPermissionRequestManagerProxy.cpp:
+        (WebKit::GeolocationPermissionRequestManagerProxy::GeolocationPermissionRequestManagerProxy):
+        (WebKit::GeolocationPermissionRequestManagerProxy::invalidateRequests):
+        (WebKit::GeolocationPermissionRequestManagerProxy::didReceiveGeolocationPermissionDecision):
+        * UIProcess/GeolocationPermissionRequestManagerProxy.h:
+        * UIProcess/Notifications/NotificationPermissionRequestManagerProxy.cpp:
+        (WebKit::NotificationPermissionRequestManagerProxy::NotificationPermissionRequestManagerProxy):
+        (WebKit::NotificationPermissionRequestManagerProxy::invalidateRequests):
+        (WebKit::NotificationPermissionRequestManagerProxy::didReceiveNotificationPermissionDecision):
+        * UIProcess/Notifications/NotificationPermissionRequestManagerProxy.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        Do some additional modernization while we are here.
+
+2013-11-30  Dan Bernstein  <mitz@apple.com>
+
+        <rdar://problem/15560240> ResourceError encoding drops NSURL-valued keys in the NSError’s userInfo, including NSErrorFailingURLKey
+        https://bugs.webkit.org/show_bug.cgi?id=125016
+
+        Reviewed by Anders “happy name day” Carlsson.
+
+        * Shared/mac/WebCoreArgumentCodersMac.mm:
+        (CoreIPC::::encodePlatformData): Encode all string- and URL-valued keys as a dictionary.
+        (CoreIPC::::decodePlatformData): Decode user info as a dictionary.
+
+2013-11-29  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed build fix for EFL and GTK WK2 builds.
+
+        * Scripts/generate-forwarding-headers.pl: Add Cocoa to the list of platform prefixes.
+
+2013-11-29  Tibor Meszaros  <mtibor@inf.u-szeged.hu>
+
+        Fix build warnings in WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=125012
+
+        Reviewed by Anders Carlsson.
+
+        fix unused parameter warnings in the following files:
+
+        * Platform/gtk/WorkQueueGtk.cpp:
+        (WorkQueue::SocketEventSource::eventCallback):
+        * Shared/API/c/WKDeprecatedFunctions.cpp:
+        (WKArrayIsMutable):
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp:
+        (WebKit::WebChromeClient::unavailablePluginButtonClicked):
+        (WebKit::WebChromeClient::didAddHeaderLayer):
+        (WebKit::WebChromeClient::didAddFooterLayer):
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::createJavaAppletWidget):
+
+2013-11-29  Sam Weinig  <sam@webkit.org>
+
+        [Cocoa] Add a little template magic to the inline API::Object storage to remove the need for all the reinterpret_casts
+        https://bugs.webkit.org/show_bug.cgi?id=125024
+
+        Reviewed by Dan Bernstein.
+
+        Introduce API::ObjectStorage which wraps std::aligned_storage and adds some convenience functions
+        to reinterpret the data as the corresponding type. Deploy it everywhere we were previously using 
+        std::aligned_storage.
+
+        * Shared/Cocoa/WKNSArray.mm:
+        * Shared/Cocoa/WKNSDictionary.mm:
+        * Shared/Cocoa/WKObject.h:
+        * UIProcess/API/Cocoa/WKBackForwardList.mm:
+        * UIProcess/API/Cocoa/WKBackForwardListItem.mm:
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        * UIProcess/API/Cocoa/WKBrowsingContextGroup.mm:
+        * UIProcess/API/Cocoa/WKNavigationData.mm:
+        * UIProcess/API/Cocoa/WKProcessGroup.mm:
+
+2013-11-29  Sam Weinig  <sam@webkit.org>
+
+        Fix crashing API tests.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController dealloc]):
+
+2013-11-29  Sam Weinig  <sam@webkit.org>
+
+        Fix some style boo-boos.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController loadDelegate]):
+        (-[WKBrowsingContextController setLoadDelegate:]):
+        (-[WKBrowsingContextController policyDelegate]):
+        (-[WKBrowsingContextController setPolicyDelegate:]):
+
+2013-11-29  Sam Weinig  <sam@webkit.org>
+
+        Fix the iOS build.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController loadDelegate]):
+        (-[WKBrowsingContextController policyDelegate]):
+        (-[WKBrowsingContextController setPolicyDelegate:]):
+
+2013-11-29  Sam Weinig  <sam@webkit.org>
+
+        [Cocoa] Make WKBrowsingContextController work with WKObject wrapping
+        https://bugs.webkit.org/show_bug.cgi?id=125022
+
+        Reviewed by Dan Bernstein.
+
+        * Shared/Cocoa/APIObject.mm:
+        (API::Object::newObject):
+        
+        * Shared/mac/ObjCObjectGraphCoders.mm:
+        Add support for WKProcessGroup.
+
+        (WebKit::WebContextObjCObjectGraphDecoderImpl::decode):
+        Replace call to _browsingContextControllerForPageRef: with wrapper.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        Convert from wrapping the C-SPI type to storing the bits of the wrapped object inline.
+
+        (-[WKBrowsingContextController dealloc]):
+        Add explicit destructor call.
+
+        (-[WKBrowsingContextController setLoadDelegate:]):
+        (-[WKBrowsingContextController setPolicyDelegate:]):
+        Lazily set up the load and policy clients only once a delegate has been set to allow
+        continued use of the C-SPI clients for WebKitTestRunner.
+
+        (-[WKBrowsingContextController _finishInitialization]):
+        Move remaining work that was done in the initialize (setting up the observer) here,
+        and have the WebPageProxy call it.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextControllerInternal.h:
+        (WebKit::wrapper):
+        Add wrapper() helper and declare conformance to the WKObject protocol. Remove no longer used
+        _initWithPageRef: and _browsingContextControllerForPageRef: helpers.
+
+        * UIProcess/API/Cocoa/WKProcessGroup.mm:
+        (didNavigateWithNavigationData):
+        (didPerformClientRedirect):
+        (didPerformServerRedirect):
+        (didUpdateHistoryTitle):
+        Switch to using wrapper().
+
+        * UIProcess/API/ios/WKContentView.mm:
+        * UIProcess/API/mac/WKView.mm:
+        Stop caching the WKBrowsingContextController, as it no long makes sense since it is the same object
+        as the WebPageProxy.
+
+        * UIProcess/mac/WebPageProxyMac.mm:
+        (WebKit::WebPageProxy::platformInitialize):
+        Inform the wrapper that it is safe to finish initialization.
+
+2013-11-29  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Add a way to recover from load errors
+        https://bugs.webkit.org/show_bug.cgi?id=125020
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (createErrorWithRecoveryAttempter): Added this helper function. It creates an NSError from
+        the given error, adding two keys to the user info dictionary: the context controller under
+        the recovery attempter key, and the frame under a private key.
+        (didFailProvisionalLoadWithErrorForFrame): Changed to use createErrorWithRecoveryAttempter.
+        (didFailLoadWithErrorForFrame): Ditto.
+        (-[WKBrowsingContextController attemptRecoveryFromError:]): Implemented this
+        WKErrorRecoveryAttempting protocol method by loading the failing URL from the error into the
+        frame from the error.
+
+        * UIProcess/API/Cocoa/WKErrorRecoveryAttempting.h: Added. Defines a protocol for attempting
+        recovery from errors and declares the error user info dictionary key under which an object
+        conforming to this protocol may be stored.
+        * UIProcess/API/Cocoa/WKErrorRecoveryAttempting.m: Added. Defines
+        WKRecoveryAttempterErrorKey.
+
+        * UIProcess/WebFrameProxy.cpp:
+        (WebKit::WebFrameProxy::loadURL): Added. Sends the LoadURLInFrame message to the page.
+        * UIProcess/WebFrameProxy.h:
+
+        * WebKit2.xcodeproj/project.pbxproj: Added references to new files.
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::loadURLInFrame): Added. Loads the URL in the given frame.
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/WebPage.messages.in: Added LoadURLInFrame.
+
+2013-11-29  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Expose loadAlternateHTMLString via the API
+        https://bugs.webkit.org/show_bug.cgi?id=125019
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.h: Declared new method.
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController loadAlternateHTMLString:baseURL:forUnreachableURL:]): Added.
+        Calls WebPageProxy::loadAlternateHTMLString.
+
+2013-11-29  Sam Weinig  <sam@webkit.org>
+
+        Move API files shared between Mac and iOS to the Cocoa directory
+        https://bugs.webkit.org/show_bug.cgi?id=125017
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.h: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextController.h.
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextController.mm.
+        * UIProcess/API/Cocoa/WKBrowsingContextControllerInternal.h: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextControllerInternal.h.
+        * UIProcess/API/Cocoa/WKBrowsingContextControllerPrivate.h: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextControllerPrivate.h.
+        * UIProcess/API/Cocoa/WKBrowsingContextGroup.h: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextGroup.h.
+        * UIProcess/API/Cocoa/WKBrowsingContextGroup.mm: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextGroup.mm.
+        * UIProcess/API/Cocoa/WKBrowsingContextGroupInternal.h: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextGroupInternal.h.
+        * UIProcess/API/Cocoa/WKBrowsingContextGroupPrivate.h: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextGroupPrivate.h.
+        * UIProcess/API/Cocoa/WKBrowsingContextLoadDelegate.h: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextLoadDelegate.h.
+        * UIProcess/API/Cocoa/WKBrowsingContextPolicyDelegate.h: Copied from Source/WebKit2/UIProcess/API/mac/WKBrowsingContextPolicyDelegate.h.
+        * UIProcess/API/Cocoa/WKConnection.h: Copied from Source/WebKit2/UIProcess/API/mac/WKConnection.h.
+        * UIProcess/API/Cocoa/WKConnection.mm: Copied from Source/WebKit2/UIProcess/API/mac/WKConnection.mm.
+        * UIProcess/API/Cocoa/WKConnectionInternal.h: Copied from Source/WebKit2/UIProcess/API/mac/WKConnectionInternal.h.
+        * UIProcess/API/Cocoa/WKProcessGroup.h: Copied from Source/WebKit2/UIProcess/API/mac/WKProcessGroup.h.
+        * UIProcess/API/Cocoa/WKProcessGroup.mm: Copied from Source/WebKit2/UIProcess/API/mac/WKProcessGroup.mm.
+        * UIProcess/API/Cocoa/WKProcessGroupInternal.h: Copied from Source/WebKit2/UIProcess/API/mac/WKProcessGroupInternal.h.
+        * UIProcess/API/Cocoa/WKProcessGroupPrivate.h: Copied from Source/WebKit2/UIProcess/API/mac/WKProcessGroupPrivate.h.
+        * UIProcess/API/Cocoa/WKTypeRefWrapper.h: Copied from Source/WebKit2/UIProcess/API/mac/WKTypeRefWrapper.h.
+        * UIProcess/API/Cocoa/WKTypeRefWrapper.mm: Copied from Source/WebKit2/UIProcess/API/mac/WKTypeRefWrapper.mm.
+        * UIProcess/API/Cocoa/WKView.h: Copied from Source/WebKit2/UIProcess/API/mac/WKView.h.
+        * UIProcess/API/Cocoa/WKViewPrivate.h: Copied from Source/WebKit2/UIProcess/API/mac/WKViewPrivate.h.
+        * UIProcess/API/Cocoa/WebKit2.h: Copied from Source/WebKit2/UIProcess/API/mac/WebKit2.h.
+        * UIProcess/API/mac/WKBrowsingContextController.h: Removed.
+        * UIProcess/API/mac/WKBrowsingContextController.mm: Removed.
+        * UIProcess/API/mac/WKBrowsingContextControllerInternal.h: Removed.
+        * UIProcess/API/mac/WKBrowsingContextControllerPrivate.h: Removed.
+        * UIProcess/API/mac/WKBrowsingContextGroup.h: Removed.
+        * UIProcess/API/mac/WKBrowsingContextGroup.mm: Removed.
+        * UIProcess/API/mac/WKBrowsingContextGroupInternal.h: Removed.
+        * UIProcess/API/mac/WKBrowsingContextGroupPrivate.h: Removed.
+        * UIProcess/API/mac/WKBrowsingContextLoadDelegate.h: Removed.
+        * UIProcess/API/mac/WKBrowsingContextPolicyDelegate.h: Removed.
+        * UIProcess/API/mac/WKConnection.h: Removed.
+        * UIProcess/API/mac/WKConnection.mm: Removed.
+        * UIProcess/API/mac/WKConnectionInternal.h: Removed.
+        * UIProcess/API/mac/WKProcessGroup.h: Removed.
+        * UIProcess/API/mac/WKProcessGroup.mm: Removed.
+        * UIProcess/API/mac/WKProcessGroupInternal.h: Removed.
+        * UIProcess/API/mac/WKProcessGroupPrivate.h: Removed.
+        * UIProcess/API/mac/WKTypeRefWrapper.h: Removed.
+        * UIProcess/API/mac/WKTypeRefWrapper.mm: Removed.
+        * UIProcess/API/mac/WKView.h: Removed.
+        * UIProcess/API/mac/WKViewPrivate.h: Removed.
+        * UIProcess/API/mac/WebKit2.h: Removed.
+        * WebKit2.xcodeproj/project.pbxproj:
+
 2013-11-29  Hunseop Jeong  <hs85.jeong@samsung.com>
 
         [EFL] viewport must be same with the size of webview

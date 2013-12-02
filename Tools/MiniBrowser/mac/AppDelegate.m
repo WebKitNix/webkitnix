@@ -41,30 +41,6 @@ enum {
 
 @implementation BrowserAppDelegate
 
-void didReceiveMessageFromInjectedBundle(WKContextRef context, WKStringRef messageName, WKTypeRef messageBody, const void *clientInfo)
-{
-    CFStringRef cfMessageName = WKStringCopyCFString(0, messageName);
-
-    WKTypeID typeID = WKGetTypeID(messageBody);
-    if (typeID == WKStringGetTypeID()) {
-        CFStringRef cfMessageBody = WKStringCopyCFString(0, (WKStringRef)messageBody);
-        LOG(@"ContextInjectedBundleClient - didReceiveMessage - MessageName: %@ MessageBody %@", cfMessageName, cfMessageBody);
-        CFRelease(cfMessageBody);
-    } else {
-        LOG(@"ContextInjectedBundleClient - didReceiveMessage - MessageName: %@ (MessageBody Unhandled)\n", cfMessageName);
-    }
-    
-    CFRelease(cfMessageName);
-
-    WKStringRef newMessageName = WKStringCreateWithCFString(CFSTR("Response"));
-    WKStringRef newMessageBody = WKStringCreateWithCFString(CFSTR("Roger that!"));
-
-    WKContextPostMessageToInjectedBundle(context, newMessageName, newMessageBody);
-    
-    WKRelease(newMessageName);
-    WKRelease(newMessageBody);
-}
-
 // MARK: History Client Callbacks
 
 static void didNavigateWithNavigationData(WKContextRef context, WKPageRef page, WKNavigationDataRef navigationData, WKFrameRef frame, const void *clientInfo)
@@ -128,24 +104,11 @@ static void populateVisitedLinks(WKContextRef context, const void *clientInfo)
             populateVisitedLinks
         };
 
-        CFStringRef bundlePathCF = (CFStringRef)[[NSBundle mainBundle] pathForAuxiliaryExecutable:@"WebBundle.bundle"];
-        WKStringRef bundlePath = WKStringCreateWithCFString(bundlePathCF);
+        _processContext = WKContextCreate();
 
-        _processContext = WKContextCreateWithInjectedBundlePath(bundlePath);
-        
-        WKContextInjectedBundleClient bundleClient = {
-            kWKContextInjectedBundleClientCurrentVersion,
-            0,      /* clientInfo */
-            didReceiveMessageFromInjectedBundle,
-            0,      /* didReceiveSynchronousMessageFromInjectedBundle */
-            0       /* getInjectedBundleInitializationUserData */
-        };
-        WKContextSetInjectedBundleClient(_processContext, &bundleClient);
         WKContextSetHistoryClient(_processContext, &historyClient);
         WKContextSetCacheModel(_processContext, kWKCacheModelPrimaryWebBrowser);
 
-        WKRelease(bundlePath);
-        
         WKStringRef pageGroupIdentifier = WKStringCreateWithCFString(CFSTR("MiniBrowser"));
         _pageGroup = WKPageGroupCreateWithIdentifier(pageGroupIdentifier);
         WKRelease(pageGroupIdentifier);
@@ -162,8 +125,10 @@ static void populateVisitedLinks(WKContextRef context, const void *clientInfo)
     
     if (![sender respondsToSelector:@selector(tag)] || [sender tag] == WebKit1NewWindowTag)
         controller = [[WK1BrowserWindowController alloc] initWithWindowNibName:@"BrowserWindow"];
+#if WK_API_ENABLED
     else if ([sender tag] == WebKit2NewWindowTag)
         controller = [[WK2BrowserWindowController alloc] initWithContext:_processContext pageGroup:_pageGroup];
+#endif
 
     if (!controller)
         return;
@@ -229,6 +194,7 @@ static void populateVisitedLinks(WKContextRef context, const void *clientInfo)
         return;
     }
 
+#if WK_API_ENABLED
     NSOpenPanel *openPanel = [NSOpenPanel openPanel];
     [openPanel beginWithCompletionHandler:^(NSInteger result) {
         if (result != NSOKButton)
@@ -241,6 +207,7 @@ static void populateVisitedLinks(WKContextRef context, const void *clientInfo)
         NSURL *url = [openPanel.URLs objectAtIndex:0];
         [newBrowserWindowController loadURLString:[url absoluteString]];
     }];
+#endif // WK_API_ENABLED
 }
 
 @end

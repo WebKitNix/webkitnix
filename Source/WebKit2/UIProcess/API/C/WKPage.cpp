@@ -55,12 +55,12 @@ WKTypeID WKPageGetTypeID()
 
 WKContextRef WKPageGetContext(WKPageRef pageRef)
 {
-    return toAPI(toImpl(pageRef)->process()->context());
+    return toAPI(&toImpl(pageRef)->process().context());
 }
 
 WKPageGroupRef WKPageGetPageGroup(WKPageRef pageRef)
 {
-    return toAPI(toImpl(pageRef)->pageGroup());
+    return toAPI(&toImpl(pageRef)->pageGroup());
 }
 
 void WKPageLoadURL(WKPageRef pageRef, WKURLRef URLRef)
@@ -205,7 +205,7 @@ void WKPageTryRestoreScrollPosition(WKPageRef pageRef)
 
 WKBackForwardListRef WKPageGetBackForwardList(WKPageRef pageRef)
 {
-    return toAPI(toImpl(pageRef)->backForwardList());
+    return toAPI(&toImpl(pageRef)->backForwardList());
 }
 
 bool WKPageWillHandleHorizontalScrollEvents(WKPageRef pageRef)

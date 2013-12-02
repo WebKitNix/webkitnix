@@ -1,3 +1,200 @@
+2013-12-02  Andres Gomez  <agomez@igalia.com>
+
+        [GTK] Fails to build with freetype 2.5.1
+        https://bugs.webkit.org/show_bug.cgi?id=125074
+
+        Reviewed by Carlos Garcia Campos.
+
+        FreeType specifies a canonical way of including their own
+        headers. Now, we are following this recommendation so the
+        compilation won't be broken again due to an upgrade in FeeType's
+        including paths.
+
+        * platform/graphics/freetype/FontPlatformDataFreeType.cpp:
+        * platform/graphics/freetype/SimpleFontDataFreeType.cpp:
+        * platform/graphics/harfbuzz/HarfBuzzFaceCairo.cpp:
+
+2013-12-02  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: Crash at WebCore::commonTreeScope
+        https://bugs.webkit.org/show_bug.cgi?id=125042
+
+        Reviewed by Mario Sanchez Prada.
+
+        When an AX text marker that references a node in a detached document is used to create a text marker range, a crash occurs
+        because the method to determine commonTreeScopes does not account for when there are no common tree scopes.
+
+        Test: platform/mac/accessibility/ordered-textmarker-crash.html
+
+        * accessibility/AccessibilityObject.cpp:
+        (WebCore::AccessibilityObject::visiblePositionRangeForUnorderedPositions):
+        * dom/TreeScope.cpp:
+        (WebCore::commonTreeScope):
+
+2013-12-02  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Fix a crash in the webaudio source provider when the audio track is going away.
+        https://bugs.webkit.org/show_bug.cgi?id=124975
+
+        Reviewed by Philippe Normand.
+
+        Merged https://chromium.googlesource.com/chromium/blink/+/b21838b32bf11b1a972dfc449ddde71115490c23
+
+        Before this patch, it was hitting a use-after-free crash  when the audio
+        track in the media stream is going away and the webaudio mediastreamsourcenode
+        is still running.
+
+        * Modules/webaudio/AudioContext.cpp:
+        (WebCore::AudioContext::createMediaStreamSource): Passing audio track
+        pointer to MediaStreamAudioSourceNode constructor.
+        * Modules/webaudio/MediaStreamAudioSourceNode.cpp:
+        (WebCore::MediaStreamAudioSourceNode::create):
+        (WebCore::MediaStreamAudioSourceNode::MediaStreamAudioSourceNode):
+        * Modules/webaudio/MediaStreamAudioSourceNode.h: Added
+        MediaStreamTrack class variable and change the constructor to receive
+        it as parameter.
+
+2013-12-02  Andrzej Badowski  <a.badowski@samsung.com>
+
+        [ATK] Support active state for listbox elements.
+        https://bugs.webkit.org/show_bug.cgi?id=125009
+
+        Reviewed by Chris Fleizach.
+
+        Added support for ATK_STATE_ACTIVE for listbox elements.
+
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (setAtkStateSetFromCoreObject):
+
+2013-12-02  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove unused functions from InspectorAgent
+        https://bugs.webkit.org/show_bug.cgi?id=125061
+
+        Reviewed by Antoine Quint.
+
+        Get rid of unused functions, redundant inclusion and forward declaration.
+
+        No new tests, no behavior changes.
+
+        * inspector/InspectorAgent.cpp:
+        * inspector/InspectorAgent.h:
+
+2013-12-02  Tibor Meszaros  <mtibor@inf.u-szeged.hu>
+
+        Fix build warning in EventHandler.cpp
+        https://bugs.webkit.org/show_bug.cgi?id=125010
+
+        Reviewed by Csaba Osztrogonác.
+
+        * page/EventHandler.cpp:
+        (WebCore::EventHandler::eventInvertsTabsToLinksClientCallResult):
+
+2013-12-02  Attila Dusnoki  <adusnoki@inf.u-szeged.hu>
+
+        HTML5 required attribute validation messages implemented.
+        https://bugs.webkit.org/show_bug.cgi?id=125003
+
+        Reviewed by Gyuyoung Kim.
+
+        * platform/efl/LocalizedStringsEfl.cpp:
+        (WebCore::validationMessagePatternMismatchText):
+        (WebCore::validationMessageValueMissingText):
+        (WebCore::validationMessageValueMissingForCheckboxText):
+        (WebCore::validationMessageValueMissingForFileText):
+        (WebCore::validationMessageValueMissingForMultipleFileText):
+        (WebCore::validationMessageValueMissingForRadioText):
+        (WebCore::validationMessageValueMissingForSelectText):
+        (WebCore::validationMessageBadInputForNumberText):
+
+2013-12-01  Andreas Kling  <akling@apple.com>
+
+        SVG: Intersection/enclosure checks should use RenderElement.
+        <https://webkit.org/b/125058>
+
+        Make RenderSVGModelObject's checkIntersection() and checkEnclosure()
+        take RenderElement* instead of RenderObject*. They are only ever
+        called with SVGElement's renderers.
+
+        Reviewed by Sam Weinig.
+
+2013-12-01  Andreas Kling  <akling@apple.com>
+
+        Remove unreachable labels for -webkit-margin-*-collapse properties.
+        <https://webkit.org/b/125057>
+
+        The following properties are implemented in DeprecatedStyleBuilder
+        and should not have case labels in the applyProperty() switch:
+
+            -webkit-margin-before-collapse
+            -webkit-margin-top-collapse
+            -webkit-margin-after-collapse
+            -webkit-margin-bottom-collapse
+
+        This seems counter-intuitive, but they are actually *not* like other
+        directional properties. In this case, before/after are only aliases
+        for top/bottom, and do not depend on writing-mode or text-direction.
+        See also r68561, where the aliases were originally added.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-01  Andreas Kling  <akling@apple.com>
+
+        CSSFunctionValue constructors should return PassRef.
+        <https://webkit.org/b/125054>
+
+        Make CSSFunctionValue::create() helpers return PassRef instead of
+        PassRefPtr since they will never return null.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-01  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r159764.
+        http://trac.webkit.org/changeset/159764
+        https://bugs.webkit.org/show_bug.cgi?id=125055
+
+        appears to hurt html5-full-render times (Requested by kling on
+        #webkit).
+
+        * html/parser/HTMLConstructionSite.cpp:
+        (WebCore::HTMLConstructionSite::insertTextNode):
+        * html/parser/HTMLConstructionSite.h:
+
+2013-12-01  Andreas Kling  <akling@apple.com>
+
+        Make more computed style helpers return PassRef.
+        <https://webkit.org/b/125043>
+
+        Reduce branchiness in computed style code by making more of the
+        file-local helpers return PassRef instead of PassRefPtr.
+
+        Reviewed by Anders Carlsson.
+
+2013-11-30  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Implement scrollbarThickness for opaque scrollbar
+        https://bugs.webkit.org/show_bug.cgi?id=125034
+
+        Reviewed by Gyuyoung Kim.
+
+        Implemented scrollbarThickness to support opaque scrollbar.
+        Now, edj can decide whether to support opaque scrollbar by adding scrollbar.thickness.
+        In addition, added OVERRIDE/FINAL keyword and removed unnecessary destructor
+        in ScrollbarThemeEfl.cpp.
+
+        No new tests, no behavior changes with default theme.
+
+        * platform/efl/RenderThemeEfl.cpp:
+        (WebCore::RenderThemeEfl::loadTheme):
+        Update thickness of scrollbar when theme was loaded.
+        * platform/efl/ScrollbarThemeEfl.cpp:
+        * platform/efl/ScrollbarThemeEfl.h:
+        (WebCore::ScrollbarThemeEfl::setScrollbarThickness):
+        (WebCore::ScrollbarThemeEfl::scrollbarThickness):
+        (WebCore::ScrollbarThemeEfl::registerScrollbar):
+        (WebCore::ScrollbarThemeEfl::unregisterScrollbar):
+
 2013-11-29  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
 
         Remove Symbian specific code.

@@ -42,6 +42,7 @@ class WebPageGroup : public API::TypedObject<API::Object::Type::PageGroup> {
 public:
     WebPageGroup(const String& identifier = String(), bool visibleToInjectedBundle = true, bool visibleToHistoryClient = true);
     static PassRefPtr<WebPageGroup> create(const String& identifier = String(), bool visibleToInjectedBundle = true, bool visibleToHistoryClient = true);
+    static PassRef<WebPageGroup> createNonNull(const String& identifier = String(), bool visibleToInjectedBundle = true, bool visibleToHistoryClient = true);
     static WebPageGroup* get(uint64_t pageGroupID);
 
     virtual ~WebPageGroup();
@@ -71,21 +72,19 @@ private:
     mutable RefPtr<WebPreferences> m_preferences;
     HashSet<WebPageProxy*> m_pages;
 };
-    
+
 template<typename T>
 void WebPageGroup::sendToAllProcessesInGroup(const T& message, uint64_t destinationID)
 {
     HashSet<WebProcessProxy*> processesSeen;
 
     for (WebPageProxy* webPageProxy : m_pages) {
-        WebProcessProxy* webProcessProxy = webPageProxy->process();
-        ASSERT(webProcessProxy);
-
-        if (!processesSeen.add(webProcessProxy).isNewEntry)
+        WebProcessProxy& webProcessProxy = webPageProxy->process();
+        if (!processesSeen.add(&webProcessProxy).isNewEntry)
             continue;
 
-        if (webProcessProxy->canSendMessage())
-            webProcessProxy->send(T(message), destinationID);
+        if (webProcessProxy.canSendMessage())
+            webProcessProxy.send(T(message), destinationID);
     }
 }
 

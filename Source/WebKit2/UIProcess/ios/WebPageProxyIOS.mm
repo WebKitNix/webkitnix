@@ -27,11 +27,12 @@
 #import "WebPageProxy.h"
 
 #import "NativeWebKeyboardEvent.h"
+#import "PageClient.h"
+#import "WKBrowsingContextControllerInternal.h"
 #import "WebPageMessages.h"
 #import "WebProcessProxy.h"
 #import <WebCore/NotImplemented.h>
 #import <WebCore/SharedBuffer.h>
-#import "PageClientImplIOS.h"
 
 using namespace WebCore;
 
@@ -39,7 +40,9 @@ namespace WebKit {
 
 void WebPageProxy::platformInitialize()
 {
-    notImplemented();
+#if WK_API_ENABLED
+    [WebKit::wrapper(*this) _finishInitialization];
+#endif
 }
 
 String WebPageProxy::standardUserAgent(const String&)
@@ -103,7 +106,7 @@ bool WebPageProxy::insertText(const String& text, uint64_t replacementRangeStart
         return true;
     
     bool handled = true;
-    process()->sendSync(Messages::WebPage::InsertText(text, replacementRangeStart, replacementRangeEnd), Messages::WebPage::InsertText::Reply(handled, m_editorState), m_pageID);
+    process().sendSync(Messages::WebPage::InsertText(text, replacementRangeStart, replacementRangeEnd), Messages::WebPage::InsertText::Reply(handled, m_editorState), m_pageID);
     return handled;
 }
 
@@ -275,7 +278,7 @@ void WebPageProxy::interpretQueuedKeyEvent(const EditorState&, bool&, Vector<Web
 void WebPageProxy::interpretKeyEvent(const EditorState& state, bool isCharEvent, bool& handled)
 {
     m_editorState = state;
-    handled = m_pageClient->interpretKeyEvent(m_keyEventQueue.first(), isCharEvent);
+    handled = m_pageClient.interpretKeyEvent(m_keyEventQueue.first(), isCharEvent);
 }
 
 // Complex text input support for plug-ins.
@@ -333,12 +336,12 @@ bool WebPageProxy::acceptsFirstMouse(int, const WebKit::WebMouseEvent&)
 
 void WebPageProxy::didFinishScrolling(const WebCore::FloatPoint& contentOffset)
 {
-    process()->send(Messages::WebPage::DidFinishScrolling(contentOffset), m_pageID);
+    process().send(Messages::WebPage::DidFinishScrolling(contentOffset), m_pageID);
 }
 
 void WebPageProxy::didFinishZooming(float newScale)
 {
-    process()->send(Messages::WebPage::DidFinishZooming(newScale), m_pageID);
+    process().send(Messages::WebPage::DidFinishZooming(newScale), m_pageID);
 }
 
 void WebPageProxy::tapHighlightAtPosition(const WebCore::FloatPoint& position, uint64_t& requestID)
@@ -346,37 +349,37 @@ void WebPageProxy::tapHighlightAtPosition(const WebCore::FloatPoint& position, u
     static uint64_t uniqueRequestID = 0;
     requestID = ++uniqueRequestID;
 
-    process()->send(Messages::WebPage::TapHighlightAtPosition(requestID, position), m_pageID);
+    process().send(Messages::WebPage::TapHighlightAtPosition(requestID, position), m_pageID);
 }
 
 void WebPageProxy::blurAssistedNode()
 {
-    process()->send(Messages::WebPage::BlurAssistedNode(), m_pageID);
+    process().send(Messages::WebPage::BlurAssistedNode(), m_pageID);
 }
 
 void WebPageProxy::mainDocumentDidReceiveMobileDocType()
 {
-    m_pageClient->mainDocumentDidReceiveMobileDocType();
+    m_pageClient.mainDocumentDidReceiveMobileDocType();
 }
 
 void WebPageProxy::didGetTapHighlightGeometries(uint64_t requestID, const WebCore::Color& color, const Vector<WebCore::FloatQuad>& highlightedQuads, const WebCore::IntSize& topLeftRadius, const WebCore::IntSize& topRightRadius, const WebCore::IntSize& bottomLeftRadius, const WebCore::IntSize& bottomRightRadius)
 {
-    m_pageClient->didGetTapHighlightGeometries(requestID, color, highlightedQuads, topLeftRadius, topRightRadius, bottomLeftRadius, bottomRightRadius);
+    m_pageClient.didGetTapHighlightGeometries(requestID, color, highlightedQuads, topLeftRadius, topRightRadius, bottomLeftRadius, bottomRightRadius);
 }
 
 void WebPageProxy::didChangeViewportArguments(const WebCore::ViewportArguments& viewportArguments)
 {
-    m_pageClient->didChangeViewportArguments(viewportArguments);
+    m_pageClient.didChangeViewportArguments(viewportArguments);
 }
 
 void WebPageProxy::startAssistingNode(const WebCore::IntRect& scrollRect, bool hasNextFocusable, bool hasPreviousFocusable)
 {
-    m_pageClient->startAssistingNode(scrollRect, hasNextFocusable, hasPreviousFocusable);
+    m_pageClient.startAssistingNode(scrollRect, hasNextFocusable, hasPreviousFocusable);
 }
 
 void WebPageProxy::stopAssistingNode()
 {
-    m_pageClient->stopAssistingNode();
+    m_pageClient.stopAssistingNode();
 }
 
 void WebPageProxy::didPerformDictionaryLookup(const AttributedString&, const DictionaryPopupInfo&)
@@ -401,7 +404,7 @@ void WebPageProxy::openPDFFromTemporaryFolderWithNativeApplication(const String&
 
 void WebPageProxy::setAcceleratedCompositingRootLayer(PlatformLayer* rootLayer)
 {
-    m_pageClient->setAcceleratedCompositingRootLayer(rootLayer);
+    m_pageClient.setAcceleratedCompositingRootLayer(rootLayer);
 }
 
 } // namespace WebKit

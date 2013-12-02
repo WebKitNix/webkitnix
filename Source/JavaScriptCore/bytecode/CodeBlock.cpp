@@ -53,7 +53,6 @@
 #include "Repatch.h"
 #include "RepatchBuffer.h"
 #include "SlotVisitorInlines.h"
-#include <stdio.h>
 #include <wtf/BagToHashMap.h>
 #include <wtf/CommaPrinter.h>
 #include <wtf/StringExtras.h>
@@ -3260,10 +3259,6 @@ void CodeBlock::tallyFrequentExitSites()
             
             if (!exit.considerAddingAsFrequentExitSite(profiledBlock))
                 continue;
-            
-#if DFG_ENABLE(DEBUG_VERBOSE)
-            dataLog("OSR exit #", i, " (bc#", exit.m_codeOrigin.bytecodeIndex, ", ", exit.m_kind, ") for ", *this, " occurred frequently: counting as frequent exit site.\n");
-#endif
         }
         break;
     }
@@ -3279,10 +3274,6 @@ void CodeBlock::tallyFrequentExitSites()
             
             if (!exit.considerAddingAsFrequentExitSite(profiledBlock))
                 continue;
-            
-#if DFG_ENABLE(DEBUG_VERBOSE)
-            dataLog("OSR exit #", i, " (bc#", exit.m_codeOrigin.bytecodeIndex, ", ", exit.m_kind, ") for ", *this, " occurred frequently: counting as frequent exit site.\n");
-#endif
         }
         break;
     }
