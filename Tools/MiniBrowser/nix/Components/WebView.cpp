@@ -130,9 +130,8 @@ static unsigned int cursorShape(int type)
         XC_X_cursor,         // "cursor/zoom_in",
         XC_X_cursor,         // "cursor/zoom_out",
         XC_fleur,                   // "cursor/grab",                     duplicated!
-        XC_fleur                    // "cursor/grabbing",                 duplicated!
-        // ""}; // FIXME: Just return "" for custom type. We don't support it now.
-
+        XC_fleur,                   // "cursor/grabbing",                 duplicated!
+        XC_left_ptr          // custom type
     };
     return cursorShapes[type];
 }
