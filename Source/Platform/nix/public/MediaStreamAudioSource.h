@@ -44,19 +44,6 @@ class AudioDestinationConsumer;
 class MediaStreamAudioSource : public MediaStreamSource {
 public:
     NIX_EXPORT MediaStreamAudioSource();
-    MediaStreamAudioSource(const MediaStreamAudioSource& other) : MediaStreamSource(other) { assign(other); }
-    ~MediaStreamAudioSource() { reset(); }
-
-    MediaStreamAudioSource& operator=(const MediaStreamAudioSource& other)
-    {
-        assign(other);
-        return *this;
-    }
-
-    NIX_EXPORT void assign(const MediaStreamAudioSource&);
-
-    NIX_EXPORT void reset();
-    bool isNull() const { return m_private.isNull(); }
 
     NIX_EXPORT const char* deviceId() const;
     NIX_EXPORT void setDeviceId(const char*);

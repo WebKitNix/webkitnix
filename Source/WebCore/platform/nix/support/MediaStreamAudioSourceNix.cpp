@@ -67,11 +67,6 @@ void MediaStreamAudioSource::assign(const MediaStreamAudioSource& other)
     m_private = other.m_private;
 }
 
-void MediaStreamAudioSource::reset()
-{
-    m_private.reset();
-}
-
 MediaStreamAudioSource::operator PassRefPtr<WebCore::MediaStreamAudioSource>() const
 {
     return toWebCoreAudioSource();
