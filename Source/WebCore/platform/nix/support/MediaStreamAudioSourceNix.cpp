@@ -62,11 +62,6 @@ MediaStreamAudioSource& MediaStreamAudioSource::operator=(WebCore::MediaStreamAu
     return *this;
 }
 
-void MediaStreamAudioSource::assign(const MediaStreamAudioSource& other)
-{
-    m_private = other.m_private;
-}
-
 MediaStreamAudioSource::operator PassRefPtr<WebCore::MediaStreamAudioSource>() const
 {
     return toWebCoreAudioSource();
