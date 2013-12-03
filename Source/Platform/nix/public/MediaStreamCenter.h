@@ -27,21 +27,13 @@
 #define Nix_MediaStreamCenter_h
 
 #include "Common.h"
-#include "PrivatePtr.h"
-
-namespace WebCore {
-class MediaStreamCenter;
-}
+#include "MediaStream.h"
 
 namespace Nix {
-class MediaStream;
-class MediaStreamSource;
 class MediaConstraints;
 
-class NIX_EXPORT MediaStreamCenter {
+class MediaStreamCenter {
 public:
-    MediaStreamCenter();
-    void request();
     // Return the name of the failed constraint. 0 if successful.
     virtual const char* validateRequestConstraints(MediaConstraints& audioConstraints, MediaConstraints& videoConstraints) = 0;
     virtual MediaStream createMediaStream(MediaConstraints& audioConstraints, MediaConstraints& videoConstraints) = 0;

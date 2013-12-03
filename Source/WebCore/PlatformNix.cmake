@@ -251,7 +251,6 @@ if (ENABLE_MEDIA_STREAM)
 
         platform/nix/support/MediaConstraintsNix.cpp
         platform/nix/support/MediaStreamAudioSourceNix.cpp
-        platform/nix/support/MediaStreamCenterNix.cpp
         platform/nix/support/MediaStreamNix.cpp
         platform/nix/support/MediaStreamSourceNix.cpp
     )
