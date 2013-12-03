@@ -41,7 +41,7 @@ class MediaStreamSource;
 
 namespace Nix {
 
-class MediaStreamSource {
+class NIX_EXPORT MediaStreamSource {
 public:
 
     enum Type {
@@ -56,26 +56,25 @@ public:
     };
 
     MediaStreamSource() { }
-    virtual ~MediaStreamSource() { reset(); }
+    virtual ~MediaStreamSource();
 
-    NIX_EXPORT void reset();
-    bool isNull() const { return m_private.isNull(); }
+    bool isNull() const;
 
-    NIX_EXPORT const char* id() const;
-    NIX_EXPORT Type type() const;
-    NIX_EXPORT const char* name() const;
+    const char* id() const;
+    Type type() const;
+    const char* name() const;
 
-    NIX_EXPORT void setReadyState(ReadyState);
-    NIX_EXPORT ReadyState readyState() const;
+    void setReadyState(ReadyState);
+    ReadyState readyState() const;
 
-    NIX_EXPORT bool enabled() const;
-    NIX_EXPORT void setEnabled(bool);
+    bool enabled() const;
+    void setEnabled(bool);
 
-    NIX_EXPORT bool muted() const;
-    NIX_EXPORT void setMuted(bool);
+    bool muted() const;
+    void setMuted(bool);
 
-    NIX_EXPORT bool readonly() const;
-    NIX_EXPORT void setReadonly(bool);
+    bool readonly() const;
+    void setReadonly(bool);
 
     // FIXME Add support for capabilites.
 

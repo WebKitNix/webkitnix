@@ -106,6 +106,10 @@ list(APPEND WebCore_SOURCES
     platform/nix/TemporaryLinkStubs.cpp
     platform/nix/WidgetNix.cpp
 
+    platform/nix/support/MediaConstraintsNix.cpp
+    platform/nix/support/MediaStreamAudioSourceNix.cpp
+    platform/nix/support/MediaStreamNix.cpp
+    platform/nix/support/MediaStreamSourceNix.cpp
     platform/nix/support/MultiChannelPCMData.cpp
 
     platform/text/LocaleNone.cpp
@@ -248,11 +252,6 @@ if (ENABLE_MEDIA_STREAM)
     )
     list(APPEND WebCore_SOURCES
         platform/mediastream/nix/UserMediaClientNix.cpp
-
-        platform/nix/support/MediaConstraintsNix.cpp
-        platform/nix/support/MediaStreamAudioSourceNix.cpp
-        platform/nix/support/MediaStreamNix.cpp
-        platform/nix/support/MediaStreamSourceNix.cpp
     )
 endif ()
 

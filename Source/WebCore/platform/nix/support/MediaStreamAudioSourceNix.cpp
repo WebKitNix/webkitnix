@@ -30,10 +30,7 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM)
-
 #include <public/MediaStreamAudioSource.h>
-
 
 #include "AudioBus.h"
 #include "MediaStreamAudioSource.h"
@@ -46,49 +43,7 @@
 
 namespace Nix {
 
-MediaStreamAudioSource::MediaStreamAudioSource()
-    : MediaStreamSource(WebCore::MediaStreamAudioSource::create().release().leakRef())
-{
-}
-
-MediaStreamAudioSource::MediaStreamAudioSource(const PassRefPtr<WebCore::MediaStreamAudioSource>& MediaStreamAudioSource)
-    : MediaStreamSource(MediaStreamAudioSource)
-{
-}
-
-MediaStreamAudioSource& MediaStreamAudioSource::operator=(WebCore::MediaStreamAudioSource* MediaStreamAudioSource)
-{
-    m_private = MediaStreamAudioSource;
-    return *this;
-}
-
-MediaStreamAudioSource::operator PassRefPtr<WebCore::MediaStreamAudioSource>() const
-{
-    return toWebCoreAudioSource();
-}
-
-MediaStreamAudioSource::operator WebCore::MediaStreamAudioSource*() const
-{
-    return toWebCoreAudioSource();
-}
-
-WebCore::MediaStreamAudioSource* MediaStreamAudioSource::toWebCoreAudioSource() const
-{
-    return dynamic_cast<WebCore::MediaStreamAudioSource*>(m_private.get());
-}
-
-const char* MediaStreamAudioSource::deviceId() const
-{
-    ASSERT(!m_private.isNull());
-    return toWebCoreAudioSource()->deviceId().utf8().data();
-}
-
-void MediaStreamAudioSource::setDeviceId(const char* deviceId)
-{
-    ASSERT(!m_private.isNull());
-    toWebCoreAudioSource()->setDeviceId(deviceId);
-}
-
+#if ENABLE(MEDIA_STREAM)
 class ConsumerWrapper : public WebCore::AudioDestinationConsumer {
 public:
     static PassRefPtr<ConsumerWrapper> create(Nix::AudioDestinationConsumer* consumer)
@@ -127,16 +82,77 @@ void ConsumerWrapper::consumeAudio(WebCore::AudioBus* bus, size_t numberOfFrames
     m_consumer->consumeAudio(busVector, numberOfFrames);
 }
 
+MediaStreamAudioSource::MediaStreamAudioSource()
+    : MediaStreamSource(WebCore::MediaStreamAudioSource::create().release().leakRef())
+{
+}
+
+MediaStreamAudioSource::MediaStreamAudioSource(const PassRefPtr<WebCore::MediaStreamAudioSource>& MediaStreamAudioSource)
+    : MediaStreamSource(MediaStreamAudioSource)
+{
+}
+
+MediaStreamAudioSource& MediaStreamAudioSource::operator=(WebCore::MediaStreamAudioSource* MediaStreamAudioSource)
+{
+    m_private = MediaStreamAudioSource;
+    return *this;
+}
+
+MediaStreamAudioSource::operator PassRefPtr<WebCore::MediaStreamAudioSource>() const
+{
+    return toWebCoreAudioSource();
+}
+
+MediaStreamAudioSource::operator WebCore::MediaStreamAudioSource*() const
+{
+    return toWebCoreAudioSource();
+}
+
+WebCore::MediaStreamAudioSource* MediaStreamAudioSource::toWebCoreAudioSource() const
+{
+    return dynamic_cast<WebCore::MediaStreamAudioSource*>(m_private.get());
+}
+#else // !ENABLE(MEDIA_STREAM)
+MediaStreamAudioSource::MediaStreamAudioSource()
+{
+}
+#endif // ENABLE(MEDIA_STREAM)
+
+const char* MediaStreamAudioSource::deviceId() const
+{
+#if ENABLE(MEDIA_STREAM)
+    ASSERT(!m_private.isNull());
+    return toWebCoreAudioSource()->deviceId().utf8().data();
+#else
+    return nullptr;
+#endif
+}
+
+void MediaStreamAudioSource::setDeviceId(const char* deviceId)
+{
+#if ENABLE(MEDIA_STREAM)
+    ASSERT(!m_private.isNull());
+    toWebCoreAudioSource()->setDeviceId(deviceId);
+#else
+    UNUSED_PARAM(deviceId);
+#endif
+}
+
 void MediaStreamAudioSource::addAudioConsumer(AudioDestinationConsumer* consumer)
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(isMainThread());
     ASSERT(!m_private.isNull() && consumer);
 
     toWebCoreAudioSource()->addAudioConsumer(ConsumerWrapper::create(consumer));
+#else
+    UNUSED_PARAM(consumer);
+#endif
 }
 
 bool MediaStreamAudioSource::removeAudioConsumer(AudioDestinationConsumer* consumer)
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(isMainThread());
     ASSERT(!m_private.isNull() && consumer);
 
@@ -148,10 +164,10 @@ bool MediaStreamAudioSource::removeAudioConsumer(AudioDestinationConsumer* consu
             return true;
         }
     }
+#else
+    UNUSED_PARAM(consumer);
+#endif
     return false;
 }
 
 } // namespace Nix
-
-#endif // ENABLE(MEDIA_STREAM)
-

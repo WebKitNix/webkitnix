@@ -31,8 +31,6 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM)
-
 #include <public/MediaStreamSource.h>
 
 #include "MediaStreamSource.h"
@@ -41,6 +39,7 @@
 
 namespace Nix {
 
+#if ENABLE(MEDIA_STREAM)
 MediaStreamSource::MediaStreamSource(const PassRefPtr<WebCore::MediaStreamSource>& mediaStreamSource)
     : m_private(mediaStreamSource)
 {
@@ -52,11 +51,6 @@ MediaStreamSource& MediaStreamSource::operator=(WebCore::MediaStreamSource* medi
     return *this;
 }
 
-void MediaStreamSource::reset()
-{
-    m_private.reset();
-}
-
 MediaStreamSource::operator PassRefPtr<WebCore::MediaStreamSource>() const
 {
     return m_private.get();
@@ -66,74 +60,124 @@ MediaStreamSource::operator WebCore::MediaStreamSource*() const
 {
     return m_private.get();
 }
+#endif // ENABLE(MEDIA_STREAM)
+
+MediaStreamSource::~MediaStreamSource()
+{
+#if ENABLE(MEDIA_STREAM)
+    m_private.reset();
+#endif
+}
 
 const char* MediaStreamSource::id() const
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     return m_private.get()->id().utf8().data();
+#else
+    return nullptr;
+#endif
 }
 
 MediaStreamSource::Type MediaStreamSource::type() const
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     return static_cast<Type>(m_private.get()->type());
+#else
+    return Audio;
+#endif
 }
 
 const char* MediaStreamSource::name() const
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     return m_private.get()->name().utf8().data();
+#else
+    return nullptr;
+#endif
 }
 
 void MediaStreamSource::setReadyState(ReadyState state)
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     m_private->setReadyState(static_cast<WebCore::MediaStreamSource::ReadyState>(state));
+#else
+    UNUSED_PARAM(state);
+#endif
 }
 
 MediaStreamSource::ReadyState MediaStreamSource::readyState() const
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     return static_cast<ReadyState>(m_private->readyState());
+#else
+    return ReadyStateEnded;
+#endif
 }
 
 void MediaStreamSource::setEnabled(bool enabled)
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     m_private->setEnabled(enabled);
+#else
+    UNUSED_PARAM(enabled);
+#endif
 }
 
 bool MediaStreamSource::enabled() const
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     return m_private->enabled();
+#else
+    return false;
+#endif
 }
 
 void MediaStreamSource::setMuted(bool muted)
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     m_private->setMuted(muted);
+#else
+    UNUSED_PARAM(muted);
+#endif
 }
 
 bool MediaStreamSource::muted() const
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     return m_private->muted();
+#else
+    return true;
+#endif
 }
 
 void MediaStreamSource::setReadonly(bool readonly)
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     m_private->setReadonly(readonly);
+#else
+    UNUSED_PARAM(readonly);
+#endif
 }
 
 bool MediaStreamSource::readonly() const
 {
+#if ENABLE(MEDIA_STREAM)
     ASSERT(!m_private.isNull());
     return m_private->readonly();
+#else
+    return true;
+#endif
 }
 
 } // namespace Nix
-
-#endif // ENABLE(MEDIA_STREAM)
 

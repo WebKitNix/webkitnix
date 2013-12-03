@@ -25,8 +25,6 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM)
-
 #include <public/MediaStream.h>
 
 #include "MediaStreamAudioSource.h"
@@ -43,6 +41,7 @@ using namespace WebCore;
 
 namespace Nix {
 
+#if ENABLE(MEDIA_STREAM)
 MediaStream::MediaStream(const PassRefPtr<WebCore::MediaStreamPrivate>& mediaStreamDescriptor)
     : m_private(mediaStreamDescriptor)
 {
@@ -53,23 +52,54 @@ MediaStream::MediaStream(WebCore::MediaStreamPrivate* mediaStreamDescriptor)
 {
 }
 
-void MediaStream::reset()
+MediaStream& MediaStream::operator=(const PassRefPtr<WebCore::MediaStreamPrivate>& mediaStreamDescriptor)
 {
+    m_private = mediaStreamDescriptor;
+    return *this;
+}
+
+MediaStream::operator PassRefPtr<WebCore::MediaStreamPrivate>() const
+{
+    return m_private.get();
+}
+
+MediaStream::operator WebCore::MediaStreamPrivate*() const
+{
+    return m_private.get();
+}
+#endif // ENABLE(MEDIA_STREAM)
+
+MediaStream::MediaStream()
+{
+}
+
+MediaStream::~MediaStream()
+{
+#if ENABLE(MEDIA_STREAM)
     m_private.reset();
+#endif
 }
 
 const char* MediaStream::id() const
 {
+#if ENABLE(MEDIA_STREAM)
     return m_private->id().utf8().data();
+#else
+    return nullptr;
+#endif
 }
 
 std::vector<MediaStreamSource*> MediaStream::audioSources() const
 {
+#if ENABLE(MEDIA_STREAM)
     size_t numberOfSources = m_private->numberOfAudioSources();
     std::vector<MediaStreamSource*> result(numberOfSources);
     for (size_t i = 0; i < numberOfSources; ++i)
         result[i] = new MediaStreamAudioSource(dynamic_cast<WebCore::MediaStreamAudioSource*>(m_private->audioSources(i)));
     return result;
+#else
+    return std::vector<MediaStreamSource*>();
+#endif
 }
 
 std::vector<MediaStreamSource*> MediaStream::videoSources() const
@@ -90,24 +120,9 @@ void MediaStream::removeSource(const MediaStreamSource&)
     // FIXME: Set a MediaStreamPrivateClient when initialize.
 }
 
-MediaStream& MediaStream::operator=(const PassRefPtr<WebCore::MediaStreamPrivate>& mediaStreamDescriptor)
-{
-    m_private = mediaStreamDescriptor;
-    return *this;
-}
-
-MediaStream::operator PassRefPtr<WebCore::MediaStreamPrivate>() const
-{
-    return m_private.get();
-}
-
-MediaStream::operator WebCore::MediaStreamPrivate*() const
-{
-    return m_private.get();
-}
-
 void MediaStream::initialize(std::vector<MediaStreamSource*>& audioSources, std::vector<MediaStreamSource*>& videoSources)
 {
+#if ENABLE(MEDIA_STREAM)
     Vector<RefPtr<WebCore::MediaStreamSource>> audio, video;
     for (size_t i = 0; i < audioSources.size(); ++i) {
         WebCore::MediaStreamAudioSource* source = *(dynamic_cast<MediaStreamAudioSource*>(audioSources[i]));
@@ -121,18 +136,19 @@ void MediaStream::initialize(std::vector<MediaStreamSource*>& audioSources, std:
         delete videoSources[i];
     }
     m_private = WebCore::MediaStreamPrivate::create(audio, video);
-}
-
-void MediaStream::assign(const MediaStream& other)
-{
-    m_private = other.m_private;
+#else
+    UNUSED_PARAM(audioSources);
+    UNUSED_PARAM(videoSources);
+#endif
 }
 
 bool MediaStream::isNull() const
 {
+#if ENABLE(MEDIA_STREAM)
     return m_private.isNull();
+#else
+    return true;
+#endif
 }
 
 } // namespace Nix
-
-#endif // ENABLE(MEDIA_STREAM)

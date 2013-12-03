@@ -41,36 +41,25 @@ namespace Nix {
 class MediaStreamSource;
 class MediaStreamAudioSource;
 
-class MediaStream {
+class NIX_EXPORT MediaStream {
 public:
-
-    MediaStream() { }
-    MediaStream(const MediaStream& other) { assign(other); }
-    ~MediaStream() { reset(); }
-
-    MediaStream& operator=(const MediaStream& other)
-    {
-        assign(other);
-        return *this;
-    }
-
-    NIX_EXPORT void assign(const MediaStream&);
+    MediaStream();
+    ~MediaStream();
 
     // Takes ownership of the MediaStreamSource* pointers, deleting them.
-    NIX_EXPORT void initialize(std::vector<MediaStreamSource*>& audioTracks, std::vector<MediaStreamSource*>& videoTracks);
+    void initialize(std::vector<MediaStreamSource*>& audioTracks, std::vector<MediaStreamSource*>& videoTracks);
 
-    NIX_EXPORT void reset();
-    NIX_EXPORT bool isNull() const;
+    bool isNull() const;
 
 
-    NIX_EXPORT const char* id() const;
+    const char* id() const;
 
     // Caller must delete the returned MediaStreamSource*
-    NIX_EXPORT std::vector<MediaStreamSource*> audioSources() const;
-    NIX_EXPORT std::vector<MediaStreamSource*> videoSources() const;
+    std::vector<MediaStreamSource*> audioSources() const;
+    std::vector<MediaStreamSource*> videoSources() const;
 
-    NIX_EXPORT void addSource(const MediaStreamSource&);
-    NIX_EXPORT void removeSource(const MediaStreamSource&);
+    void addSource(const MediaStreamSource&);
+    void removeSource(const MediaStreamSource&);
 
 #if BUILDING_NIX__
     MediaStream(WebCore::MediaStreamPrivate*);
