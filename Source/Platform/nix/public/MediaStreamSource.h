@@ -56,16 +56,7 @@ public:
     };
 
     MediaStreamSource() { }
-    MediaStreamSource(const MediaStreamSource& other) { assign(other); }
     virtual ~MediaStreamSource() { reset(); }
-
-    MediaStreamSource& operator=(const MediaStreamSource& other)
-    {
-        assign(other);
-        return *this;
-    }
-
-    NIX_EXPORT void assign(const MediaStreamSource&);
 
     NIX_EXPORT void reset();
     bool isNull() const { return m_private.isNull(); }
