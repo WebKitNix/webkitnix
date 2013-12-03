@@ -222,7 +222,7 @@ void MiniBrowser::handleKeyPress(NIXKeyEvent* event)
         return;
     }
 
-    if (event->modifiers & kNIXInputEventModifiersControlKey) {
+    if (event->modifiers & kNIXInputEventModifiersAltKey) {
         switch (event->key) {
         case kNIXKeyEventKey_Left:
             WKPageGoBack(pageRef());
