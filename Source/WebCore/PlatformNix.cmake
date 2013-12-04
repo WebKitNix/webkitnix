@@ -1,16 +1,19 @@
 list(APPEND WebCore_INCLUDE_DIRECTORIES
-    "${WEBCORE_DIR}/platform/nix"
-    "${WEBCORE_DIR}/platform/cairo"
-    "${WEBCORE_DIR}/platform/graphics/cairo"
-    "${WEBCORE_DIR}/platform/graphics/freetype"
-    "${WEBCORE_DIR}/platform/graphics/glx"
-    "${WEBCORE_DIR}/platform/graphics/nix"
-    "${WEBCORE_DIR}/platform/graphics/opengl"
-    "${WEBCORE_DIR}/platform/graphics/opentype"
-    "${WEBCORE_DIR}/platform/graphics/surfaces"
-    "${WEBCORE_DIR}/platform/linux"
-    "${WEBCORE_DIR}/platform/mediastream/gstreamer"
     "${PLATFORM_DIR}/nix/"
+    Modules/mediastream
+    platform/audio
+    platform/cairo
+    platform/graphics/cairo
+    platform/graphics/freetype
+    platform/graphics/glx
+    platform/graphics/nix
+    platform/graphics/opengl
+    platform/graphics/opentype
+    platform/graphics/surfaces
+    platform/linux
+    platform/mediastream
+    platform/mediastream/gstreamer
+    platform/nix
 )
 
 list(APPEND WebCore_SOURCES
@@ -85,6 +88,19 @@ list(APPEND WebCore_SOURCES
     platform/linux/GamepadDeviceLinux.cpp
 
     platform/mediastream/nix/MediaStreamCenterNix.cpp
+    platform/mediastream/nix/UserMediaClientNix.cpp
+
+    platform/mediastream/webrtc/MediaConstraintsWebRTC.cpp
+    platform/mediastream/webrtc/RTCDataChannelHandlerWebRTC.cpp
+    platform/mediastream/webrtc/RTCPeerConnectionHandlerWebRTC.cpp
+    platform/mediastream/webrtc/WebRTCUtils.cpp
+
+    platform/mediastream/webrtc/observers/CreateSessionDescriptionObserver.cpp
+    platform/mediastream/webrtc/observers/GetStatsObserver.cpp
+    platform/mediastream/webrtc/observers/MediaStreamWebRTCObserver.cpp
+    platform/mediastream/webrtc/observers/RTCDataChannelObserver.cpp
+    platform/mediastream/webrtc/observers/RTCPeerConnectionObserver.cpp
+    platform/mediastream/webrtc/observers/SetSessionDescriptionObserver.cpp
 
     platform/nix/CursorNix.cpp
     platform/nix/DragDataNix.cpp
@@ -123,20 +139,8 @@ list(APPEND WebCore_SOURCES
 if (ENABLE_MEDIA_STREAM)
     list(APPEND WebCore_LIBRARIES ${WEBRTCLIB_LIBRARIES})
     list(APPEND WebCore_INCLUDE_DIRECTORIES
-        "${WEBCORE_DIR}/platform/mediastream/webrtc"
+        platform/mediastream/webrtc
         ${WEBRTCLIB_INCLUDE_DIRS}
-    )
-    list(APPEND WebCore_SOURCES
-        platform/mediastream/webrtc/MediaConstraintsWebRTC.cpp
-        platform/mediastream/webrtc/observers/CreateSessionDescriptionObserver.cpp
-        platform/mediastream/webrtc/observers/GetStatsObserver.cpp
-        platform/mediastream/webrtc/observers/MediaStreamWebRTCObserver.cpp
-        platform/mediastream/webrtc/observers/RTCDataChannelObserver.cpp
-        platform/mediastream/webrtc/observers/RTCPeerConnectionObserver.cpp
-        platform/mediastream/webrtc/observers/SetSessionDescriptionObserver.cpp
-        platform/mediastream/webrtc/RTCDataChannelHandlerWebRTC.cpp
-        platform/mediastream/webrtc/RTCPeerConnectionHandlerWebRTC.cpp
-        platform/mediastream/webrtc/WebRTCUtils.cpp
     )
 endif ()
 
@@ -207,8 +211,8 @@ if (ENABLE_BATTERY_STATUS)
 endif ()
 
 list(APPEND WebCore_USER_AGENT_STYLE_SHEETS
-    ${WEBCORE_DIR}/css/mediaControlsNix.css
-    ${WEBCORE_DIR}/css/mediaControlsNixFullscreen.css
+    css/mediaControlsNix.css
+    css/mediaControlsNixFullscreen.css
 )
 
 list(APPEND WebCore_LIBRARIES
@@ -243,20 +247,9 @@ list(APPEND WebCore_INCLUDE_DIRECTORIES
 
 add_definitions(-DDATA_DIR="${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}")
 
-if (ENABLE_MEDIA_STREAM)
-    list(APPEND WebCore_INCLUDE_DIRECTORIES
-        Modules/mediastream
-        platform/audio
-        platform/mediastream
-    )
-    list(APPEND WebCore_SOURCES
-        platform/mediastream/nix/UserMediaClientNix.cpp
-    )
-endif ()
-
 if (ENABLE_WEB_AUDIO)
   list(APPEND WebCore_INCLUDE_DIRECTORIES
-    "${WEBCORE_DIR}/platform/audio/nix"
+    platform/audio/nix
   )
   list(APPEND WebCore_SOURCES
     platform/audio/nix/AudioBusNix.cpp
@@ -271,7 +264,7 @@ endif ()
 
 if (WTF_USE_CURL)
     list(APPEND WebCore_INCLUDE_DIRECTORIES
-        "${WEBCORE_DIR}/platform/network/curl"
+        platform/network/curl
     )
 
     list(APPEND WebCore_SOURCES
@@ -328,7 +321,7 @@ else ()
     )
 
     list(APPEND WebCore_INCLUDE_DIRECTORIES
-        "${WEBCORE_DIR}/platform/network/soup"
+        platform/network/soup
         ${LIBSOUP_INCLUDE_DIRS}
     )
 
