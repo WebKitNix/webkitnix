@@ -70,6 +70,3 @@ else:
     addpath('CMAKE_PREFIX_PATH', prefix)
 
 partial_build = False
-
-dvcs_mirror_dir = '/home/ossy/dvcs-mirror'
-tarballdir = '/home/ossy/tarball-mirror'
