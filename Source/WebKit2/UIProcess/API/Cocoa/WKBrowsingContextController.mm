@@ -363,9 +363,9 @@ static void didFailProvisionalLoadWithErrorForFrame(WKPageRef page, WKFrameRef f
         return;
 
     WKBrowsingContextController *browsingContext = (WKBrowsingContextController *)clientInfo;
-    if ([browsingContext.loadDelegate respondsToSelector:@selector(browsingContextControllerDidFailProvisionalLoad:withError:)]) {
+    if ([browsingContext.loadDelegate respondsToSelector:@selector(browsingContextController:didFailProvisionalLoadWithError:)]) {
         RetainPtr<NSError> nsError = adoptNS(createErrorWithRecoveryAttempter(error, frame, browsingContext));
-        [browsingContext.loadDelegate browsingContextControllerDidFailProvisionalLoad:browsingContext withError:nsError.get()];
+        [browsingContext.loadDelegate browsingContextController:browsingContext didFailProvisionalLoadWithError:nsError.get()];
     }
 }
 
@@ -395,9 +395,9 @@ static void didFailLoadWithErrorForFrame(WKPageRef page, WKFrameRef frame, WKErr
         return;
 
     WKBrowsingContextController *browsingContext = (WKBrowsingContextController *)clientInfo;
-    if ([browsingContext.loadDelegate respondsToSelector:@selector(browsingContextControllerDidFailLoad:withError:)]) {
+    if ([browsingContext.loadDelegate respondsToSelector:@selector(browsingContextController:didFailLoadWithError:)]) {
         RetainPtr<NSError> nsError = adoptNS(createErrorWithRecoveryAttempter(error, frame, browsingContext));
-        [browsingContext.loadDelegate browsingContextControllerDidFailLoad:browsingContext withError:nsError.get()];
+        [browsingContext.loadDelegate browsingContextController:browsingContext didFailLoadWithError:nsError.get()];
     }
 }
 
@@ -435,11 +435,11 @@ static void didChangeBackForwardList(WKPageRef page, WKBackForwardListItemRef ad
 
 static void setUpPageLoaderClient(WKBrowsingContextController *browsingContext, WebPageProxy& page)
 {
-    WKPageLoaderClient loaderClient;
+    WKPageLoaderClientV3 loaderClient;
     memset(&loaderClient, 0, sizeof(loaderClient));
 
-    loaderClient.version = kWKPageLoaderClientCurrentVersion;
-    loaderClient.clientInfo = browsingContext;
+    loaderClient.base.version = 3;
+    loaderClient.base.clientInfo = browsingContext;
     loaderClient.didStartProvisionalLoadForFrame = didStartProvisionalLoadForFrame;
     loaderClient.didReceiveServerRedirectForProvisionalLoadForFrame = didReceiveServerRedirectForProvisionalLoadForFrame;
     loaderClient.didFailProvisionalLoadWithErrorForFrame = didFailProvisionalLoadWithErrorForFrame;
@@ -452,7 +452,7 @@ static void setUpPageLoaderClient(WKBrowsingContextController *browsingContext, 
     loaderClient.didFinishProgress = didFinishProgress;
     loaderClient.didChangeBackForwardList = didChangeBackForwardList;
 
-    page.initializeLoaderClient(&loaderClient);
+    page.initializeLoaderClient(&loaderClient.base);
 }
 
 static WKPolicyDecisionHandler makePolicyDecisionBlock(WKFramePolicyListenerRef listener)
@@ -480,11 +480,11 @@ static WKPolicyDecisionHandler makePolicyDecisionBlock(WKFramePolicyListenerRef 
 
 static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, WebPageProxy& page)
 {
-    WKPagePolicyClient policyClient;
+    WKPagePolicyClientV1 policyClient;
     memset(&policyClient, 0, sizeof(policyClient));
 
-    policyClient.version = kWKPagePolicyClientCurrentVersion;
-    policyClient.clientInfo = browsingContext;
+    policyClient.base.version = 1;
+    policyClient.base.clientInfo = browsingContext;
 
     policyClient.decidePolicyForNavigationAction = [](WKPageRef page, WKFrameRef frame, WKFrameNavigationType navigationType, WKEventModifiers modifiers, WKEventMouseButton mouseButton, WKFrameRef originatingFrame, WKURLRequestRef request, WKFramePolicyListenerRef listener, WKTypeRef userData, const void* clientInfo)
     {
@@ -542,7 +542,7 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
             WKFramePolicyListenerUse(listener);
     };
 
-    page.initializePolicyClient(&policyClient);
+    page.initializePolicyClient(&policyClient.base);
 }
 
 - (id <WKBrowsingContextLoadDelegate>)loadDelegate

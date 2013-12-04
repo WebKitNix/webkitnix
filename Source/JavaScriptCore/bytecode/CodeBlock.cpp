@@ -31,6 +31,7 @@
 #include "CodeBlock.h"
 
 #include "BytecodeGenerator.h"
+#include "BytecodeUseDef.h"
 #include "CallLinkStatus.h"
 #include "DFGCapabilities.h"
 #include "DFGCommon.h"
@@ -671,6 +672,10 @@ void CodeBlock::dumpBytecode(PrintStream& out, ExecState* exec, const Instructio
             printLocationAndOp(out, exec, location, it, "enter");
             break;
         }
+        case op_touch_entry: {
+            printLocationAndOp(out, exec, location, it, "touch_entry");
+            break;
+        }
         case op_create_activation: {
             int r0 = (++it)->u.operand;
             printLocationOpAndRegisterOperand(out, exec, location, it, "create_activation", r0);
@@ -756,6 +761,14 @@ void CodeBlock::dumpBytecode(PrintStream& out, ExecState* exec, const Instructio
             int r1 = (++it)->u.operand;
             printLocationAndOp(out, exec, location, it, "mov");
             out.printf("%s, %s", registerName(r0).data(), registerName(r1).data());
+            break;
+        }
+        case op_captured_mov: {
+            int r0 = (++it)->u.operand;
+            int r1 = (++it)->u.operand;
+            printLocationAndOp(out, exec, location, it, "captured_mov");
+            out.printf("%s, %s", registerName(r0).data(), registerName(r1).data());
+            ++it;
             break;
         }
         case op_not: {
@@ -1209,6 +1222,14 @@ void CodeBlock::dumpBytecode(PrintStream& out, ExecState* exec, const Instructio
             out.printf("%s, f%d, %s", registerName(r0).data(), f0, shouldCheck ? "<Checked>" : "<Unchecked>");
             break;
         }
+        case op_new_captured_func: {
+            int r0 = (++it)->u.operand;
+            int f0 = (++it)->u.operand;
+            printLocationAndOp(out, exec, location, it, "new_captured_func");
+            out.printf("%s, f%d", registerName(r0).data(), f0);
+            ++it;
+            break;
+        }
         case op_new_func_exp: {
             int r0 = (++it)->u.operand;
             int f0 = (++it)->u.operand;
@@ -1531,10 +1552,13 @@ CodeBlock::CodeBlock(ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlin
 {
     ASSERT(m_heap->isDeferred());
 
+    bool didCloneSymbolTable = false;
+    
     if (SymbolTable* symbolTable = unlinkedCodeBlock->symbolTable()) {
-        if (codeType() == FunctionCode && symbolTable->captureCount())
+        if (codeType() == FunctionCode && symbolTable->captureCount()) {
             m_symbolTable.set(*m_vm, m_ownerExecutable.get(), symbolTable->clone(*m_vm));
-        else
+            didCloneSymbolTable = true;
+        } else
             m_symbolTable.set(*m_vm, m_ownerExecutable.get(), symbolTable);
     }
     
@@ -1800,9 +1824,26 @@ CodeBlock::CodeBlock(ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlin
             instructions[i + 4].u.operand = ResolveModeAndType(modeAndType.mode(), op.type).operand();
             if (op.type == GlobalVar || op.type == GlobalVarWithVarInjectionChecks)
                 instructions[i + 5].u.watchpointSet = op.watchpointSet;
-            else if (op.structure)
+            else if (op.type == ClosureVar || op.type == ClosureVarWithVarInjectionChecks) {
+                if (op.watchpointSet)
+                    op.watchpointSet->invalidate();
+            } else if (op.structure)
                 instructions[i + 5].u.structure.set(*vm(), ownerExecutable, op.structure);
             instructions[i + 6].u.pointer = reinterpret_cast<void*>(op.operand);
+            break;
+        }
+            
+        case op_captured_mov:
+        case op_new_captured_func: {
+            StringImpl* uid = pc[i + 3].u.uid;
+            if (!uid)
+                break;
+            RELEASE_ASSERT(didCloneSymbolTable);
+            ConcurrentJITLocker locker(m_symbolTable->m_lock);
+            SymbolTable::Map::iterator iter = m_symbolTable->find(locker, uid);
+            ASSERT(iter != m_symbolTable->end(locker));
+            iter->value.prepareToWatch();
+            instructions[i + 3].u.watchpointSet = iter->value.watchpointSet();
             break;
         }
 
@@ -2468,8 +2509,7 @@ bool CodeBlock::isCaptured(VirtualRegister operand, InlineCallFrame* inlineCallF
     if (!symbolTable())
         return false;
 
-    return operand.offset() <= symbolTable()->captureStart()
-        && operand.offset() > symbolTable()->captureEnd();
+    return symbolTable()->isCaptured(operand.offset());
 }
 
 int CodeBlock::framePointerOffsetToGetActivationRegisters(int machineCaptureStart)
@@ -3426,6 +3466,48 @@ String CodeBlock::nameForRegister(VirtualRegister virtualRegister)
     return "";
 }
 
+namespace {
+
+struct VerifyCapturedDef {
+    void operator()(CodeBlock* codeBlock, Instruction* instruction, OpcodeID opcodeID, int operand)
+    {
+        unsigned bytecodeOffset = instruction - codeBlock->instructions().begin();
+        
+        if (codeBlock->isConstantRegisterIndex(operand)) {
+            codeBlock->beginValidationDidFail();
+            dataLog("    At bc#", bytecodeOffset, " encountered a definition of a constant.\n");
+            codeBlock->endValidationDidFail();
+            return;
+        }
+
+        switch (opcodeID) {
+        case op_enter:
+        case op_captured_mov:
+        case op_init_lazy_reg:
+        case op_create_arguments:
+        case op_new_captured_func:
+            return;
+        default:
+            break;
+        }
+        
+        VirtualRegister virtualReg(operand);
+        if (!virtualReg.isLocal())
+            return;
+        
+        if (codeBlock->captureCount() && codeBlock->symbolTable()->isCaptured(operand)) {
+            codeBlock->beginValidationDidFail();
+            dataLog("    At bc#", bytecodeOffset, " encountered invalid assignment to captured variable loc", virtualReg.toLocal(), ".\n");
+            codeBlock->endValidationDidFail();
+            return;
+        }
+        
+        return;
+    }
+};
+
+} // anonymous namespace
+
 void CodeBlock::validate()
 {
     BytecodeLivenessAnalysis liveness(this); // Compute directly from scratch so it doesn't effect CodeBlock footprint.
@@ -3462,6 +3544,16 @@ void CodeBlock::validate()
                 endValidationDidFail();
             }
         }
+    }
+    
+    for (unsigned bytecodeOffset = 0; bytecodeOffset < instructions().size();) {
+        Instruction* currentInstruction = instructions().begin() + bytecodeOffset;
+        OpcodeID opcodeID = m_vm->interpreter->getOpcodeID(currentInstruction->u.opcode);
+        
+        VerifyCapturedDef verifyCapturedDef;
+        computeDefsForBytecodeOffset(this, bytecodeOffset, verifyCapturedDef);
+        
+        bytecodeOffset += opcodeLength(opcodeID);
     }
 }
 

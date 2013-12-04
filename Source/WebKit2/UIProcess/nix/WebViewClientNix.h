@@ -31,12 +31,18 @@
 #include "IntRect.h"
 #include "wtf/text/WTFString.h"
 
+namespace API {
+template<> struct ClientTraits<NIXViewClientBase> {
+    typedef std::tuple<NIXViewClientV0> Versions;
+};
+}
+
 namespace WebKit {
 
 class WebView;
 struct EditorState;
 
-class WebViewClientNix : public APIClient<NIXViewClient, kNIXViewClientCurrentVersion> {
+class WebViewClientNix : public API::Client<NIXViewClientBase> {
 public:
     void doneWithTouchEvent(WebView*, const NIXTouchEvent&, bool wasEventHandled);
     void didFindZoomableArea(WebView*, WKPoint target, WKRect area);

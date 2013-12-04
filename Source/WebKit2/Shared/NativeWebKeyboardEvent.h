@@ -44,6 +44,10 @@ typedef union _GdkEvent GdkEvent;
 #include <NIXEvents.h>
 #endif
 
+#if PLATFORM(IOS)
+OBJC_CLASS WebIOSEvent;
+#endif
+
 namespace WebKit {
 
 class NativeWebKeyboardEvent : public WebKeyboardEvent {

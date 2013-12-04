@@ -55,15 +55,17 @@ TEST(WebKitNix, WebAudio)
     WKPreferencesRef preferences = WKPageGroupGetPreferences(pageGroup);
     WKPreferencesSetWebAudioEnabled(preferences, true);
 
-    WKContextInjectedBundleClient injectedBundleClient;
+    WKContextInjectedBundleClientV1 injectedBundleClient;
     memset(&injectedBundleClient, 0, sizeof(injectedBundleClient));
+    injectedBundleClient.base.version = 1;
     injectedBundleClient.didReceiveMessageFromInjectedBundle = didReceiveMessageFromInjectedBundle;
-    WKContextSetInjectedBundleClient(context.get(), &injectedBundleClient);
+    WKContextSetInjectedBundleClient(context.get(), &injectedBundleClient.base);
 
-    WKPageLoaderClient loaderClient;
+    WKPageLoaderClientV3 loaderClient;
     memset(&loaderClient, 0, sizeof(loaderClient));
+    loaderClient.base.version = 3;
     loaderClient.didFinishLoadForFrame = didFinishLoadForFrame;
-    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &loaderClient);
+    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &loaderClient.base);
 
     WKRetainPtr<WKURLRef> url = adoptWK(Util::createURLForResource("../nix/webaudio", "html"));
     WKPageLoadURL(WKViewGetPage(view.get()), url.get());

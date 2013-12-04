@@ -399,7 +399,7 @@ PassRefPtr<API::Array> WebPageProxy::relatedPages() const
     return API::Array::create(std::move(result));
 }
 
-void WebPageProxy::initializeLoaderClient(const WKPageLoaderClient* loadClient)
+void WebPageProxy::initializeLoaderClient(const WKPageLoaderClientBase* loadClient)
 {
     m_loaderClient.initialize(loadClient);
     
@@ -410,9 +410,9 @@ void WebPageProxy::initializeLoaderClient(const WKPageLoaderClient* loadClient)
     // didFirstLayoutInFrame and didFirstVisuallyNonEmptyLayoutInFrame. In the meantime, this is required
     // for backwards compatibility.
     WebCore::LayoutMilestones milestones = 0;
-    if (loadClient->didFirstLayoutForFrame)
+    if (m_loaderClient.client().didFirstLayoutForFrame)
         milestones |= WebCore::DidFirstLayout;
-    if (loadClient->didFirstVisuallyNonEmptyLayoutForFrame)
+    if (m_loaderClient.client().didFirstVisuallyNonEmptyLayoutForFrame)
         milestones |= WebCore::DidFirstVisuallyNonEmptyLayout;
 
     if (milestones)
@@ -421,17 +421,17 @@ void WebPageProxy::initializeLoaderClient(const WKPageLoaderClient* loadClient)
     m_process->send(Messages::WebPage::SetWillGoToBackForwardItemCallbackEnabled(loadClient->version > 0), m_pageID);
 }
 
-void WebPageProxy::initializePolicyClient(const WKPagePolicyClient* policyClient)
+void WebPageProxy::initializePolicyClient(const WKPagePolicyClientBase* policyClient)
 {
     m_policyClient.initialize(policyClient);
 }
 
-void WebPageProxy::initializeFormClient(const WKPageFormClient* formClient)
+void WebPageProxy::initializeFormClient(const WKPageFormClientBase* formClient)
 {
     m_formClient.initialize(formClient);
 }
 
-void WebPageProxy::initializeUIClient(const WKPageUIClient* client)
+void WebPageProxy::initializeUIClient(const WKPageUIClientBase* client)
 {
     if (!isValid())
         return;
@@ -442,18 +442,18 @@ void WebPageProxy::initializeUIClient(const WKPageUIClient* client)
     setCanRunModal(m_uiClient.canRunModal());
 }
 
-void WebPageProxy::initializeFindClient(const WKPageFindClient* client)
+void WebPageProxy::initializeFindClient(const WKPageFindClientBase* client)
 {
     m_findClient.initialize(client);
 }
 
-void WebPageProxy::initializeFindMatchesClient(const WKPageFindMatchesClient* client)
+void WebPageProxy::initializeFindMatchesClient(const WKPageFindMatchesClientBase* client)
 {
     m_findMatchesClient.initialize(client);
 }
 
 #if ENABLE(CONTEXT_MENUS)
-void WebPageProxy::initializeContextMenuClient(const WKPageContextMenuClient* client)
+void WebPageProxy::initializeContextMenuClient(const WKPageContextMenuClientBase* client)
 {
     m_contextMenuClient.initialize(client);
 }
@@ -515,21 +515,24 @@ void WebPageProxy::initializeWebPage()
     ASSERT(m_drawingArea);
 
 #if ENABLE(INSPECTOR_SERVER)
-    if (m_pageGroup->preferences()->developerExtrasEnabled())
+    if (pageGroup().preferences()->developerExtrasEnabled())
         inspector()->enableRemoteInspection();
 #endif
 
+    if (pageGroup().addProcess(process()))
+        process().addWebPageGroup(pageGroup());
+
     initializeCreationParameters();
-    m_process->send(Messages::WebProcess::CreateWebPage(m_pageID, m_creationParameters), 0);
+    process().send(Messages::WebProcess::CreateWebPage(m_pageID, m_creationParameters), 0);
 
 #if ENABLE(PAGE_VISIBILITY_API)
-    m_process->send(Messages::WebPage::SetVisibilityState(m_visibilityState, /* isInitialState */ true), m_pageID);
+    process().send(Messages::WebPage::SetVisibilityState(m_visibilityState, /* isInitialState */ true), m_pageID);
 #elif ENABLE(HIDDEN_PAGE_DOM_TIMER_THROTTLING)
-    m_process->send(Messages::WebPage::SetVisibilityState(isViewVisible() ? PageVisibilityStateVisible : PageVisibilityStateHidden, /* isInitialState */ true), m_pageID);
+    process().send(Messages::WebPage::SetVisibilityState(isViewVisible() ? PageVisibilityStateVisible : PageVisibilityStateHidden, /* isInitialState */ true), m_pageID);
 #endif
 
 #if PLATFORM(MAC)
-    m_process->send(Messages::WebPage::SetSmartInsertDeleteEnabled(m_isSmartInsertDeleteEnabled), m_pageID);
+    process().send(Messages::WebPage::SetSmartInsertDeleteEnabled(m_isSmartInsertDeleteEnabled), m_pageID);
 #endif
 }
 

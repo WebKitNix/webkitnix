@@ -54,7 +54,7 @@ void NIXViewScaleToFitContents(WKViewRef view)
     static_cast<WebViewNix*>(toImpl(view))->adjustScaleToFitContents();
 }
 
-void NIXViewSetNixViewClient(WKViewRef view, const NIXViewClient* viewClient)
+void NIXViewSetNixViewClient(WKViewRef view, const NIXViewClientBase* viewClient)
 {
     static_cast<WebViewNix*>(toImpl(view))->setNixViewClient(viewClient);
 }

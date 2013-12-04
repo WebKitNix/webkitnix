@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 Intel Corporation. All rights reserved.
- * Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (C) 2012, 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,56 +38,47 @@ namespace WebCore {
 
 ResourceError cancelledError(const ResourceRequest& request)
 {
-    return ResourceError(errorDomainNetwork, NetworkErrorCancelled, request.url().string(),
-            ASCIILiteral("Load request cancelled"));
+    return ResourceError(errorDomainNetwork, NetworkErrorCancelled, request.url().string(), ASCIILiteral("Load request cancelled"));
 }
 
 ResourceError blockedError(const ResourceRequest& request)
 {
-    return ResourceError(errorDomainPolicy, PolicyErrorCannotUseRestrictedPort, request.url().string(),
-            ASCIILiteral("Not allowed to use restricted network port"));
+    return ResourceError(errorDomainPolicy, PolicyErrorCannotUseRestrictedPort, request.url().string(), ASCIILiteral("Not allowed to use restricted network port"));
 }
 
 ResourceError cannotShowURLError(const ResourceRequest& request)
 {
-    return ResourceError(errorDomainPolicy, PolicyErrorCannotShowURL, request.url().string(),
-            ASCIILiteral("URL cannot be shown"));
+    return ResourceError(errorDomainPolicy, PolicyErrorCannotShowURL, request.url().string(), ASCIILiteral("URL cannot be shown"));
 }
 
 ResourceError interruptedForPolicyChangeError(const ResourceRequest& request)
 {
-    return ResourceError(errorDomainPolicy, PolicyErrorFrameLoadInterruptedByPolicyChange, request.url().string(),
-            ASCIILiteral("Frame load was interrupted"));
+    return ResourceError(errorDomainPolicy, PolicyErrorFrameLoadInterruptedByPolicyChange, request.url().string(), ASCIILiteral("Frame load was interrupted"));
 }
 
 ResourceError cannotShowMIMETypeError(const ResourceResponse& response)
 {
-    return ResourceError(errorDomainPolicy, PolicyErrorCannotShowMimeType, response.url().string(),
-            ASCIILiteral("Content with the specified MIME type cannot be shown"));
+    return ResourceError(errorDomainPolicy, PolicyErrorCannotShowMimeType, response.url().string(), ASCIILiteral("Content with the specified MIME type cannot be shown"));
 }
 
 ResourceError fileDoesNotExistError(const ResourceResponse& response)
 {
-    return ResourceError(errorDomainNetwork, NetworkErrorFileDoesNotExist, response.url().string(),
-            ASCIILiteral("File does not exist"));
+    return ResourceError(errorDomainNetwork, NetworkErrorFileDoesNotExist, response.url().string(), ASCIILiteral("File does not exist"));
 }
 
 ResourceError pluginWillHandleLoadError(const ResourceResponse& response)
 {
-    return ResourceError(errorDomainPlugin, PluginErrorWillHandleLoad, response.url().string(),
-            ASCIILiteral("Plugin will handle load"));
+    return ResourceError(errorDomainPlugin, PluginErrorWillHandleLoad, response.url().string(), ASCIILiteral("Plugin will handle load"));
 }
 
 ResourceError downloadNetworkError(const ResourceError& networkError)
 {
-    return ResourceError(errorDomainDownload, DownloadErrorNetwork, networkError.failingURL(),
-            networkError.localizedDescription());
+    return ResourceError(errorDomainDownload, DownloadErrorNetwork, networkError.failingURL(), networkError.localizedDescription());
 }
 
 ResourceError downloadCancelledByUserError(const ResourceResponse& response)
 {
-    return ResourceError(errorDomainDownload, DownloadErrorCancelledByUser, response.url().string(),
-            ASCIILiteral("User cancelled the download"));
+    return ResourceError(errorDomainDownload, DownloadErrorCancelledByUser, response.url().string(), ASCIILiteral("User cancelled the download"));
 }
 
 ResourceError downloadDestinationError(const ResourceResponse& response, const String& errorMessage)
@@ -99,24 +90,22 @@ ResourceError printError(const PrintContext* printContext, const String& errorMe
 {
     DocumentLoader* documentLoader = printContext->frame()->loader().documentLoader();
 
-    return ResourceError(errorDomainPrint, PrintErrorGeneral,
-            documentLoader ? documentLoader->url() : URL(), errorMessage);
+    return ResourceError(errorDomainPrint, PrintErrorGeneral, documentLoader ? documentLoader->url() : URL(), errorMessage);
 }
 
 ResourceError printerNotFoundError(const PrintContext* printContext)
 {
     DocumentLoader* documentLoader = printContext->frame()->loader().documentLoader();
 
-    return ResourceError(errorDomainPrint, PrintErrorPrinterNotFound,
-            documentLoader ? documentLoader->url() : URL(), ASCIILiteral("Printer not found"));
+    return ResourceError(errorDomainPrint, PrintErrorPrinterNotFound, documentLoader ? documentLoader->url() : URL(), ASCIILiteral("Printer not found"));
 }
 
 ResourceError invalidPageRangeToPrint(const PrintContext* printContext)
 {
     DocumentLoader* documentLoader = printContext->frame()->loader().documentLoader();
 
-    return ResourceError(errorDomainPrint, PrintErrorInvalidPageRange,
-            documentLoader ? documentLoader->url() : URL(), ASCIILiteral("Invalid page range"));
+    return ResourceError(errorDomainPrint, PrintErrorInvalidPageRange, documentLoader ? documentLoader->url() : URL(), ASCIILiteral("Invalid page range"));
 }
 
 } // namespace WebCore
+

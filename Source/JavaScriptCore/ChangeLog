@@ -1,3 +1,813 @@
+2013-12-04  Andy Estes  <aestes@apple.com>
+
+        [iOS] Build projects with $(ARCHS_STANDARD_32_64_BIT)
+        https://bugs.webkit.org/show_bug.cgi?id=125236
+
+        Reviewed by Sam Weinig.
+
+        $(ARCHS_STANDARD_32_64_BIT) is what we want for both device and simulator builds.
+
+        * Configurations/DebugRelease.xcconfig:
+
+2013-12-03  Filip Pizlo  <fpizlo@apple.com>
+
+        Infer constant closure variables
+        https://bugs.webkit.org/show_bug.cgi?id=124630
+
+        Reviewed by Geoffrey Garen.
+        
+        Captured variables that are assigned once (not counting op_enter's Undefined
+        initialization) and that are contained within a function that has thus far only been
+        entered once are now constant folded. It's pretty awesome.
+        
+        This involves a watchpoint on the assignment to variables and a watchpoint on entry
+        into the function. The former is reused from global variable constant inference and the
+        latter is reused from one-time closure inference.
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::dumpBytecode):
+        (JSC::CodeBlock::CodeBlock):
+        * bytecode/Instruction.h:
+        (JSC::Instruction::Instruction):
+        * bytecode/Opcode.h:
+        (JSC::padOpcodeName):
+        * bytecode/UnlinkedCodeBlock.h:
+        (JSC::UnlinkedInstruction::UnlinkedInstruction):
+        * bytecode/VariableWatchpointSet.h:
+        (JSC::VariableWatchpointSet::invalidate):
+        * bytecode/Watchpoint.h:
+        (JSC::WatchpointSet::invalidate):
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::addVar):
+        (JSC::BytecodeGenerator::BytecodeGenerator):
+        (JSC::BytecodeGenerator::emitInitLazyRegister):
+        (JSC::BytecodeGenerator::emitMove):
+        (JSC::BytecodeGenerator::emitNewFunctionInternal):
+        (JSC::BytecodeGenerator::createArgumentsIfNecessary):
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::BytecodeGenerator::addVar):
+        (JSC::BytecodeGenerator::watchableVariable):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::getLocal):
+        (JSC::DFG::ByteCodeParser::inferredConstant):
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        (JSC::DFG::ByteCodeParser::parse):
+        * dfg/DFGGraph.cpp:
+        (JSC::DFG::Graph::tryGetActivation):
+        (JSC::DFG::Graph::tryGetRegisters):
+        * dfg/DFGGraph.h:
+        * jit/JIT.cpp:
+        (JSC::JIT::privateCompileMainPass):
+        (JSC::JIT::privateCompileSlowCases):
+        * jit/JIT.h:
+        * jit/JITOpcodes.cpp:
+        (JSC::JIT::emit_op_mov):
+        (JSC::JIT::emit_op_captured_mov):
+        (JSC::JIT::emit_op_new_captured_func):
+        (JSC::JIT::emitSlow_op_captured_mov):
+        * jit/JITOpcodes32_64.cpp:
+        (JSC::JIT::emit_op_mov):
+        (JSC::JIT::emit_op_captured_mov):
+        * llint/LowLevelInterpreter32_64.asm:
+        * llint/LowLevelInterpreter64.asm:
+        * runtime/CommonSlowPaths.cpp:
+        (JSC::SLOW_PATH_DECL):
+        * runtime/CommonSlowPaths.h:
+        * runtime/ConstantMode.h: Added.
+        * runtime/JSGlobalObject.h:
+        * runtime/JSScope.cpp:
+        (JSC::abstractAccess):
+        * runtime/SymbolTable.cpp:
+        (JSC::SymbolTableEntry::prepareToWatch):
+
+2013-12-04  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Unreviewed project file gardening.
+
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj: Remove deleted files from project.
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters: Put files in proper directory
+        folders to match the directory structure of the source code.
+
+2013-12-04  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Unreviewed Windows Build Fix attempt after r160099.
+
+        * JavaScriptCore.vcxproj/copy-files.cmd:
+
+2013-12-04  Julien Brianceau  <jbriance@cisco.com>
+
+        REGRESSION (r160094): Fix lots of crashes for sh4 architecture.
+        https://bugs.webkit.org/show_bug.cgi?id=125227
+
+        Reviewed by Michael Saboff.
+
+        * llint/LowLevelInterpreter32_64.asm: Do not use t4 and t5 as they match a0 and a1.
+        * offlineasm/registers.rb: Add t7, t8 and t9 in register list for sh4 port.
+        * offlineasm/sh4.rb: Rearrange RegisterID list and add the missing ones.
+
+2013-12-03  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Push Remote Inspector debugging connection management into JavaScriptCore
+        https://bugs.webkit.org/show_bug.cgi?id=124613
+
+        Reviewed by Timothy Hatcher.
+
+        Move the ENABLE(REMOTE_INSPECTOR) remote debugger connection management
+        into JavaScriptCore (originally from WebKit/mac). Include enhancements:
+
+          * allow for different types of remote debuggable targets,
+            eventually at least a JSContext, WebView, WKView.
+          * allow debuggables to be registered and debugged on any thread. Unlike
+            WebViews, JSContexts may be run entirely off of the main thread.
+          * move the remote connection (XPC connection) itself off of the main thread,
+            it doesn't need to be on the main thread.
+
+        Make JSContext @class and JavaScriptCore::JSContextRef
+        "JavaScript" Remote Debuggables.
+
+        * inspector/remote/RemoteInspectorDebuggable.h: Added.
+        * inspector/remote/RemoteInspectorDebuggable.cpp: Added.
+        (Inspector::RemoteInspectorDebuggable::RemoteInspectorDebuggable):
+        (Inspector::RemoteInspectorDebuggable::~RemoteInspectorDebuggable):
+        (Inspector::RemoteInspectorDebuggable::init):
+        (Inspector::RemoteInspectorDebuggable::update):
+        (Inspector::RemoteInspectorDebuggable::setRemoteDebuggingAllowed):
+        (Inspector::RemoteInspectorDebuggable::info):
+        RemoteInspectorDebuggable defines a debuggable target. As long as
+        something creates a debuggable and is set to allow remote inspection
+        it will be listed in remote debuggers. For the different types of
+        debuggables (JavaScript and Web) there is different basic information
+        that may be listed.
+
+        * inspector/InspectorFrontendChannel.h: Added.
+        (Inspector::InspectorFrontendChannel::~InspectorFrontendChannel):
+        The only thing a debuggable needs for remote debugging is an
+        InspectorFrontendChannel a way to send messages to a remote frontend.
+        This class provides that method, and is vended to the
+        RemoteInspectorDebuggable when a remote connection is setup.
+
+        * inspector/remote/RemoteInspector.h: Added.
+        * inspector/remote/RemoteInspector.mm: Added.
+        Singleton, created at least when the first Debuggable is created.
+        This class manages the list of debuggables, any connection to a
+        remote debugger proxy (XPC service "com.apple.webinspector").
+
+        (Inspector::dispatchAsyncOnQueueSafeForAnyDebuggable):
+        (Inspector::RemoteInspector::shared):
+        (Inspector::RemoteInspector::RemoteInspector):
+        (Inspector::RemoteInspector::nextAvailableIdentifier):
+        (Inspector::RemoteInspector::registerDebuggable):
+        (Inspector::RemoteInspector::unregisterDebuggable):
+        (Inspector::RemoteInspector::updateDebuggable):
+        Debuggable management. When debuggables are added, removed, or updated
+        we stash a copy of the debuggable information and push an update to
+        debuggers. Stashing a copy of the information in the RemoteInspector
+        is a thread safe way to avoid walking over all debuggables to gather
+        the information when it is needed.
+
+        (Inspector::RemoteInspector::start):
+        (Inspector::RemoteInspector::stop):
+        Runtime API to enable / disable the feature.
+
+        (Inspector::RemoteInspector::listingForDebuggable):
+        (Inspector::RemoteInspector::pushListingNow):
+        (Inspector::RemoteInspector::pushListingSoon):
+        Pushing a listing to remote debuggers.
+
+        (Inspector::RemoteInspector::sendMessageToRemoteFrontend):
+        (Inspector::RemoteInspector::setupXPCConnectionIfNeeded):
+        (Inspector::RemoteInspector::xpcConnectionReceivedMessage):
+        (Inspector::RemoteInspector::xpcConnectionFailed):
+        (Inspector::RemoteInspector::xpcConnectionUnhandledMessage):
+        XPC setup, send, and receive handling.
+
+        (Inspector::RemoteInspector::updateHasActiveDebugSession):
+        Applications being debugged may want to know when a debug
+        session is active. This provides that notification.
+
+        (Inspector::RemoteInspector::receivedSetupMessage):
+        (Inspector::RemoteInspector::receivedDataMessage):
+        (Inspector::RemoteInspector::receivedDidCloseMessage):
+        (Inspector::RemoteInspector::receivedGetListingMessage):
+        (Inspector::RemoteInspector::receivedIndicateMessage):
+        (Inspector::RemoteInspector::receivedConnectionDiedMessage):
+        Dispatching incoming remote debugging protocol messages.
+        These are wrapping above the inspector protocol messages.
+
+        * inspector/remote/RemoteInspectorConstants.h: Added.
+        Protocol messages and dictionary keys inside the messages.
+
+        (Inspector::RemoteInspectorDebuggableInfo::RemoteInspectorDebuggableInfo):
+        * inspector/remote/RemoteInspectorDebuggableConnection.h: Added.
+        * inspector/remote/RemoteInspectorDebuggableConnection.mm: Added.
+        This is a connection between the RemoteInspector singleton and a RemoteInspectorDebuggable.
+
+        (Inspector::RemoteInspectorDebuggableConnection::RemoteInspectorDebuggableConnection):
+        (Inspector::RemoteInspectorDebuggableConnection::~RemoteInspectorDebuggableConnection):
+        Allow for dispatching messages on JavaScript debuggables on a dispatch_queue
+        instead of the main queue.
+
+        (Inspector::RemoteInspectorDebuggableConnection::destination):
+        (Inspector::RemoteInspectorDebuggableConnection::connectionIdentifier):
+        Needed in the remote debugging protocol to identify the remote debugger.
+
+        (Inspector::RemoteInspectorDebuggableConnection::dispatchSyncOnDebuggable):
+        (Inspector::RemoteInspectorDebuggableConnection::dispatchAsyncOnDebuggable):
+        (Inspector::RemoteInspectorDebuggableConnection::setup):
+        (Inspector::RemoteInspectorDebuggableConnection::closeFromDebuggable):
+        (Inspector::RemoteInspectorDebuggableConnection::close):
+        (Inspector::RemoteInspectorDebuggableConnection::sendMessageToBackend):
+        (Inspector::RemoteInspectorDebuggableConnection::sendMessageToFrontend):
+        The connection is a thin channel between the two sides that can be closed
+        from either side, so there is some logic around multi-threaded access.
+
+        * inspector/remote/RemoteInspectorXPCConnection.h: Added.
+        (Inspector::RemoteInspectorXPCConnection::Client::~Client):
+        * inspector/remote/RemoteInspectorXPCConnection.mm: Added.
+        (Inspector::RemoteInspectorXPCConnection::RemoteInspectorXPCConnection):
+        (Inspector::RemoteInspectorXPCConnection::~RemoteInspectorXPCConnection):
+        (Inspector::RemoteInspectorXPCConnection::close):
+        (Inspector::RemoteInspectorXPCConnection::deserializeMessage):
+        (Inspector::RemoteInspectorXPCConnection::handleEvent):
+        (Inspector::RemoteInspectorXPCConnection::sendMessage):
+        This is a connection between the RemoteInspector singleton and an XPC service
+        named "com.apple.webinspector". This handles serialization of the dictionary
+        messages to and from the service. The receiving is done on a non-main queue.
+
+        * API/JSContext.h:
+        * API/JSContext.mm:
+        (-[JSContext name]):
+        (-[JSContext setName:]):
+        ObjC API to enable/disable JSContext remote inspection and give a name.
+
+        * API/JSContextRef.h:
+        * API/JSContextRef.cpp:
+        (JSGlobalContextGetName):
+        (JSGlobalContextSetName):
+        C API to give a JSContext a name.
+
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::setName):
+        * runtime/JSGlobalObject.h:
+        (JSC::JSGlobalObject::name):
+        Shared handling of the APIs above.
+
+        * runtime/JSGlobalObjectDebuggable.cpp: Added.
+        (JSC::JSGlobalObjectDebuggable::JSGlobalObjectDebuggable):
+        (JSC::JSGlobalObjectDebuggable::name):
+        (JSC::JSGlobalObjectDebuggable::connect):
+        (JSC::JSGlobalObjectDebuggable::disconnect):
+        (JSC::JSGlobalObjectDebuggable::dispatchMessageFromRemoteFrontend):
+        * runtime/JSGlobalObjectDebuggable.h: Added.
+        Stub for the actual remote debugging implementation. We will push
+        down the appropriate WebCore/inspector peices suitable for debugging
+        just a JavaScript context.
+
+        * CMakeLists.txt:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * GNUmakefile.am:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        Update build files.
+
+2013-12-04  Michael Saboff  <msaboff@apple.com>
+
+        Move the setting up of callee's callFrame from pushFrame to callToJavaScript thunk
+        https://bugs.webkit.org/show_bug.cgi?id=123999
+
+        Reviewed by Filip Pizlo.
+
+        Changed LLInt and/or JIT enabled ports to allocate the stack frame in the
+        callToJavaScript stub.  Added an additional stub, callToNativeFunction that
+        allocates a stack frame in a similar way for calling native entry points
+        that take a single ExecState* argument.  These stubs are implemented
+        using common macros in LowLevelInterpreter{32_64,64}.asm.  There are also
+        Windows X86 and X86-64 versions in the corresponding JitStubsXX.h.
+        The stubs allocate and create a sentinel frame, then create the callee's
+        frame, populating  the header and arguments from the passed in ProtoCallFrame*.
+        It is assumed that the caller of either stub does a check for enough stack space
+        via JSStack::entryCheck().
+
+        For ports using the C-Loop interpreter, the prior method for allocating stack
+        frame and invoking functions is used, namely with JSStack::pushFrame() and
+        ::popFrame().
+
+        Made spelling changes "sentinal" -> "sentinel".
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * interpreter/CachedCall.h:
+        (JSC::CachedCall::CachedCall):
+        (JSC::CachedCall::setThis):
+        (JSC::CachedCall::setArgument):
+        * interpreter/CallFrameClosure.h:
+        (JSC::CallFrameClosure::resetCallFrame):
+        * interpreter/Interpreter.cpp:
+        (JSC::Interpreter::execute):
+        (JSC::Interpreter::executeCall):
+        (JSC::Interpreter::executeConstruct):
+        (JSC::Interpreter::prepareForRepeatCall):
+        * interpreter/Interpreter.h:
+        * interpreter/JSStack.h:
+        * interpreter/JSStackInlines.h:
+        (JSC::JSStack::entryCheck):
+        (JSC::JSStack::pushFrame):
+        (JSC::JSStack::popFrame):
+        * interpreter/ProtoCallFrame.cpp: Added.
+        (JSC::ProtoCallFrame::init):
+        * interpreter/ProtoCallFrame.h: Added.
+        (JSC::ProtoCallFrame::codeBlock):
+        (JSC::ProtoCallFrame::setCodeBlock):
+        (JSC::ProtoCallFrame::setScope):
+        (JSC::ProtoCallFrame::setCallee):
+        (JSC::ProtoCallFrame::argumentCountIncludingThis):
+        (JSC::ProtoCallFrame::argumentCount):
+        (JSC::ProtoCallFrame::setArgumentCountIncludingThis):
+        (JSC::ProtoCallFrame::setPaddedArgsCount):
+        (JSC::ProtoCallFrame::clearCurrentVPC):
+        (JSC::ProtoCallFrame::setThisValue):
+        (JSC::ProtoCallFrame::setArgument):
+        * jit/JITCode.cpp:
+        (JSC::JITCode::execute):
+        * jit/JITCode.h:
+        * jit/JITOperations.cpp:
+        * jit/JITStubs.h:
+        * jit/JITStubsMSVC64.asm:
+        * jit/JITStubsX86.h:
+        * llint/LLIntOffsetsExtractor.cpp:
+        * llint/LLIntThunks.h:
+        * llint/LowLevelInterpreter.asm:
+        * llint/LowLevelInterpreter32_64.asm:
+        * llint/LowLevelInterpreter64.asm:
+        * runtime/ArgList.h:
+        (JSC::ArgList::data):
+        * runtime/JSArray.cpp:
+        (JSC::AVLTreeAbstractorForArrayCompare::compare_key_key):
+        * runtime/StringPrototype.cpp:
+        (JSC::replaceUsingRegExpSearch):
+
+2013-12-04  László Langó  <lango@inf.u-szeged.hu>
+
+        Remove stdio.h from JSC files.
+        https://bugs.webkit.org/show_bug.cgi?id=125220
+
+        Reviewed by Michael Saboff.
+
+        * interpreter/VMInspector.cpp:
+        * jit/JITArithmetic.cpp:
+        * jit/JITArithmetic32_64.cpp:
+        * jit/JITCall.cpp:
+        * jit/JITCall32_64.cpp:
+        * jit/JITPropertyAccess.cpp:
+        * jit/JITPropertyAccess32_64.cpp:
+        * runtime/Completion.cpp:
+        * runtime/IndexingType.cpp:
+        * runtime/Lookup.h:
+        * runtime/Operations.cpp:
+        * runtime/Options.cpp:
+        * runtime/RegExp.cpp:
+
+2013-12-04  László Langó  <lango@inf.u-szeged.hu>
+
+        Avoid to add zero offset in BaseIndex.
+        https://bugs.webkit.org/show_bug.cgi?id=125215
+
+        Reviewed by Michael Saboff.
+
+        When using cloop do not generate offsets additions for BaseIndex if the offset is zero.
+
+        * offlineasm/cloop.rb:
+
+2013-12-04  Peter Molnar  <pmolnar.u-szeged@partner.samsung.com>
+
+        Fix !ENABLE(JAVASCRIPT_DEBUGGER) build.
+        https://bugs.webkit.org/show_bug.cgi?id=125083
+
+        Reviewed by Mark Lam.
+
+        * debugger/Debugger.cpp:
+        * debugger/Debugger.h:
+        (JSC::Debugger::Debugger):
+        (JSC::Debugger::needsOpDebugCallbacks):
+        (JSC::Debugger::needsExceptionCallbacks):
+        (JSC::Debugger::detach):
+        (JSC::Debugger::sourceParsed):
+        (JSC::Debugger::exception):
+        (JSC::Debugger::atStatement):
+        (JSC::Debugger::callEvent):
+        (JSC::Debugger::returnEvent):
+        (JSC::Debugger::willExecuteProgram):
+        (JSC::Debugger::didExecuteProgram):
+        (JSC::Debugger::didReachBreakpoint):
+        * debugger/DebuggerPrimitives.h:
+        * jit/JITOpcodes.cpp:
+        (JSC::JIT::emit_op_debug):
+        * jit/JITOpcodes32_64.cpp:
+        (JSC::JIT::emit_op_debug):
+        * llint/LLIntOfflineAsmConfig.h:
+        * llint/LowLevelInterpreter.asm:
+
+2013-12-03  Mark Lam  <mark.lam@apple.com>
+
+        testapi test crashes on Windows in WTF::Vector<wchar_t,64,WTF::UnsafeVectorOverflow>::size().
+        https://bugs.webkit.org/show_bug.cgi?id=121972.
+
+        Reviewed by Brent Fulgham.
+
+        * interpreter/JSStack.cpp:
+        (JSC::JSStack::~JSStack):
+        - Reverting the change from r160004 since it's better to fix OSAllocatorWin
+          to be consistent with OSAllocatorPosix.
+
+2013-12-03  Mark Lam  <mark.lam@apple.com>
+
+        Fix LLINT_C_LOOP build for Win64.
+        https://bugs.webkit.org/show_bug.cgi?id=125186.
+
+        Reviewed by Michael Saboff.
+
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * jit/JITOperationsMSVC64.cpp: Added.
+        (JSC::getHostCallReturnValueWithExecState):
+        - Win64 will build JITStubMSVC64.asm even when !ENABLE(JIT). This results
+          in a linkage error due to a missing getHostCallReturnValueWithExecState().
+          So, we add a stub getHostCallReturnValueWithExecState() here to satisfy
+          that linkage. This function will never be called.
+          The alternative to providing such a stub is to make the MSVC project
+          recognize if the JIT is enabled or not, and exclude JITStubMSVC64.asm
+          if it's not enabled. We don't currently set ENABLE(JIT) via the MSVC
+          project and the work to do that is too much trouble for what we're trying
+          to achieve here. So, we're opting for this simpler workaround instead.
+
+        * llint/LowLevelInterpreter.asm:
+        * llint/LowLevelInterpreter.cpp:
+        (JSC::CLoop::execute):
+        - Don't build callToJavaScript if we're building the C loop. Otherwise,
+          the C loop won't build if !ENABLE(COMPUTE_GOTO_OPCODES). 
+
+2013-12-03  Michael Saboff  <msaboff@apple.com>
+
+        ARM64: Crash in JIT code due to improper reuse of cached memory temp register
+        https://bugs.webkit.org/show_bug.cgi?id=125181
+
+        Reviewed by Geoffrey Garen.
+
+        Changed load8() and load() to invalidate the memory temp CachedTempRegister when the
+        destination of an absolute load is the memory temp register since the source address
+        is also the memory temp register.  Change branch{8,32,64} of an AbsoluteAddress with
+        a register to use the dataTempRegister as the destinate of the absolute load to
+        reduce the chance that we need to invalidate the memory temp register cache.
+        In the process, found and fixed an outright bug in branch8() where we'd load into
+        the data temp register and then compare and branch on the memory temp register.
+
+        * assembler/MacroAssemblerARM64.h:
+        (JSC::MacroAssemblerARM64::load8):
+        (JSC::MacroAssemblerARM64::branch32):
+        (JSC::MacroAssemblerARM64::branch64):
+        (JSC::MacroAssemblerARM64::branch8):
+        (JSC::MacroAssemblerARM64::load):
+
+2013-12-03  Michael Saboff  <msaboff@apple.com>
+
+        jit/JITArithmetic.cpp doesn't build for non-X86 ports
+        https://bugs.webkit.org/show_bug.cgi?id=125185
+
+        Rubber stamped by Mark Hahnenberg.
+
+        Removed unused declarations and related UNUSED_PARAM().
+
+        * jit/JITArithmetic.cpp:
+        (JSC::JIT::emit_op_mod):
+
+2013-12-03  Filip Pizlo  <fpizlo@apple.com>
+
+        ObjectAllocationProfile is racy and the DFG should be cool with that
+        https://bugs.webkit.org/show_bug.cgi?id=125172
+        <rdar://problem/15233487>
+
+        Reviewed by Mark Hahnenberg.
+        
+        We would previously sometimes get a null Structure because checking if the profile is non-null and loading
+        the structure from it were two separate operations.
+
+        * dfg/DFGAbstractInterpreterInlines.h:
+        (JSC::DFG::::executeEffects):
+        * dfg/DFGAbstractValue.cpp:
+        (JSC::DFG::AbstractValue::setFuturePossibleStructure):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * runtime/JSFunction.h:
+        (JSC::JSFunction::allocationProfile):
+        (JSC::JSFunction::allocationStructure):
+
+2013-12-03  peavo@outlook.com  <peavo@outlook.com>
+
+        testapi test crashes on Windows in WTF::Vector<wchar_t,64,WTF::UnsafeVectorOverflow>::size()
+        https://bugs.webkit.org/show_bug.cgi?id=121972
+
+        Reviewed by Michael Saboff.
+
+        The reason for the crash is that the wrong memory block is decommitted.
+        This can happen if no memory has been committed in the reserved block before the JSStack object is destroyed.
+        In the JSStack destructor, the pointer to decommit then points to the end of the block (or the start of the next), and the decommit size is zero.
+        If there is a block just after the block we are trying to decommit, this block will be decommitted, since Windows will decommit the whole block,
+        if the decommit size is zero (see VirtualFree). When somebody tries to read/write to this block later, we crash.
+
+        * interpreter/JSStack.cpp:
+        (JSC::JSStack::~JSStack): Don't decommit memory if nothing has been committed.
+
+2013-12-03  László Langó  <lango@inf.u-szeged.hu>
+
+        Guard JIT include.
+        https://bugs.webkit.org/show_bug.cgi?id=125063
+
+        Reviewed by Filip Pizlo.
+
+        * llint/LLIntThunks.cpp:
+
+2013-12-03  Julien Brianceau  <jbriance@cisco.com>
+
+        Merge mips and arm/sh4 paths in nativeForGenerator and privateCompileCTINativeCall functions.
+        https://bugs.webkit.org/show_bug.cgi?id=125067
+
+        Reviewed by Michael Saboff.
+
+        * jit/JITOpcodes32_64.cpp:
+        (JSC::JIT::privateCompileCTINativeCall):
+        * jit/ThunkGenerators.cpp:
+        (JSC::nativeForGenerator):
+
+2013-12-02  Mark Lam  <mark.lam@apple.com>
+
+        Build failure when disabling JIT, YARR_JIT, and ASSEMBLER.
+        https://bugs.webkit.org/show_bug.cgi?id=123809.
+
+        Reviewed by Geoffrey Garen.
+
+        Also fixed build when disabling the DISASSEMBLER.
+        Added some needed #if's and some comments.
+
+        * assembler/LinkBuffer.cpp:
+        (JSC::LinkBuffer::finalizeCodeWithDisassembly):
+        * dfg/DFGDisassembler.cpp:
+        * dfg/DFGDisassembler.h:
+        (JSC::DFG::Disassembler::Disassembler):
+        (JSC::DFG::Disassembler::setStartOfCode):
+        (JSC::DFG::Disassembler::setForBlockIndex):
+        (JSC::DFG::Disassembler::setForNode):
+        (JSC::DFG::Disassembler::setEndOfMainPath):
+        (JSC::DFG::Disassembler::setEndOfCode):
+        (JSC::DFG::Disassembler::dump):
+        (JSC::DFG::Disassembler::reportToProfiler):
+        * disassembler/Disassembler.cpp:
+        * disassembler/X86Disassembler.cpp:
+        * jit/FPRInfo.h:
+        * jit/GPRInfo.h:
+        * jit/JITDisassembler.cpp:
+        * jit/JITDisassembler.h:
+        (JSC::JITDisassembler::JITDisassembler):
+        (JSC::JITDisassembler::setStartOfCode):
+        (JSC::JITDisassembler::setForBytecodeMainPath):
+        (JSC::JITDisassembler::setForBytecodeSlowPath):
+        (JSC::JITDisassembler::setEndOfSlowPath):
+        (JSC::JITDisassembler::setEndOfCode):
+        (JSC::JITDisassembler::dump):
+        (JSC::JITDisassembler::reportToProfiler):
+
+2013-12-02  Filip Pizlo  <fpizlo@apple.com>
+
+        Baseline JIT calls to CommonSlowPaths shouldn't restore the last result
+        https://bugs.webkit.org/show_bug.cgi?id=125107
+
+        Reviewed by Mark Hahnenberg.
+
+        Just killing dead code.
+
+        * jit/JITArithmetic.cpp:
+        (JSC::JIT::emitSlow_op_negate):
+        (JSC::JIT::emitSlow_op_lshift):
+        (JSC::JIT::emitSlow_op_rshift):
+        (JSC::JIT::emitSlow_op_urshift):
+        (JSC::JIT::emitSlow_op_bitand):
+        (JSC::JIT::emitSlow_op_inc):
+        (JSC::JIT::emitSlow_op_dec):
+        (JSC::JIT::emitSlow_op_mod):
+        (JSC::JIT::emit_op_mod):
+        (JSC::JIT::compileBinaryArithOpSlowCase):
+        (JSC::JIT::emitSlow_op_div):
+        * jit/JITArithmetic32_64.cpp:
+        (JSC::JIT::emitSlow_op_negate):
+        (JSC::JIT::emitSlow_op_lshift):
+        (JSC::JIT::emitRightShiftSlowCase):
+        (JSC::JIT::emitSlow_op_bitand):
+        (JSC::JIT::emitSlow_op_bitor):
+        (JSC::JIT::emitSlow_op_bitxor):
+        (JSC::JIT::emitSlow_op_inc):
+        (JSC::JIT::emitSlow_op_dec):
+        (JSC::JIT::emitSlow_op_add):
+        (JSC::JIT::emitSlow_op_sub):
+        (JSC::JIT::emitSlow_op_mul):
+        (JSC::JIT::emitSlow_op_div):
+        * jit/JITOpcodes.cpp:
+        (JSC::JIT::emit_op_strcat):
+        (JSC::JIT::emitSlow_op_get_callee):
+        (JSC::JIT::emitSlow_op_create_this):
+        (JSC::JIT::emitSlow_op_to_this):
+        (JSC::JIT::emitSlow_op_to_primitive):
+        (JSC::JIT::emitSlow_op_not):
+        (JSC::JIT::emitSlow_op_bitxor):
+        (JSC::JIT::emitSlow_op_bitor):
+        (JSC::JIT::emitSlow_op_stricteq):
+        (JSC::JIT::emitSlow_op_nstricteq):
+        (JSC::JIT::emitSlow_op_to_number):
+        * jit/JITOpcodes32_64.cpp:
+        (JSC::JIT::emitSlow_op_to_primitive):
+        (JSC::JIT::emitSlow_op_not):
+        (JSC::JIT::emitSlow_op_stricteq):
+        (JSC::JIT::emitSlow_op_nstricteq):
+        (JSC::JIT::emitSlow_op_to_number):
+        (JSC::JIT::emitSlow_op_get_callee):
+        (JSC::JIT::emitSlow_op_create_this):
+        (JSC::JIT::emitSlow_op_to_this):
+
+2013-12-01  Filip Pizlo  <fpizlo@apple.com>
+
+        Stores to local captured variables should be intercepted
+        https://bugs.webkit.org/show_bug.cgi?id=124883
+
+        Reviewed by Mark Hahnenberg.
+        
+        Previously, in bytecode, you could assign to a captured variable just as you would
+        assign to any other kind of variable. This complicates closure variable constant
+        inference because we don't have any place where we can intercept stores to captured
+        variables in the LLInt.
+        
+        This patch institutes a policy that only certain instructions can store to captured
+        variables. If you interpret those instructions and you are required to notifyWrite()
+        then you need to check if the relevant variable is captured. Those instructions are
+        tracked in CodeBlock.cpp's VerifyCapturedDef. The main one is simply op_captured_mov.
+        In the future, we'll probably modify those instructions to have a pointer directly to
+        the VariableWatchpointSet; but for now we just introduce the captured instructions as
+        placeholders.
+        
+        In order to validate that the placeholders are inserted correctly, this patch improves
+        the CodeBlock validation to be able to inspect every def in the bytecode. To do that,
+        this patch refactors the liveness analysis' use/def calculator to be reusable; it now
+        takes a functor for each use or def.
+        
+        In the process of refactoring the liveness analysis, I noticed that op_enter was
+        claiming to def all callee registers. That's wrong; it only defs the non-temporary
+        variables. Making that change revealed preexisting bugs in the liveness analysis, since
+        now the validator would pick up cases where the bytecode claimed to use a temporary and
+        the def calculator never noticed the definition (or the converse - where the bytecode
+        was actually not using a temporary but the liveness analysis thought that it was a
+        use). This patch fixes a few of those bugs.
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * bytecode/BytecodeLivenessAnalysis.cpp:
+        (JSC::stepOverInstruction):
+        * bytecode/BytecodeUseDef.h: Added.
+        (JSC::computeUsesForBytecodeOffset):
+        (JSC::computeDefsForBytecodeOffset):
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::dumpBytecode):
+        (JSC::CodeBlock::isCaptured):
+        (JSC::CodeBlock::validate):
+        * bytecode/CodeBlock.h:
+        * bytecode/Opcode.h:
+        (JSC::padOpcodeName):
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::BytecodeGenerator):
+        (JSC::BytecodeGenerator::resolveCallee):
+        (JSC::BytecodeGenerator::emitMove):
+        (JSC::BytecodeGenerator::isCaptured):
+        (JSC::BytecodeGenerator::local):
+        (JSC::BytecodeGenerator::constLocal):
+        (JSC::BytecodeGenerator::emitNewFunction):
+        (JSC::BytecodeGenerator::emitLazyNewFunction):
+        (JSC::BytecodeGenerator::emitNewFunctionInternal):
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::Local::Local):
+        (JSC::Local::isCaptured):
+        (JSC::Local::captureMode):
+        (JSC::BytecodeGenerator::captureMode):
+        (JSC::BytecodeGenerator::emitNode):
+        (JSC::BytecodeGenerator::pushOptimisedForIn):
+        * bytecompiler/NodesCodegen.cpp:
+        (JSC::PostfixNode::emitResolve):
+        (JSC::PrefixNode::emitResolve):
+        (JSC::ReadModifyResolveNode::emitBytecode):
+        (JSC::AssignResolveNode::emitBytecode):
+        (JSC::ConstDeclNode::emitCodeSingle):
+        (JSC::ForInNode::emitBytecode):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * dfg/DFGCapabilities.cpp:
+        (JSC::DFG::capabilityLevel):
+        * jit/JIT.cpp:
+        (JSC::JIT::privateCompileMainPass):
+        * llint/LowLevelInterpreter32_64.asm:
+        * llint/LowLevelInterpreter64.asm:
+        * runtime/SymbolTable.h:
+        (JSC::SymbolTable::isCaptured):
+
+2013-12-02  Filip Pizlo  <fpizlo@apple.com>
+
+        Instead of watchpointing activation allocation, we should watchpoint entry into functions that have captured variables
+        https://bugs.webkit.org/show_bug.cgi?id=125052
+
+        Reviewed by Mark Hahnenberg.
+        
+        This makes us watch function entry rather than activation creation. We only incur the
+        costs of doing so for functions that have captured variables, and only on the first two
+        entries into the function. This means that closure variable constant inference will
+        naturally work even for local uses of the captured variable, like:
+        
+            (function(){
+                var blah = 42;
+                ... // stuff
+                function () { ... blah /* we can fold this to 42 */ }
+                ... blah // we can also fold this to 42.
+            })();
+        
+        Previously, only the nested use would have been foldable.
+
+        * bytecode/BytecodeLivenessAnalysis.cpp:
+        (JSC::computeUsesForBytecodeOffset):
+        (JSC::computeDefsForBytecodeOffset):
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::dumpBytecode):
+        * bytecode/Opcode.h:
+        (JSC::padOpcodeName):
+        * bytecode/Watchpoint.h:
+        (JSC::WatchpointSet::touch):
+        (JSC::InlineWatchpointSet::touch):
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::BytecodeGenerator):
+        * dfg/DFGAbstractInterpreterInlines.h:
+        (JSC::DFG::::executeEffects):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * dfg/DFGCapabilities.cpp:
+        (JSC::DFG::capabilityLevel):
+        * dfg/DFGClobberize.h:
+        (JSC::DFG::clobberize):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        * dfg/DFGNode.h:
+        (JSC::DFG::Node::hasSymbolTable):
+        * dfg/DFGNodeType.h:
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSafeToExecute.h:
+        (JSC::DFG::safeToExecute):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGWatchpointCollectionPhase.cpp:
+        (JSC::DFG::WatchpointCollectionPhase::handle):
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        * jit/JIT.cpp:
+        (JSC::JIT::privateCompileMainPass):
+        * jit/JIT.h:
+        * jit/JITOpcodes.cpp:
+        (JSC::JIT::emit_op_touch_entry):
+        * llint/LowLevelInterpreter.asm:
+        * runtime/CommonSlowPaths.cpp:
+        (JSC::SLOW_PATH_DECL):
+        * runtime/CommonSlowPaths.h:
+        * runtime/JSActivation.h:
+        (JSC::JSActivation::create):
+        * runtime/SymbolTable.cpp:
+        (JSC::SymbolTable::SymbolTable):
+        * runtime/SymbolTable.h:
+
+2013-12-02  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [JSC] Get rid of some unused parameters in LLIntSlowPaths.cpp macros
+        https://bugs.webkit.org/show_bug.cgi?id=125075
+
+        Reviewed by Michael Saboff.
+
+        * llint/LLIntSlowPaths.cpp:
+        (JSC::LLInt::handleHostCall): added UNUSED_PARAM(pc).
+        (JSC::LLInt::setUpCall): Doesn't pass 'pc' to LLINT_CALL macros.
+        (JSC::LLInt::LLINT_SLOW_PATH_DECL): Ditto.
+
 2013-12-02  László Langó  <lango@inf.u-szeged.hu>
 
         Remove stdio.h from JSC files.

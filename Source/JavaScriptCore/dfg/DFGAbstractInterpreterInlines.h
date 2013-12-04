@@ -1136,6 +1136,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         break;
 
     case NewObject:
+        ASSERT(node->structure());
         forNode(node).set(m_graph, node->structure());
         m_state.setHaveStructures(true);
         break;
@@ -1146,7 +1147,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         m_state.setHaveStructures(true);
         break;
         
-    case ActivationAllocationWatchpoint:
+    case FunctionReentryWatchpoint:
         break;
     
     case CreateArguments:

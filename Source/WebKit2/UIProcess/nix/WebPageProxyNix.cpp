@@ -90,7 +90,7 @@ void WebPageProxy::loadRecentSearches(const String&, Vector<String>&)
     notImplemented();
 }
 
-void WebPageProxy::initializeUIPopupMenuClient(const WKPageUIPopupMenuClient* client)
+void WebPageProxy::initializeUIPopupMenuClient(const WKPageUIPopupMenuClientBase* client)
 {
     m_uiPopupMenuClient.initialize(client);
 }

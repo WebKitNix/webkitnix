@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2013 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (C) 2012, 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,6 +30,7 @@
 #include "InputTypeNames.h"
 #include "PaintInfo.h"
 #include "PlatformContextCairo.h"
+#include "UserAgentStyleSheets.h"
 #include "public/Canvas.h"
 #include "public/Platform.h"
 #include "public/Rect.h"
@@ -440,7 +441,6 @@ bool RenderThemeNix::paintMeter(RenderObject* o, const PaintInfo& i, const IntRe
 #endif
 
 #if ENABLE(VIDEO)
-
 String RenderThemeNix::extraMediaControlsStyleSheet()
 {
     return String(mediaControlsNixUserAgentStyleSheet, sizeof(mediaControlsNixUserAgentStyleSheet));
@@ -492,7 +492,7 @@ bool RenderThemeNix::paintMediaRewindButton(RenderObject*, const PaintInfo& i, c
     themeEngine()->paintMediaRewindButton(webCanvas(i), toNixRect(rect));
     return false;
 }
+#endif // ENABLE(VIDEO)
 
-#endif
+} // namespace WebCore
 
-}

@@ -17,9 +17,9 @@ set(Platform_HEADERS
     nix/public/MediaConstraints.h
     nix/public/MediaPlayer.h
     nix/public/MediaStream.h
+    nix/public/MediaStreamAudioSource.h
     nix/public/MediaStreamCenter.h
     nix/public/MediaStreamSource.h
-    nix/public/MediaStreamAudioSource.h
     nix/public/MultiChannelPCMData.h
     nix/public/Platform.h
     nix/public/PrivatePtr.h

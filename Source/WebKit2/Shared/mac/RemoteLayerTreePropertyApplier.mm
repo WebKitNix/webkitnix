@@ -27,6 +27,7 @@
 #import "RemoteLayerTreePropertyApplier.h"
 
 #import "PlatformCALayerRemote.h"
+#import <QuartzCore/CALayer.h>
 #import <WebCore/PlatformCAFilters.h>
 
 using namespace WebCore;
@@ -116,10 +117,14 @@ void RemoteLayerTreePropertyApplier::applyPropertiesToLayer(CALayer *layer, Remo
         layer.opaque = properties.opaque;
 
     if (properties.changedProperties & RemoteLayerTreeTransaction::MaskLayerChanged) {
-        CALayer *maskLayer = relatedLayers.get(properties.maskLayer);
-        ASSERT(!maskLayer.superlayer);
-        if (!maskLayer.superlayer)
-            layer.mask = maskLayer;
+        if (!properties.maskLayerID)
+            layer.mask = nullptr;
+        else {
+            CALayer *maskLayer = relatedLayers.get(properties.maskLayerID);
+            ASSERT(!maskLayer.superlayer);
+            if (!maskLayer.superlayer)
+                layer.mask = maskLayer;
+        }
     }
 
     if (properties.changedProperties & RemoteLayerTreeTransaction::ContentsRectChanged)

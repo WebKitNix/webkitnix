@@ -49,13 +49,13 @@ static void willAddMessageToConsole(WKBundlePageRef, WKStringRef message, uint32
 
 static void didCreatePage(WKBundleRef, WKBundlePageRef page, const void*)
 {
-    WKBundlePageUIClient uiClient;
-    memset(&uiClient, 0, sizeof(WKBundlePageUIClient));
+    WKBundlePageUIClientV2 uiClient;
+    memset(&uiClient, 0, sizeof(uiClient));
 
-    uiClient.version = kWKBundlePageUIClientCurrentVersion;
+    uiClient.base.version = 2;
     uiClient.willAddMessageToConsole = willAddMessageToConsole;
 
-    WKBundlePageSetUIClient(page, &uiClient);
+    WKBundlePageSetUIClient(page, &uiClient.base);
 }
 
 extern "C" {
@@ -63,12 +63,12 @@ void WKBundleInitialize(WKBundleRef bundle, WKTypeRef)
 {
     globalBundle = bundle;
 
-    WKBundleClient client;
-    memset(&client, 0, sizeof(WKBundleClient));
+    WKBundleClientV1 client;
+    memset(&client, 0, sizeof(client));
 
-    client.version = kWKBundleClientCurrentVersion;
+    client.base.version = 1;
     client.didCreatePage = didCreatePage;
 
-    WKBundleSetClient(bundle, &client);
+    WKBundleSetClient(bundle, &client.base);
 }
 }

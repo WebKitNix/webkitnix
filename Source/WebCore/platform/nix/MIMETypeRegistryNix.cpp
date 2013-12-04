@@ -5,7 +5,7 @@
  * Copyright (C) 2008 Torch Mobile Inc.  http://www.torchmobile.com/
  * Copyright (C) 2009-2010 ProFUSION embedded systems
  * Copyright (C) 2009-2010 Samsung Electronics
- * Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (C) 2012, 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -78,12 +78,12 @@ String MIMETypeRegistry::getMIMETypeForExtension(const String &ext)
 {
     ASSERT(isMainThread());
 
-    String s = ext.lower();
-    const ExtensionMap *e = extensionMap;
-    while (e->extension) {
-        if (s == e->extension)
-            return e->mimeType;
-        ++e;
+    String lowerCaseExt = ext.lower();
+    const ExtensionMap* extMap = extensionMap;
+    while (extMap->extension) {
+        if (lowerCaseExt == extMap->extension)
+            return extMap->mimeType;
+        ++extMap;
     }
 
     return String();
@@ -94,4 +94,5 @@ bool MIMETypeRegistry::isApplicationPluginMIMEType(const String&)
     return false;
 }
 
-}
+} // namespace WebCore
+

@@ -263,6 +263,24 @@ private:
     Node* getLocal(VirtualRegister operand)
     {
         unsigned local = operand.toLocal();
+
+        if (local < m_localWatchpoints.size()) {
+            if (VariableWatchpointSet* set = m_localWatchpoints[local]) {
+                if (JSValue value = set->inferredValue()) {
+                    addToGraph(FunctionReentryWatchpoint, OpInfo(m_codeBlock->symbolTable()));
+                    addToGraph(VariableWatchpoint, OpInfo(set));
+                    // Note: this is very special from an OSR exit standpoint. We wouldn't be
+                    // able to do this for most locals, but it works here because we're dealing
+                    // with a flushed local. For most locals we would need to issue a GetLocal
+                    // here and ensure that we have uses in DFG IR wherever there would have
+                    // been uses in bytecode. Clearly this optimization does not do this. But
+                    // that's fine, because we don't need to track liveness for captured
+                    // locals, and this optimization only kicks in for captured locals.
+                    return inferredConstant(value);
+                }
+            }
+        }
+
         Node* node = m_currentBlock->variablesAtTail.local(local);
         bool isCaptured = m_codeBlock->isCaptured(operand, inlineCallFrame());
         
@@ -684,6 +702,13 @@ private:
         return result.iterator->value;
     }
     
+    Node* inferredConstant(JSValue value)
+    {
+        if (value.isCell())
+            return cellConstant(value.asCell());
+        return getJSConstantForValue(value, 0);
+    }
+    
     InlineCallFrame* inlineCallFrame()
     {
         return m_inlineStackTop->m_inlineCallFrame;
@@ -999,6 +1024,8 @@ private:
     unsigned m_numPassedVarArgs;
 
     HashMap<ConstantBufferKey, unsigned> m_constantBufferCache;
+    
+    Vector<VariableWatchpointSet*, 16> m_localWatchpoints;
     
     struct InlineStackEntry {
         ByteCodeParser* m_byteCodeParser;
@@ -1881,7 +1908,12 @@ bool ByteCodeParser::parseBlock(unsigned limit)
             for (int i = 0; i < m_inlineStackTop->m_codeBlock->m_numVars; ++i)
                 set(virtualRegisterForLocal(i), constantUndefined(), SetOnEntry);
             NEXT_OPCODE(op_enter);
-
+            
+        case op_touch_entry:
+            if (m_inlineStackTop->m_codeBlock->symbolTable()->m_functionEnteredOnce.isStillValid())
+                addToGraph(ForceOSRExit);
+            NEXT_OPCODE(op_touch_entry);
+            
         case op_to_this: {
             Node* op1 = getThis();
             if (op1->op() != ToThis) {
@@ -1911,19 +1943,18 @@ bool ByteCodeParser::parseBlock(unsigned limit)
                 ASSERT(cell->inherits(JSFunction::info()));
                 
                 JSFunction* function = jsCast<JSFunction*>(cell);
-                ObjectAllocationProfile* allocationProfile = function->tryGetAllocationProfile();
-                if (allocationProfile) {
+                if (Structure* structure = function->allocationStructure()) {
                     addToGraph(AllocationProfileWatchpoint, OpInfo(function));
                     // The callee is still live up to this point.
                     addToGraph(Phantom, callee);
-                    set(VirtualRegister(currentInstruction[1].u.operand),
-                        addToGraph(NewObject, OpInfo(allocationProfile->structure())));
+                    set(VirtualRegister(currentInstruction[1].u.operand), addToGraph(NewObject, OpInfo(structure)));
                     alreadyEmitted = true;
                 }
             }
-            if (!alreadyEmitted)
+            if (!alreadyEmitted) {
                 set(VirtualRegister(currentInstruction[1].u.operand),
                     addToGraph(CreateThis, OpInfo(currentInstruction[3].u.operand), callee));
+            }
             NEXT_OPCODE(op_create_this);
         }
 
@@ -2145,6 +2176,16 @@ bool ByteCodeParser::parseBlock(unsigned limit)
             Node* op = get(VirtualRegister(currentInstruction[2].u.operand));
             set(VirtualRegister(currentInstruction[1].u.operand), op);
             NEXT_OPCODE(op_mov);
+        }
+            
+        case op_captured_mov: {
+            Node* op = get(VirtualRegister(currentInstruction[2].u.operand));
+            if (VariableWatchpointSet* set = currentInstruction[3].u.watchpointSet) {
+                if (set->state() != IsInvalidated)
+                    addToGraph(NotifyWrite, OpInfo(set), op);
+            }
+            set(VirtualRegister(currentInstruction[1].u.operand), op);
+            NEXT_OPCODE(op_captured_mov);
         }
 
         case op_check_has_instance:
@@ -3003,8 +3044,8 @@ bool ByteCodeParser::parseBlock(unsigned limit)
             case ClosureVarWithVarInjectionChecks: {
                 JSActivation* activation = currentInstruction[5].u.activation.get();
                 if (activation
-                    && activation->symbolTable()->m_activationAllocatedOnce.isStillValid()) {
-                    addToGraph(ActivationAllocationWatchpoint, OpInfo(activation->symbolTable()));
+                    && activation->symbolTable()->m_functionEnteredOnce.isStillValid()) {
+                    addToGraph(FunctionReentryWatchpoint, OpInfo(activation->symbolTable()));
                     set(VirtualRegister(dst), cellConstant(activation));
                     break;
                 }
@@ -3021,7 +3062,7 @@ bool ByteCodeParser::parseBlock(unsigned limit)
 
         case op_get_from_scope: {
             int dst = currentInstruction[1].u.operand;
-            unsigned scope = currentInstruction[2].u.operand;
+            int scope = currentInstruction[2].u.operand;
             unsigned identifierNumber = m_inlineStackTop->m_identifierRemap[currentInstruction[3].u.operand];
             StringImpl* uid = m_graph.identifiers()[identifierNumber];
             ResolveType resolveType = ResolveModeAndType(currentInstruction[4].u.operand).type();
@@ -3072,15 +3113,27 @@ bool ByteCodeParser::parseBlock(unsigned limit)
                 }
                 
                 addToGraph(VariableWatchpoint, OpInfo(watchpointSet));
-                if (specificValue.isCell())
-                    set(VirtualRegister(dst), cellConstant(specificValue.asCell()));
-                else
-                    set(VirtualRegister(dst), getJSConstantForValue(specificValue, 0));
+                set(VirtualRegister(dst), inferredConstant(specificValue));
                 break;
             }
             case ClosureVar:
             case ClosureVarWithVarInjectionChecks: {
                 Node* scopeNode = get(VirtualRegister(scope));
+                if (JSActivation* activation = m_graph.tryGetActivation(scopeNode)) {
+                    SymbolTable* symbolTable = activation->symbolTable();
+                    ConcurrentJITLocker locker(symbolTable->m_lock);
+                    SymbolTable::Map::iterator iter = symbolTable->find(locker, uid);
+                    ASSERT(iter != symbolTable->end(locker));
+                    VariableWatchpointSet* watchpointSet = iter->value.watchpointSet();
+                    if (watchpointSet) {
+                        if (JSValue value = watchpointSet->inferredValue()) {
+                            addToGraph(Phantom, scopeNode);
+                            addToGraph(VariableWatchpoint, OpInfo(watchpointSet));
+                            set(VirtualRegister(dst), inferredConstant(value));
+                            break;
+                        }
+                    }
+                }
                 set(VirtualRegister(dst),
                     addToGraph(GetClosureVar, OpInfo(operand), OpInfo(prediction), 
                         addToGraph(GetClosureRegisters, scopeNode)));
@@ -3233,6 +3286,15 @@ bool ByteCodeParser::parseBlock(unsigned limit)
                         get(VirtualRegister(currentInstruction[1].u.operand))));
             }
             NEXT_OPCODE(op_new_func);
+        }
+            
+        case op_new_captured_func: {
+            Node* function = addToGraph(
+                NewFunctionNoCheck, OpInfo(currentInstruction[2].u.operand));
+            if (VariableWatchpointSet* set = currentInstruction[3].u.watchpointSet)
+                addToGraph(NotifyWrite, OpInfo(set), function);
+            set(VirtualRegister(currentInstruction[1].u.operand), function);
+            NEXT_OPCODE(op_new_captured_func);
         }
             
         case op_new_func_exp: {
@@ -3603,6 +3665,22 @@ bool ByteCodeParser::parse()
 {
     // Set during construction.
     ASSERT(!m_currentIndex);
+    
+    if (m_codeBlock->captureCount()) {
+        SymbolTable* symbolTable = m_codeBlock->symbolTable();
+        ConcurrentJITLocker locker(symbolTable->m_lock);
+        SymbolTable::Map::iterator iter = symbolTable->begin(locker);
+        SymbolTable::Map::iterator end = symbolTable->end(locker);
+        for (; iter != end; ++iter) {
+            VariableWatchpointSet* set = iter->value.watchpointSet();
+            if (!set)
+                continue;
+            size_t index = static_cast<size_t>(VirtualRegister(iter->value.getIndex()).toLocal());
+            while (m_localWatchpoints.size() <= index)
+                m_localWatchpoints.append(nullptr);
+            m_localWatchpoints[index] = set;
+        }
+    }
     
     InlineStackEntry inlineStackEntry(
         this, m_codeBlock, m_profiledBlock, 0, 0, VirtualRegister(), VirtualRegister(),

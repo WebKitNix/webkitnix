@@ -36,21 +36,21 @@ void WebViewClientNix::doneWithTouchEvent(WebView* view, const NIXTouchEvent& ev
 {
     if (!m_client.doneWithTouchEvent)
         return;
-    m_client.doneWithTouchEvent(toAPI(view), &event, wasEventHandled, m_client.clientInfo);
+    m_client.doneWithTouchEvent(toAPI(view), &event, wasEventHandled, m_client.base.clientInfo);
 }
 
 void WebViewClientNix::didFindZoomableArea(WebView* view, WKPoint target, WKRect area)
 {
     if (!m_client.didFindZoomableArea)
         return;
-    m_client.didFindZoomableArea(toAPI(view), target, area, m_client.clientInfo);
+    m_client.didFindZoomableArea(toAPI(view), target, area, m_client.base.clientInfo);
 }
 
 void WebViewClientNix::setCursor(WebView* view, unsigned int shape)
 {
     if (!m_client.setCursor)
         return;
-    m_client.setCursor(toAPI(view), shape, m_client.clientInfo);
+    m_client.setCursor(toAPI(view), shape, m_client.base.clientInfo);
 }
 
 void WebViewClientNix::updateTextInputState(WebView* view, const EditorState& state)
@@ -73,7 +73,7 @@ void WebViewClientNix::updateTextInputState(WebView* view, const EditorState& st
     nixState.cursorRect = toAPI(state.cursorRect);
     nixState.editorRect = toAPI(state.editorRect);
 
-    m_client.updateTextInputState(toAPI(view), &nixState, m_client.clientInfo);
+    m_client.updateTextInputState(toAPI(view), &nixState, m_client.base.clientInfo);
 }
 
 } // namespace WebKit

@@ -23,6 +23,7 @@
 #define JSGlobalObject_h
 
 #include "ArrayAllocationProfile.h"
+#include "ConstantMode.h"
 #include "JSArray.h"
 #include "JSArrayBufferPrototype.h"
 #include "JSClassRef.h"
@@ -58,6 +59,7 @@ class FunctionExecutable;
 class FunctionPrototype;
 class GetterSetter;
 class GlobalCodeBlock;
+class JSGlobalObjectDebuggable;
 class JSPromisePrototype;
 class JSPromiseResolverPrototype;
 class JSStack;
@@ -229,7 +231,13 @@ protected:
         
     void* m_specialPointers[Special::TableSize]; // Special pointers used by the LLInt and JIT.
 
+    String m_name;
+
     Debugger* m_debugger;
+
+#if ENABLE(REMOTE_INSPECTOR)
+    std::unique_ptr<JSGlobalObjectDebuggable> m_inspectorDebuggable;
+#endif
 
     RefPtr<WatchpointSet> m_masqueradesAsUndefinedWatchpoint;
     RefPtr<WatchpointSet> m_havingABadTimeWatchpoint;
@@ -288,7 +296,6 @@ protected:
         init(thisValue);
     }
 
-    enum ConstantMode { IsConstant, IsVariable };
     struct NewGlobalVar {
         int registerNumber;
         VariableWatchpointSet* set;
@@ -419,6 +426,12 @@ public:
     Structure* promiseCallbackStructure() const { return m_promiseCallbackStructure.get(); }
     Structure* promiseWrapperCallbackStructure() const { return m_promiseWrapperCallbackStructure.get(); }
 #endif // ENABLE(PROMISES)
+
+    JS_EXPORT_PRIVATE void setRemoteDebuggingEnabled(bool);
+    JS_EXPORT_PRIVATE bool remoteDebuggingEnabled() const;
+
+    void setName(const String&);
+    const String& name() const { return m_name; }
 
     JSArrayBufferPrototype* arrayBufferPrototype() const { return m_arrayBufferPrototype.get(); }
 

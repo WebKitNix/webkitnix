@@ -1,3 +1,707 @@
+2013-12-04  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        run-jsc-stress-tests can only run locally
+        https://bugs.webkit.org/show_bug.cgi?id=124551
+
+        Reviewed by Filip Pizlo.
+
+        * Scripts/jsc-stress-test-helpers/shell-runner.sh: Fixed a couple issues. One was if the script was
+        killed before the lock directory was removed, future executions wouldn't make any progress. Also 
+        added a couple more signals to handle gracefully at shutdown. 
+        * Scripts/run-javascriptcore-tests: Pass through the --remote argument to run-jsc-stress-tests.
+        * Scripts/run-jsc-stress-tests: Added support for the --remote flag. It accepts a hostname, user, and port.
+        The script then generates the test bundle, tars it up, and copies it to the remote host via ssh where
+        it then untars the bundle and executes the shell-based test runner. Also refactored some of the logic
+        toward the end of the script to make it easier to tell which of the various modes do what.
+
+2013-12-04  Csaba Osztrogonác  <ossy@webkit.org>
+
+        [EFL][WK2] Buildfix after r160104
+        https://bugs.webkit.org/show_bug.cgi?id=125233
+
+        Reviewed by Anders Carlsson.
+
+        * TestWebKitAPI/Tests/WebKit2/CoordinatedGraphics/WKViewIsActiveSetIsActive.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/efl/WKViewClientWebProcessCallbacks.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+
+2013-12-03  Anders Carlsson  <andersca@apple.com>
+
+        Deprecate all unversioned client structs in favor of having explicit versioned structs
+        https://bugs.webkit.org/show_bug.cgi?id=125203
+
+        Reviewed by Dan Bernstein.
+
+        Update for WebKit2 API changes.
+
+        * MiniBrowser/mac/AppDelegate.m:
+        (-[BrowserAppDelegate init]):
+        * MiniBrowser/mac/WK2BrowserWindowController.m:
+        (-[WK2BrowserWindowController awakeFromNib]):
+        * TestWebKitAPI/InjectedBundleController.cpp:
+        (TestWebKitAPI::InjectedBundleController::initialize):
+        * TestWebKitAPI/Tests/WebKit2/AboutBlankLoad.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/CanHandleRequest.cpp:
+        (TestWebKitAPI::setInjectedBundleClient):
+        * TestWebKitAPI/Tests/WebKit2/CloseThenTerminate.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/CookieManager.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/DOMWindowExtensionBasic.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/DOMWindowExtensionBasic_Bundle.cpp:
+        (TestWebKitAPI::DOMWindowExtensionBasic::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/DOMWindowExtensionNoCache.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/DOMWindowExtensionNoCache_Bundle.cpp:
+        (TestWebKitAPI::DOMWindowExtensionNoCache::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/DidAssociateFormControls.cpp:
+        (TestWebKitAPI::setInjectedBundleClient):
+        * TestWebKitAPI/Tests/WebKit2/DidAssociateFormControls_Bundle.cpp:
+        (TestWebKitAPI::DidAssociateFormControlsTest::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/DidNotHandleKeyDown.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/DocumentStartUserScriptAlertCrash.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/DownloadDecideDestinationCrash.cpp:
+        (TestWebKitAPI::setContextDownloadClient):
+        (TestWebKitAPI::setPagePolicyClient):
+        * TestWebKitAPI/Tests/WebKit2/FailedLoad.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/Find.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/FindMatches.mm:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/ForceRepaint.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/FrameMIMETypeHTML.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/FrameMIMETypePNG.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/Geolocation.cpp:
+        (TestWebKitAPI::setupGeolocationProvider):
+        (TestWebKitAPI::setupView):
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/GetInjectedBundleInitializationUserDataCallback.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/HitTestResultNodeHandle.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+        (TestWebKitAPI::setInjectedBundleClient):
+        * TestWebKitAPI/Tests/WebKit2/HitTestResultNodeHandle_Bundle.cpp:
+        (TestWebKitAPI::HitTestResultNodeHandleTest::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/InjectedBundleBasic.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/InjectedBundleFrameHitTest.cpp:
+        (TestWebKitAPI::setInjectedBundleClient):
+        * TestWebKitAPI/Tests/WebKit2/InjectedBundleFrameHitTest_Bundle.cpp:
+        (TestWebKitAPI::InjectedBundleFrameHitTestTest::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/InjectedBundleInitializationUserDataCallbackWins.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/LayoutMilestonesWithAllContentInFrame.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/LoadAlternateHTMLStringWithNonDirectoryURL.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/LoadCanceledNoServerRedirectCallback.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/LoadCanceledNoServerRedirectCallback_Bundle.cpp:
+        (TestWebKitAPI::LoadCanceledNoServerRedirectCallbackTest::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/LoadPageOnCrash.cpp:
+        (TestWebKitAPI::WebKit2CrashLoader::WebKit2CrashLoader):
+        * TestWebKitAPI/Tests/WebKit2/MouseMoveAfterCrash.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/NewFirstVisuallyNonEmptyLayout.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/NewFirstVisuallyNonEmptyLayoutFails.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/NewFirstVisuallyNonEmptyLayoutForImages.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/NewFirstVisuallyNonEmptyLayoutFrames.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/PageLoadBasic.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/PageLoadDidChangeLocationWithinPageForFrame.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/ParentFrame.cpp:
+        (TestWebKitAPI::setInjectedBundleClient):
+        * TestWebKitAPI/Tests/WebKit2/ParentFrame_Bundle.cpp:
+        (TestWebKitAPI::ParentFrameTest::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/PasteboardNotifications.mm:
+        (TestWebKitAPI::setInjectedBundleClient):
+        * TestWebKitAPI/Tests/WebKit2/PasteboardNotifications_Bundle.cpp:
+        (TestWebKitAPI::PasteboardNotificationsTest::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/PrivateBrowsingPushStateNoHistoryCallback.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/ReloadPageAfterCrash.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/ResizeReversePaginatedWebView.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/ResizeWindowAfterCrash.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/ResponsivenessTimerDoesntFireEarly.cpp:
+        (TestWebKitAPI::setInjectedBundleClient):
+        (TestWebKitAPI::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/RestoreSessionStateContainingFormData.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/ScrollPinningBehaviors.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/ShouldGoToBackForwardListItem.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/ShouldGoToBackForwardListItem_Bundle.cpp:
+        (TestWebKitAPI::ShouldGoToBackForwardListItemTest::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/SpacebarScrolling.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/TerminateTwice.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/UserMessage.cpp:
+        (TestWebKitAPI::WebKit2UserMessageRoundTripTest::setInjectedBundleClient):
+        (TestWebKitAPI::WebKit2UserMessageRoundTripTest::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/WKConnection.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/WKConnection_Bundle.cpp:
+        (TestWebKitAPI::WKConnectionTest::initialize):
+        * TestWebKitAPI/Tests/WebKit2/WKPageGetScaleFactorNotZero.cpp:
+        (TestWebKitAPI::setPageLoaderClient):
+        * TestWebKitAPI/Tests/WebKit2/WebArchive.cpp:
+        (TestWebKitAPI::setInjectedBundleClient):
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/WillLoad.cpp:
+        (TestWebKitAPI::WebKit2WillLoadTest::setInjectedBundleClient):
+        * TestWebKitAPI/Tests/WebKit2/WillLoad_Bundle.cpp:
+        * TestWebKitAPI/Tests/WebKit2/WillSendSubmitEvent.cpp:
+        (TestWebKitAPI::setInjectedBundleClient):
+        * TestWebKitAPI/Tests/WebKit2/WillSendSubmitEvent_Bundle.cpp:
+        (TestWebKitAPI::WillSendSubmitEventTest::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2/mac/EditorCommands.mm:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/mac/GetBackingScaleFactor.mm:
+        (TestWebKitAPI::setInjectedBundleClient):
+        * TestWebKitAPI/Tests/WebKit2/mac/GetPIDAfterAbortedProcessLaunch.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2ObjC/CustomProtocolsInvalidScheme_Bundle.cpp:
+        * TestWebKitAPI/Tests/WebKit2ObjC/PreventImageLoadWithAutoResizing_Bundle.cpp:
+        (TestWebKitAPI::DenyWillSendRequestTest::didCreatePage):
+        * TestWebKitAPI/Tests/WebKit2ObjC/WKRemoteObjectRegistry.mm:
+        (TestWebKitAPI::didCreateConnection):
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/mac/PageVisibilityStateWithWindowChanges.mm:
+        (TestWebKitAPI::PageVisibilityStateWithWindowChanges::initializeView):
+        * TestWebKitAPI/Tests/mac/WKRemoteObjectRegistry_Bundle.mm:
+        * TestWebKitAPI/mac/WebKitAgnosticTest.mm:
+        (TestWebKitAPI::setPageLoaderClient):
+        * WebKitTestRunner/GeolocationProviderMock.cpp:
+        (WTR::GeolocationProviderMock::GeolocationProviderMock):
+        * WebKitTestRunner/InjectedBundle/InjectedBundle.cpp:
+        (WTR::InjectedBundle::initialize):
+        * WebKitTestRunner/InjectedBundle/InjectedBundlePage.cpp:
+        (WTR::InjectedBundlePage::InjectedBundlePage):
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::createOtherPage):
+        (WTR::TestController::initialize):
+        (WTR::TestController::createWebViewWithOptions):
+
+2013-12-04  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        Style checker for .messages.in files (WTF:: prefix)
+        https://bugs.webkit.org/show_bug.cgi?id=125142
+
+        Reviewed by Anders Carlsson.
+
+        A new style checker for .messages.in files, that checks for the use of WTF::
+        prefix in these files. (Also checks for tabs as these files were previously
+        handled as text files.)
+
+        * Scripts/webkitpy/style/checker.py:
+        (CheckerDispatcher._create_checker):
+          New checker is returned for .messages.in files.
+        * Scripts/webkitpy/style/checkers/messagesin.py: Added.
+          The new style checker class.
+        (MessagesInChecker):
+        (MessagesInChecker.__init__):
+        (MessagesInChecker.check):
+        (MessagesInChecker.check_WTF_prefix):
+        * Scripts/webkitpy/style/checkers/messagesin_unittest.py: Added.
+          Unit test for the new style  checker class.
+        (MessagesInCheckerStyleTestCase):
+        (test_checker):
+        (test_checker.error_handler_for_test):
+        (MessagesInCheckerTestCase):
+        (MessagesInCheckerTestCase.test_init):
+        (MessagesInCheckerTestCase.test_init.error_handler_for_test):
+
+2013-12-04  Gergo Balogh  <geryxyz@inf.u-szeged.hu>
+
+        Style checker requires alphabetical ordering in cmake lists even it contains variable.
+        https://bugs.webkit.org/show_bug.cgi?id=124918
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Scripts/webkitpy/style/checkers/cmake_unittest.py:
+        (CMakeCheckerTest.test_check):
+        * Scripts/webkitpy/style/checkers/cmake.py:
+        (CMakeChecker._check_list_order):
+        This will ignore lines with variable substitution.
+
+2013-12-04  László Langó  <lango@inf.u-szeged.hu>
+
+        check-webkit-style is wrong about expected format parameter pack rvalue reference arguments
+        https://bugs.webkit.org/show_bug.cgi?id=124731
+
+        Reviewed by Zoltan Herczeg.
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (check_spacing):
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py:
+        (Cpp11StyleTest.test_rvaule_reference_in_parameter_pack):
+
+2013-12-04  László Langó  <lango@inf.u-szeged.hu>
+
+        Remove codecs and os dependencies from filereader.py in webkitpy/style.
+        https://bugs.webkit.org/show_bug.cgi?id=124719
+
+        Although TextFileReader requires a FileSystem it circumvents it in two places!
+        We should use the FileSystem only and remove codecs and os imports.
+
+        Reviewed by Zoltan Herczeg.
+
+        * Scripts/webkitpy/common/system/filesystem.py:
+        (FileSystem.open_stdin): Moved from TextFileReader
+        * Scripts/webkitpy/style/filereader.py:
+        (TextFileReader._read_lines): use FileSystem instead of calling codecs.open directly
+        (TextFileReader._process_directory): use FileSystem instead of calling os.walk directly
+
+2013-12-04  László Langó  <lango@inf.u-szeged.hu>
+
+        check-webkit-style should check member initialization indentation.
+        https://bugs.webkit.org/show_bug.cgi?id=124820
+
+        Reviewed by Zoltan Herczeg.
+
+        check-webkit-style should check member initialization indentation
+        belongs to webkit coding style:
+        http://www.webkit.org/coding/coding-style.html#punctuation-member-init
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (check_member_initialization_list): Add new method to check member
+        initialization list.
+        (check_style): Add the call of the new method.
+        (check_language): Move self initialization checking into the new method.
+        (CppChecker): Add a new category for initialization list.
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py:
+        (CppStyleTest.test_runtime_selfinit):
+        (CppStyleTest.test_deprecated_cast):
+        (WebKitStyleTest.test_member_initialization_list): Add new testcases for
+        the new feature.
+
+2013-12-04  Tamas Gergely  <gertom@inf.u-szeged.hu>
+
+        style-bot should reject Committer additions to committers.py
+        https://bugs.webkit.org/show_bug.cgi?id=107574
+
+        Reviewed by Zoltan Herczeg.
+
+        The style check when executed in non-interactive mode (probably by a
+        bot) will raise an additional error if the contributors.json file is
+        modified. Non-interactive mode information is propagated to the
+        Dispatcher, which creates a special JSON checker for the
+        contributors.json file.
+
+        * Scripts/webkitpy/style/checker.py:
+        (check_webkit_style_configuration):
+        (CheckerDispatcher._create_checker):
+        (CheckerDispatcher.dispatch):
+        (StyleProcessorConfiguration.__init__):
+        (StyleProcessor.process):
+        * Scripts/webkitpy/style/checker_unittest.py:
+        (CheckerDispatcherSkipTest._assert_should_skip_without_warning):
+        (CheckerDispatcherDispatchTest.dispatch):
+        (StyleProcessorConfigurationTest._style_checker_configuration):
+        (StyleProcessor_EndToEndTest.test_init):
+        (StyleProcessor_EndToEndTest.test_process):
+        (StyleProcessor_CodeCoverageTest.MockDispatcher.dispatch):
+        (StyleProcessor_CodeCoverageTest.setUp):
+        * Scripts/webkitpy/style/checkers/jsonchecker.py:
+        (JSONChecker.line_number_from_json_exception):
+        (JSONContributorsChecker):
+        (JSONContributorsChecker.check):
+        * Scripts/webkitpy/style/error_handlers_unittest.py:
+        (DefaultStyleErrorHandlerTest._style_checker_configuration):
+        * Scripts/webkitpy/style/optparser.py:
+        (CommandOptionValues.__init__):
+        (ArgumentParser._create_option_parser):
+        (ArgumentParser.parse):
+        * Scripts/webkitpy/tool/commands/upload_unittest.py:
+        (test_post):
+        (test_upload):
+        * Scripts/webkitpy/tool/steps/checkstyle.py:
+        (CheckStyle.run):
+
+2013-12-04  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [EFL][WK2] Fix build after API::Client changes
+        https://bugs.webkit.org/show_bug.cgi?id=125206
+
+        Reviewed by Csaba Osztrogonác.
+
+        * TestWebKitAPI/Tests/WebKit2/CoordinatedGraphics/WKViewIsActiveSetIsActive.cpp:
+        (TestWebKitAPI::TEST):
+        * TestWebKitAPI/Tests/WebKit2/efl/WKViewClientWebProcessCallbacks.cpp:
+        (TestWebKitAPI::setViewClient):
+
+2013-12-03  Dan Bernstein  <mitz@apple.com>
+
+        Fixed a test timing out after r160040.
+
+        * TestWebKitAPI/Tests/WebKit2ObjC/WKBrowsingContextLoadDelegateTest.mm:
+        (-[SimpleLoadFailDelegate browsingContextController:didFailProvisionalLoadWithError:]):
+        Updated for the delegate method rename.
+
+2013-12-03  Filip Pizlo  <fpizlo@apple.com>
+
+        REGRESSION: repro scripts disappear when you rerun tests
+        https://bugs.webkit.org/show_bug.cgi?id=125184
+
+        Reviewed by Mark Hahnenberg.
+        
+        This bug made it difficult to quickly see if a test that recently failed is still
+        failing while also running a new batch of tests.
+
+        Repro scripts are supposed to stay around until you delete them explicitly. This
+        patch accomplishes that.
+
+        * Scripts/run-jsc-stress-tests:
+
+2013-12-03  peavo@outlook.com  <peavo@outlook.com>
+
+        [Win] run-jsc-stress-tests has a great number of failures (2026/7606) on Windows
+        https://bugs.webkit.org/show_bug.cgi?id=125111
+
+        Reviewed by Filip Pizlo.
+
+        Almost all errors seem to be caused by differences in line ending when diffing test output with expected output.
+
+        * Scripts/run-javascriptcore-tests: Enable api test and stress test for WinCairo.
+        * Scripts/run-jsc-stress-tests: Ignore carriage return when diffing test output with expected output.
+
+2013-12-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Add a script to automatically configure a git clone
+        https://bugs.webkit.org/show_bug.cgi?id=110073
+
+        Revert the change to use https for now since git.webkit.org is setup with http.
+
+        * Scripts/webkitpy/tool/commands/setupgitclone.py:
+        (SetupGitClone.execute):
+
+2013-12-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Add a script to automatically configure a git clone
+        https://bugs.webkit.org/show_bug.cgi?id=110073
+
+        Reviewed by Benjamin Poulain.
+
+        Added "webkit-patch setup-git-clone" to setup a brand new Git clone.
+
+        This command runs various commands listed on http://trac.webkit.org/wiki/UsingGitWithWebKit
+
+        * Scripts/webkitpy/tool/commands/__init__.py:
+        * Scripts/webkitpy/tool/commands/setupgitclone.py: Added.
+        (SetupGitClone):
+        (SetupGitClone.execute):
+
+2013-12-03  Anders Carlsson  <andersca@apple.com>
+
+        Deprecate WKNotificationProvider
+        https://bugs.webkit.org/show_bug.cgi?id=125178
+
+        Reviewed by Sam Weinig.
+
+        Update for WebKit2 changes.
+
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::initialize):
+        * WebKitTestRunner/WebNotificationProvider.cpp:
+        (WTR::WebNotificationProvider::provider):
+        * WebKitTestRunner/WebNotificationProvider.h:
+
+2013-12-03  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Support 64-bit Application Support Libraries Location 
+        https://bugs.webkit.org/show_bug.cgi?id=125179
+
+        Reviewed by Tim Horton.
+
+        Enable the user to specify a location for 64-bit support libraries (such as libxml2, ICU, etc.)
+        on Windows until an official distribution is available that properly creates registry settings
+        to specify these locations.
+
+        * Scripts/webkitdirs.pm:
+        (setupAppleWinEnv): Notify user to set WEBKIT_64_SUPPORT environment variable if needed.
+        (setupCygwinEnv): Report WEWBKIT_64_SUPPORT path when running 64-bit builds.
+        (appleApplicationSupportPath): Add WEBKIT_64_SUPPORT location to runtime environment when
+        running 64-bit builds.
+
+2013-12-03  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        run-jsc-stress-tests only supports host environments that have make installed
+        https://bugs.webkit.org/show_bug.cgi?id=124550
+
+        Reviewed by Darin Adler.
+
+        This might not be the case for all hosts, so this patch implements an alternate "backend" 
+        for run-jsc-stress-tests to use normal shell commands rather than Makefiles. To remain at 
+        least somewhat competitive with the make-based test runner, the shell backend uses subshells
+        run in the background to allow tests to run in parallel. Since the concurrency primitives 
+        in shell scripting are rather coarse, the overhead of this parallelism is higher than that 
+        of the make-based runner.
+
+        * Scripts/jsc-stress-test-helpers/shell-runner.sh: Added. This is the runner that is copied into
+        the bundle and controls all of the parallel aspects of the shell-based test runner.
+        * Scripts/run-jsc-stress-tests:
+
+2013-12-03  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        Remove function from TextChecker
+        https://bugs.webkit.org/show_bug.cgi?id=125148
+
+        Reviewed by Darin Adler.
+
+        The process_file_data is used only from the unit tests, so it is simply moved there.
+
+        * Scripts/webkitpy/style/checkers/text.py:
+        (TextChecker.check):
+        * Scripts/webkitpy/style/checkers/text_unittest.py:
+        (TextStyleTestCase.process_file_data):
+        (TextStyleTestCase.assertNoError):
+        (TextStyleTestCase.assertError):
+
+2013-12-03  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        Remove get_test() and reference test names directly instead.
+        https://bugs.webkit.org/show_bug.cgi?id=124962
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Scripts/webkitpy/layout_tests/models/test_expectations_unittest.py:
+        (Base.__init__):
+        (Base.get_basic_tests):
+        (assert_exp):
+        (MiscTests.test_multiple_results):
+        (MiscTests.test_category_expectations):
+        (MiscTests.test_get_modifiers):
+        (MiscTests.test_get_expectations_string):
+        (MiscTests.test_get_test_set):
+        (MiscTests.test_parse_warning):
+        (MiscTests.test_pixel_tests_flag.match):
+
+2013-12-03  Gergo Balogh  <geryxyz@inf.u-szeged.hu>
+
+        Style Checker false pass.
+        https://bugs.webkit.org/show_bug.cgi?id=112456
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Scripts/webkitpy/style/checkers/changelog.py:
+        (ChangeLogChecker.check_entry):
+        simple regex fix to check "No new tests (...)."
+        * Scripts/webkitpy/style/checkers/changelog_unittest.py:
+        (ChangeLogCheckerTest.test_no_new_tests):
+
+2013-12-02  Filip Pizlo  <fpizlo@apple.com>
+
+        run-jsc-stress-tests should allow for tests that have a directory containing .js files nested within a directory containing the data
+        https://bugs.webkit.org/show_bug.cgi?id=125130
+
+        Reviewed by Geoffrey Garen.
+
+        * Scripts/run-jsc-stress-tests:
+
+2013-12-02  Samuel White  <samuel_white@apple.com>
+
+        AX: Add AXUIElementCountForSearchPredicate parameterized attribute.
+        https://bugs.webkit.org/show_bug.cgi?id=124561
+
+        Reviewed by Chris Fleizach.
+
+        Added function to verify that NSAccessibilityUIElementCountForSearchPredicateParameterizedAttribute works as it should.
+
+        * DumpRenderTree/AccessibilityUIElement.cpp:
+        (uiElementCountForSearchPredicateCallback):
+        (uiElementForSearchPredicateCallback):
+        (AccessibilityUIElement::getJSClass):
+        * DumpRenderTree/AccessibilityUIElement.h:
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::uiElementCountForSearchPredicate):
+        * DumpRenderTree/ios/AccessibilityUIElementIOS.mm:
+        (AccessibilityUIElement::uiElementCountForSearchPredicate):
+        * DumpRenderTree/mac/AccessibilityUIElementMac.mm:
+        (searchPredicateParameterizedAttributeForSearchCriteria):
+        (AccessibilityUIElement::uiElementCountForSearchPredicate):
+        (AccessibilityUIElement::uiElementForSearchPredicate):
+        * DumpRenderTree/win/AccessibilityUIElementWin.cpp:
+        (AccessibilityUIElement::uiElementCountForSearchPredicate):
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.cpp:
+        (WTR::AccessibilityUIElement::uiElementCountForSearchPredicate):
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.h:
+        * WebKitTestRunner/InjectedBundle/Bindings/AccessibilityUIElement.idl:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::uiElementCountForSearchPredicate):
+        * WebKitTestRunner/InjectedBundle/mac/AccessibilityUIElementMac.mm:
+        (WTR::searchPredicateParameterizedAttributeForSearchCriteria):
+        (WTR::AccessibilityUIElement::uiElementCountForSearchPredicate):
+        (WTR::AccessibilityUIElement::uiElementForSearchPredicate):
+
+2013-12-02  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        Instead of a large 'if' block, each failure class should write it's own result in test_result_writer.py
+        https://bugs.webkit.org/show_bug.cgi?id=124714
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitpy/layout_tests/controllers/test_result_writer.py:
+        (write_test_result):
+        * Scripts/webkitpy/layout_tests/models/test_failures.py:
+        (TestFailure.write_failure):
+        (FailureText):
+        (FailureText.write_failure):
+        (FailureAudio):
+        (FailureAudio.write_failure):
+        (FailureCrash.write_failure):
+        (FailureMissingResult):
+        (FailureTextMismatch):
+        (FailureMissingImageHash.write_failure):
+        (FailureMissingImage.write_failure):
+        (FailureImageHashMismatch.write_failure):
+        (FailureReftestMismatch.write_failure):
+        (FailureReftestMismatchDidNotOccur.write_failure):
+        (FailureMissingAudio):
+        (FailureAudioMismatch):
+
+2013-12-02  László Langó  <lango@inf.u-szeged.hu>
+
+        Remove the stderr_write attribute from StyleProcessorConfiguration
+        https://bugs.webkit.org/show_bug.cgi?id=124703
+
+        Reviewed by Ryosuke Niwa.
+
+        Remove the stderr_write attribute from this class in checker and
+        replace its use with calls to a logging module logger. We Should 
+        use logging module instead of writing to stderr directly.
+
+        * Scripts/webkitpy/style/checker.py: Change stderr_write attribute to logging module logger.
+        (check_webkit_style_configuration):
+        (CheckerDispatcher.dispatch): Remove FIXME comment.
+        (StyleProcessorConfiguration):
+        (StyleProcessorConfiguration.__init__):
+        (StyleProcessorConfiguration.write_style_error):
+        * Scripts/webkitpy/style/checker_unittest.py: Update test to the modification.
+        There is an "ERROR" prefix in log messiges from now.
+        (StyleProcessorConfigurationTest):
+        (StyleProcessorConfigurationTest._style_checker_configuration):
+        (StyleProcessorConfigurationTest.test_init):
+        (StyleProcessorConfigurationTest.test_write_style_error_emacs):
+        (StyleProcessorConfigurationTest.test_write_style_error_vs7):
+        (StyleProcessor_EndToEndTest.with):
+        (StyleProcessor_EndToEndTest.test_init):
+        (StyleProcessor_EndToEndTest.test_process):
+        (StyleProcessor_CodeCoverageTest.setUp):
+        * Scripts/webkitpy/style/error_handlers.py: Remove stderr_write usage and replace with logging module logger.
+        (DefaultStyleErrorHandler.__call__):
+        * Scripts/webkitpy/style/error_handlers_unittest.py: Update test to the modification.
+        There is an "ERROR" prefix in log messiges from now.
+        (DefaultStyleErrorHandlerTest):
+        (DefaultStyleErrorHandlerTest.setUp):
+        (DefaultStyleErrorHandlerTest._mock_increment_error_count):
+        (DefaultStyleErrorHandlerTest._style_checker_configuration):
+        (DefaultStyleErrorHandlerTest._check_initialized):
+        (DefaultStyleErrorHandlerTest.test_non_reportable_error):
+        (DefaultStyleErrorHandlerTest.test_max_reports_per_category):
+        (DefaultStyleErrorHandlerTest.test_line_numbers):
+
+2013-12-02  Brian J. Burg  <burg@cs.washington.edu>
+
+        Add JavaScript style checker and teach checker.py about .js files
+        https://bugs.webkit.org/show_bug.cgi?id=125049
+
+        Reviewed by Joseph Pecoraro.
+
+        Add a JavaScript file type, extension, and checker (JSChecker).
+        Use TextChecker for JavaScript tests, libraries, website resources,
+        etc. and use JSChecker for files within WebInspectorUI/UserInterface.
+
+        Amended tests for TextChecker to reflect the rule above.
+
+        * Scripts/webkitpy/style/checker.py:
+        (_all_categories): Add categories defined by JSChecker.
+        (FileType): Add file type for JS and re-number the enum.
+        (CheckerDispatcher._file_type): Detect .js files as JavaScript.
+        (CheckerDispatcher._create_checker):
+        Create a JSChecker or TextChecker depending on the file's path.
+
+        * Scripts/webkitpy/style/checker_unittest.py:
+        (CheckerDispatcherDispatchTest.assert_checker_js): Added.
+        (CheckerDispatcherDispatchTest.test_js_paths): Added.
+        (CheckerDispatcherDispatchTest.test_text_paths): Add new test paths
+        that end in .js but should be checked with TextChecker.
+        * Scripts/webkitpy/style/checkers/js.py: Added.
+        (JSChecker):
+        (JSChecker.__init__):
+        (JSChecker.check):
+        * Scripts/webkitpy/style/checkers/js_unittest.py: Added.
+        (JSTestCase):
+        (JSTestCase.assertNoError):
+        (JSTestCase.assertNoError.error_for_test):
+        (JSTestCase.assertError):
+        (JSTestCase.assertError.error_for_test):
+        (JSTestCase.test_no_error):
+        (JSTestCase.test_error):
+
+2013-12-02  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        run-jsc-stress-tests always copies the VM
+        https://bugs.webkit.org/show_bug.cgi?id=125092
+
+        Reviewed by Filip Pizlo.
+
+        This can be slow, especially with full debug builds. It should just symlink the VM into the 
+        bundle by default and do a full copy only when asked.
+
+        * Scripts/run-jsc-stress-tests:
+
+2013-12-02  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Port run-jsc-stress-tests
+        https://bugs.webkit.org/show_bug.cgi?id=124801
+
+        Reviewed by Filip Pizlo.
+
+        * Scripts/run-jsc-stress-tests: Gracefully handle lack of sysctl
+        command on Windows so that stress tests can run.
+
+2013-12-02  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Build fix after r159955
+
+        * Scripts/run-jsc-stress-tests:
+
+2013-12-02  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        run-jsc-stress-tests should be able to package its tests and move them places
+        https://bugs.webkit.org/show_bug.cgi?id=124549
+
+        Reviewed by Filip Pizlo.
+
+        * Scripts/jsc-stress-test-helpers/check-mozilla-failure: Removed. Was just a ruby reimplementation
+        of grep -i -q
+        * Scripts/run-javascriptcore-tests: Pass through the --tarball flag.
+        * Scripts/run-jsc-stress-tests: Changed to create a bundle of tests inside the results directory.
+        We now also copy whatever VM was specified, along with its associated framework, into this directory.
+        All of the generated scripts now are completely relative within the results directory. This allows
+        run-jsc-stress-tests to execute a bundle from anywhere. Also added a --tarball flag which creates a
+        tarball of the generated results directory. Also refactored several portions of the script into
+        separate functions to make it easier to run them conditionally depending on which mode we're running in. 
+
 2013-12-02  Andrzej Badowski  <a.badowski@samsung.com>
 
         [ATK] Support active state for listbox elements.

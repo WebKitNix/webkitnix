@@ -57,20 +57,20 @@ TEST(WebKit2, WebViewWebProcessCrashed)
     WKRetainPtr<WKContextRef> context = adoptWK(Util::createContextForInjectedBundleTest("WebViewWebProcessCrashedTest"));
     WKRetainPtr<WKViewRef> view(AdoptWK, WKViewCreate(context.get(), 0));
 
-    WKViewClient viewClient;
-    memset(&viewClient, 0, sizeof(WKViewClient));
-    viewClient.version = kWKViewClientCurrentVersion;
+    WKViewClientV0 viewClient;
+    memset(&viewClient, 0, sizeof(viewClient));
+    viewClient.base.version = 0;
     viewClient.webProcessCrashed = webProcessCrashed;
     viewClient.webProcessDidRelaunch = webProcessRelaunched;
-    WKViewSetViewClient(view.get(), &viewClient);
+    WKViewSetViewClient(view.get(), &viewClient.base);
 
     WKViewInitialize(view.get());
 
-    WKPageLoaderClient pageLoaderClient;
-    memset(&pageLoaderClient, 0, sizeof(WKPageLoaderClient));
-    pageLoaderClient.version = kWKPageLoaderClientCurrentVersion;
+    WKPageLoaderClientV3 pageLoaderClient;
+    memset(&pageLoaderClient, 0, sizeof(pageLoaderClient));
+    pageLoaderClient.base.version = 3;
     pageLoaderClient.didFinishLoadForFrame = didFinishLoadForFrame;
-    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &pageLoaderClient);
+    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &pageLoaderClient.base);
 
     const WKSize size = WKSizeMake(100, 100);
     WKViewSetSize(view.get(), size);

@@ -1,3 +1,1276 @@
+2013-12-04  Andy Estes  <aestes@apple.com>
+
+        [iOS] Build projects with $(ARCHS_STANDARD_32_64_BIT)
+        https://bugs.webkit.org/show_bug.cgi?id=125236
+
+        Reviewed by Sam Weinig.
+
+        $(ARCHS_STANDARD_32_64_BIT) is what we want for both device and simulator builds.
+
+        * Configurations/DebugRelease.xcconfig:
+
+2013-12-04  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Unreviewed Windows build fix attempt after r160099.
+
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.vcxproj/copyForwardingHeaders.cmd:
+
+2013-12-03  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Push Remote Inspector debugging connection management into JavaScriptCore
+        https://bugs.webkit.org/show_bug.cgi?id=124613
+
+        Reviewed by Timothy Hatcher.
+
+        Make a WebCore::Page a "Web" Remote Debuggable.
+
+        * bindings/js/JSDOMGlobalObject.cpp:
+        Disable JavaScript context inspection on JSGlobalObjects inside WebCore::Page's.
+
+        * page/Page.cpp:
+        (WebCore::Page::Page):
+        (WebCore::Page::remoteInspectionAllowed):
+        (WebCore::Page::setRemoteInspectionAllowed):
+        (WebCore::Page::remoteInspectorInformationDidChange):
+        * page/Page.h:
+        * page/PageDebuggable.h:
+        * page/PageDebuggable.cpp: Added.
+        (WebCore::PageDebuggable::PageDebuggable):
+        (WebCore::PageDebuggable::name):
+        (WebCore::PageDebuggable::url):
+        (WebCore::PageDebuggable::hasLocalDebugger):
+        (WebCore::PageDebuggable::connect):
+        (WebCore::PageDebuggable::disconnect):
+        (WebCore::PageDebuggable::dispatchMessageFromRemoteFrontend):
+        (WebCore::PageDebuggable::setIndicating):
+        Make a page a "Web" debuggable.
+
+        * GNUmakefile.list.am:
+        * WebCore.exp.in:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        Misc.
+
+        * inspector/InspectorClient.h:
+        (WebCore::InspectorClient::indicate):
+        (WebCore::InspectorClient::hideIndicate):
+        Forward indicate methods to WebKit clients.
+
+        * loader/FrameLoader.cpp:
+        (WebCore::FrameLoader::didChangeTitle):
+        (WebCore::FrameLoader::dispatchDidCommitLoad):
+        Push updates when remote debuggable information like the Page's
+        URL or title change.
+
+        * ForwardingHeaders/inspector/InspectorFrontendChannel.h:
+        * inspector/InspectorForwarding.h:
+        Re-export Inspector::InspectorFrontendChannel as WebCore::InspectorFrontendChannel
+        to avoid needlessly updating code all over the place.
+
+        * inspector/CodeGeneratorInspectorStrings.py:
+        * inspector/InspectorWorkerAgent.cpp:
+        * inspector/WorkerInspectorController.cpp:
+        * testing/Internals.cpp:
+        Update include names.
+
+        * page/ContextMenuController.cpp:
+        (WebCore::ContextMenuController::populate):
+        Make the "Inspect Element" context menu work correctly when there is a
+        remote inspector instead of a local inspector.
+
+2013-12-03  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Add missing folders and files to Xcode project
+        https://bugs.webkit.org/show_bug.cgi?id=124802
+
+        Reviewed by Timothy Hatcher.
+
+        * WebCore.xcodeproj/project.pbxproj:
+
+2013-12-04  José Dapena Paz  <jdapena@igalia.com>
+
+        [texmap] Borders on rotating images are hidden/wrongly rendered with edge distance antialiasing
+        https://bugs.webkit.org/show_bug.cgi?id=124653
+
+        Reviewed by Noam Rosenthal.
+
+        Texture mapper edge distance antialiasing texture sampling was causing
+        borders to be shaded (and made them almost disappear in some cases).
+        This was because calculation of sampling happened on vertex shader, so
+        the border of the texture would go to the border of the inflation area.
+
+        What algorithm should do is sampling the border pixel for all the
+        inflation area (it is the closest pixel to all the samples in
+        inflation area), and then use the standard sampling for the other
+        parts of the texture.
+
+        No new test because this is already covered by test
+        transforms/3d/point-mapping/3d-point-mapping.html
+
+        * platform/graphics/texmap/TextureMapperShaderProgram.cpp: fix edge
+        distance antialiasing texture sampling.
+
+2013-12-04  László Langó  <lango@inf.u-szeged.hu>
+
+        Typo fix after r160074 to fix debug builds.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * platform/text/BidiResolver.h:
+        (WebCore::MidpointState::stopIgnoringSpaces):
+
+2013-12-04  Zoltan Horvath  <zoltan@webkit.org>
+
+        Move space-ignoring inline functions into MidpointState
+        <https://webkit.org/b/124957>
+
+        Reviewed by David Hyatt.
+
+        Since:
+         - The following inline functions were used only with a mandatory LineMidpointState argument:
+           startIgnoringSpaces, stopIgnoringSpaces, ensureLineBoxInsideIgnoredSpaces, deprecatedAddMidpoint.
+         - TrailingObjects class uses these functions. Since they're inline in BreakingContextInlineHeaders.h,
+           it's hard to separate TrailingObjects into it's own file. (blocks bug #124956)
+         I made these functions as a member of LineMidpointState, and I also updated the call sites.
+
+        No new tests, no behavior change.
+
+        * platform/text/BidiResolver.h:
+        (WebCore::MidpointState::startIgnoringSpaces):
+        (WebCore::MidpointState::stopIgnoringSpaces):
+        (WebCore::MidpointState::ensureLineBoxInsideIgnoredSpaces):
+        (WebCore::MidpointState::deprecatedAddMidpoint):
+        * rendering/RenderBlock.h:
+        * rendering/line/BreakingContextInlineHeaders.h:
+        (WebCore::TrailingObjects::updateMidpointsForTrailingBoxes):
+        (WebCore::BreakingContext::handleBR):
+        (WebCore::BreakingContext::handleOutOfFlowPositioned):
+        (WebCore::shouldSkipWhitespaceAfterStartObject):
+        (WebCore::BreakingContext::handleEmptyInline):
+        (WebCore::BreakingContext::handleReplaced):
+        (WebCore::ensureCharacterGetsLineBox):
+        (WebCore::BreakingContext::handleText):
+
+2013-12-03  Zoltan Horvath  <zoltan@webkit.org>
+
+        Remove BreakingContext's friendship from RenderBlockFlow
+        <https://webkit.org/b/124958>
+
+        Reviewed by David Hyatt.
+
+        BreakingContext uses only 2 functions from RenderBlockFlow: insertFloatingObject/positionNewFloatOnLine. I added helper
+        functions to LineBreaker, what is already a friend of RenderBlockFlow, so BreakingContext doesn't need to be anymore.
+ 
+        No new tests, no behavior change.
+
+        * rendering/RenderBlockFlow.h:
+        * rendering/line/BreakingContextInlineHeaders.h:
+        (WebCore::BreakingContext::handleFloat):
+        * rendering/line/LineBreaker.h:
+        (WebCore::LineBreaker::insertFloatingObject):
+        (WebCore::LineBreaker::positionNewFloatOnLine):
+
+2013-12-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        bgColor, setBgColor, alinkColor, setAlinkColor, and etc... on HTMLBodyElement are useless
+        https://bugs.webkit.org/show_bug.cgi?id=125208
+
+        Reviewed by Antti Koivisto.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/49b1eeabbbf573d5271288c66d2b566cf33a09cf
+
+        These member functions of HTMLBodyElement were only used by corresponding functions in HTMLDocument
+        since they had the Reflect option specified in HTMLBodyElement.idl.
+
+        Removed the functions and directly called getAttribute and setAttribute in relevant functions in
+        HTMLDocument. The optimization to avoid assignment is no longer needed here since we've added that
+        optimization to setAttributeInternal a while ago.
+
+        * html/HTMLBodyElement.cpp:
+        * html/HTMLBodyElement.h:
+        * html/HTMLDocument.cpp:
+        (WebCore::HTMLDocument::bgColor):
+        (WebCore::HTMLDocument::setBgColor):
+        (WebCore::HTMLDocument::fgColor):
+        (WebCore::HTMLDocument::setFgColor):
+        (WebCore::HTMLDocument::alinkColor):
+        (WebCore::HTMLDocument::setAlinkColor):
+        (WebCore::HTMLDocument::linkColor):
+        (WebCore::HTMLDocument::setLinkColor):
+        (WebCore::HTMLDocument::vlinkColor):
+        (WebCore::HTMLDocument::setVlinkColor):
+        * html/HTMLDocument.h:
+
+2013-12-03  Andreas Kling  <akling@apple.com>
+
+        Add a CSSProperty::isDirectionAwareProperty() helper.
+        <https://webkit.org/b/125202>
+
+        Move the block of case labels for checking whether a CSS property ID
+        is a directional property into a separate function. Also removed an
+        outdated comment about CSS variables.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Revert the inadvertently committed change.
+
+        * html/HTMLElement.idl:
+
+2013-12-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Remove nodeIsDetachedFromDocument and visualWordMovementEnabled in FrameSelection
+        https://bugs.webkit.org/show_bug.cgi?id=125210
+
+        Reviewed by Antti Koivisto.
+
+        Inspired by https://chromium.googlesource.com/chromium/blink/+/92409870f0ff8fafe31217830db0838a9e1ffb98
+
+        Removed some unused code.
+
+        * editing/FrameSelection.cpp:
+        (WebCore::FrameSelection::textWasReplaced):
+        * editing/FrameSelection.h:
+        * page/Settings.in:
+
+2013-12-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Potential crash in RenderView::selectionBounds and RenderView::repaintSelection
+        https://bugs.webkit.org/show_bug.cgi?id=125207
+
+        Reviewed by Simon Fraser.
+        
+        Merge https://chromium.googlesource.com/chromium/blink/+/f9e6e288a5aa959f05c374806121aaf0fc52d440
+
+        Update style in FrameSelection instead of RenderView's member functions. These are the last two
+        member functions of RenderView that updates the style.
+
+        * editing/FrameSelection.cpp:
+        (WebCore::FrameSelection::focusedOrActiveStateChanged):
+        (WebCore::FrameSelection::bounds):
+        * rendering/RenderView.cpp:
+        (WebCore::RenderView::selectionBounds):
+        (WebCore::RenderView::repaintSelection):
+
+2013-12-03  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/125143> Improve the formatting in the generated Objective-C headers.
+
+        Add a space between @property and any parenthesized attributes.
+        Prefer strong over retain when specifying memory management semantics.
+
+        Reviewed by Darin Adler.
+
+        * bindings/objc/PublicDOMInterfaces.h:
+        * bindings/scripts/CodeGeneratorObjC.pm:
+        (GetPropertyAttributes): Generate strong instead of retain. Include a
+        space before the parenthesis.
+        * bindings/scripts/test/ObjC/DOMTestActiveDOMObject.h:
+        * bindings/scripts/test/ObjC/DOMTestEventConstructor.h:
+        * bindings/scripts/test/ObjC/DOMTestException.h:
+        * bindings/scripts/test/ObjC/DOMTestInterface.h:
+        * bindings/scripts/test/ObjC/DOMTestObj.h:
+        * bindings/scripts/test/ObjC/DOMTestSerializedScriptValueInterface.h:
+        * bindings/scripts/test/ObjC/DOMTestTypedefs.h:
+        * bindings/scripts/test/ObjC/DOMattribute.h:
+
+2013-12-03  Alexey Proskuryakov  <ap@apple.com>
+
+        Update WebCrypto JWK mapping to newer proposal
+        https://bugs.webkit.org/show_bug.cgi?id=124218
+
+        Reviewed by Anders Carlsson.
+
+        Tests: crypto/subtle/jwk-export-use-values.html
+               crypto/subtle/jwk-import-use-values.html
+
+        1. "extractable" renamed to "ext" in JWK.
+        2. New values for "use" mapping, which can now be combined into comma separated lists,
+        and cover all possible WebCrypto usages.
+
+        * bindings/js/JSCryptoKeySerializationJWK.cpp:
+        (WebCore::JSCryptoKeySerializationJWK::reconcileUsages):
+        (WebCore::JSCryptoKeySerializationJWK::reconcileExtractable):
+        (WebCore::JSCryptoKeySerializationJWK::addJWKAlgorithmToJSON):
+        (WebCore::processUseValue):
+        (WebCore::JSCryptoKeySerializationJWK::addJWKUseToJSON):
+        (WebCore::JSCryptoKeySerializationJWK::serialize):
+
+2013-12-03  Simon Fraser  <simon.fraser@apple.com>
+
+        Remove some iOS-related documentScale code
+        https://bugs.webkit.org/show_bug.cgi?id=125194
+
+        Reviewed by Enrica Casucci.
+
+        Remove exports of nonexistent documentScale-related functions on Frame.
+
+        * WebCore.exp.in:
+
+2013-12-03  Eric Carlson  <eric.carlson@apple.com>
+
+        Fix regression caused by r158599
+        https://bugs.webkit.org/show_bug.cgi?id=125188
+
+        Reviewed by Jer Noble.
+
+        * html/HTMLMediaElement.cpp:
+        (HTMLMediaElement::clearMediaPlayer): Do not clear m_player when PLUGIN_PROXY_FOR_VIDEO
+            is enabled.
+
+2013-12-03  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Nix Upstream: Updating WebCore files
+        https://bugs.webkit.org/show_bug.cgi?id=124981
+
+        Reviewed by Benjamin Poulain.
+
+        Just to sync our github repo files and the trunk, as part of the upstream process
+
+        No new tests needed.
+
+        * PlatformNix.cmake:
+        * css/mediaControlsNix.css:
+        (audio):
+        (video::-webkit-media-controls):
+        (audio::-webkit-media-controls-enclosure, video::-webkit-media-controls-enclosure):
+        (video::-webkit-media-controls-enclosure):
+        (audio::-webkit-media-controls-panel, video::-webkit-media-controls-panel):
+        (video:-webkit-full-page-media):
+        (audio:-webkit-full-page-media, video:-webkit-full-page-media):
+        (audio::-webkit-media-controls-mute-button, video::-webkit-media-controls-mute-button):
+        (audio::-webkit-media-controls-overlay-play-button, video::-webkit-media-controls-overlay-play-button):
+        (audio::-webkit-media-controls-play-button, video::-webkit-media-controls-play-button):
+        (audio::-webkit-media-controls-timeline-container, video::-webkit-media-controls-timeline-container):
+        (audio::-webkit-media-controls-time-remaining-display, video::-webkit-media-controls-time-remaining-display):
+        (audio::-webkit-media-controls-timeline, video::-webkit-media-controls-timeline):
+        (audio::-webkit-media-controls-volume-slider, video::-webkit-media-controls-volume-slider):
+        (input[type="range"]::-webkit-media-slider-container):
+        (input[type="range"]::-webkit-media-slider-container > div):
+        (input[type="range"]::-webkit-media-slider-thumb):
+        (audio::-webkit-media-controls-seek-back-button, video::-webkit-media-controls-seek-back-button):
+        (audio::-webkit-media-controls-seek-forward-button, video::-webkit-media-controls-seek-forward-button):
+        (audio::-webkit-media-controls-fullscreen-button, video::-webkit-media-controls-fullscreen-button):
+        (audio::-webkit-media-controls-toggle-closed-captions-button, video::-webkit-media-controls-toggle-closed-captions-button):
+        (audio::-webkit-media-controls-fullscreen-volume-slider, video::-webkit-media-controls-fullscreen-volume-slider):
+        (audio::-webkit-media-controls-fullscreen-volume-min-button, video::-webkit-media-controls-fullscreen-volume-min-button):
+        (audio::-webkit-media-controls-fullscreen-volume-max-button, video::-webkit-media-controls-fullscreen-volume-max-button):
+        (video::-webkit-media-text-track-container):
+        (video::cue):
+        (video::-webkit-media-text-track-region):
+        (video::-webkit-media-text-track-region-container):
+        (video::-webkit-media-text-track-region-container.scrolling):
+        (video::-webkit-media-text-track-display):
+        (video::cue(:future)):
+        (video::-webkit-media-text-track-container b):
+        (video::-webkit-media-text-track-container u):
+        (video::-webkit-media-text-track-container i):
+        * editing/Editor.cpp:
+        (WebCore::Editor::cut):
+        (WebCore::Editor::copy):
+        (WebCore::Editor::copyImage):
+        * editing/Editor.h:
+        * html/HTMLCanvasElement.h:
+        * platform/Cursor.h:
+        * platform/audio/FFTFrame.h:
+        * platform/audio/nix/AudioBusNix.cpp:
+        (WebCore::AudioBus::loadPlatformResource):
+        * platform/graphics/GLContext.h:
+        * platform/nix/CursorNix.cpp:
+        (WebCore::Cursor::ensurePlatformCursor):
+        * platform/nix/GamepadsNix.cpp:
+        (WebCore::sampleGamepads):
+        * platform/nix/RenderThemeNix.cpp:
+        (WebCore::toIntSize):
+        (WebCore::toNixRect):
+        (WebCore::RenderThemeNix::platformActiveSelectionBackgroundColor):
+        (WebCore::RenderThemeNix::platformInactiveSelectionBackgroundColor):
+        (WebCore::RenderThemeNix::platformActiveSelectionForegroundColor):
+        (WebCore::RenderThemeNix::platformInactiveSelectionForegroundColor):
+        (WebCore::RenderThemeNix::platformActiveListBoxSelectionBackgroundColor):
+        (WebCore::RenderThemeNix::platformInactiveListBoxSelectionBackgroundColor):
+        (WebCore::RenderThemeNix::platformActiveListBoxSelectionForegroundColor):
+        (WebCore::RenderThemeNix::platformInactiveListBoxSelectionForegroundColor):
+        (WebCore::RenderThemeNix::platformActiveTextSearchHighlightColor):
+        (WebCore::RenderThemeNix::platformInactiveTextSearchHighlightColor):
+        (WebCore::RenderThemeNix::platformFocusRingColor):
+        (WebCore::RenderThemeNix::platformTapHighlightColor):
+        (WebCore::RenderThemeNix::paintButton):
+        (WebCore::RenderThemeNix::paintTextField):
+        (WebCore::RenderThemeNix::paintCheckbox):
+        (WebCore::RenderThemeNix::setCheckboxSize):
+        (WebCore::RenderThemeNix::paintRadio):
+        (WebCore::RenderThemeNix::setRadioSize):
+        (WebCore::RenderThemeNix::paintMenuList):
+        (WebCore::RenderThemeNix::paintProgressBar):
+        (WebCore::RenderThemeNix::paintSliderTrack):
+        (WebCore::RenderThemeNix::paintSliderThumb):
+        (WebCore::RenderThemeNix::paintInnerSpinButton):
+        (WebCore::RenderThemeNix::paintMeter):
+        (WebCore::RenderThemeNix::extraMediaControlsStyleSheet):
+        (WebCore::RenderThemeNix::paintMediaPlayButton):
+        (WebCore::RenderThemeNix::paintMediaMuteButton):
+        (WebCore::RenderThemeNix::paintMediaSeekBackButton):
+        (WebCore::RenderThemeNix::paintMediaSeekForwardButton):
+        (WebCore::RenderThemeNix::paintMediaSliderTrack):
+        (WebCore::RenderThemeNix::paintMediaVolumeSliderContainer):
+        (WebCore::RenderThemeNix::paintMediaVolumeSliderTrack):
+        (WebCore::RenderThemeNix::paintMediaRewindButton):
+        * platform/nix/RenderThemeNix.h:
+        * rendering/SimpleLineLayout.cpp:
+        (WebCore::SimpleLineLayout::canUseFor):
+
+2013-12-03  Ralph Thomas  <ralpht@gmail.com>
+
+        Typo: FixedPositionConstaint -> FixedPositionConstraint
+        https://bugs.webkit.org/show_bug.cgi?id=125171
+
+        Reviewed by Simon Fraser.
+
+        No new tests, no change in behavior.
+
+        * page/scrolling/ScrollingConstraints.h:
+        * page/scrolling/coordinatedgraphics/ScrollingCoordinatorCoordinatedGraphics.cpp:
+        (WebCore::ScrollingCoordinatorCoordinatedGraphics::updateViewportConstrainedNode):
+        * page/scrolling/mac/ScrollingCoordinatorMac.mm:
+        (WebCore::ScrollingCoordinatorMac::updateViewportConstrainedNode):
+
+2013-12-03  Samuel White  <samuel_white@apple.com>
+
+        AXPress event coordinates are always sent as (0, 0)
+        https://bugs.webkit.org/show_bug.cgi?id=76677
+
+        Reviewed by Simon Fraser.
+
+        Set the coordinates of a simulated press equal to the center of the target
+        element when the simulated press does not have a related mouse event.
+
+        Test: accessibility/press-targets-center-point.html
+
+        * dom/Element.cpp:
+        (WebCore::Element::clientRect):
+        (WebCore::Element::screenRect):
+        * dom/Element.h:
+        * dom/EventDispatcher.cpp:
+        (WebCore::EventDispatcher::dispatchSimulatedClick):
+        * dom/MouseEvent.cpp:
+        (WebCore::SimulatedMouseEvent::create):
+        (WebCore::SimulatedMouseEvent::SimulatedMouseEvent):
+        * dom/MouseEvent.h:
+
+2013-12-03  Dean Jackson  <dino@apple.com>
+
+        [WebGL] Implement OES texture float linear
+        https://bugs.webkit.org/show_bug.cgi?id=124871
+
+        Reviewed by Brent Fulgham.
+
+        Implement the OES_texture_float_linear extension. Generally
+        we'd also enable OES_texture_half_float_linear at the same
+        time, but that's blocked on webkit.org/b/110936.
+
+        Test: fast/canvas/webgl/oes-texture-float-linear.html
+
+        * CMakeLists.txt: Add new files.
+        * DerivedSources.cpp: Ditto.
+        * DerivedSources.make: Generate new file from IDL.
+        * GNUmakefile.list.am: Add new files.
+        * WebCore.vcxproj/WebCore.vcxproj: Ditto.
+        * WebCore.vcxproj/WebCore.vcxproj.filters: Ditto.
+        * WebCore.xcodeproj/project.pbxproj: New files for OESTextureFloatLinear.
+
+        * bindings/js/JSWebGLRenderingContextCustom.cpp:
+        (WebCore::toJS): Map the new name into the appropriate type.
+
+        * html/canvas/OESTextureFloatLinear.cpp: Added. This is a very simple class
+        that's mostly empty.
+        (WebCore::OESTextureFloatLinear::OESTextureFloatLinear):
+        (WebCore::OESTextureFloatLinear::~OESTextureFloatLinear):
+        (WebCore::OESTextureFloatLinear::getName):
+        (WebCore::OESTextureFloatLinear::create):
+        * html/canvas/OESTextureFloatLinear.h: Added.
+        * html/canvas/OESTextureFloatLinear.idl: Added.
+
+        * html/canvas/WebGLExtension.h: Declare the new name in the enum of extensions.
+
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::drawArrays): Call new name.
+        (WebCore::WebGLRenderingContext::drawElements): Call new name.
+        (WebCore::WebGLRenderingContext::getExtension): Create the new extension if asked.
+        (WebCore::WebGLRenderingContext::checkTextureCompleteness): Renamed from handleNPOTTextures. Now
+        checks for the type of the texture too.
+        * html/canvas/WebGLRenderingContext.h: Member variable for new extension.
+
+        * html/canvas/WebGLTexture.cpp:
+        (WebCore::WebGLTexture::WebGLTexture):
+        (WebCore::WebGLTexture::needToUseBlackTexture): Takes an extra parameter which indicates
+        if it has an extension enabled.
+        (WebCore::WebGLTexture::update): Note it is a float type when updating.
+        * html/canvas/WebGLTexture.h: New flag to indicate float type.
+
+        * platform/graphics/Extensions3D.h: New flag type.
+        * platform/graphics/opengl/Extensions3DOpenGL.cpp:
+        (WebCore::Extensions3DOpenGL::supportsExtension): Add a comment about the extension.
+
+2013-12-03  Alexey Proskuryakov  <ap@apple.com>
+
+        Support exporting private WebCrypto RSA keys
+        https://bugs.webkit.org/show_bug.cgi?id=124483
+
+        Reviewed by Anders Carlsson.
+
+        Test: crypto/subtle/rsa-export-private-key.html
+
+        It might be better to have our own bignum implementation in WTF, but we currently
+        don't, and the need for this computation is Common Crypto specific anyway.
+
+        * crypto/CommonCryptoUtilities.h:
+        * crypto/CommonCryptoUtilities.cpp:
+        (WebCore::CCBigNum::CCBigNum):
+        (WebCore::CCBigNum::~CCBigNum):
+        (WebCore::CCBigNum::operator=):
+        (WebCore::CCBigNum::data):
+        (WebCore::CCBigNum::operator-):
+        (WebCore::CCBigNum::operator%):
+        (WebCore::CCBigNum::inverse):
+        Added a minimal wrapper around CommonCrypto BigNum.
+
+        * crypto/mac/CryptoKeyRSAMac.cpp:
+        (WebCore::getPrivateKeyComponents): Compute missing parts using CCBigNum.
+        (WebCore::CryptoKeyRSA::exportData): Implemented private key case.
+
+2013-12-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        XML fragment parsing algorithm doesn't use the context element's default namespace URI
+        https://bugs.webkit.org/show_bug.cgi?id=125132
+
+        Reviewed by Darin Adler.
+
+        Always use the context element's namespace as the default namespace URI when one is not specified by xmlns.
+
+        The new behavior matches that of Internet Explorer and the specified behavior in HTML5:
+        http://www.w3.org/TR/2013/CR-html5-20130806/the-xhtml-syntax.html#parsing-xhtml-fragments
+
+        "The default namespace is the namespace for which the DOM isDefaultNamespace() method on the element would
+        return true."
+
+        Test: fast/parser/fragment-parsing-in-document-without-xmlns.html
+
+        * xml/parser/XMLDocumentParserLibxml2.cpp:
+        (WebCore::XMLDocumentParser::XMLDocumentParser):
+
+2013-12-03  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        Remove some CSS Variables leftovers
+        https://bugs.webkit.org/show_bug.cgi?id=125167
+
+        Reviewed by Darin Adler.
+
+        No new tests needed. Only removing leftover code.
+
+        * css/CSSBasicShapes.cpp:
+        * css/CSSBasicShapes.h:
+
+2013-12-03  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Checking second-to-last bit in address is a typo
+        https://bugs.webkit.org/show_bug.cgi?id=125162
+
+        Reviewed by Darin Adler.
+
+        After talking with the original author of this line,
+        is was a typo to make sure that the second-to-last bit
+        in an address is 0. Instead, we want to make sure that
+        the address is aligned to a 4-byte boundary
+
+        No behavior change, so no test is necessary
+
+        * platform/graphics/cg/ImageBufferCG.cpp:
+        (WebCore::ImageBuffer::ImageBuffer):
+
+2013-12-03  Radu Stavila  <stavila@adobe.com>
+
+        The overflow border of a relatively positioned element inside a region is not painted
+        https://bugs.webkit.org/show_bug.cgi?id=124919
+
+        Relative positioned elements have self-painting layers that don't propagate the visual overflow
+        so the layer's position should be used when determining the clipping rectangle for box decorations.
+
+        Reviewed by Mihnea Ovidenie.
+
+        Test: fast/regions/relative-borders-overflow.html
+
+        * rendering/RenderFlowThread.cpp:
+        (WebCore::RenderFlowThread::decorationsClipRectForBoxInRegion):
+
+2013-12-03  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Get rid of 'hasFrontend()' in InspectorController and WorkerInspectorController
+        https://bugs.webkit.org/show_bug.cgi?id=125135
+
+        Reviewed by Darin Adler.
+
+        Remove 'hasFrontend()' from InspectorController and WorkerInspectorController
+        as it's never called.
+
+        No new tests, no behavior changes.
+
+        * inspector/InspectorController.h:
+        * inspector/WorkerInspectorController.h:
+
+2013-12-03  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: webViewResized() is not used anywhere in WebInspectorUI
+        https://bugs.webkit.org/show_bug.cgi?id=125137
+
+        Reviewed by Darin Adler.
+
+        Remove leftover code.
+
+        No new tests, no behavior changes.
+
+        * inspector/InspectorController.cpp:
+        * inspector/InspectorController.h:
+        * inspector/InspectorOverlay.cpp:
+        * inspector/InspectorOverlay.h:
+        * inspector/InspectorPageAgent.cpp:
+        * inspector/InspectorPageAgent.h:
+
+2013-12-03  László Langó  <lango@inf.u-szeged.hu>
+
+        ASSERTION FAILED: !value || (value->isPrimitiveValue()) in WebCore::StyleProperties::getLayeredShorthandValue.
+        https://bugs.webkit.org/show_bug.cgi?id=125146
+
+        Reviewed by Darin Adler.
+
+        Do not presume that |yValue| is primitive if |value| is implicit in StylePropertySerializer.
+        An implicit y-value can become explicit if specified as a separate longhand.
+        At the same time, its new value can be non-primitive.
+
+        Backported from Blink:
+        http://src.chromium.org/viewvc/blink?view=rev&rev=153678
+
+        Test: fast/css/webkit-mask-crash-implicit.html
+
+        * css/StyleProperties.cpp:
+        (WebCore::StyleProperties::getLayeredShorthandValue):
+
+2013-12-03  Rob Buis  <rob.buis@samsung.com>
+
+        Fix build break after r160007.
+
+        * rendering/style/BasicShapes.cpp:
+        (WebCore::BasicShape::canBlend):
+
+2013-12-03  Rob Buis  <rob.buis@samsung.com>
+
+        [css shapes] layout for new ellipse syntax
+        https://bugs.webkit.org/show_bug.cgi?id=124621
+
+        Reviewed by Dirk Schulze.
+
+        Implement support for doing layout with the new ellipse shape syntax,
+        including basic animation support.
+
+        Test: fast/shapes/shape-outside-floats/shape-outside-floats-ellipse-000.html
+
+        * rendering/shapes/Shape.cpp:
+        (WebCore::Shape::createShape): Convert new ellipse to a layout shape.
+        * rendering/style/BasicShapes.cpp:
+        (WebCore::BasicShape::canBlend): Ignore ellipses with values that
+            cannot be interpolated.
+        (WebCore::BasicShapeEllipse::floatValueForRadiusInBox): Helper function to calculate
+            either radiusX or radiusY, shared by clip-path and shape code paths.
+        (WebCore::BasicShapeEllipse::path):
+        * rendering/style/BasicShapes.h:
+
+2013-12-03  Frédéric Wang  <fred.wang@free.fr>
+
+        Add an MathMLSelectElement class to implement <maction> and <semantics>.
+        <https://webkit.org/b/120058>
+
+        Reviewed by Chris Fleizach.
+
+        Tests: mathml/presentation/maction-dynamic.html
+               mathml/presentation/maction.html
+               mathml/presentation/semantics.html
+
+        This adds a new MathMLSelectElement class to prepare the implementation
+        of the <maction> and <semantics> elements, for which only one "selected"
+        child is visible. We now simply display the first child of the
+        <semantics> element instead of hiding the annotations and this allows to
+        handle the use case of SVG-in-MathML as generated by Instiki when
+        bug 124128 is fixed ; Gecko's selection algorithm will be implemented
+        later (bug 100626). We now also rely on the @actiontype and @selection
+        attributes to select the visible <maction> child ; It remains to deal
+        with the user interaction (bug 85734).
+
+        * CMakeLists.txt: add the new files.
+        * GNUmakefile.list.am: ditto
+        * Target.pri: ditto
+        * WebCore.vcxproj/WebCore.vcxproj: ditto
+        * WebCore.vcxproj/WebCore.vcxproj.filters: ditto
+        * WebCore.xcodeproj/project.pbxproj: ditto
+        * css/mathml.css: remove the CSS rule for annotation/annotation-xml.
+        * mathml/MathMLAllInOne.cpp: add the new cpp file.
+        * mathml/MathMLSelectElement.cpp: Added.
+        (WebCore::MathMLSelectElement::MathMLSelectElement):
+        (WebCore::MathMLSelectElement::create):
+        (WebCore::MathMLSelectElement::createRenderer):
+        (WebCore::MathMLSelectElement::childShouldCreateRenderer):
+        (WebCore::MathMLSelectElement::finishParsingChildren):
+        (WebCore::MathMLSelectElement::childrenChanged):
+        (WebCore::MathMLSelectElement::attributeChanged):
+        (WebCore::MathMLSelectElement::updateSelectedChild): basic implementation for maction, semantics, maction@actiontype and maction@selection.
+        * mathml/MathMLSelectElement.h: Added.
+        * mathml/mathattrs.in: add actiontype and selection attributes.
+        * mathml/mathtags.in: set element classes for maction, semantics, annotation and annotation-xml.
+
+2013-12-03  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Nix Upstream: Adding missing nix new files to WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=124987
+
+        Reviewed by Benjamin Poulain.
+
+        No new tests needed.
+
+        * PlatformNix.cmake:
+        * platform/nix/ErrorsNix.cpp: Added.
+        * platform/nix/ErrorsNix.h: Added.
+        * platform/nix/FileSystemNix.cpp: Added.
+        * platform/nix/MIMETypeRegistryNix.cpp: Added.
+        * platform/nix/SharedTimerNix.cpp: Added.
+        * platform/nix/TemporaryLinkStubs.cpp: Added.
+
+2013-12-03  Tamas Gergely  <gertom@inf.u-szeged.hu>
+
+        Correct broken build on efl port with --no-netscape-plugin-api
+        configuration.
+        https://bugs.webkit.org/show_bug.cgi?id=123997
+
+        Reviewed by Zoltan Herczeg.
+
+        Build failed on efl port with --no-netscape-plugin-api configuration
+        as ld did not found some methods. The configuration uses a minimal
+        empty implementation of the class, which is now extended with empty
+        method implementations.
+
+        * plugins/PluginPackageNone.cpp:
+        (WebCore::PluginPackage::createPackage):
+          Returns NULL pointer.
+        (WebCore::PluginPackage::hash):
+          Returns 0.
+        (WebCore::PluginPackage::equal):
+          Returns true (equals).
+        (WebCore::PluginPackage::compare):
+          Returns 0 (equals).
+        (WebCore::PluginPackage::~PluginPackage):
+          Do nothing.
+
+2013-12-02  Andreas Kling  <akling@apple.com>
+
+        Avoid setting style twice for generated image content.
+        <https://webkit.org/b/125128>
+
+        Take care of a FIXME I added in r158097 and avoid redundant work in
+        ImageContentData::createRenderer().
+
+        I changed the inheritance helper RenderImage::setPseudoStyle() into
+        a new createStyleInheritingFromPseudoStyle() function instead so it
+        can be used from both PseudoElement and ImageContentData.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-02  Samuel White  <samuel_white@apple.com>
+
+        AX: Add AXUIElementCountForSearchPredicate parameterized attribute.
+        https://bugs.webkit.org/show_bug.cgi?id=124561
+
+        Reviewed by Chris Fleizach.
+
+        Added ability to fetch the number of elements that match a specific criteria. This will enable VoiceOver
+        to interface with WebKit much more dynamically. We can now get an idea of how many interesting elements
+        exist on a page, and then fetch them in chunks as needed.
+
+        Test: platform/mac/accessibility/search-predicate-element-count.html
+
+        * accessibility/AccessibilityObject.cpp:
+        (WebCore::AccessibilityObject::isAccessibilityTextSearchMatch):
+        * accessibility/AccessibilityObject.h:
+        (WebCore::AccessibilitySearchCriteria::AccessibilitySearchCriteria):
+        * accessibility/mac/WebAccessibilityObjectWrapperMac.mm:
+        (accessibilitySearchCriteriaForSearchPredicateParameterizedAttribute):
+        (-[WebAccessibilityObjectWrapper accessibilityParameterizedAttributeNames]):
+        (-[WebAccessibilityObjectWrapper accessibilityAttributeValue:forParameter:]):
+
+2013-12-02  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        [css shapes] Layout support for new circle shape syntax
+        https://bugs.webkit.org/show_bug.cgi?id=124619
+
+        Reviewed by Dirk Schulze.
+
+        Implement support for doing layout with the new circle shape syntax,
+        inclduing basic animation support.
+
+        Tests: fast/shapes/shape-outside-floats/shape-outside-floats-circle-000.html
+               fast/shapes/shape-outside-floats/shape-outside-floats-circle-001.html
+               fast/shapes/shape-outside-floats/shape-outside-floats-circle-002.html
+               fast/shapes/shape-outside-floats/shape-outside-floats-circle-003.html
+               fast/shapes/shape-outside-floats/shape-outside-floats-circle-004.html
+               fast/shapes/shape-outside-floats/shape-outside-floats-circle-005.html
+
+        * css/BasicShapeFunctions.cpp:
+        (WebCore::floatValueForCenterCoordinate): Used by both the CSS Shapes
+            layout code and the clip path code.
+        * css/BasicShapeFunctions.h:
+        * css/CSSBasicShapes.cpp:
+        (WebCore::buildCircleString): Update to use appendLiteral, and remove
+            call to reserveCapacity - if we find that it's actually slow when
+            doing performance tests, we can hopefully do something smarter and
+            less ugly than that.
+        * css/CSSParser.cpp:
+        (WebCore::CSSParser::parseShapeRadius): Fix a logic error that caused
+            the radius keywords not to work properly.
+        * rendering/shapes/Shape.cpp:
+        (WebCore::Shape::createShape): Convert new circle to a layout shape.
+        * rendering/style/BasicShapes.cpp:
+        (WebCore::BasicShape::canBlend): Ignore circles with values that
+            cannot be interpolated.
+        (WebCore::BasicShapeCircle::floatValueForRadiusInBox): Convert circle
+            radius keywords to a float value.
+        (WebCore::BasicShapeCircle::path):
+        (WebCore::BasicShapeCircle::blend):
+        * rendering/style/BasicShapes.h:
+        (WebCore::BasicShapeCenterCoordinate::canBlend):
+        (WebCore::BasicShapeRadius::canBlend):
+
+2013-12-02  Alexey Proskuryakov  <ap@apple.com>
+
+        WebCrypto HMAC doesn't check key algorithm's hash
+        https://bugs.webkit.org/show_bug.cgi?id=125114
+
+        Reviewed by Anders Carlsson.
+
+        Test: crypto/subtle/hmac-check-algorithm.html
+
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp:
+        (WebCore::CryptoAlgorithmHMAC::keyAlgorithmMatches): Check it.
+
+2013-12-02  Brady Eidson  <beidson@apple.com>
+
+        Possible crash in ProgressTracker::progressHeartbeatTimerFired(Timer<ProgressTracker>*)
+        https://bugs.webkit.org/show_bug.cgi?id=125110
+
+        Reviewed by Darin Adler.
+
+        FrameLoader::loadProgressingStatusChanged() might be called while the Frame has a null FrameView.
+
+        It’s unclear how to reproduce, but there’s no harm in a null check.
+
+        * loader/FrameLoader.cpp:
+        (WebCore::FrameLoader::loadProgressingStatusChanged):
+
+2013-12-02  Brady Eidson  <beidson@apple.com>
+
+        Possible crash in ProgressTracker::progressHeartbeatTimerFired(Timer<ProgressTracker>*)
+        https://bugs.webkit.org/show_bug.cgi?id=125110
+
+        Reviewed by Darin Adler.
+
+        It’s possible to have a null m_originatingProgressFrame when the heartbeat timer fires.
+
+        On the surface this seems impossible because the only time m_originatingProgressFrame is cleared
+        out the heartbeat timer is also stopped.
+
+        But there’s likely still a race condition in multi-threaded environments.
+
+        There’s no harm in null-checking m_originatingProgressFrame before accessing its loader.
+
+        * loader/ProgressTracker.cpp:
+        (WebCore::ProgressTracker::progressHeartbeatTimerFired):
+
+2013-12-02  Brady Eidson  <beidson@apple.com>
+
+        Add more CachedPage null checks
+        https://bugs.webkit.org/show_bug.cgi?id=125106
+
+        Reviewed by Sam Weinig.
+
+        Only some functions in PageCache.cpp null-check the CachedPages in HistoryItems.
+
+        Every part that manipulates the CachedPage should.
+
+        * history/PageCache.cpp:
+        (WebCore::PageCache::markPagesForVistedLinkStyleRecalc):
+        (WebCore::PageCache::markPagesForFullStyleRecalc):
+        (WebCore::PageCache::markPagesForDeviceScaleChanged):
+        (WebCore::PageCache::markPagesForCaptionPreferencesChanged):
+
+2013-12-02  Zoltan Horvath  <zoltan@webkit.org>
+
+        [CSS Shapes] Support inset parsing
+        https://bugs.webkit.org/show_bug.cgi?id=124903
+
+        Reviewed by David Hyatt.
+
+        In this patch I added support for inset shape parsing for CSS Shapes. Inset is defined
+        by CSS Shapes Level 1 (http://dev.w3.org/csswg/css-shapes-1/#supported-basic-shapes).
+        Inset is going to be used by shape-outside (bug #124905), and eventually by shape-inside.
+
+        No new tests, I updated existing tests to cover the changes.
+
+        * css/BasicShapeFunctions.cpp:
+        (WebCore::valueForBasicShape): Add support for inset.
+        (WebCore::basicShapeForValue): Add support for inset.
+        * css/CSSBasicShapes.cpp:
+        (WebCore::buildInsetString): Create inset css string.
+        (WebCore::CSSBasicShapeInset::cssText): Convert inset shape to a CSS string.
+        (WebCore::CSSBasicShapeInset::equals): Compare two inset rectangles.
+        (WebCore::CSSBasicShapeInset::serializeResolvingVariables): Create an inset string, with CSS variables resolved.
+        (WebCore::CSSBasicShapeInset::hasVariableReference): Determine if this inset has any CSS Variable references.
+        * css/CSSBasicShapes.h: Add inset class.
+        (WebCore::CSSBasicShapeInset::create):
+        (WebCore::CSSBasicShapeInset::top):
+        (WebCore::CSSBasicShapeInset::right):
+        (WebCore::CSSBasicShapeInset::bottom):
+        (WebCore::CSSBasicShapeInset::left):
+        (WebCore::CSSBasicShapeInset::topLeftRadius):
+        (WebCore::CSSBasicShapeInset::topRightRadius):
+        (WebCore::CSSBasicShapeInset::bottomRightRadius):
+        (WebCore::CSSBasicShapeInset::bottomLeftRadius):
+        (WebCore::CSSBasicShapeInset::setTop):
+        (WebCore::CSSBasicShapeInset::setRight):
+        (WebCore::CSSBasicShapeInset::setBottom):
+        (WebCore::CSSBasicShapeInset::setLeft):
+        (WebCore::CSSBasicShapeInset::setTopLeftRadius):
+        (WebCore::CSSBasicShapeInset::setTopRightRadius):
+        (WebCore::CSSBasicShapeInset::setBottomRightRadius):
+        (WebCore::CSSBasicShapeInset::setBottomLeftRadius):
+        (WebCore::CSSBasicShapeInset::CSSBasicShapeInset):
+        * css/CSSParser.cpp:
+        (WebCore::completeBorderRadii): Move static function before parseInsetBorderRadius.
+        (WebCore::CSSParser::parseInsetRoundedCorners): I added this helper function for parsing the rounded corners
+        (WebCore::CSSParser::parseBasicShapeInset): Parse inset.
+        (WebCore::CSSParser::parseBasicShape): Add call to parse inset.
+        * css/CSSParser.h:
+        * css/CSSPrimitiveValue.cpp:
+        (WebCore::CSSPrimitiveValue::CSSPrimitiveValue): Add constructor for LengthSize.
+        (WebCore::CSSPrimitiveValue::init): Initialize LengthSize.
+        * css/CSSPrimitiveValue.h:
+        (WebCore::CSSPrimitiveValue::create): Add support for creating PrimitiveValue from LengthSize.
+        * css/CSSValuePool.h:
+        (WebCore::CSSValuePool::createValue): Add support for LengthSize.
+        * platform/LengthSize.h:
+        (WebCore::LengthSize::blend): Add blend for LengthSize.
+        * rendering/shapes/ShapeInsideInfo.cpp:
+        (WebCore::ShapeInsideInfo::isEnabledFor): Keep inset disabled for shape-inside now.
+        * rendering/style/BasicShapes.cpp:
+        (WebCore::BasicShapeInset::path): Calculate path for an inset.
+        (WebCore::BasicShapeInset::blend): Blend two insets.
+        * rendering/style/BasicShapes.h: Add higher level inset.
+        (WebCore::BasicShapeInset::create):
+        (WebCore::BasicShapeInset::top):
+        (WebCore::BasicShapeInset::right):
+        (WebCore::BasicShapeInset::bottom):
+        (WebCore::BasicShapeInset::left):
+        (WebCore::BasicShapeInset::topLeftRadius):
+        (WebCore::BasicShapeInset::topRightRadius):
+        (WebCore::BasicShapeInset::bottomRightRadius):
+        (WebCore::BasicShapeInset::bottomLeftRadius):
+        (WebCore::BasicShapeInset::setTop):
+        (WebCore::BasicShapeInset::setRight):
+        (WebCore::BasicShapeInset::setBottom):
+        (WebCore::BasicShapeInset::setLeft):
+        (WebCore::BasicShapeInset::setTopLeftRadius):
+        (WebCore::BasicShapeInset::setTopRightRadius):
+        (WebCore::BasicShapeInset::setBottomRightRadius):
+        (WebCore::BasicShapeInset::setBottomLeftRadius):
+        (WebCore::BasicShapeInset::BasicShapeInset):
+
+2013-12-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Support WebCrypto AES-KW
+        https://bugs.webkit.org/show_bug.cgi?id=125105
+
+        Reviewed by Sam Weinig.
+
+        Tests: crypto/subtle/aes-kw-key-manipulation.html
+               crypto/subtle/aes-kw-wrap-unwrap-aes.html
+
+        * WebCore.xcodeproj/project.pbxproj: Added new files.
+
+        * crypto/CryptoAlgorithmIdentifier.h: (WebCore::CryptoAlgorithmIdentifier): Added AES-KW.
+        It's not standardized yet, but there appears to be a consensus that it will be specified.
+
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForEncrypt):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDecrypt):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForSign):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForVerify):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDigest):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForGenerateKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveBits):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForImportKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForExportKey):
+        Added AES-KW cases everywhere.
+
+        * bindings/js/JSCryptoKeySerializationJWK.cpp:
+        (WebCore::JSCryptoKeySerializationJWK::reconcileAlgorithm):
+        (WebCore::JSCryptoKeySerializationJWK::keySizeIsValid):
+        (WebCore::JSCryptoKeySerializationJWK::addJWKAlgorithmToJSON):
+        Support importing/exporting AES-KW keys in JWK.
+
+        * bindings/js/JSSubtleCryptoCustom.cpp:
+        (WebCore::JSSubtleCrypto::importKey):
+        (WebCore::JSSubtleCrypto::exportKey):
+        (WebCore::JSSubtleCrypto::wrapKey):
+        (WebCore::JSSubtleCrypto::unwrapKey):
+        Added some accidentally forgotten std::moves.
+
+        * crypto/algorithms/CryptoAlgorithmAES_KW.cpp: Added.
+        * crypto/algorithms/CryptoAlgorithmAES_KW.h: Added.
+        * crypto/mac/CryptoAlgorithmAES_KWMac.cpp: Added.
+
+        * crypto/keys/CryptoKeyAES.cpp: (WebCore::CryptoKeyAES::CryptoKeyAES): Allow AES-KW
+        as valid algorithm for AES keys.
+
+        * crypto/mac/CryptoAlgorithmRegistryMac.cpp:
+        (WebCore::CryptoAlgorithmRegistry::platformRegisterAlgorithms): Register AES-KW.
+
+2013-12-02  Beth Dakin  <bdakin@apple.com>
+
+        Add a setting to opt into a mode where the background extends and fixed elements 
+        don't move on rubber-band
+        https://bugs.webkit.org/show_bug.cgi?id=124745
+
+        Reviewed by Tim Horton.
+
+        New setting backgroundShouldExtendBeyondPage() will cause the tile cache to have a 
+        margin, and it will also cause fixed elements and backgrounds to stick to the 
+        viewport on scroll instead of sticking to the document. 
+
+        * WebCore.exp.in:
+        * page/FrameView.cpp:
+        (WebCore::FrameView::scrollBehaviorForFixedElements):
+        * page/Settings.in:
+        * rendering/RenderLayerBacking.cpp:
+        (WebCore::RenderLayerBacking::RenderLayerBacking):
+
+2013-12-02  Roger Zanoni  <rogerzanoni@gmail.com>
+
+        [MediaStream] Use iterator-based loops instead of index-based loops
+        https://bugs.webkit.org/show_bug.cgi?id=125021
+
+        Reviewed by Eric Carlson.
+
+        Also, changing iterator variable names from iter to it and
+        initializing an 'end' variable in each loop instead of evaluating
+        'collection.end()' multiple times.
+
+        No new tests, covered by existing ones.
+
+        * Modules/mediastream/MediaStream.cpp:
+        (WebCore::MediaStream::cloneMediaStreamTrackVector):
+        (WebCore::MediaStream::haveTrackWithSource):
+        (WebCore::MediaStream::getTrackById):
+        (WebCore::MediaStream::trackDidEnd):
+        (WebCore::MediaStream::scheduledEventTimerFired):
+
+2013-12-02  Rob Buis  <rob.buis@samsung.com>
+
+        [css shapes] Parse new ellipse shape syntax
+        https://bugs.webkit.org/show_bug.cgi?id=124620
+
+        Reviewed by Dirk Schulze.
+
+        Implement parsing of the new ellipse shape syntax. This closely follows the patch
+        for the new circle syntax (https://bugs.webkit.org/show_bug.cgi?id=124618), with
+        some refactoring of functionality shared by both.
+
+        Updated existing parsing tests to cover this.
+
+        * css/BasicShapeFunctions.cpp:
+        (WebCore::BasicShapeRadiusToCSSValue):
+        (WebCore::valueForBasicShape):
+        (WebCore::CSSValueToBasicShapeRadius):
+        (WebCore::basicShapeForValue):
+        * css/CSSBasicShapes.cpp:
+        (WebCore::buildEllipseString):
+        (WebCore::CSSBasicShapeEllipse::cssText):
+        (WebCore::CSSBasicShapeEllipse::equals):
+        (WebCore::buildDeprecatedEllipseString):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::cssText):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::equals):
+        * css/CSSBasicShapes.h:
+        (WebCore::CSSDeprecatedBasicShapeEllipse::create):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::centerX):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::centerY):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::radiusX):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::radiusY):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::setCenterX):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::setCenterY):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::setRadiusX):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::setRadiusY):
+        (WebCore::CSSDeprecatedBasicShapeEllipse::CSSDeprecatedBasicShapeEllipse):
+        * css/CSSParser.cpp:
+        (WebCore::CSSParser::parseBasicShapeEllipse):
+        (WebCore::CSSParser::parseDeprecatedBasicShapeEllipse):
+        (WebCore::CSSParser::parseBasicShape):
+        * css/CSSParser.h:
+        * rendering/shapes/Shape.cpp:
+        (WebCore::Shape::createShape):
+        * rendering/style/BasicShapes.cpp:
+        (WebCore::DeprecatedBasicShapeEllipse::path):
+        (WebCore::DeprecatedBasicShapeEllipse::blend):
+        (WebCore::BasicShapeEllipse::path):
+        (WebCore::BasicShapeEllipse::blend):
+        * rendering/style/BasicShapes.h:
+        (WebCore::BasicShapeEllipse::centerX):
+        (WebCore::BasicShapeEllipse::centerY):
+        (WebCore::BasicShapeEllipse::radiusX):
+        (WebCore::BasicShapeEllipse::radiusY):
+        (WebCore::BasicShapeEllipse::setCenterX):
+        (WebCore::BasicShapeEllipse::setCenterY):
+        (WebCore::BasicShapeEllipse::setRadiusX):
+        (WebCore::BasicShapeEllipse::setRadiusY):
+        (WebCore::BasicShapeEllipse::BasicShapeEllipse):
+        (WebCore::DeprecatedBasicShapeEllipse::create):
+        (WebCore::DeprecatedBasicShapeEllipse::DeprecatedBasicShapeEllipse):
+
+2013-12-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Add support for WebCrypto RSA-OAEP
+        https://bugs.webkit.org/show_bug.cgi?id=125084
+
+        Build fix.
+
+        * crypto/CommonCryptoUtilities.h:
+        * crypto/mac/CryptoAlgorithmRSASSA_PKCS1_v1_5Mac.cpp:
+        * crypto/mac/CryptoKeyRSAMac.cpp:
+
+2013-12-02  Brendan Long  <b.long@cablelabs.com>
+
+        Use GenericEventQueue in TrackListBase and reduce code duplication with scheduleTrackEvent()
+        https://bugs.webkit.org/show_bug.cgi?id=124811
+
+        Reviewed by Eric Carlson.
+
+        No new tests because this is just refactoring.
+
+        * html/track/TrackListBase.cpp:
+        (TrackListBase::TrackListBase): Replace event code with a GenericEventQueue.
+        (TrackListBase::scheduleTrackEvent): Factor out duplicate code in schedule{Add,Remove}TrackEvent functions.
+        (TrackListBase::scheduleAddTrackEvent): Same.
+        (TrackListBase::scheduleRemoveTrackEvent): Same.
+        (TrackListBase::scheduleChangeEvent): Use GenericEventQueue.
+        * html/track/TrackListBase.h: Replace event code with GenericEventQueue.
+
+2013-12-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Add support for WebCrypto RSA-OAEP
+        https://bugs.webkit.org/show_bug.cgi?id=125084
+
+        Build fix.
+
+        * WebCore.xcodeproj/project.pbxproj: Fix an automatic merge failure by re-adding
+        CryptoAlgorithmRsaOaepParams.h.
+
+2013-12-02  Victor Jaquez  <vjaquez@igalia.com>
+
+        [Gstreamer] update webkitvideosink metadata
+        https://bugs.webkit.org/show_bug.cgi?id=125082
+
+        Reviewed by Philippe Normand.
+
+        No new tests, no behavior changes.
+
+        * platform/graphics/gstreamer/VideoSinkGStreamer.cpp:
+        (webkit_video_sink_class_init):
+
+2013-12-02  Víctor Manuel Jáquez Leal  <vjaquez@igalia.com>
+
+        Simplify MediaPlayerPrivateGStreamerBase::createVideoSink()
+        https://bugs.webkit.org/show_bug.cgi?id=125077
+
+        Remove the method's unused parameter.
+        Remove the GStreamer 0.10.22 run-time validation, since we are using
+        GStreamer 1.0 officially.
+        Remove the creation of a spurious Bin for the video sink, since
+        either the fpssink or the webkitsink are valid sink elements.
+        Change fpsink to a GRefPtr.
+
+        Now, createVideoSink() returns a simple pointer to the created sink
+        element.
+
+        Reviewed by Philippe Normand.
+
+        No new tests, no behavior changes.
+
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp:
+        (WebCore::MediaPlayerPrivateGStreamer::createGSTPlayBin):
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp:
+        (WebCore::MediaPlayerPrivateGStreamerBase::createVideoSink):
+        (WebCore::MediaPlayerPrivateGStreamerBase::decodedFrameCount):
+        (WebCore::MediaPlayerPrivateGStreamerBase::droppedFrameCount):
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.h:
+
+2013-12-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Add support for WebCrypto RSA-OAEP
+        https://bugs.webkit.org/show_bug.cgi?id=125084
+
+        Reviewed by Sam Weinig.
+
+        Tests: crypto/subtle/rsa-oaep-key-manipulation.html
+               crypto/subtle/rsa-oaep-plaintext-length.html
+               crypto/subtle/rsa-oaep-wrap-unwrap-aes.html
+
+        * WebCore.xcodeproj/project.pbxproj: Added new files.
+
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::createRsaOaepParams):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForEncrypt):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDecrypt):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForImportKey):
+        Added RSA-OAEP parameters.
+
+        * bindings/js/JSCryptoKeySerializationJWK.cpp:
+        (WebCore::JSCryptoKeySerializationJWK::reconcileAlgorithm):
+        (WebCore::JSCryptoKeySerializationJWK::keySizeIsValid):
+        (WebCore::JSCryptoKeySerializationJWK::addJWKAlgorithmToJSON):
+        Support RSA-OAEP in JWK. It is more limited than general WebCrypto, as JWK only
+        allows SHA-1 as hash.
+
+        * crypto/CommonCryptoUtilities.cpp: Added. (WebCore::getCommonCryptoDigestAlgorithm):
+        * crypto/CommonCryptoUtilities.h: Added.
+        Extracted some shared code and forward declarations for CommonCrypto.
+
+        * crypto/CryptoAlgorithmParameters.h: (WebCore::CryptoAlgorithmParameters::Class):
+        * crypto/parameters/CryptoAlgorithmRsaOaepParams.h: Added.
+        Added RsaOaepParams.
+
+        * crypto/algorithms/CryptoAlgorithmRSA_OAEP.cpp: Added.
+        * crypto/algorithms/CryptoAlgorithmRSA_OAEP.h: Added.
+        * crypto/mac/CryptoAlgorithmRSA_OAEPMac.cpp: Added.
+
+        * crypto/mac/CryptoAlgorithmHMACMac.cpp:
+        (WebCore::getCommonCryptoHMACAlgorithm):
+        (WebCore::CryptoAlgorithmHMAC::platformSign):
+        (WebCore::CryptoAlgorithmHMAC::platformVerify):
+        * crypto/mac/CryptoAlgorithmRSASSA_PKCS1_v1_5Mac.cpp:
+        * crypto/mac/CryptoKeyMac.cpp:
+        * crypto/mac/CryptoKeyRSAMac.cpp:
+        Use CommonCryptoUtilities.
+
+        * crypto/mac/CryptoAlgorithmRegistryMac.cpp:
+        (WebCore::CryptoAlgorithmRegistry::platformRegisterAlgorithms): Register RSA-OAEP.
+
 2013-12-02  Andres Gomez  <agomez@igalia.com>
 
         [GTK] Fails to build with freetype 2.5.1

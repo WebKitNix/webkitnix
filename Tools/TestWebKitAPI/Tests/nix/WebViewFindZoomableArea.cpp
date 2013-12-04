@@ -62,11 +62,11 @@ TEST(WebKitNix, WebViewFindZoomableArea)
     WKRetainPtr<WKContextRef> context = adoptWK(WKContextCreate());
     WKRetainPtr<WKViewRef> view(AdoptWK, WKViewCreate(context.get(), 0));
 
-    NIXViewClient nixViewClient;
-    memset(&nixViewClient, 0, sizeof(NIXViewClient));
-    nixViewClient.version = kNIXViewClientCurrentVersion;
+    NIXViewClientV0 nixViewClient;
+    memset(&nixViewClient, 0, sizeof(nixViewClient));
+    nixViewClient.base.version = 0;
     nixViewClient.didFindZoomableArea = didFindZoomableArea;
-    NIXViewSetNixViewClient(view.get(), &nixViewClient);
+    NIXViewSetNixViewClient(view.get(), &nixViewClient.base);
 
     Util::ForceRepaintClient forceRepaintClient(view.get());
     forceRepaintClient.setClearColor(0, 0, 1, 1);

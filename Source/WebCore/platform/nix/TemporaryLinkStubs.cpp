@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2013 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (C) 2012, 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,8 +29,6 @@
 #include "SSLKeyGenerator.h"
 #include "URL.h"
 
-using namespace WebCore;
-
 namespace WebCore {
 
 void getSupportedKeySizes(Vector<String>&)
@@ -43,5 +41,5 @@ String signedPublicKeyAndChallengeString(unsigned, const String&, const URL&)
     return String();
 }
 
-}
+} // namespace WebCore
 

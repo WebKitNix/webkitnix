@@ -58,13 +58,13 @@ public:
     void waitForLoadURLAndRepaint(const char* resource);
     void forceRepaint();
 
-    WKPageLoaderClient& loaderClient() { return m_loaderClient; }
+    WKPageLoaderClientV3& loaderClient() { return m_loaderClient; }
     WKViewRef webView() { return m_view; }
 
 private:
     WKViewRef m_view;
     bool m_didFinishLoadAndRepaint;
-    WKPageLoaderClient m_loaderClient;
+    WKPageLoaderClientV3 m_loaderClient;
 
     static void didForceRepaint(WKErrorRef, void* context);
     static void didFinishLoadForFrame(WKPageRef page, WKFrameRef, WKTypeRef, const void* context);

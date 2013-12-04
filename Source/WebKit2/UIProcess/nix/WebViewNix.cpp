@@ -73,7 +73,7 @@ void WebViewNix::setCursor(const WebCore::Cursor& cursor) {
     m_viewClientNix.setCursor(this, shape);
 }
 
-void WebViewNix::setNixViewClient(const NIXViewClient* viewClient)
+void WebViewNix::setNixViewClient(const NIXViewClientBase* viewClient)
 {
     m_viewClientNix.initialize(viewClient);
 }

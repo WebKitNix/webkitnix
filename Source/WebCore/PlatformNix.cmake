@@ -116,7 +116,6 @@ list(APPEND WebCore_SOURCES
 
     platform/text/nix/TextBreakIteratorInternalICUNix.cpp
 
-    plugins/PluginPackage.cpp
     plugins/PluginPackageNone.cpp
     plugins/PluginViewNone.cpp
 )

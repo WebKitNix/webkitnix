@@ -543,6 +543,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSOESStandardDerivatives.h \
 	DerivedSources/WebCore/JSOESTextureFloat.cpp \
 	DerivedSources/WebCore/JSOESTextureFloat.h \
+	DerivedSources/WebCore/JSOESTextureFloatLinear.cpp \
+	DerivedSources/WebCore/JSOESTextureFloatLinear.h \
 	DerivedSources/WebCore/JSOESTextureHalfFloat.cpp \
 	DerivedSources/WebCore/JSOESTextureHalfFloat.h \
 	DerivedSources/WebCore/JSOESVertexArrayObject.cpp \
@@ -1509,6 +1511,7 @@ dom_binding_idls += \
 	$(WebCore)/html/canvas/EXTTextureFilterAnisotropic.idl \
 	$(WebCore)/html/canvas/OESStandardDerivatives.idl \
 	$(WebCore)/html/canvas/OESTextureFloat.idl \
+	$(WebCore)/html/canvas/OESTextureFloatLinear.idl \
 	$(WebCore)/html/canvas/OESTextureHalfFloat.idl \
 	$(WebCore)/html/canvas/OESVertexArrayObject.idl \
 	$(WebCore)/html/canvas/OESElementIndexUint.idl \
@@ -3245,6 +3248,8 @@ webcore_sources += \
 	Source/WebCore/html/canvas/OESStandardDerivatives.h \
 	Source/WebCore/html/canvas/OESTextureFloat.cpp \
 	Source/WebCore/html/canvas/OESTextureFloat.h \
+	Source/WebCore/html/canvas/OESTextureFloatLinear.cpp \
+	Source/WebCore/html/canvas/OESTextureFloatLinear.h \
 	Source/WebCore/html/canvas/OESTextureHalfFloat.cpp \
 	Source/WebCore/html/canvas/OESTextureHalfFloat.h \
 	Source/WebCore/html/canvas/OESVertexArrayObject.cpp \
@@ -3810,7 +3815,7 @@ webcore_sources += \
 	Source/WebCore/inspector/InspectorDOMDebuggerAgent.h \
 	Source/WebCore/inspector/InspectorDOMStorageAgent.cpp \
 	Source/WebCore/inspector/InspectorDOMStorageAgent.h \
-	Source/WebCore/inspector/InspectorFrontendChannel.h \
+	Source/WebCore/inspector/InspectorForwarding.h \
 	Source/WebCore/inspector/InspectorFrontendClient.h \
 	Source/WebCore/inspector/InspectorFrontendClientLocal.cpp \
 	Source/WebCore/inspector/InspectorFrontendClientLocal.h \
@@ -4050,6 +4055,8 @@ webcore_sources += \
 	Source/WebCore/mathml/MathMLInlineContainerElement.h  \
 	Source/WebCore/mathml/MathMLMathElement.cpp \
 	Source/WebCore/mathml/MathMLMathElement.h \
+	Source/WebCore/mathml/MathMLSelectElement.cpp \
+	Source/WebCore/mathml/MathMLSelectElement.h  \
 	Source/WebCore/mathml/MathMLTextElement.cpp \
 	Source/WebCore/mathml/MathMLTextElement.h \
 	Source/WebCore/page/animation/AnimationBase.cpp \

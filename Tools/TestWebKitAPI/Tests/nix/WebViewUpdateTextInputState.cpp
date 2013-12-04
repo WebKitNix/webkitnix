@@ -69,12 +69,12 @@ TEST(WebKitNix, WebViewUpdateTextInputState)
 
     NIXTextInputState stateReceived;
     memset(&stateReceived, 0, sizeof(NIXTextInputState));
-    NIXViewClient nixViewClient;
-    memset(&nixViewClient, 0, sizeof(NIXViewClient));
-    nixViewClient.version = kNIXViewClientCurrentVersion;
-    nixViewClient.clientInfo = &stateReceived;
+    NIXViewClientV0 nixViewClient;
+    memset(&nixViewClient, 0, sizeof(nixViewClient));
+    nixViewClient.base.version = 0;
+    nixViewClient.base.clientInfo = &stateReceived;
     nixViewClient.updateTextInputState = updateTextInputState;
-    NIXViewSetNixViewClient(view.get(), &nixViewClient);
+    NIXViewSetNixViewClient(view.get(), &nixViewClient.base);
 
     WKViewInitialize(view.get());
     WKViewSetSize(view.get(), size);

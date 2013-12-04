@@ -80,7 +80,7 @@ namespace WebCore {
 #elif PLATFORM(EFL)
     typedef const char* PlatformCursor;
 #elif PLATFORM(NIX)
-    typedef unsigned int PlatformCursor;
+    typedef unsigned PlatformCursor;
 #elif PLATFORM(BLACKBERRY)
     typedef BlackBerry::Platform::BlackBerryCursor PlatformCursor;
 #else

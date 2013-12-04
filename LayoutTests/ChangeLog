@@ -1,3 +1,383 @@
+2013-12-04  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Test dynamic change of position for out-of-flow transformed element
+        https://bugs.webkit.org/show_bug.cgi?id=124978
+
+        Reviewed by Alexandru Chiculita.
+
+        Test that a 3D transformed absolutely positioned element inside a named flow
+        whose position is dynamic changed is displayed in the right position in the associated region.
+
+        * compositing/regions/abs-transformed-dynamic-update-expected.html: Added.
+        * compositing/regions/abs-transformed-dynamic-update.html: Added.
+
+2013-12-03  Filip Pizlo  <fpizlo@apple.com>
+
+        Infer constant closure variables
+        https://bugs.webkit.org/show_bug.cgi?id=124630
+
+        Reviewed by Geoffrey Garen.
+        
+        This adds both correctness and performance tests for constant closure variable
+        inference.
+
+        * js/regress/infer-closure-const-then-mov-expected.txt: Added.
+        * js/regress/infer-closure-const-then-mov-no-inline-expected.txt: Added.
+        * js/regress/infer-closure-const-then-mov-no-inline.html: Added.
+        * js/regress/infer-closure-const-then-mov.html: Added.
+        * js/regress/infer-closure-const-then-put-to-scope-expected.txt: Added.
+        * js/regress/infer-closure-const-then-put-to-scope-no-inline-expected.txt: Added.
+        * js/regress/infer-closure-const-then-put-to-scope-no-inline.html: Added.
+        * js/regress/infer-closure-const-then-put-to-scope.html: Added.
+        * js/regress/infer-closure-const-then-reenter-expected.txt: Added.
+        * js/regress/infer-closure-const-then-reenter-no-inline-expected.txt: Added.
+        * js/regress/infer-closure-const-then-reenter-no-inline.html: Added.
+        * js/regress/infer-closure-const-then-reenter.html: Added.
+        * js/regress/script-tests/infer-closure-const-then-mov-no-inline.js: Added.
+        * js/regress/script-tests/infer-closure-const-then-mov.js: Added.
+        * js/regress/script-tests/infer-closure-const-then-put-to-scope-no-inline.js: Added.
+        (thingy.):
+        (thingy):
+        * js/regress/script-tests/infer-closure-const-then-put-to-scope.js: Added.
+        (thingy.):
+        (thingy):
+        * js/regress/script-tests/infer-closure-const-then-reenter-no-inline.js: Added.
+        (.return.foo):
+        (foo):
+        * js/regress/script-tests/infer-closure-const-then-reenter.js: Added.
+        (.return.foo):
+        (foo):
+
+2013-12-04  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Unreviewed GTK gardening. Updated expectations for GTK and share them with EFL.
+
+        * accessibility/multiselect-list-reports-active-option-expected.txt: Renamed from LayoutTests/platform/efl/multiselect-list-reports-active-option-expected.txt.
+        * platform/gtk/accessibility/multiselect-list-reports-active-option-expected.txt: Removed.
+
+2013-12-03  Alexey Proskuryakov  <ap@apple.com>
+
+        Update WebCrypto JWK mapping to newer proposal
+        https://bugs.webkit.org/show_bug.cgi?id=124218
+
+        Reviewed by Anders Carlsson.
+
+        * crypto/subtle/jwk-export-use-values-expected.txt: Added.
+        * crypto/subtle/jwk-export-use-values.html: Added.
+        * crypto/subtle/jwk-import-use-values-expected.txt: Added.
+        * crypto/subtle/jwk-import-use-values.html: Added.
+        New tests for "use" mapping.
+
+        * crypto/subtle/aes-cbc-import-jwk.html:
+        * crypto/subtle/aes-cbc-unwrap-rsa.html:
+        * crypto/subtle/aes-cbc-wrap-rsa-non-extractable.html:
+        * crypto/subtle/aes-cbc-wrap-rsa.html:
+        * crypto/subtle/aes-export-key-expected.txt:
+        * crypto/subtle/aes-export-key.html:
+        * crypto/subtle/hmac-export-key-expected.txt:
+        * crypto/subtle/hmac-export-key.html:
+        * crypto/subtle/hmac-import-jwk.html:
+        * crypto/subtle/import-jwk-expected.txt:
+        * crypto/subtle/import-jwk.html:
+        * crypto/subtle/rsa-export-key-expected.txt:
+        * crypto/subtle/rsa-export-key.html:
+        * crypto/subtle/rsa-export-private-key-expected.txt:
+        * crypto/subtle/rsa-export-private-key.html:
+        * crypto/subtle/rsa-oaep-key-manipulation-expected.txt:
+        * crypto/subtle/rsa-oaep-key-manipulation.html:
+
+2013-12-03  Alexey Proskuryakov  <ap@apple.com>
+
+        Layout Test platform/mac/accessibility/search-predicate-element-count.html is flaky
+        https://bugs.webkit.org/show_bug.cgi?id=125195
+
+        * platform/mac/TestExpectations: Marking as such.
+
+2013-12-03  Samuel White  <samuel_white@apple.com>
+
+        AXPress event coordinates are always sent as (0, 0)
+        https://bugs.webkit.org/show_bug.cgi?id=76677
+
+        Reviewed by Simon Fraser.
+
+        Make sure a press targets an element's center point.
+
+        * accessibility/press-targets-center-point-expected.txt: Added.
+        * accessibility/press-targets-center-point.html: Added.
+
+2013-12-03  Dean Jackson  <dino@apple.com>
+
+        [WebGL] Implement OES texture float linear
+        https://bugs.webkit.org/show_bug.cgi?id=124871
+
+        Reviewed by Brent Fulgham.
+
+        Add the Khronos test files for this extension.
+
+        Add the JS test file for OES_texture_float_linear and OES_texture_half_float_linear
+        even though it's only used for the former at the moment.
+
+        * fast/canvas/webgl/oes-texture-float-linear.html: Added.
+        * fast/canvas/webgl/resources/oes-texture-float-and-half-float-linear.js: Added.
+
+2013-12-03  Alexey Proskuryakov  <ap@apple.com>
+
+        Support exporting private WebCrypto RSA keys
+        https://bugs.webkit.org/show_bug.cgi?id=124483
+
+        Reviewed by Anders Carlsson.
+
+        * crypto/subtle/rsa-export-private-key-expected.txt: Added.
+        * crypto/subtle/rsa-export-private-key.html: Added.
+
+2013-12-03  Alexey Proskuryakov  <ap@apple.com>
+
+        WebCrypto HMAC doesn't check key algorithm's hash
+        https://bugs.webkit.org/show_bug.cgi?id=125114
+
+        Update layout test result for a last minute change in test content.
+
+        * crypto/subtle/hmac-check-algorithm-expected.txt:
+
+2013-12-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        XML fragment parsing algorithm doesn't use the context element's default namespace URI
+        https://bugs.webkit.org/show_bug.cgi?id=125132
+
+        Reviewed by Darin Adler.
+
+        Added a test for parsing a markup fragment inside a XHTML document without xmlns.
+        The parsed fragment should use the context element's namespace as the default namespace.
+
+        * fast/parser/fragment-parsing-in-document-without-xmlns-expected.txt: Added.
+        * fast/parser/fragment-parsing-in-document-without-xmlns.html: Added.
+
+2013-12-03  Radu Stavila  <stavila@adobe.com>
+
+        The overflow border of a relatively positioned element inside a region is not painted
+        https://bugs.webkit.org/show_bug.cgi?id=124919
+
+        Added new tests for correct painting of the borders of a relatively positioned element inside a region.
+
+        Reviewed by Mihnea Ovidenie.
+
+        * fast/regions/relative-borders-overflow-expected.html: Added.
+        * fast/regions/relative-borders-overflow.html: Added.
+        * fast/regions/relative-in-absolute-borders-overflow-expected.html: Added.
+        * fast/regions/relative-in-absolute-borders-overflow.html: Added.
+
+2013-12-03  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: aria-hidden=false does not work as expected
+        https://bugs.webkit.org/show_bug.cgi?id=98787
+
+        Reviewed by Beth Dakin.
+
+        These tests were part of this patch added over a year ago, but the patch was rolled out, and when it was rolled back in
+        the tests were never added. So I'm adding them back again.
+
+        * accessibility/aria-hidden-negates-no-visibility.html: Added.
+        * platform/mac/accessibility/aria-hidden-negates-no-visibility-expected.txt: Added.
+
+2013-12-03  László Langó  <lango@inf.u-szeged.hu>
+
+        ASSERTION FAILED: !value || (value->isPrimitiveValue()) in WebCore::StyleProperties::getLayeredShorthandValue.
+        https://bugs.webkit.org/show_bug.cgi?id=125146
+
+        Reviewed by Darin Adler.
+
+        * fast/css/webkit-mask-crash-implicit-expected.txt: Added.
+        * fast/css/webkit-mask-crash-implicit.html: Added.
+
+2013-12-03  Rob Buis  <rob.buis@samsung.com>
+
+        [css shapes] layout for new ellipse syntax
+        https://bugs.webkit.org/show_bug.cgi?id=124621
+
+        Add a new test for the new ellipse syntax. Also update existing shape-inside, animation, and clip-path tests to
+        test the new ellipse syntax for clipping and shape-inside.
+
+        Reviewed by Dirk Schulze.
+
+        * animations/resources/animation-test-helpers.js:
+        (parseBasicShape):
+        * css3/masking/clip-path-animation-expected.txt:
+        * css3/masking/clip-path-animation.html:
+        * css3/masking/clip-path-ellipse.html:
+        * fast/shapes/shape-inside/shape-inside-animation-expected.txt:
+        * fast/shapes/shape-inside/shape-inside-animation.html:
+        * fast/shapes/shape-inside/shape-inside-ellipse-padding.html:
+        * fast/shapes/shape-inside/shape-inside-ellipse.html:
+        * fast/shapes/shape-inside/shape-inside-empty-expected.html:
+        * fast/shapes/shape-inside/shape-inside-empty.html:
+        * fast/shapes/shape-outside-floats/shape-outside-animation-expected.txt:
+        * fast/shapes/shape-outside-floats/shape-outside-animation.html:
+        * fast/shapes/shape-outside-floats/shape-outside-floats-ellipse-000-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-ellipse-000.html: Added.
+
+2013-12-03  Frédéric Wang  <fred.wang@free.fr>
+
+        Add an MathMLSelectElement class to implement <maction> and <semantics>.
+        <https://webkit.org/b/120058>
+
+        Reviewed by Chris Fleizach.
+
+        New tests for the selection of the visible child in the <maction> and <semantics> elements.
+
+        * mathml/presentation/maction-dynamic-expected.html: Added.
+        * mathml/presentation/maction-dynamic.html: Added.
+        * mathml/presentation/maction-expected.html: Added.
+        * mathml/presentation/maction.html: Added.
+        * mathml/presentation/semantics-expected.html: Added.
+        * mathml/presentation/semantics.html: Added.
+
+2013-12-02  Samuel White  <samuel_white@apple.com>
+
+        AX: Add AXUIElementCountForSearchPredicate parameterized attribute.
+        https://bugs.webkit.org/show_bug.cgi?id=124561
+
+        Reviewed by Chris Fleizach.
+
+        Added test to verify that NSAccessibilityUIElementCountForSearchPredicateParameterizedAttribute
+        works as it should and updated existing test that has exposes this new attribute.
+
+        * platform/mac/accessibility/bounds-for-range-expected.txt:
+        * platform/mac/accessibility/search-predicate-element-count-expected.txt: Added.
+        * platform/mac/accessibility/search-predicate-element-count.html: Added.
+
+2013-12-02  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        [css shapes] Layout support for new circle shape syntax
+        https://bugs.webkit.org/show_bug.cgi?id=124619
+
+        Reviewed by Dirk Schulze.
+
+        Add a few tests for the new circle syntax. The old tests in
+        LayoutTests/csswg will be removed when the old syntax is removed.
+
+        Also update existing shape-inside, animation, and clip-path tests to
+        test the new syntax. 
+
+        * animations/resources/animation-test-helpers.js:
+        (parseBasicShape):
+        * LayoutTests/animations/resources/animation-test-helpers.js:
+        * LayoutTests/css3/masking/clip-path-animation-expected.txt:
+        * LayoutTests/css3/masking/clip-path-animation.html:
+        * LayoutTests/css3/masking/clip-path-circle-filter.html:
+        * LayoutTests/css3/masking/clip-path-circle-overflow-hidden.html:
+        * LayoutTests/css3/masking/clip-path-circle-overflow.html:
+        * LayoutTests/css3/masking/clip-path-circle-relative-overflow.html:
+        * LayoutTests/css3/masking/clip-path-circle.html:
+        * LayoutTests/css3/masking/clip-path-restore.html:
+        * LayoutTests/fast/shapes/parsing/parsing-shape-inside-expected.txt:
+        * LayoutTests/fast/shapes/parsing/parsing-shape-outside-expected.txt:
+        * LayoutTests/fast/shapes/parsing/parsing-test-utils.js:
+        * LayoutTests/fast/shapes/shape-inside/shape-inside-animation-expected.txt:
+        * LayoutTests/fast/shapes/shape-inside/shape-inside-animation.html:
+        * LayoutTests/fast/shapes/shape-inside/shape-inside-calc-crash-expected.txt:
+        * LayoutTests/fast/shapes/shape-inside/shape-inside-calc-crash.html:
+        * LayoutTests/fast/shapes/shape-inside/shape-inside-circle-padding.html:
+        * LayoutTests/fast/shapes/shape-inside/shape-inside-circle.html:
+        * LayoutTests/fast/shapes/shape-inside/shape-inside-dynamic-nested.html:
+        * LayoutTests/fast/shapes/shape-inside/shape-inside-empty-expected.html:
+        * LayoutTests/fast/shapes/shape-inside/shape-inside-empty.html:
+        * fast/shapes/shape-outside-floats/shape-outside-animation-expected.txt:
+        * fast/shapes/shape-outside-floats/shape-outside-animation.html:
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-000-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-000.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-001-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-001.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-002-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-002.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-003-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-003.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-004-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-004.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-005-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-floats-circle-005.html: Added.
+
+2013-12-02  Alexey Proskuryakov  <ap@apple.com>
+
+        WebCrypto HMAC doesn't check key algorithm's hash
+        https://bugs.webkit.org/show_bug.cgi?id=125114
+
+        Reviewed by Anders Carlsson.
+
+        * crypto/subtle/hmac-check-algorithm-expected.txt: Added.
+        * crypto/subtle/hmac-check-algorithm.html: Added.
+
+2013-12-02  Zoltan Horvath  <zoltan@webkit.org>
+
+        [CSS Shapes] Support inset parsing
+        https://bugs.webkit.org/show_bug.cgi?id=124903
+
+        Reviewed by David Hyatt.
+
+        * fast/shapes/parsing/parsing-shape-inside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-lengths-expected.txt:
+        * fast/shapes/parsing/parsing-shape-lengths.html:
+        * fast/shapes/parsing/parsing-shape-outside-expected.txt:
+        * fast/shapes/parsing/parsing-test-utils.js:
+
+2013-12-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Support WebCrypto AES-KW
+        https://bugs.webkit.org/show_bug.cgi?id=125105
+
+        Reviewed by Sam Weinig.
+
+        * crypto/subtle/aes-kw-key-manipulation-expected.txt: Added.
+        * crypto/subtle/aes-kw-key-manipulation.html: Added.
+        * crypto/subtle/aes-kw-wrap-unwrap-aes-expected.txt: Added.
+        * crypto/subtle/aes-kw-wrap-unwrap-aes.html: Added.
+
+2013-12-02  Rob Buis  <rob.buis@samsung.com>
+
+        [css shapes] Parse new ellipse shape syntax
+        https://bugs.webkit.org/show_bug.cgi?id=124620
+
+        Reviewed by Dirk Schulze.
+
+        Test that the new ellipse syntax is properly parsed.
+
+        * fast/shapes/parsing/parsing-shape-inside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-outside-expected.txt:
+        * fast/shapes/parsing/parsing-test-utils.js:
+
+2013-12-02  Brendan Long  <b.long@cablelabs.com>
+
+        Use GenericEventQueue in TrackListBase and reduce code duplication with scheduleTrackEvent()
+        https://bugs.webkit.org/show_bug.cgi?id=124811
+
+        Reviewed by Eric Carlson.
+
+        * platform/mac/TestExpectations: Unskip onremovetrack test which was fixed a long time ago.
+
+2013-12-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Add support for WebCrypto RSA-OAEP
+        https://bugs.webkit.org/show_bug.cgi?id=125084
+
+        Reviewed by Sam Weinig.
+
+        * crypto/subtle/rsa-oaep-key-manipulation-expected.txt: Added.
+        * crypto/subtle/rsa-oaep-key-manipulation.html: Added.
+        * crypto/subtle/rsa-oaep-plaintext-length-expected.txt: Added.
+        * crypto/subtle/rsa-oaep-plaintext-length.html: Added.
+        * crypto/subtle/rsa-oaep-wrap-unwrap-aes-expected.txt: Added.
+        * crypto/subtle/rsa-oaep-wrap-unwrap-aes.html: Added.
+
+2013-12-01  Filip Pizlo  <fpizlo@apple.com>
+
+        Stores to local captured variables should be intercepted
+        https://bugs.webkit.org/show_bug.cgi?id=124883
+
+        Reviewed by Mark Hahnenberg.
+
+        * js/regress/captured-assignments-expected.txt: Added.
+        * js/regress/captured-assignments.html: Added.
+        * js/regress/script-tests/captured-assignments.js: Added.
+
 2013-12-02  Lauro Neto  <lauro.neto@openbossa.org>
 
         [MediaStream] Update layout tests to newer spec.

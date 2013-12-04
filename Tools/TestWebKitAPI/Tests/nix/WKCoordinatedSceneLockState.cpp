@@ -75,7 +75,7 @@ TEST(WebKitNix, LockAndUnlockCoordinatedSceneState)
 
     Util::PageLoader loader(view.get());
     loader.loaderClient().didStartProvisionalLoadForFrame = didStartProvisionalLoadForFrame_LockAndUnlock;
-    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &loader.loaderClient());
+    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &loader.loaderClient().base);
 
     ToolsNix::RGBAPixel currentPixelSample = offscreenBuffer.readPixelAtPoint(1, 1);
     EXPECT_EQ(ToolsNix::RGBAPixel::blue(), currentPixelSample);
@@ -116,7 +116,7 @@ TEST(WebKitNix, LockCoordinatedSceneState)
 
     Util::PageLoader loader(view.get());
     loader.loaderClient().didStartProvisionalLoadForFrame = didStartProvisionalLoadForFrame_LockOnly;
-    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &loader.loaderClient());
+    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &loader.loaderClient().base);
 
     ToolsNix::RGBAPixel currentPixelSample = offscreenBuffer.readPixelAtPoint(1, 1);
     EXPECT_EQ(ToolsNix::RGBAPixel::blue(), currentPixelSample);

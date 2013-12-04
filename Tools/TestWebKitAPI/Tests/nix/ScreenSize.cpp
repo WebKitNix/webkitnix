@@ -56,11 +56,12 @@ TEST(WebKitNix, ScreenSize)
     Util::ForceRepaintClient forceRepaintClient(view.get());
 
     WKStringRef alertText = 0;
-    WKPageUIClient uiClient;
+    WKPageUIClientV2 uiClient;
     std::memset(&uiClient, 0, sizeof(uiClient));
-    uiClient.clientInfo = &alertText;
+    uiClient.base.version = 2;
+    uiClient.base.clientInfo = &alertText;
     uiClient.runJavaScriptAlert = &alert;
-    WKPageSetPageUIClient(WKViewGetPage(view.get()), &uiClient);
+    WKPageSetPageUIClient(WKViewGetPage(view.get()), &uiClient.base);
     Util::PageLoader loader(view.get());
     loader.waitForLoadURLAndRepaint("../nix/ScreenSize");
 

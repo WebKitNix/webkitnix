@@ -265,6 +265,9 @@
     <Filter Include="ForwardingHeaders\heap">
       <UniqueIdentifier>{82ba9bb4-eaa0-4973-9bb3-a27667a1c167}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ForwardingHeaders\inspector">
+      <UniqueIdentifier>{132bade2-0aab-6274-0adff-ae8aed5aed4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="history">
       <UniqueIdentifier>{6f39dedf-2d3a-414e-83fe-7bf64f911cfb}</UniqueIdentifier>
     </Filter>
@@ -4977,6 +4980,9 @@
     <ClCompile Include="..\mathml\MathMLMathElement.cpp">
       <Filter>rendering\mathml</Filter>
     </ClCompile>
+    <ClCompile Include="..\mathml\MathMLSelectElement.cpp">
+      <Filter>rendering\mathml</Filter>
+    </ClCompile>
     <ClCompile Include="..\mathml\MathMLTextElement.cpp">
       <Filter>rendering\mathml</Filter>
     </ClCompile>
@@ -6622,6 +6628,9 @@
     <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureFloat.cpp">
       <Filter>DerivedSources</Filter>
     </ClCompile>
+    <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureFloatLinear.cpp">
+      <Filter>DerivedSources</Filter>
+    </ClCompile>
     <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureHalfFloat.cpp">
       <Filter>DerivedSources</Filter>
     </ClCompile>
@@ -6710,6 +6719,9 @@
       <Filter>html\canvas</Filter>
     </ClCompile>
     <ClCompile Include="..\html\canvas\OESTextureFloat.cpp">
+      <Filter>html\canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\html\canvas\OESTextureFloatLinear.cpp">
       <Filter>html\canvas</Filter>
     </ClCompile>
     <ClCompile Include="..\html\canvas\OESTextureHalfFloat.cpp">
@@ -12222,6 +12234,9 @@
     <ClInclude Include="..\ForwardingHeaders\heap\Strong.h">
       <Filter>ForwardingHeaders\heap</Filter>
     </ClInclude>
+    <ClInclude Include="..\ForwardingHeaders\inspector\InspectorFrontendChannel.h">
+      <Filter>ForwardingHeaders\inspector</Filter>
+    </ClInclude>
     <ClInclude Include="..\history\BackForwardClient.h">
       <Filter>history</Filter>
     </ClInclude>
@@ -12426,7 +12441,7 @@
     <ClInclude Include="..\inspector\InspectorDOMStorageAgent.h">
       <Filter>inspector</Filter>
     </ClInclude>
-    <ClInclude Include="..\inspector\InspectorFrontendChannel.h">
+    <ClInclude Include="..\inspector\InspectorForwarding.h">
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\InspectorFrontendClient.h">
@@ -12547,6 +12562,9 @@
       <Filter>rendering\mathml</Filter>
     </ClInclude>
     <ClInclude Include="..\mathml\MathMLMathElement.h">
+      <Filter>rendering\mathml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mathml\MathMLSelectElement.h">
       <Filter>rendering\mathml</Filter>
     </ClInclude>
     <ClInclude Include="..\mathml\MathMLTextElement.h">
@@ -14396,6 +14414,9 @@
     <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureFloat.h">
       <Filter>DerivedSources</Filter>
     </ClInclude>
+    <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureFloatLinear.h">
+      <Filter>DerivedSources</Filter>
+    </ClInclude>
     <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureHalfFloat.h">
       <Filter>DerivedSources</Filter>
     </ClInclude>
@@ -14487,6 +14508,9 @@
       <Filter>html\canvas</Filter>
     </ClInclude>
     <ClInclude Include="..\html\canvas\OESTextureFloat.h">
+      <Filter>html\canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="..\html\canvas\OESTextureFloatLinear.h">
       <Filter>html\canvas</Filter>
     </ClInclude>
     <ClInclude Include="..\html\canvas\OESTextureHalfFloat.h">

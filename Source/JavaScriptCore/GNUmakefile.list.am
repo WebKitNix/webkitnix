@@ -102,10 +102,11 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/bytecode/ByValInfo.h \
 	Source/JavaScriptCore/bytecode/BytecodeBasicBlock.cpp \
 	Source/JavaScriptCore/bytecode/BytecodeBasicBlock.h \
+	Source/JavaScriptCore/bytecode/BytecodeConventions.h \
 	Source/JavaScriptCore/bytecode/BytecodeLivenessAnalysis.cpp \
 	Source/JavaScriptCore/bytecode/BytecodeLivenessAnalysis.h \
 	Source/JavaScriptCore/bytecode/BytecodeLivenessAnalysisInlines.h \
-	Source/JavaScriptCore/bytecode/BytecodeConventions.h \
+	Source/JavaScriptCore/bytecode/BytecodeUseDef.h \
 	Source/JavaScriptCore/bytecode/CallLinkInfo.cpp \
 	Source/JavaScriptCore/bytecode/CallLinkInfo.h \
 	Source/JavaScriptCore/bytecode/CallLinkStatus.cpp \
@@ -609,6 +610,7 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/icu/unicode/utf_old.h \
 	Source/JavaScriptCore/icu/unicode/utypes.h \
 	Source/JavaScriptCore/icu/unicode/uversion.h \
+	Source/JavaScriptCore/inspector/InspectorFrontendChannel.h \
 	Source/JavaScriptCore/interpreter/AbstractPC.cpp \
 	Source/JavaScriptCore/interpreter/AbstractPC.h \
 	Source/JavaScriptCore/interpreter/CachedCall.h \
@@ -621,6 +623,8 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/interpreter/JSStack.cpp \
 	Source/JavaScriptCore/interpreter/JSStack.h \
 	Source/JavaScriptCore/interpreter/JSStackInlines.h \
+	Source/JavaScriptCore/interpreter/ProtoCallFrame.cpp \
+	Source/JavaScriptCore/interpreter/ProtoCallFrame.h \
 	Source/JavaScriptCore/interpreter/Register.h \
 	Source/JavaScriptCore/interpreter/StackVisitor.cpp \
 	Source/JavaScriptCore/interpreter/StackVisitor.h \
@@ -818,6 +822,7 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/runtime/Completion.cpp \
 	Source/JavaScriptCore/runtime/Completion.h \
 	Source/JavaScriptCore/runtime/ConcurrentJITLock.h \
+	Source/JavaScriptCore/runtime/ConstantMode.h \
 	Source/JavaScriptCore/runtime/ConstructData.cpp \
 	Source/JavaScriptCore/runtime/ConstructData.h \
 	Source/JavaScriptCore/runtime/DataView.cpp \

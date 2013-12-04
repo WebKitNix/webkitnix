@@ -28,65 +28,13 @@
 
 #if ENABLE(SUBTLE_CRYPTO)
 
+#include "CommonCryptoUtilities.h"
 #include "CryptoAlgorithmRsaSsaParams.h"
 #include "CryptoDigest.h"
 #include "CryptoKeyRSA.h"
 #include "ExceptionCode.h"
-#include <CommonCrypto/CommonCryptor.h>
-
-#if defined(__has_include)
-#if __has_include(<CommonCrypto/CommonRSACryptor.h>)
-#include <CommonCrypto/CommonRSACryptor.h>
-#endif
-#endif
-
-#ifndef _CC_RSACRYPTOR_H_
-enum {
-    ccPKCS1Padding = 1001
-};
-typedef uint32_t CCAsymmetricPadding;
-
-enum {
-    kCCDigestSHA1 = 8,
-    kCCDigestSHA224 = 9,
-    kCCDigestSHA256 = 10,
-    kCCDigestSHA384 = 11,
-    kCCDigestSHA512 = 12,
-};
-typedef uint32_t CCDigestAlgorithm;
-
-enum {
-    kCCNotVerified    = -4306
-};
-#endif
-
-extern "C" CCCryptorStatus CCRSACryptorSign(CCRSACryptorRef privateKey, CCAsymmetricPadding padding, const void *hashToSign, size_t hashSignLen, CCDigestAlgorithm digestType, size_t saltLen, void *signedData, size_t *signedDataLen);
-extern "C" CCCryptorStatus CCRSACryptorVerify(CCRSACryptorRef publicKey, CCAsymmetricPadding padding, const void *hash, size_t hashLen, CCDigestAlgorithm digestType, size_t saltLen, const void *signedData, size_t signedDataLen);
 
 namespace WebCore {
-
-static bool getCommonCryptoDigestAlgorithm(CryptoAlgorithmIdentifier hashFunction, CCDigestAlgorithm& algorithm)
-{
-    switch (hashFunction) {
-    case CryptoAlgorithmIdentifier::SHA_1:
-        algorithm = kCCDigestSHA1;
-        return true;
-    case CryptoAlgorithmIdentifier::SHA_224:
-        algorithm = kCCDigestSHA224;
-        return true;
-    case CryptoAlgorithmIdentifier::SHA_256:
-        algorithm = kCCDigestSHA256;
-        return true;
-    case CryptoAlgorithmIdentifier::SHA_384:
-        algorithm = kCCDigestSHA384;
-        return true;
-    case CryptoAlgorithmIdentifier::SHA_512:
-        algorithm = kCCDigestSHA512;
-        return true;
-    default:
-        return false;
-    }
-}
 
 void CryptoAlgorithmRSASSA_PKCS1_v1_5::platformSign(const CryptoAlgorithmRsaSsaParams& parameters, const CryptoKeyRSA& key, const CryptoOperationData& data, VectorCallback callback, VoidCallback failureCallback, ExceptionCode& ec)
 {

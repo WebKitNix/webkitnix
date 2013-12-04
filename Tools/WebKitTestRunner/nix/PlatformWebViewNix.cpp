@@ -110,13 +110,13 @@ PlatformWebView::PlatformWebView(WKContextRef context, WKPageGroupRef pageGroup,
     m_offscreenBuffer->makeCurrent();
     glViewport(0, 0, size.width, size.height);
 
-    WKViewClient viewClient;
-    memset(&viewClient, 0, sizeof(WKViewClient));
-    viewClient.version = kWKViewClientCurrentVersion;
-    viewClient.clientInfo = this;
+    WKViewClientV0 viewClient;
+    memset(&viewClient, 0, sizeof(WKViewClientV0));
+    viewClient.base.version = 0;
+    viewClient.base.clientInfo = this;
     viewClient.viewNeedsDisplay = viewNeedsDisplay;
     viewClient.didChangeContentsPosition = pageDidRequestScroll;
-    WKViewSetViewClient(m_view, &viewClient);
+    WKViewSetViewClient(m_view, &viewClient.base);
 
     WKViewInitialize(m_view);
     WKViewSetSize(m_view, size);

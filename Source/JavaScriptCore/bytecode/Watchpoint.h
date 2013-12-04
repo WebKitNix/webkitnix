@@ -108,12 +108,19 @@ public:
         fireAllSlow();
     }
     
-    void notifyWrite()
+    void touch()
     {
         if (state() == ClearWatchpoint)
             startWatching();
         else
             fireAll();
+    }
+    
+    void invalidate()
+    {
+        if (state() == IsWatched)
+            fireAll();
+        m_state = IsInvalidated;
     }
 
     int8_t* addressOfState() { return &m_state; }
@@ -209,10 +216,10 @@ public:
         WTF::storeStoreFence();
     }
     
-    void notifyWrite()
+    void touch()
     {
         if (isFat()) {
-            fat()->notifyWrite();
+            fat()->touch();
             return;
         }
         if (decodeState(m_data) == ClearWatchpoint)

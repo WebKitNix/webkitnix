@@ -45,3 +45,4 @@ public:
 } // namespace Nix
 
 #endif // Nix_AudioDestinationConsumer_h
+

@@ -629,39 +629,39 @@ void WKPageCountStringMatches(WKPageRef pageRef, WKStringRef string, WKFindOptio
     toImpl(pageRef)->countStringMatches(toImpl(string)->string(), toFindOptions(options), maxMatchCount);
 }
 
-void WKPageSetPageContextMenuClient(WKPageRef pageRef, const WKPageContextMenuClient* wkClient)
+void WKPageSetPageContextMenuClient(WKPageRef pageRef, const WKPageContextMenuClientBase* wkClient)
 {
 #if ENABLE(CONTEXT_MENUS)
     toImpl(pageRef)->initializeContextMenuClient(wkClient);
 #endif
 }
 
-void WKPageSetPageFindClient(WKPageRef pageRef, const WKPageFindClient* wkClient)
+void WKPageSetPageFindClient(WKPageRef pageRef, const WKPageFindClientBase* wkClient)
 {
     toImpl(pageRef)->initializeFindClient(wkClient);
 }
 
-void WKPageSetPageFindMatchesClient(WKPageRef pageRef, const WKPageFindMatchesClient* wkClient)
+void WKPageSetPageFindMatchesClient(WKPageRef pageRef, const WKPageFindMatchesClientBase* wkClient)
 {
     toImpl(pageRef)->initializeFindMatchesClient(wkClient);
 }
 
-void WKPageSetPageFormClient(WKPageRef pageRef, const WKPageFormClient* wkClient)
+void WKPageSetPageFormClient(WKPageRef pageRef, const WKPageFormClientBase* wkClient)
 {
     toImpl(pageRef)->initializeFormClient(wkClient);
 }
 
-void WKPageSetPageLoaderClient(WKPageRef pageRef, const WKPageLoaderClient* wkClient)
+void WKPageSetPageLoaderClient(WKPageRef pageRef, const WKPageLoaderClientBase* wkClient)
 {
     toImpl(pageRef)->initializeLoaderClient(wkClient);
 }
 
-void WKPageSetPagePolicyClient(WKPageRef pageRef, const WKPagePolicyClient* wkClient)
+void WKPageSetPagePolicyClient(WKPageRef pageRef, const WKPagePolicyClientBase* wkClient)
 {
     toImpl(pageRef)->initializePolicyClient(wkClient);
 }
 
-void WKPageSetPageUIClient(WKPageRef pageRef, const WKPageUIClient* wkClient)
+void WKPageSetPageUIClient(WKPageRef pageRef, const WKPageUIClientBase* wkClient)
 {
     toImpl(pageRef)->initializeUIClient(wkClient);
 }

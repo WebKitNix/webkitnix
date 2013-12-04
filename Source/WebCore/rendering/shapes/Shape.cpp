@@ -151,13 +151,18 @@ PassOwnPtr<Shape> Shape::createShape(const BasicShape* basicShape, const LayoutS
     }
 
     case BasicShape::BasicShapeCircleType: {
-        // FIXME implement layout. bug 124619
-        shape = createRectangleShape(FloatRect(0, 0, boxWidth, boxHeight), FloatSize(0, 0));
+        const BasicShapeCircle* circle = static_cast<const BasicShapeCircle*>(basicShape);
+        float centerX = floatValueForCenterCoordinate(circle->centerX(), boxWidth);
+        float centerY = floatValueForCenterCoordinate(circle->centerY(), boxHeight);
+        float radius = circle->floatValueForRadiusInBox(boxWidth, boxHeight);
+        FloatPoint logicalCenter = physicalPointToLogical(FloatPoint(centerX, centerY), logicalBoxSize.height(), writingMode);
+
+        shape = createShapeCircle(logicalCenter, radius);
         break;
     }
 
-    case BasicShape::BasicShapeEllipseType: {
-        const BasicShapeEllipse* ellipse = static_cast<const BasicShapeEllipse*>(basicShape);
+    case BasicShape::DeprecatedBasicShapeEllipseType: {
+        const DeprecatedBasicShapeEllipse* ellipse = static_cast<const DeprecatedBasicShapeEllipse*>(basicShape);
         float centerX = floatValueForLength(ellipse->centerX(), boxWidth);
         float centerY = floatValueForLength(ellipse->centerY(), boxHeight);
         float radiusX = floatValueForLength(ellipse->radiusX(), boxWidth);
@@ -166,6 +171,18 @@ PassOwnPtr<Shape> Shape::createShape(const BasicShape* basicShape, const LayoutS
         FloatSize logicalRadii = physicalSizeToLogical(FloatSize(radiusX, radiusY), writingMode);
 
         shape = createShapeEllipse(logicalCenter, logicalRadii);
+        break;
+    }
+
+    case BasicShape::BasicShapeEllipseType: {
+        const BasicShapeEllipse* ellipse = static_cast<const BasicShapeEllipse*>(basicShape);
+        float centerX = floatValueForCenterCoordinate(ellipse->centerX(), boxWidth);
+        float centerY = floatValueForCenterCoordinate(ellipse->centerY(), boxHeight);
+        float radiusX = ellipse->floatValueForRadiusInBox(ellipse->radiusX(), centerX, boxWidth);
+        float radiusY = ellipse->floatValueForRadiusInBox(ellipse->radiusY(), centerY, boxHeight);
+        FloatPoint logicalCenter = physicalPointToLogical(FloatPoint(centerX, centerY), logicalBoxSize.height(), writingMode);
+
+        shape = createShapeEllipse(logicalCenter, FloatSize(radiusX, radiusY));
         break;
     }
 

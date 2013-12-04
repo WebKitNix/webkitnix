@@ -3,21 +3,28 @@
  * Copyright (C) 2008 Collabora, Ltd.
  * Copyright (C) 2008 Apple Inc. All rights reserved.
  * Portions Copyright (c) 2010 Motorola Mobility, Inc.  All rights reserved.
+ * Copyright (C) 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
- *
- * You should have received a copy of the GNU Library General Public License
- * along with this library; see the file COPYING.LIB.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "config.h"
@@ -36,10 +43,10 @@
 
 namespace WebCore {
 
-/* On linux file names are just raw bytes, so also strings that cannot be encoded in any way
- * are valid file names. This mean that we cannot just store a file name as-is in a String
- * but we have to escape it.
- * On Windows the GLib file name encoding is always UTF-8 so we can optimize this case. */
+// On linux file names are just raw bytes, so also strings that cannot be encoded in any way
+// are valid file names. This mean that we cannot just store a file name as-is in a String
+// but we have to escape it.
+// On Windows the GLib file name encoding is always UTF-8 so we can optimize this case.
 String filenameToString(const char* filename)
 {
     if (!filename)
@@ -127,7 +134,6 @@ bool getFileModificationTime(const String& path, time_t& modifiedTime)
 
     modifiedTime = statResult.st_mtime;
     return true;
-
 }
 
 bool getFileMetadata(const String& path, FileMetadata& metadata)
@@ -145,7 +151,6 @@ bool getFileMetadata(const String& path, FileMetadata& metadata)
     metadata.length = statResult.st_size;
     metadata.type = S_ISDIR(statResult.st_mode) ? FileMetadata::TypeDirectory : FileMetadata::TypeFile;
     return true;
-
 }
 
 String pathByAppendingComponent(const String& path, const String& component)
@@ -198,7 +203,7 @@ CString applicationDirectoryPath()
 
 CString sharedResourcesPath()
 {
-    static CString cachedPath;
+    DEFINE_STATIC_LOCAL(CString, cachedPath, ());
     if (!cachedPath.isNull())
         return cachedPath;
 
@@ -220,7 +225,6 @@ uint64_t getVolumeFreeSizeForPath(const char* path)
 
 String directoryName(const String& path)
 {
-    /* No null checking needed */
     GOwnPtr<char> dirname(g_path_get_dirname(fileSystemRepresentation(path).data()));
     return String::fromUTF8(dirname.get());
 }
@@ -334,4 +338,6 @@ bool unloadModule(PlatformModule module)
 {
     return g_module_close(module);
 }
-}
+
+} // namespace WebCore
+

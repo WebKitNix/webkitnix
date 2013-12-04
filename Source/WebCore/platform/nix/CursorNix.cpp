@@ -6,7 +6,7 @@
  * Copyright (C) 2008 Kenneth Rohde Christiansen
  * Copyright (C) 2009-2010 ProFUSION embedded systems
  * Copyright (C) 2009-2010 Samsung Electronics
- * Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (C) 2012, 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
  * All rights reserved.
  *
@@ -65,4 +65,5 @@ void Cursor::ensurePlatformCursor() const
     m_platformCursor = m_type;
 }
 
-}
+} // namespace WebCore
+

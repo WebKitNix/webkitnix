@@ -31,6 +31,7 @@
 #define BasicShapes_h
 
 #include "Length.h"
+#include "LengthSize.h"
 #include "WindRule.h"
 #include <wtf/RefCounted.h>
 #include <wtf/RefPtr.h>
@@ -48,10 +49,12 @@ public:
     enum Type {
         BasicShapeRectangleType = 1,
         DeprecatedBasicShapeCircleType = 2,
-        BasicShapeEllipseType = 3,
+        DeprecatedBasicShapeEllipseType = 3,
         BasicShapePolygonType = 4,
         BasicShapeInsetRectangleType = 5,
-        BasicShapeCircleType = 6
+        BasicShapeCircleType = 6,
+        BasicShapeEllipseType = 7,
+        BasicShapeInsetType = 8
     };
 
     enum ReferenceBox {
@@ -141,6 +144,12 @@ public:
     Keyword keyword() const { return m_keyword; }
     const Length& length() const { return m_length; }
 
+    bool canBlend(const BasicShapeCenterCoordinate& other) const
+    {
+        // FIXME determine how to interpolate between keywords. See bug 125108.
+        return m_keyword == None && other.keyword() == None;
+    }
+
     BasicShapeCenterCoordinate blend(const BasicShapeCenterCoordinate& other, double progress) const
     {
         if (m_keyword != None || other.keyword() != None)
@@ -169,6 +178,12 @@ public:
     const Length& value() const { return m_value; }
     Type type() const { return m_type; }
 
+    bool canBlend(const BasicShapeRadius& other) const
+    {
+        // FIXME determine how to interpolate between keywords. See bug 125108.
+        return m_type == Value && other.type() == Value;
+    }
+
     BasicShapeRadius blend(const BasicShapeRadius& other, double progress) const
     {
         if (m_type != Value || other.type() != Value)
@@ -190,6 +205,7 @@ public:
     const BasicShapeCenterCoordinate& centerX() const { return m_centerX; }
     const BasicShapeCenterCoordinate& centerY() const { return m_centerY; }
     const BasicShapeRadius& radius() const { return m_radius; }
+    float floatValueForRadiusInBox(float boxWidth, float boxHeight) const;
 
     void setCenterX(BasicShapeCenterCoordinate centerX) { m_centerX = std::move(centerX); }
     void setCenterY(BasicShapeCenterCoordinate centerY) { m_centerY = std::move(centerY); }
@@ -235,6 +251,34 @@ class BasicShapeEllipse : public BasicShape {
 public:
     static PassRefPtr<BasicShapeEllipse> create() { return adoptRef(new BasicShapeEllipse); }
 
+    const BasicShapeCenterCoordinate& centerX() const { return m_centerX; }
+    const BasicShapeCenterCoordinate& centerY() const { return m_centerY; }
+    const BasicShapeRadius& radiusX() const { return m_radiusX; }
+    const BasicShapeRadius& radiusY() const { return m_radiusY; }
+    float floatValueForRadiusInBox(const BasicShapeRadius&, float center, float boxWidthOrHeight) const;
+
+    void setCenterX(BasicShapeCenterCoordinate centerX) { m_centerX = std::move(centerX); }
+    void setCenterY(BasicShapeCenterCoordinate centerY) { m_centerY = std::move(centerY); }
+    void setRadiusX(BasicShapeRadius radiusX) { m_radiusX = std::move(radiusX); }
+    void setRadiusY(BasicShapeRadius radiusY) { m_radiusY = std::move(radiusY); }
+
+    virtual void path(Path&, const FloatRect&) OVERRIDE;
+    virtual PassRefPtr<BasicShape> blend(const BasicShape*, double) const OVERRIDE;
+
+    virtual Type type() const OVERRIDE { return BasicShapeEllipseType; }
+private:
+    BasicShapeEllipse() { }
+
+    BasicShapeCenterCoordinate m_centerX;
+    BasicShapeCenterCoordinate m_centerY;
+    BasicShapeRadius m_radiusX;
+    BasicShapeRadius m_radiusY;
+};
+
+class DeprecatedBasicShapeEllipse : public BasicShape {
+public:
+    static PassRefPtr<DeprecatedBasicShapeEllipse> create() { return adoptRef(new DeprecatedBasicShapeEllipse); }
+
     const Length& centerX() const { return m_centerX; }
     const Length& centerY() const { return m_centerY; }
     const Length& radiusX() const { return m_radiusX; }
@@ -248,9 +292,9 @@ public:
     virtual void path(Path&, const FloatRect&) OVERRIDE;
     virtual PassRefPtr<BasicShape> blend(const BasicShape*, double) const OVERRIDE;
 
-    virtual Type type() const OVERRIDE { return BasicShapeEllipseType; }
+    virtual Type type() const OVERRIDE { return DeprecatedBasicShapeEllipseType; }
 private:
-    BasicShapeEllipse() { }
+    DeprecatedBasicShapeEllipse() { }
 
     Length m_centerX;
     Length m_centerY;
@@ -324,5 +368,48 @@ private:
     Length m_cornerRadiusX;
     Length m_cornerRadiusY;
 };
+
+class BasicShapeInset : public BasicShape {
+public:
+    static PassRefPtr<BasicShapeInset> create() { return adoptRef(new BasicShapeInset); }
+
+    const Length& top() const { return m_top; }
+    const Length& right() const { return m_right; }
+    const Length& bottom() const { return m_bottom; }
+    const Length& left() const { return m_left; }
+
+    const LengthSize& topLeftRadius() const { return m_topLeftRadius; }
+    const LengthSize& topRightRadius() const { return m_topRightRadius; }
+    const LengthSize& bottomRightRadius() const { return m_bottomRightRadius; }
+    const LengthSize& bottomLeftRadius() const { return m_bottomLeftRadius; }
+
+    void setTop(Length top) { m_top = std::move(top); }
+    void setRight(Length right) { m_right = std::move(right); }
+    void setBottom(Length bottom) { m_bottom = std::move(bottom); }
+    void setLeft(Length left) { m_left = std::move(left); }
+
+    void setTopLeftRadius(LengthSize radius) { m_topLeftRadius = std::move(radius); }
+    void setTopRightRadius(LengthSize radius) { m_topRightRadius = std::move(radius); }
+    void setBottomRightRadius(LengthSize radius) { m_bottomRightRadius = std::move(radius); }
+    void setBottomLeftRadius(LengthSize radius) { m_bottomLeftRadius = std::move(radius); }
+
+    virtual void path(Path&, const FloatRect&) OVERRIDE;
+    virtual PassRefPtr<BasicShape> blend(const BasicShape*, double) const OVERRIDE;
+
+    virtual Type type() const OVERRIDE { return BasicShapeInsetType; }
+private:
+    BasicShapeInset() { }
+
+    Length m_right;
+    Length m_top;
+    Length m_bottom;
+    Length m_left;
+
+    LengthSize m_topLeftRadius;
+    LengthSize m_topRightRadius;
+    LengthSize m_bottomRightRadius;
+    LengthSize m_bottomLeftRadius;
+};
+
 }
 #endif

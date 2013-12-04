@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 Intel Corporation. All rights reserved.
- * Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (C) 2012, 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -95,6 +95,7 @@ ResourceError printError(const PrintContext*, const String& errorMessage);
 ResourceError printerNotFoundError(const PrintContext*);
 ResourceError invalidPageRangeToPrint(const PrintContext*);
 
-}
+} // namespace WebCore
 
 #endif // ErrorsNix_h
+

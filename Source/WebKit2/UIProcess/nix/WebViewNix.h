@@ -45,7 +45,7 @@ namespace WebKit {
 
 class WebViewNix : public WebView {
 public:
-    void setNixViewClient(const NIXViewClient* viewClient);
+    void setNixViewClient(const NIXViewClientBase* viewClient);
 
     void findZoomableAreaForPoint(const WKPoint& point, int horizontalRadius, int verticalRadius);
 

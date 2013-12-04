@@ -5343,6 +5343,124 @@ bool CSSParser::parseClipShape(CSSPropertyID propId, bool important)
     return false;
 }
 
+static void completeBorderRadii(RefPtr<CSSPrimitiveValue> radii[4])
+{
+    if (radii[3])
+        return;
+    if (!radii[2]) {
+        if (!radii[1])
+            radii[1] = radii[0];
+        radii[2] = radii[0];
+    }
+    radii[3] = radii[1];
+}
+
+// FIXME: This should be refactored with CSSParser::parseBorderRadius.
+// CSSParser::parseBorderRadius contains support for some legacy radius construction.
+PassRefPtr<CSSBasicShape> CSSParser::parseInsetRoundedCorners(PassRefPtr<CSSBasicShapeInset> shape, CSSParserValueList* args)
+{
+    CSSParserValue* argument = args->next();
+
+    std::unique_ptr<CSSParserValueList> radiusArguments(new CSSParserValueList);
+    while (argument) {
+        radiusArguments->addValue(*argument);
+        argument = args->next();
+    }
+
+    unsigned num = radiusArguments->size();
+    if (!num || num > 9)
+        return nullptr;
+
+    RefPtr<CSSPrimitiveValue> radii[2][4];
+
+    unsigned indexAfterSlash = 0;
+    for (unsigned i = 0; i < num; ++i) {
+        CSSParserValue* value = radiusArguments->valueAt(i);
+        if (value->unit == CSSParserValue::Operator) {
+            if (value->iValue != '/')
+                return nullptr;
+
+            if (!i || indexAfterSlash || i + 1 == num || num > i + 5)
+                return nullptr;
+
+            indexAfterSlash = i + 1;
+            completeBorderRadii(radii[0]);
+            continue;
+        }
+
+        if (i - indexAfterSlash >= 4)
+            return nullptr;
+
+        if (!validUnit(value, FLength | FPercent | FNonNeg))
+            return nullptr;
+
+        RefPtr<CSSPrimitiveValue> radius = createPrimitiveNumericValue(value);
+
+        if (!indexAfterSlash)
+            radii[0][i] = radius;
+        else
+            radii[1][i - indexAfterSlash] = radius.release();
+    }
+
+    if (!indexAfterSlash) {
+        completeBorderRadii(radii[0]);
+        for (unsigned i = 0; i < 4; ++i)
+            radii[1][i] = radii[0][i];
+    } else
+        completeBorderRadii(radii[1]);
+
+    shape->setTopLeftRadius(createPrimitiveValuePair(radii[0][0].release(), radii[1][0].release()));
+    shape->setTopRightRadius(createPrimitiveValuePair(radii[0][1].release(), radii[1][1].release()));
+    shape->setBottomRightRadius(createPrimitiveValuePair(radii[0][2].release(), radii[1][2].release()));
+    shape->setBottomLeftRadius(createPrimitiveValuePair(radii[0][3].release(), radii[1][3].release()));
+
+    return shape;
+}
+
+PassRefPtr<CSSBasicShape> CSSParser::parseBasicShapeInset(CSSParserValueList* args)
+{
+    ASSERT(args);
+
+    RefPtr<CSSBasicShapeInset> shape = CSSBasicShapeInset::create();
+
+    unsigned argumentNumber = 0;
+    CSSParserValue* argument = args->current();
+    while (argument) {
+        if (argument->unit == CSSPrimitiveValue::CSS_IDENT) {
+            if (argumentNumber > 0 && equalIgnoringCase(argument->string, "round"))
+                return parseInsetRoundedCorners(shape.release(), args);
+            return nullptr;
+        }
+
+        Units unitFlags = FLength | FPercent| FNonNeg;
+        if (!validUnit(argument, unitFlags) || argumentNumber > 3)
+            return nullptr;
+
+        RefPtr<CSSPrimitiveValue> length = createPrimitiveNumericValue(argument);
+        switch (argumentNumber) {
+        case 0:
+            shape->setTop(length);
+            break;
+        case 1:
+            shape->setRight(length);
+            break;
+        case 2:
+            shape->setBottom(length);
+            break;
+        case 3:
+            shape->setLeft(length);
+            break;
+        }
+        argument = args->next();
+        argumentNumber++;
+    }
+
+    if (!argumentNumber)
+        return nullptr;
+
+    return shape;
+}
+
 PassRefPtr<CSSBasicShape> CSSParser::parseBasicShapeRectangle(CSSParserValueList* args)
 {
     ASSERT(args);
@@ -5457,7 +5575,7 @@ PassRefPtr<CSSBasicShape> CSSParser::parseBasicShapeInsetRectangle(CSSParserValu
 
 PassRefPtr<CSSPrimitiveValue> CSSParser::parseShapeRadius(CSSParserValue* value)
 {
-    if (value->id == CSSValueClosestSide && value->id == CSSValueFarthestSide)
+    if (value->id == CSSValueClosestSide || value->id == CSSValueFarthestSide)
         return cssValuePool().createIdentifierValue(value->id);
 
     if (!validUnit(value, FLength | FPercent | FNonNeg))
@@ -5565,11 +5683,60 @@ PassRefPtr<CSSBasicShape> CSSParser::parseBasicShapeEllipse(CSSParserValueList* 
 {
     ASSERT(args);
 
+    // ellipse(radiusX)
+    // ellipse(radiusX at <position>
+    // ellipse(radiusX radiusY)
+    // ellipse(radiusX radiusY at <position>
+    // ellipse(at <position>)
+    // where position defines centerX and centerY using a CSS <position> data type.
+    RefPtr<CSSBasicShapeEllipse> shape = CSSBasicShapeEllipse::create();
+
+    for (CSSParserValue* argument = args->current(); argument; argument = args->next()) {
+        // The call to parseFillPosition below should consume all of the
+        // arguments except the first three. Thus, an index greater than two
+        // indicates an invalid production.
+        if (args->currentIndex() > 2)
+            return 0;
+
+        if (args->currentIndex() < 2 && argument->id != CSSValueAt) {
+            if (RefPtr<CSSPrimitiveValue> radius = parseShapeRadius(argument)) {
+                if (!shape->radiusX())
+                    shape->setRadiusX(radius);
+                else
+                    shape->setRadiusY(radius);
+                continue;
+            }
+
+            return 0;
+        }
+
+        if (argument->id != CSSValueAt)
+            return 0;
+        RefPtr<CSSValue> centerX;
+        RefPtr<CSSValue> centerY;
+        args->next(); // set list to start of position center
+        parseFillPosition(args, centerX, centerY);
+        if (!centerX || !centerY)
+            return 0;
+
+        ASSERT(centerX->isPrimitiveValue());
+        ASSERT(centerY->isPrimitiveValue());
+        shape->setCenterX(toCSSPrimitiveValue(centerX.get()));
+        shape->setCenterY(toCSSPrimitiveValue(centerY.get()));
+    }
+
+    return shape;
+}
+
+PassRefPtr<CSSBasicShape> CSSParser::parseDeprecatedBasicShapeEllipse(CSSParserValueList* args)
+{
+    ASSERT(args);
+
     // ellipse(centerX, centerY, radiusX, radiusY)
     if (args->size() != 7)
         return 0;
 
-    RefPtr<CSSBasicShapeEllipse> shape = CSSBasicShapeEllipse::create();
+    RefPtr<CSSDeprecatedBasicShapeEllipse> shape = CSSDeprecatedBasicShapeEllipse::create();
     unsigned argumentNumber = 0;
     CSSParserValue* argument = args->current();
     while (argument) {
@@ -5761,11 +5928,16 @@ PassRefPtr<CSSBasicShape> CSSParser::parseBasicShape()
         else
             shape = parseBasicShapeCircle(args);
     else if (equalIgnoringCase(value->function->name, "ellipse("))
-        shape = parseBasicShapeEllipse(args);
+        if (isDeprecatedBasicShape(args))
+            shape = parseDeprecatedBasicShapeEllipse(args);
+        else
+            shape = parseBasicShapeEllipse(args);
     else if (equalIgnoringCase(value->function->name, "polygon("))
         shape = parseBasicShapePolygon(args);
     else if (equalIgnoringCase(value->function->name, "inset-rectangle("))
         shape = parseBasicShapeInsetRectangle(args);
+    else if (equalIgnoringCase(value->function->name, "inset("))
+        shape = parseBasicShapeInset(args);
 
     if (!shape)
         return nullptr;
@@ -7455,18 +7627,6 @@ bool CSSParser::parseBorderImageWidth(RefPtr<CSSPrimitiveValue>& result)
 bool CSSParser::parseBorderImageOutset(RefPtr<CSSPrimitiveValue>& result)
 {
     return parseBorderImageQuad(FLength | FInteger | FNonNeg, result);
-}
-
-static void completeBorderRadii(RefPtr<CSSPrimitiveValue> radii[4])
-{
-    if (radii[3])
-        return;
-    if (!radii[2]) {
-        if (!radii[1])
-            radii[1] = radii[0];
-        radii[2] = radii[0];
-    }
-    radii[3] = radii[1];
 }
 
 bool CSSParser::parseBorderRadius(CSSPropertyID propId, bool important)

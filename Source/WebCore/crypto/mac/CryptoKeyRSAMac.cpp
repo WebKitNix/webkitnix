@@ -28,32 +28,11 @@
 
 #if ENABLE(SUBTLE_CRYPTO)
 
+#include "CommonCryptoUtilities.h"
 #include "CryptoAlgorithmDescriptionBuilder.h"
 #include "CryptoAlgorithmRegistry.h"
 #include "CryptoKeyDataRSAComponents.h"
 #include "CryptoKeyPair.h"
-#include <CommonCrypto/CommonCryptor.h>
-
-#if defined(__has_include)
-#if __has_include(<CommonCrypto/CommonRSACryptor.h>)
-#include <CommonCrypto/CommonRSACryptor.h>
-#endif
-#endif
-
-#ifndef _CC_RSACRYPTOR_H_
-enum {
-    ccRSAKeyPublic          = 0,
-    ccRSAKeyPrivate         = 1
-};
-typedef uint32_t CCRSAKeyType;
-#endif
-
-extern "C" CCCryptorStatus CCRSACryptorCreateFromData(CCRSAKeyType keyType, uint8_t *modulus, size_t modulusLength, uint8_t *exponent, size_t exponentLength, uint8_t *p, size_t pLength, uint8_t *q, size_t qLength, CCRSACryptorRef *ref);
-extern "C" CCCryptorStatus CCRSACryptorGeneratePair(size_t keysize, uint32_t e, CCRSACryptorRef *publicKey, CCRSACryptorRef *privateKey);
-extern "C" CCRSACryptorRef CCRSACryptorGetPublicKeyFromPrivateKey(CCRSACryptorRef privkey);
-extern "C" void CCRSACryptorRelease(CCRSACryptorRef key);
-extern "C" CCCryptorStatus CCRSAGetKeyComponents(CCRSACryptorRef rsaKey, uint8_t *modulus, size_t *modulusLength, uint8_t *exponent, size_t *exponentLength, uint8_t *p, size_t *pLength, uint8_t *q, size_t *qLength);
-extern "C" CCRSAKeyType CCRSAGetKeyType(CCRSACryptorRef key);
 
 namespace WebCore {
 
@@ -77,6 +56,42 @@ static CCCryptorStatus getPublicKeyComponents(CCRSACryptorRef rsaKey, Vector<uin
 
     modulus.shrink(modulusLength);
     publicExponent.shrink(exponentLength);
+    return status;
+}
+
+static CCCryptorStatus getPrivateKeyComponents(CCRSACryptorRef rsaKey, Vector<uint8_t>& privateExponent, CryptoKeyDataRSAComponents::PrimeInfo& firstPrimeInfo, CryptoKeyDataRSAComponents::PrimeInfo& secondPrimeInfo)
+{
+    ASSERT(CCRSAGetKeyType(rsaKey) == ccRSAKeyPrivate);
+
+    Vector<uint8_t> unusedModulus(16384);
+    size_t modulusLength = unusedModulus.size();
+    privateExponent.resize(16384);
+    size_t exponentLength = privateExponent.size();
+    firstPrimeInfo.primeFactor.resize(16384);
+    size_t pLength = firstPrimeInfo.primeFactor.size();
+    secondPrimeInfo.primeFactor.resize(16384);
+    size_t qLength = secondPrimeInfo.primeFactor.size();
+
+    CCCryptorStatus status = CCRSAGetKeyComponents(rsaKey, unusedModulus.data(), &modulusLength, privateExponent.data(), &exponentLength, firstPrimeInfo.primeFactor.data(), &pLength, secondPrimeInfo.primeFactor.data(), &qLength);
+    if (status)
+        return status;
+
+    privateExponent.shrink(exponentLength);
+    firstPrimeInfo.primeFactor.shrink(pLength);
+    secondPrimeInfo.primeFactor.shrink(qLength);
+
+    CCBigNum d(privateExponent.data(), privateExponent.size());
+    CCBigNum p(firstPrimeInfo.primeFactor.data(), firstPrimeInfo.primeFactor.size());
+    CCBigNum q(secondPrimeInfo.primeFactor.data(), secondPrimeInfo.primeFactor.size());
+
+    CCBigNum dp = d % (p - 1);
+    CCBigNum dq = d % (q - 1);
+    CCBigNum qi = q.inverse(p);
+
+    firstPrimeInfo.factorCRTExponent = dp.data();
+    secondPrimeInfo.factorCRTExponent = dq.data();
+    secondPrimeInfo.factorCRTCoefficient = qi.data();
+
     return status;
 }
 
@@ -186,8 +201,25 @@ std::unique_ptr<CryptoKeyData> CryptoKeyRSA::exportData() const
         }
         return CryptoKeyDataRSAComponents::createPublic(modulus, publicExponent);
     }
-    case ccRSAKeyPrivate:
-        // Not supported yet.
+    case ccRSAKeyPrivate: {
+        Vector<uint8_t> modulus;
+        Vector<uint8_t> publicExponent;
+        CCCryptorStatus status = getPublicKeyComponents(m_platformKey, modulus, publicExponent);
+        if (status) {
+            WTFLogAlways("Couldn't get RSA key components, status %d", status);
+            return nullptr;
+        }
+        Vector<uint8_t> privateExponent;
+        CryptoKeyDataRSAComponents::PrimeInfo firstPrimeInfo;
+        CryptoKeyDataRSAComponents::PrimeInfo secondPrimeInfo;
+        Vector<CryptoKeyDataRSAComponents::PrimeInfo> otherPrimeInfos; // Always empty, CommonCrypto only supports two primes (cf. <rdar://problem/15444074>).
+        status = getPrivateKeyComponents(m_platformKey, privateExponent, firstPrimeInfo, secondPrimeInfo);
+        if (status) {
+            WTFLogAlways("Couldn't get RSA key components, status %d", status);
+            return nullptr;
+        }
+        return CryptoKeyDataRSAComponents::createPrivateWithAdditionalData(modulus, publicExponent, privateExponent, firstPrimeInfo, secondPrimeInfo, otherPrimeInfos);
+    }
     default:
         return nullptr;
     }

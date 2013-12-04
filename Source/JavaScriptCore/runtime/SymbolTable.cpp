@@ -68,7 +68,8 @@ JSValue SymbolTableEntry::inferredValue()
 void SymbolTableEntry::prepareToWatch()
 {
     FatEntry* entry = inflate();
-    ASSERT(!entry->m_watchpoints);
+    if (entry->m_watchpoints)
+        return;
     entry->m_watchpoints = adoptRef(new VariableWatchpointSet());
 }
 
@@ -99,7 +100,7 @@ SymbolTable::SymbolTable(VM& vm)
     , m_usesNonStrictEval(false)
     , m_captureStart(0)
     , m_captureEnd(0)
-    , m_activationAllocatedOnce(ClearWatchpoint)
+    , m_functionEnteredOnce(ClearWatchpoint)
 {
 }
 

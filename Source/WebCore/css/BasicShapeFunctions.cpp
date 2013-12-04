@@ -100,6 +100,21 @@ static PassRefPtr<CSSPrimitiveValue> valueForCenterCoordinate(CSSValuePool& pool
     return pool.createValue(Pair::create(pool.createIdentifierValue(keyword), pool.createValue(center.length(), style)));
 }
 
+static PassRefPtr<CSSPrimitiveValue> basicShapeRadiusToCSSValue(const RenderStyle* style, CSSValuePool& pool, const BasicShapeRadius& radius)
+{
+    switch (radius.type()) {
+    case BasicShapeRadius::Value:
+        return pool.createValue(radius.value(), style);
+    case BasicShapeRadius::ClosestSide:
+        return pool.createIdentifierValue(CSSValueClosestSide);
+    case BasicShapeRadius::FarthestSide:
+        return pool.createIdentifierValue(CSSValueFarthestSide);
+    }
+
+    ASSERT_NOT_REACHED();
+    return 0;
+}
+
 PassRefPtr<CSSValue> valueForBasicShape(const RenderStyle* style, const BasicShape* basicShape)
 {
     CSSValuePool& pool = cssValuePool();
@@ -137,29 +152,30 @@ PassRefPtr<CSSValue> valueForBasicShape(const RenderStyle* style, const BasicSha
 
         circleValue->setCenterX(valueForCenterCoordinate(pool, style, circle->centerX()));
         circleValue->setCenterY(valueForCenterCoordinate(pool, style, circle->centerY()));
-        switch (circle->radius().type()) {
-        case BasicShapeRadius::Value:
-            circleValue->setRadius(pool.createValue(circle->radius().value(), style));
-            break;
-        case BasicShapeRadius::ClosestSide:
-            circleValue->setRadius(pool.createIdentifierValue(CSSValueClosestSide));
-            break;
-        case BasicShapeRadius::FarthestSide:
-            circleValue->setRadius(pool.createIdentifierValue(CSSValueFarthestSide));
-            break;
-        }
+        circleValue->setRadius(basicShapeRadiusToCSSValue(style, pool, circle->radius()));
         basicShapeValue = circleValue.release();
         break;
     }
-    case BasicShape::BasicShapeEllipseType: {
-        const BasicShapeEllipse* ellipse = static_cast<const BasicShapeEllipse*>(basicShape);
-        RefPtr<CSSBasicShapeEllipse> ellipseValue = CSSBasicShapeEllipse::create();
+    case BasicShape::DeprecatedBasicShapeEllipseType: {
+        const DeprecatedBasicShapeEllipse* ellipse = static_cast<const DeprecatedBasicShapeEllipse*>(basicShape);
+        RefPtr<CSSDeprecatedBasicShapeEllipse> ellipseValue = CSSDeprecatedBasicShapeEllipse::create();
 
         ellipseValue->setCenterX(pool.createValue(ellipse->centerX(), style));
         ellipseValue->setCenterY(pool.createValue(ellipse->centerY(), style));
         ellipseValue->setRadiusX(pool.createValue(ellipse->radiusX(), style));
         ellipseValue->setRadiusY(pool.createValue(ellipse->radiusY(), style));
 
+        basicShapeValue = ellipseValue.release();
+        break;
+    }
+    case BasicShape::BasicShapeEllipseType: {
+        const BasicShapeEllipse* ellipse = static_cast<const BasicShapeEllipse*>(basicShape);
+        RefPtr<CSSBasicShapeEllipse> ellipseValue = CSSBasicShapeEllipse::create();
+
+        ellipseValue->setCenterX(valueForCenterCoordinate(pool, style, ellipse->centerX()));
+        ellipseValue->setCenterY(valueForCenterCoordinate(pool, style, ellipse->centerY()));
+        ellipseValue->setRadiusX(basicShapeRadiusToCSSValue(style, pool, ellipse->radiusX()));
+        ellipseValue->setRadiusY(basicShapeRadiusToCSSValue(style, pool, ellipse->radiusY()));
         basicShapeValue = ellipseValue.release();
         break;
     }
@@ -187,6 +203,23 @@ PassRefPtr<CSSValue> valueForBasicShape(const RenderStyle* style, const BasicSha
         rectangleValue->setRadiusY(pool.createValue(rectangle->cornerRadiusY(), style));
 
         basicShapeValue = rectangleValue.release();
+        break;
+    }
+    case BasicShape::BasicShapeInsetType: {
+        const BasicShapeInset* inset = static_cast<const BasicShapeInset*>(basicShape);
+        RefPtr<CSSBasicShapeInset> insetValue = CSSBasicShapeInset::create();
+
+        insetValue->setTop(pool.createValue(inset->top()));
+        insetValue->setRight(pool.createValue(inset->right()));
+        insetValue->setBottom(pool.createValue(inset->bottom()));
+        insetValue->setLeft(pool.createValue(inset->left()));
+
+        insetValue->setTopLeftRadius(pool.createValue(inset->topLeftRadius()));
+        insetValue->setTopRightRadius(pool.createValue(inset->topRightRadius()));
+        insetValue->setBottomRightRadius(pool.createValue(inset->bottomRightRadius()));
+        insetValue->setBottomLeftRadius(pool.createValue(inset->bottomLeftRadius()));
+
+        basicShapeValue = insetValue.release();
         break;
     }
     default:
@@ -228,6 +261,26 @@ static BasicShapeCenterCoordinate convertToCenterCoordinate(const RenderStyle* s
     }
 
     return BasicShapeCenterCoordinate(convertToLength(style, rootStyle, value));
+}
+
+static BasicShapeRadius cssValueToBasicShapeRadius(const RenderStyle* style, const RenderStyle* rootStyle, PassRefPtr<CSSPrimitiveValue> radius)
+{
+    if (!radius)
+        return BasicShapeRadius(BasicShapeRadius::ClosestSide);
+
+    if (radius->isValueID()) {
+        switch (radius->getValueID()) {
+        case CSSValueClosestSide:
+            return BasicShapeRadius(BasicShapeRadius::ClosestSide);
+        case CSSValueFarthestSide:
+            return BasicShapeRadius(BasicShapeRadius::FarthestSide);
+        default:
+            ASSERT_NOT_REACHED();
+            break;
+        }
+    }
+
+    return BasicShapeRadius(convertToLength(style, rootStyle, radius.get()));
 }
 
 PassRefPtr<BasicShape> basicShapeForValue(const RenderStyle* style, const RenderStyle* rootStyle, const CSSBasicShape* basicShapeValue)
@@ -279,35 +332,36 @@ PassRefPtr<BasicShape> basicShapeForValue(const RenderStyle* style, const Render
             circle->setCenterX(BasicShapeCenterCoordinate(Length(50, Percent)));
             circle->setCenterY(BasicShapeCenterCoordinate(Length(50, Percent)));
         }
-        if (RefPtr<CSSPrimitiveValue> radius = circleValue->radius()) {
-            if (radius->isValueID()) {
-                switch (radius->getValueID()) {
-                case CSSValueClosestSide:
-                    circle->setRadius(BasicShapeRadius(BasicShapeRadius::ClosestSide));
-                    break;
-                case CSSValueFarthestSide:
-                    circle->setRadius(BasicShapeRadius(BasicShapeRadius::FarthestSide));
-                    break;
-                default:
-                    ASSERT_NOT_REACHED();
-                    break;
-                }
-            } else
-                circle->setRadius(BasicShapeRadius(convertToLength(style, rootStyle, radius.get())));
-        } else
-            circle->setRadius(BasicShapeRadius(BasicShapeRadius::ClosestSide));
+        circle->setRadius(cssValueToBasicShapeRadius(style, rootStyle, circleValue->radius()));
 
         basicShape = circle.release();
+        break;
+    }
+    case CSSBasicShape::CSSDeprecatedBasicShapeEllipseType: {
+        const CSSDeprecatedBasicShapeEllipse* ellipseValue = static_cast<const CSSDeprecatedBasicShapeEllipse *>(basicShapeValue);
+        RefPtr<DeprecatedBasicShapeEllipse> ellipse = DeprecatedBasicShapeEllipse::create();
+
+        ellipse->setCenterX(convertToLength(style, rootStyle, ellipseValue->centerX()));
+        ellipse->setCenterY(convertToLength(style, rootStyle, ellipseValue->centerY()));
+        ellipse->setRadiusX(convertToLength(style, rootStyle, ellipseValue->radiusX()));
+        ellipse->setRadiusY(convertToLength(style, rootStyle, ellipseValue->radiusY()));
+
+        basicShape = ellipse.release();
         break;
     }
     case CSSBasicShape::CSSBasicShapeEllipseType: {
         const CSSBasicShapeEllipse* ellipseValue = static_cast<const CSSBasicShapeEllipse *>(basicShapeValue);
         RefPtr<BasicShapeEllipse> ellipse = BasicShapeEllipse::create();
 
-        ellipse->setCenterX(convertToLength(style, rootStyle, ellipseValue->centerX()));
-        ellipse->setCenterY(convertToLength(style, rootStyle, ellipseValue->centerY()));
-        ellipse->setRadiusX(convertToLength(style, rootStyle, ellipseValue->radiusX()));
-        ellipse->setRadiusY(convertToLength(style, rootStyle, ellipseValue->radiusY()));
+        if (ellipseValue->centerX() && ellipseValue->centerY()) {
+            ellipse->setCenterX(convertToCenterCoordinate(style, rootStyle, ellipseValue->centerX()));
+            ellipse->setCenterY(convertToCenterCoordinate(style, rootStyle, ellipseValue->centerY()));
+        } else {
+            ellipse->setCenterX(BasicShapeCenterCoordinate(Length(50, Percent)));
+            ellipse->setCenterY(BasicShapeCenterCoordinate(Length(50, Percent)));
+        }
+        ellipse->setRadiusX(cssValueToBasicShapeRadius(style, rootStyle, ellipseValue->radiusX()));
+        ellipse->setRadiusY(cssValueToBasicShapeRadius(style, rootStyle, ellipseValue->radiusY()));
 
         basicShape = ellipse.release();
         break;
@@ -346,6 +400,48 @@ PassRefPtr<BasicShape> basicShapeForValue(const RenderStyle* style, const Render
         basicShape = rect.release();
         break;
     }
+    case CSSBasicShape::CSSBasicShapeInsetType: {
+        const CSSBasicShapeInset* rectValue = static_cast<const CSSBasicShapeInset* >(basicShapeValue);
+        RefPtr<BasicShapeInset> rect = BasicShapeInset::create();
+
+        if (rectValue->left())
+            rect->setTop(convertToLength(style, rootStyle, rectValue->top()));
+        else
+            return rect;
+        if (rectValue->right())
+            rect->setRight(convertToLength(style, rootStyle, rectValue->right()));
+        if (rectValue->bottom())
+            rect->setBottom(convertToLength(style, rootStyle, rectValue->bottom()));
+        if (rectValue->left())
+            rect->setLeft(convertToLength(style, rootStyle, rectValue->left()));
+
+        if (rectValue->topLeftRadius()) {
+            Pair* topLeftRadius = rectValue->topLeftRadius()->getPairValue();
+            rect->setTopLeftRadius(LengthSize(convertToLength(style, rootStyle, topLeftRadius->first()), convertToLength(style, rootStyle, topLeftRadius->second())));
+        } else
+            rect->setTopLeftRadius(LengthSize(Length(0, Fixed), Length(0, Fixed)));
+
+        if (rectValue->topRightRadius()) {
+            Pair* topRightRadius = rectValue->topRightRadius()->getPairValue();
+            rect->setTopRightRadius(LengthSize(convertToLength(style, rootStyle, topRightRadius->first()), convertToLength(style, rootStyle, topRightRadius->second())));
+        } else
+            rect->setTopRightRadius(LengthSize(Length(0, Fixed), Length(0, Fixed)));
+
+        if (rectValue->bottomRightRadius()) {
+            Pair* bottomRightRadius = rectValue->bottomRightRadius()->getPairValue();
+            rect->setBottomRightRadius(LengthSize(convertToLength(style, rootStyle, bottomRightRadius->first()), convertToLength(style, rootStyle, bottomRightRadius->second())));
+        } else
+            rect->setBottomRightRadius(LengthSize(Length(0, Fixed), Length(0, Fixed)));
+
+        if (rectValue->topLeftRadius()) {
+            Pair* bottomLeftRadius = rectValue->bottomLeftRadius()->getPairValue();
+            rect->setBottomLeftRadius(LengthSize(convertToLength(style, rootStyle, bottomLeftRadius->first()), convertToLength(style, rootStyle, bottomLeftRadius->second())));
+        } else
+            rect->setBottomLeftRadius(LengthSize(Length(0, Fixed), Length(0, Fixed)));
+
+        basicShape = rect.release();
+        break;
+    }
     default:
         break;
     }
@@ -354,4 +450,23 @@ PassRefPtr<BasicShape> basicShapeForValue(const RenderStyle* style, const Render
 
     return basicShape.release();
 }
+
+float floatValueForCenterCoordinate(const BasicShapeCenterCoordinate& center, float boxDimension)
+{
+    float offset = floatValueForLength(center.length(), boxDimension);
+    switch (center.keyword()) {
+    case BasicShapeCenterCoordinate::None:
+        return offset;
+    case BasicShapeCenterCoordinate::Top:
+    case BasicShapeCenterCoordinate::Left:
+        return offset;
+    case BasicShapeCenterCoordinate::Bottom:
+    case BasicShapeCenterCoordinate::Right:
+        return boxDimension - offset;
+    }
+
+    ASSERT_NOT_REACHED();
+    return 0;
+}
+
 }

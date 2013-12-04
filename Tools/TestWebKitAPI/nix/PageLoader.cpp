@@ -45,8 +45,9 @@ PageLoader::PageLoader(WKViewRef view)
     std::memset(&m_loaderClient, 0, sizeof(m_loaderClient));
 
     m_loaderClient.didFinishLoadForFrame = didFinishLoadForFrame;
-    m_loaderClient.clientInfo = this;
-    WKPageSetPageLoaderClient(WKViewGetPage(m_view), &m_loaderClient);
+    m_loaderClient.base.version = 3;
+    m_loaderClient.base.clientInfo = this;
+    WKPageSetPageLoaderClient(WKViewGetPage(m_view), &m_loaderClient.base);
 }
 
 void PageLoader::didForceRepaint(WKErrorRef, void* context)
@@ -81,12 +82,12 @@ ForceRepaintClient::ForceRepaintClient(WKViewRef view)
     , m_clearB(0)
     , m_clearA(0)
 {
-    WKViewClient viewClient;
-    memset(&viewClient, 0, sizeof(WKViewClient));
-    viewClient.version = kWKViewClientCurrentVersion;
-    viewClient.clientInfo = this;
+    WKViewClientV0 viewClient;
+    memset(&viewClient, 0, sizeof(viewClient));
+    viewClient.base.version = 0;
+    viewClient.base.clientInfo = this;
     viewClient.viewNeedsDisplay = viewNeedsDisplay;
-    WKViewSetViewClient(m_view, &viewClient);
+    WKViewSetViewClient(m_view, &viewClient.base);
 }
 
 void ForceRepaintClient::setClearColor(int r, int g, int b, int a)

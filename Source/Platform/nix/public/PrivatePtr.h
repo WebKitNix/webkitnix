@@ -108,3 +108,4 @@ private:
 } // namespace Nix
 
 #endif // Nix_PrivatePtr_h
+

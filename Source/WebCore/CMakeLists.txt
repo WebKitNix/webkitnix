@@ -502,6 +502,7 @@ set(WebCore_IDL_FILES
     html/canvas/OESElementIndexUint.idl
     html/canvas/OESStandardDerivatives.idl
     html/canvas/OESTextureFloat.idl
+    html/canvas/OESTextureFloatLinear.idl
     html/canvas/OESTextureHalfFloat.idl
     html/canvas/OESVertexArrayObject.idl
     html/canvas/WebGLActiveInfo.idl
@@ -1491,6 +1492,7 @@ set(WebCore_SOURCES
     html/canvas/OESElementIndexUint.cpp
     html/canvas/OESStandardDerivatives.cpp
     html/canvas/OESTextureFloat.cpp
+    html/canvas/OESTextureFloatLinear.cpp
     html/canvas/OESTextureHalfFloat.cpp
     html/canvas/OESVertexArrayObject.cpp
     html/canvas/WebGLBuffer.cpp
@@ -1704,6 +1706,7 @@ set(WebCore_SOURCES
     mathml/MathMLElement.cpp
     mathml/MathMLInlineContainerElement.cpp
     mathml/MathMLMathElement.cpp
+    mathml/MathMLSelectElement.cpp
     mathml/MathMLTextElement.cpp
 
     page/AutoscrollController.cpp
@@ -2657,6 +2660,7 @@ if (ENABLE_WEBGL)
         html/canvas/OESElementIndexUint.cpp
         html/canvas/OESStandardDerivatives.cpp
         html/canvas/OESTextureFloat.cpp
+        html/canvas/OESTextureFloatLinear.cpp
         html/canvas/OESTextureHalfFloat.cpp
         html/canvas/OESVertexArrayObject.cpp
         html/canvas/WebGLBuffer.cpp
@@ -2691,6 +2695,7 @@ if (ENABLE_WEBGL)
         html/canvas/OESElementIndexUint.idl
         html/canvas/OESStandardDerivatives.idl
         html/canvas/OESTextureFloat.idl
+        html/canvas/OESTextureFloatLinear.idl
         html/canvas/OESTextureHalfFloat.idl
         html/canvas/OESVertexArrayObject.idl
         html/canvas/WebGLActiveInfo.idl

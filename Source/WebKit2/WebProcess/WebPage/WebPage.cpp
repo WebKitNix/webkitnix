@@ -352,6 +352,10 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     WebCore::provideUserMediaTo(m_page.get(), new UserMediaClientNix());
 #endif
 
+#if ENABLE(REMOTE_INSPECTOR)
+    m_page->setRemoteInspectionAllowed(true);
+#endif
+
     m_page->setCanStartMedia(false);
     m_mayStartMediaWhenInWindow = parameters.mayStartMediaWhenInWindow;
 
@@ -489,64 +493,64 @@ uint64_t WebPage::messageSenderDestinationID()
 }
 
 #if ENABLE(CONTEXT_MENUS)
-void WebPage::initializeInjectedBundleContextMenuClient(WKBundlePageContextMenuClient* client)
+void WebPage::initializeInjectedBundleContextMenuClient(WKBundlePageContextMenuClientBase* client)
 {
     m_contextMenuClient.initialize(client);
 }
 #endif
 
-void WebPage::initializeInjectedBundleEditorClient(WKBundlePageEditorClient* client)
+void WebPage::initializeInjectedBundleEditorClient(WKBundlePageEditorClientBase* client)
 {
     m_editorClient.initialize(client);
 }
 
-void WebPage::initializeInjectedBundleFormClient(WKBundlePageFormClient* client)
+void WebPage::initializeInjectedBundleFormClient(WKBundlePageFormClientBase* client)
 {
     m_formClient.initialize(client);
 }
 
-void WebPage::initializeInjectedBundleLoaderClient(WKBundlePageLoaderClient* client)
+void WebPage::initializeInjectedBundleLoaderClient(WKBundlePageLoaderClientBase* client)
 {
+    m_loaderClient.initialize(client);
+
     // It would be nice to get rid of this code and transition all clients to using didLayout instead of
     // didFirstLayoutInFrame and didFirstVisuallyNonEmptyLayoutInFrame. In the meantime, this is required
     // for backwards compatibility.
     LayoutMilestones milestones = 0;
     if (client) {
-        if (client->didFirstLayoutForFrame)
+        if (m_loaderClient.client().didFirstLayoutForFrame)
             milestones |= WebCore::DidFirstLayout;
-        if (client->didFirstVisuallyNonEmptyLayoutForFrame)
+        if (m_loaderClient.client().didFirstVisuallyNonEmptyLayoutForFrame)
             milestones |= WebCore::DidFirstVisuallyNonEmptyLayout;
     }
 
     if (milestones)
         listenForLayoutMilestones(milestones);
-
-    m_loaderClient.initialize(client);
 }
 
-void WebPage::initializeInjectedBundlePolicyClient(WKBundlePagePolicyClient* client)
+void WebPage::initializeInjectedBundlePolicyClient(WKBundlePagePolicyClientBase* client)
 {
     m_policyClient.initialize(client);
 }
 
-void WebPage::initializeInjectedBundleResourceLoadClient(WKBundlePageResourceLoadClient* client)
+void WebPage::initializeInjectedBundleResourceLoadClient(WKBundlePageResourceLoadClientBase* client)
 {
     m_resourceLoadClient.initialize(client);
 }
 
-void WebPage::initializeInjectedBundleUIClient(WKBundlePageUIClient* client)
+void WebPage::initializeInjectedBundleUIClient(WKBundlePageUIClientBase* client)
 {
     m_uiClient.initialize(client);
 }
 
 #if ENABLE(FULLSCREEN_API)
-void WebPage::initializeInjectedBundleFullScreenClient(WKBundlePageFullScreenClient* client)
+void WebPage::initializeInjectedBundleFullScreenClient(WKBundlePageFullScreenClientBase* client)
 {
     m_fullScreenClient.initialize(client);
 }
 #endif
 
-void WebPage::initializeInjectedBundleDiagnosticLoggingClient(WKBundlePageDiagnosticLoggingClient* client)
+void WebPage::initializeInjectedBundleDiagnosticLoggingClient(WKBundlePageDiagnosticLoggingClientBase* client)
 {
     m_logDiagnosticMessageClient.initialize(client);
 }
@@ -2512,7 +2516,6 @@ void WebPage::updatePreferences(const WebPreferencesStore& store)
     settings.setInteractiveFormValidationEnabled(store.getBoolValueForKey(WebPreferencesKey::interactiveFormValidationEnabledKey()));
     settings.setSpatialNavigationEnabled(store.getBoolValueForKey(WebPreferencesKey::spatialNavigationEnabledKey()));
 
-
 #if ENABLE(SQL_DATABASE)
     DatabaseManager::manager().setIsAvailable(store.getBoolValueForKey(WebPreferencesKey::databasesEnabledKey()));
 #endif
@@ -2593,6 +2596,7 @@ void WebPage::updatePreferences(const WebPreferencesStore& store)
     settings.setLowPowerVideoAudioBufferSizeEnabled(store.getBoolValueForKey(WebPreferencesKey::lowPowerVideoAudioBufferSizeEnabledKey()));
     settings.setSimpleLineLayoutEnabled(store.getBoolValueForKey(WebPreferencesKey::simpleLineLayoutEnabledKey()));
     settings.setSimpleLineLayoutDebugBordersEnabled(store.getBoolValueForKey(WebPreferencesKey::simpleLineLayoutDebugBordersEnabledKey()));
+    settings.setBackgroundShouldExtendBeyondPage(store.getBoolValueForKey(WebPreferencesKey::backgroundShouldExtendBeyondPageKey()));
 
     settings.setUseLegacyTextAlignPositionedElementBehavior(store.getBoolValueForKey(WebPreferencesKey::useLegacyTextAlignPositionedElementBehaviorKey()));
 
@@ -3436,7 +3440,7 @@ void WebPage::drawRectToImage(uint64_t frameID, const PrintInfo& printInfo, cons
 
 #if USE(CG)
     if (coreFrame) {
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
         ASSERT(coreFrame->document()->printing() || pdfDocumentForPrintingFrame(coreFrame));
 #else
         ASSERT(coreFrame->document()->printing());
@@ -3448,7 +3452,7 @@ void WebPage::drawRectToImage(uint64_t frameID, const PrintInfo& printInfo, cons
         float printingScale = static_cast<float>(imageSize.width()) / rect.width();
         graphicsContext->scale(FloatSize(printingScale, printingScale));
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
         if (RetainPtr<PDFDocument> pdfDocument = pdfDocumentForPrintingFrame(coreFrame)) {
             ASSERT(!m_printContext);
             graphicsContext->scale(FloatSize(1, -1));
@@ -3482,7 +3486,7 @@ void WebPage::drawPagesToPDF(uint64_t frameID, const PrintInfo& printInfo, uint3
 #if USE(CG)
     if (coreFrame) {
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
         ASSERT(coreFrame->document()->printing() || pdfDocumentForPrintingFrame(coreFrame));
 #else
         ASSERT(coreFrame->document()->printing());
@@ -3494,7 +3498,7 @@ void WebPage::drawPagesToPDF(uint64_t frameID, const PrintInfo& printInfo, uint3
         CGRect mediaBox = (m_printContext && m_printContext->pageCount()) ? m_printContext->pageRect(0) : CGRectMake(0, 0, printInfo.availablePaperWidth, printInfo.availablePaperHeight);
         RetainPtr<CGContextRef> context = adoptCF(CGPDFContextCreate(pdfDataConsumer.get(), &mediaBox, 0));
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
         if (RetainPtr<PDFDocument> pdfDocument = pdfDocumentForPrintingFrame(coreFrame)) {
             ASSERT(!m_printContext);
             drawPagesToPDFFromPDFDocument(context.get(), pdfDocument.get(), printInfo, first, count);

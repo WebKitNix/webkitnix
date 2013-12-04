@@ -47,16 +47,17 @@ TEST(WebKit2, WebWorker)
 
     WKViewInitialize(view.platformView());
 
-    WKPageLoaderClient pageLoaderClient;
-    memset(&pageLoaderClient, 0, sizeof(WKPageLoaderClient));
-    pageLoaderClient.version = kWKPageLoaderClientCurrentVersion;
+    WKPageLoaderClientV3 pageLoaderClient;
+    memset(&pageLoaderClient, 0, sizeof(pageLoaderClient));
+    pageLoaderClient.base.version = 3;
     pageLoaderClient.didReceiveTitleForFrame = didReceiveTitleForFrame;
-    WKPageSetPageLoaderClient(WKViewGetPage(view.platformView()), &pageLoaderClient);
+    WKPageSetPageLoaderClient(WKViewGetPage(view.platformView()), &pageLoaderClient.base);
 
-    WKContextInjectedBundleClient injectedBundleClient;
+    WKContextInjectedBundleClientV1 injectedBundleClient;
     memset(&injectedBundleClient, 0, sizeof(injectedBundleClient));
+    injectedBundleClient.base.version = 1;
     injectedBundleClient.didReceiveMessageFromInjectedBundle = didReceiveMessageFromInjectedBundle;
-    WKContextSetInjectedBundleClient(context.get(), &injectedBundleClient);
+    WKContextSetInjectedBundleClient(context.get(), &injectedBundleClient.base);
 
     WKPageGroupRef pageGroup = WKPageGetPageGroup(WKViewGetPage(view.platformView()));
     WKPreferencesRef preferences = WKPageGroupGetPreferences(pageGroup);

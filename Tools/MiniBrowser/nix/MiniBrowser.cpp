@@ -76,20 +76,20 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
 
     m_view = WKViewCreate(m_context.get(), m_pageGroup.get());
 
-    NIXViewClient nixViewClient;
-    memset(&nixViewClient, 0, sizeof(NIXViewClient));
-    nixViewClient.version = kNIXViewClientCurrentVersion;
-    nixViewClient.clientInfo = this;
+    NIXViewClientV0 nixViewClient;
+    memset(&nixViewClient, 0, sizeof(nixViewClient));
+    nixViewClient.base.version = 0;
+    nixViewClient.base.clientInfo = this;
     nixViewClient.doneWithTouchEvent = MiniBrowser::doneWithTouchEvent;
     nixViewClient.didFindZoomableArea = MiniBrowser::didFindZoomableArea;
     nixViewClient.updateTextInputState = MiniBrowser::updateTextInputState;
     nixViewClient.setCursor = MiniBrowser::setCursor;
-    NIXViewSetNixViewClient(m_view, &nixViewClient);
+    NIXViewSetNixViewClient(m_view, &nixViewClient.base);
 
-    WKViewClient viewClient;
-    memset(&viewClient, 0, sizeof(WKViewClient));
-    viewClient.version = kWKViewClientCurrentVersion;
-    viewClient.clientInfo = this;
+    WKViewClientV0 viewClient;
+    memset(&viewClient, 0, sizeof(viewClient));
+    viewClient.base.version = 0;
+    viewClient.base.clientInfo = this;
     viewClient.viewNeedsDisplay = MiniBrowser::viewNeedsDisplay;
     viewClient.webProcessCrashed = MiniBrowser::webProcessCrashed;
     viewClient.webProcessDidRelaunch = MiniBrowser::webProcessRelaunched;
@@ -97,7 +97,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     viewClient.didRenderFrame = MiniBrowser::didRenderFrame;
     viewClient.didChangeContentsPosition = MiniBrowser::pageDidRequestScroll;
     viewClient.didChangeViewportAttributes = MiniBrowser::didChangeViewportAttributes;
-    WKViewSetViewClient(m_view, &viewClient);
+    WKViewSetViewClient(m_view, &viewClient.base);
 
     WKViewInitialize(m_view);
     WKPageSetCustomBackingScaleFactor(pageRef(), options.devicePixelRatio);
@@ -123,34 +123,34 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     WKViewSetIsFocused(m_view, true);
     WKViewSetIsVisible(m_view, true);
 
-    WKPageContextMenuClient contextMenuClient;
-    memset(&contextMenuClient, 0, sizeof(WKPageContextMenuClient));
-    contextMenuClient.version = kWKPageContextMenuClientCurrentVersion;
-    contextMenuClient.clientInfo = this;
+    WKPageContextMenuClientV3 contextMenuClient;
+    memset(&contextMenuClient, 0, sizeof(WKPageContextMenuClientV3));
+    contextMenuClient.base.version = 3;
+    contextMenuClient.base.clientInfo = this;
     contextMenuClient.showContextMenu = MiniBrowser::showContextMenu;
-    WKPageSetPageContextMenuClient(pageRef(), &contextMenuClient);
+    WKPageSetPageContextMenuClient(pageRef(), &contextMenuClient.base);
 
     // Popup Menu UI client.
-    WKPageUIPopupMenuClient popupMenuClient;
-    memset(&popupMenuClient, 0, sizeof(WKPageUIPopupMenuClient));
-    popupMenuClient.version = kWKPageUIPopupMenuClientCurrentVersion;
-    popupMenuClient.clientInfo = this;
+    WKPageUIPopupMenuClientV0 popupMenuClient;
+    memset(&popupMenuClient, 0, sizeof(popupMenuClient));
+    popupMenuClient.base.version = 0;
+    popupMenuClient.base.clientInfo = this;
     popupMenuClient.showPopupMenu = MiniBrowser::showPopupMenu;
-    WKPageSetUIPopupMenuClient(pageRef(), &popupMenuClient);
+    WKPageSetUIPopupMenuClient(pageRef(), &popupMenuClient.base);
 
-    WKPageUIClient uiClient;
-    memset(&uiClient, 0, sizeof(WKPageUIClient));
-    uiClient.version = kWKPageUIClientCurrentVersion;
-    uiClient.clientInfo = this;
+    WKPageUIClientV2 uiClient;
+    memset(&uiClient, 0, sizeof(uiClient));
+    uiClient.base.version = 2;
+    uiClient.base.clientInfo = this;
     uiClient.runJavaScriptAlert = MiniBrowser::runJavaScriptAlert;
     uiClient.runJavaScriptConfirm = MiniBrowser::runJavaScriptConfirm;
     uiClient.runJavaScriptPrompt = MiniBrowser::runJavaScriptPrompt;
-    WKPageSetPageUIClient(pageRef(), &uiClient);
+    WKPageSetPageUIClient(pageRef(), &uiClient.base);
 
-    WKPageLoaderClient loadClient;
+    WKPageLoaderClientV3 loadClient;
     memset(&loadClient, 0, sizeof(WKPageLoaderClient));
-    loadClient.version = kWKPageLoaderClientCurrentVersion;
-    loadClient.clientInfo = this;
+    loadClient.base.version = 3;
+    loadClient.base.clientInfo = this;
     loadClient.didStartProgress = MiniBrowser::didStartProgress;
     loadClient.didChangeProgress = MiniBrowser::didChangeProgress;
     loadClient.didReceiveTitleForFrame = MiniBrowser::didReceiveTitleForFrame;
@@ -159,7 +159,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     loadClient.didFailProvisionalLoadWithErrorForFrame = MiniBrowser::didFailProvisionalLoadWithErrorForFrame;
     loadClient.didReceiveAuthenticationChallengeInFrame = MiniBrowser::didReceiveAuthenticationChallengeInFrame;
 
-    WKPageSetPageLoaderClient(pageRef(), &loadClient);
+    WKPageSetPageLoaderClient(pageRef(), &loadClient.base);
 
     WKRetainPtr<WKURLRef> wkUrl = adoptWK(WKURLCreateWithUTF8CString(options.url.c_str()));
     WKPageLoadURL(pageRef(), wkUrl.get());

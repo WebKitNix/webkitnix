@@ -2,6 +2,7 @@
  * Copyright (C) 2006 Apple Computer, Inc.  All rights reserved.
  * Copyright (C) 2006 Michael Emmel mike.emmel@gmail.com
  * All rights reserved.
+ * Copyright (C) 2013 Nokia Corporation and/or its subsidiary(-ies).
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,9 +39,9 @@ namespace WebCore {
 static guint sharedTimer;
 static void (*sharedTimerFiredFunction)();
 
-void setSharedTimerFiredFunction(void (*f)())
+void setSharedTimerFiredFunction(void (*firedFunction)())
 {
-    sharedTimerFiredFunction = f;
+    sharedTimerFiredFunction = firedFunction;
 }
 
 static gboolean timeoutCallback(gpointer)
@@ -70,4 +71,5 @@ void stopSharedTimer()
     sharedTimer = 0;
 }
 
-}
+} // namespace WebCore
+
