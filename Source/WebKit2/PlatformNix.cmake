@@ -334,6 +334,10 @@ set(WebKitNix_WebKit2_HEADERS
     UIProcess/API/C/WKBatteryManager.h
     UIProcess/API/C/WKBatteryStatus.h
     UIProcess/API/C/WKContext.h
+    UIProcess/API/C/WKContextConnectionClient.h
+    UIProcess/API/C/WKContextDownloadClient.h
+    UIProcess/API/C/WKContextHistoryClient.h
+    UIProcess/API/C/WKContextInjectedBundleClient.h
     UIProcess/API/C/WKContextPrivate.h
     UIProcess/API/C/WKCookieManager.h
     UIProcess/API/C/WKCredential.h
@@ -393,6 +397,15 @@ set(WebKitNix_WebKit2_HEADERS
     UIProcess/API/C/nix/WKPageNix.h
 
     WebProcess/InjectedBundle/API/c/WKBundle.h
+    WebProcess/InjectedBundle/API/c/WKBundlePageContextMenuClient.h
+    WebProcess/InjectedBundle/API/c/WKBundlePageDiagnosticLoggingClient.h
+    WebProcess/InjectedBundle/API/c/WKBundlePageEditorClient.h
+    WebProcess/InjectedBundle/API/c/WKBundlePageFormClient.h
+    WebProcess/InjectedBundle/API/c/WKBundlePageFullScreenClient.h
+    WebProcess/InjectedBundle/API/c/WKBundlePageLoaderClient.h
+    WebProcess/InjectedBundle/API/c/WKBundlePagePolicyClient.h
+    WebProcess/InjectedBundle/API/c/WKBundlePageResourceLoadClient.h
+    WebProcess/InjectedBundle/API/c/WKBundlePageUIClient.h
     WebProcess/InjectedBundle/API/c/WKBundleBackForwardList.h
     WebProcess/InjectedBundle/API/c/WKBundleBackForwardListItem.h
     WebProcess/InjectedBundle/API/c/WKBundleDOMWindowExtension.h
