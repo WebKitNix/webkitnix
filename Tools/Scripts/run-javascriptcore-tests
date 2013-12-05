@@ -59,10 +59,6 @@ my @testsToSkip = (
     "ecma/Date/15.9.5.14.js",
     "ecma/Date/15.9.5.31-1.js",
     "ecma/Date/15.9.5.34-1.js",
-    # Tests failing when running in BRT timezone
-    "ecma/Date/15.9.5.28-1.js",
-    "ecma/Date/15.9.5.29-1.js",
-    "ecma/Date/15.9.5.35-1.js",
 );
 
 my $jsDriverArgs = "-L " . join(" ", @testsToSkip);
@@ -262,6 +258,11 @@ if ($runJSCStress) {
     }
     if (defined($ENV{"EXTRA_JSC_TESTS"})) {
         push(@jscStressDriverCmd, $ENV{"EXTRA_JSC_TESTS"});
+    }
+    if(isNix()) {
+        # FIXME https://bugs.webkit.org/show_bug.cgi?id=4930
+        # Many JavaScriptCore date tests fail when timezone is not PDT
+        $ENV{TZ}="America/Los_Angeles";
     }
     print "Running: " . join(" ", @jscStressDriverCmd) . "\n";
     my $result = system(@jscStressDriverCmd);
