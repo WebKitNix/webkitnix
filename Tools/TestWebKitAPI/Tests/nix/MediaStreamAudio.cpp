@@ -79,16 +79,18 @@ TEST(WebKitNix, MediaStreamAudio)
     WKPreferencesRef preferences = WKPageGroupGetPreferences(pageGroup);
     WKPreferencesSetWebAudioEnabled(preferences, true);
 
-    WKContextInjectedBundleClient injectedBundleClient;
+    WKContextInjectedBundleClientV1 injectedBundleClient;
+    injectedBundleClient.base.version = 1;
     memset(&injectedBundleClient, 0, sizeof(injectedBundleClient));
     injectedBundleClient.didReceiveMessageFromInjectedBundle = didReceiveMessageFromInjectedBundle;
-    WKContextSetInjectedBundleClient(context.get(), &injectedBundleClient);
+    WKContextSetInjectedBundleClient(context.get(), &injectedBundleClient.base);
 
-    WKPageLoaderClient loaderClient;
+    WKPageLoaderClientV3 loaderClient;
+    loaderClient.base.version = 3;
     memset(&loaderClient, 0, sizeof(loaderClient));
     loaderClient.didFinishLoadForFrame = didFinishLoadForFrame;
     loaderClient.didReceiveTitleForFrame = didReceiveTitleForFrame;
-    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &loaderClient);
+    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &loaderClient.base);
 
     WKRetainPtr<WKURLRef> url = adoptWK(Util::createURLForResource("../nix/MediaStreamAudio", "html"));
     WKPageLoadURL(WKViewGetPage(view.get()), url.get());
