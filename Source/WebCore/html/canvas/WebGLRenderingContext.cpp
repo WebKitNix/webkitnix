@@ -3349,7 +3349,7 @@ void WebGLRenderingContext::linkProgram(WebGLProgram* program, ExceptionCode& ec
     if (!isGLES2Compliant()) {
         WebGLShader* vertexShader = program->getAttachedShader(GraphicsContext3D::VERTEX_SHADER);
         WebGLShader* fragmentShader = program->getAttachedShader(GraphicsContext3D::FRAGMENT_SHADER);
-        if (!vertexShader || !vertexShader->isValid() || !fragmentShader || !fragmentShader->isValid()) {
+        if (!vertexShader || !vertexShader->isValid() || !fragmentShader || !fragmentShader->isValid() || !m_context->areProgramSymbolsValid(objectOrZero(vertexShader), objectOrZero(fragmentShader))) {
             program->setLinkStatus(false);
             return;
         }
@@ -3733,13 +3733,6 @@ void WebGLRenderingContext::texImage2DImpl(GC3Denum target, GC3Dint level, GC3De
 
 bool WebGLRenderingContext::validateTexFunc(const char* functionName, TexFuncValidationFunctionType functionType, TexFuncValidationSourceType sourceType, GC3Denum target, GC3Dint level, GC3Denum internalformat, GC3Dsizei width, GC3Dsizei height, GC3Dint border, GC3Denum format, GC3Denum type, GC3Dint xoffset, GC3Dint yoffset)
 {
-    // FIXME: Uploading {ImageData, HTMLImageElement, HTMLCanvasElement, HTMLVideoElement} to half floating point texture is not supported yet.
-    // See https://bugs.webkit.org/show_bug.cgi?id=110936.
-    if (sourceType != SourceArrayBufferView && type == GraphicsContext3D::HALF_FLOAT_OES) {
-        synthesizeGLError(GraphicsContext3D::INVALID_OPERATION, functionName, "Operation not supported yet");
-        return false;
-    }
-
     if (!validateTexFuncParameters(functionName, functionType, target, level, internalformat, width, height, border, format, type))
         return false;
 

@@ -134,8 +134,6 @@ public:
     virtual void stopAnimation() OVERRIDE;
     virtual void resetAnimation() OVERRIDE;
 
-    virtual unsigned decodedSize() const OVERRIDE;
-
     virtual void drawPattern(GraphicsContext*, const FloatRect& srcRect, const AffineTransform& patternTransform,
         const FloatPoint& phase, ColorSpace styleColorSpace, CompositeOperator, const FloatRect& destRect, BlendMode = BlendModeNormal) OVERRIDE;
 
@@ -301,6 +299,8 @@ private:
 
     RefPtr<Image> m_cachedImage;
 };
+
+IMAGE_TYPE_CASTS(BitmapImage)
 
 }
 

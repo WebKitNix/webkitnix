@@ -1335,6 +1335,13 @@ private:
             return;
         }
         
+        if (JSArrayBufferView* view = m_graph.tryGetFoldableView(m_node->child1().node(), m_node->arrayMode())) {
+            if (view->mode() != FastTypedArray) {
+                setStorage(m_out.constIntPtr(view->vector()));
+                return;
+            }
+        }
+        
         setStorage(m_out.loadPtr(cell, m_heaps.JSArrayBufferView_vector));
     }
     
@@ -1451,12 +1458,10 @@ private:
             TypedArrayType type = m_node->arrayMode().typedArrayType();
             
             if (isTypedView(type)) {
-                LValue array = lowCell(m_node->child1());
-                
                 speculate(
                     OutOfBounds, noValue(), 0,
                     m_out.aboveOrEqual(
-                        index, m_out.load32(array, m_heaps.JSArrayBufferView_length)));
+                        index, typedArrayLength(m_node->child1(), m_node->arrayMode())));
                 
                 TypedPointer pointer = TypedPointer(
                     m_heaps.typedArrayProperties,
@@ -1624,7 +1629,8 @@ private:
                     speculate(
                         OutOfBounds, noValue(), 0,
                         m_out.aboveOrEqual(
-                            index, m_out.load32(base, m_heaps.JSArrayBufferView_length)));
+                            index,
+                            typedArrayLength(child1.node(), m_node->arrayMode(), base)));
                 }
                 
                 TypedPointer pointer = TypedPointer(
@@ -2765,6 +2771,18 @@ private:
             m_out.phi(m_out.intPtr, fastButterfly, slowButterfly));
     }
     
+    LValue typedArrayLength(Node* baseNode, ArrayMode arrayMode, LValue base)
+    {
+        if (JSArrayBufferView* view = m_graph.tryGetFoldableView(baseNode, arrayMode))
+            return m_out.constInt32(view->length());
+        return m_out.load32(base, m_heaps.JSArrayBufferView_length);
+    }
+    
+    LValue typedArrayLength(Edge baseEdge, ArrayMode arrayMode)
+    {
+        return typedArrayLength(baseEdge.node(), arrayMode, lowCell(baseEdge));
+    }
+    
     LValue boolify(Edge edge)
     {
         switch (edge.useKind()) {
@@ -2993,13 +3011,39 @@ private:
     
     LValue doubleToInt32(LValue doubleValue)
     {
+        if (Output::hasSensibleDoubleToInt())
+            return sensibleDoubleToInt32(doubleValue);
+        
         double limit = pow(2, 31) - 1;
         return doubleToInt32(doubleValue, -limit, limit);
     }
     
     LValue doubleToUInt32(LValue doubleValue)
     {
+        if (Output::hasSensibleDoubleToInt())
+            return sensibleDoubleToInt32(doubleValue);
+        
         return doubleToInt32(doubleValue, 0, pow(2, 32) - 1, false);
+    }
+    
+    LValue sensibleDoubleToInt32(LValue doubleValue)
+    {
+        LBasicBlock slowPath = FTL_NEW_BLOCK(m_out, ("sensible doubleToInt32 slow path"));
+        LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("sensible doubleToInt32 continuation"));
+        
+        ValueFromBlock fastResult = m_out.anchor(
+            m_out.sensibleDoubleToInt(doubleValue));
+        m_out.branch(
+            m_out.equal(fastResult.value(), m_out.constInt32(0x80000000)),
+            slowPath, continuation);
+        
+        LBasicBlock lastNext = m_out.appendTo(slowPath, continuation);
+        ValueFromBlock slowResult = m_out.anchor(
+            m_out.call(m_out.operation(toInt32), doubleValue));
+        m_out.jump(continuation);
+        
+        m_out.appendTo(continuation, lastNext);
+        return m_out.phi(m_out.int32, fastResult, slowResult);
     }
     
     void speculateBackward(

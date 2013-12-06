@@ -1986,7 +1986,7 @@ def check_member_initialization_list(clean_lines, line_number, error):
     # Each member (and superclass) should be indented on a separate line,
     # with the colon or comma preceding the member on that line.
     begin_line = line
-    if search(r'(?P<indentation>\s*)([^\s]\(.*\)\s?\:|^\s*\:).*[^;]*$', line):
+    if search(r'^(?P<indentation>\s*)((explicit\s+)?[^\s]+\(.*\)\s?\:|^\s*\:).*[^;]*$', line):
         if search(r'[^:]\:[^\:\s]+', line):
             error(line_number, 'whitespace/init', 4,
                 'Missing spaces around :')
@@ -2008,7 +2008,7 @@ def check_member_initialization_list(clean_lines, line_number, error):
                         'Wrong number of spaces before statement. (expected: %d)' % len(inner_indentation))
                 if search(r'\S\s*,', line):
                     error(line_number, 'whitespace/init', 4,
-                        'Comma should be at the beggining of the line in a member initialization list.')
+                        'Comma should be at the beginning of the line in a member initialization list.')
 
             # To avoid infinite loop, if can't find the end of member initialization list
             if line_number < len(raw) - 1:

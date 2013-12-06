@@ -1,3 +1,515 @@
+2013-12-05  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Introduce IMAGE_TYPE_CASTS, and use it
+        https://bugs.webkit.org/show_bug.cgi?id=125330
+
+        Reviewed by Ryosuke Niwa.
+
+        As a step to use TYPE_CASTS_BASE, this cl introduce IMAGE_TYPE_CASTS.
+        BitmapImage, SVGImage can use it to generate toFoo() type case helper functions.
+
+        * WebProcess/Plugins/PluginView.cpp:
+        (WebKit::PluginView::pluginSnapshotTimerFired):
+
+2013-12-05  Mark Lam  <mark.lam@apple.com>
+
+        C Loop LLINT layout test regressions.
+        https://bugs.webkit.org/show_bug.cgi?id=125314.
+
+        Reviewed by Geoffrey Garen.
+
+        The regression was due to the ENABLE_LLINT_C_LOOP flag not being included
+        in the build of the WebKit and WebKit2 components. As a result, some fields
+        in JSC::VM were ifdef'ed out in WebCore and JSC, but not in WebKit and
+        WebKit2. This resulted in VM::m_initializingObjectClass having 2 different
+        offsets depending on whether it is accessed from WebCore and JSC or from
+        WebKit and WebKit2, and chaos ensued.
+
+        This issue will manifest when we pass --cloop to build-webkit.
+        The fix is simply to add ENABLE_LLINT_C_LOOP to FEATURE_DEFINES for WebKit
+        and WebKit2.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-12-04  Oliver Hunt  <oliver@apple.com>
+
+        Refactor static getter function prototype to include thisValue in addition to the base object
+        https://bugs.webkit.org/show_bug.cgi?id=124461
+
+        Reviewed by Geoffrey Garen.
+
+        Update the WK2 JSC usage to the new static getter API
+
+        * WebProcess/Plugins/Netscape/JSNPMethod.cpp:
+        (WebKit::callMethod):
+        * WebProcess/Plugins/Netscape/JSNPObject.cpp:
+        (WebKit::callNPJSObject):
+        (WebKit::constructWithConstructor):
+        (WebKit::JSNPObject::propertyGetter):
+        (WebKit::JSNPObject::methodGetter):
+        * WebProcess/Plugins/Netscape/JSNPObject.h:
+        * WebProcess/Plugins/Netscape/NPRuntimeObjectMap.cpp:
+        (WebKit::NPRuntimeObjectMap::getOrCreateNPObject):
+        (WebKit::NPRuntimeObjectMap::finalize):
+        * WebProcess/WebPage/WebFrame.cpp:
+        (WebKit::WebFrame::frameForContext):
+        (WebKit::WebFrame::counterValue):
+
+2013-12-05  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r160133.
+        http://trac.webkit.org/changeset/160133
+        https://bugs.webkit.org/show_bug.cgi?id=125325
+
+        broke bindings tests on all the bots (Requested by thorton on
+        #webkit).
+
+        * WebProcess/Plugins/Netscape/JSNPMethod.cpp:
+        (WebKit::callMethod):
+        * WebProcess/Plugins/Netscape/JSNPObject.cpp:
+        (WebKit::callNPJSObject):
+        (WebKit::constructWithConstructor):
+        (WebKit::JSNPObject::propertyGetter):
+        (WebKit::JSNPObject::methodGetter):
+        * WebProcess/Plugins/Netscape/JSNPObject.h:
+        * WebProcess/Plugins/Netscape/NPRuntimeObjectMap.cpp:
+        (WebKit::NPRuntimeObjectMap::getOrCreateNPObject):
+        (WebKit::NPRuntimeObjectMap::finalize):
+        * WebProcess/WebPage/WebFrame.cpp:
+        (WebKit::WebFrame::counterValue):
+
+2013-12-05  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: Seed: safari extension installation crashes safari under voice over and freezes voice over
+        https://bugs.webkit.org/show_bug.cgi?id=125308
+
+        Reviewed by Anders Carlsson.
+
+        Much like Javascript alerts, we need to allow accessibility clients to continue to interact with the WebProcess thread
+        when using dispatchDecidePolicyResponses.
+
+        * Platform/CoreIPC/MessageSender.h:
+        (CoreIPC::MessageSender::sendSync):
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::dispatchDecidePolicyForResponse):
+
+2013-12-05  Anders Carlsson  <andersca@apple.com>
+
+        "Use Selection for Find" doesn't work in PDF viewed in Safari
+        https://bugs.webkit.org/show_bug.cgi?id=125319
+        <rdar://problem/15486983>
+
+        Reviewed by Tim Horton.
+
+        * WebProcess/Plugins/PDF/PDFPlugin.h:
+        * WebProcess/Plugins/PDF/PDFPlugin.mm:
+        (-[WKPDFLayerControllerDelegate writeItemsToPasteboard:withTypes:]):
+        Pass NSGeneralPboard to writeItemsToPasteboard.
+
+        (WebKit::PDFPlugin::handleEditingCommand):
+        Handle takeFindStringFromSelection by getting the current selection string and writing it to the find pasteboard.
+
+        (WebKit::PDFPlugin::isEditingCommandEnabled):
+        Handle takeFindStringFromSelection.
+
+        (WebKit::PDFPlugin::writeItemsToPasteboard):
+        Update this to take a pasteboard name.
+
+2013-12-05  Anders Carlsson  <andersca@apple.com>
+
+        WebKit2 API should use weak ownership for delegate properties rather than assign
+        https://bugs.webkit.org/show_bug.cgi?id=125316
+        <rdar://problem/15560614>
+
+        Reviewed by Dan Bernstein.
+
+        Use WeakObjCPtr for the delegates.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.h:
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (didStartProvisionalLoadForFrame):
+        (didReceiveServerRedirectForProvisionalLoadForFrame):
+        (didFailProvisionalLoadWithErrorForFrame):
+        (didCommitLoadForFrame):
+        (didFinishLoadForFrame):
+        (didFailLoadWithErrorForFrame):
+        (didStartProgress):
+        (didChangeProgress):
+        (didFinishProgress):
+        (didChangeBackForwardList):
+        (setUpPagePolicyClient):
+        (-[WKBrowsingContextController loadDelegate]):
+        (-[WKBrowsingContextController setLoadDelegate:]):
+        (-[WKBrowsingContextController policyDelegate]):
+        (-[WKBrowsingContextController setPolicyDelegate:]):
+        (-[WKBrowsingContextController historyDelegate]):
+        (-[WKBrowsingContextController setHistoryDelegate:]):
+        * UIProcess/API/Cocoa/WKBrowsingContextControllerInternal.h:
+        * UIProcess/API/Cocoa/WKConnection.mm:
+        (didReceiveMessage):
+        (didClose):
+        (-[WKConnection delegate]):
+        (-[WKConnection setDelegate:]):
+        * UIProcess/API/Cocoa/WKProcessGroup.mm:
+        (didCreateConnection):
+        (getInjectedBundleInitializationUserData):
+        (didNavigateWithNavigationData):
+        (didPerformClientRedirect):
+        (didPerformServerRedirect):
+        (didUpdateHistoryTitle):
+        (-[WKProcessGroup delegate]):
+        (-[WKProcessGroup setDelegate:]):
+
+2013-12-05  Anders Carlsson  <andersca@apple.com>
+
+        Tweak WeakObjCPtr
+        https://bugs.webkit.org/show_bug.cgi?id=125311
+
+        Reviewed by Darin Adler.
+
+        Make it possible to use WeakObjCPtr with pointer types such as id. Also,
+        add a getAutoreleased() member that will load the weak pointer and retain + autorelease it.
+
+        * Shared/mac/WeakObjCPtr.h:
+        (WebKit::WeakObjCPtr::WeakObjCPtr):
+        (WebKit::WeakObjCPtr::operator=):
+        (WebKit::WeakObjCPtr::get):
+        (WebKit::WeakObjCPtr::getAutoreleased):
+
+2013-12-05  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK][WK2] Clean up WorkQueueGtk
+        https://bugs.webkit.org/show_bug.cgi?id=125177
+
+        Reviewed by Carlos Garcia Campos.
+
+        Clean up the GTK implementation of the WorkQueue class a bit.
+        - registerSocketEventHandler doesn't take a condition argument anymore -- G_IO_IN was the only condition ever passed into
+        that method so that is now the hard-coded default.
+        - Clean up the declarations of GTK-specific bits in the WorkQueue header file. SocketEventSourceIterator typedef is removed
+        and auto will be used instead.
+        - WorkQueue::dispatchOnTermination and WorkQueue::SocketEventSource::performWorkOnTermination methods were unused and now removed.
+        - WorkQueue::SocketEventSource doesn't expect a GIO condition anymore, and WorkQueue::SocketEventSource::checkCondition is removed.
+        G_IO_IN condition was the only one used is now hard-coded into the check in WorkQueue::SocketEventSource::eventCallback.
+        - Removed an unnecessary non-null assertion for the heap-allocated SocketEventSource.
+        - Removed a technically duplicated assertion that a file descriptor is already present in the event sources map. Moved the
+        assertion before the HashMap::find() call.
+        - Removed two unnecessary assertions that non-null values are being returned by g_idle_source_new() and g_timeout_source_new().
+        Both functions are guaranteed to return non-null values.
+
+        * Platform/CoreIPC/unix/ConnectionUnix.cpp:
+        (CoreIPC::Connection::open):
+        * Platform/WorkQueue.h:
+        * Platform/gtk/WorkQueueGtk.cpp:
+        (WorkQueue::SocketEventSource::SocketEventSource):
+        (WorkQueue::SocketEventSource::eventCallback):
+        (WorkQueue::registerSocketEventHandler):
+        (WorkQueue::unregisterSocketEventHandler):
+        (WorkQueue::dispatch):
+        (WorkQueue::dispatchAfterDelay):
+
+2013-12-04  Gergo Balogh  <geryxyz@inf.u-szeged.hu>
+
+        Report error when #else is used in message receiver generator's input.
+        https://bugs.webkit.org/show_bug.cgi?id=124147
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Scripts/webkit2/messages_unittest.py:
+        (UnsupportedPrecompilerDirectiveTest):
+        (UnsupportedPrecompilerDirectiveTest.test_error_at_else):
+        (UnsupportedPrecompilerDirectiveTest.test_error_at_elif):
+        * Scripts/webkit2/parser.py:
+        (parse):
+
+2013-12-04  Sam Weinig  <sam@webkit.org>
+
+        [Cocoa] Make WKConnection work with WKObject wrapping
+        https://bugs.webkit.org/show_bug.cgi?id=125266
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/Cocoa/WKConnection.mm:
+        (-[WKConnection dealloc]):
+        (didReceiveMessage):
+        (didClose):
+        (setUpClient):
+        (-[WKConnection delegate]):
+        (-[WKConnection setDelegate:]):
+        (-[WKConnection sendMessageWithName:body:]):
+        (-[WKConnection remoteObjectRegistry]):
+        (-[WKConnection API::]):
+        * UIProcess/API/Cocoa/WKConnectionInternal.h:
+        (WebKit::wrapper):
+        * UIProcess/API/Cocoa/WKProcessGroup.mm:
+        (didCreateConnection):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugIn.mm:
+        (-[WKWebProcessPlugInController _initWithPrincipalClassInstance:bundleRef:]):
+        (-[WKWebProcessPlugInController connection]):
+        (-[WKWebProcessPlugInController _bundleRef]):
+
+2013-12-04  Anders Carlsson  <andersca@apple.com>
+
+        Add a WeakObjCPtr class
+        https://bugs.webkit.org/show_bug.cgi?id=125267
+
+        Reviewed by Geoffrey Garen.
+
+        WeakObjCPtr is a zeroing weak reference class template that will be used for delegates.
+
+        * Shared/mac/WeakObjCPtr.h: Added.
+        (WebKit::WeakObjCPtr::WeakObjCPtr):
+        (WebKit::WeakObjCPtr::~WeakObjCPtr):
+        (WebKit::WeakObjCPtr::operator=):
+        (WebKit::WeakObjCPtr::get):
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2013-12-04  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Unreviewed EFL build fix after r160135
+
+        * CMakeLists.txt: Added rendering/line to include lists.
+
+2013-12-04  Anders Carlsson  <andersca@apple.com>
+
+        Make the estimatedProgress property observable using KVO
+        https://bugs.webkit.org/show_bug.cgi?id=125259
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::PageLoadState):
+        (WebKit::PageLoadState::reset):
+        (WebKit::PageLoadState::activeURL):
+        (WebKit::PageLoadState::estimatedProgress):
+        (WebKit::PageLoadState::setPendingAPIRequestURL):
+        (WebKit::PageLoadState::clearPendingAPIRequestURL):
+        (WebKit::PageLoadState::didStartProgress):
+        (WebKit::PageLoadState::didChangeProgress):
+        (WebKit::PageLoadState::didFinishProgress):
+        * UIProcess/PageLoadState.h:
+        Move m_estimatedProgress to the page load state and call the observers when it changes.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::estimatedProgress):
+        (WebKit::WebPageProxy::didStartProgress):
+        (WebKit::WebPageProxy::didChangeProgress):
+        (WebKit::WebPageProxy::didFinishProgress):
+        (WebKit::WebPageProxy::resetState):
+        Call through to m_pageLoadState.
+
+        * UIProcess/WebPageProxy.h:
+
+2013-12-04  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [WK2] Including SecItemShim.h should be guarded by ENABLE(SEC_ITEM_SHIM)
+        https://bugs.webkit.org/show_bug.cgi?id=125255
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/WebProcessProxy.cpp:
+        * WebProcess/WebProcess.cpp:
+
+2013-12-04  Oliver Hunt  <oliver@apple.com>
+
+        Refactor static getter function prototype to include thisValue in addition to the base object
+        https://bugs.webkit.org/show_bug.cgi?id=124461
+
+        Reviewed by Geoffrey Garen.
+
+        Update the WK2 JSC usage to the new static getter API
+
+        * WebProcess/Plugins/Netscape/JSNPMethod.cpp:
+        (WebKit::callMethod):
+        * WebProcess/Plugins/Netscape/JSNPObject.cpp:
+        (WebKit::callNPJSObject):
+        (WebKit::constructWithConstructor):
+        (WebKit::JSNPObject::propertyGetter):
+        (WebKit::JSNPObject::methodGetter):
+        * WebProcess/Plugins/Netscape/JSNPObject.h:
+        * WebProcess/Plugins/Netscape/NPRuntimeObjectMap.cpp:
+        (WebKit::NPRuntimeObjectMap::getOrCreateNPObject):
+        (WebKit::NPRuntimeObjectMap::finalize):
+        * WebProcess/WebPage/WebFrame.cpp:
+        (WebKit::WebFrame::frameForContext):
+        (WebKit::WebFrame::counterValue):
+
+2013-12-04  Anders Carlsson  <andersca@apple.com>
+
+        Add a loading property to WKBrowsingContextController
+        https://bugs.webkit.org/show_bug.cgi?id=125256
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.h:
+        Add loading property.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextConteroller.mm:
+        Implement willChangeIsLoading and didChangeIsLoading and call the relevant KVO methods.
+
+        (-[WKBrowsingContextController isLoading]):
+        Call through to the PageLoadState.
+
+        * UIProcess/PageLoadState.cpp:
+        (WebKit::PageLoadState::reset):
+        Use setState.
+
+        (WebKit::PageLoadState::isLoading):
+        Call isLoadingState.
+
+        (WebKit::PageLoadState::didStartProvisionalLoad):
+        Use setState.
+
+        (WebKit::PageLoadState::didFailProvisionalLoad):
+        Use setState.
+
+        (WebKit::PageLoadState::didCommitLoad):
+        Use setState.
+
+        (WebKit::PageLoadState::didFinishLoad):
+        Use setState.
+
+        (WebKit::PageLoadState::didFailLoad):
+        Use setState.
+
+        (WebKit::PageLoadState::isLoadingState):
+        Helper function for determining whether a state is a loading state or not.
+
+        (WebKit::PageLoadState::setState):
+        If setting the state will cause "isLoading" to change, call out to the observers.
+
+        * UIProcess/PageLoadState.h:
+
+2013-12-04  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [EFL][GTK][WK2] Remove unnecessary reinterpret_casts when setting API clients
+        https://bugs.webkit.org/show_bug.cgi?id=125231
+
+        Reviewed by Anders Carlsson.
+
+        After r159988, WKClients have to be instantiated with a specific
+        version of that client and its Base field has to used when setting it.
+        Eg:
+
+            WKFullScreenClientV0 wkClient = {
+                {
+                    0, // version
+                    this, // clientInfo
+                },
+                    willEnterFullScreen,
+                    willExitFullScreen
+            };
+            WKViewSetFullScreenClientGtk(this, &wkClient.base);
+
+        So we don't need the reinterpret_casts introduced in r160075.
+
+        * UIProcess/API/gtk/WebKitFullscreenClient.cpp:
+        (attachFullScreenClientToView): reinterpret_cast<WKFooClientBase*>(&client) -> &client.base
+        * UIProcess/API/gtk/WebKitRequestManagerClient.cpp:
+        (attachRequestManagerClientToContext): Ditto.
+        * UIProcess/API/gtk/WebKitTextChecker.cpp:
+        (WebKitTextChecker::WebKitTextChecker): Ditto.
+        * UIProcess/API/gtk/WebKitWebInspector.cpp:
+        (webkitWebInspectorCreate): Ditto.
+        * UIProcess/efl/BatteryProvider.cpp:
+        (BatteryProvider::BatteryProvider): Ditto.
+        * UIProcess/efl/NetworkInfoProvider.cpp:
+        (NetworkInfoProvider::NetworkInfoProvider): Ditto.
+        * UIProcess/efl/PageUIClientEfl.cpp:
+        (WebKit::PageUIClientEfl::PageUIClientEfl): Ditto.
+        * UIProcess/efl/RequestManagerClientEfl.cpp:
+        (WebKit::RequestManagerClientEfl::RequestManagerClientEfl): Ditto.
+        * UIProcess/efl/TextCheckerClientEfl.cpp:
+        (TextCheckerClientEfl::TextCheckerClientEfl): Ditto.
+        * UIProcess/efl/VibrationClientEfl.cpp:
+        (VibrationClientEfl::VibrationClientEfl): Ditto.
+        * UIProcess/efl/ViewClientEfl.cpp:
+        (WebKit::ViewClientEfl::ViewClientEfl): Ditto.
+
+2013-12-04  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [GTK][WK2] Fix build after r160104
+        https://bugs.webkit.org/show_bug.cgi?id=125240
+
+        Reviewed by Anders Carlsson.
+
+        Using specific version of API client when instantiating them.
+        Applied that same change to the following files:
+
+        * UIProcess/API/gtk/WebKitContextMenuClient.cpp:
+        * UIProcess/API/gtk/WebKitCookieManager.cpp:
+        * UIProcess/API/gtk/WebKitDownloadClient.cpp:
+        * UIProcess/API/gtk/WebKitFaviconDatabase.cpp:
+        * UIProcess/API/gtk/WebKitFindController.cpp:
+        * UIProcess/API/gtk/WebKitFormClient.cpp:
+        * UIProcess/API/gtk/WebKitGeolocationProvider.cpp:
+        * UIProcess/API/gtk/WebKitInjectedBundleClient.cpp:
+        * UIProcess/API/gtk/WebKitLoaderClient.cpp:
+        * UIProcess/API/gtk/WebKitPolicyClient.cpp:
+        * UIProcess/API/gtk/WebKitUIClient.cpp:
+        * WebProcess/InjectedBundle/API/gtk/WebKitWebExtension.cpp:
+        * WebProcess/InjectedBundle/API/gtk/WebKitWebPage.cpp:
+
+2013-12-04  Dan Bernstein  <mitz@apple.com>
+
+        Fixed the 32-bit Mac build.
+
+        * Shared/mac/WebCoreArgumentCodersMac.mm:
+        (CoreIPC::::encodePlatformData):
+
+2013-12-04  Dan Bernstein  <mitz@apple.com>
+
+        [Mac] When NSError user info is missing NSErrorPeerCertificateChainKey, ArgumentCoder should extract it from NSURLErrorFailingURLPeerTrustErrorKey
+        https://bugs.webkit.org/show_bug.cgi?id=125251
+
+        Reviewed by Anders Carlsson.
+
+        * Shared/mac/WebCoreArgumentCodersMac.mm:
+        (CoreIPC::::encodePlatformData): If the user info doesn’t include
+        NSURLErrorFailingURLPeerTrustErrorKey, copy the peer certificate chain from the peer trust
+        under NSURLErrorFailingURLPeerTrustErrorKey. On the decoding side, it will appear under the
+        NSURLErrorFailingURLPeerTrustErrorKey, because a trust object can’t be fully serialized.
+
+2013-12-04  Dan Bernstein  <mitz@apple.com>
+
+        Replace USE(SECURITY_FRAMEWORK) with finer-grained defines
+        https://bugs.webkit.org/show_bug.cgi?id=125242
+
+        Reviewed by Sam Weinig.
+
+        * Configurations/WebKit2.xcconfig: Removed “-framework Security” from the linker flags, now
+        that it’s included in the target’s Link Binary with Libraries build phase.
+        * NetworkProcess/NetworkProcess.cpp:
+        (WebKit::NetworkProcess::initializeConnection): Changed to use ENABLE(SEC_ITEM_SHIM).
+        * NetworkProcess/mac/NetworkProcessMac.mm:
+        (WebKit::NetworkProcess::platformInitializeNetworkProcess): Ditto.
+        * Shared/Authentication/AuthenticationManager.cpp: Changed to use HAVE(SEC_IDENTITY).
+        * Shared/Authentication/mac/AuthenticationManager.mac.mm: Ditto.
+        * Shared/cf/ArgumentCodersCF.cpp:
+        (CoreIPC::typeFromCFTypeRef): Removed use of USE(SECURITY_FRAMEWORK) since all CF platforms
+        use it. Added HAVE(SEC_KEYCHAIN) where needed.
+        (CoreIPC::encode): Ditto.
+        (CoreIPC::decode): Ditto.
+        * Shared/cf/ArgumentCodersCF.h: Ditto.
+        * Shared/mac/SecItemShim.cpp: Chanegd to use ENABLE(SEC_ITEM_SHIM).
+        * Shared/mac/SecItemShim.h: Ditto.
+        * Shared/mac/SecItemShim.messages.in: Ditto.
+        * UIProcess/Network/NetworkProcessProxy.cpp:
+        (WebKit::NetworkProcessProxy::connectionWillOpen): Ditto.
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::connectionWillOpen): Ditto.
+        * UIProcess/mac/SecItemShimProxy.cpp: Ditto.
+        * UIProcess/mac/SecItemShimProxy.h: Ditto,
+        * UIProcess/mac/SecItemShimProxy.messages.in: Ditto.
+        * WebKit2.xcodeproj/project.pbxproj: Link Security.framework unconditionally.
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::initializeConnection): Changed to use ENABLE(SEC_ITEM_SHIM).
+        * WebProcess/mac/WebProcessMac.mm:
+        (WebKit::WebProcess::platformInitializeProcess): Ditto.
+        * config.h: Defined ENABLE_SEC_ITEM_SHIM.
+
 2013-12-04  Csaba Osztrogonác  <ossy@webkit.org>
 
         [EFL][WK2] Buildfix after r160104

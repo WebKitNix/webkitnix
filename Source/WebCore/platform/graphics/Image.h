@@ -124,7 +124,6 @@ public:
     virtual String filenameExtension() const { return String(); } // null string if unknown
 
     virtual void destroyDecodedData(bool destroyAll = true) = 0;
-    virtual unsigned decodedSize() const = 0;
 
     SharedBuffer* data() { return m_encodedImageData.get(); }
 
@@ -209,6 +208,9 @@ private:
     ImageObserver* m_imageObserver;
     FloatSize m_space;
 };
+
+#define IMAGE_TYPE_CASTS(ToClassName) \
+    TYPE_CASTS_BASE(ToClassName, Image, image, image->is##ToClassName(), image.is##ToClassName())
 
 }
 

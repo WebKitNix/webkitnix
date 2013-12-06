@@ -30,6 +30,7 @@ namespace WebKit {
 
 PageLoadState::PageLoadState()
     : m_state(State::Finished)
+    , m_estimatedProgress(0)
 {
 }
 
@@ -55,7 +56,8 @@ void PageLoadState::removeObserver(Observer& observer)
 
 void PageLoadState::reset()
 {
-    m_state = State::Finished;
+    setState(State::Finished);
+
     m_pendingAPIRequestURL = String();
     m_provisionalURL = String();
     m_url = String();
@@ -66,6 +68,15 @@ void PageLoadState::reset()
     callObserverCallback(&Observer::willChangeTitle);
     m_title = String();
     callObserverCallback(&Observer::didChangeTitle);
+
+    callObserverCallback(&Observer::willChangeEstimatedProgress);
+    m_estimatedProgress = 0;
+    callObserverCallback(&Observer::didChangeEstimatedProgress);
+}
+
+bool PageLoadState::isLoading() const
+{
+    return isLoadingState(m_state);
 }
 
 String PageLoadState::activeURL() const
@@ -89,7 +100,19 @@ String PageLoadState::activeURL() const
 
     ASSERT_NOT_REACHED();
     return String();
+}
 
+// Always start progress at initialProgressValue. This helps provide feedback as
+// soon as a load starts.
+
+static const double initialProgressValue = 0.1;
+
+double PageLoadState::estimatedProgress() const
+{
+    if (!m_pendingAPIRequestURL.isNull())
+        return initialProgressValue;
+
+    return m_estimatedProgress;
 }
 
 const String& PageLoadState::pendingAPIRequestURL() const
@@ -99,19 +122,24 @@ const String& PageLoadState::pendingAPIRequestURL() const
 
 void PageLoadState::setPendingAPIRequestURL(const String& pendingAPIRequestURL)
 {
+    callObserverCallback(&Observer::willChangeEstimatedProgress);
     m_pendingAPIRequestURL = pendingAPIRequestURL;
+    callObserverCallback(&Observer::didChangeEstimatedProgress);
 }
 
 void PageLoadState::clearPendingAPIRequestURL()
 {
+    callObserverCallback(&Observer::willChangeEstimatedProgress);
     m_pendingAPIRequestURL = String();
+    callObserverCallback(&Observer::didChangeEstimatedProgress);
 }
 
 void PageLoadState::didStartProvisionalLoad(const String& url, const String& unreachableURL)
 {
     ASSERT(m_provisionalURL.isEmpty());
 
-    m_state = State::Provisional;
+    setState(State::Provisional);
+
     m_provisionalURL = url;
 
     setUnreachableURL(unreachableURL);
@@ -128,7 +156,8 @@ void PageLoadState::didFailProvisionalLoad()
 {
     ASSERT(m_state == State::Provisional);
 
-    m_state = State::Finished;
+    setState(State::Finished);
+
     m_provisionalURL = String();
     m_unreachableURL = m_lastUnreachableURL;
 }
@@ -137,7 +166,8 @@ void PageLoadState::didCommitLoad()
 {
     ASSERT(m_state == State::Provisional);
 
-    m_state = State::Committed;
+    setState(State::Committed);
+
     m_url = m_provisionalURL;
     m_provisionalURL = String();
 
@@ -149,14 +179,14 @@ void PageLoadState::didFinishLoad()
     ASSERT(m_state == State::Committed);
     ASSERT(m_provisionalURL.isEmpty());
 
-    m_state = State::Finished;
+    setState(State::Finished);
 }
 
 void PageLoadState::didFailLoad()
 {
     ASSERT(m_provisionalURL.isEmpty());
 
-    m_state = State::Finished;
+    setState(State::Finished);
 }
 
 void PageLoadState::didSameDocumentNavigation(const String& url)
@@ -182,6 +212,61 @@ void PageLoadState::setTitle(const String& title)
     callObserverCallback(&Observer::willChangeTitle);
     m_title = title;
     callObserverCallback(&Observer::didChangeTitle);
+}
+
+void PageLoadState::didStartProgress()
+{
+    callObserverCallback(&Observer::willChangeEstimatedProgress);
+    m_estimatedProgress = initialProgressValue;
+    callObserverCallback(&Observer::didChangeEstimatedProgress);
+}
+
+void PageLoadState::didChangeProgress(double value)
+{
+    callObserverCallback(&Observer::willChangeEstimatedProgress);
+    m_estimatedProgress = value;
+    callObserverCallback(&Observer::didChangeEstimatedProgress);
+}
+
+void PageLoadState::didFinishProgress()
+{
+    callObserverCallback(&Observer::willChangeEstimatedProgress);
+    m_estimatedProgress = 1;
+    callObserverCallback(&Observer::didChangeEstimatedProgress);
+}
+
+bool PageLoadState::isLoadingState(State state)
+{
+    switch (state) {
+    case State::Provisional:
+    case State::Committed:
+        return true;
+
+    case State::Finished:
+        return false;
+    }
+
+    ASSERT_NOT_REACHED();
+    return false;
+}
+
+void PageLoadState::setState(State state)
+{
+    if (m_state == state)
+        return;
+
+    bool isLoadingIsChanging = false;
+
+    if (isLoadingState(m_state) != isLoadingState(state))
+        isLoadingIsChanging = true;
+
+    if (isLoadingIsChanging)
+        callObserverCallback(&Observer::willChangeIsLoading);
+
+    m_state = state;
+
+    if (isLoadingIsChanging)
+        callObserverCallback(&Observer::didChangeIsLoading);
 }
 
 void PageLoadState::callObserverCallback(void (Observer::*callback)())

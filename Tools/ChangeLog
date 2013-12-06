@@ -1,3 +1,247 @@
+2013-12-06  Chris Fleizach  <cfleizach@apple.com>
+
+        Fix spelling error in style checker: beggining
+        https://bugs.webkit.org/show_bug.cgi?id=125347
+
+        Reviewed by Anders Carlsson.
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (check_member_initialization_list):
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py:
+        (WebKitStyleTest.test_member_initialization_list):
+
+2013-12-06  Lukasz Gajowy  <l.gajowy@samsung.com>
+
+        [ATK] Missing aria roles mappings
+        https://bugs.webkit.org/show_bug.cgi?id=117729
+
+        Reviewed by Mario Sanchez Prada.
+
+        Added new mappings to AccessibilityUIElementAtk.cpp.
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+
+2013-12-06  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Typo fix after r160218.
+
+        * Scripts/webkitpy/test/main.py:
+        (main):
+
+2013-12-06  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Unreviewed fix after r160206.
+
+        * Scripts/webkitpy/test/main.py:
+        (main): sys.platform can be win32 or cygwin too on Windows.
+
+2013-12-05  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Disable WebKit2 webkitpy unittests on Windows
+        https://bugs.webkit.org/show_bug.cgi?id=125318
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitpy/test/main.py:
+        (main):
+
+2013-12-05  Anders Carlsson  <andersca@apple.com>
+
+        Tweak WeakObjCPtr
+        https://bugs.webkit.org/show_bug.cgi?id=125311
+
+        Reviewed by Darin Adler.
+
+        Split up tests into more logical groups. Add new tests for new functionality.
+
+        * TestWebKitAPI/Tests/WebKit2/mac/WeakObjCPtr.mm:
+
+2013-12-05  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Fix gtk-doc warnings when generating DOM bindings API docs
+        https://bugs.webkit.org/show_bug.cgi?id=125302
+
+        Reviewed by Philippe Normand.
+
+        * gtk/generate-webkitdom-doc-files:
+        (WebKitDOMDocGeneratorSections.write_footer): Add a new section
+        containing a private subsection for WEBKIT_API, WEBKIT_DEPRECATED
+        and WEBKIT_DEPRECATED_FOR macros.
+
+2013-12-05  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Fix cross compilation on x86
+        https://bugs.webkit.org/show_bug.cgi?id=125295
+
+        Reviewed by Zoltan Herczeg.
+
+        Certain compiler flags should not be added when cross compilation is enabled.
+
+        * Scripts/webkitdirs.pm:
+        (runAutogenForAutotoolsProjectIfNecessary):
+        (generateBuildSystemFromCMakeProject):
+
+2013-12-05  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        Remove duplicated/dead code from cpp style checker unit tests.
+        https://bugs.webkit.org/show_bug.cgi?id=125226
+
+        Reviewed by Ryosuke Niwa.
+
+        Remove the first definition of OrderOfIncludesTest class as it is
+        overwritten by the second. Remove a duplicated assert statement
+        from the second class.
+
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py:
+        (OrderOfIncludesTest.setUp):
+        (OrderOfIncludesTest.test_try_drop_common_suffixes):
+          The last assert was duplicated.
+
+2013-12-05  László Langó  <lango@inf.u-szeged.hu>
+
+        Remove Scripts/generate-qt-inspector-resource.
+        https://bugs.webkit.org/show_bug.cgi?id=125288
+
+        Reviewed by Andreas Kling.
+
+        * Scripts/generate-qt-inspector-resource: Removed. There is no QT anymore.
+        We don't need this file.
+
+2013-12-05  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        Remove certain methods from TestExpectations and use TestExpectationsModel instead of them
+        https://bugs.webkit.org/show_bug.cgi?id=125218
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitpy/layout_tests/controllers/layout_test_finder.py:
+        (LayoutTestFinder.skip_tests):
+        * Scripts/webkitpy/layout_tests/controllers/layout_test_runner.py:
+        (LayoutTestRunner.run_tests):
+        (LayoutTestRunner._update_summary_with_result):
+        * Scripts/webkitpy/layout_tests/controllers/manager.py:
+        (Manager._test_is_slow):
+        * Scripts/webkitpy/layout_tests/layout_package/json_layout_results_generator.py:
+        (JSONLayoutResultsGenerator._insert_failure_summaries):
+        * Scripts/webkitpy/layout_tests/models/test_expectations.py:
+        (TestExpectations.get_rebaselining_failures):
+        * Scripts/webkitpy/layout_tests/models/test_expectations_unittest.py:
+        (assert_exp):
+        (MiscTests.test_multiple_results):
+        (MiscTests.test_category_expectations):
+        (MiscTests.test_get_modifiers):
+        (MiscTests.test_get_expectations_string):
+        (MiscTests.test_expectation_to_string):
+        (MiscTests.test_get_test_set):
+        (MiscTests.test_more_specific_override_resets_skip):
+        (SkippedTests.check):
+        * Scripts/webkitpy/layout_tests/models/test_run_results.py:
+        (TestRunResults.__init__):
+        (summarize_results):
+        * Scripts/webkitpy/tool/commands/rebaseline.py:
+        (RebaselineExpectations._tests_to_rebaseline):
+
+2013-12-04  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Enable HTMLTemplateElement by default
+        https://bugs.webkit.org/show_bug.cgi?id=123851
+
+        Reviewed by Antti Koivisto.
+
+        * Scripts/webkitperl/FeatureList.pm:
+
+2013-12-04  Jozsef Berta  <jberta@inf.u-szeged.hu>
+
+        [EFL] Bumping GStreamer version to 1.2.1
+        https://bugs.webkit.org/show_bug.cgi?id=125155
+
+        Reviewed by Gyuyoung Kim.
+
+        * efl/jhbuild.modules: Set the GStreamer version to 1.2.1
+
+
+2013-12-04  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        Update jhbuild revision.
+        https://bugs.webkit.org/show_bug.cgi?id=124966
+        
+        Reviewed by Gyuyoung Kim.
+
+        Used version of Jhbuild failed to create directories and caused
+        update-webkitefl-libs to fail. Latest Jhbuild version has it fixed.
+
+        * jhbuild/jhbuild-wrapper:
+
+2013-12-04  Anders Carlsson  <andersca@apple.com>
+
+        Add a WeakObjCPtr class
+        https://bugs.webkit.org/show_bug.cgi?id=125267
+
+        Reviewed by Geoffrey Garen.
+
+        Add API tests for WeakObjCPtr.
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/WebKit2/mac/WeakObjCPtr.mm: Added.
+        (TEST):
+
+2013-12-04  Anders Carlsson  <andersca@apple.com>
+
+        Make the estimatedProgress property observable using KVO
+        https://bugs.webkit.org/show_bug.cgi?id=125259
+
+        Reviewed by Dan Bernstein.
+
+        Bind the progress indicator value to the "estimatedProgress" property.
+
+        * MiniBrowser/mac/WK2BrowserWindowController.m:
+        (-[WK2BrowserWindowController dealloc]):
+        (-[WK2BrowserWindowController awakeFromNib]):
+
+2013-12-04  Anders Carlsson  <andersca@apple.com>
+
+        Add a loading property to WKBrowsingContextController
+        https://bugs.webkit.org/show_bug.cgi?id=125256
+
+        Reviewed by Dan Bernstein.
+
+        Bind the progress indicator visibility to the "loading" property.
+
+        * MiniBrowser/mac/WK2BrowserWindowController.m:
+        (-[WK2BrowserWindowController dealloc]):
+        (-[WK2BrowserWindowController awakeFromNib]):
+        (-[WK2BrowserWindowController didStartProgress]):
+        (-[WK2BrowserWindowController didFinishProgress]):
+
+2013-12-04  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [EFL][WK2] Buildfix after r160104
+        https://bugs.webkit.org/show_bug.cgi?id=125231
+
+        Reviewed by Anders Carlsson.
+
+        * TestWebKitAPI/Tests/WebKit2/CoordinatedGraphics/WKViewIsActiveSetIsActive.cpp:
+        (TestWebKitAPI::TEST): reinterpret_cast<WKFooClientBase*>(&client) -> &client.base
+        * TestWebKitAPI/Tests/WebKit2/efl/WKViewClientWebProcessCallbacks.cpp:
+        (TestWebKitAPI::setViewClient): Ditto.
+
+2013-12-04  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        check-webkit-style detected some ternary statements as initialization lists
+        https://bugs.webkit.org/show_bug.cgi?id=125246
+
+        Reviewed by Dean Jackson.
+
+        The regular expression that check-webkit-tests uses to detect initialization
+        lists was too broad, resulting in false positives. This patch makes the
+        regex more specific
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (check_member_initialization_list):
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py:
+        (WebKitStyleTest.test_member_initialization_list):
+
 2013-12-04  Mark Hahnenberg  <mhahnenberg@apple.com>
 
         run-jsc-stress-tests can only run locally

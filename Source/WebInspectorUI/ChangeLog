@@ -1,3 +1,242 @@
+2013-12-05  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove 'cookiesString' output from Page.getCookies
+        https://bugs.webkit.org/show_bug.cgi?id=125268
+
+        Reviewed by Timothy Hatcher.
+
+        Remove 'cookiesString' output from Page.getCookies protocol.
+        It is no longer meaningful because it is an unused parameter.
+
+        * UserInterface/CookieStorageContentView.js:
+        (WebInspector.CookieStorageContentView.prototype.update):
+        * UserInterface/InspectorBackendCommands.js:
+
+2013-12-05  Brian J. Burg  <burg@cs.washington.edu>
+
+        Web Inspector: expose node and frame snapshot capabilities.
+        https://bugs.webkit.org/show_bug.cgi?id=124326
+
+        Reviewed by Joseph Pecoraro.
+
+        Add method signatures for snapshotNode() and snapshotRect().
+        Remove method signature for unimplemented Page.captureScreenshot.
+
+        * UserInterface/InspectorBackendCommands.js:
+
+2013-12-05  Alexandru Chiculita  <achicu@adobe.com>
+
+        Web Inspector: [CSS Regions] Show a list of containing regions when clicking a node that is part of a flow
+        https://bugs.webkit.org/show_bug.cgi?id=124614
+
+        Reviewed by Timothy Hatcher.
+
+        Added a new function in DOMTreeManager called getNodeContentFlowInfo that can be used
+        to retrieve an object with the following structure:
+        {
+             "regionFlow": <Reference to the ContentFlow object referenced by the -webkit-flow-from property of the node>,
+             "contentFlow": <Reference to the ContentFlow object referenced by the -webkit-flow-into property of 
+                             the node or a parent of the node>,
+             "regions": [ list of DOMNodes representing the regions containers of the node. The node is split across all these regions. ]
+        }
+
+        Also, used this method to display a two new sections in the Computed Styles panel.
+        1. Section "Flows": can have up to two Simple Rows: "Region Flow" and "Content Flow".
+        2. Section "Container Regions" contains a DOMTreeDataGrid with the list of regions.
+
+        The sections are only visible when there's content to display.
+
+        Next to the "Region Flow" simple row I've added an arrow that will take the user to the "ContentFlowDOMTreeContentView" of the
+        ContentFlow. The same happens for the "Content Flow", but in this case the element will also be highlighted.
+
+        Part of the patch I've added the DOMTreeDataGridNode. LayerTreeDataGrid has a lot of CSS in common with it, so I
+        will make another patch to refactor LayerTreeDataGrid to use DOMTreeDataGridNode as a base class.
+
+        * Localizations/en.lproj/localizedStrings.js:
+        * UserInterface/ComputedStyleDetailsPanel.css: Added.
+        (.details-section > .content > .group > .row.simple.content-flow-link > .label):
+        (.details-section > .content > .group > .row.simple.content-flow-link > .value):
+        (.details-section > .content > .group > .row.simple.content-flow-link > .value > div):
+        (.details-section > .content > .group > .row.simple.content-flow-link > .value > div > .icon):
+        (.details-section > .content > .group > .row.simple.content-flow-link > .value > div > span):
+        (.details-section > .content > .group > .row.simple.content-flow-link > .value > div > .go-to-arrow):
+        (.details-section > .content > .group > .row.simple.content-flow-link:hover > .value > div > .go-to-arrow):
+        * UserInterface/ComputedStyleDetailsPanel.js:
+        (WebInspector.ComputedStyleDetailsPanel):
+        (WebInspector.ComputedStyleDetailsPanel.prototype.get regionFlow):
+        (WebInspector.ComputedStyleDetailsPanel.prototype.set regionFlow):
+        (WebInspector.ComputedStyleDetailsPanel.prototype.get contentFlow):
+        (WebInspector.ComputedStyleDetailsPanel.prototype.set contentFlow):
+        (WebInspector.ComputedStyleDetailsPanel.prototype.get containerRegions):
+        (WebInspector.ComputedStyleDetailsPanel.prototype.set containerRegions):
+        (WebInspector.ComputedStyleDetailsPanel.prototype.refresh):
+        (WebInspector.ComputedStyleDetailsPanel.prototype._computedStyleShowAllCheckboxValueChanged):
+        (WebInspector.ComputedStyleDetailsPanel.prototype._resetFlowDetails):
+        (WebInspector.ComputedStyleDetailsPanel.prototype._refreshFlowDetails.contentFlowInfoReady):
+        (WebInspector.ComputedStyleDetailsPanel.prototype._refreshFlowDetails):
+        (WebInspector.ComputedStyleDetailsPanel.prototype._goToRegionFlowArrowWasClicked):
+        (WebInspector.ComputedStyleDetailsPanel.prototype._goToContentFlowArrowWasClicked):
+        * UserInterface/DOMTreeDataGrid.css: Added.
+        (.dom-tree-data-grid .data-grid):
+        (.dom-tree-data-grid .data-grid table.data):
+        (.dom-tree-data-grid .data-container):
+        (.dom-tree-data-grid .data-container tr):
+        (.dom-tree-data-grid .data-container td > div):
+        (.dom-tree-data-grid .data-container .name-column):
+        (.dom-tree-data-grid .data-container .name-column .icon):
+        (.dom-tree-data-grid .data-container .name-column .label):
+        (.dom-tree-data-grid .data-container tr:hover .name-column .label):
+        (.dom-tree-data-grid .data-container .go-to-arrow):
+        (.dom-tree-data-grid .data-container tr:hover .go-to-arrow):
+        (.dom-tree-data-grid .data-container tbody > tr:nth-child(2n)):
+        (.dom-tree-data-grid .data-container tbody > tr:nth-child(2n+1)):
+        * UserInterface/DOMTreeDataGrid.js: Added.
+        (WebInspector.DOMTreeDataGrid):
+        (WebInspector.DOMTreeDataGrid.prototype._onmousemove):
+        (WebInspector.DOMTreeDataGrid.prototype._onmouseout):
+        * UserInterface/DOMTreeDataGridNode.js: Added.
+        (WebInspector.DOMTreeDataGridNode):
+        (WebInspector.DOMTreeDataGridNode.prototype.get domNode):
+        (WebInspector.DOMTreeDataGridNode.prototype.createCellContent):
+        (WebInspector.DOMTreeDataGridNode.prototype._updateNodeName):
+        (WebInspector.DOMTreeDataGridNode.prototype._makeNameCell):
+        (WebInspector.DOMTreeDataGridNode.prototype._updateNameCellData):
+        (WebInspector.DOMTreeDataGridNode.prototype._goToArrowWasClicked):
+        * UserInterface/DOMTreeManager.js:
+        (WebInspector.DOMTreeManager.prototype.unregisteredNamedFlowContentElement):
+        (WebInspector.DOMTreeManager.prototype.nodeRequested):
+        (WebInspector.DOMTreeManager.prototype._coerceRemoteArrayOfDOMNodes):
+        (WebInspector.DOMTreeManager.prototype.domNodeResolved):
+        (WebInspector.DOMTreeManager.prototype.regionNodesAvailable):
+        (WebInspector.DOMTreeManager.prototype.get if):
+        (WebInspector.DOMTreeManager.prototype.get var):
+        (WebInspector.DOMTreeManager.prototype.backendFunction.getComputedProperty):
+        (WebInspector.DOMTreeManager.prototype.backendFunction.getContentFlowName):
+        (WebInspector.DOMTreeManager.prototype.):
+        * UserInterface/DataGrid.css:
+        (.data-grid.no-header > table.header):
+        (.data-grid.no-header .data-container):
+        * UserInterface/DetailsSection.js:
+        (WebInspector.DetailsSection):
+        * UserInterface/InspectorBackend.js:
+        (InspectorBackendClass.prototype._wrap):
+        * UserInterface/Main.html:
+        * UserInterface/ResourceSidebarPanel.js:
+        (WebInspector.ResourceSidebarPanel.prototype.showContentFlowDOMTree):
+        * UserInterface/RuntimeManager.js:
+        (WebInspector.RuntimeManager.prototype.evaluateInInspectedWindow):
+        (WebInspector.RuntimeManager.prototype.getPropertiesForRemoteObject):
+
+2013-12-04  Antoine Quint  <graouts@apple.com>
+
+        Web Inspector: ColorWheel uses old Color constructor
+        https://bugs.webkit.org/show_bug.cgi?id=125260
+
+        Reviewed by Joseph Pecoraro.
+
+        Update to new WebInspector.Color constructor signature and use a clear color.
+
+        * UserInterface/ColorWheel.js:
+        (WebInspector.ColorWheel.prototype.get tintedColor):
+        (WebInspector.ColorWheel.prototype.get rawColor):
+
+2013-12-04  Antoine Quint  <graouts@apple.com>
+
+        Web Inspector: color picker doesn't work with "blue"
+        https://bugs.webkit.org/show_bug.cgi?id=125262
+
+        Reviewed by Joseph Pecoraro.
+
+        Under certain circumstances rounding issues would have us compare
+        two equal numbers that differ by 0.00000001 and sometime trip this
+        if statement and yield a null color. We now add a little fudge to
+        the test and also return a clear color rather than null to match what
+        we do in the getters for "tintedColor" and "rawColor".
+
+        * UserInterface/ColorWheel.js:
+        (WebInspector.ColorWheel.prototype._colorAtPointWithBrightness):
+
+2013-12-04  Antoine Quint  <graouts@apple.com>
+
+        Web Inspector: use only two decimals for opacity in rgba/hsla colors
+        https://bugs.webkit.org/show_bug.cgi?id=125261
+
+        Reviewed by Joseph Pecoraro.
+
+        * UserInterface/ColorPicker.js:
+        (WebInspector.ColorPicker.prototype._updateColor):
+
+2013-12-04  Antoine Quint  <graouts@apple.com>
+
+        Web Inspector: "data detectors" menu on hover for actionable tokens
+        https://bugs.webkit.org/show_bug.cgi?id=124363
+
+        Reviewed by Timothy Hatcher.
+
+        Add a new WebInspector.HoverMenu class to display an overlay menu that is presented
+        with respect to a target frame that it draws itself around adding a customizable
+        action button to its right. The menu uses fade animations as it's presented and
+        dismissed and a single delegation method is fired when the button is pressed. Finally,
+        just like a popover, it automatically dismisses itself upon scrolling anywhere
+        outside of its bounds.
+
+        * UserInterface/HoverMenu.css: Added.
+        * UserInterface/HoverMenu.js: Added.
+        (WebInspector.HoverMenu):
+        (WebInspector.HoverMenu.prototype.get element):
+        (WebInspector.HoverMenu.prototype.dismiss):
+        (WebInspector.HoverMenu.prototype.handleEvent):
+        (WebInspector.HoverMenu.prototype._handleClickEvent):
+        * UserInterface/Images/HoverMenuButton.png: Added.
+        * UserInterface/Images/HoverMenuButton@2x.png: Added.
+        * UserInterface/Main.html:
+
+2013-12-04  Antoine Quint  <graouts@apple.com>
+
+        Web Inspector: edited color should serialize back to original format when possible
+        https://bugs.webkit.org/show_bug.cgi?id=125244
+
+        Reviewed by Joseph Pecoraro.
+
+        Profoundly reworked WebInspector.Color to be more efficient and more flexible when
+        serializing the color to the various supported formats.
+
+        * UserInterface/CSSStyleDeclarationTextEditor.js:
+        (WebInspector.CSSStyleDeclarationTextEditor.prototype._createColorSwatches):
+        Use new WebInspector.Color.fromString() factory and check for a null return value
+        rather than an exception to identify invalid color tokens.
+
+        * UserInterface/Color.js:
+        (WebInspector.Color):
+        Rewrote WebInspector.Color such that it would have, at all times, a canonical
+        representation in terms of either RGBA or HSLA depending on the format used to
+        create the color. The new constructor parameters lets the user pass a format
+        and the RGBA or HSLA components, allowing to bypass the string-only creation
+        system which was sub-optimal for the new color picker. Additionally, the toString()
+        method now can provide the most accurate serialization of the color based on the
+        provided format with a fallback mechanism to RGB/RGBA in cases where the desired
+        format would incur a loss of fidelity. Finally, simplified the API to only feature
+        essential features.
+
+        (WebInspector.Color.fromString):
+        New factory method used to create a color from a string.
+
+        * UserInterface/ColorPicker.js:
+        (WebInspector.ColorPicker.prototype.set color):
+        Keep track of the original color format so that we can use it as the preferred format
+        when serializing the updated color in _updateColor().
+
+        (WebInspector.ColorPicker.prototype._updateColor):
+        Use the original color format as the prefered formation for color serialization. Also,
+        use the new WebInspector.Color constructor in lieu of the removed .fromRGBA factory.
+
+        (WebInspector.ColorPicker.prototype._updateSliders):
+        Use the new WebInspector.Color constructor in lieu of the removed .fromRGBA factory.
+
+        * UserInterface/ColorWheel.js:
+        (WebInspector.ColorWheel.prototype._colorAtPointWithBrightness):
+        Use the new WebInspector.Color constructor in lieu of the removed .fromRGB factory.
+
 2013-12-03  Seokju Kwon  <seokju@webkit.org>
 
         Web Inspector: Remove '_attachedWindowHeight' property in InspectorFrontendHostStub.js

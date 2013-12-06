@@ -44,9 +44,9 @@ WK_API_CLASS
 
 #pragma mark Delegates
 
-@property (assign) id <WKBrowsingContextLoadDelegate> loadDelegate;
-@property (assign) id <WKBrowsingContextPolicyDelegate> policyDelegate;
-@property (assign) id <WKBrowsingContextHistoryDelegate> historyDelegate;
+@property (weak) id <WKBrowsingContextLoadDelegate> loadDelegate;
+@property (weak) id <WKBrowsingContextPolicyDelegate> policyDelegate;
+@property (weak) id <WKBrowsingContextHistoryDelegate> historyDelegate;
 
 #pragma mark Loading
 
@@ -105,6 +105,8 @@ WK_API_CLASS
 @property(readonly) WKBackForwardList *backForwardList;
 
 #pragma mark Active Load Introspection
+
+@property (readonly, getter=isLoading) BOOL loading;
 
 /* URL for the active load. This is the URL that should be shown in user interface. */
 @property(readonly) NSURL *activeURL;

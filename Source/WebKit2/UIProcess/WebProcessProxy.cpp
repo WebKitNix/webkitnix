@@ -53,7 +53,7 @@
 #include "PDFPlugin.h"
 #endif
 
-#if USE(SECURITY_FRAMEWORK)
+#if ENABLE(SEC_ITEM_SHIM)
 #include "SecItemShimProxy.h"
 #endif
 
@@ -112,7 +112,7 @@ void WebProcessProxy::connectionWillOpen(CoreIPC::Connection* connection)
 {
     ASSERT(this->connection() == connection);
 
-#if USE(SECURITY_FRAMEWORK)
+#if ENABLE(SEC_ITEM_SHIM)
     SecItemShimProxy::shared().initializeConnection(connection);
 #endif
 

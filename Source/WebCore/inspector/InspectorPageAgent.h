@@ -101,7 +101,7 @@ public:
     virtual void removeScriptToEvaluateOnLoad(ErrorString*, const String& identifier);
     virtual void reload(ErrorString*, const bool* optionalIgnoreCache, const String* optionalScriptToEvaluateOnLoad, const String* optionalScriptPreprocessor);
     virtual void navigate(ErrorString*, const String& url);
-    virtual void getCookies(ErrorString*, RefPtr<TypeBuilder::Array<TypeBuilder::Page::Cookie>>& cookies, WTF::String* cookiesString);
+    virtual void getCookies(ErrorString*, RefPtr<TypeBuilder::Array<TypeBuilder::Page::Cookie>>& cookies);
     virtual void deleteCookie(ErrorString*, const String& cookieName, const String& url);
     virtual void getResourceTree(ErrorString*, RefPtr<TypeBuilder::Page::FrameResourceTree>&);
     virtual void getResourceContent(ErrorString*, const String& frameId, const String& url, String* content, bool* base64Encoded);
@@ -129,7 +129,8 @@ public:
     virtual void setEmulatedMedia(ErrorString*, const String&);
     virtual void getCompositingBordersVisible(ErrorString*, bool* out_param);
     virtual void setCompositingBordersVisible(ErrorString*, bool);
-    virtual void captureScreenshot(ErrorString*, String* data);
+    virtual void snapshotNode(ErrorString*, int nodeId, String* outDataURL);
+    virtual void snapshotRect(ErrorString*, int x, int y, int width, int height, const String& coordinateSystem, String* outDataURL);
     virtual void handleJavaScriptDialog(ErrorString*, bool accept, const String* promptText);
     virtual void archive(ErrorString*, String* data);
 

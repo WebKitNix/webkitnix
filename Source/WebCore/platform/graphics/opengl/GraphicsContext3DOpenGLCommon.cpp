@@ -326,6 +326,14 @@ void GraphicsContext3D::reshape(int width, int height)
     ::glFlush();
 }
 
+bool GraphicsContext3D::areProgramSymbolsValid(Platform3DObject vertexShader, Platform3DObject fragmentShader) const
+{
+    UNUSED_PARAM(vertexShader);
+    UNUSED_PARAM(fragmentShader);
+    // TODO: Fill me in.
+    return true;
+}
+
 IntSize GraphicsContext3D::getInternalFramebufferSize() const
 {
     return IntSize(m_currentWidth, m_currentHeight);
@@ -1356,6 +1364,9 @@ GC3Dsizeiptr GraphicsContext3D::getVertexAttribOffset(GC3Duint index, GC3Denum p
 void GraphicsContext3D::texSubImage2D(GC3Denum target, GC3Dint level, GC3Dint xoff, GC3Dint yoff, GC3Dsizei width, GC3Dsizei height, GC3Denum format, GC3Denum type, const void* pixels)
 {
     makeContextCurrent();
+
+    if (type == HALF_FLOAT_OES)
+        type = GL_HALF_FLOAT_ARB;
 
     // FIXME: we will need to deal with PixelStore params when dealing with image buffers that differ from the subimage size.
     ::glTexSubImage2D(target, level, xoff, yoff, width, height, format, type, pixels);

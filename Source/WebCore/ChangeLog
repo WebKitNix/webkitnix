@@ -1,3 +1,1026 @@
+2013-12-06  Andreas Kling  <akling@apple.com>
+
+        Make remaining CSSValue constructors return PassRef.
+        <https://webkit.org/b/125337>
+
+        Tweak the remaining CSSValue create() helpers to return PassRef
+        instead of PassRefPtr in the cases where nullptr is never returned.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-06  Roger Fong  <roger_fong@apple.com>
+
+        Hook into some shader symbol logic following the ANGLE update in r159533.
+        https://bugs.webkit.org/show_bug.cgi?id=125332.
+
+        Reviewed by Brent Fulgham.
+
+        No new functionality added.
+
+        * html/canvas/WebGLRenderingContext.cpp: Add some error checking for errors related to 
+            shader symbols that exist across both vertex and fragment shaders.
+        (WebCore::WebGLRenderingContext::linkProgram):
+        * platform/graphics/ANGLEWebKitBridge.cpp: Add logic for handling varyings 
+            and add new fields to the ANGLEShaderSymbol struct.
+        (WebCore::getSymbolInfo):
+        * platform/graphics/ANGLEWebKitBridge.h:
+        * platform/graphics/GraphicsContext3D.h: Add those same fields to the SymbolInfo struct 
+            as well so that we can access them from our shader source map.
+            Also add a map of varyings along side the uniforms and attributes.
+        (WebCore::GraphicsContext3D::SymbolInfo::SymbolInfo):
+        (WebCore::GraphicsContext3D::ShaderSourceEntry::symbolMap):
+        * platform/graphics/opengl/Extensions3DOpenGLCommon.cpp:
+        (WebCore::Extensions3DOpenGLCommon::getTranslatedShaderSourceANGLE):
+        * platform/graphics/opengl/GraphicsContext3DOpenGLCommon.cpp:
+        (WebCore::GraphicsContext3D::areProgramSymbolsValid): Will be filled in later, this method 
+            will use the shader source map to check for issues with unused varyings and precisions 
+            mismatches of shader symbols that exist across both the vertex and fragment shaders.
+
+2013-12-06  Lukasz Gajowy  <l.gajowy@samsung.com>
+
+        [ATK] Missing aria roles mappings
+        https://bugs.webkit.org/show_bug.cgi?id=117729
+
+        Reviewed by Mario Sanchez Prada.
+
+        Added a few mappings from ARIA roles to ATK roles.
+
+        Test: accessibility/aria-mappings.html
+
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (atkRole):
+
+2013-11-11  Philippe Normand  <pnormand@igalia.com>
+
+        [GStreamer] webkitwebaudiosrc element needs to emit stream-start, caps and segment events
+        https://bugs.webkit.org/show_bug.cgi?id=123015
+
+        Reviewed by Martin Robinson.
+
+        When the source element starts emitting buffers send along various
+        events to notify downstream elements.
+
+        No new tests, change covered by existing webaudio tests.
+
+        * platform/audio/gstreamer/WebKitWebAudioSourceGStreamer.cpp:
+        (webkit_web_audio_src_init): Initialize segment.
+        (webKitWebAudioSrcConstructed): Give an explicit name to each
+        queue added in front of the interleave element.
+        (webKitWebAudioSrcLoop): Before sending the first buffers push
+        stream-start, caps and segment events on each queue's sinkpad.
+
+2013-12-05  Philippe Normand  <pnormand@igalia.com>
+
+        [GStreamer] Audio/Video sink management is incoherent
+        https://bugs.webkit.org/show_bug.cgi?id=125304
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Allow subclasses of MediaPlayerPrivateGStreamerBase to create
+        custom audio/video sinks in a coherent manner using
+        create{Audio,Video}Sink methods. Convenience getters are also
+        available. Also removed some un-needed member variables in the
+        playbin-based player.
+
+        No new tests, existing media tests cover this change.
+
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp:
+        (WebCore::MediaPlayerPrivateGStreamer::MediaPlayerPrivateGStreamer):
+        (WebCore::MediaPlayerPrivateGStreamer::updateStates):
+        (WebCore::MediaPlayerPrivateGStreamer::createAudioSink):
+        (WebCore::MediaPlayerPrivateGStreamer::audioSink):
+        (WebCore::MediaPlayerPrivateGStreamer::createGSTPlayBin):
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.h:
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp:
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.h:
+        (WebCore::MediaPlayerPrivateGStreamerBase::createAudioSink):
+
+2013-12-05  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Introduce IMAGE_TYPE_CASTS, and use it
+        https://bugs.webkit.org/show_bug.cgi?id=125330
+
+        Reviewed by Ryosuke Niwa.
+
+        As a step to use TYPE_CASTS_BASE, this cl introduce IMAGE_TYPE_CASTS.
+        BitmapImage and SVGImage can use it to generate toFoo() type case helper functions.
+
+        No new tests, no behavior changes.
+
+        * loader/cache/CachedImage.cpp:
+        (WebCore::CachedImage::imageSizeForRenderer):
+        (WebCore::CachedImage::resumeAnimatingImagesForLoader):
+        * platform/graphics/BitmapImage.h:
+        * platform/graphics/Image.h:
+        * platform/mac/DragImageMac.mm:
+        (WebCore::createDragImageFromImage):
+        * svg/graphics/SVGImage.h:
+
+2013-12-05  Zoltan Horvath  <zoltan@webkit.org>
+
+        Clean up the forwarding headers of RenderBlock.h
+        https://bugs.webkit.org/show_bug.cgi?id=125323
+
+        Reviewed by Ryosuke Niwa.
+
+        In this patch, I removed the unnecessary forwarding headers from RenderBlock.h, and moved some to RenderBlockFlow.h.
+
+        No new tests, no behavior change.
+
+        * rendering/RenderBlock.h: Remove unnecessary forwarding headers.
+        * rendering/RenderBlockFlow.h: Moved some forwarding headers from RenderBlock.h
+
+2013-12-04  Oliver Hunt  <oliver@apple.com>
+
+        Refactor static getter function prototype to include thisValue in addition to the base object
+        https://bugs.webkit.org/show_bug.cgi?id=124461
+
+        Reviewed by Geoffrey Garen.
+
+        Change bindings codegen to produce static getter functions
+        with the correct types.  Also update the many custom implementations
+        to the new type.
+
+        No change in behaviour.
+
+        * bindings/js/JSCSSStyleDeclarationCustom.cpp:
+        (WebCore::cssPropertyGetterPixelOrPosPrefixCallback):
+        (WebCore::cssPropertyGetterCallback):
+        * bindings/js/JSDOMBinding.cpp:
+        (WebCore::objectToStringFunctionGetter):
+        * bindings/js/JSDOMBinding.h:
+        * bindings/js/JSDOMMimeTypeArrayCustom.cpp:
+        (WebCore::JSDOMMimeTypeArray::nameGetter):
+        * bindings/js/JSDOMPluginArrayCustom.cpp:
+        (WebCore::JSDOMPluginArray::nameGetter):
+        * bindings/js/JSDOMPluginCustom.cpp:
+        (WebCore::JSDOMPlugin::nameGetter):
+        * bindings/js/JSDOMStringMapCustom.cpp:
+        (WebCore::JSDOMStringMap::nameGetter):
+        * bindings/js/JSDOMWindowCustom.cpp:
+        (WebCore::nonCachingStaticFunctionGetter):
+        (WebCore::childFrameGetter):
+        (WebCore::indexGetter):
+        (WebCore::namedItemGetter):
+        * bindings/js/JSHTMLAllCollectionCustom.cpp:
+        (WebCore::JSHTMLAllCollection::nameGetter):
+        * bindings/js/JSHTMLCollectionCustom.cpp:
+        (WebCore::JSHTMLCollection::nameGetter):
+        * bindings/js/JSHTMLDocumentCustom.cpp:
+        (WebCore::JSHTMLDocument::nameGetter):
+        * bindings/js/JSHTMLFormControlsCollectionCustom.cpp:
+        (WebCore::JSHTMLFormControlsCollection::nameGetter):
+        * bindings/js/JSHTMLFormElementCustom.cpp:
+        (WebCore::JSHTMLFormElement::nameGetter):
+        * bindings/js/JSHTMLFrameSetElementCustom.cpp:
+        (WebCore::JSHTMLFrameSetElement::nameGetter):
+        * bindings/js/JSHistoryCustom.cpp:
+        (WebCore::nonCachingStaticBackFunctionGetter):
+        (WebCore::nonCachingStaticForwardFunctionGetter):
+        (WebCore::nonCachingStaticGoFunctionGetter):
+        * bindings/js/JSJavaScriptCallFrameCustom.cpp:
+        (WebCore::JSJavaScriptCallFrame::scopeType):
+        * bindings/js/JSLocationCustom.cpp:
+        (WebCore::nonCachingStaticReplaceFunctionGetter):
+        (WebCore::nonCachingStaticReloadFunctionGetter):
+        (WebCore::nonCachingStaticAssignFunctionGetter):
+        * bindings/js/JSNamedNodeMapCustom.cpp:
+        (WebCore::JSNamedNodeMap::nameGetter):
+        * bindings/js/JSNodeListCustom.cpp:
+        (WebCore::JSNodeList::nameGetter):
+        * bindings/js/JSPluginElementFunctions.cpp:
+        (WebCore::pluginElementPropertyGetter):
+        * bindings/js/JSPluginElementFunctions.h:
+        * bindings/js/JSRTCStatsResponseCustom.cpp:
+        (WebCore::JSRTCStatsResponse::nameGetter):
+        * bindings/js/JSStorageCustom.cpp:
+        (WebCore::JSStorage::nameGetter):
+        * bindings/js/JSStyleSheetListCustom.cpp:
+        (WebCore::JSStyleSheetList::nameGetter):
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateHeader):
+        (GenerateImplementation):
+        (GenerateParametersCheck):
+        * bridge/runtime_array.cpp:
+        (JSC::RuntimeArray::lengthGetter):
+        (JSC::RuntimeArray::indexGetter):
+        * bridge/runtime_array.h:
+        * bridge/runtime_method.cpp:
+        (JSC::RuntimeMethod::lengthGetter):
+        * bridge/runtime_method.h:
+        * bridge/runtime_object.cpp:
+        (JSC::Bindings::RuntimeObject::fallbackObjectGetter):
+        (JSC::Bindings::RuntimeObject::fieldGetter):
+        (JSC::Bindings::RuntimeObject::methodGetter):
+        * bridge/runtime_object.h:
+
+2013-12-05  Tim Horton  <timothy_horton@apple.com>
+
+        Remove Image::decodedSize()
+        https://bugs.webkit.org/show_bug.cgi?id=125327
+
+        Reviewed by Sam Weinig.
+
+        No new tests, just removing dead code.
+
+        * platform/graphics/BitmapImage.cpp:
+        (WebCore::BitmapImage::resetAnimation):
+        * platform/graphics/BitmapImage.h:
+        * platform/graphics/GeneratedImage.h:
+        * platform/graphics/Image.h:
+        * platform/graphics/cg/PDFDocumentImage.cpp:
+        * platform/graphics/cg/PDFDocumentImage.h:
+        * svg/graphics/SVGImage.h:
+        * svg/graphics/SVGImageForContainer.h:
+
+2013-12-05  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r160133.
+        http://trac.webkit.org/changeset/160133
+        https://bugs.webkit.org/show_bug.cgi?id=125325
+
+        broke bindings tests on all the bots (Requested by thorton on
+        #webkit).
+
+        * bindings/js/JSCSSStyleDeclarationCustom.cpp:
+        (WebCore::cssPropertyGetterPixelOrPosPrefixCallback):
+        (WebCore::cssPropertyGetterCallback):
+        * bindings/js/JSDOMBinding.cpp:
+        (WebCore::objectToStringFunctionGetter):
+        * bindings/js/JSDOMBinding.h:
+        * bindings/js/JSDOMMimeTypeArrayCustom.cpp:
+        (WebCore::JSDOMMimeTypeArray::nameGetter):
+        * bindings/js/JSDOMPluginArrayCustom.cpp:
+        (WebCore::JSDOMPluginArray::nameGetter):
+        * bindings/js/JSDOMPluginCustom.cpp:
+        (WebCore::JSDOMPlugin::nameGetter):
+        * bindings/js/JSDOMStringMapCustom.cpp:
+        (WebCore::JSDOMStringMap::nameGetter):
+        * bindings/js/JSDOMWindowCustom.cpp:
+        (WebCore::nonCachingStaticFunctionGetter):
+        (WebCore::childFrameGetter):
+        (WebCore::indexGetter):
+        (WebCore::namedItemGetter):
+        * bindings/js/JSHTMLAllCollectionCustom.cpp:
+        (WebCore::JSHTMLAllCollection::nameGetter):
+        * bindings/js/JSHTMLCollectionCustom.cpp:
+        (WebCore::JSHTMLCollection::nameGetter):
+        * bindings/js/JSHTMLDocumentCustom.cpp:
+        (WebCore::JSHTMLDocument::nameGetter):
+        * bindings/js/JSHTMLFormControlsCollectionCustom.cpp:
+        (WebCore::JSHTMLFormControlsCollection::nameGetter):
+        * bindings/js/JSHTMLFormElementCustom.cpp:
+        (WebCore::JSHTMLFormElement::nameGetter):
+        * bindings/js/JSHTMLFrameSetElementCustom.cpp:
+        (WebCore::JSHTMLFrameSetElement::nameGetter):
+        * bindings/js/JSHistoryCustom.cpp:
+        (WebCore::nonCachingStaticBackFunctionGetter):
+        (WebCore::nonCachingStaticForwardFunctionGetter):
+        (WebCore::nonCachingStaticGoFunctionGetter):
+        * bindings/js/JSJavaScriptCallFrameCustom.cpp:
+        (WebCore::JSJavaScriptCallFrame::scopeType):
+        * bindings/js/JSLocationCustom.cpp:
+        (WebCore::nonCachingStaticReplaceFunctionGetter):
+        (WebCore::nonCachingStaticReloadFunctionGetter):
+        (WebCore::nonCachingStaticAssignFunctionGetter):
+        * bindings/js/JSNamedNodeMapCustom.cpp:
+        (WebCore::JSNamedNodeMap::nameGetter):
+        * bindings/js/JSNodeListCustom.cpp:
+        (WebCore::JSNodeList::nameGetter):
+        * bindings/js/JSPluginElementFunctions.cpp:
+        (WebCore::pluginElementPropertyGetter):
+        * bindings/js/JSPluginElementFunctions.h:
+        * bindings/js/JSRTCStatsResponseCustom.cpp:
+        (WebCore::JSRTCStatsResponse::nameGetter):
+        * bindings/js/JSStorageCustom.cpp:
+        (WebCore::JSStorage::nameGetter):
+        * bindings/js/JSStyleSheetListCustom.cpp:
+        (WebCore::JSStyleSheetList::nameGetter):
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateHeader):
+        (GenerateImplementation):
+        (GenerateParametersCheck):
+        * bridge/runtime_array.cpp:
+        (JSC::RuntimeArray::lengthGetter):
+        (JSC::RuntimeArray::indexGetter):
+        * bridge/runtime_array.h:
+        * bridge/runtime_method.cpp:
+        (JSC::RuntimeMethod::lengthGetter):
+        * bridge/runtime_method.h:
+        * bridge/runtime_object.cpp:
+        (JSC::Bindings::RuntimeObject::fallbackObjectGetter):
+        (JSC::Bindings::RuntimeObject::fieldGetter):
+        (JSC::Bindings::RuntimeObject::methodGetter):
+        * bridge/runtime_object.h:
+
+2013-12-05  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove 'cookiesString' output from Page.getCookies
+        https://bugs.webkit.org/show_bug.cgi?id=125268
+
+        Reviewed by Timothy Hatcher.
+
+        Remove 'cookiesString' output from Page.getCookies protocol.
+        It is no longer meaningful because it is an unused parameter.
+
+        No new tests, no behavior change.
+
+        * inspector/InspectorPageAgent.cpp:
+        (WebCore::InspectorPageAgent::getCookies):
+        * inspector/InspectorPageAgent.h:
+        * inspector/protocol/Page.json:
+
+2013-12-05  Brian J. Burg  <burg@cs.washington.edu>
+
+        Web Inspector: expose node and frame snapshot capabilities.
+        https://bugs.webkit.org/show_bug.cgi?id=124326
+
+        Reviewed by Joseph Pecoraro.
+
+        This adds snapshotRect() and snapshotNode() to the Page domain.
+        Both methods create snapshots using FrameSnapshotting APIs
+        and send images to the inspector frontend as a data URL.
+
+        Remove the unimplemented Page.captureScreenshot API.
+
+        * inspector/InspectorPageAgent.cpp:
+        (WebCore::InspectorPageAgent::snapshotNode): Added.
+        (WebCore::InspectorPageAgent::snapshotRect): Added.
+        * inspector/InspectorPageAgent.h:
+        * inspector/protocol/Page.json: Added new protocol APIs.
+
+2013-12-04 Bear Travis <betravis@adobe.com>
+
+    [CSS Shapes] Enable CSS Shapes on Windows
+    https://bugs.webkit.org/show_bug.cgi?id=89957
+
+    Reviewed by Brent Fulgham.
+
+    * css/CSSPropertyNames.in: Tweak to ensure shapes properties are regenerated.
+
+2013-12-05  Roger Fong  <roger_fong@apple.com>
+
+        [WebGL] Make sure we satisfy uniform and varying packing restrictions.
+        https://bugs.webkit.org/show_bug.cgi?id=125124.
+        <rdar://problem/15203291>
+
+        Reviewed by Brent Fulgham.
+
+        Tests covered by WebGL Khronos conformance tests:
+        webgl/1.0.2/conformance/glsl/misc/shader-uniform-packing-restrictions.html
+        webgl/1.0.2/conformance/glsl/misc/shader-varying-packing-restrictions.html
+
+        * platform/graphics/opengl/Extensions3DOpenGLCommon.cpp:
+        (WebCore::Extensions3DOpenGLCommon::getTranslatedShaderSourceANGLE):
+
+2013-12-05  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        32bit buildfix after r160151
+        https://bugs.webkit.org/show_bug.cgi?id=125298
+
+        Reviewed by Csaba Osztrogonác.
+
+        * platform/graphics/gstreamer/WebKitWebSourceGStreamer.cpp:
+        (StreamingClient::handleDataReceived):
+
+2013-12-05  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Cropping and drawing ImageBuffers results in uninitialized data being shown
+        https://bugs.webkit.org/show_bug.cgi?id=125271
+
+        Reviewed by Simon Fraser.
+
+        createCroppedImageIfNecessary() crops to the bottom left of the ImageBuffer
+        backing store instead of the top left. In addition, ImageBuffer::draw()
+        draws the entire ImageBuffer's backing store instead of just the relevant
+        portion of it.
+
+        No new tests are necessary because the existing tests already test this
+        functionality
+
+        * platform/graphics/cg/ImageBufferCG.cpp:
+        (WebCore::createCroppedImageIfNecessary): Crop to the top left of the
+        backing store 
+        (WebCore::ImageBuffer::draw): Draw only the logical portion of the
+        backing store 
+
+2013-12-05  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Remove stale ScriptGlobalObject methods
+        https://bugs.webkit.org/show_bug.cgi?id=125276
+
+        Reviewed by Sam Weinig.
+
+        * bindings/js/ScriptObject.cpp:
+        (WebCore::ScriptGlobalObject::set):
+        * bindings/js/ScriptObject.h:
+
+2013-12-04  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Change how the form element pointer affects parsing template elements, to reduce weirdness in templates
+        https://bugs.webkit.org/show_bug.cgi?id=125279
+
+        Reviewed by Antti Koivisto.
+
+        Faithfully update the HTML5 parser after http://html5.org/tools/web-apps-tracker?from=8330&to=8331.
+
+        Test: fast/dom/HTMLTemplateElement/no-form-association-2.html
+
+        * html/parser/HTMLConstructionSite.cpp:
+        (WebCore::HTMLConstructionSite::insertHTMLFormElement): Don't the form element pointer if the context
+        element or its ancestor is a template element.
+        (WebCore::HTMLConstructionSite::insideTemplateElement): Added.
+        (WebCore::HTMLConstructionSite::createHTMLElement): Renamed openElementsContainTemplateElement to
+        insideTemplateElement to reflect the true semantics of the boolean.
+
+        * html/parser/HTMLConstructionSite.h:
+
+        * html/parser/HTMLTreeBuilder.cpp:
+        (WebCore::HTMLTreeBuilder::processIsindexStartTagForInBody): Ignore the form element pointer if there
+        is a template element on the stack of open elements. This faithfully reflects what's being said in the
+        specification. We should probably make isParsingTemplateContents more efficient by storing a boolean
+        and then wrap from() in some helper function but that should probbaly happen in a separate patch.
+        (WebCore::HTMLTreeBuilder::processStartTagForInBody): Ditto.
+        (WebCore::HTMLTreeBuilder::processStartTagForInTable): Ditto.
+        (WebCore::HTMLTreeBuilder::processEndTagForInBody): Don't unset or rely on the form element pointer
+        when there is a template element on the stack of open elements.
+
+        * html/parser/HTMLTreeBuilder.h:
+        (WebCore::HTMLTreeBuilder::isParsingTemplateContents): Added a trivial implementation for when
+        TEMPLATE_ELEMENT is disabled.
+        (WebCore::HTMLTreeBuilder::isParsingFragmentOrTemplateContents): Merged two implementations.
+
+2013-12-05  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        [MediaStream] Firing negotiationneeded event upon track add/remove on MediaStream
+        https://bugs.webkit.org/show_bug.cgi?id=125243
+
+        Reviewed by Eric Carlson.
+
+        Spec states that: In particular, if an RTCPeerConnection object is consuming a MediaStream on which a track is
+        added, by, e.g., the addTrack() method being invoked, the RTCPeerConnection object must fire the
+        "negotiationneeded" event. Removal of media components must also trigger "negotiationneeded".
+
+        Existing tests updated.
+
+        * Modules/mediastream/MediaStream.cpp:
+        (WebCore::MediaStream::addTrack):
+        (WebCore::MediaStream::removeTrack):
+        (WebCore::MediaStream::addObserver):
+        (WebCore::MediaStream::removeObserver):
+        * Modules/mediastream/MediaStream.h:
+        * Modules/mediastream/RTCPeerConnection.cpp:
+        (WebCore::RTCPeerConnection::~RTCPeerConnection):
+        (WebCore::RTCPeerConnection::addStream):
+        (WebCore::RTCPeerConnection::removeStream):
+        (WebCore::RTCPeerConnection::didAddOrRemoveTrack):
+        * Modules/mediastream/RTCPeerConnection.h:
+        * platform/mock/RTCPeerConnectionHandlerMock.cpp:
+        (WebCore::RTCPeerConnectionHandlerMock::addStream):
+
+2013-12-05  Beth Dakin  <bdakin@apple.com>
+
+        Bad repaints on twitter when the tile cache has a margin
+        https://bugs.webkit.org/show_bug.cgi?id=125263
+        -and corresponding-
+        <rdar://problem/15576884>
+
+        Reviewed by Tim Horton.
+
+        When tiles that used to be margin tiles become real-content tiles, they need to be 
+        invalidated.
+
+        Two new helper functions will make it so that we don’t have to manually factor out 
+        the margin from the bounds in more than one place in the code.
+        * platform/graphics/ca/mac/TileController.h:
+        * platform/graphics/ca/mac/TileController.mm:
+        (WebCore::TileController::boundsWithoutMargin):
+        (WebCore::TileController::boundsAtLastRevalidateWithoutMargin):
+
+         Here is one existing place where we used to factor out the margin, but now we can 
+        call boundsWithoutMargin().
+        (WebCore::TileController::adjustRectAtTileIndexForMargin):
+
+        And here is where we invalidate the formerly-margin tiles.
+        (WebCore::TileController::revalidateTiles):
+
+2013-12-05  Zoltan Horvath  <zoltan@webkit.org>
+
+        Remove the forward declaration of BidiContext class from RenderBlock.h
+        https://bugs.webkit.org/show_bug.cgi?id=125265
+
+        Reviewed by Csaba Osztrogonác.
+
+        No new tests, no behavior change.
+
+        * rendering/RenderBlock.h: BidiContext is not used in RenderBlock.h
+
+2013-12-05  Aloisio Almeida Jr  <aloisio.almeida@openbossa.org>
+
+        [Cairo] Avoid extra copy when drawing images
+        https://bugs.webkit.org/show_bug.cgi?id=124209
+
+        Reviewed by Carlos Garcia Campos.
+
+        This commit applies some changes proposed after the original patch has
+        been landed. It fixes the logic to create the subsurface (as it was
+        inverted). It also remove an unnecessary RefPtr variable to hold the
+        subsurface.
+
+        No new tests. It's an enhancement. Already covered by existing tests.
+
+        * platform/graphics/cairo/PlatformContextCairo.cpp:
+        (WebCore::PlatformContextCairo::drawSurfaceToContext):
+
+2013-12-05  Zoltan Horvath  <zoltan@webkit.org>
+
+        [CSS Shapes] Fix inset when only a subset of the arguments are defined
+        https://bugs.webkit.org/show_bug.cgi?id=125277
+
+        Reviewed by David Hyatt.
+
+       I thought Length's default value is fixed-0, but actually it's auto-0. For the optional arguments
+       of inset shape, we need to use fixed-0, so I updated the code and the tests to use that explicitly.
+
+        No new tests, I updated the old ones.
+
+        * css/BasicShapeFunctions.cpp:
+        (WebCore::basicShapeForValue):
+
+2013-12-05  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Do not use deprecated gtk-doc 'Rename to' tag
+        https://bugs.webkit.org/show_bug.cgi?id=125303
+
+        Reviewed by Philippe Normand.
+
+        GObject introspection rename-to annotation is available in
+        since version 0.6.3 so we should use that instead.
+
+        * bindings/gobject/WebKitDOMEventTarget.h:
+
+2013-12-05  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Add missing symbols to WebKitDOMDeprecated.symbols
+        https://bugs.webkit.org/show_bug.cgi?id=125300
+
+        Reviewed by Philippe Normand.
+
+        Add webkit_dom_html_element_get_id and
+        webkit_dom_html_element_set_id to the symbols files.
+
+        * bindings/gobject/WebKitDOMDeprecated.symbols:
+        * bindings/gobject/webkitdom.symbols:
+
+2013-12-05  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Unreviewed. Update GObject DOM bindings symbols file after r159711.
+
+        * bindings/gobject/webkitdom.symbols:
+
+2013-12-05  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Move platform sources free of layering violations under libPlatform
+        https://bugs.webkit.org/show_bug.cgi?id=117509
+
+        Reviewed by Carlos Garcia Campos.
+
+        * GNUmakefile.list.am: Move additional source files located in the platform layer under libPlatform.
+        All moved sources are free of layering violations and thus ready for the migration.
+
+2013-12-05  László Langó  <lango@inf.u-szeged.hu>
+
+        Remove bridge/testqtbindings.cpp.
+        https://bugs.webkit.org/show_bug.cgi?id=125287
+
+        Reviewed by Alexey Proskuryakov.
+
+        * bridge/testqtbindings.cpp: Removed. There is no QT anymore.
+        We don't need this file.
+
+2013-12-04  Gurpreet Kaur  <k.gurpreet@samsung.com>
+
+        % unit heights don't work if parent block height is set in vh
+        https://bugs.webkit.org/show_bug.cgi?id=118516
+
+        Reviewed by Simon Fraser.
+
+        From Blink r156449 by <srinivasa.ragavan.venkateswaran@intel.com>
+
+        An element having height as percentage needs to have the
+        containingblock's height or availableheight to calculate its
+        own height. The containing block having a height set in vh
+        unit was not being considered for calculating the child's
+        height.
+
+        Tests: fast/css/viewport-percentage-compute-box-height.html
+               fast/css/viewport-percentage-compute-box-width.html
+
+        * rendering/RenderBox.cpp:
+        (WebCore::RenderBox::computePercentageLogicalHeight):
+        Correct child's height(in pecentage) was not being calculated
+        incase of parent having height set in vh unit. Added condition
+        to calculate the containing block height in terms of viewport size.
+
+2013-12-04  Roger Fong  <roger_fong@apple.com>
+
+        [Windows] Unreviewed build fix. Copy headers from rendering/line to build directory.
+
+        * WebCore.vcxproj/copyForwardingHeaders.cmd:
+
+2013-12-04  Ryosuke Niwa  <rniwa@webkit.org>
+
+        bgColor, setBgColor, alinkColor, setAlinkColor, and etc... on HTMLBodyElement are useless
+        https://bugs.webkit.org/show_bug.cgi?id=125208
+
+        Rubber-stamped by Anders Carlsson.
+
+        Address Darin's comment to use fastGetAttribute instead of getAttribute.
+
+        * html/HTMLDocument.cpp:
+        (WebCore::HTMLDocument::bgColor):
+        (WebCore::HTMLDocument::fgColor):
+        (WebCore::HTMLDocument::alinkColor):
+        (WebCore::HTMLDocument::linkColor):
+        (WebCore::HTMLDocument::vlinkColor):
+
+2013-12-04  Brian J. Burg  <burg@cs.washington.edu>
+
+        Consolidate various frame snapshot capabilities.
+        https://bugs.webkit.org/show_bug.cgi?id=124325
+
+        Reviewed by Darin Adler.
+
+        Various snapshot creation methods had duplicated code and were split
+        between Frame, DragImage, and platform-specific implementationss.
+        This patch puts WebCore snapshot methods into FrameSnapshotting
+        and removes platform implementations where possible.
+
+        DragImage methods reuse snapshot methods where possible. Inspector
+        will be able to take snapshots without using drag images.
+
+        No new tests, this is a refactoring.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * WebCore.exp.in:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * bindings/objc/DOM.mm:
+        (-[DOMNode renderedImage]):
+        (-[DOMRange renderedImageForcingBlackText:]):
+        * dom/Clipboard.cpp:
+        (WebCore::Clipboard::createDragImage):
+        * dom/ClipboardMac.mm:
+        (WebCore::Clipboard::createDragImage):
+        * page/DragController.cpp:
+        (WebCore::DragController::startDrag):
+        * page/Frame.cpp:
+        * page/Frame.h:
+        * page/FrameSnapshotting.cpp: Added.
+        (WebCore::ScopedFramePaintingState::ScopedFramePaintingState):
+        (WebCore::ScopedFramePaintingState::~ScopedFramePaintingState):
+        (WebCore::snapshotFrameRect): Move most buffer logic to here.
+        (WebCore::snapshotSelection): Moved from Frame.
+        (WebCore::snapshotNode): Moved from Frame.
+        * page/FrameSnapshotting.h: Added.
+        * page/mac/FrameMac.mm: Removed.
+        * page/mac/FrameSnapshottingMac.h: Removed.
+        * page/mac/FrameSnapshottingMac.mm: Removed.
+        * page/win/FrameWin.cpp: remove duplicate implementation.
+        * page/win/FrameWin.h: Fix an incorrect parameter name.
+        * platform/DragImage.cpp:
+        (WebCore::ScopedNodeDragState::ScopedNodeDragState):
+        (WebCore::ScopedNodeDragState::~ScopedNodeDragState):
+        (WebCore::createDragImageFromSnapshot): Boilerplate buffer conversion.
+        (WebCore::createDragImageForNode):
+        (WebCore::createDragImageForSelection):
+        (WebCore::ScopedFrameSelectionState::ScopedFrameSelectionState):
+        (WebCore::ScopedFrameSelectionState::~ScopedFrameSelectionState):
+        (WebCore::createDragImageForRange): Moved from Frame.
+        (WebCore::createDragImageForImage): Moved from FrameSnapshottingMac.
+        (WebCore::createDragImageForLink): use nullptr.
+
+2013-12-04  Benjamin Poulain  <bpoulain@apple.com>
+
+        Remove spaces on a blank line to have ResourceHandleCFNet.cpp identical to iOS
+
+        Unreviewed.
+
+        * platform/network/cf/ResourceHandleCFNet.cpp:
+        (WebCore::ResourceHandle::platformLoadResourceSynchronously):
+
+2013-12-04  Antti Koivisto  <antti@apple.com>
+
+        Move pseudo element construction out from Element
+        https://bugs.webkit.org/show_bug.cgi?id=125257
+
+        Reviewed by Anders Carlsson.
+
+        This is logically part of the style resolve/render tree construction. This will make future
+        refactoring easier.
+
+        * dom/Element.cpp:
+        * dom/Element.h:
+        * style/StyleResolveTree.cpp:
+        (WebCore::Style::beforeOrAfterPseudoElement):
+        (WebCore::Style::setBeforeOrAfterPseudoElement):
+        (WebCore::Style::clearBeforeOrAfterPseudoElement):
+        (WebCore::Style::needsPseudeElement):
+        (WebCore::Style::attachBeforeOrAfterPseudoElementIfNeeded):
+        (WebCore::Style::attachRenderTree):
+        (WebCore::Style::updateBeforeOrAfterPseudoElement):
+        (WebCore::Style::resolveTree):
+
+2013-12-04  Zoltan Horvath  <zoltan@webkit.org>
+
+        Move TrailingObjects class into its own h/cpp
+        https://bugs.webkit.org/show_bug.cgi?id=124956
+
+        Reviewed by David Hyatt.
+
+        Since I moved space-ignoring inline functions into MidpointState in r160074,
+        I can nicely separate TrailingObjects class from BreakingContextInlineHeader.h.
+        This change improves the readability, and it's part of the RenderBlockLineLayout
+        refactoring campaign, which is tracked under bug #121261.
+
+        No new tests, no behavior change.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.xcodeproj/project.pbxproj:
+        * rendering/RenderBlock.h:
+        * rendering/RenderBlockFlow.h:
+        * rendering/line/BreakingContextInlineHeaders.h:
+        * rendering/line/TrailingObjects.cpp: Added.
+        (WebCore::TrailingObjects::updateMidpointsForTrailingBoxes):
+        * rendering/line/TrailingObjects.h: Added.
+        (WebCore::TrailingObjects::TrailingObjects):
+        (WebCore::TrailingObjects::setTrailingWhitespace):
+        (WebCore::TrailingObjects::clear):
+        (WebCore::TrailingObjects::appendBoxIfNeeded):
+
+2013-12-04  Oliver Hunt  <oliver@apple.com>
+
+        Refactor static getter function prototype to include thisValue in addition to the base object
+        https://bugs.webkit.org/show_bug.cgi?id=124461
+
+        Reviewed by Geoffrey Garen.
+
+        Change bindings codegen to produce static getter functions
+        with the correct types.  Also update the many custom implementations
+        to the new type.
+
+        No change in behaviour.
+
+        * bindings/js/JSCSSStyleDeclarationCustom.cpp:
+        (WebCore::cssPropertyGetterPixelOrPosPrefixCallback):
+        (WebCore::cssPropertyGetterCallback):
+        * bindings/js/JSDOMBinding.cpp:
+        (WebCore::objectToStringFunctionGetter):
+        * bindings/js/JSDOMBinding.h:
+        * bindings/js/JSDOMMimeTypeArrayCustom.cpp:
+        (WebCore::JSDOMMimeTypeArray::nameGetter):
+        * bindings/js/JSDOMPluginArrayCustom.cpp:
+        (WebCore::JSDOMPluginArray::nameGetter):
+        * bindings/js/JSDOMPluginCustom.cpp:
+        (WebCore::JSDOMPlugin::nameGetter):
+        * bindings/js/JSDOMStringMapCustom.cpp:
+        (WebCore::JSDOMStringMap::nameGetter):
+        * bindings/js/JSDOMWindowCustom.cpp:
+        (WebCore::nonCachingStaticFunctionGetter):
+        (WebCore::childFrameGetter):
+        (WebCore::indexGetter):
+        (WebCore::namedItemGetter):
+        * bindings/js/JSHTMLAllCollectionCustom.cpp:
+        (WebCore::JSHTMLAllCollection::nameGetter):
+        * bindings/js/JSHTMLCollectionCustom.cpp:
+        (WebCore::JSHTMLCollection::nameGetter):
+        * bindings/js/JSHTMLDocumentCustom.cpp:
+        (WebCore::JSHTMLDocument::nameGetter):
+        * bindings/js/JSHTMLFormControlsCollectionCustom.cpp:
+        (WebCore::JSHTMLFormControlsCollection::nameGetter):
+        * bindings/js/JSHTMLFormElementCustom.cpp:
+        (WebCore::JSHTMLFormElement::nameGetter):
+        * bindings/js/JSHTMLFrameSetElementCustom.cpp:
+        (WebCore::JSHTMLFrameSetElement::nameGetter):
+        * bindings/js/JSHistoryCustom.cpp:
+        (WebCore::nonCachingStaticBackFunctionGetter):
+        (WebCore::nonCachingStaticForwardFunctionGetter):
+        (WebCore::nonCachingStaticGoFunctionGetter):
+        * bindings/js/JSJavaScriptCallFrameCustom.cpp:
+        (WebCore::JSJavaScriptCallFrame::scopeType):
+        * bindings/js/JSLocationCustom.cpp:
+        (WebCore::nonCachingStaticReplaceFunctionGetter):
+        (WebCore::nonCachingStaticReloadFunctionGetter):
+        (WebCore::nonCachingStaticAssignFunctionGetter):
+        * bindings/js/JSNamedNodeMapCustom.cpp:
+        (WebCore::JSNamedNodeMap::nameGetter):
+        * bindings/js/JSNodeListCustom.cpp:
+        (WebCore::JSNodeList::nameGetter):
+        * bindings/js/JSPluginElementFunctions.cpp:
+        (WebCore::pluginElementPropertyGetter):
+        * bindings/js/JSPluginElementFunctions.h:
+        * bindings/js/JSRTCStatsResponseCustom.cpp:
+        (WebCore::JSRTCStatsResponse::nameGetter):
+        * bindings/js/JSStorageCustom.cpp:
+        (WebCore::JSStorage::nameGetter):
+        * bindings/js/JSStyleSheetListCustom.cpp:
+        (WebCore::JSStyleSheetList::nameGetter):
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateHeader):
+        (GenerateImplementation):
+        (GenerateParametersCheck):
+        * bridge/runtime_array.cpp:
+        (JSC::RuntimeArray::lengthGetter):
+        (JSC::RuntimeArray::indexGetter):
+        * bridge/runtime_array.h:
+        * bridge/runtime_method.cpp:
+        (JSC::RuntimeMethod::lengthGetter):
+        * bridge/runtime_method.h:
+        * bridge/runtime_object.cpp:
+        (JSC::Bindings::RuntimeObject::fallbackObjectGetter):
+        (JSC::Bindings::RuntimeObject::fieldGetter):
+        (JSC::Bindings::RuntimeObject::methodGetter):
+        * bridge/runtime_object.h:
+
+2013-12-04  Zoltan Horvath  <zoltan@webkit.org>
+
+        [CSS Shapes] Support inset for shape-outside
+        <https://webkit.org/b/125112>
+
+        Reviewed by David Hyatt.
+
+        This patch adds inset support for shape-outside. Parsing has previously landed in r159968.
+        Specification: http://dev.w3.org/csswg/css-shapes/#supported-basic-shapes
+
+        Tests: fast/shapes/shape-outside-floats/shape-outside-floats-inset-rounded-bottom-left.html
+               fast/shapes/shape-outside-floats/shape-outside-floats-inset-rounded-bottom-right.html
+               fast/shapes/shape-outside-floats/shape-outside-floats-inset-rounded-top-left.html
+               fast/shapes/shape-outside-floats/shape-outside-floats-inset-rounded-top-right.html
+               fast/shapes/shape-outside-floats/shape-outside-floats-inset.html
+
+        * platform/LengthSize.h:
+        (WebCore::LengthSize::floatSize): Add conversion to FloatSize.
+        * rendering/shapes/Shape.cpp:
+        (WebCore::Shape::createShape): Handle inset case.
+
+2013-12-04  Bear Travis  <betravis@adobe.com>
+
+        Web Inspector: [CSS Shapes] Support raster shape visualizations
+        https://bugs.webkit.org/show_bug.cgi?id=124080
+
+        Reviewed by Joseph Pecoraro.
+
+        Create an inspector visualization for a shape created from an image.
+        The visualization takes each line of the image, combining where possible.
+
+        Test added to inspector-protocol/model/highlight-shape-outside.html
+
+        * rendering/shapes/RasterShape.cpp:
+        (WebCore::RasterShapeIntervals::buildBoundsPath): Create a path representing the
+        RasterShapeIntervals.
+        * rendering/shapes/RasterShape.h:
+
+2013-12-04  Zoltan Horvath  <zoltan@webkit.org>
+
+        [CSS Shapes] Remove explicit numbering from BasicShape::Type and CSSBasicShape::Type enums
+        https://bugs.webkit.org/show_bug.cgi?id=125163
+
+        Reviewed by Rob Buis.
+
+        I don't see any reason to have explicit numbering for the Type enum in our [CSS]BasicShape classes.
+        I removed numbering, which will decrease for instance the merge conflicts on Type changes.
+
+        No new tests, no behavior change.
+
+        * css/CSSBasicShapes.h:
+        * rendering/style/BasicShapes.h:
+
+2013-12-04  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Allow ImageBuffer to use an IOSurface that is larger than necessary
+        https://bugs.webkit.org/show_bug.cgi?id=124626
+
+        Reviewed by Simon Fraser.
+
+        Because creating ImageBuffer's backing store can be so expensive, it
+        would be beneficial to have a pool of pre-created backing stores
+        available. However, this means that ImageBuffer might have to use a
+        backing store that is larger than the exact dimensions that it needs.
+        This patch adds a field, m_backingStoreSize, to CG's ImageBufferData
+        class, and uses this new field when performing ImageBuffer operations
+        to allow for larger-than-necessary backing stores. Content is always
+        drawn in the top left corner of the backing store.
+
+        No new tests are necessary because there is no behavior change.
+
+        * platform/graphics/ImageBuffer.h:
+        (WebCore::ImageBuffer::baseTransform): The base transform has to put
+        content at the top left corner instead of bottom left
+        * platform/graphics/cg/ImageBufferCG.cpp:
+        (WebCore::createCroppedImageIfNecessary): Convenience function to figure out
+        the dimensions of the backing texture in user space
+        (WebCore::ImageBuffer::ImageBuffer): Set up new m_backingStoreSize member
+        (WebCore::maybeCropToBounds): Some ImageBuffer API functions require
+        outputting an image with logical size. This function performs the cropping
+        (WebCore::ImageBuffer::copyImage): Updated for larger-than-necessary
+        backing stores
+        (WebCore::ImageBuffer::copyNativeImage): Ditto
+        (WebCore::ImageBuffer::draw): Ditto
+        (WebCore::ImageBuffer::clip): Ditto
+        (WebCore::ImageBuffer::putByteArray): Ditto
+        (WebCore::ImageBuffer::toDataURL): Ditto
+        * platform/graphics/cg/ImageBufferDataCG.cpp:
+        (WebCore::ImageBufferData::getData): Ditto
+        (WebCore::ImageBufferData::putData): Ditto
+        * platform/graphics/cg/ImageBufferDataCG.h: New m_backingStoreSize field
+
+2013-12-03  Dean Jackson  <dino@apple.com>
+
+        [WebGL] Support for texImage2D of type HALF_FLOAT_OES
+        https://bugs.webkit.org/show_bug.cgi?id=110936
+
+        Reviewed by Brent Fulgham.
+
+        Add support for the HALF_FLOAT_OES texture format from texImage2D
+        and texSubImage2D.
+
+        A lot of this patch comes from the original patch on the bug
+        by Nayan Kumar, and the Blink commit:
+        https://codereview.chromium.org/13842017
+
+        Tests: fast/canvas/webgl/oes-texture-half-float-with-canvas.html
+               fast/canvas/webgl/oes-texture-half-float-with-image.html
+               fast/canvas/webgl/oes-texture-half-float-with-video.html
+
+        * html/canvas/OESTextureHalfFloat.idl: New HALF_FLOAT_OES constant value.
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::validateTexFunc): Remove the code that
+        would bail if half-float values were used.
+        * platform/graphics/GraphicsContext3D.cpp:
+        - Return appropriate DataFormats for half floating point types.
+        - Copy the float -> half-float code from Blink
+        - New pack functions for half floats
+        * platform/graphics/GraphicsContext3D.h: New format types.
+        * platform/graphics/opengl/GraphicsContext3DOpenGLCommon.cpp:
+        (WebCore::GraphicsContext3D::texSubImage2D): Use GL_HALF_FLOAT_ARB if we're passed
+        a HALF_FLOAT_OES.
+
+2013-12-04  Daniel Bates  <dabates@apple.com>
+
+        Fix the Apple Windows build after <http://trac.webkit.org/changeset/160113>
+        (https://bugs.webkit.org/show_bug.cgi?id=125193)
+
+        * rendering/RenderThemeWin.cpp:
+        (WebCore::RenderThemeWin::paintMenuList): Substitute paintInfo for i.
+
+2013-12-04  Daniel Bates  <dabates@apple.com>
+
+        Rename RenderTheme::paintMenuListButton()
+        https://bugs.webkit.org/show_bug.cgi?id=125193
+
+        Reviewed by Simon Fraser.
+
+        Towards upstreaming the iOS concept of render theme decorations we should rename
+        RenderTheme::paintMenuListButton() to RenderTheme::paintMenuListButtonDecorations()
+        to better describe its purpose.
+
+        Also, fix code style issues.
+
+        * platform/blackberry/RenderThemeBlackBerry.cpp:
+        (WebCore::RenderThemeBlackBerry::paintMenuListButtonDecorations):
+        * platform/blackberry/RenderThemeBlackBerry.h:
+        * platform/efl/RenderThemeEfl.cpp:
+        (WebCore::RenderThemeEfl::paintMenuListButtonDecorations):
+        * platform/efl/RenderThemeEfl.h:
+        * platform/gtk/RenderThemeGtk.cpp:
+        (WebCore::RenderThemeGtk::paintMenuListButtonDecorations):
+        * platform/gtk/RenderThemeGtk.h:
+        * platform/nix/RenderThemeNix.h:
+        * rendering/RenderTheme.cpp:
+        (WebCore::RenderTheme::paintDecorations): Rename argument o, r to renderer and rect, respectively.
+        * rendering/RenderTheme.h:
+        (WebCore::RenderTheme::paintMenuListButtonDecorations):
+        * rendering/RenderThemeMac.h:
+        * rendering/RenderThemeMac.mm:
+        (WebCore::RenderThemeMac::paintMenuListButtonDecorations): Rename argument o, r to renderer and rect,
+        respectively; also remove extraneous white space and substitute 1 for 1.0f.
+        * rendering/RenderThemeSafari.cpp:
+        (WebCore::RenderThemeSafari::paintMenuListButtonDecorations): Ditto.
+        * rendering/RenderThemeSafari.h:
+        * rendering/RenderThemeWin.cpp:
+        (WebCore::RenderThemeWin::paintMenuList): Rename argument o, i, r to renderer, paintInfo, and rect,
+        respectively.
+        (WebCore::RenderThemeWin::paintMenuListButtonDecorations): Ditto.
+        * rendering/RenderThemeWin.h:
+        * rendering/RenderThemeWinCE.cpp:
+        (WebCore::RenderThemeWinCE::paintMenuList): Ditto.
+        (WebCore::RenderThemeWinCE::paintMenuListButtonDecorations): Ditto. 
+        * rendering/RenderThemeWinCE.h:
+
 2013-12-04  Andy Estes  <aestes@apple.com>
 
         [iOS] Build projects with $(ARCHS_STANDARD_32_64_BIT)

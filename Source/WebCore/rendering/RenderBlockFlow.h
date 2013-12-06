@@ -27,12 +27,22 @@
 #include "RenderBlock.h"
 #include "RenderLineBoxList.h"
 #include "SimpleLineLayout.h"
+#include "TrailingObjects.h"
 
 namespace WebCore {
 
+class LayoutStateMaintainer;
 class LineBreaker;
+class LineInfo;
+class LineWidth;
 class RenderNamedFlowFragment;
+class RenderRubyRun;
+class WordMeasurement;
+
 struct FloatWithRect;
+
+template <class Run> class BidiRunList;
+typedef Vector<WordMeasurement, 64> WordMeasurements;
 
 class RenderBlockFlow : public RenderBlock {
 public:

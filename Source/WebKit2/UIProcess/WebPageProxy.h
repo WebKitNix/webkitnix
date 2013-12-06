@@ -1219,8 +1219,6 @@ private:
     GeolocationPermissionRequestManagerProxy m_geolocationPermissionRequestManager;
     NotificationPermissionRequestManagerProxy m_notificationPermissionRequestManager;
 
-    double m_estimatedProgress;
-
     ViewState::Flags m_viewState;
 
     bool m_canGoBack;
