@@ -19,6 +19,7 @@ set(MiniBrowser_SOURCES
     Components/Button.cpp
     Components/MenuEntry.cpp
     Components/PopupMenu.cpp
+    Components/Tooltip.cpp
     Components/UrlBar.cpp
     ${TOOLS_DIR}/Shared/nix/GLUtilities.cpp
 )

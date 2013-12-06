@@ -73,6 +73,7 @@ void BrowserWindow::handleEvent(const XEvent& event)
         m_control->handleKeyReleaseEvent(event);
         break;
     case ConfigureNotify:
+        m_control->hideTooltip();
         m_control->removePopupMenu();
         updateSizeIfNeeded(event.xconfigure.width, event.xconfigure.height);
         break;

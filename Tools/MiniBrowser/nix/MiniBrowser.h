@@ -78,6 +78,7 @@ public:
     static void doneWithTouchEvent(WKViewRef, const NIXTouchEvent* event, bool wasEventHandled, const void* clientInfo);
     static void setCursor(WKViewRef, unsigned int shape, const void *clientInfo);
     static void updateTextInputState(WKViewRef, const NIXTextInputState* state, const void* clientInfo);
+    static void didChangeTooltip(WKViewRef, const WKStringRef tooltip, const void* clientInfo);
 
     // GestureRecognizerClient.
     virtual void handleSingleTap(double timestamp, const NIXTouchPoint&);

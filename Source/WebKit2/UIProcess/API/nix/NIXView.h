@@ -70,6 +70,7 @@ typedef void (*NIXViewDoneWithTouchEventCallback)(WKViewRef view, const NIXTouch
 typedef void (*NIXViewPageDidFindZoomableAreaCallback)(WKViewRef view, WKPoint target, WKRect area, const void* clientInfo);
 typedef void (*NIXViewPageUpdateTextInputStateCallback)(WKViewRef view, const NIXTextInputState* state, const void* clientInfo);
 typedef void (*NIXViewSetCursor)(WKViewRef view, unsigned int shape, const void* clientInfo);
+typedef void (*NIXViewDidChangeTooltipCallback)(WKViewRef view, const WKStringRef tooltip, const void* clientInfo);
 
 typedef struct NIXViewClientBase {
     int                                              version;
@@ -84,6 +85,7 @@ typedef struct NIXViewClientV0 {
     NIXViewPageDidFindZoomableAreaCallback           didFindZoomableArea;
     NIXViewPageUpdateTextInputStateCallback          updateTextInputState;
     NIXViewSetCursor                                 setCursor;
+    NIXViewDidChangeTooltipCallback                  didChangeTooltip;
 } NIXViewClientV0;
 
 WK_EXPORT void NIXViewSetAutoScaleToFitContents(WKViewRef, bool);

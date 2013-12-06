@@ -1,5 +1,7 @@
 /*
  * Copyright (C) 2012-2013 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (C) 2013 University of Szeged
+ * Copyright (C) 2013 Attila Dusnoki <adusnoki@inf.u-szeged.hu>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,34 +25,45 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef WebViewClientNix_h
-#define WebViewClientNix_h
+#ifndef Tooltip_h
+#define Tooltip_h
 
-#include "APIClient.h"
-#include "NIXView.h"
-#include "IntRect.h"
-#include "wtf/text/WTFString.h"
+#include "VisualComponent.h"
 
-namespace API {
-template<> struct ClientTraits<NIXViewClientBase> {
-    typedef std::tuple<NIXViewClientV0> Versions;
-};
-}
+#include <cairo-xlib.h>
+#include <string>
+#include <vector>
 
-namespace WebKit {
-
-class WebView;
-struct EditorState;
-
-class WebViewClientNix : public API::Client<NIXViewClientBase> {
+class Tooltip : public VisualComponent {
 public:
-    void doneWithTouchEvent(WebView*, const NIXTouchEvent&, bool wasEventHandled);
-    void didFindZoomableArea(WebView*, WKPoint target, WKRect area);
-    void updateTextInputState(WebView*, const EditorState&);
-    void setCursor(WebView*, unsigned int);
-    void didChangeTooltip(WebView*, const WKStringRef tooltip);
+    Tooltip(Display*, Window, XContext, BrowserControl*, WKRect);
+    ~Tooltip();
+
+    virtual void handleEvent(const XEvent&) { }
+    void showTooltip(int, int, std::string);
+    void hideTooltip();
+
+private:
+    static const int textWidthIndent = 8;
+    static const int lineHeightSize = 15;
+    static const int mousePositionXOffset = 15;
+    static const int mousePositionYOffset = 20;
+    static const int maximumCharactersPerLine = 80;
+
+    virtual void createXWindow(Window, XContext);
+
+    void resizeWindow(int, int);
+    int windowSlideOffsetX(WKSize, int);
+    int windowSlideOffsetY(WKSize, int);
+
+    int widthOfLongestLine();
+    int textWidth(const char*);
+    void drawText(std::string&, int);
+    void wordWrap(std::string);
+
+    std::vector<std::string> m_wrappedText;
+    cairo_t* m_cairo;
+    cairo_surface_t* m_surface;
 };
 
-} // namespace WebKit
-
-#endif // WebViewClientNix_h
+#endif

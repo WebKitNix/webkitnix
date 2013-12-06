@@ -97,6 +97,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     viewClient.didRenderFrame = MiniBrowser::didRenderFrame;
     viewClient.didChangeContentsPosition = MiniBrowser::pageDidRequestScroll;
     viewClient.didChangeViewportAttributes = MiniBrowser::didChangeViewportAttributes;
+    viewClient.didChangeTooltip = MiniBrowser::didChangeTooltip;
     WKViewSetViewClient(m_view, &viewClient.base);
 
     WKViewInitialize(m_view);
@@ -837,6 +838,7 @@ void MiniBrowser::didStartProgress(WKPageRef page, const void* clientInfo)
     MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
     mb->m_control->setLoadProgress(0.0);
     mb->m_control->removePopupMenu();
+    mb->m_control->resetTooltip();
 }
 
 void MiniBrowser::didChangeProgress(WKPageRef page, const void* clientInfo)
@@ -962,4 +964,10 @@ std::string MiniBrowser::activeUrl()
         url = createStdStringFromWKString(urlStr.get());
     }
     return url;
+}
+
+void MiniBrowser::didChangeTooltip(WKViewRef, const WKStringRef tooltip, const void* clientInfo)
+{
+    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    mb->m_control->handleTooltipChange(createStdStringFromWKString(tooltip));
 }

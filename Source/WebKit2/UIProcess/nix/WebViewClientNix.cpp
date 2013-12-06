@@ -76,4 +76,11 @@ void WebViewClientNix::updateTextInputState(WebView* view, const EditorState& st
     m_client.updateTextInputState(toAPI(view), &nixState, m_client.base.clientInfo);
 }
 
+void WebViewClientNix::didChangeTooltip(WebView* view, const WKStringRef tooltip)
+{
+    if (!m_client.didChangeTooltip)
+        return;
+    m_client.didChangeTooltip(toAPI(view), tooltip, m_client.base.clientInfo);
+}
+
 } // namespace WebKit

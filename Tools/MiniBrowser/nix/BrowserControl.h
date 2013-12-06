@@ -31,10 +31,20 @@
 #include "Components/BrowserWindow.h"
 #include "Components/Button.h"
 #include "Components/PopupMenu.h"
+#include "Components/Tooltip.h"
 #include "Components/UrlBar.h"
 #include "Components/WebView.h"
 #include "NIXEvents.h"
 #include "XlibEventSource.h"
+#include <glib.h>
+
+typedef struct {
+    Tooltip* tooltip;
+    guint timer;
+    int mouseX;
+    int mouseY;
+    std::string text;
+} TooltipInfo;
 
 class BrowserControlClient {
 public:
@@ -118,6 +128,11 @@ public:
     void createPopupMenu(WKRect&, std::vector<std::string>*);
     void removePopupMenu(int itemValue = 0);
 
+    void handleTooltipChange(std::string);
+    void showTooltip();
+    void hideTooltip();
+    void resetTooltip();
+
 private:
     void init();
     void sendKeyboardEventToNix(const XEvent&);
@@ -125,6 +140,10 @@ private:
     Button* createXButton(int, int, const char*, ButtonFunction);
     // XlibEventSource::Client.
     virtual void handleXEvent(const XEvent&);
+
+    void restartTooltipTimer();
+    void stopTooltipTimer();
+    void updateTooltipIfNeeded(const XPointerMovedEvent&);
 
     BrowserControlClient* m_client;
 
@@ -150,6 +169,8 @@ private:
     PopupMenu* m_popupMenu;
     UrlBar* m_urlBar;
     WebView* m_webView;
+
+    TooltipInfo m_tooltipInfo;
 };
 
 #endif

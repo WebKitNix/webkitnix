@@ -65,6 +65,8 @@ BrowserControl::BrowserControl(BrowserControlClient * client, int width, int hei
 
     m_popupMessage = XInternAtom(m_display, "MenuEntry", False);
 
+    m_tooltipInfo.tooltip = new Tooltip(m_display, m_webView->window(), m_context, this, WKRectMake(0, 0, 0, 0));
+
     createInputMethodAndInputContext();
 }
 
@@ -87,6 +89,7 @@ BrowserControl::~BrowserControl()
     delete m_refreshButton;
     delete m_urlBar;
     delete m_toolBar;
+    delete m_tooltipInfo.tooltip;
     delete m_browserWindow;
 
     if (m_ic)
@@ -353,6 +356,7 @@ void BrowserControl::updateClickCount(const XButtonPressedEvent& event)
 
 void BrowserControl::handleButtonPressEvent(const XButtonPressedEvent& event)
 {
+    hideTooltip();
     removePopupMenu();
     passFocusToWebView();
 
@@ -420,6 +424,9 @@ void BrowserControl::handlePointerMoveEvent(const XPointerMovedEvent& event)
     ev.modifiers = convertXEventModifiersToNativeModifiers(event.state);
     ev.timestamp = convertXEventTimeToNixTimestamp(event.time);
     m_client->handleMouseMove(&ev);
+
+    hideTooltip();
+    updateTooltipIfNeeded(event);
 }
 
 void BrowserControl::handleSizeChanged(int width, int height)
@@ -439,4 +446,62 @@ void BrowserControl::handleClose()
 void BrowserControl::setWebViewCursor(unsigned int shape)
 {
     m_webView->setCursor(shape);
+}
+
+void BrowserControl::handleTooltipChange(std::string text)
+{
+    m_tooltipInfo.text = text;
+    hideTooltip();
+
+    if (!m_tooltipInfo.text.empty())
+        restartTooltipTimer();
+}
+
+void BrowserControl::updateTooltipIfNeeded(const XPointerMovedEvent& event)
+{
+    if (m_tooltipInfo.text.empty())
+        return;
+
+    m_tooltipInfo.mouseX = event.x;
+    m_tooltipInfo.mouseY = event.y;
+
+    restartTooltipTimer();
+}
+
+void BrowserControl::showTooltip()
+{
+    m_tooltipInfo.tooltip->showTooltip(m_tooltipInfo.mouseX, m_tooltipInfo.mouseY, m_tooltipInfo.text);
+}
+
+void BrowserControl::resetTooltip()
+{
+    m_tooltipInfo.text.erase();
+    hideTooltip();
+}
+
+void BrowserControl::hideTooltip()
+{
+    m_tooltipInfo.tooltip->hideTooltip();
+    stopTooltipTimer();
+}
+
+static gboolean timeoutCallback(BrowserControl* control)
+{
+    control->showTooltip();
+    return FALSE;
+}
+
+void BrowserControl::restartTooltipTimer()
+{
+    stopTooltipTimer();
+    m_tooltipInfo.timer = g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(timeoutCallback), this);
+}
+
+void BrowserControl::stopTooltipTimer()
+{
+    if (!m_tooltipInfo.timer)
+        return;
+
+    gboolean removedSource = g_source_remove(m_tooltipInfo.timer);
+    m_tooltipInfo.timer = 0;
 }
