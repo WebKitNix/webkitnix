@@ -514,7 +514,8 @@ void MiniBrowser::doneWithTouchEvent(WKViewRef, const NIXTouchEvent* event, bool
 void MiniBrowser::setCursor(WKViewRef, unsigned int shape, const void* clientInfo)
 {
     MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
-    mb->m_control->setWebViewCursor(shape);
+    if (!mb->isMobileMode())
+        mb->m_control->setWebViewCursor(shape);
 }
 
 double MiniBrowser::scale()
@@ -969,5 +970,6 @@ std::string MiniBrowser::activeUrl()
 void MiniBrowser::didChangeTooltip(WKViewRef, const WKStringRef tooltip, const void* clientInfo)
 {
     MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
-    mb->m_control->handleTooltipChange(createStdStringFromWKString(tooltip));
+    if (!mb->isMobileMode())
+        mb->m_control->handleTooltipChange(createStdStringFromWKString(tooltip));
 }
