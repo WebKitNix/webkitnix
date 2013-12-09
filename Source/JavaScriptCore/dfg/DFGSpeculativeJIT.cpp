@@ -2329,7 +2329,7 @@ JITCompiler::Jump SpeculativeJIT::jumpForTypedArrayOutOfBounds(Node* node, GPRRe
 {
     if (node->op() == PutByValAlias)
         return JITCompiler::Jump();
-    if (JSArrayBufferView* view = m_jit.graph().tryGetFoldableView(m_jit.graph().child(node, 0).node(), node->arrayMode())) {
+    if (JSArrayBufferView* view = m_jit.graph().tryGetFoldableViewForChild1(node)) {
         uint32_t length = view->length();
         Node* indexNode = m_jit.graph().child(node, 1).node();
         if (m_jit.graph().isInt32Constant(indexNode) && static_cast<uint32_t>(m_jit.graph().valueOfInt32Constant(indexNode)) < length)
@@ -4042,27 +4042,16 @@ void SpeculativeJIT::compileStringZeroLength(Node* node)
 #endif
 }
 
-bool SpeculativeJIT::compileConstantIndexedPropertyStorage(Node* node)
+void SpeculativeJIT::compileConstantStoragePointer(Node* node)
 {
-    JSArrayBufferView* view = m_jit.graph().tryGetFoldableView(
-        node->child1().node(), node->arrayMode());
-    if (!view)
-        return false;
-    if (view->mode() == FastTypedArray)
-        return false;
-    
     GPRTemporary storage(this);
     GPRReg storageGPR = storage.gpr();
-    m_jit.move(TrustedImmPtr(view->vector()), storageGPR);
+    m_jit.move(TrustedImmPtr(node->storagePointer()), storageGPR);
     storageResult(storageGPR, node);
-    return true;
 }
 
 void SpeculativeJIT::compileGetIndexedPropertyStorage(Node* node)
 {
-    if (compileConstantIndexedPropertyStorage(node))
-        return;
-    
     SpeculateCellOperand base(this, node->child1());
     GPRReg baseReg = base.gpr();
     

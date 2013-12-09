@@ -1148,6 +1148,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         break;
         
     case FunctionReentryWatchpoint:
+    case TypedArrayWatchpoint:
         break;
     
     case CreateArguments:
@@ -1439,7 +1440,8 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         m_state.setHaveStructures(true);
         break;
     }
-    case GetIndexedPropertyStorage: {
+    case GetIndexedPropertyStorage:
+    case ConstantStoragePointer: {
         forNode(node).clear();
         break; 
     }

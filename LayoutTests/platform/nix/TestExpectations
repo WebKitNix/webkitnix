@@ -2672,8 +2672,6 @@ fast/events/selectstart-by-single-click-with-shift.html [ Failure Pass ]
 fast/loader/submit-form-while-parsing-2.html [ Failure Pass ]
 
 # Failures after merge (3fe2361 2979e3f)
-fast/dom/HTMLTemplateElement/contentWrappers.html [ Failure ]
-fast/dom/HTMLTemplateElement/innerHTML-inert.html [ Failure ]
 fast/events/mouse-cursor-image-set.html [ Failure ]
 http/tests/xmlhttprequest/access-control-preflight-async-not-supported.html [ Failure Pass ]
 
@@ -2694,12 +2692,8 @@ fast/layers/no-clipping-overflow-hidden-hardware-acceleration.html [ ImageOnlyFa
 
 # Failures after merge (952e7ef1 9509d291)
 compositing/layer-creation/fixed-position-change-out-of-view-in-view.html [ Failure ]
-fast/dom/HTMLTemplateElement/xhtml-parsing-and-serialization.xml [ Failure ]
 fast/events/constructors/mouse-event-constructor.html [ Failure ]
 fast/events/touch/gesture/gesture-scrollbar.html [ Failure ]
-fast/xpath/xpath-template-element.html [ Failure ]
-fast/xsl/xslt-processor-template.html [ Failure ]
-fast/xsl/xslt-xhtml-template.xml [ Failure ]
 
 # Failure after merge (ed1dcb7 b9b7af1)
 fast/replaced/preferred-widths.html [ Failure Pass ]
@@ -2709,7 +2703,6 @@ storage/indexeddb/cursor-delete.html [ Failure Pass ]
 css3/flexbox/button.html [ Failure ]
 fast/events/touch/gesture/touch-gesture-scroll-div-not-propagated.html [ Failure ]
 fast/events/touch/gesture/touch-gesture-scroll-page-not-propagated.html [ Failure ]
-html5lib/generated/run-template-write.html [ Failure ]
 http/tests/loading/promote-img-preload-priority.html [ Failure ]
 http/tests/misc/will-send-request-returns-null-on-redirect.html [ Failure ]
 compositing/overlap-blending/children-opacity-huge.html [ ImageOnlyFailure ]
@@ -2856,11 +2849,6 @@ fast/workers/worker-close-more.html [ Failure ]
 transitions/negative-delay.html [ Failure Pass ]
 
 # need to turn on HTMLTemplateElement - ENABLE(TEMPLATE_ELEMENT)
-fast/dom/HTMLTemplateElement/cloneNode.html [ Failure ]
-fast/dom/HTMLTemplateElement/inertContents.html [ Failure ]
-fast/dom/HTMLTemplateElement/innerHTML.html [ Failure ]
-fast/dom/HTMLTemplateElement/ownerDocument.html [ Failure ]
-fast/dom/HTMLTemplateElement/ownerDocumentXHTML.xhtml [ Failure ]
 imported/w3c/html-templates [ Skip ]
 
 # We don't enable SUBTLE_CRYPTO yet
@@ -3604,8 +3592,7 @@ fast/events/touch/touch-input-element-change-documents.html [ Failure ]
 fast/events/drag-selects-image.html [ Failure ]
 # 'undefined' is not an object (evaluating 'template.content.appendChild').
 fast/dom/HTMLTemplateElement/cycles-in-shadow.html [ Failure ]
-fast/dom/HTMLTemplateElement/cycles.html [ Failure ]
-fast/dom/HTMLTemplateElement/ownerDocument-adoptNode.html [ Failure ]
+
 # Jumped down.
 fast/events/autoscroll-in-textarea.html [ Failure ]
 # Text not scrolled.

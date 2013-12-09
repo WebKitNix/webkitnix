@@ -577,6 +577,8 @@ private:
         case LoopHint:
         case NotifyWrite:
         case FunctionReentryWatchpoint:
+        case TypedArrayWatchpoint:
+        case ConstantStoragePointer:
             break;
             
         // This gets ignored because it already has a prediction.

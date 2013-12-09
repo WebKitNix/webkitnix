@@ -29,8 +29,6 @@
 #include <X11/Xlib.h>
 #include <iostream>
 
-using std::cerr;
-
 namespace ToolsNix {
 
 GLOffscreenBuffer::GLOffscreenBuffer(unsigned width, unsigned height)
@@ -41,7 +39,7 @@ GLOffscreenBuffer::GLOffscreenBuffer(unsigned width, unsigned height)
     , m_context(0)
 {
     if (!m_display) {
-        cerr << "Error: XOpenDisplay()\n";
+        std::cerr << "Error: XOpenDisplay()\n";
         return;
     }
 
@@ -58,20 +56,20 @@ GLOffscreenBuffer::GLOffscreenBuffer(unsigned width, unsigned height)
     int configCount;
     GLXFBConfig* config = glXChooseFBConfig(m_display, 0, configAttributes, &configCount);
     if (!configCount) {
-        cerr << "Error: glXChooseFBConfig()\n";
+        std::cerr << "Error: glXChooseFBConfig()\n";
         XFree(config);
         XCloseDisplay(m_display);
         return;
     }
 
     static const int pbufferAttributes[] = {
-        GLX_PBUFFER_WIDTH, width,
-        GLX_PBUFFER_HEIGHT, height,
+        GLX_PBUFFER_WIDTH, static_cast<int>(width),
+        GLX_PBUFFER_HEIGHT, static_cast<int>(height),
         0
     };
     m_pbuffer = glXCreatePbuffer(m_display, config[0], pbufferAttributes);
     if (!m_pbuffer) {
-        cerr << "Error: glXCreatePbuffer()\n";
+        std::cerr << "Error: glXCreatePbuffer()\n";
         XFree(config);
         XCloseDisplay(m_display);
         return;
@@ -80,7 +78,7 @@ GLOffscreenBuffer::GLOffscreenBuffer(unsigned width, unsigned height)
     m_context = glXCreateNewContext(m_display, config[0], GLX_RGBA_TYPE, 0, GL_TRUE);
     XFree(config);
     if (!m_context) {
-        cerr << "Error: glXCreateNewContext()\n";
+        std::cerr << "Error: glXCreateNewContext()\n";
         glXDestroyPbuffer(m_display, m_pbuffer);
         XCloseDisplay(m_display);
         return;

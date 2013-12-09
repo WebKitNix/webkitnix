@@ -1,3 +1,178 @@
+2013-12-09  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: WebKit ignores @alt on IMG elements with role="text"
+        https://bugs.webkit.org/show_bug.cgi?id=125363
+
+        Reviewed by Mario Sanchez Prada.
+
+        * accessibility/alt-tag-on-image-with-nonimage-role-expected.txt: Added.
+        * accessibility/alt-tag-on-image-with-nonimage-role.html: Added.
+
+2013-12-09  Michal Poteralski  <m.poteralski@samsung.com>
+
+        DataCloneError exception is not thrown when postMessage's second parameter
+        is the source port or the target port.
+
+        https://bugs.webkit.org/show_bug.cgi?id=124708
+
+        Reviewed by Alexey Proskuryakov.
+
+        Added layout test to check correctness of value thrown by postMessage:
+
+        * fast/dom/Window/postMessage-clone-port-error-expected.txt: Added.
+        * fast/dom/Window/postMessage-clone-port-error.html: Added.
+
+2013-12-09  Gustavo Noronha Silva  <gns@gnome.org>
+
+        accessibility/press-targets-center-point.html should not depend on font layout
+        https://bugs.webkit.org/show_bug.cgi?id=125387
+
+        Reviewed by Chris Fleizach.
+
+        * accessibility/press-targets-center-point.html: use explicit sizes for heights (and width
+        for vertical writing mode), so that font layout does not alter the results.
+        * platform/gtk/TestExpectations: remove failure expectation for accessibility/press-targets-center-point.html
+
+2013-12-08  Ryosuke Niwa  <rniwa@webkit.org>
+
+        getComputedStyle border-radius shorthand omits vertical radius information
+        https://bugs.webkit.org/show_bug.cgi?id=125394
+
+        Reviewed by Andreas Kling.
+
+        * fast/css/getComputedStyle/getComputedStyle-border-radius-shorthand-expected.txt:
+        * fast/css/getComputedStyle/getComputedStyle-border-radius-shorthand.html:
+
+2013-12-08  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+
+        Removing the baseline added in r160283. It's not really required, the failure is originating
+        in an unnecessary and wrong patch that's applied on the Freetype source tree that's used in the
+        GTK's Jhbuild setup. That patch will be removed in the near future, but until then the failure
+        of accessibility/press-targers-center-point.html should be handled through an expectation.
+
+        * platform/gtk/TestExpectations:
+        * platform/gtk/accessibility/press-targets-center-point-expected.txt: Removed.
+
+2013-12-08  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening. Adding expectations for the current test failures.
+        Adding a GTK-specific baseline for a recently introduced a11y test.
+
+        * platform/gtk/TestExpectations:
+        * platform/gtk/accessibility/press-targets-center-point-expected.txt: Added.
+
+2013-12-05  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Bring end-of-stream algorithm section up to current spec.
+        https://bugs.webkit.org/show_bug.cgi?id=125270
+
+        Reviewed by Darin Adler.
+
+        * media/media-source/media-source-end-of-stream-expected.txt: Added.
+        * media/media-source/media-source-end-of-stream.html: Added.
+
+2013-12-06  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support all of Branch/LogicalNot
+        https://bugs.webkit.org/show_bug.cgi?id=125370
+
+        Reviewed by Mark Hahnenberg.
+
+        * js/regress/logical-not-expected.txt: Added.
+        * js/regress/logical-not.html: Added.
+        * js/regress/script-tests/logical-not.js: Added.
+        (foo):
+
+2013-12-06  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support generic ByVal accesses
+        https://bugs.webkit.org/show_bug.cgi?id=125368
+
+        Reviewed by Mark Hahnenberg.
+
+        * js/regress/by-val-generic-expected.txt: Added.
+        * js/regress/by-val-generic.html: Added.
+        * js/regress/script-tests/by-val-generic.js: Added.
+        (foo):
+
+2013-12-06  Jer Noble  <jer.noble@apple.com>
+
+        Unreviewed gardening; revert r160237 after r160247 made it unnecessary.
+
+        * platform/mac/TestExpectations:
+
+2013-12-06  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support hole/OOB array accesses
+        https://bugs.webkit.org/show_bug.cgi?id=118077
+
+        Reviewed by Oliver Hunt and Mark Hahnenberg.
+
+        * js/regress/double-get-by-val-out-of-bounds-expected.txt: Added.
+        * js/regress/double-get-by-val-out-of-bounds.html: Added.
+        * js/regress/get-by-val-out-of-bounds-expected.txt: Added.
+        * js/regress/get-by-val-out-of-bounds.html: Added.
+        * js/regress/script-tests/double-get-by-val-out-of-bounds.js: Added.
+        (foo):
+        * js/regress/script-tests/get-by-val-out-of-bounds.js: Added.
+        (foo):
+
+2013-12-06  Rob Buis  <rob.buis@samsung.com>
+
+        [CSS Shapes] ShapeOutsideInfo needs to use the parent's writing mode when calculating offsets
+        https://bugs.webkit.org/show_bug.cgi?id=124680
+
+        Reviewed by Dirk Schulze.
+
+        Make sure the writing-mode property on the float is not taken into account for shape-outside.
+        Adapt highlight-shape-outside.html so it sets the writing-mode on the container div, not the float.
+        However because of earlier unreliability in EFL/GTK, skip the test for now.
+
+        * TestExpectations:
+        * fast/shapes/shape-outside-floats/shape-outside-floats-different-writing-modes.html:
+        * inspector-protocol/model/highlight-shape-outside-expected.txt:
+        * inspector-protocol/model/highlight-shape-outside.html:
+
+2013-12-06  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should support all of ValueToInt32
+        https://bugs.webkit.org/show_bug.cgi?id=125283
+
+        Reviewed by Mark Hahnenberg.
+
+        * js/regress/put-by-val-machine-int-expected.txt: Added.
+        * js/regress/put-by-val-machine-int.html: Added.
+        * js/regress/script-tests/put-by-val-machine-int.js: Added.
+        (foo):
+
+2013-12-06  Eric Carlson  <eric.carlson@apple.com>
+
+        Unreviewed gardening, correct previous fix.
+
+        * platform/mac-mountainlion/TestExpectations: Removed.
+        * platform/mac/TestExpectations: Mark plugins/quicktime-plugin-replacement.html as flakey
+            on Mavericks.
+
+2013-12-06  Eric Carlson  <eric.carlson@apple.com>
+
+        plugins/quicktime-plugin-replacement.html is flakey on OS X Mavericks
+        https://bugs.webkit.org/show_bug.cgi?id=125356
+
+        Reviewed by Jer Noble.
+
+        * platform/mac-mountainlion/TestExpectations: Added. Mark test as flakey.
+
+2013-12-06  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Add test expectations for failing tests.
+
+        * platform/efl-wk2/TestExpectations:
+        * platform/efl/TestExpectations:
+
 2013-12-06  Lukasz Gajowy  <l.gajowy@samsung.com>
 
         Unreviewed ATK gardening

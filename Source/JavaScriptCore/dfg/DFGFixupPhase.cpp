@@ -95,17 +95,6 @@ private:
         }
             
         case BitOr: {
-            // Optimize X|0 -> X.
-            if (node->child2()->isConstant()) {
-                JSValue C2 = m_graph.valueOfJSConstant(node->child2().node());
-                if (C2.isInt32() && !C2.asInt32()) {
-                    m_insertionSet.insertNode(m_indexInBlock, SpecNone, Phantom, node->codeOrigin,
-                        Edge(node->child2().node(), KnownInt32Use));
-                    node->children.removeEdge(1);
-                    node->convertToIdentity();
-                    break;
-                }
-            }
             fixIntEdge(node->child1());
             fixIntEdge(node->child2());
             break;
@@ -888,6 +877,10 @@ private:
         case Int52ToValue:
         case InvalidationPoint:
         case CheckArray:
+        case ConstantStoragePointer:
+            // These are just nodes that we don't currently expect to see during fixup.
+            // If we ever wanted to insert them prior to fixup, then we just have to create
+            // fixup rules for them.
             RELEASE_ASSERT_NOT_REACHED();
             break;
 
@@ -951,6 +944,7 @@ private:
         case ExtractOSREntryLocal:
         case LoopHint:
         case FunctionReentryWatchpoint:
+        case TypedArrayWatchpoint:
             break;
 #else
         default:

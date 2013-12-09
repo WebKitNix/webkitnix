@@ -33,14 +33,17 @@
 namespace WebCore {
 
 class MockSampleBox;
+typedef struct opaqueCMSampleBuffer *CMSampleBufferRef;
 
 struct PlatformSample {
     enum {
         None,
         MockSampleBoxType,
+        CMSampleBufferType,
     } type;
     union {
         MockSampleBox* mockSampleBox;
+        CMSampleBufferRef cmSampleBuffer;
     } sample;
 };
 
@@ -56,6 +59,7 @@ public:
     enum SampleFlags {
         None = 0,
         IsSync = 1 << 0,
+        NonDisplaying = 1 << 1,
     };
     virtual SampleFlags flags() const = 0;
     virtual PlatformSample platformSample() = 0;

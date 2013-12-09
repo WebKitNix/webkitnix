@@ -1874,8 +1874,6 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/indexeddb/WorkerGlobalScopeIndexedDatabase.h \
 	Source/WebCore/Modules/mediasource/MediaSource.cpp \
 	Source/WebCore/Modules/mediasource/MediaSource.h \
-	Source/WebCore/Modules/mediasource/MediaSourceBase.cpp \
-	Source/WebCore/Modules/mediasource/MediaSourceBase.h \
 	Source/WebCore/Modules/mediasource/MediaSourceRegistry.cpp \
 	Source/WebCore/Modules/mediasource/MediaSourceRegistry.h \
 	Source/WebCore/Modules/mediasource/SourceBuffer.cpp \
@@ -5480,6 +5478,7 @@ webcore_platform_sources += \
 	Source/WebCore/platform/network/soup/ResourceRequestSoup.cpp \
 	Source/WebCore/platform/network/soup/ResourceResponse.h \
 	Source/WebCore/platform/network/soup/ResourceResponseSoup.cpp \
+	Source/WebCore/platform/network/soup/SynchronousLoaderClientSoup.cpp \
 	Source/WebCore/platform/ScrollableArea.cpp \
 	Source/WebCore/platform/ScrollableArea.h \
 	Source/WebCore/platform/ScrollbarThemeClient.h \
@@ -5940,6 +5939,7 @@ platform_sources += \
 	Source/WebCore/platform/network/SocketStreamHandleBase.cpp \
 	Source/WebCore/platform/network/SocketStreamHandleBase.h \
 	Source/WebCore/platform/network/SocketStreamHandleClient.h \
+	Source/WebCore/platform/soup/SharedBufferSoup.cpp \
 	Source/WebCore/platform/text/enchant/TextCheckerEnchant.h \
 	Source/WebCore/platform/text/enchant/TextCheckerEnchant.cpp \
 	Source/WebCore/platform/text/BidiContext.cpp \

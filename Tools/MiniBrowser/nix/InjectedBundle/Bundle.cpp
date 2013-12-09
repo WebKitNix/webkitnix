@@ -27,8 +27,8 @@
 #include <WebKit2/WKBundleInitialize.h>
 #include <WebKit2/WKBundlePage.h>
 #include <WebKit2/WKString.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 static WKBundleRef globalBundle;
 
@@ -40,7 +40,7 @@ static void willAddMessageToConsole(WKBundlePageRef, WKStringRef message, uint32
     char* messageString = new char[messageStringSize];
     WKStringGetUTF8CString(message, messageString, messageStringSize);
 
-    printf("[js:%lu] %s\n", lineNumber, messageString);
+    printf("[js:%u] %s\n", lineNumber, messageString);
 
     delete[] messageString;
 }

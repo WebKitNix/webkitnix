@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Apple Inc. All rights reserved.
+ * Copyright (C) 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,53 +23,24 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import "config.h"
-#import "WebFullScreenManagerProxy.h"
+#import "WKFoundation.h"
 
-#if ENABLE(FULLSCREEN_API) && PLATFORM(IOS)
+#if WK_API_ENABLED
 
-using namespace WebCore;
+#import "AuthenticationChallengeProxy.h"
+#import "WKObject.h"
 
 namespace WebKit {
 
-void WebFullScreenManagerProxy::invalidate()
+inline NSURLAuthenticationChallenge *wrapper(AuthenticationChallengeProxy& challenge)
 {
-    if (!m_webView)
-        return;
-    
-    m_webView = 0;
+    ASSERT([challenge.wrapper() isKindOfClass:[NSURLAuthenticationChallenge self]]);
+    return (NSURLAuthenticationChallenge *)challenge.wrapper();
 }
 
-void WebFullScreenManagerProxy::close()
-{
-    // No-op.
 }
 
-bool WebFullScreenManagerProxy::isFullScreen()
-{
-    return false;
-}
+@interface WKNSURLAuthenticationChallenge : WKObject
+@end
 
-void WebFullScreenManagerProxy::enterFullScreen()
-{
-    // No-op.
-}
-
-void WebFullScreenManagerProxy::exitFullScreen()
-{
-    // No-op.
-}
-    
-void WebFullScreenManagerProxy::beganEnterFullScreen(const IntRect& initialFrame, const IntRect& finalFrame)
-{
-    // No-op.
-}
-
-void WebFullScreenManagerProxy::beganExitFullScreen(const IntRect& initialFrame, const IntRect& finalFrame)
-{
-    // No-op.
-}
-
-} // namespace WebKit
-
-#endif
+#endif // WK_API_ENABLED

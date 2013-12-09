@@ -83,6 +83,8 @@ list(APPEND WebCore_SOURCES
     platform/gtk/LoggingGtk.cpp
     platform/gtk/SharedBufferGtk.cpp
 
+    platform/soup/SharedBufferSoup.cpp
+
     platform/image-decoders/cairo/ImageDecoderCairo.cpp
 
     platform/linux/GamepadDeviceLinux.cpp

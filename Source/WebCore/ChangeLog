@@ -1,3 +1,985 @@
+2013-12-09  Brendan Long  <b.long@cablelabs.com>
+
+        [GStreamer] Memory leak due to incorrect use of gst_tag_list_merge in TextCombinerGStreamer
+        https://bugs.webkit.org/show_bug.cgi?id=125452
+
+        Reviewed by Philippe Normand.
+
+        No new tests because this fixes a memory leak.
+
+        * platform/graphics/gstreamer/TextCombinerGStreamer.cpp:
+        (webkitTextCombinerPadEvent): Use gst_tag_list_insert instead of gst_tag_list_merge, since we don't want to create a new list.
+
+2013-12-09  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: WebKit ignores @alt on IMG elements with role="text"
+        https://bugs.webkit.org/show_bug.cgi?id=125363
+
+        Reviewed by Mario Sanchez Prada.
+
+        If an <img> element has a different role, the alt attribute should still be used in the 
+        name calculation if present.
+
+        Test: accessibility/alt-tag-on-image-with-nonimage-role.html
+
+        * accessibility/AccessibilityNodeObject.cpp:
+        (WebCore::AccessibilityNodeObject::usesAltTagForTextComputation):
+        (WebCore::AccessibilityNodeObject::alternativeText):
+        (WebCore::AccessibilityNodeObject::accessibilityDescription):
+        (WebCore::AccessibilityNodeObject::text):
+        * accessibility/AccessibilityNodeObject.h:
+
+2013-12-08  Martin Robinson  <mrobinson@igalia.com>
+
+        [WK2][Soup] Use didReceiveBuffer instead of didReceiveData
+        https://bugs.webkit.org/show_bug.cgi?id=118598
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Original patch by Kwang Yul Seo  <skyul@company100.net> and Csaba OsztrogonÃ¡c  <ossy@webkit.org>.
+
+        Switch from using didReceiveData to didReceiveBuffer for the Soup backend and
+        let SharedBuffer wrap a SoupBuffer. This is necessary because the NetworkProcess
+        only supports getting data via SharedBuffer.
+
+        * GNUmakefile.list.am: Add the new SharedBufferSoup.cpp file to the list.
+        * PlatformEfl.cmake:
+        * PlatformGTK.cmake:
+        * PlatformNix.cmake:
+        * platform/SharedBuffer.cpp: We no longer used the no-op version of the platformFoo methods.
+        * platform/SharedBuffer.h: Ditto.
+        * platform/graphics/gstreamer/WebKitWebSourceGStreamer.cpp:  Use didReceiveBuffer instead of didReceiveData.
+        * platform/network/ResourceHandleInternal.h: Have only a m_soupBuffer member instead of three to manage the buffer.
+        * platform/network/soup/GOwnPtrSoup.cpp: Add support for SoupBuffer.
+        * platform/network/soup/GOwnPtrSoup.h: Ditto.
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::WebCoreSynchronousLoader::didReceiveData): ASSERT_NOT_REACHED here, since it should never be
+        called now.
+        (WebCore::WebCoreSynchronousLoader::didReceiveBuffer): Handle this call properly.
+        (WebCore::ResourceHandle::ensureReadBuffer): Now we package up our buffer into a SoupBuffer.
+        (WebCore::redirectSkipCallback): Use the new m_soupBuffer member.
+        (WebCore::cleanupSoupRequestOperation): Ditto.
+        (WebCore::nextMultipartResponsePartCallback): Ditto.
+        (WebCore::sendRequestCallback): Ditto.
+        (WebCore::readCallback):
+        * platform/soup/SharedBufferSoup.cpp: Added.
+
+2013-12-09  Michal Poteralski  <m.poteralski@samsung.com>
+
+        DataCloneError exception is not thrown when postMessage's second parameter is the source
+        port or the target port.
+
+        https://bugs.webkit.org/show_bug.cgi?id=124708
+
+        Reviewed by Alexey Proskuryakov.
+
+        According to specification:
+        http://www.whatwg.org/specs/web-apps/current-work/multipage/web-messaging.html#dom-window-postmessage
+
+        If the method was invoked with a second argument transfer then if any of the objects in the
+        transfer are either the source port or the target port (if any), then a DataCloneError
+        exception should be thrown. Currently an InvalidStateError exception is thrown what is an
+        incorrect behaviour.
+
+        The proposed solution is change to the correct the exception value.
+
+        Tests: fast/dom/Window/postMessage-clone-port-error.html
+
+        * dom/MessagePort.cpp:
+        (WebCore::MessagePort::postMessage): Improve exception value
+
+2013-12-09  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Unreviewed. Fix the GTK+ build with NetworkProcess enabled.
+
+        * GNUmakefile.list.am: Add missing file to compilation.
+
+2013-12-08  Ryosuke Niwa  <rniwa@webkit.org>
+
+        getComputedStyle border-radius shorthand omits vertical radius information
+        https://bugs.webkit.org/show_bug.cgi?id=125394
+
+        Reviewed by Andreas Kling.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/4c2866855dddbb28bb7d978ad627acc368af23d0
+
+        getComputedStyle of border-radius shows the vertical radius components if they differ from their horizontal counterpants.
+        We were incorrectly detecting this case and over simplifying the results of getComputedStyle.
+        This patch ensures we only hide the vertical values if they are identical to the horizontal values.
+
+        * css/CSSComputedStyleDeclaration.cpp:
+        (WebCore::getBorderRadiusShorthandValue):
+
+2013-12-08  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Do not skip attributes with only custom setter
+        https://bugs.webkit.org/show_bug.cgi?id=125417
+
+        Reviewed by Gustavo Noronha Silva.
+
+        For attributes with a custom setter, we now generate the code as a
+        read-only attribute with a getter method, unless it also has a
+        custom getter in which case the attribute is skipped.
+
+        * bindings/gobject/GNUmakefile.am: Generate WebKitDOMMediaController
+        that is now required by an attribute having a custom setter.
+        * bindings/gobject/WebKitDOMCustom.cpp: Remove methods that are now generated.
+        * bindings/gobject/WebKitDOMCustom.h: Ditto.
+        * bindings/gobject/WebKitDOMCustom.symbols: Ditto.
+        * bindings/gobject/webkitdom.symbols: Add new symbols.
+        * bindings/scripts/CodeGeneratorGObject.pm:
+        (SkipAttribute): Do not skip attributes having a custom setter.
+        (GetWriteableProperties): Do not include attributes having a
+        custom setter.
+        (GenerateProperty): Do not return early for attributes having
+        custom setter.
+        (GenerateFunctions): Do not generate setter for attributes having
+        a custom setter.
+
+2013-12-08  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Do not generate new dispatch_event methods marked as deprecated
+        https://bugs.webkit.org/show_bug.cgi?id=125416
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * bindings/scripts/CodeGeneratorGObject.pm:
+        (SkipFunction): Skip dispatch_event methods for objects
+        implementing EventTarget interface unless they are already
+        deprecated.
+        (GenerateFunction): Pass also the parentNode to SkipFunction().
+
+2013-12-05  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Bring end-of-stream algorithm section up to current spec.
+        https://bugs.webkit.org/show_bug.cgi?id=125270
+
+        Reviewed by Darin Adler.
+
+        Test: media/media-source/media-source-end-of-stream.html
+
+        Separate the "endOfStream()" method from the "end of stream algorithm".
+
+        * Modules/mediasource/MediaSource.cpp:
+        (WebCore::SourceBufferIsUpdating): Added predicate function.
+        (WebCore::MediaSource::endOfStream): Call streamEndedWithError().
+        (WebCore::MediaSource::streamEndedWithError): Added.
+        * Modules/mediasource/MediaSource.h:
+        * Modules/mediasource/SourceBuffer.cpp:
+        (WebCore::SourceBuffer::appendBufferTimerFired): Call streamEndedWithError().
+        (WebCore::SourceBuffer::sourceBufferPrivateDidReceiveSample): Ditto.
+        * Modules/mediasource/SourceBuffer.h:
+        * html/HTMLMediaElement.cpp:
+        (HTMLMediaElement::mediaLoadingFailedFatally): Renamed from mediaEngineError.
+        (HTMLMediaElement::mediaLoadingFailed): Call renamed method.
+        * html/HTMLMediaElement.h:
+        * platform/graphics/avfoundation/objc/MediaSourcePrivateAVFObjC.mm:
+        (WebCore::MediaSourcePrivateAVFObjC::markEndOfStream): Set load state to Loaded.
+        * platform/mock/mediasource/MockMediaPlayerMediaSource.cpp:
+        (WebCore::MockMediaPlayerMediaSource::setNetworkState): Simple setter.
+        * platform/mock/mediasource/MockMediaPlayerMediaSource.h:
+        * platform/mock/mediasource/MockMediaSourcePrivate.cpp:
+        (WebCore::MockMediaSourcePrivate::MockMediaSourcePrivate): Set the intitial duration to NaN.
+        (WebCore::MockMediaSourcePrivate::markEndOfStream): Set load state to Loaded.
+
+2013-12-04  Jer Noble  <jer.noble@apple.com>
+
+        [MSE][Mac] Crash when removing MediaSource from HTMLMediaElement.
+        https://bugs.webkit.org/show_bug.cgi?id=125269
+
+        Reviewed by Sam Weinig.
+
+        Fixes the media/media-source/media-source-fastseek.html test when run with MallocScribble enabled.
+
+        It's possible for a SourceBufferPrivateAVFObjC to outlive its MediaSourcePrivateAVFObjC, so
+        make sure to clear the pointer from the former to the latter when the latter is destroyed.
+        That means we now have to check to see if the pointer to the latter is still valid at every
+        call site.
+
+        As a drive-by fix, rename m_parent to m_mediaSource to more accurately reflect what the pointer
+        points to.
+
+        * platform/graphics/avfoundation/objc/MediaSourcePrivateAVFObjC.mm:
+        (WebCore::MediaSourcePrivateAVFObjC::~MediaSourcePrivateAVFObjC): Clear the SourceBuffer's backpointer.
+        * platform/graphics/avfoundation/objc/SourceBufferPrivateAVFObjC.h:
+        (WebCore::SourceBufferPrivateAVFObjC::clearMediaSource): 
+        * platform/graphics/avfoundation/objc/SourceBufferPrivateAVFObjC.mm:
+        (WebCore::SourceBufferPrivateAVFObjC::SourceBufferPrivateAVFObjC): Rename m_parent -> m_mediaSource.
+        (WebCore::SourceBufferPrivateAVFObjC::append): Check m_mediaSource before calling.
+        (WebCore::SourceBufferPrivateAVFObjC::removedFromMediaSource): Ditto.
+        (WebCore::SourceBufferPrivateAVFObjC::readyState): Ditto.
+        (WebCore::SourceBufferPrivateAVFObjC::setReadyState): Ditto.
+        (WebCore::SourceBufferPrivateAVFObjC::trackDidChangeEnabled): Ditto.
+        (WebCore::SourceBufferPrivateAVFObjC::flushAndEnqueueNonDisplayingSamples): Ditto.
+        (WebCore::SourceBufferPrivateAVFObjC::enqueueSample): Ditto.
+        (WebCore::SourceBufferPrivateAVFObjC::setActive): Ditto.
+        * platform/mock/mediasource/MockMediaSourcePrivate.cpp:
+        (WebCore::MockMediaSourcePrivate::~MockMediaSourcePrivate): Clear the SourceBuffer's backpointer.
+        * platform/mock/mediasource/MockSourceBufferPrivate.cpp:
+        (WebCore::MockSourceBufferPrivate::MockSourceBufferPrivate): Rename m_parent -> m_mediaSource.
+        (WebCore::MockSourceBufferPrivate::removedFromMediaSource): Check m_mediaSource before calling.
+        (WebCore::MockSourceBufferPrivate::readyState): Ditto.
+        (WebCore::MockSourceBufferPrivate::setReadyState): Ditto.
+        (WebCore::MockSourceBufferPrivate::setActive): Ditto.
+        * platform/mock/mediasource/MockSourceBufferPrivate.h:
+        (WebCore::MockSourceBufferPrivate::clearMediaSource):
+
+2013-12-07  Zoltan Horvath  <zoltan@webkit.org>
+
+        Remove statusWithDirection static function from RenderBlockLineLayout
+        https://bugs.webkit.org/show_bug.cgi?id=125372
+
+        Reviewed by Andreas Kling.
+
+        I run into a FIXME about using BidiStatus constructor rather than statusWithDirection,
+        once it's implemented. BidiStatus has got the appropriate constructor now, so I removed
+        statusWithDirection and updated the code to use the constructor of BidiStatus.
+
+        No new tests, no behavior change.
+
+        * rendering/RenderBlockLineLayout.cpp:
+        (WebCore::constructBidiRunsForSegment):
+
+2013-12-07  ChangSeok Oh  <changseok.oh@collabora.com>
+
+        Unreviewed. Build fix for gtk port after r160260.
+
+        * loader/cache/CachedImage.h: Add missing a header.
+
+2013-12-07  Gustavo Noronha Silva  <gns@gnome.org>
+
+        ubuntu software center hits _XReadEvents() error
+        https://bugs.webkit.org/show_bug.cgi?id=123480
+
+        Reviewed by Martin Robinson.
+
+        * platform/gtk/WidgetBackingStoreGtkX11.cpp:
+        (WebCore::WidgetBackingStoreGtkX11::~WidgetBackingStoreGtkX11): clear the surface
+        before freeing the associated pixmap.
+
+2013-12-06  Tim Horton  <timothy_horton@apple.com>
+
+        [mac] Keep around more decoded image data, since it's purgeable
+        https://bugs.webkit.org/show_bug.cgi?id=125273
+        <rdar://problem/13205438>
+
+        Unreviewed patch to fix review comments...
+
+        * platform/graphics/BitmapImage.h:
+        Dan noticed that these return statements were improperly indented.
+
+2013-12-05  Jer Noble  <jer.noble@apple.com>
+
+        [MSE][Mac] Disable AVFoundation when enabling the MockMediaPlayerMediaSource.
+        https://bugs.webkit.org/show_bug.cgi?id=125338
+
+        Reviewed by Darin Adler.
+
+        The MediaSource API has some assumptions which break if more than one installed
+        media engine supports MediaSources at the same time. So when enabling the mock
+        media source engine in DRT or WKTR, disable AVFoundation so that only the mock
+        engine will support media source loading.
+
+        * testing/Internals.cpp:
+        (WebCore::Internals::initializeMockMediaSource):
+
+2013-12-06  Antti Koivisto  <antti@apple.com>
+
+        Use NeverDestroyed instead of DEFINE_STATIC_LOCAL
+
+        Reviewed by Anders Carlsson.
+
+        * rendering/RenderText.cpp:
+        (WebCore::originalTextMap):
+
+2013-12-05  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Add a runtime-setting for the MediaSource constructor.
+        https://bugs.webkit.org/show_bug.cgi?id=125336
+
+        Reviewed by Eric Carlson.
+
+        Add a Setting to enable the MediaSource constructor.
+
+        * Modules/mediasource/MediaSource.idl:
+        * page/Settings.in:
+
+2013-12-06  Tim Horton  <timothy_horton@apple.com>
+
+        [mac] Keep around more decoded image data, since it's purgeable
+        https://bugs.webkit.org/show_bug.cgi?id=125273
+        <rdar://problem/13205438>
+
+        Reviewed by Simon Fraser.
+
+        No new tests, just an optimization.
+
+        Instead of throwing away decoded image data eagerly, allow the operating
+        system to manage the memory via the standard purgeability mechanism,
+        where it can.
+
+        This improves the performance on some pathological cases (extremely large
+        animated GIFs) by up to 8x.
+
+        * loader/cache/MemoryCache.cpp:
+        (WebCore::MemoryCache::pruneLiveResourcesToSize):
+        Don't prune live resources' decoded data if it is purgeable.
+
+        * platform/graphics/BitmapImage.cpp:
+        (WebCore::BitmapImage::destroyDecodedDataIfNecessary):
+        Don't eagerly throw away decoded image data if it's purgeable.
+
+        * loader/cache/CachedImage.h:
+        * loader/cache/CachedResource.h:
+        (WebCore::CachedResource::decodedDataIsPurgeable):
+        * platform/graphics/BitmapImage.h:
+        * platform/graphics/Image.h:
+        (WebCore::Image::decodedDataIsPurgeable):
+
+2013-12-06  Antti Koivisto  <antti@apple.com>
+
+        Save original text for RenderText to a map
+        https://bugs.webkit.org/show_bug.cgi?id=125278
+
+        Reviewed by Darin Adler.
+        
+        Currently the original text is fetched from the Text node. This is one of the few things 
+        where we use the RenderText node pointer and is stopping Text nodes from being anonymous.
+        
+        It is very rare of original text to differ from the actual text so we can just squirrel the
+        original to a map when it differs. This is also simplifies the code.
+
+        * rendering/RenderQuote.cpp:
+        (WebCore::RenderQuote::styleDidChange):
+        (WebCore::RenderQuote::updateDepth):
+        * rendering/RenderText.cpp:
+        (WebCore::originalTextMap):
+        (WebCore::RenderText::RenderText):
+        (WebCore::RenderText::~RenderText):
+        (WebCore::RenderText::styleDidChange):
+        (WebCore::RenderText::originalText):
+        (WebCore::RenderText::setTextInternal):
+        (WebCore::RenderText::setText):
+        * rendering/RenderText.h:
+        * rendering/RenderTextFragment.cpp:
+        * rendering/RenderTextFragment.h:
+
+2013-12-04  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Refactor MediaSourceBase back into MediaSource
+        https://bugs.webkit.org/show_bug.cgi?id=125245
+
+        Reviewed by Eric Carlson.
+
+        Now that the legacy WebKitMediaSource has been removed, there is no reason to have
+        a separate MediaSource and MediaSourceBase. Re-integrate the two.
+
+        Copy all the methods from MediaSource into MediaSourceBase, and rename the class MediaSource:
+        * Modules/mediasource/MediaSource.cpp: Copied from MediaSourceBase.cpp.
+        (WebCore::MediaSource::create): Copied from MediaSource.cpp.
+        (WebCore::MediaSource::addSourceBuffer): Ditto.
+        (WebCore::MediaSource::removeSourceBuffer): Ditto.
+        (WebCore::MediaSource::isTypeSupported): Ditto.
+        (WebCore::MediaSource::eventTargetInterface): Ditto.
+        (WebCore::MediaSource::sourceBufferDidChangeAcitveState): Ditto.
+        * Modules/mediasource/MediaSource.h: Copied from MediaSourceBase.h.
+        (WebCore::MediaSource::sourceBuffers): Copied from MediaSource.h.
+        (WebCore::MediaSource::activeSourceBuffers): Copied from MediaSource.h.
+        * Modules/mediasource/MediaSourceBase.cpp: Removed.
+        * Modules/mediasource/MediaSourceBase.h: Removed.
+
+        Change all references to MediaSourceBase into MediaSource:
+        * Modules/mediasource/DOMURLMediaSource.cpp:
+        (WebCore::DOMURLMediaSource::createObjectURL):
+        * Modules/mediasource/DOMURLMediaSource.h:
+        * Modules/mediasource/MediaSourceRegistry.cpp:
+        (WebCore::MediaSourceRegistry::registerURL):
+        (WebCore::MediaSourceRegistry::unregisterURL):
+        * Modules/mediasource/MediaSourceRegistry.h:
+
+        Remove MediaSourceBase.cpp/h from the project file:
+        * WebCore.xcodeproj/project.pbxproj:
+        * GNUmakefile.list.am:
+
+2013-12-06  Eric Carlson  <eric.carlson@apple.com>
+
+        r159827 broke plug-in snapshotting
+        https://bugs.webkit.org/show_bug.cgi?id=125365
+
+        Reviewed by Dean Jackson.
+
+        No new tests, covered by existing tests.
+
+        * html/HTMLPlugInImageElement.cpp:
+        (WebCore::HTMLPlugInImageElement::didAddUserAgentShadowRoot): Return early if there is NOT
+            a page, not if there IS a page.
+
+2013-12-06  Roger Fong <roger_fong@apple.com> and Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Support compiling with VS2013
+        https://bugs.webkit.org/show_bug.cgi?id=125353
+
+        Reviewed by Anders Carlsson.
+
+        * loader/archive/cf/LegacyWebArchive.cpp:
+        (WebCore::LegacyWebArchive::create): Use nullptr
+        (WebCore::LegacyWebArchive::createFromSelection): Ditto
+
+2013-11-15  Jer Noble  <jer.noble@apple.com>
+
+        [MSE][Mac] Add a new MSE-compatible MediaPlayerPrivate implementation, MediaPlayerPrivateMediaSourceAVFObjC
+        https://bugs.webkit.org/show_bug.cgi?id=123378
+
+        Reviewed by Eric Carlson.
+
+        Add an AVFoundation implementation of MediaPlayerPrivate which creates and uses
+        MediaSourcePrivate and SourceBufferPrivate subclasses.
+
+        Add the new media engine to the list of installed engines:
+        * platform/MediaSample.h:
+        * platform/graphics/MediaPlayer.cpp:
+        (WebCore::installedMediaEngines):
+        * platform/graphics/MediaPlayer.h:
+
+        Add the new files to the project:
+        * WebCore.xcodeproj/project.pbxproj:
+
+        Drive by fix for ports who implement seekDouble():
+        * platform/graphics/MediaPlayerPrivate.h:
+        (WebCore::MediaPlayerPrivateInterface::seekWithTolerance):
+
+        Add new Video and AudioTrackPrivate types which handle their own enable state:
+        * platform/graphics/avfoundation/objc/AudioTrackPrivateMediaSourceAVFObjC.cpp: Added
+        (WebCore::AudioTrackPrivateMediaSourceAVFObjC::AudioTrackPrivateMediaSourceAVFObjC):
+        (WebCore::AudioTrackPrivateMediaSourceAVFObjC::resetPropertiesFromTrack):
+        (WebCore::AudioTrackPrivateMediaSourceAVFObjC::setAssetTrack):
+        (WebCore::AudioTrackPrivateMediaSourceAVFObjC::assetTrack):
+        (WebCore::AudioTrackPrivateMediaSourceAVFObjC::setEnabled):
+        * platform/graphics/avfoundation/objc/AudioTrackPrivateMediaSourceAVFObjC.h: Added
+        * platform/graphics/avfoundation/objc/VideoTrackPrivateMediaSourceAVFObjC.cpp: Added.
+        (WebCore::VideoTrackPrivateMediaSourceAVFObjC::VideoTrackPrivateMediaSourceAVFObjC):
+        (WebCore::VideoTrackPrivateMediaSourceAVFObjC::resetPropertiesFromTrack):
+        (WebCore::VideoTrackPrivateMediaSourceAVFObjC::setAssetTrack):
+        (WebCore::VideoTrackPrivateMediaSourceAVFObjC::assetTrack):
+        (WebCore::VideoTrackPrivateMediaSourceAVFObjC::setSelected):
+        * platform/graphics/avfoundation/objc/VideoTrackPrivateMediaSourceAVFObjC.h: Added.
+
+        Add a new MediaPlayerPrivate which can handle MediaSource objects:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateMediaSourceAVFObjC.h: Added.
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateMediaSourceAVFObjC.mm: Added.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::MediaPlayerPrivateMediaSourceAVFObjC):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::~MediaPlayerPrivateMediaSourceAVFObjC):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::registerMediaEngine):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::create):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::isAvailable):
+        (WebCore::mimeTypeCache):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::getSupportedTypes):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::supportsType):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::load):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::cancelLoad):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::prepareToPlay):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::platformMedia):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::platformLayer):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::play):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::playInternal):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::pause):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::pauseInternal):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::paused):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::supportsScanning):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::naturalSize):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::hasVideo):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::hasAudio):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::setVisible):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::durationDouble):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::currentTimeDouble):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::startTimeDouble):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::initialTime):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::seekWithTolerance):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::seekInternal):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::seeking):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::setRateDouble):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::networkState):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::readyState):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::seekable):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::maxTimeSeekableDouble):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::minTimeSeekable):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::buffered):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::didLoadingProgress):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::setSize):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::paint):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::paintCurrentFrameInContext):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::hasAvailableVideoFrame):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::supportsAcceleratedRendering):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::acceleratedRenderingStateChanged):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::movieLoadType):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::prepareForRendering):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::engineDescription):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::languageOfPrimaryAudioTrack):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::extraMemoryCost):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::ensureLayer):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::destroyLayer):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::updateDuration):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::updateStates):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::setReadyState):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::setNetworkState):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::addDisplayLayer):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::removeDisplayLayer):
+
+        Add a new MediaSourcePrivate implementation:
+        * platform/graphics/avfoundation/objc/MediaSourcePrivateAVFObjC.h: Added.
+        (WebCore::MediaSourcePrivateAVFObjC::player):
+        (WebCore::MediaSourcePrivateAVFObjC::activeSourceBuffers):
+        * platform/graphics/avfoundation/objc/MediaSourcePrivateAVFObjC.mm: Added.
+        (WebCore::MediaSourcePrivateAVFObjC::create):
+        (WebCore::MediaSourcePrivateAVFObjC::MediaSourcePrivateAVFObjC):
+        (WebCore::MediaSourcePrivateAVFObjC::~MediaSourcePrivateAVFObjC):
+        (WebCore::MediaSourcePrivateAVFObjC::addSourceBuffer):
+        (WebCore::MediaSourcePrivateAVFObjC::removeSourceBuffer):
+        (WebCore::MediaSourcePrivateAVFObjC::duration):
+        (WebCore::MediaSourcePrivateAVFObjC::setDuration):
+        (WebCore::MediaSourcePrivateAVFObjC::markEndOfStream):
+        (WebCore::MediaSourcePrivateAVFObjC::unmarkEndOfStream):
+        (WebCore::MediaSourcePrivateAVFObjC::readyState):
+        (WebCore::MediaSourcePrivateAVFObjC::setReadyState):
+        (WebCore::MediaSourcePrivateAVFObjC::sourceBufferPrivateDidChangeActiveState):
+        (WebCore::MediaSourcePrivateAVFObjCHasAudio):
+        (WebCore::MediaSourcePrivateAVFObjC::hasAudio):
+        (WebCore::MediaSourcePrivateAVFObjCHasVideo):
+        (WebCore::MediaSourcePrivateAVFObjC::hasVideo):
+        (WebCore::MediaSourcePrivateAVFObjC::seekToTime):
+
+        Add a new SourceBufferPrivate implementation:
+        * platform/graphics/avfoundation/objc/SourceBufferPrivateAVFObjC.h: Added.
+        * platform/graphics/avfoundation/objc/SourceBufferPrivateAVFObjC.mm: Added.
+        (-[WebAVStreamDataParserListener initWithParser:parent:WebCore::]):
+        (-[WebAVStreamDataParserListener dealloc]):
+        (-[WebAVStreamDataParserListener streamDataParser:didParseStreamDataAsAsset:]):
+        (-[WebAVStreamDataParserListener streamDataParser:didFailToParseStreamDataWithError:]):
+        (-[WebAVStreamDataParserListener streamDataParser:didProvideMediaData:forTrackID:mediaType:flags:]):
+        (-[WebAVStreamDataParserListener streamDataParser:didReachEndOfTrackWithTrackID:mediaType:]):
+        (WebCore::MediaSampleAVFObjC::create):
+        (WebCore::MediaSampleAVFObjC::~MediaSampleAVFObjC):
+        (WebCore::MediaSampleAVFObjC::MediaSampleAVFObjC):
+        (WebCore::MediaSampleAVFObjC::platformSample):
+        (WebCore::CMSampleBufferIsRandomAccess):
+        (WebCore::MediaSampleAVFObjC::flags):
+        (WebCore::MediaDescriptionAVFObjC::create):
+        (WebCore::MediaDescriptionAVFObjC::~MediaDescriptionAVFObjC):
+        (WebCore::MediaDescriptionAVFObjC::MediaDescriptionAVFObjC):
+        (WebCore::SourceBufferPrivateAVFObjC::create):
+        (WebCore::SourceBufferPrivateAVFObjC::SourceBufferPrivateAVFObjC):
+        (WebCore::SourceBufferPrivateAVFObjC::~SourceBufferPrivateAVFObjC):
+        (WebCore::SourceBufferPrivateAVFObjC::didParseStreamDataAsAsset):
+        (WebCore::SourceBufferPrivateAVFObjC::didFailToParseStreamDataWithError):
+        (WebCore::callProcessCodedFrameForEachSample):
+        (WebCore::SourceBufferPrivateAVFObjC::didProvideMediaDataForTrackID):
+        (WebCore::SourceBufferPrivateAVFObjC::processCodedFrame):
+        (WebCore::SourceBufferPrivateAVFObjC::didReachEndOfTrackWithTrackID):
+        (WebCore::SourceBufferPrivateAVFObjC::setClient):
+        (WebCore::SourceBufferPrivateAVFObjC::append):
+        (WebCore::SourceBufferPrivateAVFObjC::abort):
+        (WebCore::SourceBufferPrivateAVFObjC::removedFromMediaSource):
+        (WebCore::SourceBufferPrivateAVFObjC::readyState):
+        (WebCore::SourceBufferPrivateAVFObjC::setReadyState):
+        (WebCore::SourceBufferPrivateAVFObjC::evictCodedFrames):
+        (WebCore::SourceBufferPrivateAVFObjC::isFull):
+        (WebCore::SourceBufferPrivateAVFObjC::hasVideo):
+        (WebCore::SourceBufferPrivateAVFObjC::hasAudio):
+        (WebCore::SourceBufferPrivateAVFObjC::trackDidChangeEnabled):
+        (WebCore::createNonDisplayingCopy):
+        (WebCore::SourceBufferPrivateAVFObjC::flushAndEnqueueNonDisplayingSamples):
+        (WebCore::SourceBufferPrivateAVFObjC::enqueueSample):
+        (WebCore::SourceBufferPrivateAVFObjC::isReadyForMoreSamples):
+        (WebCore::SourceBufferPrivateAVFObjC::setActive):
+        (WebCore::SourceBufferPrivateAVFObjC::fastSeekTimeForMediaTime):
+        (WebCore::SourceBufferPrivateAVFObjC::seekToTime):
+        * platform/mac/PlatformClockCM.h:
+
+        Add a SOFT_LINK_CLASS_OPTIONAL macro:
+        * platform/mac/SoftLinking.h:
+
+2013-12-06  Alexey Proskuryakov  <ap@apple.com>
+
+        Remove some duplicate checks from SerializedScriptValue
+        https://bugs.webkit.org/show_bug.cgi?id=125358
+
+        Reviewed by Geoffrey Garen.
+
+        There is no need to call inherits() before WebCore's toXXX(JSValue) functions.
+
+        Also, the result of toArrayBuffer() is a raw pointer, not a RefPtr (it's confusing
+        because toArrayBufferView returns a RefPtr).
+
+        * bindings/js/SerializedScriptValue.cpp: (WebCore::CloneSerializer::dumpIfTerminal):
+
+2013-12-06  Tim Horton  <timothy_horton@apple.com>
+
+        Remove Image::decodedSize()
+        https://bugs.webkit.org/show_bug.cgi?id=125327
+
+        Reviewed by Simon Fraser.
+
+        Missed a comment when removing this code.
+
+        * svg/graphics/SVGImage.h:
+
+2013-12-06  Rob Buis  <rob.buis@samsung.com>
+
+        [CSS Shapes] ShapeOutsideInfo needs to use the parent's writing mode when calculating offsets
+        https://bugs.webkit.org/show_bug.cgi?id=124680
+
+        Reviewed by Dirk Schulze.
+
+        Do not take the writing-mode property on the float into account for shape-outside.
+        Add a virtual method writingMode() in order to do this for shape-outside but
+        keep old behavior (element writingMode) for shape-inside.
+
+        Change existing test floats/shape-outside-floats-different-writing-modes.html to test the
+        new behavior.
+
+        * rendering/shapes/ShapeInfo.cpp:
+        (WebCore::::computedShape):
+        * rendering/shapes/ShapeInfo.h:
+        (WebCore::ShapeInfo::writingMode):
+        * rendering/shapes/ShapeOutsideInfo.cpp:
+        (WebCore::ShapeOutsideInfo::writingMode):
+        * rendering/shapes/ShapeOutsideInfo.h:
+
+2013-12-06  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Remove Staging Workaround
+        https://bugs.webkit.org/show_bug.cgi?id=125354
+
+        Reviewed by Timothy Hatcher.
+
+        * inspector/CodeGeneratorInspector.py:
+
+2013-12-06  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Simplify ScriptFunctionCall by removing dead code.
+        https://bugs.webkit.org/show_bug.cgi?id=125274
+
+        Reviewed by Timothy Hatcher.
+
+        * bindings/js/ScriptFunctionCall.cpp:
+        (WebCore::ScriptFunctionCall::call):
+        * bindings/js/ScriptFunctionCall.h:
+
+2013-12-06  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Upstream WebCore/rendering changes
+        https://bugs.webkit.org/show_bug.cgi?id=125239
+
+        Reviewed by Simon Fraser.
+
+        * WebCore.xcodeproj/project.pbxproj:
+        * rendering/InlineBox.cpp:
+        (WebCore::InlineBox::previousOnLineExists): Added.
+        * rendering/InlineBox.h:
+        * rendering/InlineTextBox.cpp:
+        (WebCore::InlineTextBox::paintCompositionBackground): Modified to query RenderStyle
+        on iOS for the composition fill color. Added FIXME to make this platform-independent.
+        (WebCore::InlineTextBox::paintDecoration): Added iOS-specific decoration code.
+        (WebCore::lineStyleForMarkerType):
+        (WebCore::InlineTextBox::paintDocumentMarkers): Added iOS-specific code. Also, added
+        FIXME to make this code platform-independent.
+        * rendering/RenderBlock.cpp:
+        (WebCore::RenderBlock::paint): Ditto.
+        (WebCore::positionForPointRespectingEditingBoundaries): Added iOS-specific code.
+        * rendering/RenderBlock.h: Changed access control of logical{Left, Right}SelectionOffset()
+        from private to protected so that these methods can be used from RenderImage::collectSelectionRects().
+        * rendering/RenderBox.cpp:
+        (WebCore::RenderBox::borderRadii): Added.
+        (WebCore::RenderBox::paintBoxDecorations): Added iOS-specific workaround. See <rdar://problem/6209763>
+        for more details.
+        (WebCore::RenderBox::computeRectForRepaint): Added iOS-specific code. 
+        (WebCore::customContainingBlockWidth): Added; guarded by PLATFORM(IOS).
+        (WebCore::customContainingBlockHeight): Added; guarded by PLATFORM(IOS).
+        (WebCore::customContainingBlockLogicalWidth): Added; guarded by PLATFORM(IOS).
+        (WebCore::customContainingBlockLogicalHeight): Added; guarded by PLATFORM(IOS).
+        (WebCore::customContainingBlockAvailableLogicalHeight): Added; guarded by PLATFORM(IOS).
+        (WebCore::RenderBox::availableLogicalHeightUsing): Added iOS-specific code; calls customContainingBlockAvailableLogicalHeight().
+        (WebCore::RenderBox::containingBlockLogicalWidthForPositioned): Added iOS-specific code; calls customContainingBlockLogicalWidth().
+        (WebCore::RenderBox::containingBlockLogicalHeightForPositioned): Added iOS-specific code; calls customContainingBlockLogicalHeight().
+        (WebCore::RenderBox::layoutOverflowRectForPropagation): Added iOS-specific code.
+        * rendering/RenderBox.h:
+        * rendering/RenderBoxModelObject.cpp:
+        (WebCore::RenderBoxModelObject::stickyPositionOffset): Use FrameView::customFixedPositionLayoutRect()
+        instead of FrameView::viewportConstrainedVisibleContentRect().
+        * rendering/RenderButton.cpp:
+        (WebCore::RenderButton::layout): Added; iOS-specific. Includes FIXME comment.
+        See <rdar://problem/7675493> for more details.
+        * rendering/RenderElement.cpp:
+        (WebCore::RenderElement::styleWillChange): Added iOS-specific code.
+        (WebCore::RenderElement::styleDidChange): Modified to only call areCursorsEqual() and
+        EventHandler::scheduleCursorUpdate() on a non-iOS port.
+        * rendering/RenderEmbeddedObject.cpp:
+        (WebCore::RenderEmbeddedObject::allowsAcceleratedCompositing): Added iOS-specific code.
+        (WebCore::RenderEmbeddedObject::setPluginUnavailabilityReason): This method has an empty implementation for iOS.
+        (WebCore::RenderEmbeddedObject::setPluginUnavailabilityReasonWithDescription): Ditto.
+        * rendering/RenderFileUploadControl.cpp:
+        (WebCore::nodeHeight):
+        (WebCore::RenderFileUploadControl::maxFilenameWidth): Added iOS-specific code.
+        (WebCore::RenderFileUploadControl::paintObject): Ditto.
+        (WebCore::RenderFileUploadControl::fileTextValue): Ditto.
+        * rendering/RenderFrameSet.cpp:
+        (WebCore::RenderFrameSet::positionFrames): Ditto; Also added FIXME comment as this code may not
+        be specific to iOS.
+        * rendering/RenderIFrame.h: Added iOS-specific workaround to RenderObject::renderName(). Added
+        FIXME comment to determine whether this workaround is still applicable.
+        * rendering/RenderImage.cpp:
+        (WebCore::RenderImage::collectSelectionRects): Added; guarded by PLATFORM(IOS).
+        (WebCore::RenderImage::paintAreaElementFocusRing): This method has an empty implementation for iOS.
+        * rendering/RenderImage.h:
+        * rendering/RenderInline.cpp:
+        (WebCore::RenderInline::absoluteQuadsForSelection): Added; guarded by PLATFORM(IOS).
+        * rendering/RenderInline.h:
+        * rendering/RenderLayer.cpp:
+        (WebCore::RenderLayer::RenderLayer): Added iOS-specific member initialization.
+        (WebCore::RenderLayer::~RenderLayer): Added iOS-specific code.
+        (WebCore::RenderLayer::willBeDestroyed): Added; iOS-specific.
+        (WebCore::RenderLayer::hasAcceleratedTouchScrolling): Ditto.
+        (WebCore::RenderLayer::handleTouchEvent): Ditto.
+        (WebCore::RenderLayer::registerAsTouchEventListenerForScrolling): Ditto.
+        (WebCore::RenderLayer::unregisterAsTouchEventListenerForScrolling): Ditto.
+        (WebCore::RenderLayer::updateNeedsCompositedScrolling): Added iOS-specific code as we use UIKit
+        to composite our scroll bars.
+        (WebCore::RenderLayer::scrollTo): Added iOS-specific code.
+        (WebCore::RenderLayer::scrollRectToVisible): Ditto.
+        (WebCore::RenderLayer::styleChanged): Modified to make use of the passed StyleDifference on iOS.
+        (WebCore::RenderLayer::visibleContentRect): Added; iOS-specific.
+        (WebCore::RenderLayer::didStartScroll): Ditto.
+        (WebCore::RenderLayer::didEndScroll): Ditto.
+        (WebCore::RenderLayer::didUpdateScroll): Ditto.
+        (WebCore::RenderLayer::invalidateScrollbarRect): Added iOS-specific code.
+        (WebCore::RenderLayer::invalidateScrollCornerRect): Ditto.
+        (WebCore::RenderLayer::verticalScrollbarWidth): Ditto.
+        (WebCore::RenderLayer::horizontalScrollbarHeight): Ditto.
+        (WebCore::RenderLayer::updateScrollableAreaSet): Ditto.
+        (WebCore::RenderLayer::updateScrollInfoAfterLayout): Add iOS-specific workaround with FIXME. See
+        <rdar://problem/15579797> for more details.
+        (WebCore::RenderLayer::paintOverflowControls): Added iOS-specific code.
+        (WebCore::RenderLayer::calculateClipRects): Ditto.
+        * rendering/RenderLayer.h:
+        * rendering/RenderLayerBacking.cpp:
+        (WebCore::RenderLayerBacking::createPrimaryGraphicsLayer): Modified to not apply page scale on iOS
+        as we apply a page scale at a different time in the code.
+        (WebCore::RenderLayerBacking::layerWillBeDestroyed): Added; guarded by PLATFORM(IOS).
+        (WebCore::layerOrAncestorIsTransformedOrScrolling): Added iOS-specific variant with FIXME comment.
+        (WebCore::RenderLayerBacking::shouldClipCompositedBounds): Added iOS-specific code.
+        (WebCore::RenderLayerBacking::updateGraphicsLayerConfiguration): Ditto.
+        (WebCore::RenderLayerBacking::updateGraphicsLayerGeometry): Ditto.
+        (WebCore::RenderLayerBacking::registerScrollingLayers): Ditto.
+        (WebCore::RenderLayerBacking::updateScrollingLayers): Ditto.
+        (WebCore::RenderLayerBacking::containsPaintedContent): Call RenderLayer::hasBoxDecorationsOrBackground()
+        when building on iOS Simulator.
+        (WebCore::RenderLayerBacking::parentForSublayers): Added iOS-specific code and FIXME comment.
+        (WebCore::RenderLayerBacking::paintsIntoWindow): Opt-into coordinated graphics code path.
+        (WebCore::RenderLayerBacking::setContentsNeedDisplayInRect): Added iOS-specific code.
+        (WebCore::RenderLayerBacking::paintIntoLayer): Compile-out ASSERT_NOT_REACHED for iOS and added FIXME comment.
+        * rendering/RenderLayerBacking.h:
+        * rendering/RenderLayerCompositor.cpp:
+        (WebCore::RenderLayerCompositor::scheduleLayerFlush): Added iOS-specific code.
+        (WebCore::RenderLayerCompositor::chromeClient): Added; guarded by PLATFORM(IOS).
+        (WebCore::RenderLayerCompositor::flushPendingLayerChanges): Added iOS-specific code.
+        (WebCore::scrollbarHasDisplayNone): Added; iOS-specific.
+        (WebCore::updateScrollingLayerWithClient): Ditto.
+        (WebCore::RenderLayerCompositor::updateCustomLayersAfterFlush): Ditto.
+        (WebCore::RenderLayerCompositor::didFlushChangesForLayer): Added iOS-specific code.
+        (WebCore::RenderLayerCompositor::didChangeVisibleRect): Ditto.
+        (WebCore::RenderLayerCompositor::addToOverlapMap): Don't apply page scale factor on iOS. We apply
+        the page scale factor at a different time in the code. Also, added FIXME comment.
+        (WebCore::RenderLayerCompositor::computeCompositingRequirements): Added iOS-specific workaround.
+        See <rdar://problem/8348337> for more details.
+        (WebCore::RenderLayerCompositor::setIsInWindow): Use non-Mac code path for iOS.
+        (WebCore::RenderLayerCompositor::allowsIndependentlyCompositedFrames): Added iOS-specific code.
+        (WebCore::RenderLayerCompositor::requiresCompositingLayer): Ditto.
+        (WebCore::RenderLayerCompositor::requiresOwnBackingStore): Ditto.
+        (WebCore::RenderLayerCompositor::reasonsForCompositing): Ditto.
+        (WebCore::RenderLayerCompositor::requiresCompositingForAnimation): Opt-into calling
+        AnimationController::isRunningAnimationOnRenderer() on iOS.
+        (WebCore::RenderLayerCompositor::requiresCompositingForScrolling): Added; guarded by PLATFORM(IOS).
+        (WebCore::isStickyInAcceleratedScrollingLayerOrViewport): Added iOS-specific code.
+        (WebCore::isViewportConstrainedFixedOrStickyLayer): Ditto.
+        (WebCore::RenderLayerCompositor::requiresCompositingForPosition): Use FrameView::customFixedPositionLayoutRect()
+        instead of FrameView::viewportConstrainedVisibleContentRect().
+        (WebCore::RenderLayerCompositor::contentsScaleMultiplierForNewTiles): Ditto.
+        (WebCore::RenderLayerCompositor::ensureRootLayer): Ditto.
+        (WebCore::RenderLayerCompositor::computeFixedViewportConstraints): Use FrameView::customFixedPositionLayoutRect()
+        instead of FrameView::viewportConstrainedVisibleContentRect().
+        (WebCore::RenderLayerCompositor::computeStickyViewportConstraints): Ditto.
+        (WebCore::RenderLayerCompositor::registerOrUpdateViewportConstrainedLayer): This method has an empty implementation for iOS
+        as we batch update viewport-constrained layers in the iOS-specific method, RenderLayerCompositor::updateCustomLayersAfterFlush().
+        (WebCore::RenderLayerCompositor::unregisterViewportConstrainedLayer): Ditto.
+        (WebCore::RenderLayerCompositor::registerAllViewportConstrainedLayers): Added; guarded by PLATFORM(IOS).
+        (WebCore::RenderLayerCompositor::unregisterAllViewportConstrainedLayers): Ditto.
+        (WebCore::RenderLayerCompositor::registerAllScrollingLayers): Ditto.
+        (WebCore::RenderLayerCompositor::unregisterAllScrollingLayers): Ditto.
+        (WebCore::RenderLayerCompositor::scrollingLayerAddedOrUpdated): Ditto.
+        (WebCore::RenderLayerCompositor::scrollingLayerRemoved): Ditto.
+        (WebCore::RenderLayerCompositor::startInitialLayerFlushTimerIfNeeded): Ditto.
+        * rendering/RenderLayerCompositor.h:
+        * rendering/RenderLayerFilterInfo.h: Added iOS-specific Clang workaround to ignore
+        an unused private field.
+        * rendering/RenderMenuList.cpp:
+        (WebCore::selectedOptionCount): Added; guarded by PLATFORM(IOS).
+        (WebCore::RenderMenuList::RenderMenuList): On iOS we don't make use of RenderMenuList::m_popupIsVisible.
+        (WebCore::RenderMenuList::~RenderMenuList): On iOS we don't make use of RenderMenuList::m_popup.
+        (WebCore::RenderMenuList::adjustInnerStyle): Add iOS-specific code.
+        (RenderMenuList::updateFromElement): On iOS we don't make use of RenderMenuList::m_popup.
+        (RenderMenuList::setTextFromOption): Add iOS-specific code.
+        (RenderMenuList::showPopup): Define RenderMenuList::showPopup() to ASSERT_NOT_REACHED() on iOS as
+        we don't make use of RenderMenuList::m_popup.
+        (RenderMenuList::hidePopup): This method has an empty implementation for iOS as we don't make use
+        of RenderMenuList::m_popup.
+        (RenderMenuList::popupDidHide): This method has an empty implementation for iOS as we don't make use
+        of RenderMenuList::m_popupIsVisible.
+        * rendering/RenderMenuList.h:
+        * rendering/RenderObject.cpp:
+        (WebCore::RenderObject::columnNumberForOffset): Added; guarded by PLATFORM(IOS). Also, added a FIXME comment to
+        make this function return an unsigned integer instead of a signed integer.
+        (WebCore::RenderObject::collectSelectionRects): Added; guarded by PLATFORM(IOS).
+        (WebCore::RenderObject::destroy): Added iOS-specific code.
+        (WebCore::RenderObject::innerLineHeight): Added.
+        (WebCore::RenderObject::willRenderImage): Added iOS-specific code.
+        * rendering/RenderObject.h: Change the access control of RenderObject::drawLineForBoxSide() from protected to
+        public so that it can be used from RenderThemeIOS::adjustMenuListButtonStyle().
+        (WebCore::RenderObject::absoluteQuadsForSelection):
+        * rendering/RenderScrollbar.h: Change the access control of RenderScrollbar::getScrollbarPseudoStyle() from
+        private to public so that it can be used from the iOS-specific static function, scrollbarHasDisplayNone,
+        defined in RenderLayerCompositor.cpp.
+        * rendering/RenderSearchField.cpp:
+        (WebCore::RenderSearchField::itemText): Added iOS-specific code.
+        * rendering/RenderText.cpp:
+        (WebCore::RenderText::collectSelectionRects): Added; guarded by PLATFORM(IOS).
+        (WebCore::RenderText::setTextInternal): Added iOS-specific code.
+        * rendering/RenderText.h:
+        * rendering/RenderTextControl.cpp:
+        (WebCore::RenderTextControl::adjustInnerTextStyle): Ditto.
+        (WebCore::RenderTextControl::canScroll): Added; guarded by PLATFORM(IOS).
+        (WebCore::RenderTextControl::innerLineHeight): Ditto.
+        * rendering/RenderTextControl.h:
+        * rendering/RenderTextControlMultiLine.cpp:
+        (WebCore::RenderTextControlMultiLine::getAvgCharWidth): Compile-out code when building for iOS.
+        (WebCore::RenderTextControlMultiLine::createInnerTextStyle): Added iOS-specific code.
+        * rendering/RenderTextControlSingleLine.cpp:
+        (WebCore::RenderTextControlSingleLine::layout): Ditto.
+        (WebCore::RenderTextControlSingleLine::getAvgCharWidth): Compile-out code when building for iOS.
+        (WebCore::RenderTextControlSingleLine::preferredContentLogicalWidth): Ditto.
+        * rendering/RenderTextLineBoxes.cpp:
+        (WebCore::lineDirectionPointFitsInBox): Ditto.
+        (WebCore::RenderTextLineBoxes::positionForPoint): Added iOS-specific code.
+        * rendering/RenderTheme.cpp:
+        (WebCore::RenderTheme::paintBorderOnly): Ditto.
+        (WebCore::RenderTheme::paintDecorations): Modified to call the control-specific paint*Decorations().
+        * rendering/RenderTheme.h:
+        (WebCore::RenderTheme::paintCheckboxDecorations): Added.
+        (WebCore::RenderTheme::paintRadioDecorations): Added.
+        (WebCore::RenderTheme::paintButtonDecorations): Added.
+        (WebCore::RenderTheme::paintTextFieldDecorations): Added.
+        (WebCore::RenderTheme::paintTextAreaDecorations): Added.
+        (WebCore::RenderTheme::paintMenuListDecorations): Added.
+        (WebCore::RenderTheme::paintPushButtonDecorations): Added.
+        (WebCore::RenderTheme::paintSquareButtonDecorations): Added.
+        (WebCore::RenderTheme::paintFileUploadIconDecorations): Added.
+        (WebCore::RenderTheme::paintSliderThumbDecorations): Added.
+        (WebCore::RenderTheme::paintSearchFieldDecorations): Added.
+        * rendering/RenderThemeIOS.h: Added.
+        * rendering/RenderThemeIOS.mm: Added.
+        * rendering/RenderThemeMac.h: Don't compile the contents of this file when building for iOS.
+        * rendering/RenderThemeMac.mm: Ditto.
+        * rendering/RenderVideo.cpp:
+        (WebCore::RenderVideo::calculateIntrinsicSize): Compile-out code when building for iOS.
+        * rendering/RenderView.cpp:
+        (WebCore::RenderView::availableLogicalHeight): Add iOS-specific workaround. See <rdar://problem/7166808>.
+        (WebCore::fixedPositionOffset): Added; used in iOS-specific code (e.g. RenderView::mapLocalToContainer()).
+        (WebCore::RenderView::mapLocalToContainer): Use WebCore::fixedPositionOffset() instead of 
+        FrameView::scrollOffsetForFixedPosition().
+        (WebCore::RenderView::pushMappingToContainer): Ditto.
+        (WebCore::RenderView::mapAbsoluteToLocalPoint): Ditto.
+        (WebCore::RenderView::repaintViewRectangle): Ditto.
+        (WebCore::RenderView::computeRectForRepaint): Ditto.
+        (WebCore::isFixedPositionInViewport): Added; used in RenderView::hasCustomFixedPosition().
+        (WebCore::RenderView::hasCustomFixedPosition): Added; guarded by PLATFORM(IOS).
+        * rendering/RenderView.h:
+        * rendering/RenderWidget.cpp:
+        (WebCore::RenderWidget::willBeDestroyed): Added iOS-specific code.
+        * rendering/RootInlineBox.cpp:
+        (WebCore::RootInlineBox::ascentAndDescentForBox): Ditto.
+        * rendering/break_lines.cpp: Only include header <CoreServices/CoreServices.h> when building for Mac.
+
+2013-12-06  Zoltan Horvath  <zoltan@webkit.org>
+
+        Clean up the includes of RenderBlock.h 
+        https://bugs.webkit.org/show_bug.cgi?id=125351
+
+        Reviewed by Darin Adler.
+
+        I turned some header includes into forward declarations. I also removed / 
+        moved out some includes, which don't belong to RenderBlock.h anymore.
+
+        No new tests, no behavior change.
+
+        * editing/VisibleUnits.cpp:
+        * html/HTMLInputElement.cpp:
+        * html/HTMLTextAreaElement.cpp:
+        * html/TextFieldInputType.cpp:
+        * html/TextInputType.cpp:
+        * rendering/InlineElementBox.cpp:
+        * rendering/RenderBlock.h:
+        * rendering/RenderBlockFlow.cpp:
+        * rendering/line/LineBreaker.h:
+        * rendering/line/LineWidth.cpp:
+
+2013-12-06  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Define SHA1 hash size in SHA1.h and use it at various places.
+        https://bugs.webkit.org/show_bug.cgi?id=125345
+
+        Reviewed by Darin Adler.
+
+        Use SHA1::hashSize instead of local variables.
+
+        * Modules/websockets/WebSocketHandshake.cpp:
+        (WebCore::WebSocketHandshake::getExpectedWebSocketAccept):
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::HostTLSCertificateSet::computeCertificateHash):
+
+2013-12-06  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Add load delegate methods for responding to authentication challenges
+        https://bugs.webkit.org/show_bug.cgi?id=125333
+
+        Reviewed by Darin Adler.
+
+        * WebCore.exp.in: Exported core(NSURLCredential *).
+
+2013-12-06  Daniel Bates  <dabates@apple.com>
+
+        Rename {adjust, paint}SearchFieldDecoration, {adjust, paint}SearchFieldResultsDecoration
+        https://bugs.webkit.org/show_bug.cgi?id=125191
+
+        Reviewed by Joseph Pecoraro.
+
+        Towards upstreaming the iOS concept of render theme decorations, we should rename
+        RenderTheme::{adjust, paint}SearchFieldDecorationStyle and RenderTheme::{adjust, paint}SearchFieldResultsDecoration
+        to avoid ambiguity with the iOS concept.
+
+        * platform/efl/RenderThemeEfl.cpp:
+        * platform/efl/RenderThemeEfl.h:
+        * platform/gtk/RenderThemeGtk.cpp:
+        * platform/gtk/RenderThemeGtk.h:
+        * rendering/RenderTheme.cpp:
+        * rendering/RenderTheme.h:
+        * rendering/RenderThemeMac.h:
+        * rendering/RenderThemeMac.mm:
+        * rendering/RenderThemeSafari.cpp:
+        * rendering/RenderThemeSafari.h:
+        * rendering/RenderThemeWin.cpp:
+        * rendering/RenderThemeWin.h:
+        * rendering/RenderThemeWinCE.cpp:
+        * rendering/RenderThemeWinCE.h:
+
 2013-12-06  Andreas Kling  <akling@apple.com>
 
         Make remaining CSSValue constructors return PassRef.

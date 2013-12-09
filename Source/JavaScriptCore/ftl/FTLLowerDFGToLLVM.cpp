@@ -266,11 +266,6 @@ private:
         case Phantom:
             compilePhantom();
             break;
-        case Flush:
-        case PhantomLocal:
-        case SetArgument:
-        case LoopHint:
-            break;
         case ArithAdd:
         case ValueAdd:
             compileAddSub();
@@ -348,6 +343,9 @@ private:
         case GetButterfly:
             compileGetButterfly();
             break;
+        case ConstantStoragePointer:
+            compileConstantStoragePointer();
+            break;
         case GetIndexedPropertyStorage:
             compileGetIndexedPropertyStorage();
             break;
@@ -362,6 +360,7 @@ private:
             break;
         case PutByVal:
         case PutByValAlias:
+        case PutByValDirect:
             compilePutByVal();
             break;
         case NewObject:
@@ -396,10 +395,6 @@ private:
             break;
         case NotifyWrite:
             compileNotifyWrite();
-            break;
-        case VariableWatchpoint:
-            break;
-        case FunctionReentryWatchpoint:
             break;
         case GetMyScope:
             compileGetMyScope();
@@ -471,6 +466,14 @@ private:
         case Int52ToValue:
             compileInt52ToValue();
             break;
+        case Flush:
+        case PhantomLocal:
+        case SetArgument:
+        case LoopHint:
+        case VariableWatchpoint:
+        case FunctionReentryWatchpoint:
+        case TypedArrayWatchpoint:
+            break;
         default:
             RELEASE_ASSERT_NOT_REACHED();
             break;
@@ -484,8 +487,96 @@ private:
 
     void compileValueToInt32()
     {
-        ASSERT(m_node->child1().useKind() == BooleanUse);
-        setInt32(m_out.zeroExt(lowBoolean(m_node->child1()), m_out.int32));
+        switch (m_node->child1().useKind()) {
+        case Int32Use:
+            setInt32(lowInt32(m_node->child1()));
+            break;
+            
+        case MachineIntUse:
+            setInt32(m_out.castToInt32(lowStrictInt52(m_node->child1())));
+            break;
+            
+        case NumberUse:
+        case NotCellUse: {
+            LoweredNodeValue value = m_int32Values.get(m_node->child1().node());
+            if (isValid(value)) {
+                setInt32(value.value());
+                break;
+            }
+            
+            value = m_jsValueValues.get(m_node->child1().node());
+            if (isValid(value)) {
+                LBasicBlock intCase = FTL_NEW_BLOCK(m_out, ("ValueToInt32 int case"));
+                LBasicBlock notIntCase = FTL_NEW_BLOCK(m_out, ("ValueToInt32 not int case"));
+                LBasicBlock doubleCase = 0;
+                LBasicBlock notNumberCase = 0;
+                if (m_node->child1().useKind() == NotCellUse) {
+                    doubleCase = FTL_NEW_BLOCK(m_out, ("ValueToInt32 double case"));
+                    notNumberCase = FTL_NEW_BLOCK(m_out, ("ValueToInt32 not number case"));
+                }
+                LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("ValueToInt32 continuation"));
+                
+                Vector<ValueFromBlock> results;
+                
+                m_out.branch(isNotInt32(value.value()), notIntCase, intCase);
+                
+                LBasicBlock lastNext = m_out.appendTo(intCase, notIntCase);
+                results.append(m_out.anchor(unboxInt32(value.value())));
+                m_out.jump(continuation);
+                
+                if (m_node->child1().useKind() == NumberUse) {
+                    m_out.appendTo(notIntCase, continuation);
+                    FTL_TYPE_CHECK(
+                        jsValueValue(value.value()), m_node->child1(), SpecFullNumber,
+                        isCellOrMisc(value.value()));
+                    results.append(m_out.anchor(doubleToInt32(unboxDouble(value.value()))));
+                    m_out.jump(continuation);
+                } else {
+                    m_out.appendTo(notIntCase, doubleCase);
+                    m_out.branch(isCellOrMisc(value.value()), notNumberCase, doubleCase);
+                    
+                    m_out.appendTo(doubleCase, notNumberCase);
+                    results.append(m_out.anchor(doubleToInt32(unboxDouble(value.value()))));
+                    m_out.jump(continuation);
+                    
+                    m_out.appendTo(notNumberCase, continuation);
+                    
+                    FTL_TYPE_CHECK(
+                        jsValueValue(value.value()), m_node->child1(), ~SpecCell,
+                        isCell(value.value()));
+                    
+                    LValue specialResult = m_out.select(
+                        m_out.equal(
+                            value.value(),
+                            m_out.constInt64(JSValue::encode(jsBoolean(true)))),
+                        m_out.int32One, m_out.int32Zero);
+                    results.append(m_out.anchor(specialResult));
+                    m_out.jump(continuation);
+                }
+                
+                m_out.appendTo(continuation, lastNext);
+                setInt32(m_out.phi(m_out.int32, results));
+                break;
+            }
+            
+            value = m_doubleValues.get(m_node->child1().node());
+            if (isValid(value)) {
+                setInt32(doubleToInt32(value.value()));
+                break;
+            }
+            
+            terminate(Uncountable);
+            break;
+        }
+            
+        case BooleanUse:
+            setInt32(m_out.zeroExt(lowBoolean(m_node->child1()), m_out.int32));
+            break;
+            
+        default:
+            RELEASE_ASSERT_NOT_REACHED();
+            break;
+        }
     }
 
     void compileInt52ToValue()
@@ -1309,6 +1400,11 @@ private:
         setStorage(m_out.loadPtr(lowCell(m_node->child1()), m_heaps.JSObject_butterfly));
     }
     
+    void compileConstantStoragePointer()
+    {
+        setStorage(m_out.constIntPtr(m_node->storagePointer()));
+    }
+    
     void compileGetIndexedPropertyStorage()
     {
         LValue cell = lowCell(m_node->child1());
@@ -1333,13 +1429,6 @@ private:
             
             setStorage(m_out.loadPtr(m_out.phi(m_out.intPtr, fastResult, slowResult), m_heaps.StringImpl_data));
             return;
-        }
-        
-        if (JSArrayBufferView* view = m_graph.tryGetFoldableView(m_node->child1().node(), m_node->arrayMode())) {
-            if (view->mode() != FastTypedArray) {
-                setStorage(m_out.constIntPtr(view->vector()));
-                return;
-            }
         }
         
         setStorage(m_out.loadPtr(cell, m_heaps.JSArrayBufferView_vector));
@@ -1394,25 +1483,45 @@ private:
             LValue index = lowInt32(m_node->child2());
             LValue storage = lowStorage(m_node->child3());
             
+            IndexedAbstractHeap& heap = m_node->arrayMode().type() == Array::Int32 ?
+                m_heaps.indexedInt32Properties : m_heaps.indexedContiguousProperties;
+            
             if (m_node->arrayMode().isInBounds()) {
                 speculate(
                     OutOfBounds, noValue(), 0,
                     m_out.aboveOrEqual(
                         index, m_out.load32(storage, m_heaps.Butterfly_publicLength)));
                 
-                LValue result = m_out.load64(m_out.baseIndex(
-                    m_node->arrayMode().type() == Array::Int32 ?
-                        m_heaps.indexedInt32Properties : m_heaps.indexedContiguousProperties,
-                    storage, m_out.zeroExt(index, m_out.intPtr),
-                    m_state.forNode(m_node->child2()).m_value));
+                LValue result = m_out.load64(baseIndex(heap, storage, index, m_node->child2()));
                 speculate(LoadFromHole, noValue(), 0, m_out.isZero64(result));
                 setJSValue(result);
                 return;
             }
             
-            // FIXME: Implement hole/OOB loads in the FTL.
-            // https://bugs.webkit.org/show_bug.cgi?id=118077
-            RELEASE_ASSERT_NOT_REACHED();
+            LValue base = lowCell(m_node->child1());
+            
+            LBasicBlock fastCase = FTL_NEW_BLOCK(m_out, ("GetByVal int/contiguous fast case"));
+            LBasicBlock slowCase = FTL_NEW_BLOCK(m_out, ("GetByVal int/contiguous slow case"));
+            LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("GetByVal int/contiguous continuation"));
+            
+            m_out.branch(
+                m_out.aboveOrEqual(
+                    index, m_out.load32(storage, m_heaps.Butterfly_publicLength)),
+                slowCase, fastCase);
+            
+            LBasicBlock lastNext = m_out.appendTo(fastCase, slowCase);
+            
+            ValueFromBlock fastResult = m_out.anchor(
+                m_out.load64(baseIndex(heap, storage, index, m_node->child2())));
+            m_out.branch(m_out.isZero64(fastResult.value()), slowCase, continuation);
+            
+            m_out.appendTo(slowCase, continuation);
+            ValueFromBlock slowResult = m_out.anchor(
+                vmCall(m_out.operation(operationGetByValArrayInt), m_callFrame, base, index));
+            m_out.jump(continuation);
+            
+            m_out.appendTo(continuation, lastNext);
+            setJSValue(m_out.phi(m_out.int64, fastResult, slowResult));
             return;
         }
             
@@ -1420,16 +1529,16 @@ private:
             LValue index = lowInt32(m_node->child2());
             LValue storage = lowStorage(m_node->child3());
             
+            IndexedAbstractHeap& heap = m_heaps.indexedDoubleProperties;
+            
             if (m_node->arrayMode().isInBounds()) {
                 speculate(
                     OutOfBounds, noValue(), 0,
                     m_out.aboveOrEqual(
                         index, m_out.load32(storage, m_heaps.Butterfly_publicLength)));
                 
-                LValue result = m_out.loadDouble(m_out.baseIndex(
-                    m_heaps.indexedDoubleProperties,
-                    storage, m_out.zeroExt(index, m_out.intPtr),
-                    m_state.forNode(m_node->child2()).m_value));
+                LValue result = m_out.loadDouble(
+                    baseIndex(heap, storage, index, m_node->child2()));
                 
                 if (!m_node->arrayMode().isSaneChain()) {
                     speculate(
@@ -1440,9 +1549,42 @@ private:
                 break;
             }
             
-            // FIXME: Implement hole/OOB loads in the FTL.
-            // https://bugs.webkit.org/show_bug.cgi?id=118077
-            RELEASE_ASSERT_NOT_REACHED();
+            LValue base = lowCell(m_node->child1());
+            
+            LBasicBlock inBounds = FTL_NEW_BLOCK(m_out, ("GetByVal double in bounds"));
+            LBasicBlock boxPath = FTL_NEW_BLOCK(m_out, ("GetByVal double boxing"));
+            LBasicBlock slowCase = FTL_NEW_BLOCK(m_out, ("GetByVal double slow case"));
+            LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("GetByVal double continuation"));
+            
+            m_out.branch(
+                m_out.aboveOrEqual(
+                    index, m_out.load32(storage, m_heaps.Butterfly_publicLength)),
+                slowCase, inBounds);
+            
+            LBasicBlock lastNext = m_out.appendTo(inBounds, boxPath);
+            LValue doubleValue = m_out.loadDouble(
+                baseIndex(heap, storage, index, m_node->child2()));
+            m_out.branch(
+                m_out.doubleNotEqualOrUnordered(doubleValue, doubleValue), slowCase, boxPath);
+            
+            m_out.appendTo(boxPath, slowCase);
+            ValueFromBlock fastResult = m_out.anchor(boxDouble(doubleValue));
+            m_out.jump(continuation);
+            
+            m_out.appendTo(slowCase, continuation);
+            ValueFromBlock slowResult = m_out.anchor(
+                vmCall(m_out.operation(operationGetByValArrayInt), m_callFrame, base, index));
+            m_out.jump(continuation);
+            
+            m_out.appendTo(continuation, lastNext);
+            setJSValue(m_out.phi(m_out.int64, fastResult, slowResult));
+            return;
+        }
+            
+        case Array::Generic: {
+            setJSValue(vmCall(
+                m_out.operation(operationGetByVal), m_callFrame,
+                lowJSValue(m_node->child1()), lowJSValue(m_node->child2())));
             return;
         }
             
@@ -1544,6 +1686,31 @@ private:
         Edge child2 = m_graph.varArgChild(m_node, 1);
         Edge child3 = m_graph.varArgChild(m_node, 2);
         Edge child4 = m_graph.varArgChild(m_node, 3);
+        
+        switch (m_node->arrayMode().type()) {
+        case Array::Generic: {
+            V_JITOperation_EJJJ operation;
+            if (m_node->op() == PutByValDirect) {
+                if (m_graph.isStrictModeFor(m_node->codeOrigin))
+                    operation = operationPutByValDirectStrict;
+                else
+                    operation = operationPutByValDirectNonStrict;
+            } else {
+                if (m_graph.isStrictModeFor(m_node->codeOrigin))
+                    operation = operationPutByValStrict;
+                else
+                    operation = operationPutByValNonStrict;
+            }
+                
+            vmCall(
+                m_out.operation(operation), m_callFrame,
+                lowJSValue(child1), lowJSValue(child2), lowJSValue(child3));
+            return;
+        }
+            
+        default:
+            break;
+        }
 
         LValue base = lowCell(child1);
         LValue index = lowInt32(child2);
@@ -1625,12 +1792,12 @@ private:
             TypedArrayType type = m_node->arrayMode().typedArrayType();
             
             if (isTypedView(type)) {
-                if (m_node->op() == PutByVal) {
+                if (m_node->op() != PutByValAlias) {
                     speculate(
                         OutOfBounds, noValue(), 0,
                         m_out.aboveOrEqual(
                             index,
-                            typedArrayLength(child1.node(), m_node->arrayMode(), base)));
+                            typedArrayLength(child1, m_node->arrayMode(), base)));
                 }
                 
                 TypedPointer pointer = TypedPointer(
@@ -1649,7 +1816,7 @@ private:
                         if (child3.useKind() == Int32Use)
                             intValue = lowInt32(child3);
                         else
-                            intValue = m_out.castToInt32(lowInt52(child3));
+                            intValue = m_out.castToInt32(lowStrictInt52(child3));
 
                         if (isClamped(type)) {
                             ASSERT(elementSize(type) == 1);
@@ -1705,10 +1872,8 @@ private:
                             
                             m_out.appendTo(continuation, lastNext);
                             intValue = m_out.phi(m_out.int32, intValues);
-                        } else if (isSigned(type))
+                        } else
                             intValue = doubleToInt32(doubleValue);
-                        else
-                            intValue = doubleToUInt32(doubleValue);
                         break;
                     }
                         
@@ -2232,6 +2397,11 @@ private:
             return;
         }
         
+        if (m_node->isBinaryUseKind(UntypedUse)) {
+            nonSpeculativeCompare(LLVMIntEQ, operationCompareEq);
+            return;
+        }
+        
         RELEASE_ASSERT_NOT_REACHED();
     }
     
@@ -2300,106 +2470,22 @@ private:
     
     void compileCompareLess()
     {
-        if (m_node->isBinaryUseKind(Int32Use)) {
-            setBoolean(
-                m_out.lessThan(lowInt32(m_node->child1()), lowInt32(m_node->child2())));
-            return;
-        }
-        
-        if (m_node->isBinaryUseKind(MachineIntUse)) {
-            Int52Kind kind;
-            LValue left = lowWhicheverInt52(m_node->child1(), kind);
-            LValue right = lowInt52(m_node->child2(), kind);
-            setBoolean(m_out.lessThan(left, right));
-            return;
-        }
-        
-        if (m_node->isBinaryUseKind(NumberUse)) {
-            setBoolean(
-                m_out.doubleLessThan(lowDouble(m_node->child1()), lowDouble(m_node->child2())));
-            return;
-        }
-        
-        RELEASE_ASSERT_NOT_REACHED();
+        compare(LLVMIntSLT, LLVMRealOLT, operationCompareLess);
     }
     
     void compileCompareLessEq()
     {
-        if (m_node->isBinaryUseKind(Int32Use)) {
-            setBoolean(
-                m_out.lessThanOrEqual(lowInt32(m_node->child1()), lowInt32(m_node->child2())));
-            return;
-        }
-        
-        if (m_node->isBinaryUseKind(MachineIntUse)) {
-            Int52Kind kind;
-            LValue left = lowWhicheverInt52(m_node->child1(), kind);
-            LValue right = lowInt52(m_node->child2(), kind);
-            setBoolean(m_out.lessThanOrEqual(left, right));
-            return;
-        }
-        
-        if (m_node->isBinaryUseKind(NumberUse)) {
-            setBoolean(
-                m_out.doubleLessThanOrEqual(
-                    lowDouble(m_node->child1()), lowDouble(m_node->child2())));
-            return;
-        }
-        
-        RELEASE_ASSERT_NOT_REACHED();
+        compare(LLVMIntSLE, LLVMRealOLE, operationCompareLessEq);
     }
     
     void compileCompareGreater()
     {
-        if (m_node->isBinaryUseKind(Int32Use)) {
-            setBoolean(
-                m_out.greaterThan(lowInt32(m_node->child1()), lowInt32(m_node->child2())));
-            return;
-        }
-        
-        if (m_node->isBinaryUseKind(MachineIntUse)) {
-            Int52Kind kind;
-            LValue left = lowWhicheverInt52(m_node->child1(), kind);
-            LValue right = lowInt52(m_node->child2(), kind);
-            setBoolean(m_out.greaterThan(left, right));
-            return;
-        }
-        
-        if (m_node->isBinaryUseKind(NumberUse)) {
-            setBoolean(
-                m_out.doubleGreaterThan(
-                    lowDouble(m_node->child1()), lowDouble(m_node->child2())));
-            return;
-        }
-        
-        RELEASE_ASSERT_NOT_REACHED();
+        compare(LLVMIntSGT, LLVMRealOGT, operationCompareGreater);
     }
     
     void compileCompareGreaterEq()
     {
-        if (m_node->isBinaryUseKind(Int32Use)) {
-            setBoolean(
-                m_out.greaterThanOrEqual(
-                    lowInt32(m_node->child1()), lowInt32(m_node->child2())));
-            return;
-        }
-        
-        if (m_node->isBinaryUseKind(MachineIntUse)) {
-            Int52Kind kind;
-            LValue left = lowWhicheverInt52(m_node->child1(), kind);
-            LValue right = lowInt52(m_node->child2(), kind);
-            setBoolean(m_out.greaterThanOrEqual(left, right));
-            return;
-        }
-        
-        if (m_node->isBinaryUseKind(NumberUse)) {
-            setBoolean(
-                m_out.doubleGreaterThanOrEqual(
-                    lowDouble(m_node->child1()), lowDouble(m_node->child2())));
-            return;
-        }
-        
-        RELEASE_ASSERT_NOT_REACHED();
+        compare(LLVMIntSGE, LLVMRealOGE, operationCompareGreaterEq);
     }
     
     void compileLogicalNot()
@@ -2629,6 +2715,76 @@ private:
         info.m_isInvalidationPoint = true;
     }
     
+    TypedPointer baseIndex(IndexedAbstractHeap& heap, LValue storage, LValue index, Edge edge)
+    {
+        return m_out.baseIndex(
+            heap, storage, m_out.zeroExt(index, m_out.intPtr),
+            m_state.forNode(edge).m_value);
+    }
+    
+    void compare(
+        LIntPredicate intCondition, LRealPredicate realCondition,
+        S_JITOperation_EJJ helperFunction)
+    {
+        if (m_node->isBinaryUseKind(Int32Use)) {
+            LValue left = lowInt32(m_node->child1());
+            LValue right = lowInt32(m_node->child2());
+            setBoolean(m_out.icmp(intCondition, left, right));
+            return;
+        }
+        
+        if (m_node->isBinaryUseKind(MachineIntUse)) {
+            Int52Kind kind;
+            LValue left = lowWhicheverInt52(m_node->child1(), kind);
+            LValue right = lowInt52(m_node->child2(), kind);
+            setBoolean(m_out.icmp(intCondition, left, right));
+            return;
+        }
+        
+        if (m_node->isBinaryUseKind(NumberUse)) {
+            LValue left = lowDouble(m_node->child1());
+            LValue right = lowDouble(m_node->child2());
+            setBoolean(m_out.fcmp(realCondition, left, right));
+            return;
+        }
+        
+        if (m_node->isBinaryUseKind(UntypedUse)) {
+            nonSpeculativeCompare(intCondition, helperFunction);
+            return;
+        }
+        
+        RELEASE_ASSERT_NOT_REACHED();
+    }
+    
+    void nonSpeculativeCompare(LIntPredicate intCondition, S_JITOperation_EJJ helperFunction)
+    {
+        LValue left = lowJSValue(m_node->child1());
+        LValue right = lowJSValue(m_node->child2());
+        
+        LBasicBlock leftIsInt = FTL_NEW_BLOCK(m_out, ("CompareEq untyped left is int"));
+        LBasicBlock fastPath = FTL_NEW_BLOCK(m_out, ("CompareEq untyped fast path"));
+        LBasicBlock slowPath = FTL_NEW_BLOCK(m_out, ("CompareEq untyped slow path"));
+        LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("CompareEq untyped continuation"));
+        
+        m_out.branch(isNotInt32(left), slowPath, leftIsInt);
+        
+        LBasicBlock lastNext = m_out.appendTo(leftIsInt, fastPath);
+        m_out.branch(isNotInt32(right), slowPath, fastPath);
+        
+        m_out.appendTo(fastPath, slowPath);
+        ValueFromBlock fastResult = m_out.anchor(
+            m_out.icmp(intCondition, unboxInt32(left), unboxInt32(right)));
+        m_out.jump(continuation);
+        
+        m_out.appendTo(slowPath, continuation);
+        ValueFromBlock slowResult = m_out.anchor(m_out.notNull(vmCall(
+            m_out.operation(helperFunction), m_callFrame, left, right)));
+        m_out.jump(continuation);
+        
+        m_out.appendTo(continuation, lastNext);
+        setBoolean(m_out.phi(m_out.boolean, fastResult, slowResult));
+    }
+    
     LValue allocateCell(LValue allocator, LValue structure, LBasicBlock slowPath)
     {
         LBasicBlock success = FTL_NEW_BLOCK(m_out, ("object allocation success"));
@@ -2771,16 +2927,16 @@ private:
             m_out.phi(m_out.intPtr, fastButterfly, slowButterfly));
     }
     
-    LValue typedArrayLength(Node* baseNode, ArrayMode arrayMode, LValue base)
+    LValue typedArrayLength(Edge baseEdge, ArrayMode arrayMode, LValue base)
     {
-        if (JSArrayBufferView* view = m_graph.tryGetFoldableView(baseNode, arrayMode))
+        if (JSArrayBufferView* view = m_graph.tryGetFoldableView(baseEdge.node(), arrayMode))
             return m_out.constInt32(view->length());
         return m_out.load32(base, m_heaps.JSArrayBufferView_length);
     }
     
     LValue typedArrayLength(Edge baseEdge, ArrayMode arrayMode)
     {
-        return typedArrayLength(baseEdge.node(), arrayMode, lowCell(baseEdge));
+        return typedArrayLength(baseEdge, arrayMode, lowCell(baseEdge));
     }
     
     LValue boolify(Edge edge)
@@ -2801,6 +2957,27 @@ private:
             LValue stringValue = lowString(m_node->child1());
             LValue length = m_out.load32(stringValue, m_heaps.JSString_length);
             return m_out.notEqual(length, m_out.int32Zero);
+        }
+        case UntypedUse: {
+            LValue value = lowJSValue(m_node->child1());
+            
+            LBasicBlock slowCase = FTL_NEW_BLOCK(m_out, ("Boolify untyped slow case"));
+            LBasicBlock fastCase = FTL_NEW_BLOCK(m_out, ("Boolify untyped fast case"));
+            LBasicBlock continuation = FTL_NEW_BLOCK(m_out, ("Boolify untyped continuation"));
+            
+            m_out.branch(isNotBoolean(value), slowCase, fastCase);
+            
+            LBasicBlock lastNext = m_out.appendTo(fastCase, slowCase);
+            ValueFromBlock fastResult = m_out.anchor(unboxBoolean(value));
+            m_out.jump(continuation);
+            
+            m_out.appendTo(slowCase, continuation);
+            ValueFromBlock slowResult = m_out.anchor(m_out.notNull(vmCall(
+                m_out.operation(operationConvertJSValueToBoolean), m_callFrame, value)));
+            m_out.jump(continuation);
+            
+            m_out.appendTo(continuation, lastNext);
+            return m_out.phi(m_out.boolean, fastResult, slowResult);
         }
         default:
             RELEASE_ASSERT_NOT_REACHED();
@@ -3016,14 +3193,6 @@ private:
         
         double limit = pow(2, 31) - 1;
         return doubleToInt32(doubleValue, -limit, limit);
-    }
-    
-    LValue doubleToUInt32(LValue doubleValue)
-    {
-        if (Output::hasSensibleDoubleToInt())
-            return sensibleDoubleToInt32(doubleValue);
-        
-        return doubleToInt32(doubleValue, 0, pow(2, 32) - 1, false);
     }
     
     LValue sensibleDoubleToInt32(LValue doubleValue)
@@ -3256,7 +3425,7 @@ private:
     
     LValue lowCell(Edge edge, OperandSpeculationMode mode = AutomaticOperandSpeculation)
     {
-        ASSERT_UNUSED(mode, mode == ManualOperandSpeculation || isCell(edge.useKind()));
+        ASSERT_UNUSED(mode, mode == ManualOperandSpeculation || DFG::isCell(edge.useKind()));
         
         if (edge->op() == JSConstant) {
             JSValue value = m_graph.valueOfJSConstant(edge.node());
@@ -3563,6 +3732,11 @@ private:
     LValue isNotCell(LValue jsValue)
     {
         return m_out.testNonZero64(jsValue, m_tagMask);
+    }
+    
+    LValue isCell(LValue jsValue)
+    {
+        return m_out.testIsZero64(jsValue, m_tagMask);
     }
     
     LValue isNotBoolean(LValue jsValue)

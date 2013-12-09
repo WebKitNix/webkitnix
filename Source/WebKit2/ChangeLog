@@ -1,3 +1,402 @@
+2013-12-09  Sergio Villar Senin  <svillar@igalia.com>
+
+        [WK2] Add UNIX_DOMAIN_SOCKETS specific bits for supporting NetworkProcess
+        https://bugs.webkit.org/show_bug.cgi?id=110093
+
+        Reviewed by Martin Robinson.
+
+        Original patch by Balazs Kelemen <kbalazs@webkit.org>.
+
+        Adds the UNIX specific bits to support connections to the
+        NetworkProcess. Since the process of creating the pair of sockets
+        is exactly the same as in the PluginProcess, I've decided to
+        refactor it in ConnectionUnix::createPlatformConnection(). This
+        can be reused later to create a cross-platform solution and remove
+        all the ifdefs (see bug 110978).
+
+        * NetworkProcess/NetworkProcess.cpp:
+        (WebKit::NetworkProcess::createNetworkConnectionToWebProcess):
+        * Platform/CoreIPC/Connection.h:
+        * Platform/CoreIPC/unix/ConnectionUnix.cpp:
+        (CoreIPC::Connection::createPlatformConnection):
+        * PluginProcess/PluginProcess.cpp:
+        (WebKit::PluginProcess::createWebProcessConnection):
+        * UIProcess/Network/NetworkProcessProxy.cpp:
+        (WebKit::NetworkProcessProxy::networkProcessCrashedOrFailedToLaunch):
+        (WebKit::NetworkProcessProxy::didCreateNetworkConnectionToWebProcess):
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::ensureNetworkProcessConnection):
+
+2013-12-09  Kwang Yul Seo  <skyul@company100.net>
+
+        [WK2][Soup] Support cache model in NetworkProcess
+        https://bugs.webkit.org/show_bug.cgi?id=118343
+
+        Reviewed by Carlos Garcia Campos.
+
+        Original patch by Kwang Yul Seo <skyul@company100.net> and Csaba Osztrogonác <ossy@webkit.org>.
+
+        Copied cache model code from WebProcess.
+        NetworkProcess is configured not to use the WebCore memory cache.
+
+        * NetworkProcess/soup/NetworkProcessSoup.cpp:
+        (WebKit::getCacheDiskFreeSize):
+        (WebKit::getMemorySize):
+        (WebKit::NetworkProcess::platformInitializeNetworkProcess):
+        Initialize soup cache.
+        (WebKit::NetworkProcess::platformSetCacheModel):
+        Copied code from WebProcess::platformSetCacheModel but removed
+        WebCore memory cache initialization because NetworkProcess does not use
+        the WebCore memory cache.
+        (WebKit::NetworkProcess::clearCacheForAllOrigins):
+        Copied code from WebProcess::clearCacheForAllOrigins.
+        * NetworkProcess/unix/NetworkProcessMainUnix.cpp:
+        Copied initialization code from WebProcessMainGtk.cpp.
+        (WebKit::NetworkProcessMain):
+        * WebProcess/soup/WebProcessSoup.cpp:
+        (WebKit::WebProcess::platformSetCacheModel):
+        Don't set the disk cache if NetworkProcess is used.
+        (WebKit::WebProcess::platformClearResourceCaches):
+        Don't clear the non-existing disk cache. (if NetworkProcess is used)
+        (WebKit::WebProcess::platformInitializeWebProcess):
+        Don't initialize the disk cache if NetworkProcess is used.
+
+2013-12-09  Gustavo Noronha Silva  <gns@gnome.org>
+
+        [GTK] run-webkit-tests may DOS the system, specially in debug builds
+        https://bugs.webkit.org/show_bug.cgi?id=125436
+
+        Reviewed by Martin Robinson.
+
+        * GNUmakefile.am: use -no-fast-install for WebKitWebProcess and WebKitPluginProcess so
+        they do not need to be relinked the first time they are executed in-tree.
+
+2013-12-09  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK][WK2] Move WebFullScreenManagerProxyGtk logic to PageClientImpl
+        https://bugs.webkit.org/show_bug.cgi?id=125440
+
+        Reviewed by Martin Robinson.
+
+        Make PageClientImpl a WebFullScreenManagerProxyClient. This brings the GTK port in line
+        with changes in r160296 and fixes the WK2 build for that port.
+
+        * GNUmakefile.list.am:
+        * UIProcess/API/gtk/PageClientImpl.cpp:
+        (WebKit::PageClientImpl::fullScreenManagerProxyClient):
+        (WebKit::PageClientImpl::closeFullScreenManager):
+        (WebKit::PageClientImpl::isFullScreen):
+        (WebKit::PageClientImpl::enterFullScreen):
+        (WebKit::PageClientImpl::exitFullScreen):
+        (WebKit::PageClientImpl::beganEnterFullScreen):
+        (WebKit::PageClientImpl::beganExitFullScreen):
+        * UIProcess/API/gtk/PageClientImpl.h:
+        * UIProcess/API/gtk/WebKitWebViewBase.cpp:
+        (webkitWebViewBaseCreateWebPage):
+        * UIProcess/gtk/WebFullScreenManagerProxyGtk.cpp:
+
+2013-12-09  Brian Holt  <brian.holt@samsung.com>
+
+        [WK2][Gtk] Add support for ENABLE_NETWORK_PROCESS to the build system
+        https://bugs.webkit.org/show_bug.cgi?id=118231
+
+        Reviewed by Martin Robinson.
+
+        Original patch by Kwang Yul Seo  <skyul@company100.net>.
+
+        Add source files to the build system and build NetworkProcess executable.
+
+        * GNUmakefile.am:
+        * GNUmakefile.list.am:
+        * NetworkProcess/unix/NetworkProcessMainUnix.cpp:
+        * UIProcess/gtk/WebContextGtk.cpp:
+        (WebKit::WebContext::platformInitializeWebProcess):
+
+2013-12-08  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL][WK2] Move FullScreenManager logic to WebViewEfl
+        https://bugs.webkit.org/show_bug.cgi?id=125438
+
+        Reviewed by Gyuyoung Kim.
+
+        This patch fixed build break on EFL port Since r160296.
+
+        * PlatformEfl.cmake: Removed WebFullScreenManagerProxyEfl.cpp.
+        * UIProcess/WebFullScreenManagerProxy.cpp: Removed EFL specific code.
+        (WebKit::WebFullScreenManagerProxy::WebFullScreenManagerProxy):
+        * UIProcess/WebFullScreenManagerProxy.h: Ditto.
+        * UIProcess/efl/WebFullScreenManagerProxyEfl.cpp: Removed file and moved logic to WebViewEfl.
+        * UIProcess/efl/WebViewEfl.cpp:
+        (WebKit::WebViewEfl::WebViewEfl):
+        (WebKit::WebViewEfl::setEwkView): Removed call to setWebView().
+        (WebKit::WebViewEfl::fullScreenManagerProxyClient):
+        (WebKit::WebViewEfl::isFullScreen):
+        (WebKit::WebViewEfl::enterFullScreen):
+        (WebKit::WebViewEfl::exitFullScreen):
+        * UIProcess/efl/WebViewEfl.h:
+
+2013-12-08  Sam Weinig  <sam@webkit.org>
+
+        Remove WebContext::sharedProcessContext()
+        https://bugs.webkit.org/show_bug.cgi?id=125437
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/ios/WKGeolocationProviderIOS.mm:
+        * UIProcess/WebContext.cpp:
+        * UIProcess/WebContext.h:
+
+2013-12-08  Sam Weinig  <sam@webkit.org>
+
+        Fix the iOS build.
+
+        * UIProcess/API/ios/PageClientImplIOS.h:
+        * UIProcess/API/ios/PageClientImplIOS.mm:
+        * UIProcess/ios/WebFullScreenManagerProxyIOS.mm: Removed.
+
+2013-12-08  Sam Weinig  <sam@webkit.org>
+
+        [Cocoa] Remove knowledge of the WKView from the WebFullScreenManagerProxy by adding a proper client
+        https://bugs.webkit.org/show_bug.cgi?id=125427
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/mac/PageClientImpl.h:
+        * UIProcess/API/mac/PageClientImpl.mm:
+        (WebKit::PageClientImpl::fullScreenManagerProxyClient):
+        (WebKit::PageClientImpl::closeFullScreenManager):
+        (WebKit::PageClientImpl::isFullScreen):
+        (WebKit::PageClientImpl::enterFullScreen):
+        (WebKit::PageClientImpl::exitFullScreen):
+        (WebKit::PageClientImpl::beganEnterFullScreen):
+        (WebKit::PageClientImpl::beganExitFullScreen):
+        Implement the new client.
+
+        * UIProcess/API/mac/WKView.mm:
+        Remove call to setWebView() and do some cleanup.
+
+        * UIProcess/API/mac/WKViewInternal.h:
+        Convert to property syntax and re-arrange.
+
+        * UIProcess/PageClient.h:
+        Expose access to the new client.
+
+        * UIProcess/WebFullScreenManagerProxy.cpp:
+        (WebKit::WebFullScreenManagerProxy::create):
+        (WebKit::WebFullScreenManagerProxy::WebFullScreenManagerProxy):
+        (WebKit::WebFullScreenManagerProxy::invalidate):
+        (WebKit::WebFullScreenManagerProxy::close):
+        (WebKit::WebFullScreenManagerProxy::isFullScreen):
+        (WebKit::WebFullScreenManagerProxy::enterFullScreen):
+        (WebKit::WebFullScreenManagerProxy::exitFullScreen):
+        (WebKit::WebFullScreenManagerProxy::beganEnterFullScreen):
+        (WebKit::WebFullScreenManagerProxy::beganExitFullScreen):
+        * UIProcess/WebFullScreenManagerProxy.h:
+        Use the new client.
+
+        * UIProcess/WebPageProxy.cpp:
+        Pass the new client.
+
+        * UIProcess/mac/WebFullScreenManagerProxyMac.mm:
+        Removed. Now goes through the client.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+        Remove WebFullScreenManagerProxyMac.mm.
+
+2013-12-07  Sam Weinig  <sam@webkit.org>
+
+        [Cocoa] Remove webProcessPlugInInitialize: from the WKWebProcessPlugIn protocol
+        https://bugs.webkit.org/show_bug.cgi?id=125405
+
+        Reviewed by Dan Bernstein.
+
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugIn.h:
+        * WebProcess/InjectedBundle/mac/InjectedBundleMac.mm:
+        (WebKit::InjectedBundle::load):
+
+2013-12-08  Brian Holt  <brian.holt@samsung.com>
+
+        [WK2] Guard include of SecItemShim.h with ENABLE(SEC_ITEM_SHIM)
+        https://bugs.webkit.org/show_bug.cgi?id=125415
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * NetworkProcess/NetworkProcess.cpp:
+        * UIProcess/Network/NetworkProcessProxy.cpp:
+
+2013-12-07  Sam Weinig  <sam@webkit.org>
+
+        [Cocoa] Make WKWebProcessPlugInController work with WKObject wrapping
+        https://bugs.webkit.org/show_bug.cgi?id=125404
+
+        Reviewed by Dan Bernstein.
+
+        * Shared/Cocoa/APIObject.mm:
+        (API::Object::newObject):
+        * Shared/mac/ObjCObjectGraphCoders.mm:
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugIn.mm:
+        (-[WKWebProcessPlugInController dealloc]):
+        (didCreatePage):
+        (willDestroyPage):
+        (-[WKWebProcessPlugInController _setPrincipalClassInstance:]):
+        (-[WKWebProcessPlugInController API::]):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInInternal.h:
+        (WebKit::wrapper):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInPrivate.h:
+        * WebProcess/InjectedBundle/mac/InjectedBundleMac.mm:
+        (WebKit::InjectedBundle::load):
+
+2013-12-07  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] WebData has a generic wrapper
+        https://bugs.webkit.org/show_bug.cgi?id=125402
+
+        Reviewed by Sam Weinig.
+
+        Added WKNSData, an NSData subclass that conforms to WKObject and wraps a WebData.
+
+        * Shared/Cocoa/APIObject.mm:
+        (API::Object::newObject): Allocate a WKNSData if the API::Object is data.
+        * Shared/Cocoa/WKNSData.h: Added.
+        (WebKit::wrapper): Added. Returns a WebData’s wrapper as an NSData.
+        * Shared/Cocoa/WKNSData.mm: Added.
+        (-[WKNSData dealloc]): Calls the WebData destructor.
+        (-[WKNSData length]): Added.
+        (-[WKNSData bytes]): Added.
+        (-[WKNSData copyWithZone:]): Retains self.
+        (-[WKNSData _apiObject]): Returns the wrapped WebData.
+        * WebKit2.xcodeproj/project.pbxproj: Added references to new files.
+
+2013-12-07  Sam Weinig  <sam@webkit.org>
+
+        [Cocoa] Make WKWebProcessPlugInBrowserContextController work with WKObject wrapping
+        https://bugs.webkit.org/show_bug.cgi?id=125403
+
+        Reviewed by Dan Bernstein.
+
+        * Shared/Cocoa/APIObject.mm:
+        (API::Object::newObject):
+        * Shared/mac/ObjCObjectGraphCoders.mm:
+        (WebKit::InjectedBundleObjCObjectGraphDecoderImpl::decode):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugIn.mm:
+        (didCreatePage):
+        (willDestroyPage):
+        (setUpBundleClient):
+        (-[WKWebProcessPlugInController _initWithPrincipalClassInstance:bundle:]):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextController.mm:
+        (-[WKWebProcessPlugInBrowserContextController dealloc]):
+        (-[WKWebProcessPlugInBrowserContextController mainFrameDocument]):
+        (-[WKWebProcessPlugInBrowserContextController selectedRange]):
+        (-[WKWebProcessPlugInBrowserContextController API::]):
+        (-[WKWebProcessPlugInBrowserContextController _bundlePageRef]):
+        (-[WKWebProcessPlugInBrowserContextController handle]):
+        (+[WKWebProcessPlugInBrowserContextController lookUpBrowsingContextFromHandle:]):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextControllerInternal.h:
+        (WebKit::wrapper):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInInternal.h:
+        * WebProcess/InjectedBundle/mac/InjectedBundleMac.mm:
+        (WebKit::InjectedBundle::load):
+
+2013-12-07  Gustavo Noronha Silva  <gns@gnome.org>
+
+        Fix API test expectation following 160220.
+
+        Rubber-stamped by Martin Robinson.
+
+        * UIProcess/API/gtk/tests/TestWebKitAccessibility.cpp:
+        (testAtspiBasicHierarchy): check for ATK_ROLE_DOCUMENT_WEB instead of ATK_ROLE_DOCUMENT_FRAME.
+
+2013-12-06  Enrica Casucci  <enrica@apple.com>
+
+        Make insertText message asynchronous for iOS.
+
+        Reviewed by Benjamin Poulain.
+
+        * UIProcess/ios/WebPageProxyIOS.mm:
+        (WebKit::WebPageProxy::insertText):
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/WebPage.messages.in:
+        * WebProcess/WebPage/ios/WebPageIOS.mm:
+        (WebKit::WebPage::insertText):
+
+2013-12-05  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Add a runtime-setting for the MediaSource constructor.
+        https://bugs.webkit.org/show_bug.cgi?id=125336
+
+        Reviewed by Eric Carlson.
+
+        Add a private WKPreferences API to control the WebCore mediaSourceEnabled setting.
+
+        * Shared/WebPreferencesStore.h:
+        * UIProcess/API/C/WKPreferences.cpp:
+        (WKPreferencesSetMediaSourceEnabled):
+        (WKPreferencesGetMediaSourceEnabled):
+        * UIProcess/API/C/WKPreferencesPrivate.h:
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::updatePreferences):
+
+2013-12-06  Dan Bernstein  <mitz@apple.com>
+
+        <rdar://problem/15606872> REGRESSION (r160148): Mail throws an exception during launch
+        https://bugs.webkit.org/show_bug.cgi?id=125362
+
+        Reviewed by Sam Weinig.
+
+        There were two problems in how WKConnection was made to work with WKObject: first,
+        API::Object::newObject() was not updated to allocate the correct wrapper class, and second,
+        WebConnection has subclasses with additional data members, which don’t fit in the object
+        storage ivar.
+
+        * Shared/Cocoa/APIObject.mm:
+        (API::Object::newObject): Changed to allocate a WKConnection of the required size.
+        * UIProcess/API/Cocoa/WKConnection.mm:
+        Removed _connection ivar.
+        (-[WKConnection dealloc]): Changed to use -_connection accessor instead of ivar.
+        (-[WKConnection setDelegate:]): Ditto.
+        (-[WKConnection sendMessageWithName:body:]): Ditto.
+        (-[WKConnection remoteObjectRegistry]): Ditto.
+        (-[WKConnection _connection]): Added.
+        (-[WKConnection _apiObject]): Changed to return the object in the instance extra storage.
+
+2013-12-06  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Add load delegate methods for responding to authentication challenges
+        https://bugs.webkit.org/show_bug.cgi?id=125333
+
+        Reviewed by Darin Adler.
+
+        * Shared/Cocoa/APIObject.mm:
+        (API::Object::newObject): Allocate a WKNSURLAuthenticationChallenge if the object is an
+        AuthenticationChallengeProxy.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (canAuthenticateAgainstProtectionSpaceInFrame): Implemented this WKPageLoaderClient callback
+        by calling the load delegate.
+        (didReceiveAuthenticationChallengeInFrame): Ditto.
+        (setUpPageLoaderClient): Set the above callbacks in the client structure.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextLoadDelegatePrivate.h: Added. Declares two new
+        delegate methods.
+
+        * UIProcess/API/Cocoa/WKNSURLAuthenticationChallenge.h: Added.
+        (WebKit::wrapper): Added. Returns an AuthenticationChallengeProxy’s wrapper as an
+        NSURLAuthenticationChallenge.
+        * UIProcess/API/Cocoa/WKNSURLAuthenticationChallenge.mm: Added.
+        (-[WKNSURLAuthenticationChallenge _web_createTarget]): Override this WKObject method to
+        return a copy of the challenge with the sender set to a shared instance of
+        WKNSURLAuthenticationChallengeSender.
+        (-[WKNSURLAuthenticationChallenge _web_authenticationChallengeProxy]): Added. Returns the
+        wrapped object.
+        (-[WKNSURLAuthenticationChallengeSender cancelAuthenticationChallenge:]): Added. Calls
+        AuthenticationDecisionListener::cancel.
+        (-[WKNSURLAuthenticationChallengeSender continueWithoutCredentialForAuthenticationChallenge:]):
+        Added. Calls AuthenticationDecisionListener::useCredential, passing nullptr.
+        (-[WKNSURLAuthenticationChallengeSender useCredential:forAuthenticationChallenge:]): Added.
+        Calls AuthenticationDecisionListener::useCredential, passing the credential.
+
+        * WebKit2.xcodeproj/project.pbxproj: Added references to new files.
+
 2013-12-05  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
 
         Introduce IMAGE_TYPE_CASTS, and use it

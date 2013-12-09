@@ -25,18 +25,10 @@
 
 #include "ColumnInfo.h"
 #include "GapRects.h"
-#include "PODIntervalTree.h"
 #include "RenderBox.h"
-#include "RootInlineBox.h"
-#include "TextBreakIterator.h"
 #include "TextRun.h"
 #include <wtf/OwnPtr.h>
 #include <wtf/ListHashSet.h>
-
-#if ENABLE(CSS_SHAPES)
-#include "ShapeInsideInfo.h"
-#include "ShapeValue.h"
-#endif
 
 namespace WebCore {
 
@@ -44,6 +36,10 @@ class LineLayoutState;
 class LogicalSelectionOffsetCaches;
 class RenderInline;
 class RenderText;
+#if ENABLE(CSS_SHAPES)
+class ShapeInsideInfo;
+class ShapeValue;
+#endif
 
 struct BidiRun;
 struct PaintInfo;
@@ -441,6 +437,9 @@ protected:
 
     void setDesiredColumnCountAndWidth(int, LayoutUnit);
 
+    LayoutUnit logicalLeftSelectionOffset(RenderBlock& rootBlock, LayoutUnit position, const LogicalSelectionOffsetCaches&);
+    LayoutUnit logicalRightSelectionOffset(RenderBlock& rootBlock, LayoutUnit position, const LogicalSelectionOffsetCaches&);
+
 public:
     virtual void computeOverflow(LayoutUnit oldClientAfterEdge, bool recomputeFloats = false);
     void clearLayoutOverflow();
@@ -561,9 +560,7 @@ private:
         LayoutUnit& lastLogicalTop, LayoutUnit& lastLogicalLeft, LayoutUnit& lastLogicalRight, const LogicalSelectionOffsetCaches&, const PaintInfo*);
     LayoutRect blockSelectionGap(RenderBlock& rootBlock, const LayoutPoint& rootBlockPhysicalPosition, const LayoutSize& offsetFromRootBlock,
         LayoutUnit lastLogicalTop, LayoutUnit lastLogicalLeft, LayoutUnit lastLogicalRight, LayoutUnit logicalBottom, const LogicalSelectionOffsetCaches&, const PaintInfo*);
-    LayoutUnit logicalLeftSelectionOffset(RenderBlock& rootBlock, LayoutUnit position, const LogicalSelectionOffsetCaches&);
-    LayoutUnit logicalRightSelectionOffset(RenderBlock& rootBlock, LayoutUnit position, const LogicalSelectionOffsetCaches&);
-    
+
     // FIXME-BLOCKFLOW: Remove virtualizaion when all callers have moved to RenderBlockFlow
     virtual void clipOutFloatingObjects(RenderBlock&, const PaintInfo*, const LayoutPoint&, const LayoutSize&) { };
     friend class LogicalSelectionOffsetCaches;

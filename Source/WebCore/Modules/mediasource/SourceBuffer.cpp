@@ -429,7 +429,7 @@ void SourceBuffer::appendBufferTimerFired(Timer<SourceBuffer>*)
         // 2. If the input buffer contains bytes that violate the SourceBuffer byte stream format specification,
         // then run the end of stream algorithm with the error parameter set to "decode" and abort this algorithm.
         if (result == SourceBufferPrivate::ParsingFailed) {
-            m_source->endOfStream(decodeError(), IgnorableExceptionCode());
+            m_source->streamEndedWithError(decodeError(), IgnorableExceptionCode());
             break;
         }
 
@@ -806,7 +806,7 @@ void SourceBuffer::sourceBufferPrivateDidReceiveSample(SourceBufferPrivate*, Pas
             // abort these steps.
             MediaTime presentationStartTime = MediaTime::zeroTime();
             if (presentationTimestamp < presentationStartTime || decodeTimestamp < presentationStartTime) {
-                m_source->endOfStream(decodeError(), IgnorableExceptionCode());
+                m_source->streamEndedWithError(decodeError(), IgnorableExceptionCode());
                 return;
             }
         }
@@ -985,6 +985,11 @@ void SourceBuffer::sourceBufferPrivateDidReceiveSample(SourceBufferPrivate*, Pas
         if (trackBuffer.highestPresentationTimestamp.isInvalid() || frameEndTimestamp > trackBuffer.highestPresentationTimestamp)
             trackBuffer.highestPresentationTimestamp = frameEndTimestamp;
 
+        // 1.21 If highest presentation end timestamp is unset or frame end timestamp is greater than highest
+        // presentation end timestamp, then set highest presentation end timestamp equal to frame end timestamp.
+        if (m_highestPresentationEndTimestamp.isInvalid() || frameEndTimestamp > m_highestPresentationEndTimestamp)
+            m_highestPresentationEndTimestamp = frameEndTimestamp;
+
         m_buffered->add(presentationTimestamp.toDouble(), (presentationTimestamp + frameDuration + microsecond).toDouble());
 
         break;
@@ -993,12 +998,12 @@ void SourceBuffer::sourceBufferPrivateDidReceiveSample(SourceBufferPrivate*, Pas
 
 bool SourceBuffer::sourceBufferPrivateHasAudio(const SourceBufferPrivate*) const
 {
-    return m_audioTracks->length();
+    return m_audioTracks && m_audioTracks->length();
 }
 
 bool SourceBuffer::sourceBufferPrivateHasVideo(const SourceBufferPrivate*) const
 {
-    return m_videoTracks->length();
+    return m_videoTracks && m_videoTracks->length();
 }
 
 void SourceBuffer::videoTrackSelectedChanged(VideoTrack* track)

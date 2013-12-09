@@ -3591,7 +3591,8 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
-    case AllocationProfileWatchpoint: {
+    case AllocationProfileWatchpoint:
+    case TypedArrayWatchpoint: {
         noResult(node);
         break;
     }
@@ -3945,6 +3946,11 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
+    case ConstantStoragePointer: {
+        compileConstantStoragePointer(node);
+        break;
+    }
+        
     case GetTypedArrayByteOffset: {
         compileGetTypedArrayByteOffset(node);
         break;
