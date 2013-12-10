@@ -245,8 +245,6 @@ list(APPEND WebCore_INCLUDE_DIRECTORIES
     ${ZLIB_INCLUDE_DIRS}
 )
 
-add_definitions(-DDATA_DIR="${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}")
-
 if (ENABLE_WEB_AUDIO)
   list(APPEND WebCore_INCLUDE_DIRECTORIES
     platform/audio/nix

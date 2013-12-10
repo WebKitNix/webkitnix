@@ -90,6 +90,8 @@ set(ENABLE_WEBKIT 0)
 set(ENABLE_WEBKIT2 1)
 
 set(WebKit2_OUTPUT_NAME WebKitNix)
+set(DATA_INSTALL_DIR "share/${WebKit2_OUTPUT_NAME}-${PROJECT_VERSION_MAJOR}" CACHE PATH "Installation path for WebKitNix data")
+add_definitions(-DDATA_DIR="${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}")
 
 add_definitions(-DBUILDING_NIX__=1)
 
