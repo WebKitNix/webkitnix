@@ -1,3 +1,342 @@
+2013-12-10  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of forward exit on DoubleAsInt32
+        https://bugs.webkit.org/show_bug.cgi?id=125552
+
+        Reviewed by Oliver Hunt.
+        
+        The forward exit was just there so that we wouldn't have to keep the inputs alive up to
+        the DoubleAsInt32. That's dumb. Forward exits are a complicated piece of machinery and
+        we shouldn't have it just for a bit of liveness micro-optimization.
+        
+        Also add a bunch of machinery to test this case on X86.
+
+        * assembler/AbstractMacroAssembler.h:
+        (JSC::optimizeForARMv7s):
+        (JSC::optimizeForARM64):
+        (JSC::optimizeForX86):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        * dfg/DFGNodeType.h:
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileDoubleAsInt32):
+        * runtime/Options.h:
+        * tests/stress/double-as-int32.js: Added.
+        (foo):
+        (test):
+
+2013-12-10  Filip Pizlo  <fpizlo@apple.com>
+
+        Simplify CSE's treatment of NodeRelevantToOSR
+        https://bugs.webkit.org/show_bug.cgi?id=125538
+
+        Reviewed by Oliver Hunt.
+        
+        Make the NodeRelevantToOSR thing obvious: if there is any MovHint on a node then the
+        node is relevant to OSR.
+
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::run):
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        (JSC::DFG::CSEPhase::performBlockCSE):
+
+2013-12-10  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of forward exit in GetByVal on Uint32Array
+        https://bugs.webkit.org/show_bug.cgi?id=125543
+
+        Reviewed by Oliver Hunt.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileGetByValOnIntTypedArray):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileGetByVal):
+
+2013-12-10  Balazs Kilvady  <kilvadyb@homejinni.com>
+
+        [MIPS] Redundant instructions in code generated from offlineasm.
+        https://bugs.webkit.org/show_bug.cgi?id=125528
+
+        Reviewed by Michael Saboff.
+
+        Optimize lowering of offlineasm BaseIndex Addresses.
+
+        * offlineasm/mips.rb:
+
+2013-12-10  Oliver Hunt  <oliver@apple.com>
+
+        Reduce the mass templatizing of the JS parser
+        https://bugs.webkit.org/show_bug.cgi?id=125535
+
+        Reviewed by Michael Saboff.
+
+        The various caches we have now have removed the need for many of
+        the template vs. regular parameters.  This patch converts those
+        template parameters to regular parameters and updates the call
+        sites.  This reduces the code size of the parser by around 15%.
+
+        * parser/ASTBuilder.h:
+        (JSC::ASTBuilder::createGetterOrSetterProperty):
+        (JSC::ASTBuilder::createProperty):
+        * parser/Parser.cpp:
+        (JSC::::parseInner):
+        (JSC::::parseSourceElements):
+        (JSC::::parseVarDeclarationList):
+        (JSC::::createBindingPattern):
+        (JSC::::tryParseDeconstructionPatternExpression):
+        (JSC::::parseDeconstructionPattern):
+        (JSC::::parseSwitchClauses):
+        (JSC::::parseSwitchDefaultClause):
+        (JSC::::parseBlockStatement):
+        (JSC::::parseFormalParameters):
+        (JSC::::parseFunctionInfo):
+        (JSC::::parseFunctionDeclaration):
+        (JSC::::parseProperty):
+        (JSC::::parseObjectLiteral):
+        (JSC::::parseStrictObjectLiteral):
+        (JSC::::parseMemberExpression):
+        * parser/Parser.h:
+        * parser/SyntaxChecker.h:
+        (JSC::SyntaxChecker::createProperty):
+        (JSC::SyntaxChecker::createGetterOrSetterProperty):
+
+2013-12-10  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        ASSERT !heap.vm()->isInitializingObject() when finishing DFG compilation at beginning of GC
+        https://bugs.webkit.org/show_bug.cgi?id=125472
+
+        Reviewed by Geoff Garen.
+
+        This patch makes it look like it's okay to allocate so that the DFG plan finalization stuff 
+        can do what it needs to do. We already expected that we might do allocation during plan 
+        finalization and we increased the deferral depth to handle this, but we need to fix this other 
+        ASSERT stuff too.
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * heap/Heap.cpp:
+        (JSC::Heap::collect):
+        * heap/Heap.h:
+        * heap/RecursiveAllocationScope.h: Added.
+        (JSC::RecursiveAllocationScope::RecursiveAllocationScope):
+        (JSC::RecursiveAllocationScope::~RecursiveAllocationScope):
+        * runtime/VM.h:
+
+2013-12-09  Filip Pizlo  <fpizlo@apple.com>
+
+        Impose and enforce some basic rules of sanity for where Phi functions are allowed to occur and where their (optional) corresponding MovHints can be
+        https://bugs.webkit.org/show_bug.cgi?id=125480
+
+        Reviewed by Geoffrey Garen.
+        
+        Previously, if you wanted to insert some speculation right after where a value was
+        produced, you'd get super confused if that value was produced by a Phi node.  You can't
+        necessarily insert speculations after a Phi node because Phi nodes appear in this
+        special sequence of Phis and MovHints that establish the OSR exit state for a block.
+        So, you'd probably want to search for the next place where it's safe to insert things.
+        We already do this "search for beginning of next bytecode instruction" search by
+        looking at the next node that has a different CodeOrigin.  But this would be hard for a
+        Phi because those Phis and MovHints have basically random CodeOrigins and they can all
+        have different CodeOrigins.
+
+        This change imposes some sanity for this situation:
+
+        - Phis must have unset CodeOrigins.
+
+        - In each basic block, all nodes that have unset CodeOrigins must come before all nodes
+          that have set CodeOrigins.
+
+        This all ends up working out just great because prior to this change we didn't have a 
+        use for unset CodeOrigins.  I think it's appropriate to make "unset CodeOrigin" mean
+        that we're in the prologue of a basic block.
+
+        It's interesting what this means for block merging, which we don't yet do in SSA.
+        Consider merging the edge A->B.  One possibility is that the block merger is now
+        required to clean up Phi/Upsilons, and reascribe the MovHints to have the CodeOrigin of
+        the A's block terminal.  But an answer that might be better is that the originless
+        nodes at the top of the B are just given the origin of the terminal and we keep the
+        Phis.  That would require changing the above rules.  We'll see how it goes, and what we
+        end up picking...
+
+        Overall, this special-things-at-the-top rule is analogous to what other SSA-based
+        compilers do.  For example, LLVM has rules mandating that Phis appear at the top of a
+        block.
+
+        * bytecode/CodeOrigin.cpp:
+        (JSC::CodeOrigin::dump):
+        * dfg/DFGOSRExitBase.h:
+        (JSC::DFG::OSRExitBase::OSRExitBase):
+        * dfg/DFGSSAConversionPhase.cpp:
+        (JSC::DFG::SSAConversionPhase::run):
+        * dfg/DFGValidate.cpp:
+        (JSC::DFG::Validate::validate):
+        (JSC::DFG::Validate::validateSSA):
+
+2013-12-08  Filip Pizlo  <fpizlo@apple.com>
+
+        Reveal array bounds checks in DFG IR
+        https://bugs.webkit.org/show_bug.cgi?id=125253
+
+        Reviewed by Oliver Hunt and Mark Hahnenberg.
+        
+        In SSA mode, this reveals array bounds checks and the load of array length in DFG IR,
+        making this a candidate for LICM.
+
+        This also fixes a long-standing performance bug where the JSObject slow paths would
+        always create contiguous storage, rather than type-specialized storage, when doing a
+        "storage creating" storage, like:
+        
+            var o = {};
+            o[0] = 42;
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * bytecode/ExitKind.cpp:
+        (JSC::exitKindToString):
+        (JSC::exitKindIsCountable):
+        * bytecode/ExitKind.h:
+        * dfg/DFGAbstractInterpreterInlines.h:
+        (JSC::DFG::::executeEffects):
+        * dfg/DFGArrayMode.cpp:
+        (JSC::DFG::permitsBoundsCheckLowering):
+        (JSC::DFG::ArrayMode::permitsBoundsCheckLowering):
+        * dfg/DFGArrayMode.h:
+        (JSC::DFG::ArrayMode::lengthNeedsStorage):
+        * dfg/DFGClobberize.h:
+        (JSC::DFG::clobberize):
+        * dfg/DFGConstantFoldingPhase.cpp:
+        (JSC::DFG::ConstantFoldingPhase::foldConstants):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        * dfg/DFGNodeType.h:
+        * dfg/DFGPlan.cpp:
+        (JSC::DFG::Plan::compileInThreadImpl):
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSSALoweringPhase.cpp: Added.
+        (JSC::DFG::SSALoweringPhase::SSALoweringPhase):
+        (JSC::DFG::SSALoweringPhase::run):
+        (JSC::DFG::SSALoweringPhase::handleNode):
+        (JSC::DFG::SSALoweringPhase::lowerBoundsCheck):
+        (JSC::DFG::performSSALowering):
+        * dfg/DFGSSALoweringPhase.h: Added.
+        * dfg/DFGSafeToExecute.h:
+        (JSC::DFG::safeToExecute):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileDoublePutByVal):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compileContiguousPutByVal):
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileCheckInBounds):
+        (JSC::FTL::LowerDFGToLLVM::compileGetByVal):
+        (JSC::FTL::LowerDFGToLLVM::compilePutByVal):
+        (JSC::FTL::LowerDFGToLLVM::contiguousPutByValOutOfBounds):
+        * runtime/JSObject.cpp:
+        (JSC::JSObject::convertUndecidedForValue):
+        (JSC::JSObject::createInitialForValueAndSet):
+        (JSC::JSObject::putByIndexBeyondVectorLength):
+        (JSC::JSObject::putDirectIndexBeyondVectorLength):
+        * runtime/JSObject.h:
+        * tests/stress/float32array-out-of-bounds.js: Added.
+        (make):
+        (foo):
+        (test):
+        * tests/stress/int32-object-out-of-bounds.js: Added.
+        (make):
+        (foo):
+        (test):
+        * tests/stress/int32-out-of-bounds.js: Added.
+        (foo):
+        (test):
+
+2013-12-09  Sam Weinig  <sam@webkit.org>
+
+        Replace use of WTF::FixedArray with std::array
+        https://bugs.webkit.org/show_bug.cgi?id=125475
+
+        Reviewed by Anders Carlsson.
+
+        * bytecode/CodeBlockHash.cpp:
+        (JSC::CodeBlockHash::dump):
+        * bytecode/Opcode.cpp:
+        (JSC::OpcodeStats::~OpcodeStats):
+        * dfg/DFGCSEPhase.cpp:
+        * ftl/FTLAbstractHeap.h:
+        * heap/MarkedSpace.h:
+        * parser/ParserArena.h:
+        * runtime/CodeCache.h:
+        * runtime/DateInstanceCache.h:
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::reset):
+        * runtime/JSGlobalObject.h:
+        * runtime/JSString.h:
+        * runtime/LiteralParser.h:
+        * runtime/NumericStrings.h:
+        * runtime/RegExpCache.h:
+        * runtime/SmallStrings.h:
+
+2013-12-09  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Remove miscellaneous unnecessary build statements
+        https://bugs.webkit.org/show_bug.cgi?id=125466
+
+        Reviewed by Darin Adler.
+
+        * DerivedSources.make:
+        * JavaScriptCore.vcxproj/build-generated-files.sh:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * make-generated-sources.sh:
+
+2013-12-08  Filip Pizlo  <fpizlo@apple.com>
+
+        CSE should work in SSA
+        https://bugs.webkit.org/show_bug.cgi?id=125430
+
+        Reviewed by Oliver Hunt and Mark Hahnenberg.
+
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::run):
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGPlan.cpp:
+        (JSC::DFG::Plan::compileInThreadImpl):
+
+2013-12-09  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Remove docs/make-bytecode-docs.pl
+        https://bugs.webkit.org/show_bug.cgi?id=125462
+
+        This sript is very old and no longer outputs useful data since the
+        op code definitions have moved from Interpreter.cpp.
+
+        Reviewed by Darin Adler.
+
+        * DerivedSources.make:
+        * docs/make-bytecode-docs.pl: Removed.
+
+2013-12-09  Julien Brianceau  <jbriance@cisco.com>
+
+        Fix sh4 LLINT build.
+        https://bugs.webkit.org/show_bug.cgi?id=125454
+
+        Reviewed by Michael Saboff.
+
+        In LLINT, sh4 backend implementation didn't handle properly conditional jumps using
+        a LabelReference instance. This patch fixes it through sh4LowerMisplacedLabels phase.
+        Also, to avoid the need of a 4th temporary gpr, this phase is triggered later in
+        getModifiedListSH4.
+
+        * offlineasm/sh4.rb:
+
 2013-12-08  Filip Pizlo  <fpizlo@apple.com>
 
         Add the notion of ConstantStoragePointer to DFG IR

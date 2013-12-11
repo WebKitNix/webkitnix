@@ -35,6 +35,7 @@
 #include "AXObjectCache.h"
 #include "ArchiveResource.h"
 #include "BackForwardList.h"
+#include "BatteryClientGtk.h"
 #include "CairoUtilities.h"
 #include "Chrome.h"
 #include "ChromeClientGtk.h"
@@ -3623,6 +3624,10 @@ static void webkit_web_view_update_settings(WebKitWebView* webView)
     WebCore::RuntimeEnabledFeatures::sharedFeatures().setCSSRegionsEnabled(true);
 #endif
 
+#if ENABLE(MEDIA_SOURCE)
+    coreSettings.setMediaSourceEnabled(settingsPrivate->enableMediaSource);
+#endif
+
     // Use mock scrollbars if in DumpRenderTree mode (i.e. testing layout tests).
     coreSettings.setMockScrollbarsEnabled(DumpRenderTreeSupportGtk::dumpRenderTreeModeEnabled());
 
@@ -3771,6 +3776,11 @@ static void webkit_web_view_settings_notify(WebKitWebSettings* webSettings, GPar
         settings.setCSSCustomFilterEnabled(g_value_get_boolean(&value));
 #endif
 
+#if ENABLE(MEDIA_SOURCE)
+    else if (name == g_intern_string("enable-mediasource"))
+        settings.setMediaSourceEnabled(g_value_get_boolean(&value));
+#endif
+
     else if (!g_object_class_find_property(G_OBJECT_GET_CLASS(webSettings), name))
         g_warning("Unexpected setting '%s'", name);
     g_value_unset(&value);
@@ -3826,6 +3836,10 @@ static void webkit_web_view_init(WebKitWebView* webView)
 #if ENABLE(NAVIGATOR_CONTENT_UTILS)
     priv->navigatorContentUtilsClient = WebKit::NavigatorContentUtilsClient::create();
     WebCore::provideNavigatorContentUtilsTo(priv->corePage, priv->navigatorContentUtilsClient.get());
+#endif
+
+#if ENABLE(BATTERY_STATUS)
+    WebCore::provideBatteryTo(priv->corePage, new BatteryClientGtk);
 #endif
 
     if (DumpRenderTreeSupportGtk::dumpRenderTreeModeEnabled()) {

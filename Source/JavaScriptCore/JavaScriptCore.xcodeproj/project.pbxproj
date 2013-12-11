@@ -381,6 +381,8 @@
 		0FC097A2146B28CC00CF2442 /* DFGThunks.h in Headers */ = {isa = PBXBuildFile; fileRef = 0FC097A0146B28C700CF2442 /* DFGThunks.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		0FC20CB51852E2C600C9E954 /* DFGStrengthReductionPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0FC20CB31852E2C600C9E954 /* DFGStrengthReductionPhase.cpp */; };
 		0FC20CB61852E2C600C9E954 /* DFGStrengthReductionPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = 0FC20CB41852E2C600C9E954 /* DFGStrengthReductionPhase.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		0FC20CB918556A3500C9E954 /* DFGSSALoweringPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0FC20CB718556A3500C9E954 /* DFGSSALoweringPhase.cpp */; };
+		0FC20CBA18556A3500C9E954 /* DFGSSALoweringPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = 0FC20CB818556A3500C9E954 /* DFGSSALoweringPhase.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		0FC314121814559100033232 /* RegisterSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 0FC314101814559100033232 /* RegisterSet.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		0FC314131814559100033232 /* TempRegisterSet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0FC314111814559100033232 /* TempRegisterSet.cpp */; };
 		0FC3141518146D7000033232 /* RegisterSet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0FC3141418146D7000033232 /* RegisterSet.cpp */; };
@@ -719,6 +721,7 @@
 		2A48D1911772365B00C65A5F /* APICallbackFunction.h in Headers */ = {isa = PBXBuildFile; fileRef = C211B574176A224D000E2A23 /* APICallbackFunction.h */; };
 		2A6F462617E959CE00C45C98 /* HeapOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A6F462517E959CE00C45C98 /* HeapOperation.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		2A7A58EF1808A4C40020BDF7 /* DeferGC.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A7A58EE1808A4C40020BDF7 /* DeferGC.cpp */; };
+		2AAD964A18569417001F93BE /* RecursiveAllocationScope.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AAD964918569417001F93BE /* RecursiveAllocationScope.h */; };
 		2AD8932B17E3868F00668276 /* HeapIterationScope.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AD8932917E3868F00668276 /* HeapIterationScope.h */; };
 		371D842D17C98B6E00ECF994 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 371D842C17C98B6E00ECF994 /* libz.dylib */; };
 		41359CF30FDD89AD00206180 /* DateConversion.h in Headers */ = {isa = PBXBuildFile; fileRef = D21202290AD4310C00ED79B6 /* DateConversion.h */; };
@@ -1705,6 +1708,8 @@
 		0FC097A0146B28C700CF2442 /* DFGThunks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DFGThunks.h; path = dfg/DFGThunks.h; sourceTree = "<group>"; };
 		0FC20CB31852E2C600C9E954 /* DFGStrengthReductionPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DFGStrengthReductionPhase.cpp; path = dfg/DFGStrengthReductionPhase.cpp; sourceTree = "<group>"; };
 		0FC20CB41852E2C600C9E954 /* DFGStrengthReductionPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DFGStrengthReductionPhase.h; path = dfg/DFGStrengthReductionPhase.h; sourceTree = "<group>"; };
+		0FC20CB718556A3500C9E954 /* DFGSSALoweringPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DFGSSALoweringPhase.cpp; path = dfg/DFGSSALoweringPhase.cpp; sourceTree = "<group>"; };
+		0FC20CB818556A3500C9E954 /* DFGSSALoweringPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DFGSSALoweringPhase.h; path = dfg/DFGSSALoweringPhase.h; sourceTree = "<group>"; };
 		0FC314101814559100033232 /* RegisterSet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RegisterSet.h; sourceTree = "<group>"; };
 		0FC314111814559100033232 /* TempRegisterSet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TempRegisterSet.cpp; sourceTree = "<group>"; };
 		0FC3141418146D7000033232 /* RegisterSet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RegisterSet.cpp; sourceTree = "<group>"; };
@@ -1995,6 +2000,7 @@
 		2A2825CF18341F2D0087FBA9 /* DelayedReleaseScope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DelayedReleaseScope.h; sourceTree = "<group>"; };
 		2A6F462517E959CE00C45C98 /* HeapOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HeapOperation.h; sourceTree = "<group>"; };
 		2A7A58EE1808A4C40020BDF7 /* DeferGC.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DeferGC.cpp; sourceTree = "<group>"; };
+		2AAD964918569417001F93BE /* RecursiveAllocationScope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RecursiveAllocationScope.h; sourceTree = "<group>"; };
 		2AD8932917E3868F00668276 /* HeapIterationScope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HeapIterationScope.h; sourceTree = "<group>"; };
 		371D842C17C98B6E00ECF994 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		449097EE0F8F81B50076A327 /* FeatureDefines.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = FeatureDefines.xcconfig; sourceTree = "<group>"; };
@@ -3145,6 +3151,7 @@
 				0FC8150814043BCA00CFA603 /* WriteBarrierSupport.cpp */,
 				0FC8150914043BD200CFA603 /* WriteBarrierSupport.h */,
 				2A2825CF18341F2D0087FBA9 /* DelayedReleaseScope.h */,
+				2AAD964918569417001F93BE /* RecursiveAllocationScope.h */,
 			);
 			path = heap;
 			sourceTree = "<group>";
@@ -3964,6 +3971,8 @@
 				86880F4C14353B2100B08D42 /* DFGSpeculativeJIT64.cpp */,
 				A7D89CF017A0B8CC00773AD8 /* DFGSSAConversionPhase.cpp */,
 				A7D89CF117A0B8CC00773AD8 /* DFGSSAConversionPhase.h */,
+				0FC20CB718556A3500C9E954 /* DFGSSALoweringPhase.cpp */,
+				0FC20CB818556A3500C9E954 /* DFGSSALoweringPhase.h */,
 				0F9FB4F217FCB91700CB67F8 /* DFGStackLayoutPhase.cpp */,
 				0F9FB4F317FCB91700CB67F8 /* DFGStackLayoutPhase.h */,
 				0FC20CB31852E2C600C9E954 /* DFGStrengthReductionPhase.cpp */,
@@ -4387,6 +4396,7 @@
 				A73E1331179624CD00E4DEA8 /* DFGDesiredStructureChains.h in Headers */,
 				C2C0F7CE17BBFC5B00464FE4 /* DFGDesiredTransitions.h in Headers */,
 				0FE8534C1723CDA500B618F5 /* DFGDesiredWatchpoints.h in Headers */,
+				0FC20CBA18556A3500C9E954 /* DFGSSALoweringPhase.h in Headers */,
 				C2981FD917BAEE4B00A3BC98 /* DFGDesiredWeakReferences.h in Headers */,
 				C2981FDD17BAFF4400A3BC98 /* DFGDesiredWriteBarriers.h in Headers */,
 				0FF427651591A1CE004CB9FF /* DFGDisassembler.h in Headers */,
@@ -4619,6 +4629,7 @@
 				0F2B66EA17B6B5AB00A7AE3F /* JSArrayBufferViewInlines.h in Headers */,
 				A7BDAECB17F4EA1400F6140C /* JSArrayIterator.h in Headers */,
 				BC18C4180E16F5CD00B34460 /* JSBase.h in Headers */,
+				2AAD964A18569417001F93BE /* RecursiveAllocationScope.h in Headers */,
 				140D17D70E8AD4A9000CD17D /* JSBasePrivate.h in Headers */,
 				86FA9E92142BBB2E001773B7 /* JSBoundFunction.h in Headers */,
 				BC18C4190E16F5CD00B34460 /* JSCallbackConstructor.h in Headers */,
@@ -5287,7 +5298,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/DerivedSources/JavaScriptCore/docs\"\ncd \"${BUILT_PRODUCTS_DIR}/DerivedSources/JavaScriptCore\"\n\n/bin/ln -sfh \"${SRCROOT}\" JavaScriptCore\nexport JavaScriptCore=\"JavaScriptCore\"\nexport BUILT_PRODUCTS_DIR=\"../..\"\n\nmake --no-builtin-rules -f \"JavaScriptCore/DerivedSources.make\" -j `/usr/sbin/sysctl -n hw.ncpu` || exit 1\n\n/usr/bin/env ruby JavaScriptCore/offlineasm/asm.rb JavaScriptCore/llint/LowLevelInterpreter.asm ${BUILT_PRODUCTS_DIR}/JSCLLIntOffsetsExtractor LLIntAssembly.h || exit 1\n";
+			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/DerivedSources/JavaScriptCore\"\ncd \"${BUILT_PRODUCTS_DIR}/DerivedSources/JavaScriptCore\"\n\n/bin/ln -sfh \"${SRCROOT}\" JavaScriptCore\nexport JavaScriptCore=\"JavaScriptCore\"\nexport BUILT_PRODUCTS_DIR=\"../..\"\n\nmake --no-builtin-rules -f \"JavaScriptCore/DerivedSources.make\" -j `/usr/sbin/sysctl -n hw.ncpu` || exit 1\n\n/usr/bin/env ruby JavaScriptCore/offlineasm/asm.rb JavaScriptCore/llint/LowLevelInterpreter.asm ${BUILT_PRODUCTS_DIR}/JSCLLIntOffsetsExtractor LLIntAssembly.h || exit 1\n";
 		};
 		A55DEAA416703DF7003DB841 /* Check For Inappropriate Macros in External Headers */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5722,6 +5733,7 @@
 				969A079A0ED1D3AE00F1F681 /* Opcode.cpp in Sources */,
 				14280850107EC0D70013E7B2 /* Operations.cpp in Sources */,
 				0FE228EE1436AB2C00196C48 /* Options.cpp in Sources */,
+				0FC20CB918556A3500C9E954 /* DFGSSALoweringPhase.cpp in Sources */,
 				148F21BC107EC54D0042EC2C /* Parser.cpp in Sources */,
 				93052C340FB792190048FDC3 /* ParserArena.cpp in Sources */,
 				0F9FC8C314E1B5FE00D52AE0 /* PolymorphicPutByIdList.cpp in Sources */,

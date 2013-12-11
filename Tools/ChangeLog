@@ -1,3 +1,298 @@
+2013-12-11  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/125563> Remove the DumpRenderTree Perl Support module
+
+        Now that old-run-webkit-tests is not used on OS X it's not worth the time and effort
+        to build and maintain this custom Perl module.
+
+        Reviewed by Anders Carlsson.
+
+        * DumpRenderTree/DumpRenderTree.xcodeproj/project.pbxproj: Remove the target.
+        * DumpRenderTree/mac/PerlSupport/DumpRenderTreeSupport.c: Removed.
+        * DumpRenderTree/mac/PerlSupport/DumpRenderTreeSupportPregenerated.pm: Removed.
+        * DumpRenderTree/mac/PerlSupport/DumpRenderTreeSupport_wrapPregenerated.c: Removed.
+        * DumpRenderTree/mac/PerlSupport/Makefile: Removed.
+        * Scripts/old-run-webkit-tests: Update a comment that referred to DumpRenderTreeSupport as a reason to
+        build DumpRenderTree.
+        (dumpToolDidCrash): Stop importing and using the module.
+        * Scripts/webkitpy/port/base.py:
+        (Port._build_driver): Update a comment in the same manner as in old-run-webkit-tests.
+
+2013-12-11  Brendan Long  <b.long@cablelabs.com>
+
+        [GTK] Add "enable-mediasource" property to WebKitWebSettings
+        https://bugs.webkit.org/show_bug.cgi?id=125566
+
+        Reviewed by Philippe Normand.
+
+        * DumpRenderTree/gtk/DumpRenderTree.cpp:
+        (resetDefaultsToConsistentValues): Turn MediaSource on by default for easier testing.
+        * DumpRenderTree/gtk/TestRunnerGtk.cpp:
+        (TestRunner::overridePreference): Allow overriding WebKitMediaSourceEnabled.
+
+2013-12-11  Dan Bernstein  <mitz@apple.com>
+
+        [Mac] Observe the activeURL property to keep the MiniBrowser URL field up to date
+        https://bugs.webkit.org/show_bug.cgi?id=125579
+
+        Reviewed by Anders Carlsson.
+
+        * MiniBrowser/mac/WK2BrowserWindowController.m:
+        (-[WK2BrowserWindowController dealloc]): Stop observing the activeURL property.
+        (-[WK2BrowserWindowController observeValueForKeyPath:ofObject:change:context:]): When the
+        activeURL property changes, update the URL field with its value.
+        (-[WK2BrowserWindowController awakeFromNib]): Start observing the activeURL property.
+        (-[WK2BrowserWindowController browsingContextControllerDidStartProvisionalLoad:]): Just log.
+        (-[WK2BrowserWindowController browsingContextControllerDidReceiveServerRedirectForProvisionalLoad:]):
+        Ditto.
+        (-[WK2BrowserWindowController browsingContextController:didFailProvisionalLoadWithError:]):
+        Ditto.
+        (-[WK2BrowserWindowController browsingContextControllerDidCommitLoad:]): Ditto.
+        (-[WK2BrowserWindowController browsingContextController:didFailLoadWithError:]): Ditto.
+
+2013-12-11  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        Fixed test-wepkitpy logging for buildslaves
+        https://bugs.webkit.org/show_bug.cgi?id=125445
+
+        Reviewed by Csaba Osztrogonác.
+
+        * BuildSlaveSupport/build.webkit.org-config/master.cfg:
+        (RunPythonTests):
+
+2013-12-11  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Programmatically-inserted children lack accessibility events
+        https://bugs.webkit.org/show_bug.cgi?id=100275
+
+        Reviewed by Chris Fleizach.
+
+        Update DRT and WebKitTestRunner to handle the children-changed
+        signal properly, considering the detail and optional parameters.
+
+        * DumpRenderTree/atk/AccessibilityCallbacksAtk.cpp: Updated.
+        (axObjectEventListener):
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityNotificationHandlerAtk.cpp: Updated.
+
+2013-12-03  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/125139> Modernize the WebKit API headers
+        <rdar://problem/15540175>
+
+        Reviewed by Anders Carlsson.
+
+        * DumpRenderTree/mac/TestRunnerMac.mm:
+        (TestRunner::setCacheModel): Cast to the enum type.
+
+2013-12-10  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of forward exit on DoubleAsInt32
+        https://bugs.webkit.org/show_bug.cgi?id=125552
+
+        Reviewed by Oliver Hunt.
+        
+        Add some support for testing the generic (non-X86) paths on X86 by disabling
+        architecture-specific optimizations (ASO's).
+
+        * Scripts/run-javascriptcore-tests:
+        * Scripts/run-jsc-stress-tests:
+
+2013-12-10  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Unreviewed EFL build fix attempt
+
+        * TestWebKitAPI/CMakeLists.txt: Added ${WEBKIT2_DIR}/Platform/CoreIPC to include lists.
+        * WebKitTestRunner/CMakeLists.txt: Ditto.
+
+2013-12-10  Anders Carlsson  <andersca@apple.com>
+
+        Add a HashMap constructor that takes an initializer list
+        https://bugs.webkit.org/show_bug.cgi?id=125551
+
+        Reviewed by Dan Bernstein.
+
+        * TestWebKitAPI/Tests/WTF/HashMap.cpp:
+        (TestWebKitAPI::TEST):
+
+2013-12-10  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Use std::array when computing MD5 checksum
+        https://bugs.webkit.org/show_bug.cgi?id=125509
+
+        Reviewed by Anders Carlsson.
+
+        Use MD5::Digest type and MD5::hashSize when computing MD5 checksum.
+
+        * DumpRenderTree/blackberry/PixelDumpSupportBlackBerry.cpp:
+        (computeMD5HashStringForBitmapContext):
+        * DumpRenderTree/cairo/PixelDumpSupportCairo.cpp:
+        (computeMD5HashStringForBitmapContext):
+        * TestWebKitAPI/Tests/WTF/MD5.cpp:
+        (TestWebKitAPI::expectMD5):
+        * WebKitTestRunner/cairo/TestInvocationCairo.cpp:
+        (WTR::computeMD5HashStringForCairoSurface):
+        * WebKitTestRunner/cg/TestInvocationCG.cpp:
+        (WTR::computeMD5HashStringForContext):
+
+2013-12-10  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Expose splitter elements with ATK_ROLE_SEPARATOR
+        https://bugs.webkit.org/show_bug.cgi?id=125522
+
+        Reviewed by Chris Fleizach.
+
+        Update strings representing ATK_ROLE_SEPARATOR for layout tests.
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+
+2013-12-10  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Add --makeargs option to build-jsc
+        https://bugs.webkit.org/show_bug.cgi?id=125344
+
+        Reviewed by Filip Pizlo.
+
+        * Scripts/build-jsc: Handle and pass makefile arguments in jsc build.
+
+2013-12-10  Joanmarie Diggs  <jdiggs@igalia.com>
+
+        AX: [ATK] Convert the get_text atktest.c unit tests to layout tests
+        https://bugs.webkit.org/show_bug.cgi?id=125497
+
+        Reviewed by Mario Sanchez Prada.
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (AccessibilityUIElement::stringForRange): Implemented.
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::stringForRange): Implemented.
+
+2013-12-10  Martin Robinson  <mrobinson@igalia.com>
+
+        Various fixes for the CMake GTK+ build
+
+        Reviewed by Gustavo Noronha.
+
+        * MiniBrowser/gtk/CMakeLists.txt: Update source list and correct the name of BrowserMarshal.h.
+        * TestWebKitAPI/PlatformGTK.cmake: Add GTK+ libraries to the test program. They're required.
+
+2013-12-10  László Langó  <lango@inf.u-szeged.hu>
+
+        --cloop option does not work in Tools/Scripts/build-jsc.
+        https://bugs.webkit.org/show_bug.cgi?id=125214
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Scripts/build-jsc:
+
+2013-12-10  Dániel Bátyai  <Batyai.Daniel@stud.u-szeged.hu>
+
+        Merge mark_for_landing and mark_for_commit_queue into one argument
+        https://bugs.webkit.org/show_bug.cgi?id=125448
+
+        Reviewed by Ryosuke Niwa.
+
+        * Scripts/webkitpy/common/net/bugzilla/bugzilla.py:
+        (CommitQueueFlag):
+        (Bugzilla._commit_queue_flag):
+        (Bugzilla._fill_attachment_form):
+        (Bugzilla.add_patch_to_bug):
+        (Bugzilla.create_bug):
+        * Scripts/webkitpy/common/net/bugzilla/bugzilla_unittest.py:
+        (test_commit_queue_flag.assert_commit_queue_flag):
+        (test_commit_queue_flag):
+
+2013-12-09  Tim Horton  <timothy_horton@apple.com>
+
+        Remove dead extract_reference_link.py (and the reftests module)
+        https://bugs.webkit.org/show_bug.cgi?id=125116
+
+        Reviewed by Ryosuke Niwa.
+
+        This code doesn't seem to have ever been used.
+
+        * Scripts/webkitpy/layout_tests/reftests/__init__.py: Removed.
+        * Scripts/webkitpy/layout_tests/reftests/extract_reference_link.py: Removed.
+        * Scripts/webkitpy/layout_tests/reftests/extract_reference_link_unittest.py: Removed.
+
+2013-12-09  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Translate ATK_ROLE_SECTION into "AXSection" in DRT/WKTR
+        https://bugs.webkit.org/show_bug.cgi?id=125456
+
+        Reviewed by Chris Fleizach.
+
+        Return 'AXSection' for section roles instead of 'AXDiv'.
+
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+
+2013-12-09  Brian J. Burg  <burg@cs.washington.edu>
+
+        check-webkit-style should check for extra newlines at EOF
+        https://bugs.webkit.org/show_bug.cgi?id=125424
+
+        Reviewed by Darin Adler.
+
+        Report a style violation if extraneous newlines are added
+        to the end of a C++ file. There should only be one newline at EOF.
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (check_for_missing_new_line_at_eof): Renamed from check_for_new_line_at_eof.
+        (check_for_extra_new_line_at_eof): Added.
+        (_process_lines): Added new check and renamed existing EOF check.
+        * Scripts/webkitpy/style/checkers/cpp_unittest.py:
+        (CppStyleTest.test_extra_newlines_at_eof): Added.
+        (CppStyleTest.test_extra_newlines_at_eof.do_test): Added.
+
+2013-12-09  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        check-webkit-style: ternary operator in macro call identified as initialization list
+        https://bugs.webkit.org/show_bug.cgi?id=125443
+
+        Reviewed by Ryosuke Niwa.
+
+        Do not match initialization list when questionmark is placed before :
+
+        * Scripts/webkitpy/style/checkers/cpp.py:
+        (check_member_initialization_list):
+
+2013-12-09  Joanmarie Diggs  <jdiggs@igalia.com>
+
+        AX: [ATK] Convert the get_{string,text}_at_offset atktest.c unit tests to layout tests
+        https://bugs.webkit.org/show_bug.cgi?id=125451
+
+        Reviewed by Mario Sanchez Prada.
+
+        Create the needed callbacks for DRT and WKTR.
+
+        * DumpRenderTree/AccessibilityUIElement.cpp:
+        (characterAtOffsetCallback): added
+        (wordAtOffsetCallback): added
+        (lineAtOffsetCallback): added
+        (sentenceAtOffsetCallback): added
+        (AccessibilityUIElement::getJSClass):
+        * DumpRenderTree/AccessibilityUIElement.h:
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp:
+        (stringAtOffset): added
+        (AccessibilityUIElement::characterAtOffset): added
+        (AccessibilityUIElement::wordAtOffset): added
+        (AccessibilityUIElement::lineAtOffset): added
+        (AccessibilityUIElement::sentenceAtOffset): added
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.cpp:
+        (WTR::AccessibilityUIElement::characterAtOffset): added
+        (WTR::AccessibilityUIElement::wordAtOffset): added
+        (WTR::AccessibilityUIElement::lineAtOffset): added
+        (WTR::AccessibilityUIElement::sentenceAtOffset): added
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.h:
+        * WebKitTestRunner/InjectedBundle/Bindings/AccessibilityUIElement.idl:
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::stringAtOffset): added
+        (WTR::AccessibilityUIElement::characterAtOffset): added
+        (WTR::AccessibilityUIElement::wordAtOffset): added
+        (WTR::AccessibilityUIElement::lineAtOffset): added
+        (WTR::AccessibilityUIElement::sentenceAtOffset): added
+
 2013-12-08  Sam Weinig  <sam@webkit.org>
 
         32-bit MiniBrowser doesn't build

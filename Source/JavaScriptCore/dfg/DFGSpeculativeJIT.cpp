@@ -1740,7 +1740,7 @@ void SpeculativeJIT::compileDoublePutByVal(Node* node, SpeculateCellOperand& bas
     
     if (arrayMode.isInBounds()) {
         speculationCheck(
-            StoreToHoleOrOutOfBounds, JSValueRegs(), 0,
+            OutOfBounds, JSValueRegs(), 0,
             m_jit.branch32(MacroAssembler::AboveOrEqual, propertyReg, MacroAssembler::Address(storageReg, Butterfly::offsetOfPublicLength())));
     } else {
         MacroAssembler::Jump inBounds = m_jit.branch32(MacroAssembler::Below, propertyReg, MacroAssembler::Address(storageReg, Butterfly::offsetOfPublicLength()));
@@ -2188,7 +2188,7 @@ void SpeculativeJIT::compileDoubleAsInt32(Node* node)
     JITCompiler::JumpList failureCases;
     bool negZeroCheck = !bytecodeCanIgnoreNegativeZero(node->arithNodeFlags());
     m_jit.branchConvertDoubleToInt32(valueFPR, resultGPR, failureCases, scratchFPR, negZeroCheck);
-    forwardSpeculationCheck(Overflow, JSValueRegs(), 0, failureCases, ValueRecovery::inFPR(valueFPR));
+    speculationCheck(Overflow, JSValueRegs(), 0, failureCases);
 
     int32Result(resultGPR, node);
 }
@@ -2394,7 +2394,7 @@ void SpeculativeJIT::compileGetByValOnIntTypedArray(Node* node, TypedArrayType t
     
     ASSERT(elementSize(type) == 4 && !isSigned(type));
     if (node->shouldSpeculateInt32()) {
-        forwardSpeculationCheck(Overflow, JSValueRegs(), 0, m_jit.branch32(MacroAssembler::LessThan, resultReg, TrustedImm32(0)), ValueRecovery::uint32InGPR(resultReg));
+        speculationCheck(Overflow, JSValueRegs(), 0, m_jit.branch32(MacroAssembler::LessThan, resultReg, TrustedImm32(0)));
         int32Result(resultReg, node);
         return;
     }

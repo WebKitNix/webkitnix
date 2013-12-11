@@ -70,7 +70,6 @@
 #include "WebFullScreenManager.h"
 #include "WebFullScreenManagerMessages.h"
 #include "WebGeolocationClient.h"
-#include "WebGeometry.h"
 #include "WebImage.h"
 #include "WebInspector.h"
 #include "WebInspectorClient.h"
@@ -396,6 +395,7 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     setAutoSizingShouldExpandToViewHeight(parameters.autoSizingShouldExpandToViewHeight);
     
     setScrollPinningBehavior(parameters.scrollPinningBehavior);
+    setBackgroundExtendsBeyondPage(parameters.backgroundExtendsBeyondPage);
 
     m_userAgent = parameters.userAgent;
 
@@ -757,7 +757,7 @@ PassRefPtr<API::Array> WebPage::trackedRepaintRects()
     repaintRects.reserveInitialCapacity(view->trackedRepaintRects().size());
 
     for (const auto& repaintRect : view->trackedRepaintRects())
-        repaintRects.uncheckedAppend(WebRect::create(toAPI(repaintRect)));
+        repaintRects.uncheckedAppend(API::Rect::create(toAPI(repaintRect)));
 
     return API::Array::create(std::move(repaintRects));
 }
@@ -1382,6 +1382,12 @@ void WebPage::listenForLayoutMilestones(uint32_t milestones)
 void WebPage::setSuppressScrollbarAnimations(bool suppressAnimations)
 {
     m_page->setShouldSuppressScrollbarAnimations(suppressAnimations);
+}
+
+void WebPage::setBackgroundExtendsBeyondPage(bool backgroundExtendsBeyondPage)
+{
+    if (m_page->settings().backgroundShouldExtendBeyondPage() != backgroundExtendsBeyondPage)
+        m_page->settings().setBackgroundShouldExtendBeyondPage(backgroundExtendsBeyondPage);
 }
 
 void WebPage::setPaginationMode(uint32_t mode)
@@ -2596,7 +2602,6 @@ void WebPage::updatePreferences(const WebPreferencesStore& store)
     settings.setLowPowerVideoAudioBufferSizeEnabled(store.getBoolValueForKey(WebPreferencesKey::lowPowerVideoAudioBufferSizeEnabledKey()));
     settings.setSimpleLineLayoutEnabled(store.getBoolValueForKey(WebPreferencesKey::simpleLineLayoutEnabledKey()));
     settings.setSimpleLineLayoutDebugBordersEnabled(store.getBoolValueForKey(WebPreferencesKey::simpleLineLayoutDebugBordersEnabledKey()));
-    settings.setBackgroundShouldExtendBeyondPage(store.getBoolValueForKey(WebPreferencesKey::backgroundShouldExtendBeyondPageKey()));
 
     settings.setUseLegacyTextAlignPositionedElementBehavior(store.getBoolValueForKey(WebPreferencesKey::useLegacyTextAlignPositionedElementBehaviorKey()));
 

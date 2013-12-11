@@ -1,3 +1,687 @@
+2013-12-11  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Improving createOffer and createAnswer LayoutTests
+        https://bugs.webkit.org/show_bug.cgi?id=125568
+
+        Reviewed by Philippe Normand.
+
+        The constraints parameter should be optional in both. Also adding tests to check if we already have a local SDP
+        when creating an answer.
+
+        Existing tests were updated.
+
+        * platform/mock/RTCPeerConnectionHandlerMock.cpp:
+        (WebCore::RTCPeerConnectionHandlerMock::createOffer):
+
+2013-12-11  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        [EFL] Fix build with CONTEXT_MENUS flag set OFF
+        https://bugs.webkit.org/show_bug.cgi?id=125572
+
+        Reviewed by Gyuyoung Kim.
+
+        dispatchEventAsContextMenuEvent is called regardless of CONTEXT_MENUS flag setting,
+        thus its definition in InspectorFrontendHost should not be guarded by this flag.
+
+        No new tests, no behaviour change.
+
+        * inspector/InspectorFrontendHost.cpp:
+        (WebCore::InspectorFrontendHost::dispatchEventAsContextMenuEvent):
+
+2013-12-11  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        [CURL] Build fails after r160386.
+        https://bugs.webkit.org/show_bug.cgi?id=125571
+
+        Reviewed by Zoltan Herczeg.
+
+        Need no new tests.
+
+        Fix a typo in commit r160386 that prevents building with curl.
+
+        * platform/network/curl/CurlCacheEntry.cpp:
+        (WebCore::CurlCacheEntry::generateBaseFilename):
+
+2013-12-11  Rob Buis  <rob.buis@samsung.com>
+
+        [CSS Shapes] Take into account fill-rule for polygon interpolation
+        https://bugs.webkit.org/show_bug.cgi?id=125508
+
+        Reviewed by Dirk Schulze.
+
+        Implement the polygon fill-rule part of http://dev.w3.org/csswg/css-shapes/#basic-shape-interpolation.
+
+        Adapt fast/shapes/shape-outside-floats/shape-outside-animation.html.
+
+        * rendering/style/BasicShapes.cpp:
+        (WebCore::BasicShape::canBlend):
+
+2013-12-11  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Programmatically-inserted children lack accessibility events
+        https://bugs.webkit.org/show_bug.cgi?id=100275
+
+        Reviewed by Chris Fleizach.
+
+        Test: accessibility/children-changed-sends-notification.html
+
+        Emit children-changed::add and children-changed::remove whenever
+        an object has been added/removed to the accessibility hierarchy,
+        that is, when a new AtkObject is being attached/detached.
+
+        * accessibility/AXObjectCache.h: Added new enumeration to know
+        when we are detaching a wrapper because of the cache or the
+        element is being destroyed, so we can use that information.
+        (WebCore::AXObjectCache::detachWrapper): Added a new parameter and
+        updated all the prototypes in different ports.
+        * accessibility/AXObjectCache.cpp:
+        (WebCore::AXObjectCache::~AXObjectCache): Call detachWrapper()
+        specifying that we do it because the cache is being destroyed.
+        (WebCore::AXObjectCache::remove): Call detachWrapper() specifying
+        that we do it because an accessible element is being destroyed.
+
+        * accessibility/atk/AXObjectCacheAtk.cpp:
+        (WebCore::AXObjectCache::detachWrapper): Emit the children-changed
+        signal when needed. We rely on the cached reference to the parent
+        AtkObject (using the implementation of atk_object_get_parent from
+        the AtkObject class) to find the right object to emit the signal
+        from here, since the accessibility hierarchy from WebCore will no
+        longer be accessible at this point.
+        (WebCore::AXObjectCache::attachWrapper): Emit the children-change
+        signal from here unless we are in the middle of a layout update,
+        trying to provide as much information (e.g. the offset) as possible.
+        (WebCore::AXObjectCache::postPlatformNotification): Make sure we
+        update (touch) the subtree under an accessibility object whenever
+        we receive AXChildrenChanded from WebCore, to ensure that those
+        objects will also be visible rightaway to ATs, and that those get
+        properly notified of the event at that very same moment.
+
+        * accessibility/ios/AXObjectCacheIOS.mm:
+        (WebCore::AXObjectCache::detachWrapper): Updated function signature.
+        * accessibility/mac/AXObjectCacheMac.mm:
+        (WebCore::AXObjectCache::detachWrapper): Ditto.
+        * accessibility/win/AXObjectCacheWin.cpp:
+        (WebCore::AXObjectCache::detachWrapper): Ditto.
+
+2013-12-11  Andreas Kling  <akling@apple.com>
+
+        REGRESSION(r160389): SVG test assertion extravaganza.
+
+        Unreviewed. Use getAttribute() instead of fastGetAttribute() for
+        the "type" attribute since it's animatable on SVG elements.
+
+2013-12-11  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Set m_nextBreakablePosition as private in InlineIterator, and use it.
+        https://bugs.webkit.org/show_bug.cgi?id=125482
+
+        Reviewed by Andreas Kling.
+
+        InlineIterator has been exported m_nextBreakablePosition as public though it is member variable.
+        This patch set it as private, and add getter/setter functions for it.
+
+        No new tests, no behavior changes.
+
+        * rendering/InlineIterator.h:
+        (WebCore::InlineIterator::InlineIterator):
+        (WebCore::InlineIterator::nextBreakablePosition):
+        (WebCore::InlineIterator::setNextBreakablePosition):
+        * rendering/line/BreakingContextInlineHeaders.h:
+        (WebCore::BreakingContext::handleText):
+
+2013-12-10  Gurpreet Kaur  <k.gurpreet@samsung.com>
+
+        top and bottom black background line not getting displayed
+        https://bugs.webkit.org/show_bug.cgi?id=21664
+
+        Reviewed by Simon Fraser.
+
+        The table cell's background was not being displayed. Since the table
+        cell had no child correct offsetWidth was not being set even if table
+        width is being defined.
+
+        Test: fast/dom/HTMLTableElement/empy-table-cell-with-background-color.html
+
+        * rendering/AutoTableLayout.cpp:
+        (WebCore::AutoTableLayout::recalcColumn):
+        cellHasContent should also be set to true incase background color is
+        present.
+
+2013-12-10  Beth Dakin  <bdakin@apple.com>
+
+        Horizontal rubber-banding without a horizontal scrollbar is distracting
+        https://bugs.webkit.org/show_bug.cgi?id=125550
+
+        Reviewed by Simon Fraser.
+
+        Setting the ScrollElasticity to ScrollElasticityAutomatic will make sure we only 
+        rubber-band horizontally when there is a horizontal scrollbar.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::FrameView):
+
+2013-12-10  Martin Robinson  <mrobinson@igalia.com>
+
+        Correct a preprocessor guard from a mis-merged patch
+
+        In r160367, I mismerged a patch from Gustavo Noronha. This commit
+        fixes the merge and thus fixes the CMake build.
+
+        * html/HTMLMediaElement.idl: Move the preprocessor guard to the correct property.
+
+2013-12-10  Rob Buis  <rob.buis@samsung.com>
+
+        Clean up SVGScriptElement
+        https://bugs.webkit.org/show_bug.cgi?id=125527
+
+        Reviewed by Sam Weinig.
+
+        Rewrite to not store type in m_type and also remove type getter/setter.
+
+        * svg/SVGScriptElement.cpp:
+        (WebCore::SVGScriptElement::parseAttribute):
+        (WebCore::SVGScriptElement::typeAttributeValue):
+        * svg/SVGScriptElement.h:
+        * svg/SVGScriptElement.idl:
+
+2013-12-10  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Use std::array when computing MD5 checksum
+        https://bugs.webkit.org/show_bug.cgi?id=125509
+
+        Reviewed by Anders Carlsson.
+
+        Use MD5::Digest type and MD5::hashSize when computing MD5 checksum.
+
+        * platform/network/curl/CurlCacheEntry.cpp:
+        (WebCore::CurlCacheEntry::generateBaseFilename):
+
+2013-12-10  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Expose splitter elements with ATK_ROLE_SEPARATOR
+        https://bugs.webkit.org/show_bug.cgi?id=125522
+
+        Reviewed by Chris Fleizach.
+
+        Expose objects with SplitterRole role as ATK_ROLE_SEPARATOR.
+
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (atkRole):
+
+2013-12-10  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Elements with role 'alertdialog' should be ATK_ROLE_ALERT
+        https://bugs.webkit.org/show_bug.cgi?id=125521
+
+        Reviewed by Chris Fleizach.
+
+        Stop exposing alert dialogs as ATK_ROLE_DIALOG and do it as
+        ATK_ROLE_ALERT instead.
+
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (atkRole):
+
+2013-12-10  Brendan Long  <b.long@cablelabs.com>
+
+        [GTK][GStreamer] media/video-preload.html is flakily crashing on WK2
+        https://bugs.webkit.org/show_bug.cgi?id=125411
+
+        Reviewed by Philippe Normand.
+
+        No new tests because this fixes flakeyness in existing tests (media/video-preload.html, and various tests in media/track/{audio,in-band,video}).
+
+        * platform/graphics/gstreamer/TextCombinerGStreamer.cpp:
+        (webkitTextCombinerPadGetProperty): Copy tag list to prevent concurrent modification problems.
+        (webkitTextCombinerPadEvent): Add locking.
+        * platform/graphics/gstreamer/TrackPrivateBaseGStreamer.cpp:
+        (WebCore::TrackPrivateBaseGStreamer::TrackPrivateBaseGStreamer): Call tagsChanged() because we need it to setup m_tags.
+        (WebCore::TrackPrivateBaseGStreamer::disconnect): Clear m_tags.
+        (WebCore::TrackPrivateBaseGStreamer::tagsChanged): Lookup the tags while we're in this callback, because it's the only time we can guarantee that the input-selector won't unref them.
+        (WebCore::TrackPrivateBaseGStreamer::notifyTrackOfTagsChanged): Use m_tags.
+        * platform/graphics/gstreamer/TrackPrivateBaseGStreamer.h: Add m_tags and a mutex.
+
+2013-12-10  László Langó  <lango@inf.u-szeged.hu>
+
+        PageConsole::addMessage should automatically determine column number alongside line number
+        https://bugs.webkit.org/show_bug.cgi?id=114319
+
+        Reviewed by Joseph Pecoraro.
+
+        * dom/InlineStyleSheetOwner.cpp:
+        (WebCore::InlineStyleSheetOwner::InlineStyleSheetOwner):
+        * dom/ScriptElement.cpp:
+        (WebCore::ScriptElement::ScriptElement):
+        * dom/ScriptableDocumentParser.h:
+        * dom/StyledElement.cpp:
+        (WebCore::StyledElement::styleAttributeChanged):
+        * html/parser/HTMLDocumentParser.cpp:
+        (WebCore::HTMLDocumentParser::didReceiveParsedChunkFromBackgroundParser):
+        (WebCore::HTMLDocumentParser::pumpPendingSpeculations):
+        * html/parser/HTMLDocumentParser.h:
+        * inspector/InspectorResourceAgent.cpp:
+        (WebCore::InspectorResourceAgent::buildInitiatorObject):
+        * page/Console.cpp:
+        (WebCore::internalAddMessage):
+        * page/PageConsole.cpp:
+        (WebCore::PageConsole::printSourceURLAndPosition):
+        (WebCore::PageConsole::addMessage):
+        * page/PageConsole.h:
+        * xml/parser/XMLDocumentParser.h:
+        * xml/parser/XMLDocumentParserLibxml2.cpp:
+        (WebCore::XMLDocumentParser::error):
+
+2013-12-10  Andreas Kling  <akling@apple.com>
+
+        Jettison all StyleResolver data on memory pressure.
+        <https://webkit.org/b/125498>
+
+        The StyleResolver can be rebuilt relatively quickly; we already
+        have an optimization that discards it some time after last use.
+
+        If we find ourseles under serious memory pressure, don't wait for
+        the timer to kick in, throw everything overboard right away.
+
+        ~5MB progression post-pressure on Membuster3.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-10  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Add support for building the DOM bindings
+        https://bugs.webkit.org/show_bug.cgi?id=116375
+
+        Reviewed by Gustavo Noronha Silva.
+
+        The CMake build is more complete than the autotools counterpart, so autotools doesn't consider
+        some supplemental IDL attributes when building the DOM bindings. To prevent API breaks we should
+        protect these attributes from DOM binding generation.
+
+        * Modules/battery/BatteryManager.idl: Protect non-GObject DOM bound methods by C preprocessor checks.
+        * Modules/battery/NavigatorBattery.idl: Ditto.
+        * Modules/mediastream/HTMLMediaElementMediaStream.idl: Ditto.
+        * Modules/networkinfo/NavigatorNetworkInfoConnection.idl: Ditto.
+        * Modules/networkinfo/NetworkInfoConnection.idl: Ditto.
+        * PlatformGTK.cmake: Add build steps for building the bindings.
+        * dom/Document.idl: Protect non-GObject DOM bound methods by C preprocessor checks.
+        * html/HTMLMediaElement.idl: Ditto.
+
+2013-12-10  Martin Robinson  <mrobinson@igalia.com>
+
+        Various fixes for the CMake GTK+ build
+
+        Reviewed by Gustavo Noronha.
+
+        * PlatformGTK.cmake: Update source list.
+
+2013-12-10  Robert Sipka  <sipka@inf.u-szeged.hu>
+
+        [nix][curl] Buildfix after r160310
+        https://bugs.webkit.org/show_bug.cgi?id=125489
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Curl doesn't include soup files.
+
+        * PlatformNix.cmake:
+
+2013-12-10  Gustavo Noronha Silva  <gns@gnome.org>
+
+        [GTK] REGRESSION: www.yahoo.com redirects to the mobile version after UA change
+        https://bugs.webkit.org/show_bug.cgi?id=125444
+
+        Reviewed by Martin Robinson.
+
+        * platform/gtk/UserAgentGtk.cpp:
+        (WebCore::platformVersionForUAString): more correctly pretend we're Mac OS X.
+        (WebCore::standardUserAgent): ditto.
+
+2013-12-09  Gustavo Noronha Silva  <gns@gnome.org>
+
+        [Soup] Send original encoded data size to didReceiveBuffer
+        https://bugs.webkit.org/show_bug.cgi?id=125410
+
+        Reviewed by Martin Robinson.
+
+        No tests, the only way to test this seems to be through the inspector UI.
+
+        * platform/network/ResourceHandle.h:
+        * platform/network/ResourceHandleInternal.h:
+        (WebCore::ResourceHandleInternal::ResourceHandleInternal): data member to track stream
+        position.
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::ResourceHandle::currentStreamPosition): obtains the current stream position by querying
+        the first seekable input stream we find.
+        (WebCore::nextMultipartResponsePartCallback): store the position before we start reading a new part.
+        (WebCore::sendRequestCallback): store the position before we start reading the response body.
+        (WebCore::readCallback): pass the position delta to didReceiveData.
+
+2013-12-09  Andreas Kling  <akling@apple.com>
+
+        Clear out font width measurement caches on memory pressure.
+        <https://webkit.org/b/125481>
+
+        The data kept in WidthCaches can be regenerated on demand. Throwing
+        it away when we're under memory pressure buys us ~4MB on Membuster3.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-09  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove enabled() in InspectorRuntimeAgent.
+        https://bugs.webkit.org/show_bug.cgi?id=125476
+
+        Reviewed by Joseph Pecoraro.
+
+        Dead code. It's never called anywhere.
+
+        No new tests, no behavior change.
+
+        * inspector/InspectorRuntimeAgent.h:
+
+2013-12-09  Sam Weinig  <sam@webkit.org>
+
+        Replace use of WTF::FixedArray with std::array
+        https://bugs.webkit.org/show_bug.cgi?id=125475
+
+        Reviewed by Anders Carlsson.
+
+        * crypto/parameters/CryptoAlgorithmAesCbcParams.h:
+        * platform/graphics/GlyphMetricsMap.h:
+
+2013-12-09  Benjamin Poulain  <bpoulain@apple.com>
+
+        Refactor the CFURLConnectionClient to be the synchronous implementation of an abstract network delegate
+        https://bugs.webkit.org/show_bug.cgi?id=125379
+
+        Reviewed by Alexey Proskuryakov.
+
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * platform/network/ResourceHandle.h:
+        * platform/network/ResourceHandleInternal.h:
+        * platform/network/cf/ResourceHandleCFNet.cpp:
+        (WebCore::ResourceHandle::createCFURLConnection):
+        * platform/network/cf/ResourceHandleCFURLConnectionDelegate.cpp: Added.
+        (WebCore::ResourceHandleCFURLConnectionDelegate::ResourceHandleCFURLConnectionDelegate):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::~ResourceHandleCFURLConnectionDelegate):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::willSendRequestCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::didReceiveResponseCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::didReceiveDataCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::didFinishLoadingCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::didFailCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::willCacheResponseCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::didReceiveChallengeCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::didSendBodyDataCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::shouldUseCredentialStorageCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::canRespondToProtectionSpaceCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::didReceiveDataArrayCallback):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::makeConnectionClient):
+        * platform/network/cf/ResourceHandleCFURLConnectionDelegate.h: Added.
+        * platform/network/cf/SynchronousResourceHandleCFURLConnectionDelegate.cpp: Added.
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::SynchronousResourceHandleCFURLConnectionDelegate):
+        (WebCore::synthesizeRedirectResponseIfNecessary):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::willSendRequest):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::didReceiveResponse):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::didReceiveData):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::didFinishLoading):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::didFail):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::willCacheResponse):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::didReceiveChallenge):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::didSendBodyData):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::shouldUseCredentialStorageCallback):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::canRespondToProtectionSpace):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::didReceiveDataArray):
+        * platform/network/cf/SynchronousResourceHandleCFURLConnectionDelegate.h: Added.
+
+2013-12-09  Ryosuke Niwa  <rniwa@webkit.org>
+
+        REGRESSION(r136280): input[type=image] should assume coords of 0,0 when activated without physically clicking
+        https://bugs.webkit.org/show_bug.cgi?id=125392
+
+        Reviewed by Darin Adler.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/3c33d42207cd209bb171083ba66c225f694f2101
+
+        Activating an image button with the keyboard or element.click() should result in selected coords of (0,0) per
+        http://www.w3.org/TR/2013/CR-html5-20130806/forms.html#image-button-state-(type=image)
+        "If the user activates the control without explicitly selecting a coordinate, then the coordinate (0,0) must be assumed."
+
+        New behavior also matches that of Internet Explorer and Firefox.
+
+        Tests: fast/forms/input-image-submit.html
+
+        * html/ImageInputType.cpp:
+        (WebCore::ImageInputType::handleDOMActivateEvent): Set m_clickLocation to (0, 0) for simulated events.
+
+2013-12-09  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Add support for VideoPlaybackMetrics.
+        https://bugs.webkit.org/show_bug.cgi?id=125380
+
+        Reviewed by Eric Carlson.
+
+        Test: media/media-source/media-source-video-playback-quality.html
+
+        Add a new object type VideoPlaybackQuality to be returned by
+        HTMLMediaElement.getVideoPlaybackQuality().
+
+        HTMLMediaElements must separately track a droppedVideoFrame count, as
+        certain operations on SourceBuffer will drop incoming frames, which must
+        be accounted for. Reset this count when the media engine changes, which is
+        indicitive of a new media load requset starting.
+
+        Add the new VideoPlaybackQuality class:
+        * Modules/mediasource/VideoPlaybackQuality.cpp: Added.
+        (WebCore::VideoPlaybackQuality::create):
+        (WebCore::VideoPlaybackQuality::VideoPlaybackQuality):
+        * Modules/mediasource/VideoPlaybackQuality.h: Added.
+        (WebCore::VideoPlaybackQuality::creationTime):
+        (WebCore::VideoPlaybackQuality::totalVideoFrames):
+        (WebCore::VideoPlaybackQuality::droppedVideoFrames):
+        (WebCore::VideoPlaybackQuality::corruptedVideoFrames):
+        (WebCore::VideoPlaybackQuality::totalFrameDelay):
+        * Modules/mediasource/VideoPlaybackQuality.idl: Added.
+
+        Add support for the new class to HTMLMediaElement:
+        * html/HTMLMediaElement.cpp:
+        (HTMLMediaElement::shouldUseVideoPluginProxy):
+        (HTMLMediaElement::getVideoPlaybackQuality):
+        * html/HTMLMediaElement.h:
+        * html/HTMLMediaElement.idl:
+
+        Report the video quality metrics from the MediaPlayer:
+        * platform/graphics/MediaPlayer.cpp:
+        (WebCore::MediaPlayer::totalVideoFrames):
+        (WebCore::MediaPlayer::droppedVideoFrames):
+        (WebCore::MediaPlayer::corruptedVideoFrames):
+        (WebCore::MediaPlayer::totalFrameDelay):
+        * platform/graphics/MediaPlayer.h:
+        * platform/graphics/MediaPlayerPrivate.h:
+        (WebCore::MediaPlayerPrivateInterface::totalVideoFrames):
+        (WebCore::MediaPlayerPrivateInterface::droppedVideoFrames):
+        (WebCore::MediaPlayerPrivateInterface::corruptedVideoFrames):
+        (WebCore::MediaPlayerPrivateInterface::totalFrameDelay):
+
+        Correctly report the dropped frame count:
+        * Modules/mediasource/SourceBuffer.cpp:
+        (WebCore::SourceBuffer::TrackBuffer::TrackBuffer): needsRandomAccessFlag defaults to true.
+        (WebCore::SourceBuffer::sourceBufferPrivateDidReceiveSample): Check the sync status of the incoming sample.
+        (WebCore::SourceBuffer::didDropSample): Notify the media element of a dropped frame.
+        * Modules/mediasource/SourceBuffer.h:
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::HTMLMediaElement):
+        (HTMLMediaElement::mediaPlayerEngineUpdated): Reset m_droppedFrameCount.
+        (HTMLMediaElement::getVideoPlaybackQuality): Return a new VideoPlaybackQuality object.
+        * html/HTMLMediaElement.h:
+        (WebCore::HTMLMediaElement::incrementDroppedFrameCount): Simple incrementer.
+        * platform/MediaSample.h:
+        (WebCore::MediaSample::isSync): Convenience function.
+        (WebCore::MediaSample::isNonDisplaying): Ditto.
+
+        Add support in the AVFoundation MediaSource Engine:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateMediaSourceAVFObjC.h:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateMediaSourceAVFObjC.mm:
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::totalVideoFrames):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::droppedVideoFrames):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::corruptedVideoFrames):
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::totalFrameDelay):
+
+        Add support in the Mock MediaSource Engine:
+        * platform/mock/mediasource/MockBox.h:
+        * platform/mock/mediasource/MockMediaPlayerMediaSource.cpp:
+        (WebCore::MockMediaPlayerMediaSource::totalVideoFrames): Simple accessor.
+        (WebCore::MockMediaPlayerMediaSource::droppedVideoFrames): Ditto.
+        (WebCore::MockMediaPlayerMediaSource::corruptedVideoFrames): Ditto.
+        (WebCore::MockMediaPlayerMediaSource::totalFrameDelay): Ditto.
+        * platform/mock/mediasource/MockMediaPlayerMediaSource.h:
+        * platform/mock/mediasource/MockMediaSourcePrivate.cpp:
+        (WebCore::MockMediaSourcePrivate::MockMediaSourcePrivate):
+        * platform/mock/mediasource/MockMediaSourcePrivate.h:
+        * platform/mock/mediasource/MockSourceBufferPrivate.cpp:
+        (WebCore::MockSourceBufferPrivate::enqueueSample): Increment the frame counts based on
+            the incoming sample.
+        * platform/mock/mediasource/MockSourceBufferPrivate.h:
+
+        Add the new files to the project:
+        * bindings/gobject/GNUmakefile.am:
+        * DerivedSources.make:
+        * WebCore.xcodeproj/project.pbxproj:
+        * GNUMakefile.list.am:
+        * CMakeLists.txt:
+
+2013-12-09  Simon Fraser  <simon.fraser@apple.com>
+
+        Avoid divide by zero in scrollbar code, and protect against Obj-C exceptions
+        https://bugs.webkit.org/show_bug.cgi?id=125469
+        <rdar://problem/15535772>
+
+        Reviewed by Beth Dakin.
+        
+        In ScrollbarThemeMac::setPaintCharacteristicsForScrollbar(), proportion could
+        end up as NaN if scrollbar->totalSize() were zero. Protect against that.
+        
+        Also wrap functions that call into Objective-C with BEGIN_BLOCK_OBJC_EXCEPTIONS/
+        END_BLOCK_OBJC_EXCEPTIONS.
+
+        * platform/mac/ScrollbarThemeMac.mm:
+        (WebCore::ScrollbarThemeMac::scrollbarThickness):
+        (WebCore::ScrollbarThemeMac::updateScrollbarOverlayStyle):
+        (WebCore::ScrollbarThemeMac::minimumThumbLength):
+        (WebCore::ScrollbarThemeMac::updateEnabledState):
+        (WebCore::ScrollbarThemeMac::setPaintCharacteristicsForScrollbar):
+        (WebCore::scrollbarPainterPaint):
+
+2013-12-09  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Implement Document.cloneNode()
+        https://bugs.webkit.org/show_bug.cgi?id=11646
+
+        Reviewed by Darin Adler.
+
+        Merge https://chromium.googlesource.com/chromium/blink/+/dc7879025e01d63be9fcf6a84ca6c9b8b5768a80
+
+        Implement the behavior specified in the current DOM4 working draft:
+        http://www.w3.org/TR/2013/WD-dom-20131107/#dom-node-clonenode
+
+        Tests: fast/dom/Document/clone-node.html
+               fast/dom/HTMLDocument/clone-node-quirks-mode.html
+               svg/custom/clone-node.html
+
+        * dom/Document.cpp:
+        (WebCore::Document::cloneNode):
+        (WebCore::Document::cloneDocumentWithoutChildren):
+        (WebCore::Document::cloneDataFromDocument):
+        * dom/Document.h:
+        * html/HTMLDocument.cpp:
+        (WebCore::HTMLDocument::cloneDocumentWithoutChildren):
+        * html/HTMLDocument.h:
+        * svg/SVGDocument.cpp:
+        (WebCore::SVGDocument::cloneDocumentWithoutChildren):
+        * svg/SVGDocument.h:
+
+2013-12-09  Andreas Kling  <akling@apple.com>
+
+        REGRESSION(r160260): Memory pressure signal causes web process to hang.
+        <https://webkit.org/b/125465>
+
+        Reviewed by Tim Horton.
+
+        This command caused all of my web processes to hang:
+
+            notifyutil -p org.WebKit.lowMemory
+
+        This only happens when the cache pruning code encounters a resource
+        using purgeable memory.
+
+        * loader/cache/MemoryCache.cpp:
+        (WebCore::MemoryCache::pruneLiveResourcesToSize):
+
+            Grab the next CachedResource pointer before continuing the loop.
+
+2013-12-09  peavo@outlook.com  <peavo@outlook.com>
+
+        [WinCairo] OpenGL compile error.
+        https://bugs.webkit.org/show_bug.cgi?id=125383
+
+        Reviewed by Darin Adler.
+
+        * platform/graphics/opengl/Extensions3DOpenGLES.h: Define GL_HALF_FLOAT_ARB on Windows when OPENGL_ES_2 is used.
+
+2013-12-09  Peter Molnar  <pmolnar.u-szeged@partner.samsung.com>
+
+        Fix handling of 'inherit' and 'initial' for grid lines.
+        https://bugs.webkit.org/show_bug.cgi?id=125223
+
+        Reviewed by Darin Adler.
+
+        'initial' and 'inherit' are always allowed values for CSS properties.
+        As the CSSParser handles them automatically, those 2 values were never
+        taken care of in StyleResolver, leading to crashes.
+
+        Added tests cases for 'inherit' and 'initial' to the following tests:
+
+        fast/css-grid-layout/grid-item-column-row-get-set.html
+        fast/css-grid-layout/grid-item-end-after-get-set.html
+        fast/css-grid-layout/grid-item-start-before-get-set.html
+
+        Patch backported from Blink: https://src.chromium.org/viewvc/blink?revision=149257&view=revision
+
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::applyProperty):
+        * rendering/style/RenderStyle.h:
+        * rendering/style/StyleGridItemData.cpp:
+        (WebCore::StyleGridItemData::StyleGridItemData):
+
+2013-12-09  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Inspector.json and CodeGenerator tweaks
+        https://bugs.webkit.org/show_bug.cgi?id=125321
+
+        Reviewed by Timothy Hatcher.
+
+        * inspector/protocol/Runtime.json:
+        Runtime.js was depending on Network.FrameId. This is a layering
+        violation, so ideally we can fix this later. For now, just copy
+        the FrameId type into Runtime. They are strings so all is good.
+
+        * inspector/CodeGeneratorInspector.py:
+        (Generator.EventMethodStructTemplate.append_epilog):
+        * inspector/CodeGeneratorInspectorStrings.py:
+        Improve --help usage information.
+        Make the script work with a single domain json file.
+        Add ASCIILiteral's where appropriate.
+
+2013-12-09  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [Nix] Fix file name typo in PlatformNix.cmake
+        https://bugs.webkit.org/show_bug.cgi?id=125457
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Wrong file name introduced in http://trac.webkit.org/changeset/160310.
+        * PlatformNix.cmake:
+
 2013-12-09  Brendan Long  <b.long@cablelabs.com>
 
         [GStreamer] Memory leak due to incorrect use of gst_tag_list_merge in TextCombinerGStreamer

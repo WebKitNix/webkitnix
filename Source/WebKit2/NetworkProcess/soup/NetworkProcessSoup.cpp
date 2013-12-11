@@ -28,6 +28,7 @@
 #if ENABLE(NETWORK_PROCESS)
 #include "NetworkProcess.h"
 
+#include "CertificateInfo.h"
 #include "NetworkProcessCreationParameters.h"
 #include "ResourceCachesToClear.h"
 #include <WebCore/FileSystem.h>
@@ -78,6 +79,8 @@ void NetworkProcess::platformInitializeNetworkProcess(const NetworkProcessCreati
     GRefPtr<SoupCache> soupCache = adoptGRef(soup_cache_new(parameters.diskCacheDirectory.utf8().data(), SOUP_CACHE_SINGLE_USER));
     soup_session_add_feature(WebCore::ResourceHandle::defaultSession(), SOUP_SESSION_FEATURE(soupCache.get()));
     soup_cache_load(soupCache.get());
+
+    setIgnoreTLSErrors(parameters.ignoreTLSErrors);
 }
 
 void NetworkProcess::platformSetCacheModel(CacheModel cacheModel)
@@ -104,9 +107,14 @@ void NetworkProcess::platformSetCacheModel(CacheModel cacheModel)
         soup_cache_set_max_size(cache, urlCacheDiskCapacity);
 }
 
-void NetworkProcess::allowSpecificHTTPSCertificateForHost(const CertificateInfo&, const String&)
+void NetworkProcess::setIgnoreTLSErrors(bool ignoreTLSErrors)
 {
-    notImplemented();
+    ResourceHandle::setIgnoreSSLErrors(ignoreTLSErrors);
+}
+
+void NetworkProcess::allowSpecificHTTPSCertificateForHost(const CertificateInfo& certificateInfo, const String& host)
+{
+    WebCore::ResourceHandle::setClientCertificate(host, certificateInfo.certificate());
 }
 
 void NetworkProcess::clearCacheForAllOrigins(uint32_t cachesToClear)

@@ -163,7 +163,7 @@ class WebTouchEvent;
 
 typedef Vector<RefPtr<PageOverlay>> PageOverlayList;
 
-class WebPage : public API::TypedObject<API::Object::Type::BundlePage>, public CoreIPC::MessageReceiver, public CoreIPC::MessageSender {
+class WebPage : public API::ObjectImpl<API::Object::Type::BundlePage>, public CoreIPC::MessageReceiver, public CoreIPC::MessageSender {
 public:
     static PassRefPtr<WebPage> create(uint64_t pageID, const WebPageCreationParameters&);
     virtual ~WebPage();
@@ -317,6 +317,8 @@ public:
     void listenForLayoutMilestones(uint32_t /* LayoutMilestones */);
 
     void setSuppressScrollbarAnimations(bool);
+
+    void setBackgroundExtendsBeyondPage(bool);
 
     void setPaginationMode(uint32_t /* WebCore::Pagination::Mode */);
     void setPaginationBehavesLikeColumns(bool);

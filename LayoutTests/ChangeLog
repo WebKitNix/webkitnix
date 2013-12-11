@@ -1,3 +1,357 @@
+2013-12-11  Javier Fernandez  <jfernandez@igalia.com>
+
+        Arithmetic overflow when computing max-height CSS property with subpixel layout
+        https://bugs.webkit.org/show_bug.cgi?id=119273
+
+        Reviewed by Martin Robinson.
+
+        Enabled SATURATED_LAYOUT_ARITHMETIC for the gtk+ port.
+
+        * platform/gtk/TestExpectations: Removed failure expectation for autoheight-correct-region-for-lines-2.html
+
+2013-12-11  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Improving createOffer and createAnswer LayoutTests
+        https://bugs.webkit.org/show_bug.cgi?id=125568
+
+        Reviewed by Philippe Normand.
+
+        The constraints parameter should be optional in both. Also adding tests to check if we already have a local SDP
+        when creating an answer.
+
+        * fast/mediastream/RTCPeerConnection-createAnswer-expected.txt:
+        * fast/mediastream/RTCPeerConnection-createAnswer.html:
+        * fast/mediastream/RTCPeerConnection-createOffer-expected.txt:
+        * fast/mediastream/RTCPeerConnection-createOffer.html:
+
+2013-12-11  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Add test expectations for failing ref-tests.
+
+        * platform/efl-wk2/TestExpectations:
+        * platform/efl/TestExpectations:
+
+2013-12-11  Rob Buis  <rob.buis@samsung.com>
+
+        [CSS Shapes] Take into account fill-rule for polygon interpolation
+        https://bugs.webkit.org/show_bug.cgi?id=125508
+
+        Reviewed by Dirk Schulze.
+
+        Adapt fast/shapes/shape-outside-floats/shape-outside-animation.html so it also tests polygon animation
+        when using different fill rules.
+
+        * animations/resources/animation-test-helpers.js:
+        (parseBasicShape): also allow evenodd when parsing the polygon
+        * fast/shapes/shape-outside-floats/shape-outside-animation-expected.txt:
+        * fast/shapes/shape-outside-floats/shape-outside-animation.html:
+
+2013-12-11  Michal Poteralski  <m.poteralski@samsung.com>
+
+        Test results of postMessage-clone-port-error.html test are broken
+        https://bugs.webkit.org/show_bug.cgi?id=125487
+
+        Reviewed by Alexey Proskuryakov.
+
+        Improved Layout test checks correctness of value thrown by postMessage:
+
+        * fast/dom/Window/postMessage-clone-port-error-expected.txt:
+        * fast/dom/Window/postMessage-clone-port-error.html:
+
+2013-12-11  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Programmatically-inserted children lack accessibility events
+        https://bugs.webkit.org/show_bug.cgi?id=100275
+
+        Reviewed by Chris Fleizach.
+
+        Add new test to chack that children-changed signals are properly
+        emitted when adding/removing elements in the accessibility hierarchy.
+
+        * accessibility/children-changed-sends-notification-expected.txt: Added.
+        * accessibility/children-changed-sends-notification.html: Added.
+
+        Update test to filter out unrelated non-loading events.
+        * accessibility/loading-iframe-sends-notification.html: Updated.
+
+        Skip the test on the Mac as it does not expose these kind of
+        notifications when children are being added or removed.
+        * platform/mac/TestExpectations: Skip newly added test.
+
+2013-12-10  Gurpreet Kaur  <k.gurpreet@samsung.com>
+
+        top and bottom black background line not getting displayed
+        https://bugs.webkit.org/show_bug.cgi?id=21664
+
+        Reviewed by Simon Fraser.
+
+        * fast/dom/HTMLTableElement/empy-table-cell-with-background-color-expected.txt: Added.
+        * fast/dom/HTMLTableElement/empy-table-cell-with-background-color.html: Added.
+        Added new test case to verify that table cell offsetWidth is set even
+        when it has no contents but has background color.
+        * fast/table/auto-100-percent-width-expected.txt:
+        * platform/mac/fast/table/empty-cells-expected.txt:
+        * tables/mozilla/bugs/bug1818-6-expected.txt:
+        Rebaselining the existing test case as per the new changes. The new
+        dimension changes are as per mozilla behaviour. For
+        auto-100-percent-width-expected.txt we get 1 px red background because
+        if cellHasContent we set columnLayout's minLogicalWidth and 
+        columnLayout's maxLogicalWidth as 1 initially even if cell is empty.
+
+2013-12-10  Krzysztof Czech  <k.czech@samsung.com>
+
+        AX: Share accessibility/aria-hidden-negates-no-visibility.html expectation with other ports
+        https://bugs.webkit.org/show_bug.cgi?id=125495
+
+        Reviewed by Chris Fleizach.
+
+        Expectation of accessibility/aria-hidden-negates-no-visibility.html is the same for EFL and GTK.
+
+        * accessibility/aria-hidden-negates-no-visibility-expected.txt: Renamed from LayoutTests/platform/mac/accessibility/aria-hidden-negates-no-visibility-expected.txt.
+
+2013-12-10  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Expose splitter elements with ATK_ROLE_SEPARATOR
+        https://bugs.webkit.org/show_bug.cgi?id=125522
+
+        Reviewed by Chris Fleizach.
+
+        Update expected results in layout test for EFL and GTK.
+
+        * platform/efl-wk1/accessibility/lists-expected.txt:
+        * platform/efl-wk2/accessibility/lists-expected.txt:
+        * platform/gtk/accessibility/lists-expected.txt:
+
+2013-12-10  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Elements with role 'alertdialog' should be ATK_ROLE_ALERT
+        https://bugs.webkit.org/show_bug.cgi?id=125521
+
+        Reviewed by Chris Fleizach.
+
+        Update expected result in layout test.
+
+        * accessibility/aria-mappings-expected.txt:
+
+2013-12-10  László Langó  <lango@inf.u-szeged.hu>
+
+        PageConsole::addMessage should automatically determine column number alongside line number
+        https://bugs.webkit.org/show_bug.cgi?id=114319
+
+        Reviewed by Joseph Pecoraro.
+
+        * inspector-protocol/page/deny-X-FrameOption-expected.txt: Added.
+        * inspector-protocol/page/deny-X-FrameOption.html: Added.
+
+2013-12-10  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Add failure expectations for tests added in r157725.
+
+        * platform/efl/TestExpectations:
+
+2013-12-10  Joanmarie Diggs  <jdiggs@igalia.com>
+
+        AX: [ATK] Convert the get_text atktest.c unit tests to layout tests
+        https://bugs.webkit.org/show_bug.cgi?id=125497
+
+        Reviewed by Mario Sanchez Prada.
+
+        * platform/gtk/accessibility/text-for-range-combo-box-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-combo-box.html: Added.
+        * platform/gtk/accessibility/text-for-range-embedded-objects-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-embedded-objects.html: Added.
+        * platform/gtk/accessibility/text-for-range-entry-and-password-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-entry-and-password.html: Added.
+        * platform/gtk/accessibility/text-for-range-extraneous-whitespace-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-extraneous-whitespace.html: Added.
+        * platform/gtk/accessibility/text-for-range-formatted-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-formatted.html: Added.
+        * platform/gtk/accessibility/text-for-range-heading-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-heading.html: Added.
+        * platform/gtk/accessibility/text-for-range-list-items-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-list-items.html: Added.
+        * platform/gtk/accessibility/text-for-range-simple-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-simple.html: Added.
+        * platform/gtk/accessibility/text-for-range-table-cells-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-table-cells.html: Added.
+        * platform/gtk/accessibility/text-for-range-with-link-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-range-with-link.html: Added.
+        * platform/gtk/accessibility/text-for-table-expected.txt: Added.
+        * platform/gtk/accessibility/text-for-table.html: Added.
+
+2013-12-10  Krzysztof Czech  <k.czech@samsung.com>
+
+        [ATK] accessibility/alt-tag-on-image-with-nonimage-role.html is failing after r160311
+        https://bugs.webkit.org/show_bug.cgi?id=125504
+
+        Unreviewed ATK gardening.
+
+        * platform/efl/TestExpectations: Marked as failing.
+        * platform/gtk/TestExpectations: Marked as failing.
+
+2013-12-10  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Add failure expectations for tests that started to fail after r154906.
+
+        * platform/efl/TestExpectations:
+
+2013-12-09  Ryosuke Niwa  <rniwa@webkit.org>
+
+        REGRESSION(r136280): input[type=image] should assume coords of 0,0 when activated without physically clicking
+        https://bugs.webkit.org/show_bug.cgi?id=125392
+
+        Reviewed by Darin Adler.
+
+        * fast/events/stopPropagation-submit-expected.txt:
+        * fast/forms/input-image-submit.html:
+        * platform/gtk/fast/events/stopPropagation-submit-expected.txt: Removed.
+
+2013-12-09  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Add support for VideoPlaybackMetrics.
+        https://bugs.webkit.org/show_bug.cgi?id=125380
+
+        Reviewed by Eric Carlson.
+
+        * media/media-source/media-source-video-playback-quality-expected.txt: Added.
+        * media/media-source/media-source-video-playback-quality.html: Added.
+        * media/media-source/mock-media-source.js:
+        (var):
+
+2013-12-09  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Implement Document.cloneNode()
+        https://bugs.webkit.org/show_bug.cgi?id=11646
+
+        Reviewed by Darin Adler.
+
+        * dom/xhtml/level3/core/documentgetinputencoding04-expected.txt:
+        * dom/xhtml/level3/core/documentgetxmlencoding05-expected.txt:
+        * dom/xhtml/level3/core/nodeisequalnode01-expected.txt:
+        * dom/xhtml/level3/core/nodeisequalnode21-expected.txt:
+        * dom/xhtml/level3/core/nodeisequalnode25-expected.txt:
+        * dom/xhtml/level3/core/nodeisequalnode26-expected.txt:
+        * fast/dom/Document/clone-node-expected.txt: Added.
+        * fast/dom/Document/clone-node.html: Added.
+        * fast/dom/HTMLDocument/clone-node-quirks-mode-expected.txt: Added.
+        * fast/dom/HTMLDocument/clone-node-quirks-mode.html: Added.
+        * svg/custom/clone-node-expected.txt: Added.
+        * svg/custom/clone-node.html: Added.
+
+2013-12-09  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Translate ATK_ROLE_SECTION into "AXSection" in DRT/WKTR
+        https://bugs.webkit.org/show_bug.cgi?id=125456
+
+        Reviewed by Chris Fleizach.
+
+        Update expectations for GTK and EFL that were expecting AXDiv for
+        section roles, so they now expect AXSection.
+
+        * accessibility/adjacent-continuations-cause-assertion-failure-expected.txt:
+        * accessibility/div-within-anchors-causes-crash-expected.txt:
+        * platform/efl-wk1/accessibility/image-map2-expected.txt:
+        * platform/efl-wk1/accessibility/transformed-element-expected.txt:
+        * platform/efl-wk2/accessibility/image-map2-expected.txt:
+        * platform/efl-wk2/accessibility/transformed-element-expected.txt:
+        * platform/efl/accessibility/media-emits-object-replacement-expected.txt:
+        * platform/gtk/accessibility/aria-roles-unignored-expected.txt:
+        * platform/gtk/accessibility/aria-roles-unignored.html:
+        * platform/gtk/accessibility/entry-and-password-expected.txt:
+        * platform/gtk/accessibility/image-map2-expected.txt:
+        * platform/gtk/accessibility/media-emits-object-replacement-expected.txt:
+        * platform/gtk/accessibility/object-with-title-expected.txt:
+        * platform/gtk/accessibility/object-with-title.html:
+        * platform/gtk/accessibility/replaced-objects-in-anonymous-blocks-expected.txt:
+        * platform/gtk/accessibility/spans-paragraphs-and-divs-expected.txt:
+        * platform/gtk/accessibility/spans-paragraphs-and-divs.html:
+        * platform/gtk/accessibility/transformed-element-expected.txt:
+
+2013-12-09  Peter Molnar  <pmolnar.u-szeged@partner.samsung.com>
+
+        Fix handling of 'inherit' and 'initial' for grid lines.
+        https://bugs.webkit.org/show_bug.cgi?id=125223
+
+        Reviewed by Darin Adler.
+
+        'initial' and 'inherit' are always allowed values for CSS properties.
+        As the CSSParser handles them automatically, those 2 values were never
+        taken care of in StyleResolver, leading to crashes.
+
+        Patch backported from Blink: https://src.chromium.org/viewvc/blink?revision=149257&view=revision
+
+        * fast/css-grid-layout/grid-item-column-row-get-set-expected.txt:
+        * fast/css-grid-layout/grid-item-column-row-get-set.html:
+        * fast/css-grid-layout/grid-item-end-after-get-set-expected.txt:
+        * fast/css-grid-layout/grid-item-end-after-get-set.html:
+        * fast/css-grid-layout/grid-item-start-before-get-set-expected.txt:
+        * fast/css-grid-layout/grid-item-start-before-get-set.html:
+        * fast/css-grid-layout/resources/grid-item-column-row-parsing-utils.js:
+
+2013-12-09  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Add a test for style sharing if grandparents matches different rule chain and nth-last child
+        https://bugs.webkit.org/show_bug.cgi?id=125397
+
+        Reviewed by Darin Adler.
+        
+        Add the test from https://chromium.googlesource.com/chromium/blink/+/30ff49bf63cdec31070ab4eda8784564f56789d4
+        and https://chromium.googlesource.com/chromium/blink/+/3cb1724bb52f3607006ddd0a89d356da23766115
+        so that we may not introduce the same regressions in WebKit.
+
+        * fast/css/nth-last-child-recalc-expected.html: Added.
+        * fast/css/nth-last-child-recalc.html: Added.
+        * fast/css/style-sharing-grand-parent-invalidate-expected.txt: Added.
+        * fast/css/style-sharing-grand-parent-invalidate.html: Added.
+
+2013-12-09  Joanmarie Diggs  <jdiggs@igalia.com>
+
+        AX: [ATK] Convert the get_{string,text}_at_offset atktest.c unit tests to layout tests
+        https://bugs.webkit.org/show_bug.cgi?id=125451
+
+        Reviewed by Mario Sanchez Prada.
+
+        New tests and expectations based on the tests and expectations found in atktest.c.
+        These were done as platform-specific tests because only ATK-based assistive technologies
+        seem to have any need for this support.
+
+        * platform/gtk/accessibility/text-at-offset-embedded-objects-expected.txt: Added.
+        * platform/gtk/accessibility/text-at-offset-embedded-objects.html: Added.
+        * platform/gtk/accessibility/text-at-offset-newlines-expected.txt: Added.
+        * platform/gtk/accessibility/text-at-offset-newlines.html: Added.
+        * platform/gtk/accessibility/text-at-offset-preformatted-expected.txt: Added.
+        * platform/gtk/accessibility/text-at-offset-preformatted.html: Added.
+        * platform/gtk/accessibility/text-at-offset-simple-expected.txt: Added.
+        * platform/gtk/accessibility/text-at-offset-simple.html: Added.
+        * platform/gtk/accessibility/text-at-offset-special-chars-expected.txt: Added.
+        * platform/gtk/accessibility/text-at-offset-special-chars.html: Added.
+        * platform/gtk/accessibility/text-at-offset-textarea-expected.txt: Added.
+        * platform/gtk/accessibility/text-at-offset-textarea.html: Added.
+        * platform/gtk/accessibility/text-at-offset-textinput-expected.txt: Added.
+        * platform/gtk/accessibility/text-at-offset-textinput.html: Added.
+        * platform/gtk/accessibility/text-at-offset-wrapped-lines-expected.txt: Added.
+        * platform/gtk/accessibility/text-at-offset-wrapped-lines.html: Added.
+
+2013-12-09  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Add failure test expectations and rebaselines for failing tests.
+
+        * platform/efl-wk2/TestExpectations:
+        * platform/efl/TestExpectations:
+        * platform/efl-wk1/fast/forms/validation-message-appearance-expected.png: Rebaseline after r159915.
+        * platform/efl-wk2/fast/forms/validation-message-appearance-expected.png: Ditto.
+        * platform/efl/fast/forms/validation-message-appearance-expected.txt: Ditto.
+        * platform/efl/fast/parser/entity-comment-in-textarea-expected.png: Rebaseline after r159192.
+        * platform/efl/fast/parser/entity-comment-in-textarea-expected.txt: Ditto.
+
 2013-12-09  Chris Fleizach  <cfleizach@apple.com>
 
         AX: WebKit ignores @alt on IMG elements with role="text"

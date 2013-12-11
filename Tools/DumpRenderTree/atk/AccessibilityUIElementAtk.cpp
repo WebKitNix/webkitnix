@@ -258,9 +258,9 @@ inline const char* roleToString(AtkRole role)
     case ATK_ROLE_SCROLL_PANE:
         return "AXScrollArea";
     case ATK_ROLE_SECTION:
-        return "AXDiv";
+        return "AXSection";
     case ATK_ROLE_SEPARATOR:
-        return "AXHorizontalRule";
+        return "AXSeparator";
     case ATK_ROLE_SLIDER:
         return "AXSlider";
     case ATK_ROLE_SPIN_BUTTON:
@@ -1080,10 +1080,13 @@ JSStringRef AccessibilityUIElement::boundsForRange(unsigned location, unsigned l
     return JSStringCreateWithCharacters(0, 0);
 }
 
-JSStringRef AccessibilityUIElement::stringForRange(unsigned, unsigned) 
+JSStringRef AccessibilityUIElement::stringForRange(unsigned location, unsigned length)
 {
-    // FIXME: implement
-    return JSStringCreateWithCharacters(0, 0);
+    if (!ATK_IS_TEXT(m_element))
+        return JSStringCreateWithCharacters(0, 0);
+
+    String string = atk_text_get_text(ATK_TEXT(m_element), location, location + length);
+    return JSStringCreateWithUTF8CString(string.utf8().data());
 } 
 
 JSStringRef AccessibilityUIElement::attributedStringForRange(unsigned, unsigned)
@@ -1433,6 +1436,61 @@ JSStringRef AccessibilityUIElement::classList() const
 {
     // FIXME: implement
     return nullptr;
+}
+
+JSStringRef stringAtOffset(PlatformUIElement element, AtkTextBoundary boundary, int offset)
+{
+    if (!ATK_IS_TEXT(element))
+        return JSStringCreateWithCharacters(0, 0);
+
+    gint startOffset, endOffset;
+    StringBuilder builder;
+
+#if ATK_CHECK_VERSION(2, 10, 0)
+    AtkTextGranularity granularity;
+    switch (boundary) {
+    case ATK_TEXT_BOUNDARY_CHAR:
+        granularity = ATK_TEXT_GRANULARITY_CHAR;
+        break;
+    case ATK_TEXT_BOUNDARY_WORD_START:
+        granularity = ATK_TEXT_GRANULARITY_WORD;
+        break;
+    case ATK_TEXT_BOUNDARY_LINE_START:
+        granularity = ATK_TEXT_GRANULARITY_LINE;
+        break;
+    case ATK_TEXT_BOUNDARY_SENTENCE_START:
+        granularity = ATK_TEXT_GRANULARITY_SENTENCE;
+        break;
+    default:
+        return JSStringCreateWithCharacters(0, 0);
+    }
+
+    builder.append(atk_text_get_string_at_offset(ATK_TEXT(element), offset, granularity, &startOffset, &endOffset));
+#else
+    builder.append(atk_text_get_text_at_offset(ATK_TEXT(element), offset, boundary, &startOffset, &endOffset));
+#endif
+    builder.append(String::format(", %i, %i", startOffset, endOffset));
+    return JSStringCreateWithUTF8CString(builder.toString().utf8().data());
+}
+
+JSStringRef AccessibilityUIElement::characterAtOffset(int offset)
+{
+    return stringAtOffset(m_element, ATK_TEXT_BOUNDARY_CHAR, offset);
+}
+
+JSStringRef AccessibilityUIElement::wordAtOffset(int offset)
+{
+    return stringAtOffset(m_element, ATK_TEXT_BOUNDARY_WORD_START, offset);
+}
+
+JSStringRef AccessibilityUIElement::lineAtOffset(int offset)
+{
+    return stringAtOffset(m_element, ATK_TEXT_BOUNDARY_LINE_START, offset);
+}
+
+JSStringRef AccessibilityUIElement::sentenceAtOffset(int offset)
+{
+    return stringAtOffset(m_element, ATK_TEXT_BOUNDARY_SENTENCE_START, offset);
 }
 
 #endif

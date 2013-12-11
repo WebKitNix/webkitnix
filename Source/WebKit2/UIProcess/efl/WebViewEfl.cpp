@@ -87,10 +87,12 @@ PassRefPtr<WebPopupMenuProxy> WebViewEfl::createPopupMenuProxy(WebPageProxy* pag
     return WebPopupMenuListenerEfl::create(page);
 }
 
+#if ENABLE(CONTEXT_MENUS)
 PassRefPtr<WebContextMenuProxy> WebViewEfl::createContextMenuProxy(WebPageProxy* page)
 {
     return WebContextMenuProxyEfl::create(m_ewkView, page);
 }
+#endif
 
 void WebViewEfl::setCursor(const Cursor& cursor)
 {
@@ -141,11 +143,6 @@ void WebViewEfl::sendMouseEvent(const Evas_Event_Mouse_Move* event)
 }
 
 #if ENABLE(FULLSCREEN_API)
-
-WebFullScreenManagerProxyClient& WebViewEfl::fullScreenManagerProxyClient()
-{
-    return *this;
-}
 
 // WebFullScreenManagerProxyClient
 bool WebViewEfl::isFullScreen()
