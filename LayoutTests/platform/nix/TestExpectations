@@ -3178,6 +3178,18 @@ fast/dom/shadow
 fast/frames/detached-shadow-frame.html
 inspector/elements/update-shadowdom.html
 
+# ENABLE(CSS3_TEXT_DECORATION) is disabled
+fast/css3-text/css3-text-decoration/getComputedStyle/getComputedStyle-text-decoration-color.html
+fast/css3-text/css3-text-decoration/getComputedStyle/getComputedStyle-text-decoration-line.html
+fast/css3-text/css3-text-decoration/getComputedStyle/getComputedStyle-text-decoration-shorthand-ordering.html
+fast/css3-text/css3-text-decoration/getComputedStyle/getComputedStyle-text-decoration-shorthand.html
+fast/css3-text/css3-text-decoration/getComputedStyle/getComputedStyle-text-decoration-style.html
+fast/css3-text/css3-text-decoration/getComputedStyle/getComputedStyle-text-underline-position.html
+fast/css3-text/css3-text-decoration/text-decoration-color.html
+fast/css3-text/css3-text-decoration/text-decoration-line.html
+fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink.html
+fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-roundtrip.html
+
 ################################################################################
 # UNIMPLEMENTED FEATURES
 ################################################################################
