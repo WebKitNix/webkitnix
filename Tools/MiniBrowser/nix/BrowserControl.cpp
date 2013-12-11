@@ -448,7 +448,7 @@ void BrowserControl::setWebViewCursor(unsigned int shape)
     m_webView->setCursor(shape);
 }
 
-void BrowserControl::handleTooltipChange(std::string text)
+void BrowserControl::handleTooltipChange(const std::string& text)
 {
     m_tooltipInfo.text = text;
     hideTooltip();

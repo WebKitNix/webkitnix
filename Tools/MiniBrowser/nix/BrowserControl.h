@@ -128,7 +128,7 @@ public:
     void createPopupMenu(WKRect&, std::vector<std::string>*);
     void removePopupMenu(int itemValue = 0);
 
-    void handleTooltipChange(std::string);
+    void handleTooltipChange(const std::string&);
     void showTooltip();
     void hideTooltip();
     void resetTooltip();
