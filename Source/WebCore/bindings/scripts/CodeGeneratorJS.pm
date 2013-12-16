@@ -694,6 +694,9 @@ sub GenerateHeader
     if ($hasImpureNamedGetter) {
         $structureFlags{"JSC::HasImpureGetOwnPropertySlot"} = 1;
     }
+    if ($interface->extendedAttributes->{"NewImpurePropertyFiresWatchpoints"}) {
+        $structureFlags{"JSC::NewImpurePropertyFiresWatchpoints"} = 1;
+    }
 
     # Getters
     if ($hasGetter) {
@@ -3234,7 +3237,7 @@ my %nativeType = (
     "SerializedScriptValue" => "RefPtr<SerializedScriptValue>",
     "Date" => "double",
     "Dictionary" => "Dictionary",
-    "any" => "ScriptValue",
+    "any" => "Deprecated::ScriptValue",
     "boolean" => "bool",
     "double" => "double",
     "float" => "float",

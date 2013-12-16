@@ -44,15 +44,15 @@
 #include "InjectedScriptHost.h"
 #include "InspectorDOMAgent.h"
 #include "InspectorDebuggerAgent.h"
-#include "InspectorValues.h"
 #include "JSEventListener.h"
 #include "JSHTMLAllCollection.h"
 #include "JSHTMLCollection.h"
 #include "JSNode.h"
 #include "JSNodeList.h"
 #include "JSStorage.h"
-#include "ScriptValue.h"
 #include "Storage.h"
+#include <bindings/ScriptValue.h>
+#include <inspector/InspectorValues.h>
 #include <parser/SourceCode.h>
 #include <runtime/DateInstance.h>
 #include <runtime/Error.h>
@@ -69,20 +69,20 @@ using namespace JSC;
 
 namespace WebCore {
 
-Node* InjectedScriptHost::scriptValueAsNode(ScriptValue value)
+Node* InjectedScriptHost::scriptValueAsNode(Deprecated::ScriptValue value)
 {
     if (!value.isObject() || value.isNull())
         return 0;
     return toNode(value.jsValue());
 }
 
-ScriptValue InjectedScriptHost::nodeAsScriptValue(JSC::ExecState* state, Node* node)
+Deprecated::ScriptValue InjectedScriptHost::nodeAsScriptValue(JSC::ExecState* state, Node* node)
 {
     if (!shouldAllowAccessToNode(state, node))
-        return ScriptValue(state->vm(), jsNull());
+        return Deprecated::ScriptValue(state->vm(), jsNull());
 
     JSLockHolder lock(state);
-    return ScriptValue(state->vm(), toJS(state, deprecatedGlobalObjectForPrototype(state), node));
+    return Deprecated::ScriptValue(state->vm(), toJS(state, deprecatedGlobalObjectForPrototype(state), node));
 }
 
 JSValue JSInjectedScriptHost::inspectedObject(ExecState* exec)
@@ -95,7 +95,7 @@ JSValue JSInjectedScriptHost::inspectedObject(ExecState* exec)
         return jsUndefined();
 
     JSLockHolder lock(exec);
-    ScriptValue scriptValue = object->get(exec);
+    Deprecated::ScriptValue scriptValue = object->get(exec);
     if (scriptValue.hasNoValue())
         return jsUndefined();
 
@@ -128,29 +128,30 @@ JSValue JSInjectedScriptHost::type(ExecState* exec)
 
     JSValue value = exec->uncheckedArgument(0);
     if (value.isString())
-        return jsString(exec, String("string"));
+        return exec->vm().smallStrings.stringString();
     if (value.inherits(JSArray::info()))
-        return jsString(exec, String("array"));
+        return jsNontrivialString(exec, ASCIILiteral("array"));
     if (value.isBoolean())
-        return jsString(exec, String("boolean"));
+        return exec->vm().smallStrings.booleanString();
     if (value.isNumber())
-        return jsString(exec, String("number"));
+        return exec->vm().smallStrings.numberString();
     if (value.inherits(DateInstance::info()))
-        return jsString(exec, String("date"));
+        return jsNontrivialString(exec, ASCIILiteral("date"));
     if (value.inherits(RegExpObject::info()))
-        return jsString(exec, String("regexp"));
+        return jsNontrivialString(exec, ASCIILiteral("regexp"));
     if (value.inherits(JSNode::info()))
-        return jsString(exec, String("node"));
+        return jsNontrivialString(exec, ASCIILiteral("node"));
     if (value.inherits(JSNodeList::info()))
-        return jsString(exec, String("array"));
+        return jsNontrivialString(exec, ASCIILiteral("array"));
     if (value.inherits(JSHTMLCollection::info()))
-        return jsString(exec, String("array"));
+        return jsNontrivialString(exec, ASCIILiteral("array"));
     if (value.inherits(JSInt8Array::info()) || value.inherits(JSInt16Array::info()) || value.inherits(JSInt32Array::info()))
-        return jsString(exec, String("array"));
+        return jsNontrivialString(exec, ASCIILiteral("array"));
     if (value.inherits(JSUint8Array::info()) || value.inherits(JSUint16Array::info()) || value.inherits(JSUint32Array::info()))
-        return jsString(exec, String("array"));
+        return jsNontrivialString(exec, ASCIILiteral("array"));
     if (value.inherits(JSFloat32Array::info()) || value.inherits(JSFloat64Array::info()))
-        return jsString(exec, String("array"));
+        return jsNontrivialString(exec, ASCIILiteral("array"));
+
     return jsUndefined();
 }
 
@@ -247,8 +248,8 @@ JSValue JSInjectedScriptHost::getEventListeners(ExecState* exec)
 JSValue JSInjectedScriptHost::inspect(ExecState* exec)
 {
     if (exec->argumentCount() >= 2) {
-        ScriptValue object(exec->vm(), exec->uncheckedArgument(0));
-        ScriptValue hints(exec->vm(), exec->uncheckedArgument(1));
+        Deprecated::ScriptValue object(exec->vm(), exec->uncheckedArgument(0));
+        Deprecated::ScriptValue hints(exec->vm(), exec->uncheckedArgument(1));
         impl().inspectImpl(object.toInspectorValue(exec), hints.toInspectorValue(exec));
     }
     return jsUndefined();

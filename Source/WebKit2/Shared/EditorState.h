@@ -89,6 +89,9 @@ struct EditorState {
     Vector<WebCore::SelectionRect> selectionRects;
     uint64_t selectedTextLength;
     String wordAtSelection;
+    WebCore::IntRect firstMarkedRect;
+    WebCore::IntRect lastMarkedRect;
+    String markedText;
 #endif
 
 #if PLATFORM(GTK) || PLATFORM(NIX)

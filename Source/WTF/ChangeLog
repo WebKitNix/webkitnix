@@ -1,3 +1,161 @@
+2013-12-16  Peter Szanka  <h868064@stud.u-szeged.hu>
+
+        Delete RVCT related code parts.
+        https://bugs.webkit.org/show_bug.cgi?id=125626
+
+        Reviewed by Darin Adler.
+
+        * wtf/Assertions.h:
+        * wtf/Compiler.h:
+        * wtf/FastMalloc.h:
+        * wtf/Platform.h:
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Remove Pre-VS2013 support code.
+        https://bugs.webkit.org/show_bug.cgi?id=125693
+
+        Reviewed by Darin Adler.
+
+        * wtf/StringPrintStream.cpp:
+        (WTF::StringPrintStream::vprintf): Use va_copy, like a civilized person.
+
+2013-12-12  Darin Adler  <darin@apple.com>
+
+        Incorrect handling of non-ASCII characters in WTF::base64DecodeInternal
+        https://bugs.webkit.org/show_bug.cgi?id=125658
+
+        Reviewed by Alexey Proskuryakov.
+
+        * wtf/text/Base64.cpp:
+        (WTF::base64EncodeInternal): Use a reference to an array instead of a pointer
+        for the table argument type so we check the size of the array at the call site.
+        (WTF::base64DecodeInternal): Ditto. Also added an bounds check before using the
+        table so we don't load some random value for non-ASCII characters.
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Unreviewed build fix after r160548
+
+        * WTF.vcxproj/WTFGenerated.vcxproj: Specify that we are using
+        the vs12_xp target for Makefile-based projects.
+
+2013-12-13  Anders Carlsson  <andersca@apple.com>
+
+        Require variadic templates to build WebKit
+        https://bugs.webkit.org/show_bug.cgi?id=125701
+
+        Reviewed by Andreas Kling.
+
+        * wtf/Compiler.h:
+        Add an #error if variadic templates are disabled.
+
+        * wtf/NeverDestroyed.h:
+        * wtf/PassRef.h:
+        * wtf/StdLibExtras.h:
+        Remove a bunch of COMPILER_SUPPORTS(CXX_VARIADIC_TEMPLATES) #ifdefs.
+
+2013-12-13  Peter Szanka  <h868064@stud.u-szeged.hu>
+
+        Delete INTEL C compiler related code parts.
+        https://bugs.webkit.org/show_bug.cgi?id=125625
+
+        Reviewed by Darin Adler.
+
+        * wtf/Assertions.h:
+        * wtf/Compiler.h:
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Switch WebKit solution to Visual Studio 2013
+        https://bugs.webkit.org/show_bug.cgi?id=125192
+
+        Reviewed by Anders Carlsson.
+
+        * WTF.vcxproj/WTF.vcxproj: Update for VS2013
+        * WTF.vcxproj/WTF.vcxproj.filters: Ditto
+
+2013-12-12  Brady Eidson  <beidson@apple.com>
+
+        DatabaseProcess IndexedDB: Establish a metadata backing store on disk
+        https://bugs.webkit.org/show_bug.cgi?id=125258
+
+        Reviewed by Alexey Proskuryakov, Anders Carlsson, and Tim Horton.
+
+        * wtf/text/WTFString.h: Export toUInt64Strict().
+
+2013-12-12  Sam Weinig  <sam@webkit.org>
+
+        Replace uses of WTF::BitArray with std::bitset
+        https://bugs.webkit.org/show_bug.cgi?id=125642
+
+        Reviewed by Anders Carlsson.
+
+        * GNUmakefile.list.am:
+        * WTF.vcxproj/WTF.vcxproj:
+        * WTF.vcxproj/WTF.vcxproj.filters:
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/BitArray.h: Removed.
+        * wtf/CMakeLists.txt:
+
+2013-12-11  David Kilzer  <ddkilzer@apple.com>
+
+        Define m_hasBadParent in InlineBox if defined(ADDRESS_SANITIZER)
+        <http://webkit.org/b/125329>
+
+        Reviewed by Darin Adler.
+
+        * wtf/Assertions.h: Define macro
+        ASSERT_WITH_SECURITY_IMPLICATION_DISABLED based on whether
+        ASSERT_WITH_SECURITY_IMPLICATION() is enabled.
+
+2013-12-11  Brendan Long  <b.long@cablelabs.com>
+
+        Type punning error in MD5.cpp
+        https://bugs.webkit.org/show_bug.cgi?id=125412
+
+        Reviewed by Darin Adler.
+
+        * wtf/MD5.cpp:
+        (WTF::toLittleEndian): Renamed, and use memcpy instead of casting.
+        (WTF::MD5::addBytes): Renamed reverseBytes to toLittleEndian.
+        (WTF::MD5::checksum): Same, and use memcpy instead of casting to prevent type punning error.
+
+2013-12-11  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Store SHA1 hash in std::array
+        https://bugs.webkit.org/show_bug.cgi?id=125446
+
+        Reviewed by Darin Adler.
+
+        Change Vector to std::array and use typedef.
+
+        * wtf/SHA1.cpp:
+        (WTF::SHA1::computeHash):
+        (WTF::SHA1::hexDigest):
+        (WTF::SHA1::computeHexDigest):
+        * wtf/SHA1.h:
+
+2013-12-11  Oliver Hunt  <oliver@apple.com>
+
+        Give Unique StringImpls a meaningful data pointer
+        https://bugs.webkit.org/show_bug.cgi?id=125598
+
+        Reviewed by Michael Saboff.
+
+        Found by code inspection.  If there is a collision in an Identifier
+        table when comparing to a string literal we attempt to use the data
+        pointer (essentially this ends up being a null termination check).
+
+        Previously unique pointers just used the literal 1 as the data address
+        but this obviously fails when dereferenced.  Instead we now make the
+        data pointer point to the location of the buffer pointer itself.  As
+        the buffer pointer is initialised to 0, this satisfies the requirement
+        that the 0-length unique string is null terminated.
+
+        * wtf/text/StringImpl.h:
+        (WTF::StringImpl::StringImpl):
+
 2013-12-10  Anders Carlsson  <andersca@apple.com>
 
         Add a HashMap constructor that takes an initializer list

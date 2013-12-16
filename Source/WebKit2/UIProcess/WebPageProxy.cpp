@@ -343,7 +343,7 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Web
     m_vibration = WebVibrationProxy::create(this);
 #endif
 
-    m_process->addMessageReceiver(Messages::WebPageProxy::messageReceiverName(), m_pageID, this);
+    m_process->addMessageReceiver(Messages::WebPageProxy::messageReceiverName(), m_pageID, *this);
 
     // FIXME: If we ever expose the session storage size as a preference, we need to pass it here.
     m_process->context().storageManager().createSessionStorageNamespace(m_pageID, m_process->isValid() ? m_process->connection() : 0, std::numeric_limits<unsigned>::max());
@@ -474,7 +474,7 @@ void WebPageProxy::reattachToWebProcess()
     else
         m_process = m_process->context().createNewWebProcessRespectingProcessCountLimit();
     m_process->addExistingWebPage(this, m_pageID);
-    m_process->addMessageReceiver(Messages::WebPageProxy::messageReceiverName(), m_pageID, this);
+    m_process->addMessageReceiver(Messages::WebPageProxy::messageReceiverName(), m_pageID, *this);
 
 #if ENABLE(INSPECTOR)
     m_inspector = WebInspectorProxy::create(this);
@@ -526,13 +526,13 @@ void WebPageProxy::initializeWebPage()
     process().send(Messages::WebProcess::CreateWebPage(m_pageID, m_creationParameters), 0);
 
 #if ENABLE(PAGE_VISIBILITY_API)
-    process().send(Messages::WebPage::SetVisibilityState(m_visibilityState, /* isInitialState */ true), m_pageID);
+    send(Messages::WebPage::SetVisibilityState(m_visibilityState, /* isInitialState */ true));
 #elif ENABLE(HIDDEN_PAGE_DOM_TIMER_THROTTLING)
-    process().send(Messages::WebPage::SetVisibilityState(isViewVisible() ? PageVisibilityStateVisible : PageVisibilityStateHidden, /* isInitialState */ true), m_pageID);
+    send(Messages::WebPage::SetVisibilityState(isViewVisible() ? PageVisibilityStateVisible : PageVisibilityStateHidden, /* isInitialState */ true));
 #endif
 
 #if PLATFORM(MAC)
-    process().send(Messages::WebPage::SetSmartInsertDeleteEnabled(m_isSmartInsertDeleteEnabled), m_pageID);
+    send(Messages::WebPage::SetSmartInsertDeleteEnabled(m_isSmartInsertDeleteEnabled));
 #endif
 }
 
@@ -2254,7 +2254,7 @@ void WebPageProxy::clearLoadDependentCallbacks()
     }
 }
 
-void WebPageProxy::didCommitLoadForFrame(uint64_t frameID, const String& mimeType, uint32_t opaqueFrameLoadType, const CertificateInfo& certificateInfo, CoreIPC::MessageDecoder& decoder)
+void WebPageProxy::didCommitLoadForFrame(uint64_t frameID, const String& mimeType, uint32_t opaqueFrameLoadType, const WebCore::CertificateInfo& certificateInfo, CoreIPC::MessageDecoder& decoder)
 {
     RefPtr<API::Object> userData;
     WebContextUserMessageDecoder messageDecoder(userData, process());
@@ -2498,7 +2498,7 @@ void WebPageProxy::frameDidBecomeFrameSet(uint64_t frameID, bool value)
 }
 
 // PolicyClient
-void WebPageProxy::decidePolicyForNavigationAction(uint64_t frameID, uint32_t opaqueNavigationType, uint32_t opaqueModifiers, int32_t opaqueMouseButton, uint64_t originatingFrameID, const ResourceRequest& request, uint64_t listenerID, CoreIPC::MessageDecoder& decoder, bool& receivedPolicyAction, uint64_t& policyAction, uint64_t& downloadID)
+void WebPageProxy::decidePolicyForNavigationAction(uint64_t frameID, uint32_t opaqueNavigationType, uint32_t opaqueModifiers, int32_t opaqueMouseButton, uint64_t originatingFrameID, const WebCore::ResourceRequest& originalRequest, const ResourceRequest& request, uint64_t listenerID, CoreIPC::MessageDecoder& decoder, bool& receivedPolicyAction, uint64_t& policyAction, uint64_t& downloadID)
 {
     RefPtr<API::Object> userData;
     WebContextUserMessageDecoder messageDecoder(userData, process());
@@ -2513,6 +2513,7 @@ void WebPageProxy::decidePolicyForNavigationAction(uint64_t frameID, uint32_t op
     WebFrameProxy* frame = m_process->webFrame(frameID);
     MESSAGE_CHECK(frame);
     MESSAGE_CHECK_URL(request.url());
+    MESSAGE_CHECK_URL(originalRequest.url());
 
     NavigationType navigationType = static_cast<NavigationType>(opaqueNavigationType);
     WebEvent::Modifiers modifiers = static_cast<WebEvent::Modifiers>(opaqueModifiers);
@@ -2526,7 +2527,7 @@ void WebPageProxy::decidePolicyForNavigationAction(uint64_t frameID, uint32_t op
     m_inDecidePolicyForNavigationAction = true;
     m_syncNavigationActionPolicyActionIsValid = false;
     
-    if (!m_policyClient.decidePolicyForNavigationAction(this, frame, navigationType, modifiers, mouseButton, originatingFrame, request, listener.get(), userData.get()))
+    if (!m_policyClient.decidePolicyForNavigationAction(this, frame, navigationType, modifiers, mouseButton, originatingFrame, originalRequest, request, listener.get(), userData.get()))
         listener->use();
 
     m_inDecidePolicyForNavigationAction = false;
@@ -3090,7 +3091,7 @@ void WebPageProxy::editorStateChanged(const EditorState& editorState)
 #if PLATFORM(IOS)
     else {
         // We need to notify the client on iOS to make sure the selection is redrawn.
-        m_pageClient.selectionDidChange();
+        notifyRevealedSelection();
     }
 #endif
 
@@ -3164,6 +3165,21 @@ void WebPageProxy::didFindStringMatches(const String& string, Vector<Vector<WebC
 void WebPageProxy::didFailToFindString(const String& string)
 {
     m_findClient.didFailToFindString(this, string);
+}
+
+bool WebPageProxy::sendMessage(std::unique_ptr<CoreIPC::MessageEncoder> encoder, unsigned messageSendFlags)
+{
+    return m_process->sendMessage(std::move(encoder), messageSendFlags);
+}
+
+CoreIPC::Connection* WebPageProxy::messageSenderConnection()
+{
+    return m_process->connection();
+}
+
+uint64_t WebPageProxy::messageSenderDestinationID()
+{
+    return m_pageID;
 }
 
 void WebPageProxy::valueChangedForPopupMenu(WebPopupMenuProxy*, int32_t newSelectedIndex)

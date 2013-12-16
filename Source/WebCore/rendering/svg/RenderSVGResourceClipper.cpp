@@ -171,7 +171,7 @@ bool RenderSVGResourceClipper::applyClippingToContext(RenderElement& renderer, c
         maskContext->concatCTM(animatedLocalTransform);
 
         // clipPath can also be clipped by another clipPath.
-        SVGResources* resources = SVGResourcesCache::cachedResourcesForRenderObject(this);
+        SVGResources* resources = SVGResourcesCache::cachedResourcesForRenderObject(*this);
         RenderSVGResourceClipper* clipper;
         bool succeeded;
         if (resources && (clipper = resources->clipper())) {
@@ -220,9 +220,7 @@ bool RenderSVGResourceClipper::drawContentIntoMaskImage(ClipperData* clipperData
     view().frameView().setPaintBehavior(oldBehavior | PaintBehaviorRenderingSVGMask);
 
     // Draw all clipPath children into a global mask.
-    auto children = childrenOfType<SVGElement>(clipPathElement());
-    for (auto it = children.begin(), end = children.end(); it != end; ++it) {
-        SVGElement& child = *it;
+    for (auto& child : childrenOfType<SVGElement>(clipPathElement())) {
         auto renderer = child.renderer();
         if (!renderer)
             continue;

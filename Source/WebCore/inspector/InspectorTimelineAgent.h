@@ -33,10 +33,11 @@
 
 #if ENABLE(INSPECTOR)
 
-#include "InspectorBaseAgent.h"
-#include "InspectorFrontend.h"
-#include "InspectorValues.h"
+#include "InspectorWebAgentBase.h"
+#include "InspectorWebBackendDispatchers.h"
+#include "InspectorWebFrontendDispatchers.h"
 #include "LayoutRect.h"
+#include <inspector/InspectorValues.h>
 #include <wtf/PassOwnPtr.h>
 #include <wtf/Vector.h>
 #include <wtf/WeakPtr.h>
@@ -121,8 +122,8 @@ private:
 };
 
 class InspectorTimelineAgent
-    : public InspectorBaseAgent
-    , public InspectorTimelineBackendDispatcherHandler {
+    : public InspectorAgentBase
+    , public Inspector::InspectorTimelineBackendDispatcherHandler {
     WTF_MAKE_NONCOPYABLE(InspectorTimelineAgent);
 public:
     enum InspectorType { PageInspector, WorkerInspector };
@@ -134,7 +135,7 @@ public:
 
     ~InspectorTimelineAgent();
 
-    virtual void didCreateFrontendAndBackend(InspectorFrontendChannel*, InspectorBackendDispatcher*) OVERRIDE;
+    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) OVERRIDE;
     virtual void willDestroyFrontendAndBackend() OVERRIDE;
 
     virtual void start(ErrorString*, const int* maxCallStackDepth, const bool* includeDomCounters);
@@ -220,33 +221,33 @@ private:
     friend class TimelineRecordStack;
 
     struct TimelineRecordEntry {
-        TimelineRecordEntry(PassRefPtr<InspectorObject> record, PassRefPtr<InspectorObject> data, PassRefPtr<InspectorArray> children, TimelineRecordType type, size_t usedHeapSizeAtStart)
+        TimelineRecordEntry(PassRefPtr<Inspector::InspectorObject> record, PassRefPtr<Inspector::InspectorObject> data, PassRefPtr<Inspector::InspectorArray> children, TimelineRecordType type, size_t usedHeapSizeAtStart)
             : record(record), data(data), children(children), type(type), usedHeapSizeAtStart(usedHeapSizeAtStart)
         {
         }
-        RefPtr<InspectorObject> record;
-        RefPtr<InspectorObject> data;
-        RefPtr<InspectorArray> children;
+        RefPtr<Inspector::InspectorObject> record;
+        RefPtr<Inspector::InspectorObject> data;
+        RefPtr<Inspector::InspectorArray> children;
         TimelineRecordType type;
         size_t usedHeapSizeAtStart;
     };
 
     InspectorTimelineAgent(InstrumentingAgents*, InspectorPageAgent*, InspectorMemoryAgent*, InspectorType, InspectorClient*);
 
-    void sendEvent(PassRefPtr<InspectorObject>);
-    void appendRecord(PassRefPtr<InspectorObject> data, TimelineRecordType, bool captureCallStack, Frame*);
-    void pushCurrentRecord(PassRefPtr<InspectorObject>, TimelineRecordType, bool captureCallStack, Frame*);
+    void sendEvent(PassRefPtr<Inspector::InspectorObject>);
+    void appendRecord(PassRefPtr<Inspector::InspectorObject> data, TimelineRecordType, bool captureCallStack, Frame*);
+    void pushCurrentRecord(PassRefPtr<Inspector::InspectorObject>, TimelineRecordType, bool captureCallStack, Frame*);
 
-    void setDOMCounters(TypeBuilder::Timeline::TimelineEvent* record);
-    void setFrameIdentifier(InspectorObject* record, Frame*);
+    void setDOMCounters(Inspector::TypeBuilder::Timeline::TimelineEvent* record);
+    void setFrameIdentifier(Inspector::InspectorObject* record, Frame*);
 
     void didCompleteCurrentRecord(TimelineRecordType);
 
-    void setHeapSizeStatistics(InspectorObject* record);
+    void setHeapSizeStatistics(Inspector::InspectorObject* record);
     void commitFrameRecord();
 
-    void addRecordToTimeline(PassRefPtr<InspectorObject>, TimelineRecordType);
-    void innerAddRecordToTimeline(PassRefPtr<InspectorObject>, TimelineRecordType);
+    void addRecordToTimeline(PassRefPtr<Inspector::InspectorObject>, TimelineRecordType);
+    void innerAddRecordToTimeline(PassRefPtr<Inspector::InspectorObject>, TimelineRecordType);
     void clearRecordStack();
 
     void localToPageQuad(const RenderObject&, const LayoutRect&, FloatQuad*);
@@ -258,15 +259,15 @@ private:
     InspectorMemoryAgent* m_memoryAgent;
     TimelineTimeConverter m_timeConverter;
 
-    std::unique_ptr<InspectorTimelineFrontendDispatcher> m_frontendDispatcher;
-    RefPtr<InspectorTimelineBackendDispatcher> m_backendDispatcher;
+    std::unique_ptr<Inspector::InspectorTimelineFrontendDispatcher> m_frontendDispatcher;
+    RefPtr<Inspector::InspectorTimelineBackendDispatcher> m_backendDispatcher;
     double m_timestampOffset;
 
     Vector<TimelineRecordEntry> m_recordStack;
 
     int m_id;
     int m_maxCallStackDepth;
-    RefPtr<InspectorObject> m_pendingFrameRecord;
+    RefPtr<Inspector::InspectorObject> m_pendingFrameRecord;
     InspectorType m_inspectorType;
     InspectorClient* m_client;
     WeakPtrFactory<InspectorTimelineAgent> m_weakFactory;

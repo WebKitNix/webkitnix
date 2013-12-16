@@ -56,8 +56,8 @@ public:
         return m_connection.get();
     }
 
-    void addMessageReceiver(CoreIPC::StringReference messageReceiverName, CoreIPC::MessageReceiver*);
-    void addMessageReceiver(CoreIPC::StringReference messageReceiverName, uint64_t destinationID, CoreIPC::MessageReceiver*);
+    void addMessageReceiver(CoreIPC::StringReference messageReceiverName, CoreIPC::MessageReceiver&);
+    void addMessageReceiver(CoreIPC::StringReference messageReceiverName, uint64_t destinationID, CoreIPC::MessageReceiver&);
     void removeMessageReceiver(CoreIPC::StringReference messageReceiverName, uint64_t destinationID);
 
     bool isValid() const { return m_connection; }
@@ -65,6 +65,8 @@ public:
     bool canSendMessage() const { return isValid() || isLaunching(); }
 
     PlatformProcessIdentifier processIdentifier() const { return m_processLauncher->processIdentifier(); }
+
+    bool sendMessage(std::unique_ptr<CoreIPC::MessageEncoder>, unsigned messageSendFlags);
 
 protected:
     void clearConnection();
@@ -80,8 +82,6 @@ private:
     virtual void getLaunchOptions(ProcessLauncher::LaunchOptions&) = 0;
     virtual void connectionWillOpen(CoreIPC::Connection*);
     virtual void connectionWillClose(CoreIPC::Connection*);
-
-    bool sendMessage(std::unique_ptr<CoreIPC::MessageEncoder>, unsigned messageSendFlags);
 
     Vector<std::pair<std::unique_ptr<CoreIPC::MessageEncoder>, unsigned>> m_pendingMessages;
     RefPtr<ProcessLauncher> m_processLauncher;

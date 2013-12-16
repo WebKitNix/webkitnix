@@ -1766,6 +1766,7 @@ class CppStyleTest(CppStyleTestBase):
         self.assert_lint('if (a = b == 1)', '')
         self.assert_multi_line_lint('#include <sys/io.h>\n', '')
         self.assert_multi_line_lint('#import <foo/bar.h>\n', '')
+        self.assert_multi_line_lint('#if __has_include(<ApplicationServices/ApplicationServicesPriv.h>)\n', '')
 
     def test_operator_methods(self):
         self.assert_lint('String operator+(const String&, const String&);', '')
@@ -1935,7 +1936,9 @@ class CppStyleTest(CppStyleTestBase):
                     '  [whitespace/ending_newline] [5]'))
 
         do_test(self, '// Newline\n// at EOF\n', False)
+        do_test(self, '// Newline2\n\n// at EOF\n', False)
         do_test(self, '// No newline\n// at EOF', True)
+        do_test(self, '// No newline2\n\n// at EOF', True)
 
     def test_extra_newlines_at_eof(self):
         def do_test(self, data, too_many_newlines):
@@ -1950,7 +1953,9 @@ class CppStyleTest(CppStyleTestBase):
                     '  [whitespace/ending_newline] [5]'))
 
         do_test(self, '// No Newline\n// at EOF', False)
+        do_test(self, '// No Newline2\n\n// at EOF', False)
         do_test(self, '// One Newline\n// at EOF\n', False)
+        do_test(self, '// One Newline2\n\n// at EOF\n', False)
         do_test(self, '// Two Newlines\n// at EOF\n\n', True)
         do_test(self, '// Three Newlines\n// at EOF\n\n\n', True)
 
@@ -4975,7 +4980,8 @@ class WebKitStyleTest(CppStyleTestBase):
         'Missing spaces around :  [whitespace/init] [4]')
         self.assert_multi_line_lint('''\
         MyClass::MyClass(Document* doc)
-            : MySuperClass() , m_doc(0)
+            : MySuperClass() ,
+            m_doc(0)
         { }''',
         'Comma should be at the beginning of the line in a member initialization list.'
         '  [whitespace/init] [4]')
@@ -4988,6 +4994,11 @@ class WebKitStyleTest(CppStyleTestBase):
         : public Goo
         , public foo {
         };''',
+        '')
+        self.assert_multi_line_lint('''\
+        MyClass::MyClass(Document* doc)
+            : MySuperClass(doc, doc)
+        { }''',
         '')
         self.assert_lint('o = foo(b ? bar() : baz());', '')
         self.assert_lint('MYMACRO(a ? b() : c);', '')

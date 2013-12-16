@@ -515,7 +515,7 @@ void Element::setActive(bool flag, bool pause)
     if (reactsToPress)
         setNeedsStyleRecalc();
 
-    if (renderer()->style().hasAppearance() && renderer()->theme()->stateChanged(renderer(), PressedState))
+    if (renderer()->style().hasAppearance() && renderer()->theme().stateChanged(renderer(), PressedState))
         reactsToPress = true;
 
     // The rest of this function implements a feature that only works if the
@@ -581,7 +581,7 @@ void Element::setHovered(bool flag)
         setNeedsStyleRecalc();
 
     if (renderer()->style().hasAppearance())
-        renderer()->theme()->stateChanged(renderer(), HoverState);
+        renderer()->theme().stateChanged(renderer(), HoverState);
 }
 
 void Element::scrollIntoView(bool alignToTop) 
@@ -2154,14 +2154,15 @@ RenderStyle* Element::computedStyle(PseudoId pseudoElementSpecifier)
         if (pseudoElementSpecifier) {
             RenderStyle* cachedPseudoStyle = usedStyle->getCachedPseudoStyle(pseudoElementSpecifier);
             return cachedPseudoStyle ? cachedPseudoStyle : usedStyle;
-         } else
-            return usedStyle;
+        }
+        return usedStyle;
     }
 
-    if (!attached())
+    if (!attached()) {
         // FIXME: Try to do better than this. Ensure that styleForElement() works for elements that are not in the
         // document tree and figure out when to destroy the computed style for such elements.
-        return 0;
+        return nullptr;
+    }
 
     ElementRareData& data = ensureElementRareData();
     if (!data.computedStyle())

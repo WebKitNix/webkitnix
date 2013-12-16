@@ -59,9 +59,9 @@ void WebViewClientNix::updateTextInputState(WebView* view, const EditorState& st
         return;
 
     NIXTextInputState nixState;
-    ProxyingRefPtr<WebString> selectedText = toAPI(state.selectedText.impl());
-    ProxyingRefPtr<WebString> surroundingText = toAPI(state.surroundingText.impl());
-    ProxyingRefPtr<WebString> submitLabel = toAPI(state.submitLabel.impl());
+    ProxyingRefPtr<API::String> selectedText = toAPI(state.selectedText.impl());
+    ProxyingRefPtr<API::String> surroundingText = toAPI(state.surroundingText.impl());
+    ProxyingRefPtr<API::String> submitLabel = toAPI(state.submitLabel.impl());
 
     nixState.selectedText = selectedText;
     nixState.surroundingText = surroundingText;

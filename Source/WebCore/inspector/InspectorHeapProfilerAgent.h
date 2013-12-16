@@ -33,8 +33,9 @@
 
 #if ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
 
-#include "InspectorBaseAgent.h"
-#include "InspectorFrontend.h"
+#include "InspectorWebAgentBase.h"
+#include "InspectorWebBackendDispatchers.h"
+#include "InspectorWebFrontendDispatchers.h"
 #include <wtf/Forward.h>
 #include <wtf/HashMap.h>
 #include <wtf/Noncopyable.h>
@@ -49,7 +50,7 @@ class ScriptProfile;
 
 typedef String ErrorString;
 
-class InspectorHeapProfilerAgent : public InspectorBaseAgent, public InspectorHeapProfilerBackendDispatcherHandler {
+class InspectorHeapProfilerAgent : public InspectorAgentBase, public Inspector::InspectorHeapProfilerBackendDispatcherHandler {
     WTF_MAKE_NONCOPYABLE(InspectorHeapProfilerAgent); WTF_MAKE_FAST_ALLOCATED;
 public:
     static PassOwnPtr<InspectorHeapProfilerAgent> create(InstrumentingAgents*, InjectedScriptManager*);
@@ -61,16 +62,16 @@ public:
 
     virtual void hasHeapProfiler(ErrorString*, bool*);
 
-    virtual void getProfileHeaders(ErrorString*, RefPtr<TypeBuilder::Array<TypeBuilder::HeapProfiler::ProfileHeader>>&);
+    virtual void getProfileHeaders(ErrorString*, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::HeapProfiler::ProfileHeader>>&);
     virtual void getHeapSnapshot(ErrorString*, int uid);
     virtual void removeProfile(ErrorString*, int uid);
 
-    virtual void didCreateFrontendAndBackend(InspectorFrontendChannel*, InspectorBackendDispatcher*) OVERRIDE;
+    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) OVERRIDE;
     virtual void willDestroyFrontendAndBackend() OVERRIDE;
 
     virtual void takeHeapSnapshot(ErrorString*, const bool* reportProgress);
 
-    virtual void getObjectByHeapObjectId(ErrorString*, const String& heapSnapshotObjectId, const String* objectGroup, RefPtr<TypeBuilder::Runtime::RemoteObject>& result);
+    virtual void getObjectByHeapObjectId(ErrorString*, const String& heapSnapshotObjectId, const String* objectGroup, RefPtr<Inspector::TypeBuilder::Runtime::RemoteObject>& result);
     virtual void getHeapObjectId(ErrorString*, const String& objectId, String* heapSnapshotObjectId);
 
 private:
@@ -80,11 +81,11 @@ private:
 
     void resetFrontendProfiles();
 
-    PassRefPtr<TypeBuilder::HeapProfiler::ProfileHeader> createSnapshotHeader(const ScriptHeapSnapshot&);
+    PassRefPtr<Inspector::TypeBuilder::HeapProfiler::ProfileHeader> createSnapshotHeader(const ScriptHeapSnapshot&);
 
     InjectedScriptManager* m_injectedScriptManager;
-    std::unique_ptr<InspectorHeapProfilerFrontendDispatcher> m_frontendDispatcher;
-    RefPtr<InspectorHeapProfilerBackendDispatcher> m_backendDispatcher;
+    std::unique_ptr<Inspector::InspectorHeapProfilerFrontendDispatcher> m_frontendDispatcher;
+    RefPtr<Inspector::InspectorHeapProfilerBackendDispatcher> m_backendDispatcher;
     unsigned m_nextUserInitiatedHeapSnapshotNumber;
     IdToHeapSnapshotMap m_snapshots;
     bool m_profileHeadersRequested;

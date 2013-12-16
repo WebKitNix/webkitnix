@@ -298,6 +298,7 @@ else ()
         loader/soup/SubresourceLoaderSoup.cpp
 
         platform/network/soup/AuthenticationChallengeSoup.cpp
+        platform/network/soup/CertificateInfo.cpp
         platform/network/soup/CookieJarSoup.cpp
         platform/network/soup/CookieStorageSoup.cpp
         platform/network/soup/CredentialStorageSoup.cpp

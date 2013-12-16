@@ -510,9 +510,8 @@ void SVGElement::animatedPropertyTypeForAttribute(const QualifiedName& attribute
 
 bool SVGElement::haveLoadedRequiredResources()
 {
-    auto svgChildren = childrenOfType<SVGElement>(*this);
-    for (auto child = svgChildren.begin(), end = svgChildren.end(); child != end; ++child) {
-        if (!child->haveLoadedRequiredResources())
+    for (auto& child : childrenOfType<SVGElement>(*this)) {
+        if (!child.haveLoadedRequiredResources())
             return false;
     }
     return true;
@@ -782,7 +781,7 @@ RenderStyle* SVGElement::computedStyle(PseudoId pseudoElementSpecifier)
     if (!m_svgRareData || !m_svgRareData->useOverrideComputedStyle())
         return Element::computedStyle(pseudoElementSpecifier);
 
-    RenderStyle* parentStyle = 0;
+    RenderStyle* parentStyle = nullptr;
     if (Element* parent = parentOrShadowHostElement()) {
         if (auto renderer = parent->renderer())
             parentStyle = &renderer->style();

@@ -1,3 +1,516 @@
+2013-12-16  Peter Szanka  <h868064@stud.u-szeged.hu>
+
+        Delete RVCT related code parts.
+        https://bugs.webkit.org/show_bug.cgi?id=125626
+
+        Reviewed by Darin Adler.
+
+        * assembler/ARMAssembler.cpp:
+        * assembler/ARMAssembler.h:
+        (JSC::ARMAssembler::cacheFlush):
+        * assembler/MacroAssemblerARM.cpp:
+        (JSC::isVFPPresent):
+        * jit/JITStubsARM.h:
+        * jit/JITStubsARMv7.h:
+
+2013-12-15  Ryosuke Niwa  <rniwa@webkit.org>
+
+        REGRESSION: 2x regression on Dromaeo DOM query tests
+        https://bugs.webkit.org/show_bug.cgi?id=125377
+
+        Reviewed by Filip Pizlo.
+
+        The bug was caused by JSC not JIT'ing property access on "document" due to its type info having
+        HasImpureGetOwnPropertySlot flag.
+
+        Fixed the bug by new type info flag NewImpurePropertyFiresWatchpoints, which allows the baseline
+        JIT to generate byte code for access properties on an object with named properties (a.k.a.
+        custom name getter) in DOM. When a new named property appears on the object, VM is notified via
+        VM::addImpureProperty and fires StructureStubClearingWatchpoint added during the repatch.
+
+        * bytecode/GetByIdStatus.cpp:
+        (JSC::GetByIdStatus::computeFromLLInt): Take the slow path if we have any object with impure
+        properties in the prototype chain.
+        (JSC::GetByIdStatus::computeForChain): Ditto.
+
+        * jit/Repatch.cpp:
+        (JSC::repatchByIdSelfAccess): Throw away the byte code when a new impure property is added on any
+        object in the prototype chain via StructureStubClearingWatchpoint.
+        (JSC::generateProtoChainAccessStub): Ditto.
+        (JSC::tryCacheGetByID):
+        (JSC::tryBuildGetByIDList):
+        (JSC::tryRepatchIn): Ditto.
+
+        * runtime/JSTypeInfo.h: Added NewImpurePropertyFiresWatchpoints.
+        (JSC::TypeInfo::newImpurePropertyFiresWatchpoints): Added.
+
+        * runtime/Operations.h:
+        (JSC::normalizePrototypeChainForChainAccess): Don't exit early if VM will be notified of new
+        impure property even if the object had impure properties.
+
+        * runtime/Structure.h:
+        (JSC::Structure::takesSlowPathInDFGForImpureProperty): Added. Wraps hasImpureGetOwnPropertySlot and
+        asserts that newImpurePropertyFiresWatchpoints is true whenever hasImpureGetOwnPropertySlot is true.
+
+        * runtime/VM.cpp:
+        (JSC::VM::registerWatchpointForImpureProperty): Added.
+        (JSC::VM::addImpureProperty): Added. HTMLDocument calls it to notify JSC of a new impure property.
+
+        * runtime/VM.h:
+
+2013-12-15  Andy Estes  <aestes@apple.com>
+
+        [iOS] Upstream changes to FeatureDefines.xcconfig
+        https://bugs.webkit.org/show_bug.cgi?id=125742
+
+        Reviewed by Dan Bernstein.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-12-14  Filip Pizlo  <fpizlo@apple.com>
+
+        FTL should *really* know when things are flushed
+        https://bugs.webkit.org/show_bug.cgi?id=125747
+
+        Reviewed by Sam Weinig.
+        
+        Fix more codegen badness. This makes V8v7's crypto am3() function run faster in the FTL
+        than in DFG. This means that even if we just compile those functions in V8v7 that don't
+        make calls, the FTL gives us a 2% speed-up over the DFG. That's pretty good considering
+        that we have still more optimizations to fix and we can make calls work.
+
+        * dfg/DFGSSAConversionPhase.cpp:
+        (JSC::DFG::SSAConversionPhase::run):
+        * ftl/FTLCompile.cpp:
+        (JSC::FTL::fixFunctionBasedOnStackMaps):
+
+2013-12-14  Andy Estes  <aestes@apple.com>
+
+        Unify FeatureDefines.xcconfig
+        https://bugs.webkit.org/show_bug.cgi?id=125741
+
+        Rubber-stamped by Dan Bernstein.
+
+        * Configurations/FeatureDefines.xcconfig: Enable ENABLE_MEDIA_SOURCE.
+
+2013-12-14  Mark Rowe  <mrowe@apple.com>
+
+        Build fix after r160557.
+
+        r160557 added the first generated header to JavaScriptCore that needs to be installed in to
+        the framework wrapper. Sadly JavaScriptCore's Derived Sources target was not set to generate
+        headers when invoked as part of the installhdrs action. This resulted in the build failing
+        due to Xcode being unable to find the header file to install. The fix for this is to configure
+        the Derived Sources target to use JavaScriptCore.xcconfig, which sets INSTALLHDRS_SCRIPT_PHASE
+        to YES and allows Xcode to generate derived sources during the installhdrs action.
+
+        Enabling INSTALLHDRS_SCRIPT_PHASE required tweaking the Generate Derived Sources script build
+        phase to skip running code related to offlineasm that depends on JSCLLIntOffsetExtractor
+        having been compiled, which isn't the case at installhdrs time.
+
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+
+2013-12-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Some Set and Map prototype functions have incorrect function lengths
+        https://bugs.webkit.org/show_bug.cgi?id=125732
+
+        Reviewed by Oliver Hunt.
+
+        * runtime/MapPrototype.cpp:
+        (JSC::MapPrototype::finishCreation):
+        * runtime/SetPrototype.cpp:
+        (JSC::SetPrototype::finishCreation):
+
+2013-12-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Move Inspector and Debugger protocol domains into JavaScriptCore
+        https://bugs.webkit.org/show_bug.cgi?id=125707
+
+        Reviewed by Timothy Hatcher.
+
+        * CMakeLists.txt:
+        * DerivedSources.make:
+        * GNUmakefile.am:
+        * inspector/protocol/Debugger.json: Renamed from Source/WebCore/inspector/protocol/Debugger.json.
+        * inspector/protocol/GenericTypes.json: Added.
+        * inspector/protocol/InspectorDomain.json: Renamed from Source/WebCore/inspector/protocol/InspectorDomain.json.
+        Add new files to inspector generation.
+
+        * inspector/scripts/CodeGeneratorInspector.py:
+        (Generator.go):
+        Only build TypeBuilder output if the domain only has types. Avoid
+        backend/frontend dispatchers and backend commands.
+
+        (TypeBindings.create_type_declaration_.EnumBinding.get_setter_value_expression_pattern):
+        (format_setter_value_expression):
+        (Generator.process_command):
+        (Generator.generate_send_method):
+        * inspector/scripts/CodeGeneratorInspectorStrings.py:
+        Export and name the get{JS,Web}EnumConstant function.
+
+2013-12-11  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of forward exit on UInt32ToNumber by adding an op_unsigned bytecode instruction
+        https://bugs.webkit.org/show_bug.cgi?id=125553
+
+        Reviewed by Oliver Hunt.
+        
+        UInt32ToNumber was a super complicated node because it had to do a speculation, but it
+        would do it after we already had computed the urshift. It couldn't just back to the
+        beginning of the urshift because the inputs to the urshift weren't necessarily live
+        anymore. We couldn't jump forward to the beginning of the next instruction because the
+        result of the urshift was not yet unsigned-converted.
+        
+        For a while we solved this by forward-exiting in UInt32ToNumber. But that's really
+        gross and I want to get rid of all forward exits. They cause a lot of bugs.
+        
+        We could also have turned UInt32ToNumber to a backwards exit by forcing the inputs to
+        the urshift to be live. I figure that this might be a bit too extreme.
+        
+        So, I just created a new place that we can exit to: I split op_urshift into op_urshift
+        followed by op_unsigned. op_unsigned is an "unsigned cast" along the lines of what
+        UInt32ToNumber does. This allows me to get rid of all of the nastyness in the DFG for
+        forward exiting in UInt32ToNumber.
+        
+        This patch enables massive code carnage in the DFG and FTL, and brings us closer to
+        eliminating one of the DFG's most confusing concepts. On the flipside, it does make the
+        bytecode slightly more complex (one new instruction). This is a profitable trade. We
+        want the DFG and FTL to trend towards simplicity, since they are both currently too
+        complicated.
+
+        * bytecode/BytecodeUseDef.h:
+        (JSC::computeUsesForBytecodeOffset):
+        (JSC::computeDefsForBytecodeOffset):
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::dumpBytecode):
+        * bytecode/Opcode.h:
+        (JSC::padOpcodeName):
+        * bytecode/ValueRecovery.cpp:
+        (JSC::ValueRecovery::dumpInContext):
+        * bytecode/ValueRecovery.h:
+        (JSC::ValueRecovery::gpr):
+        * bytecompiler/NodesCodegen.cpp:
+        (JSC::BinaryOpNode::emitBytecode):
+        (JSC::emitReadModifyAssignment):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::toInt32):
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * dfg/DFGClobberize.h:
+        (JSC::DFG::clobberize):
+        * dfg/DFGNodeType.h:
+        * dfg/DFGOSRExitCompiler32_64.cpp:
+        (JSC::DFG::OSRExitCompiler::compileExit):
+        * dfg/DFGOSRExitCompiler64.cpp:
+        (JSC::DFG::OSRExitCompiler::compileExit):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileMovHint):
+        (JSC::DFG::SpeculativeJIT::compileUInt32ToNumber):
+        * dfg/DFGSpeculativeJIT.h:
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        * dfg/DFGSpeculativeJIT64.cpp:
+        * dfg/DFGStrengthReductionPhase.cpp:
+        (JSC::DFG::StrengthReductionPhase::handleNode):
+        (JSC::DFG::StrengthReductionPhase::convertToIdentityOverChild):
+        (JSC::DFG::StrengthReductionPhase::convertToIdentityOverChild1):
+        (JSC::DFG::StrengthReductionPhase::convertToIdentityOverChild2):
+        * ftl/FTLFormattedValue.h:
+        (JSC::FTL::int32Value):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileUInt32ToNumber):
+        * ftl/FTLValueFormat.cpp:
+        (JSC::FTL::reboxAccordingToFormat):
+        (WTF::printInternal):
+        * ftl/FTLValueFormat.h:
+        * jit/JIT.cpp:
+        (JSC::JIT::privateCompileMainPass):
+        (JSC::JIT::privateCompileSlowCases):
+        * jit/JIT.h:
+        * jit/JITArithmetic.cpp:
+        (JSC::JIT::emit_op_urshift):
+        (JSC::JIT::emitSlow_op_urshift):
+        (JSC::JIT::emit_op_unsigned):
+        (JSC::JIT::emitSlow_op_unsigned):
+        * jit/JITArithmetic32_64.cpp:
+        (JSC::JIT::emitRightShift):
+        (JSC::JIT::emitRightShiftSlowCase):
+        (JSC::JIT::emit_op_unsigned):
+        (JSC::JIT::emitSlow_op_unsigned):
+        * llint/LowLevelInterpreter32_64.asm:
+        * llint/LowLevelInterpreter64.asm:
+        * runtime/CommonSlowPaths.cpp:
+        (JSC::SLOW_PATH_DECL):
+        * runtime/CommonSlowPaths.h:
+
+2013-12-13  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        LLInt should not conditionally branch to to labels outside of its function
+        https://bugs.webkit.org/show_bug.cgi?id=125713
+
+        Reviewed by Geoffrey Garen.
+
+        Conditional branches are insufficient for jumping to out-of-function labels.
+        The fix is to use an unconditional jmp to the label combined with a conditional branch around the jmp.
+
+        * llint/LowLevelInterpreter32_64.asm:
+        * llint/LowLevelInterpreter64.asm:
+
+2013-12-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        [GTK] Remove Warnings in building about duplicate INSPECTOR variables
+        https://bugs.webkit.org/show_bug.cgi?id=125710
+
+        Reviewed by Tim Horton.
+
+        * GNUmakefile.am:
+
+2013-12-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Cleanup CodeGeneratorInspectorStrings a bit
+        https://bugs.webkit.org/show_bug.cgi?id=125705
+
+        Reviewed by Timothy Hatcher.
+
+        * inspector/scripts/CodeGeneratorInspectorStrings.py:
+        Use ${foo} variable syntax and add an ASCIILiteral.
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Unreviewed build fix after r160563
+
+        * JavaScriptCore.vcxproj/JavaScriptCoreGenerated.vcxproj: Missed the Debug
+        target in my last patch.
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Unreviewed build fix after r160548
+
+        * JavaScriptCore.vcxproj/JavaScriptCoreGenerated.vcxproj: Specify
+        that we are using the vs12_xp target for Makefile-based projects.
+        * JavaScriptCore.vcxproj/LLInt/LLIntAssembly/LLIntAssembly.vcxproj: Ditto
+        * JavaScriptCore.vcxproj/LLInt/LLIntDesiredOffsets/LLIntDesiredOffsets.vcxproj: Ditto.
+
+2013-12-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Make inspector folder groups smarter in JavaScriptCore.xcodeproj
+        https://bugs.webkit.org/show_bug.cgi?id=125663
+
+        Reviewed by Darin Adler.
+
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+
+2013-12-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Add Inspector Code Generation to JavaScriptCore for Runtime Domain
+        https://bugs.webkit.org/show_bug.cgi?id=125595
+
+        Reviewed by Timothy Hatcher.
+
+          - Move CodeGeneration scripts from WebCore into JavaScriptCore/inspector/scripts
+          - For ports that build WebKit frameworks separately, export the scripts as PrivateHeaders
+          - Update CodeGeneratorInspector.py in a few ways:
+            - output dynamic filenames, so JavaScriptCore generates InspectorJSFoo.* and WebCore generates InspectorWebFoo.*
+            - take in more then one protocol JSON file. The first contains domains to generate, the others are dependencies
+              that are generated elsewhere that we can depend on for Types.
+          - Add DerivedSources build step to generate the Inspector Interfaces
+
+        * CMakeLists.txt:
+        * DerivedSources.make:
+        * GNUmakefile.am:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * JavaScriptCore.vcxproj/copy-files.cmd:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        Add scripts and code generation.
+
+        * inspector/protocol/Runtime.json: Renamed from Source/WebCore/inspector/protocol/Runtime.json.
+        Move protocol file into JavaScriptCore so its types will be generated in JavaScriptCore.
+
+        * inspector/scripts/CodeGeneratorInspector.py: Renamed from Source/WebCore/inspector/CodeGeneratorInspector.py.
+        Updates to the script as listed above.
+
+        * inspector/scripts/CodeGeneratorInspectorStrings.py: Renamed from Source/WebCore/inspector/CodeGeneratorInspectorStrings.py.
+        * inspector/scripts/generate-combined-inspector-json.py: Renamed from Source/WebCore/inspector/Scripts/generate-combined-inspector-json.py.
+        Moved from WebCore into JavaScriptCore for code generation.
+
+2013-12-13  Peter Szanka  <h868064@stud.u-szeged.hu>
+
+        Delete INTEL C compiler related code parts.
+        https://bugs.webkit.org/show_bug.cgi?id=125625
+
+        Reviewed by Darin Adler.
+
+        * jsc.cpp:
+        * testRegExp.cpp:
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Switch WebKit solution to Visual Studio 2013
+        https://bugs.webkit.org/show_bug.cgi?id=125192
+
+        Reviewed by Anders Carlsson.
+
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj: Update for VS2013
+        * JavaScriptCore.vcxproj/LLInt/LLIntOffsetsExtractor/LLIntOffsetsExtractor.vcxproj:
+        Ditto
+        * JavaScriptCore.vcxproj/jsc/jsc.vcxproj: Ditto
+        * JavaScriptCore.vcxproj/testRegExp/testRegExp.vcxproj: Ditto
+        * JavaScriptCore.vcxproj/testapi/testapi.vcxproj: Ditto
+
+2013-12-12  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Add a few more ASCIILiterals
+        https://bugs.webkit.org/show_bug.cgi?id=125662
+
+        Reviewed by Darin Adler.
+
+        * inspector/InspectorBackendDispatcher.cpp:
+        (Inspector::InspectorBackendDispatcher::dispatch):
+
+2013-12-12  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Test new JSContext name APIs
+        https://bugs.webkit.org/show_bug.cgi?id=125607
+
+        Reviewed by Darin Adler.
+
+        * API/JSContext.h:
+        * API/JSContextRef.h:
+        Fix whitespace issues.
+
+        * API/tests/testapi.c:
+        (globalContextNameTest):
+        (main):
+        * API/tests/testapi.mm:
+        Add tests for JSContext set/get name APIs.
+
+2013-12-11  Filip Pizlo  <fpizlo@apple.com>
+
+        ARM64: Hang running pdfjs test, suspect DFG generated code for "in"
+        https://bugs.webkit.org/show_bug.cgi?id=124727
+        <rdar://problem/15566923>
+
+        Reviewed by Michael Saboff.
+        
+        Get rid of In's hackish use of StructureStubInfo. Previously it was using hotPathBegin,
+        and it was the only IC that used that field, which was wasteful. Moreover, it used it
+        to store two separate locations: the label for patching the jump and the label right
+        after the jump. The code was relying on those two being the same label, which is true
+        on X86 and some other platforms, but it isn't true on ARM64.
+        
+        This gets rid of hotPathBegin and makes In express those two locations as offsets from
+        the callReturnLocation, which is analogous to what the other IC's do.
+        
+        This fixes a bug where any successful In patching would result in a trivially infinite
+        loop - and hence a hang - on ARM64.
+
+        * bytecode/StructureStubInfo.h:
+        * dfg/DFGJITCompiler.cpp:
+        (JSC::DFG::JITCompiler::link):
+        * dfg/DFGJITCompiler.h:
+        (JSC::DFG::InRecord::InRecord):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileIn):
+        * jit/JITInlineCacheGenerator.cpp:
+        (JSC::JITByIdGenerator::finalize):
+        * jit/Repatch.cpp:
+        (JSC::replaceWithJump):
+        (JSC::patchJumpToGetByIdStub):
+        (JSC::tryCachePutByID):
+        (JSC::tryBuildPutByIdList):
+        (JSC::tryRepatchIn):
+        (JSC::resetGetByID):
+        (JSC::resetPutByID):
+        (JSC::resetIn):
+
+2013-12-11  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Push More Inspector Required Classes Down into JavaScriptCore
+        https://bugs.webkit.org/show_bug.cgi?id=125324
+
+        Reviewed by Timothy Hatcher.
+
+        * CMakeLists.txt:
+        * GNUmakefile.am:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * JavaScriptCore.vcxproj/JavaScriptCoreCommon.props:
+        * JavaScriptCore.vcxproj/copy-files.cmd:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * bindings/ScriptFunctionCall.cpp: Renamed from Source/WebCore/bindings/js/ScriptFunctionCall.cpp.
+        * bindings/ScriptFunctionCall.h: Renamed from Source/WebCore/bindings/js/ScriptFunctionCall.h.
+        * bindings/ScriptObject.cpp: Copied from Source/WebCore/inspector/WorkerConsoleAgent.cpp.
+        * bindings/ScriptObject.h: Renamed from Source/WebCore/inspector/InspectorBaseAgent.h.
+        * bindings/ScriptValue.cpp: Renamed from Source/WebCore/bindings/js/ScriptValue.cpp.
+        * bindings/ScriptValue.h: Renamed from Source/WebCore/bindings/js/ScriptValue.h.
+        * inspector/InspectorAgentBase.h: Copied from Source/WebCore/inspector/InspectorAgentRegistry.h.
+        * inspector/InspectorAgentRegistry.cpp: Renamed from Source/WebCore/inspector/InspectorAgentRegistry.cpp.
+        * inspector/InspectorBackendDispatcher.h: Renamed from Source/WebCore/inspector/InspectorBackendDispatcher.h.
+        (Inspector::InspectorSupplementalBackendDispatcher::InspectorSupplementalBackendDispatcher):
+        (Inspector::InspectorSupplementalBackendDispatcher::~InspectorSupplementalBackendDispatcher):
+        * inspector/InspectorValues.cpp: Renamed from Source/WebCore/inspector/InspectorValues.cpp.
+        * inspector/InspectorValues.h: Renamed from Source/WebCore/inspector/InspectorValues.h.
+
+2013-12-11  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Store SHA1 hash in std::array
+        https://bugs.webkit.org/show_bug.cgi?id=125446
+
+        Reviewed by Darin Adler.
+
+        Change Vector to std::array and use typedef.
+
+        * bytecode/CodeBlockHash.cpp:
+        (JSC::CodeBlockHash::CodeBlockHash):
+
+2013-12-11  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/125141> Modernize the JavaScriptCore API headers
+        <rdar://problem/15540121>
+
+        This consists of three main changes:
+        1) Converting the return type of initializer methods to instancetype.
+        2) Declaring properties rather than getters and setters.
+        3) Tagging C API methods with information about their memory management semantics.
+
+        Changing the declarations from getters and setters to properties also required
+        updating the headerdoc in a number of places.
+
+        Reviewed by Anders Carlsson.
+
+        * API/JSContext.h:
+        * API/JSContext.mm:
+        * API/JSManagedValue.h:
+        * API/JSManagedValue.mm:
+        * API/JSStringRefCF.h:
+        * API/JSValue.h:
+        * API/JSVirtualMachine.h:
+        * API/JSVirtualMachine.mm:
+
+2013-12-11  Mark Rowe  <mrowe@apple.com>
+
+        <https://webkit.org/b/125559> Move JavaScriptCore off the legacy WebKit availability macros
+
+        The legacy WebKit availability macros are verbose, confusing, and provide no benefit over
+        using the system availability macros directly. The original vision was that they'd serve
+        a cross-platform purpose but that never came to be.
+
+        Map from WebKit version to OS X version based on the mapping in WebKitAvailability.h.
+        All iOS versions are specified as 7.0 as that is when the JavaScriptCore C API was made
+        public.
+
+        Part of <rdar://problem/15512304>.
+
+        Reviewed by Anders Carlsson.
+
+        * API/JSBasePrivate.h:
+        * API/JSContextRef.h:
+        * API/JSContextRefPrivate.h:
+        * API/JSObjectRef.h:
+        * API/JSValueRef.h:
+
 2013-12-10  Filip Pizlo  <fpizlo@apple.com>
 
         Get rid of forward exit on DoubleAsInt32

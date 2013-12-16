@@ -36,14 +36,14 @@
 
 #include "InjectedScriptHost.h"
 #include "InjectedScriptManager.h"
-#include "InspectorBackendDispatchers.h"
 #include "InspectorClient.h"
 #include "InspectorConsoleAgent.h"
 #include "InspectorForwarding.h"
-#include "InspectorFrontend.h"
 #include "InspectorHeapProfilerAgent.h"
 #include "InspectorProfilerAgent.h"
 #include "InspectorTimelineAgent.h"
+#include "InspectorWebBackendDispatchers.h"
+#include "InspectorWebFrontendDispatchers.h"
 #include "InstrumentingAgents.h"
 #include "WorkerConsoleAgent.h"
 #include "WorkerDebuggerAgent.h"
@@ -51,7 +51,10 @@
 #include "WorkerReportingProxy.h"
 #include "WorkerRuntimeAgent.h"
 #include "WorkerThread.h"
+#include <inspector/InspectorBackendDispatcher.h>
 #include <wtf/PassOwnPtr.h>
+
+using namespace Inspector;
 
 namespace WebCore {
 

@@ -1,3 +1,2122 @@
+2013-12-16  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] Add support for the computing the included intervals for a BoxShape
+        https://bugs.webkit.org/show_bug.cgi?id=124605
+
+        Reviewed by Andreas Kling.
+
+        Setting shape-inside to content-box now works.
+
+        Changed FloatRoundedRect::xInterceptsAtY() to include the bottom edge of
+        the rectangle and to check for the special cases where any or all of the
+        corner radii are empty.
+
+        Test: fast/shapes/shape-inside/shape-inside-content-box.html
+
+        * platform/graphics/FloatRoundedRect.cpp:
+        (WebCore::FloatRoundedRect::xInterceptsAtY):
+        * rendering/shapes/BoxShape.cpp:
+        (WebCore::BoxShape::getIncludedIntervals): Replaced the stub implementation with logic that's similar to getExcludedIntervals().
+        * rendering/shapes/ShapeInfo.cpp:
+        (WebCore::::computedShape): Removed a meaningless assert.
+        * rendering/shapes/ShapeInsideInfo.cpp:
+        (WebCore::ShapeInsideInfo::isEnabledFor):
+
+2013-12-16  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Expose accessibility objects for more WAI-ARIA roles
+        https://bugs.webkit.org/show_bug.cgi?id=125596
+
+        Reviewed by Chris Fleizach.
+
+        Exposed accessibility objects with the proper AtkRoles, some of
+        them to be provided by the next stable release of ATK.
+
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (atkRole):
+
+2013-12-16  Eric Carlson  <eric.carlson@apple.com>
+
+        Fix QuickTime plug-in replacement scripting bugs
+        https://bugs.webkit.org/show_bug.cgi?id=125717
+
+        Reviewed by Sam Weinig.
+
+        No new tests, existing test updated.
+
+        * Modules/plugins/QuickTimePluginReplacement.js:
+        (Replacement): Change '' to "" to avoid "Empty character constant" warning when creating
+            Derived Sources.
+        (Replacement.prototype.createVideoElement): Handle qtsrc attribute. Remember base url.
+        (Replacement.prototype.setURL): Resolve urls relative to base.
+
+2013-12-15  Darin Adler  <darin@apple.com>
+
+        Catch callers who forget to use initializeStyle
+        https://bugs.webkit.org/show_bug.cgi?id=125763
+
+        Reviewed by Andreas Kling.
+
+        A recent fix was because a caller used setStyle first rather than using
+        initializeStyle. This patch adds an assertion to catch cases where we do
+        that so we see the mistake right away instead of indirectly later.
+
+        * rendering/RenderElement.cpp:
+        (WebCore::RenderElement::initializeStyle): Simplified an assertion.
+        (WebCore::RenderElement::setStyle): Added an assertion that m_hasInitializedStyle
+        is true, with an exception for RenderView, which needs to be created before we
+        have the correct style computed for it (at least for now). Also broke out an
+        assertion that was using &&, since we would prefer to know which clause failed,
+        making separate assertions more useful than a combined assertion.
+
+2013-12-16  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Expose accessibility objects with ATK_ROLE_CHECK_MENU_ITEM
+        https://bugs.webkit.org/show_bug.cgi?id=125594
+
+        Reviewed by Chris Fleizach.
+
+        Exposed accessibility objects with checkmenuitem role with the
+        proper AtkRole, to be provided by the next stable release of ATK.
+
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (atkRole):
+
+2013-12-16  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Expose accessibility objects with ATK_ROLE_ARTICLE
+        https://bugs.webkit.org/show_bug.cgi?id=125587
+
+        Reviewed by Chris Fleizach.
+
+        Exposed accessibility objects with article role with the proper
+        AtkRole, to be provided by the next stable release of ATK.
+
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (atkRole):
+
+2013-11-27  Sergio Villar Senin  <svillar@igalia.com>
+
+        [CSS Grid Layout] Fix the preferred logical widths code to work with spanning grid items
+        https://bugs.webkit.org/show_bug.cgi?id=123994
+
+        Reviewed by Andreas Kling.
+
+        From Blink r159189 by <jchaffraix@chromium.org>
+
+        There was no definition in the specs for the intrinsic / preferred
+        logical widths on the grid element. The following was proposed to
+        the WG and later accepted:
+        - The sum of the grid tracks' UsedBreadth is the minimum logical width
+        - The sum of the grid tracks' MaxBreadth is the maximum logical width
+
+        http://lists.w3.org/Archives/Public/www-style/2013Oct/0054.html
+        for more information.
+
+        * rendering/RenderGrid.cpp:
+        (WebCore::RenderGrid::computeIntrinsicLogicalWidths):
+        (WebCore::RenderGrid::computedUsedBreadthOfGridTracks):
+        (WebCore::RenderGrid::minContentForChild):
+        (WebCore::RenderGrid::maxContentForChild):
+        * rendering/RenderGrid.h:
+
+2013-12-15  Frédéric Wang  <fred.wang@free.fr>
+
+        Add support for maction@toggle
+        https://bugs.webkit.org/show_bug.cgi?id=120059
+
+        Reviewed by Chris Fleizach.
+
+        Test: mathml/presentation/maction-toggle.html
+
+        * mathml/MathMLSelectElement.cpp:
+        (WebCore::MathMLSelectElement::getSelectedChildAndIndex):
+        (WebCore::MathMLSelectElement::updateSelectedChild):
+        (WebCore::MathMLSelectElement::defaultEventHandler):
+        (WebCore::MathMLSelectElement::willRespondToMouseClickEvents):
+        (WebCore::MathMLSelectElement::toggle):
+        * mathml/MathMLSelectElement.h:
+
+2013-12-15  Darin Adler  <darin@apple.com>
+
+        More nullptr in RenderElement
+        https://bugs.webkit.org/show_bug.cgi?id=125764
+
+        Reviewed by Andreas Kling.
+
+        * rendering/RenderElement.cpp:
+        (WebCore::RenderElement::uncachedFirstLineStyle):
+        (WebCore::RenderElement::updateShapeImage):
+        (WebCore::RenderElement::destroyLeftoverChildren):
+        (WebCore::RenderElement::findNextLayer):
+        Use nullptr in a few more places.
+
+2013-12-15  Ryosuke Niwa  <rniwa@webkit.org>
+
+        REGRESSION: 2x regression on Dromaeo DOM query tests
+        https://bugs.webkit.org/show_bug.cgi?id=125377
+
+        Reviewed by Filip Pizlo.
+
+        The bug was caused by JSC not JIT'ing property accesses on document because of its having
+        custom named getter (named properties).  This resulted in resolution of methods on document
+        such as getElementById to happen inside the interpreter.
+
+        Fixed the bug by using the new JSC type info flag which tells JSC to JIT property access on
+        document, and then notifying JSC whenever a new named property appeared on document.
+
+        Tests: js/dom/dfg-prototype-chain-caching-with-impure-get-own-property-slot-traps-2.html
+               js/dom/dfg-prototype-chain-caching-with-impure-get-own-property-slot-traps-3.html
+               js/dom/dfg-prototype-chain-caching-with-impure-get-own-property-slot-traps-4.html
+               js/dom/prototype-chain-caching-with-impure-get-own-property-slot-traps-2.html
+               js/dom/prototype-chain-caching-with-impure-get-own-property-slot-traps-3.html
+               js/dom/prototype-chain-caching-with-impure-get-own-property-slot-traps-4.html
+
+        * bindings/js/JSDOMBinding.cpp:
+        (WebCore::addImpureProperty): Wraps VM::addImpureProperty.
+        * bindings/js/JSDOMBinding.h:
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateHeader): Added the support for NewImpurePropertyFiresWatchpoints.
+        * bindings/scripts/IDLAttributes.txt: Ditto.
+        * html/HTMLDocument.cpp:
+        (WebCore::HTMLDocument::addDocumentNamedItem): Calls addImpureProperty.
+        * html/HTMLDocument.idl: Added NewImpurePropertyFiresWatchpoints.
+
+2013-12-15  Brent Fulgham  <bfulgham@webkit.org>
+
+        [WIn] Unreviewed build fix after r160599
+
+        * rendering/RenderMediaControls.cpp:
+        (WebCore::determineState): RenderObject::theme now returns
+        a reference.
+
+2013-12-15  Brent Fulgham  <bfulgham@webkit.org>
+
+        [Win] Unreviewed build fix
+
+        The build system continues to attempt to build QTMovieWin, even
+        though it is excluded from the build solution. I'm actually
+        removing the project files to prevent this.
+
+        * WebCore.vcxproj/QTMovieWin/QTMovieWin.vcxproj: Removed.
+        * WebCore.vcxproj/QTMovieWin/QTMovieWin.vcxproj.filters: Removed.
+
+2013-12-15  Rob Buis  <rob.buis@samsung.com>
+
+        [CSS Shapes] shape-outside animation does not handle 'auto' well
+        https://bugs.webkit.org/show_bug.cgi?id=125700
+
+        Reviewed by Dirk Schulze.
+
+        Handle the case where we are blending/animating with a null ShapeValue due to 'auto'.
+
+        Adapted LayoutTests/fast/shapes/shape-outside-floats/shape-outside-animation.html for testing this.
+
+        * page/animation/CSSPropertyAnimation.cpp:
+        (WebCore::blendFunc):
+
+2013-12-15  Andy Estes  <aestes@apple.com>
+
+        [iOS] Upstream changes to FeatureDefines.xcconfig
+        https://bugs.webkit.org/show_bug.cgi?id=125742
+
+        Reviewed by Dan Bernstein.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-12-14  Darin Adler  <darin@apple.com>
+
+        Crash in CSSImageGeneratorValue and RenderScrollbar
+        https://bugs.webkit.org/show_bug.cgi?id=125702
+
+        Reviewed by Alexey Proskuryakov.
+
+        This crash had two causes at two different levels. The crash fixes both.
+
+        At the RenderScrollbar level, we were setting up a new renderer, a
+        RenderScrollbarPart, and never calling initializeStyle. This meant that
+        we did not do proper style setup, which meant we did not end up calling
+        CSSImageGeneratorValue::addClient and so had a removeClient that was not
+        properly balanced by an addClient. This is the primary bug.
+
+        At the CSSImageGeneratorValue level, the addClient and removeClient
+        functions were not properly handling possibly-mismatched calls. It was
+        easy to fix the functions to work even if the calls are not perfectly
+        matched up, which makes the consequences of a missed addClient call
+        much less dire, no longer messing up reference counting. Fixing this
+        mitigates the risk if we made this same mistake elsewhere, although I
+        could not find any other places with some quick searches.
+
+        Test: fast/css/scrollbar-image-crash.html
+
+        * css/CSSImageGeneratorValue.cpp:
+        (WebCore::CSSImageGeneratorValue::addClient): Only call ref if this will
+        add the first client.
+        (WebCore::CSSImageGeneratorValue::removeClient): Only call deref if this
+        removes the last client. Also added an assertion that can fire if we call
+        removeClient without first calling addClient, which is illegal. However,
+        the function handles that case without over-deref'ing itself.
+
+        * rendering/RenderScrollbar.cpp:
+        (WebCore::RenderScrollbar::updateScrollbarPart): Simplify the logic for
+        needRenderer a bit. Use initializeStyle rather than setStyle when first
+        creating the RenderScrollbarPart. Also use add and take properly so we
+        don't do extra hash lookups the old code did with get/set and get/remove.
+
+2013-12-14  Sam Weinig  <sam@webkit.org>
+
+        CTTE: SVGResourcesCache::cachedResourcesForRenderObject() should take a reference
+        https://bugs.webkit.org/show_bug.cgi?id=125743
+
+        Reviewed by Dan Bernstein.
+
+        * rendering/svg/RenderSVGContainer.cpp:
+        (WebCore::RenderSVGContainer::selfWillPaint):
+        * rendering/svg/RenderSVGImage.cpp:
+        (WebCore::RenderSVGImage::imageChanged):
+        * rendering/svg/RenderSVGResource.cpp:
+        (WebCore::requestPaintingResource):
+        (WebCore::removeFromCacheAndInvalidateDependencies):
+        (WebCore::RenderSVGResource::markForLayoutAndParentResourceInvalidation):
+        * rendering/svg/RenderSVGResourceClipper.cpp:
+        (WebCore::RenderSVGResourceClipper::applyClippingToContext):
+        * rendering/svg/RenderSVGRoot.cpp:
+        (WebCore::RenderSVGRoot::paintReplaced):
+        * rendering/svg/RenderSVGShape.cpp:
+        (WebCore::RenderSVGShape::shouldGenerateMarkerPositions):
+        (WebCore::RenderSVGShape::markerRect):
+        (WebCore::RenderSVGShape::drawMarkers):
+        * rendering/svg/SVGRenderSupport.cpp:
+        (WebCore::invalidateResourcesOfChildren):
+        (WebCore::SVGRenderSupport::layoutChildren):
+        (WebCore::SVGRenderSupport::intersectRepaintRectWithResources):
+        (WebCore::SVGRenderSupport::filtersForceContainerLayout):
+        (WebCore::SVGRenderSupport::pointInClippingArea):
+        * rendering/svg/SVGRenderingContext.cpp:
+        (WebCore::SVGRenderingContext::prepareToRenderSVGContent):
+        * rendering/svg/SVGResourcesCache.cpp:
+        (WebCore::SVGResourcesCache::cachedResourcesForRenderObject):
+        (WebCore::SVGResourcesCache::clientLayoutChanged):
+        (WebCore::SVGResourcesCache::clientDestroyed):
+        * rendering/svg/SVGResourcesCache.h:
+        * rendering/svg/SVGResourcesCycleSolver.cpp:
+        (WebCore::SVGResourcesCycleSolver::resourceContainsCycles):
+
+2013-12-14  Dan Bernstein  <mitz@apple.com>
+
+        Clean up the project after r160487
+
+        * WebCore.xcodeproj/project.pbxproj: Moved reference to Security.framework from the top
+        level of the project to the Frameworks group, and made it SDK-relative.
+
+2013-12-14  Andreas Kling  <akling@apple.com>
+
+        Page::theme() should return a reference.
+        <https://webkit.org/b/125737>
+
+        There's always a RenderTheme, and not a single call site was checking
+        for null pointers anyway. Updated RenderObject::theme() as well.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-13  Sam Weinig  <sam@webkit.org>
+
+        CTTE: Convert Element and RenderObject iterator usage to use range-based for loops
+        https://bugs.webkit.org/show_bug.cgi?id=125731
+
+        Reviewed by Andreas Kling.
+
+        Perform straight forward conversions. A few stragglers that do odd things remain.
+
+2013-12-14  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Small string improvements to JSInjectedScriptHost::type and other bindings
+        https://bugs.webkit.org/show_bug.cgi?id=125722
+
+        Reviewed by Timothy Hatcher.
+
+        * bindings/js/JSInjectedScriptHostCustom.cpp:
+        (WebCore::JSInjectedScriptHost::type):
+        Use SmallStrings, jsNontrivialString and ASCIILiteral.
+
+        * bindings/js/JSJavaScriptCallFrameCustom.cpp:
+        (WebCore::JSJavaScriptCallFrame::type):
+        Use jsNontrivialString.
+
+        * bridge/c/c_instance.cpp:
+        (JSC::Bindings::CInstance::stringValue):
+        Use jsNontrivialString and ASCIILiteral.
+
+2013-12-14  Andreas Kling  <akling@apple.com>
+
+        Move a couple of inlines from RenderObject to RenderElement.
+        <https://webkit.org/b/125734>
+
+        Take most of the inline functions on RenderObject that call style()
+        and move them over to RenderElement where style() is branchless.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-14  Andreas Kling  <akling@apple.com>
+
+        RenderElement::rendererForRootBackground() should return a reference.
+        <https://webkit.org/b/125735>
+
+        This function always finds a renderer to return.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-14  Mark Rowe  <mrowe@apple.com>
+
+        Build fix after r160557.
+
+        * Configurations/WebCore.xcconfig: Find JavaScriptCore.framework below SDKROOT so that we'll pick
+        up the built version in production builds rather than the system version.
+
+2013-12-14  Brendan Long  <b.long@cablelabs.com>
+
+        [GStreamer] Use GMutexLocker instead of g_mutex_lock
+        https://bugs.webkit.org/show_bug.cgi?id=125588
+
+        Reviewed by Philippe Normand.
+
+        No new tests because this is just code simplification.
+
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp:
+        (WebCore::MediaPlayerPrivateGStreamerBase::updateTexture):
+        (WebCore::MediaPlayerPrivateGStreamerBase::triggerRepaint):
+        (WebCore::MediaPlayerPrivateGStreamerBase::paint):
+        * platform/graphics/gstreamer/VideoSinkGStreamer.cpp:
+        (webkitVideoSinkTimeoutCallback):
+        (webkitVideoSinkRender):
+        (unlockBufferMutex):
+        (webkitVideoSinkUnlockStop):
+        (webkitVideoSinkStart):
+
+2013-12-13  Andreas Kling  <akling@apple.com>
+
+        Move RenderObject::repaintAfterLayoutIfNeeded() to RenderElement.
+        <https://webkit.org/b/125712>
+
+        This function is only ever called on RenderElements, so move it there.
+        Removes some RenderObject::style() branchiness.
+
+        Reviewed by Darin Adler.
+
+2013-12-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Move Inspector and Debugger protocol domains into JavaScriptCore
+        https://bugs.webkit.org/show_bug.cgi?id=125707
+
+        Reviewed by Timothy Hatcher.
+
+          - Switch TypeBuilder::Page::SearchMatch to TypeBuilder::GenericTypes::SearchMatch
+            which comes from InspectorJSTypeBuilders.
+          - Remove domains that moved to JavaScriptCore.
+
+        No new tests, this only moves code around. There are no functional changes.
+
+        * CMakeLists.txt:
+        * DerivedSources.make:
+        * GNUmakefile.am:
+        Add new files.
+
+        * inspector/ContentSearchUtils.cpp:
+        (WebCore::ContentSearchUtils::buildObjectForSearchMatch):
+        (WebCore::ContentSearchUtils::searchInTextByLines):
+        * inspector/ContentSearchUtils.h:
+        * inspector/InspectorAgent.cpp:
+        * inspector/InspectorAgent.h:
+        * inspector/InspectorDebuggerAgent.h:
+        * inspector/InspectorPageAgent.cpp:
+        (WebCore::InspectorPageAgent::searchInResource):
+        * inspector/InspectorPageAgent.h:
+        * inspector/protocol/Page.json:
+        Update includes and type builder type names.
+
+        * inspector/InspectorDebuggerAgent.cpp:
+        (WebCore::breakpointActionTypeForString):
+        (WebCore::InspectorDebuggerAgent::searchInContent):
+        * inspector/InspectorTimelineAgent.cpp:
+        (WebCore::InspectorTimelineAgent::innerAddRecordToTimeline):
+        Use the new getEnum function names.
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Remove pre-VS2013 support code.
+        https://bugs.webkit.org/show_bug.cgi?id=125693
+
+        Reviewed by Darin Adler.
+
+        * Modules/webdatabase/DatabaseTracker.cpp:
+        (WebCore::DatabaseTracker::setQuota): Use C99 format arguments
+        * loader/FTPDirectoryParser.cpp:
+        (WebCore::parseOneFTPLine): Ditto
+        * loader/icon/IconDatabase.cpp:
+        (WebCore::IconDatabase::pruneUnretainedIcons): Ditto 
+        * platform/sql/SQLiteDatabase.cpp:
+        (WebCore::SQLiteDatabase::setMaximumSize): Ditto
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        SVG bindings are improperly being generated with "fastGetAttribute"
+        https://bugs.webkit.org/show_bug.cgi?id=125670
+
+        Reviewed by Darin Adler.
+
+        A bug was introduced in r152845 that improperly called the
+        IsSVGAnimatedType using the $attribute hash, rather than the
+        expected $attribute->signature->type.
+
+        * bindings/scripts/CodeGenerator.pm:
+        (GetterExpression): Clean up attribute type confusion.
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Unreviewed build fix after r160548
+
+        * WebCore.vcxproj/WebCore.vcxproj: Exclude MediaPlayerPrivateQuickTimeVisualContext from
+        Windows build.
+        * platform/graphics/MediaPlayer.cpp: Don't use QuickTime as the PlatformMediaEngine.
+
+2013-12-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        [GTK] Remove Warnings in building about duplicate INSPECTOR variables
+        https://bugs.webkit.org/show_bug.cgi?id=125710
+
+        Reviewed by Tim Horton.
+
+        * GNUmakefile.am:
+
+2013-12-13  Roger Fong  <roger_fong@apple.com>
+
+        [WebGL] Check for global variable precision mismatch between vertex and fragment shaders.
+        https://bugs.webkit.org/show_bug.cgi?id=125546.
+        <rdar://problem/15203364>
+
+        Reviewed by Brent Fulgham.
+
+        Covered Khronos conformances tests:
+        webgl/1.0.2/glsl/misc/shader-with-global-variable-precision-mismatch.html
+
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::linkProgram):
+        * platform/graphics/GraphicsContext3D.h: Rename areProgramSymbolsValid since it currently only serves one purpose.
+        * platform/graphics/opengl/GraphicsContext3DOpenGLCommon.cpp:
+        (WebCore::GraphicsContext3D::precisionsMatch):
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Unreviewed build fix after r160548
+
+        * WebCore.vcxproj/WebCoreGenerated.vcxproj: Specify that we are
+        using the vs120_xp build target for Makefile-based projects.
+
+2013-12-13  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Add Inspector Code Generation to JavaScriptCore for Runtime Domain
+        https://bugs.webkit.org/show_bug.cgi?id=125595
+
+        Reviewed by Timothy Hatcher.
+
+          - CodeGeneration changed to output Frontend and Backend dispatchers
+            in namespace Inspector. So update all the agent's appropriately.
+          - Update Derived Sources code generation to use the Scripts that had
+            moved to JavaScriptCore. Some ports just use JSC/inspector/scripts
+            directly, but others have to use the Scripts exported by JSC
+            in JavaScriptCore's PrivateHeaders.
+          - Add ForwardingHeaders for the files generated in JavaScriptCore.
+          - Update the names of Inspector DerivedSources files, since they
+            were renamed to InspectorWeb*.
+
+        No new tests, this only moves code around. There are no functional changes.
+
+        * CMakeLists.txt:
+        * DerivedSources.make:
+        * ForwardingHeaders/inspector/InspectorJSBackendDispatchers.h: Added.
+        * ForwardingHeaders/inspector/InspectorJSFrontendDispatchers.h: Added.
+        * ForwardingHeaders/inspector/InspectorJSTypeBuilders.h: Added.
+        * GNUmakefile.am:
+        * GNUmakefile.list.am:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.vcxproj/build-generated-files.sh:
+        * WebCore.xcodeproj/project.pbxproj:
+        Remove files, rename files, update code generation.
+
+        * make-generated-sources.sh:
+        Update this standalone developer script to fill in the new InspectorScripts variable.
+
+        * inspector/ConsoleMessage.h:
+        * inspector/InjectedScriptHost.cpp:
+        * inspector/InspectorAgent.cpp:
+        * inspector/InspectorAgent.h:
+        * inspector/InspectorApplicationCacheAgent.cpp:
+        * inspector/InspectorApplicationCacheAgent.h:
+        * inspector/InspectorCSSAgent.h:
+        * inspector/InspectorCanvasAgent.cpp:
+        * inspector/InspectorCanvasAgent.h:
+        * inspector/InspectorConsoleAgent.cpp:
+        * inspector/InspectorConsoleAgent.h:
+        * inspector/InspectorController.cpp:
+        * inspector/InspectorDOMAgent.cpp:
+        * inspector/InspectorDOMAgent.h:
+        * inspector/InspectorDOMDebuggerAgent.cpp:
+        * inspector/InspectorDOMDebuggerAgent.h:
+        * inspector/InspectorDOMStorageAgent.cpp:
+        * inspector/InspectorDOMStorageAgent.h:
+        * inspector/InspectorDatabaseAgent.cpp:
+        * inspector/InspectorDatabaseAgent.h:
+        * inspector/InspectorDatabaseResource.cpp:
+        * inspector/InspectorDatabaseResource.h:
+        * inspector/InspectorDebuggerAgent.cpp:
+        * inspector/InspectorDebuggerAgent.h:
+        * inspector/InspectorFrontendClientLocal.cpp:
+        * inspector/InspectorHeapProfilerAgent.h:
+        * inspector/InspectorIndexedDBAgent.cpp:
+        * inspector/InspectorIndexedDBAgent.h:
+        * inspector/InspectorInputAgent.h:
+        * inspector/InspectorLayerTreeAgent.cpp:
+        * inspector/InspectorLayerTreeAgent.h:
+        * inspector/InspectorMemoryAgent.cpp:
+        * inspector/InspectorMemoryAgent.h:
+        * inspector/InspectorPageAgent.cpp:
+        * inspector/InspectorPageAgent.h:
+        * inspector/InspectorProfilerAgent.cpp:
+        * inspector/InspectorProfilerAgent.h:
+        * inspector/InspectorResourceAgent.cpp:
+        * inspector/InspectorResourceAgent.h:
+        * inspector/InspectorRuntimeAgent.h:
+        * inspector/InspectorTimelineAgent.cpp:
+        * inspector/InspectorTimelineAgent.h:
+        * inspector/InspectorWorkerAgent.cpp:
+        * inspector/InspectorWorkerAgent.h:
+        * inspector/PageRuntimeAgent.h:
+        * inspector/ScriptCallFrame.cpp:
+        * inspector/WorkerInspectorController.cpp:
+        * inspector/WorkerRuntimeAgent.h:
+        Updates header names and class namespace changes.
+
+2013-12-13  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Adding RTCPeerConnectionErrorCallback
+        https://bugs.webkit.org/show_bug.cgi?id=125574
+
+        Reviewed by Eric Carlson.
+
+        According to the spec there should be a RTCPeerConnectionErrorCallback function type for createOffer/Answer,
+        setLocal/RemoteDescription and updateIce function calls. This callback must handle a DOMError object.
+
+        Existing tests were updated.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * Modules/mediastream/RTCPeerConnection.cpp:
+        (WebCore::RTCPeerConnection::createOffer):
+        (WebCore::RTCPeerConnection::createAnswer):
+        (WebCore::RTCPeerConnection::setLocalDescription):
+        (WebCore::RTCPeerConnection::setRemoteDescription):
+        (WebCore::RTCPeerConnection::addIceCandidate):
+        * Modules/mediastream/RTCErrorCallback.h: Removed.
+        * Modules/mediastream/RTCErrorCallback.idl: Removed.
+        * Modules/mediastream/RTCPeerConnection.h:
+        * Modules/mediastream/RTCPeerConnection.idl:
+        * Modules/mediastream/RTCPeerConnectionErrorCallback.h: Added.
+        * Modules/mediastream/RTCPeerConnectionErrorCallback.idl: Added.
+        * Modules/mediastream/RTCSessionDescriptionRequestImpl.cpp:
+        (WebCore::RTCSessionDescriptionRequestImpl::create):
+        (WebCore::RTCSessionDescriptionRequestImpl::RTCSessionDescriptionRequestImpl):
+        (WebCore::RTCSessionDescriptionRequestImpl::requestFailed):
+        * Modules/mediastream/RTCSessionDescriptionRequestImpl.h:
+        * Modules/mediastream/RTCVoidRequestImpl.cpp:
+        (WebCore::RTCVoidRequestImpl::create):
+        (WebCore::RTCVoidRequestImpl::RTCVoidRequestImpl):
+        (WebCore::RTCVoidRequestImpl::requestFailed):
+        * Modules/mediastream/RTCVoidRequestImpl.h:
+        * WebCore.xcodeproj/project.pbxproj:
+        * platform/mediastream/RTCPeerConnectionHandler.cpp:
+        (WebCore::RTCPeerConnectionHandler::incompatibleConstraintsErrorName):
+        (WebCore::RTCPeerConnectionHandler::invalidSessionDescriptionErrorName):
+        (WebCore::RTCPeerConnectionHandler::incompatibleSessionDescriptionErrorName):
+        (WebCore::RTCPeerConnectionHandler::internalErrorName):
+        * platform/mediastream/RTCPeerConnectionHandler.h:
+        * platform/mock/RTCNotifiersMock.cpp:
+        (WebCore::SessionRequestNotifier::SessionRequestNotifier):
+        (WebCore::SessionRequestNotifier::fire):
+        (WebCore::VoidRequestNotifier::VoidRequestNotifier):
+        (WebCore::VoidRequestNotifier::fire):
+        * platform/mock/RTCNotifiersMock.h:
+        * platform/mock/RTCPeerConnectionHandlerMock.cpp:
+        (WebCore::RTCPeerConnectionHandlerMock::createOffer):
+        (WebCore::RTCPeerConnectionHandlerMock::createAnswer):
+
+2013-12-13  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Switch WebKit solution to Visual Studio 2013
+        https://bugs.webkit.org/show_bug.cgi?id=125192
+
+        Reviewed by Anders Carlsson.
+
+        * WebCore.vcxproj/WebCore.vcxproj: Update for VS2013
+        * WebCore.vcxproj/WebCore.vcxproj.filters: Ditto
+        * WebCore.vcxproj/WebCoreTestSupport.vcxproj: Ditto
+
+2013-12-13  Alexey Proskuryakov  <ap@apple.com>
+
+        WebCrypto Key.usages should be ordered alphabetically
+        https://bugs.webkit.org/show_bug.cgi?id=125696
+
+        Reviewed by Darin Adler.
+
+        * crypto/CryptoKey.cpp: (WebCore::CryptoKey::usages): Do it.
+
+2013-12-13  Darin Adler  <darin@apple.com>
+
+        Make some optimizations for DOM bindings involving vectors
+        https://bugs.webkit.org/show_bug.cgi?id=125680
+
+        Reviewed by Andreas Kling.
+
+        * bindings/js/JSDOMBinding.h:
+        (WebCore::toJS): Removed unnecessary copying of vectors when converting them
+        to JavaScript values.
+        (WebCore::toRefPtrNativeArray): Use reserveInitialCapacity and uncheckedAppend.
+        (WebCore::toNativeArray): Ditto.
+        (WebCore::toNativeArguments): Ditto.
+
+2013-12-13  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        REGRESSION(r155784): [GTK] Some methods incorrectly removed in r155784 and deprecated in r158662
+        https://bugs.webkit.org/show_bug.cgi?id=125692
+
+        Reviewed by Martin Robinson.
+
+        In r155784 the build was fixed by skipping Console::profile() and
+        Console::profileEnd(), but the patch also skipped other methods
+        containing the profile method name. Those were incorrectly
+        deprecated in r158662 thinking that the property had been removed
+        in the idl.
+
+        * bindings/gobject/WebKitDOMDeprecated.cpp: Undeprecate
+        webkit_dom_html_head_element_get_profile and
+        webkit_dom_html_head_element_set_profile.
+        * bindings/gobject/WebKitDOMDeprecated.h: Ditto.
+        * bindings/gobject/WebKitDOMDeprecated.symbols: Ditto.
+        * bindings/scripts/CodeGeneratorGObject.pm:
+        (SkipFunction): Skip webkit_dom_console_profile and
+        webkit_dom_console_profile_end.
+
+2013-12-13  Rob Buis  <rob.buis@samsung.com>
+
+        Clean up SVGScriptElement
+        https://bugs.webkit.org/show_bug.cgi?id=125527
+
+        Reviewed by Darin Adler.
+
+        From the Blink port of this bug it becomes clear that svg/dom/SVGScriptElement/script-set-href.svg and
+        svg/dom/svg-element-attribute-js-null.xhtml still hit an assert in Debug because SVGNames::typeAttr can't
+        be used with fastGetAttribute in all cases, because it can be animatable. However for SVGScriptElement
+        it is not animatable, so make isAnimatableAttribute virtual (note Debug only method) and allow typeAttr
+        in the SVGScriptElement case to be useable for fastGetAttribute.
+
+        Test: svg/dom/SVGScriptElement/script-type-attribute.svg
+
+        * svg/SVGElement.h:
+        * svg/SVGScriptElement.cpp:
+        (WebCore::SVGScriptElement::isAnimatableAttribute):
+        * svg/SVGScriptElement.h:
+
+2013-12-13  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Expose also webkit_dom_document_get_url
+        https://bugs.webkit.org/show_bug.cgi?id=125691
+
+        Reviewed by Martin Robinson.
+
+        For some reason we expose the URL property, so it can be accessed
+        with g_object_get(), but we have a special case to not provide a
+        public getter.
+
+        * bindings/gobject/webkitdom.symbols: Add new symbol.
+        * bindings/scripts/CodeGeneratorGObject.pm:
+        (GenerateFunctions): Remove the special case of URL property.
+
+2013-12-13  Andreas Kling  <akling@apple.com>
+
+        CSSFilterImageValue constructor should require both image and filter.
+        <https://webkit.org/b/125056>
+
+        Make the CSSFilterImageValue::create() helper take both the image and
+        filter CSSValues by PassRef since they should never be null.
+
+        Tweaked ComputedStyleExtractor::valueForFilter() to return a PassRef
+        for this to work.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-12  Andreas Kling  <akling@apple.com>
+
+        StyleResolver::adjustRenderStyle() should take RenderStyle references.
+        <https://webkit.org/b/125623>
+
+        This function doesn't handle null styles being passed, so prevent
+        it at compile time.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-13  Darin Adler  <darin@apple.com>
+
+        Eliminate awkward virtualComputedStyle construction
+        https://bugs.webkit.org/show_bug.cgi?id=125681
+
+        Reviewed by Andreas Kling.
+
+        * dom/Element.cpp:
+        (WebCore::Element::computedStyle): Tweak coding style a bit.
+
+        * dom/Element.h: Marked computedStyle virtual and got rid of virtualComputedStyle.
+        This fixes a bug that we would not call SVGElement::computedStyle if we called
+        it through an Element pointer or reference. Not sure how to get test coverage for this.
+
+        * dom/Node.cpp:
+        (WebCore::Node::computedStyle): Use a loop instead of recursive virtual calls.
+
+        * dom/Node.h: Made computedStyle virtual and got rid of virtualComputedStyle.
+
+        * svg/SVGElement.cpp:
+        (WebCore::SVGElement::computedStyle): Tweak coding style a bit.
+
+        * svg/SVGElement.h: Made computedStyle virtual (and FINAL) and got rid fo
+        virtualComputedStyle.
+
+2013-12-13  Darin Adler  <darin@apple.com>
+
+        Fix a couple stray uses of RefPtr that should release
+        https://bugs.webkit.org/show_bug.cgi?id=125679
+
+        Reviewed by Andreas Kling.
+
+        * css/CSSParser.cpp:
+        (WebCore::CSSParser::parseFilter): Add calls to release, in
+        one case rearranging the order of operations slightly so we
+        don't release the pointer before using it.
+
+2013-12-12  Alexey Proskuryakov  <ap@apple.com>
+
+        WebCrypto wrapKey operation doesn't check key usage
+        https://bugs.webkit.org/show_bug.cgi?id=125675
+
+        Reviewed by Darin Adler.
+
+        Tests: crypto/subtle/unwrapKey-check-usage.html
+               crypto/subtle/wrapKey-check-usage.html
+
+        * bindings/js/JSSubtleCryptoCustom.cpp: (WebCore::JSSubtleCrypto::wrapKey):
+        Added accidentally omitted code. Other operations are fine.
+
+2013-12-12  Darin Adler  <darin@apple.com>
+
+        Make some improvements in CSSImageGeneratorValue code
+        https://bugs.webkit.org/show_bug.cgi?id=125676
+
+        Reviewed by Simon Fraser.
+
+        * css/CSSCrossfadeValue.cpp:
+        (WebCore::subimageKnownToBeOpaque): Take a reference to the CSSValue, since
+        it's known not to be null. Used checked cast.
+        (WebCore::CSSCrossfadeValue::knownToBeOpaque): Updated to pass a reference.
+
+        * css/CSSImageGeneratorValue.cpp:
+        (WebCore::CSSImageGeneratorValue::saveCachedImageForSize): Use
+        make_unique instead of adoptPtr.
+        (WebCore::CSSImageGeneratorValue::subimageIsPending): Use checked cast.
+        (WebCore::CSSImageGeneratorValue::cachedImageForCSSValue): Ditto, also
+        use nullptr.
+
+        * css/CSSImageGeneratorValue.h: Removed unneeded includes, added some forward
+        declarations, used unique_ptr instead of OwnPtr, and used CSS_VALUE_TYPE_CASTS
+        macro to create cast functions.
+
+        * css/CSSValue.cpp: Removed unneeded include of CSSImageGeneratorValue.h.
+
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::State::clear): Use nullptr instead of 0.
+        (WebCore::StyleResolver::applyProperty): Use checked cast and pass references
+        instead of pointers to StyleGeneratedImage::create.
+        (WebCore::StyleResolver::styleImage): Use checked cast and pass references
+        instead of pointers to generatedOrPendingFromValue.
+        (WebCore::StyleResolver::generatedOrPendingFromValue): Take the value as a
+        reference instead of a pointer.
+        (WebCore::StyleResolver::loadPendingImage): Pass a refernece instead of a
+        pointer to StyleGeneratedImage::create.
+        (WebCore::StyleResolver::loadPendingImages): Use auto for iteration instead of
+        a lot type name.
+
+        * css/StyleResolver.h: Changed generatedOrPendingFromValue to take the value
+        as a reference instead of a pointer.
+
+        * page/animation/CSSPropertyAnimation.cpp:
+        (WebCore::blendFilter): Pass a reference insted of a pointer to
+        StyleGeneratedImage::create.
+        (WebCore::crossfadeBlend): Ditto.
+        (WebCore::blendFunc): Ditto. Also use references for local variables.
+
+        * rendering/style/StyleGeneratedImage.cpp:
+        (WebCore::StyleGeneratedImage::StyleGeneratedImage): Use PassRef instead of
+        PassRefPtr for the argument type.
+        (WebCore::StyleGeneratedImage::cssValue): Updated since m_imageGeneratorValue
+        is now a Ref instead of a RefPtr. Sadly this requires a const_cast that we can
+        come back and get rid of later.
+        (WebCore::StyleGeneratedImage::imageSize): Ditto.
+        (WebCore::StyleGeneratedImage::image): Ditto.
+
+        * rendering/style/StyleGeneratedImage.h: Changed create function and constructor
+        to take a PassRef. Made imageValue non-const since it returns a non-const value,
+        to be consistent with "conceptual const". Changed m_imageGeneratorValue to be a
+        Ref instead of a RefPtr.
+
+        * rendering/style/StyleImage.h: Made WrappedImagePtr be const void*, since it's
+        a pointer used only for equality checks. Not a great idiom, but fine to use a
+        const pointer instead of non-const, and avoids the const_cast we'd otherwise
+        need in StyleGeneratedImage::data.
+
+2013-12-12  KyungTae Kim  <ktf.kim@samsung.com>
+
+        Improve the find word boundary performance
+        https://bugs.webkit.org/show_bug.cgi?id=125619
+
+        In endWordBoundary case, the textBreakPrevious call in findWordBoundary is unnecessary.
+        So use separate function for endWordBoundary can improve the performance.
+
+        Reviewed by Darin Adler.
+
+        No tests because no operation changes.
+
+        * editing/VisibleUnits.cpp: Use findEndWordBoundary in endWordBoundary
+        (WebCore::endWordBoundary):
+        * platform/text/TextBoundaries.cpp: Add findEndWordBoundary function
+        (WebCore::findEndWordBoundary):
+        * platform/text/TextBoundaries.h:
+        * platform/text/mac/TextBoundaries.mm: Add findEndWordBoundary function
+        (WebCore::findEndWordBoundary):
+
+2013-12-12  Benjamin Poulain  <bpoulain@apple.com>
+
+        Fix a silly mistake of r160467
+        https://bugs.webkit.org/show_bug.cgi?id=125657
+
+        Reviewed by Alexey Proskuryakov.
+
+        Fix a typo. The validity check was missing the logical not.
+
+        * platform/network/cf/ResourceHandleCFURLConnectionDelegateWithOperationQueue.cpp:
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::willSendRequest):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didReceiveResponse):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didReceiveData):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didFinishLoading):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didFail):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::willCacheResponse):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didReceiveChallenge):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didSendBodyData):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::shouldUseCredentialStorage):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::canRespondToProtectionSpace):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didReceiveDataArray):
+
+2013-12-12  Tim Horton  <timothy_horton@apple.com>
+
+        [wk2] Handle pinch-to-zoom gesture
+        https://bugs.webkit.org/show_bug.cgi?id=125604
+
+        Reviewed by Simon Fraser.
+
+        * WebCore.exp.in:
+        Export some TransformationMatrix functions.
+
+        * WebCore.xcodeproj/project.pbxproj:
+        Make some headers private so that RenderLayerCompositor/Backing can be used from WebKit2.
+
+        * rendering/RenderLayerCompositor.h:
+        (WebCore::RenderLayerCompositor::layerForContentShadow):
+        Add a getter for the content shadow layer.
+
+2013-12-12  Brady Eidson  <beidson@apple.com>
+
+        DatabaseProcess IndexedDB: Establish a metadata backing store on disk
+        https://bugs.webkit.org/show_bug.cgi?id=125258
+
+        Reviewed by Alexey Proskuryakov, Anders Carlsson, and Tim Horton.
+
+        Teach CrossThreadCopier how to handle IDBDatabaseMetadata.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * WebCore.exp.in:
+        * WebCore.xcodeproj/project.pbxproj:
+
+        * Modules/indexeddb/IDBDatabaseMetadata.cpp: Added.
+        (WebCore::IDBDatabaseMetadata::isolatedCopy):
+        (WebCore::IDBObjectStoreMetadata::isolatedCopy):
+        (WebCore::IDBIndexMetadata::isolatedCopy):
+        * Modules/indexeddb/IDBDatabaseMetadata.h:
+
+        * Modules/indexeddb/IDBKeyPath.cpp:
+        (WebCore::IDBKeyPath::isolatedCopy):
+        * Modules/indexeddb/IDBKeyPath.h:
+
+        * platform/CrossThreadCopier.cpp:
+        (WebCore::::copy): Add an IDBDatabaseMetadata specialization.
+        * platform/CrossThreadCopier.h:
+
+2013-12-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Add support for RSAES-PKCS1-v1_5
+        https://bugs.webkit.org/show_bug.cgi?id=125647
+
+        Build fix.
+
+        * crypto/CommonCryptoUtilities.h: Declare a newly used private constant.
+
+2013-12-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Add support for RSAES-PKCS1-v1_5
+        https://bugs.webkit.org/show_bug.cgi?id=125647
+
+        Reviewed by Anders Carlsson.
+
+        Tests: crypto/subtle/rsaes-pkcs1-v1_5-decrypt.html
+               crypto/subtle/rsaes-pkcs1-v1_5-wrap-unwrap-aes.html
+
+        * crypto/algorithms/CryptoAlgorithmAES_KW.cpp:
+        * crypto/algorithms/CryptoAlgorithmAES_KW.h:
+        Removed meaningless parameters arguments from private functions. The base arguments
+        class is always empty.
+
+        * WebCore.xcodeproj/project.pbxproj:
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForEncrypt):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDecrypt):
+        * bindings/js/JSCryptoKeySerializationJWK.cpp:
+        (WebCore::JSCryptoKeySerializationJWK::reconcileAlgorithm):
+        (WebCore::JSCryptoKeySerializationJWK::keySizeIsValid):
+        (WebCore::JSCryptoKeySerializationJWK::addJWKAlgorithmToJSON):
+        * crypto/algorithms/CryptoAlgorithmRSAES_PKCS1_v1_5.cpp: Added.
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::CryptoAlgorithmRSAES_PKCS1_v1_5):
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::~CryptoAlgorithmRSAES_PKCS1_v1_5):
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::create):
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::identifier):
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::keyAlgorithmMatches):
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::encrypt):
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::decrypt):
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::generateKey):
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::importKey):
+        * crypto/algorithms/CryptoAlgorithmRSAES_PKCS1_v1_5.h: Added.
+        * crypto/mac/CryptoAlgorithmRSAES_PKCS1_v1_5Mac.cpp: Added.
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::platformEncrypt):
+        (WebCore::CryptoAlgorithmRSAES_PKCS1_v1_5::platformDecrypt):
+        * crypto/mac/CryptoAlgorithmRegistryMac.cpp:
+        (WebCore::CryptoAlgorithmRegistry::platformRegisterAlgorithms):
+        Added support for this algorithm.
+
+2013-12-12  Andreas Kling  <akling@apple.com>
+
+        [Mac] Stop not caching HTTP resources with "Vary" header in response.
+        <https://webkit.org/b/125483>
+        <rdar://problem/11781097>
+
+        Remove the workaround preventing resources with the "Vary" header
+        from going into cache, as the CFNetwork cache has supported this
+        for quite a while now.
+
+        31.5 MB progression on Membuster3, because we can now mmap those
+        resources from disk once they are in the cache.
+
+        We keep the workaround on PLATFORM(WIN) for now.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-12  Sam Weinig  <sam@webkit.org>
+
+        Replace uses of WTF::BitArray with std::bitset
+        https://bugs.webkit.org/show_bug.cgi?id=125642
+
+        Reviewed by Anders Carlsson.
+
+        * css/CSSParser.cpp:
+        (WebCore::filterProperties):
+        (WebCore::CSSParser::createStyleProperties):
+        * css/StyleProperties.cpp:
+        (WebCore::StyleProperties::asText):
+
+2013-12-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Public key in a generated KeyPair should always be extractable
+        https://bugs.webkit.org/show_bug.cgi?id=125643
+
+        Reviewed by Sam Weinig.
+
+        The spec doesn't explain how generateKey works with key pairs (there are open bugs
+        about that). Making public keys non-extractable makes no sense one way or another.
+
+        Test: crypto/subtle/rsa-oaep-generate-non-extractable-key.html
+
+        * crypto/mac/CryptoKeyRSAMac.cpp: (WebCore::CryptoKeyRSA::generatePair):
+
+2013-12-12  Alexey Proskuryakov  <ap@apple.com>
+
+        Make algorithm.name return registered name, not normalized one
+        https://bugs.webkit.org/show_bug.cgi?id=125641
+
+        Reviewed by Anders Carlsson.
+
+        Currently, WebCrypto editor's draft stipulates that algorithm name is lowercased
+        as part of normalization.
+
+        But it makes little sense to register algorithms as mixed (mostly upper) case, yet
+        return the name lowercased. Other implementations don't bother respecting this,
+        and signs are that the spec will change.
+
+        I'd like to match other implementations here, because sticking to the spec only
+        makes us fail 3rd party test suites for no good reason.
+
+        Updated many existing tests.
+
+        * crypto/CryptoAlgorithmRegistry.cpp:
+        (WebCore::CryptoAlgorithmRegistry::getIdentifierForName):
+        (WebCore::CryptoAlgorithmRegistry::registerAlgorithm):
+        * crypto/CryptoAlgorithmRegistry.h:
+        * crypto/algorithms/CryptoAlgorithmAES_CBC.cpp:
+        * crypto/algorithms/CryptoAlgorithmAES_KW.cpp:
+        * crypto/algorithms/CryptoAlgorithmHMAC.cpp:
+        * crypto/algorithms/CryptoAlgorithmRSASSA_PKCS1_v1_5.cpp:
+        * crypto/algorithms/CryptoAlgorithmRSA_OAEP.cpp:
+        * crypto/algorithms/CryptoAlgorithmSHA1.cpp:
+        * crypto/algorithms/CryptoAlgorithmSHA224.cpp:
+        * crypto/algorithms/CryptoAlgorithmSHA256.cpp:
+        * crypto/algorithms/CryptoAlgorithmSHA384.cpp:
+        * crypto/algorithms/CryptoAlgorithmSHA512.cpp:
+
+2013-12-12  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Move CertificateInfo to WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=124720
+
+        Reviewed by Darin Adler.
+
+        Based on the patch by Kwang Yul Seo <skyul@company100.net>
+
+        * GNUmakefile.list.am:
+        * PlatformEfl.cmake:
+        * PlatformGTK.cmake:
+        * WebCore.exp.in:
+        * WebCore.xcodeproj/project.pbxproj:
+        * platform/network/mac/CertificateInfo.h: Renamed from Source/WebKit2/Shared/mac/CertificateInfo.h.
+        (WebCore::CertificateInfo::setCertificateChain): Added, because WebCoreArgumentCoders needs it.
+        * platform/network/mac/CertificateInfoMac.mm: Renamed from Source/WebKit2/Shared/mac/CertificateInfo.mm.
+        (WebCore::CertificateInfo::CertificateInfo): Moved encode() and decode() to WebCoreArgumentCodersMac.mm.
+        * platform/network/soup/CertificateInfo.cpp: Copied from Source/WebKit2/Shared/WebCertificateInfo.h.
+        (WebCore::CertificateInfo::CertificateInfo): Moved encode() and decode() to WebCoreArgumentCodersSoup.cpp.
+        * platform/network/soup/CertificateInfo.h: Renamed from Source/WebKit2/Shared/soup/CertificateInfo.h.
+        (WebCore::CertificateInfo::setCertificate): Added, because WebCoreArgumentCoders needs it.
+        (WebCore::CertificateInfo::setTLSErrors): Added, because WebCoreArgumentCoders needs it.
+
+2013-12-12  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r160417.
+        http://trac.webkit.org/changeset/160417
+        https://bugs.webkit.org/show_bug.cgi?id=125629
+
+        The patch is causing crashes (Requested by zdobersek1 on
+        #webkit).
+
+        * accessibility/AXObjectCache.cpp:
+        (WebCore::AXObjectCache::~AXObjectCache):
+        (WebCore::AXObjectCache::remove):
+        * accessibility/AXObjectCache.h:
+        (WebCore::AXObjectCache::detachWrapper):
+        * accessibility/atk/AXObjectCacheAtk.cpp:
+        (WebCore::AXObjectCache::detachWrapper):
+        (WebCore::AXObjectCache::attachWrapper):
+        (WebCore::AXObjectCache::postPlatformNotification):
+        * accessibility/ios/AXObjectCacheIOS.mm:
+        (WebCore::AXObjectCache::detachWrapper):
+        * accessibility/mac/AXObjectCacheMac.mm:
+        (WebCore::AXObjectCache::detachWrapper):
+        * accessibility/win/AXObjectCacheWin.cpp:
+        (WebCore::AXObjectCache::detachWrapper):
+
+2013-12-12  Martin Robinson  <mrobinson@igalia.com>
+
+        Remove a few more guards mistakenly added in r160367
+
+        Reviewed by Carlos Garcia Campos
+
+        r160367 was too liberal in hiding APIs from the GObject DOM bindings.
+        We should expose the BatteryManager and the text and audio tracks.
+
+        * Modules/battery/BatteryManager.idl:
+        * html/HTMLMediaElement.idl:
+
+2013-12-11  Darin Adler  <darin@apple.com>
+
+        StylePendingImage needs to correctly manage the CSSValue pointer lifetime
+        https://bugs.webkit.org/show_bug.cgi?id=125468
+
+        Reviewed by Andreas Kling.
+
+        Test: fast/css/pending-image-crash.xhtml
+
+        Disconnect the reference counted StylePendingImage from the CSSValue that owns
+        it when it's not needed any more, otherwise we could end up using a pointer
+        that might no longer be valid.
+
+        * css/CSSCursorImageValue.cpp:
+        (WebCore::CSSCursorImageValue::detachPendingImage): Added. Calls detachFromCSSValue
+        on the current image if it is a StylePendingImage.
+        (WebCore::CSSCursorImageValue::~CSSCursorImageValue): Call detachPendingImage.
+        (WebCore::CSSCursorImageValue::cachedImage): Call detachPendingImage before changing
+        m_image to a new value.
+        (WebCore::CSSCursorImageValue::clearCachedImage): Ditto.
+        * css/CSSCursorImageValue.h: Added detachPendingImage.
+
+        * css/CSSImageSetValue.cpp:
+        (WebCore::CSSImageSetValue::detachPendingImage): Added. Calls detachFromCSSValue
+        on the current image set if it is a StylePendingImage.
+        (WebCore::CSSImageSetValue::~CSSImageSetValue): Call detachPendingImage.
+        (WebCore::CSSImageSetValue::cachedImageSet): Call detachPendingImage before changing
+        m_imageSet to a new value.
+        * css/CSSImageSetValue.h: Added detachPendingImage.
+
+        * css/CSSImageValue.cpp:
+        (WebCore::CSSImageValue::detachPendingImage): Added. Calls detachFromCSSValue on the
+        current image if it is a StylePendingImage.
+        (WebCore::CSSImageValue::~CSSImageValue): Call detachPendingImage.
+        (WebCore::CSSImageValue::cachedImage): Call detachPendingImage before changing m_image
+        to a new value.
+        * css/CSSImageValue.h: Added detachPendingImage.
+
+        * rendering/style/StylePendingImage.h:
+        (WebCore::StylePendingImage::cssImageValue): Added a null check.
+        (WebCore::StylePendingImage::cssImageGeneratorValue): Added a null check.
+        (WebCore::StylePendingImage::cssCursorImageValue): Added a null check.
+        (WebCore::StylePendingImage::cssImageSetValue): Added a null check.
+        (WebCore::StylePendingImage::detachFromCSSValue): Added. Sets m_value to null since
+        the style is no longer using this StylePendingImage.
+        (WebCore::StylePendingImage::data): Changed to use the "this" pointer since all we
+        need is some arbitrary pointer uniquely identifying the image. Before loading the image,
+        we have no suitable weak identifier, so it suffices to use the unique pointer to each
+        StylePendingImage object. This function is used only in a limited way; it would be nice
+        to find a way to make the code less strange long term.
+
+2013-12-11  Darin Adler  <darin@apple.com>
+
+        Remove some unneeded code noticed while looking at StylePendingImage
+        https://bugs.webkit.org/show_bug.cgi?id=125618
+
+        Reviewed by Andreas Kling.
+
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::loadPendingImage): Removed redundant function calls.
+
+        * rendering/RenderImageResource.cpp: Removed unneeded nullImage and
+        usesImageContainerSize member functions.
+        (WebCore::RenderImageResource::image): Use Image::nullImage directly instead of
+        through RenderImageResourceImage::nullImage.
+
+        * rendering/RenderImageResource.h: Removed unneeded usesImageContainerSize
+        and nullImage functions. Also removed unneeded includes.
+
+        * rendering/RenderImageResourceStyleImage.h: Removed unneeded
+        usesImageContainerSize override. Nobody was calling it.
+
+2013-12-11  Benjamin Poulain  <bpoulain@apple.com>
+
+        Add the CFNetwork implementation of the asynchronous ResourceHandle
+        https://bugs.webkit.org/show_bug.cgi?id=124440
+
+        Reviewed by Alexey Proskuryakov.
+
+        Add a second subclass of ResourceHandleCFURLConnectionDelegate: ResourceHandleCFURLConnectionDelegateWithOperationQueue.
+        The difference is those objects handle the network callback on a different queue.
+
+        Some common code has been refactored in ResourceHandleCFURLConnectionDelegate to reduce duplicated code.
+
+        The initialization of the request and connection is moved to the subclass to clean up initialization.
+
+        * WebCore.xcodeproj/project.pbxproj:
+        * platform/network/ResourceHandle.h:
+        * platform/network/ResourceHandleClient.cpp:
+        (WebCore::ResourceHandleClient::willCacheResponseAsync):
+        * platform/network/ResourceHandleClient.h:
+        * platform/network/cf/ResourceHandleCFURLConnectionDelegateWithOperationQueue.cpp: Added.
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::ResourceHandleCFURLConnectionDelegateWithOperationQueue):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::~ResourceHandleCFURLConnectionDelegateWithOperationQueue):
+        (WebCore::connectionWasCancelled):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::setupRequest):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::setupConnectionScheduling):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::willSendRequest):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didReceiveResponse):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didReceiveData):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didFinishLoading):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didFail):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::willCacheResponse):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didReceiveChallenge):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didSendBodyData):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::shouldUseCredentialStorage):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::canRespondToProtectionSpace):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::didReceiveDataArray):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::continueWillSendRequest):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::continueDidReceiveResponse):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::continueShouldUseCredentialStorage):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::continueWillCacheResponse):
+        (WebCore::ResourceHandleCFURLConnectionDelegateWithOperationQueue::continueCanAuthenticateAgainstProtectionSpace):
+        * platform/network/cf/ResourceHandleCFURLConnectionDelegateWithOperationQueue.h: Copied from Source/WebCore/platform/network/cf/SynchronousResourceHandleCFURLConnectionDelegate.h.
+        * platform/network/cf/ResourceHandleCFNet.cpp:
+        (WebCore::ResourceHandleInternal::~ResourceHandleInternal):
+        (WebCore::ResourceHandle::createCFURLConnection):
+        (WebCore::ResourceHandle::start):
+        (WebCore::ResourceHandle::shouldUseCredentialStorage):
+        (WebCore::ResourceHandle::canAuthenticateAgainstProtectionSpace):
+        (WebCore::ResourceHandle::continueWillSendRequest):
+        (WebCore::ResourceHandle::continueDidReceiveResponse):
+        (WebCore::ResourceHandle::continueShouldUseCredentialStorage):
+        (WebCore::ResourceHandle::continueCanAuthenticateAgainstProtectionSpace):
+        (WebCore::ResourceHandle::continueWillCacheResponse):
+        * platform/network/cf/ResourceHandleCFURLConnectionDelegate.cpp:
+        (WebCore::ResourceHandleCFURLConnectionDelegate::releaseHandle):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::synthesizeRedirectResponseIfNecessary):
+        (WebCore::ResourceHandleCFURLConnectionDelegate::createResourceRequest):
+        * platform/network/cf/ResourceHandleCFURLConnectionDelegate.h:
+        * platform/network/cf/SynchronousResourceHandleCFURLConnectionDelegate.cpp:
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::setupRequest):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::setupConnectionScheduling):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::willSendRequest):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::continueWillSendRequest):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::continueDidReceiveResponse):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::continueShouldUseCredentialStorage):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::continueWillCacheResponse):
+        (WebCore::SynchronousResourceHandleCFURLConnectionDelegate::continueCanAuthenticateAgainstProtectionSpace):
+        * platform/network/cf/SynchronousResourceHandleCFURLConnectionDelegate.h:
+
+2013-12-11  David Kilzer  <ddkilzer@apple.com>
+
+        Define m_hasBadParent in InlineBox if defined(ADDRESS_SANITIZER)
+        <http://webkit.org/b/125329>
+
+        Reviewed by Darin Adler.
+
+        No tests since this is a build fix for:
+
+            $ ./Tools/Scripts/build-webkit --release OTHER_CFLAGS="$inherited -DADDRESS_SANITIZER=1"
+
+        * rendering/InlineBox.cpp:
+        * rendering/InlineBox.h:
+        - Replace ASSERT_DISABLED use with
+          ASSERT_WITH_SECURITY_IMPLICATION_DISABLED for m_hasBadParent.
+
+        * rendering/InlineFlowBox.cpp:
+        (WebCore::InlineFlowBox::~InlineFlowBox):
+        - Use !ASSERT_WITH_SECURITY_IMPLICATION_DISABLED instead of
+          #ifndef NDEBUG since this calls setHasBadParent().
+        (WebCore::InlineFlowBox::checkConsistency):
+        - Move ASSERT(!m_hasBadChildList) outside of
+          #if CHECK_CONSISTENCY and change to
+          ASSERT_WITH_SECURITY_IMPLICATION(!m_hasBadChildList).
+
+        * rendering/InlineFlowBox.h:
+        (WebCore::InlineFlowBox::InlineFlowBox):
+        (WebCore::InlineFlowBox::setHasBadChildList):
+        - Change #ifndef NDEBUG to
+          #if !ASSERT_WITH_SECURITY_IMPLICATION_DISABLED for code using
+          m_hasBadChildList.
+
+2013-12-11  Ralph Thomas  <ralpht@gmail.com>
+
+        [WebGL] Fix build on GL ES 2.0 targets after r160119
+        https://bugs.webkit.org/show_bug.cgi?id=125541
+
+        Reviewed by Brent Fulgham.
+
+        GL ES 2.0 doesn't define GL_HALF_FLOAT_ARB, so pass through HALF_FLOAT_OES (which is defined for GL ES 2.0).
+        This change also reverts r160324 which incorrectly defined GL_HALF_FLOAT_ARB for the Windows ANGLE target.
+
+        No new tests, no change in functionality.
+
+        * platform/graphics/opengl/GraphicsContext3DOpenGLCommon.cpp:
+        (WebCore::GraphicsContext3D::texSubImage2D):
+
+2013-12-11  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Push More Inspector Required Classes Down into JavaScriptCore
+        https://bugs.webkit.org/show_bug.cgi?id=125324
+
+        Reviewed by Timothy Hatcher.
+
+        Part 1: Push down core inspector classes.
+
+          - Move InspectAgentBase, InspectorAgentRegistry, InspectorBackendDispatcher, InspectorValues
+            down to JavaScriptCore and into the Inspector namespace.
+          - Add forwarding headers for JavaScriptCore/inspector files.
+          - Use the Inspector namespace where appropriate.
+          - Rename InspectorBaseAgent to InspectorAgentBase for clarity.
+
+        Part 2: Push Script wrapper classes down into JavaScriptCore/bindings.
+
+          - Move ScriptObject and ScriptValue into JavaScriptCore but namespace Deprecated
+          - Add forwarding headers
+          - Use Deprecated::ScriptObject and Deprecated::ScriptValue everywhere.
+
+        Part 3: Push Down ScriptFunctionCall
+
+          - Move ScriptFunctionCall to JavaScriptCore/bindings into namespace Deprecated.
+          - Give constructor a function to all for a different JSC::call, because
+            WebCore ScriptFunctionCall's use JSMainThreadExecState when isMainThread.
+          - Prefer Deprecated::ScriptFunctionCall everywhere it is used in WebCore.
+
+        Part 4: Extract InspectorTypeBuilder helper functions
+
+          - There is a chunk of InspectorTypeBuilder that never changes. Extract it into
+            its own file, InspectorTypeBuilder.h in JSC/inspector, Inspector namespace.
+          - This moves TypeBuilder from namespace WebCore to namespace Inspector
+          - Rename the WebCore generated InspectorTypeBuilder to InspectorWebTypeBuilders,
+            eventually the CodeGenerator script will do this for more then TypeBuilders
+            and there will be "JS" TypeBuilders and "Web" TypeBuilders files.
+
+        No new tests. No change in functionality, just moving things around.
+
+        * CMakeLists.txt:
+        * ForwardingHeaders/bindings/ScriptFunctionCall.h: Added.
+        * ForwardingHeaders/bindings/ScriptObject.h: Added.
+        * ForwardingHeaders/bindings/ScriptValue.h: Added.
+        * ForwardingHeaders/inspector/InspectorAgentBase.h: Added.
+        * ForwardingHeaders/inspector/InspectorAgentRegistry.h: Added.
+        * ForwardingHeaders/inspector/InspectorBackendDispatcher.h: Added.
+        * ForwardingHeaders/inspector/InspectorTypeBuilder.h: Added.
+        * ForwardingHeaders/inspector/InspectorValues.h: Added.
+        * GNUmakefile.am:
+        * GNUmakefile.list.am:
+        * Modules/indexeddb/IDBAny.cpp:
+        (WebCore::IDBAny::scriptValue):
+        (WebCore::IDBAny::IDBAny):
+        * Modules/indexeddb/IDBAny.h:
+        * Modules/indexeddb/IDBCursor.cpp:
+        (WebCore::IDBCursor::key):
+        (WebCore::IDBCursor::primaryKey):
+        (WebCore::IDBCursor::value):
+        (WebCore::IDBCursor::update):
+        (WebCore::IDBCursor::continueFunction):
+        (WebCore::IDBCursor::setValueReady):
+        * Modules/indexeddb/IDBCursor.h:
+        * Modules/indexeddb/IDBFactory.cpp:
+        (WebCore::IDBFactory::cmp):
+        * Modules/indexeddb/IDBFactory.h:
+        * Modules/indexeddb/IDBIndex.cpp:
+        (WebCore::IDBIndex::openCursor):
+        (WebCore::IDBIndex::count):
+        (WebCore::IDBIndex::openKeyCursor):
+        (WebCore::IDBIndex::get):
+        (WebCore::IDBIndex::getKey):
+        * Modules/indexeddb/IDBIndex.h:
+        (WebCore::IDBIndex::openCursor):
+        (WebCore::IDBIndex::openKeyCursor):
+        * Modules/indexeddb/IDBKeyRange.cpp:
+        (WebCore::IDBKeyRange::lowerValue):
+        (WebCore::IDBKeyRange::upperValue):
+        (WebCore::IDBKeyRange::only):
+        (WebCore::IDBKeyRange::lowerBound):
+        (WebCore::IDBKeyRange::upperBound):
+        (WebCore::IDBKeyRange::bound):
+        * Modules/indexeddb/IDBKeyRange.h:
+        (WebCore::IDBKeyRange::lowerBound):
+        (WebCore::IDBKeyRange::upperBound):
+        (WebCore::IDBKeyRange::bound):
+        * Modules/indexeddb/IDBObjectStore.cpp:
+        (WebCore::IDBObjectStore::get):
+        (WebCore::generateIndexKeysForValue):
+        (WebCore::IDBObjectStore::add):
+        (WebCore::IDBObjectStore::put):
+        (WebCore::IDBObjectStore::deleteFunction):
+        (WebCore::IDBObjectStore::openCursor):
+        (WebCore::IDBObjectStore::count):
+        * Modules/indexeddb/IDBObjectStore.h:
+        * Modules/indexeddb/IDBRequest.cpp:
+        (WebCore::IDBRequest::setResultCursor):
+        (WebCore::IDBRequest::onSuccess):
+        (WebCore::IDBRequest::onSuccessInternal):
+        * Modules/indexeddb/IDBRequest.h:
+        * Modules/mediastream/CapabilityRange.cpp:
+        (WebCore::scriptValue):
+        (WebCore::CapabilityRange::min):
+        (WebCore::CapabilityRange::max):
+        * Modules/mediastream/CapabilityRange.h:
+        * Modules/mediastream/MediaTrackConstraint.h:
+        * Modules/mediastream/RTCIceCandidate.cpp:
+        * Modules/plugins/QuickTimePluginReplacement.cpp:
+        * Modules/plugins/QuickTimePluginReplacement.h:
+        * UseJSC.cmake:
+        * WebCore.exp.in:
+        * WebCore.vcxproj/WebCore.vcxproj:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.xcodeproj/project.pbxproj:
+        * bindings/js/Dictionary.h:
+        (WebCore::Dictionary::getEventListener):
+        * bindings/js/IDBBindingUtilities.cpp:
+        (WebCore::createIDBKeyFromScriptValueAndKeyPath):
+        (WebCore::injectIDBKeyIntoScriptValue):
+        (WebCore::canInjectIDBKeyIntoScriptValue):
+        (WebCore::deserializeIDBValue):
+        (WebCore::deserializeIDBValueBuffer):
+        (WebCore::idbKeyToScriptValue):
+        (WebCore::scriptValueToIDBKey):
+        * bindings/js/IDBBindingUtilities.h:
+        * bindings/js/JSBindingsAllInOne.cpp:
+        * bindings/js/JSDictionary.cpp:
+        (WebCore::JSDictionary::convertValue):
+        * bindings/js/JSDictionary.h:
+        * bindings/js/JSHTMLCanvasElementCustom.cpp:
+        (WebCore::JSHTMLCanvasElement::getContext):
+        * bindings/js/JSInjectedScriptHostCustom.cpp:
+        (WebCore::InjectedScriptHost::scriptValueAsNode):
+        (WebCore::InjectedScriptHost::nodeAsScriptValue):
+        (WebCore::JSInjectedScriptHost::inspectedObject):
+        (WebCore::JSInjectedScriptHost::inspect):
+        * bindings/js/JSInjectedScriptManager.cpp:
+        (WebCore::InjectedScriptManager::createInjectedScript):
+        * bindings/js/JSMainThreadExecState.cpp:
+        (WebCore::functionCallHandlerFromAnyThread):
+        * bindings/js/JSMainThreadExecState.h:
+        (WebCore::JSMainThreadExecState::currentState):
+        * bindings/js/JSMessageEventCustom.cpp:
+        (WebCore::JSMessageEvent::data):
+        (WebCore::handleInitMessageEvent):
+        * bindings/js/ScheduledAction.cpp:
+        * bindings/js/ScriptCallStackFactory.cpp:
+        (WebCore::createScriptArguments):
+        * bindings/js/ScriptController.cpp:
+        (WebCore::ScriptController::evaluateInWorld):
+        (WebCore::ScriptController::evaluate):
+        (WebCore::ScriptController::executeScriptInWorld):
+        (WebCore::ScriptController::executeScript):
+        (WebCore::ScriptController::executeIfJavaScriptURL):
+        * bindings/js/ScriptController.h:
+        * bindings/js/ScriptDebugServer.cpp:
+        (WebCore::ScriptDebugServer::setScriptSource):
+        (WebCore::ScriptDebugServer::updateCallStack):
+        (WebCore::ScriptDebugServer::dispatchDidPause):
+        (WebCore::ScriptDebugServer::runScript):
+        * bindings/js/ScriptDebugServer.h:
+        * bindings/js/ScriptGlobalObject.cpp: Renamed from Source/WebCore/bindings/js/ScriptObject.cpp.
+        (WebCore::handleException):
+        (WebCore::ScriptGlobalObject::set):
+        (WebCore::ScriptGlobalObject::get):
+        (WebCore::ScriptGlobalObject::remove):
+        * bindings/js/ScriptGlobalObject.h: Copied from Source/WebCore/inspector/ScriptCallStack.h.
+        (WebCore::ScriptGlobalObject::ScriptGlobalObject):
+        * bindings/js/ScriptObject.h: Removed.
+        * bindings/js/ScriptProfile.cpp:
+        (WebCore::buildInspectorObjectFor):
+        (WebCore::ScriptProfile::buildInspectorObjectForHead):
+        (WebCore::ScriptProfile::buildInspectorObjectForBottomUpHead):
+        * bindings/js/ScriptProfile.h:
+        * bindings/js/ScriptProfiler.cpp:
+        (WebCore::ScriptProfiler::objectByHeapObjectId):
+        (WebCore::ScriptProfiler::getHeapObjectId):
+        * bindings/js/ScriptProfiler.h:
+        * bindings/js/ScriptState.h:
+        * bindings/js/SerializedScriptValue.cpp:
+        (WebCore::SerializedScriptValue::deserializeForInspector):
+        (WebCore::SerializedScriptValue::serialize):
+        (WebCore::SerializedScriptValue::deserialize):
+        * bindings/js/SerializedScriptValue.h:
+        * bindings/js/WorkerScriptController.cpp:
+        (WebCore::WorkerScriptController::evaluate):
+        (WebCore::WorkerScriptController::setException):
+        * bindings/js/WorkerScriptController.h:
+        * bindings/scripts/CodeGeneratorJS.pm:
+        * bindings/scripts/test/JS/JSTestObj.cpp:
+        (WebCore::setJSTestObjAnyAttribute):
+        * dom/CustomEvent.cpp:
+        (WebCore::CustomEvent::initCustomEvent):
+        * dom/CustomEvent.h:
+        (WebCore::CustomEvent::detail):
+        * dom/MessageEvent.cpp:
+        (WebCore::MessageEvent::MessageEvent):
+        (WebCore::MessageEvent::initMessageEvent):
+        * dom/MessageEvent.h:
+        (WebCore::MessageEvent::create):
+        (WebCore::MessageEvent::dataAsScriptValue):
+        * dom/PopStateEvent.h:
+        (WebCore::PopStateEvent::state):
+        * dom/ScriptElement.cpp:
+        * html/HTMLMediaElement.cpp:
+        * html/parser/XSSAuditor.cpp:
+        * html/parser/XSSAuditorDelegate.cpp:
+        * inspector/CodeGeneratorInspector.py:
+        (RawTypes.BaseType.get_raw_validator_call_text):
+        (RawTypes.Object.get_array_item_raw_c_type_text):
+        (RawTypes.Any.get_array_item_raw_c_type_text):
+        (RawTypes.Array.get_array_item_raw_c_type_text):
+        (CommandReturnPassModel.OptOutput.get_return_var_type):
+        (CommandReturnPassModel.OptOutput.get_output_parameter_type):
+        (TypeModel.ExactlyInt.get_input_param_type_text):
+        (TypeModel.ExactlyInt.get_opt_output_type_):
+        (TypeModel.init_class):
+        (TypeBindings.create_named_type_declaration.Helper):
+        (TypeBindings.create_type_declaration_.EnumBinding.get_code_generator.CodeGenerator.generate_type_builder):
+        (TypeBindings.create_type_declaration_.EnumBinding.get_setter_value_expression_pattern):
+        (TypeBindings.create_type_declaration_.ClassBinding.get_code_generator.CodeGenerator.generate_type_builder):
+        (Inspector):
+        (ArrayBinding.get_array_item_c_type_text):
+        (Generator.go):
+        (Generator.process_command):
+        * inspector/CodeGeneratorInspectorStrings.py:
+        (void):
+        (InspectorFrontend_h):
+        (InspectorBackendDispatchers_h):
+        * inspector/ConsoleMessage.cpp:
+        (WebCore::messageSourceValue):
+        (WebCore::messageTypeValue):
+        (WebCore::messageLevelValue):
+        (WebCore::ConsoleMessage::addToFrontend):
+        * inspector/ConsoleMessage.h:
+        * inspector/ContentSearchUtils.cpp:
+        (WebCore::ContentSearchUtils::buildObjectForSearchMatch):
+        (WebCore::ContentSearchUtils::searchInTextByLines):
+        * inspector/ContentSearchUtils.h:
+        * inspector/InjectedScript.cpp:
+        (WebCore::InjectedScript::InjectedScript):
+        (WebCore::InjectedScript::evaluate):
+        (WebCore::InjectedScript::callFunctionOn):
+        (WebCore::InjectedScript::evaluateOnCallFrame):
+        (WebCore::InjectedScript::getFunctionDetails):
+        (WebCore::InjectedScript::getProperties):
+        (WebCore::InjectedScript::getInternalProperties):
+        (WebCore::InjectedScript::nodeForObjectId):
+        (WebCore::InjectedScript::releaseObject):
+        (WebCore::InjectedScript::wrapCallFrames):
+        (WebCore::InjectedScript::wrapObject):
+        (WebCore::InjectedScript::wrapTable):
+        (WebCore::InjectedScript::wrapNode):
+        (WebCore::InjectedScript::findObjectById):
+        (WebCore::InjectedScript::inspectNode):
+        (WebCore::InjectedScript::releaseObjectGroup):
+        (WebCore::InjectedScript::nodeAsScriptValue):
+        * inspector/InjectedScript.h:
+        * inspector/InjectedScriptBase.cpp:
+        (WebCore::InjectedScriptBase::InjectedScriptBase):
+        (WebCore::InjectedScriptBase::initialize):
+        (WebCore::InjectedScriptBase::injectedScriptObject):
+        (WebCore::InjectedScriptBase::callFunctionWithEvalEnabled):
+        (WebCore::InjectedScriptBase::makeCall):
+        (WebCore::InjectedScriptBase::makeEvalCall):
+        * inspector/InjectedScriptBase.h:
+        * inspector/InjectedScriptCanvasModule.cpp:
+        (WebCore::InjectedScriptCanvasModule::wrapCanvas2DContext):
+        (WebCore::InjectedScriptCanvasModule::wrapWebGLContext):
+        (WebCore::InjectedScriptCanvasModule::callWrapContextFunction):
+        (WebCore::InjectedScriptCanvasModule::markFrameEnd):
+        (WebCore::InjectedScriptCanvasModule::callStartCapturingFunction):
+        (WebCore::InjectedScriptCanvasModule::callVoidFunctionWithTraceLogIdArgument):
+        (WebCore::InjectedScriptCanvasModule::traceLog):
+        (WebCore::InjectedScriptCanvasModule::replayTraceLog):
+        (WebCore::InjectedScriptCanvasModule::resourceInfo):
+        (WebCore::InjectedScriptCanvasModule::resourceState):
+        * inspector/InjectedScriptCanvasModule.h:
+        * inspector/InjectedScriptHost.cpp:
+        (WebCore::InjectedScriptHost::inspectImpl):
+        (WebCore::InjectedScriptHost::InspectableObject::get):
+        * inspector/InjectedScriptHost.h:
+        * inspector/InjectedScriptManager.cpp:
+        (WebCore::InjectedScriptManager::injectedScriptFor):
+        * inspector/InjectedScriptManager.h:
+        * inspector/InjectedScriptModule.cpp:
+        (WebCore::InjectedScriptModule::ensureInjected):
+        * inspector/InspectorAgent.cpp:
+        (WebCore::InspectorAgent::InspectorAgent):
+        (WebCore::InspectorAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorAgent::inspect):
+        * inspector/InspectorAgent.h:
+        * inspector/InspectorAllInOne.cpp:
+        * inspector/InspectorApplicationCacheAgent.cpp:
+        (WebCore::InspectorApplicationCacheAgent::InspectorApplicationCacheAgent):
+        (WebCore::InspectorApplicationCacheAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorApplicationCacheAgent::getFramesWithManifests):
+        (WebCore::InspectorApplicationCacheAgent::getApplicationCacheForFrame):
+        (WebCore::InspectorApplicationCacheAgent::buildObjectForApplicationCache):
+        (WebCore::InspectorApplicationCacheAgent::buildArrayForApplicationCacheResources):
+        (WebCore::InspectorApplicationCacheAgent::buildObjectForApplicationCacheResource):
+        * inspector/InspectorApplicationCacheAgent.h:
+        * inspector/InspectorCSSAgent.cpp:
+        (WebCore::SelectorProfile::toInspectorObject):
+        (WebCore::InspectorCSSAgent::InspectorCSSAgent):
+        (WebCore::InspectorCSSAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorCSSAgent::getMatchedStylesForNode):
+        (WebCore::InspectorCSSAgent::getInlineStylesForNode):
+        (WebCore::InspectorCSSAgent::getComputedStyleForNode):
+        (WebCore::InspectorCSSAgent::getAllStyleSheets):
+        (WebCore::InspectorCSSAgent::getStyleSheet):
+        (WebCore::InspectorCSSAgent::setStyleText):
+        (WebCore::InspectorCSSAgent::setPropertyText):
+        (WebCore::InspectorCSSAgent::toggleProperty):
+        (WebCore::InspectorCSSAgent::setRuleSelector):
+        (WebCore::InspectorCSSAgent::addRule):
+        (WebCore::InspectorCSSAgent::getSupportedCSSProperties):
+        (WebCore::InspectorCSSAgent::getNamedFlowCollection):
+        (WebCore::InspectorCSSAgent::stopSelectorProfiler):
+        (WebCore::InspectorCSSAgent::stopSelectorProfilerImpl):
+        (WebCore::InspectorCSSAgent::asInspectorStyleSheet):
+        (WebCore::InspectorCSSAgent::collectStyleSheets):
+        (WebCore::InspectorCSSAgent::viaInspectorStyleSheet):
+        (WebCore::InspectorCSSAgent::detectOrigin):
+        (WebCore::InspectorCSSAgent::buildObjectForRule):
+        (WebCore::InspectorCSSAgent::buildArrayForRuleList):
+        (WebCore::InspectorCSSAgent::buildArrayForMatchedRuleList):
+        (WebCore::InspectorCSSAgent::buildObjectForAttributesStyle):
+        (WebCore::InspectorCSSAgent::buildArrayForRegions):
+        (WebCore::InspectorCSSAgent::buildObjectForNamedFlow):
+        * inspector/InspectorCSSAgent.h:
+        * inspector/InspectorCanvasAgent.cpp:
+        (WebCore::InspectorCanvasAgent::InspectorCanvasAgent):
+        (WebCore::InspectorCanvasAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorCanvasAgent::wrapCanvas2DRenderingContextForInstrumentation):
+        (WebCore::InspectorCanvasAgent::wrapWebGLRenderingContextForInstrumentation):
+        (WebCore::InspectorCanvasAgent::notifyRenderingContextWasWrapped):
+        (WebCore::InspectorCanvasAgent::injectedScriptCanvasModule):
+        * inspector/InspectorCanvasAgent.h:
+        * inspector/InspectorCanvasInstrumentation.h:
+        (WebCore::InspectorInstrumentation::wrapCanvas2DRenderingContextForInstrumentation):
+        (WebCore::InspectorInstrumentation::wrapWebGLRenderingContextForInstrumentation):
+        * inspector/InspectorClient.cpp:
+        * inspector/InspectorClient.h:
+        * inspector/InspectorConsoleAgent.cpp:
+        (WebCore::InspectorConsoleAgent::InspectorConsoleAgent):
+        (WebCore::InspectorConsoleAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectableHeapObject::get):
+        * inspector/InspectorConsoleAgent.h:
+        * inspector/InspectorController.cpp:
+        * inspector/InspectorController.h:
+        * inspector/InspectorDOMAgent.cpp:
+        (WebCore::InspectorDOMAgent::InspectorDOMAgent):
+        (WebCore::InspectorDOMAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDOMAgent::getDocument):
+        (WebCore::InspectorDOMAgent::pushChildNodesToFrontend):
+        (WebCore::InspectorDOMAgent::querySelectorAll):
+        (WebCore::InspectorDOMAgent::pushNodePathToFrontend):
+        (WebCore::InspectorDOMAgent::getEventListenersForNode):
+        (WebCore::InspectorDOMAgent::getSearchResults):
+        (WebCore::InspectorDOMAgent::resolveNode):
+        (WebCore::InspectorDOMAgent::getAttributes):
+        (WebCore::InspectorDOMAgent::buildObjectForNode):
+        (WebCore::InspectorDOMAgent::buildArrayForElementAttributes):
+        (WebCore::InspectorDOMAgent::buildArrayForContainerChildren):
+        (WebCore::InspectorDOMAgent::buildObjectForEventListener):
+        (WebCore::InspectorDOMAgent::didCommitLoad):
+        (WebCore::InspectorDOMAgent::didInsertDOMNode):
+        (WebCore::InspectorDOMAgent::styleAttributeInvalidated):
+        * inspector/InspectorDOMAgent.h:
+        * inspector/InspectorDOMDebuggerAgent.cpp:
+        (WebCore::InspectorDOMDebuggerAgent::InspectorDOMDebuggerAgent):
+        (WebCore::InspectorDOMDebuggerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDOMDebuggerAgent::descriptionForDOMEvent):
+        * inspector/InspectorDOMDebuggerAgent.h:
+        * inspector/InspectorDOMStorageAgent.cpp:
+        (WebCore::InspectorDOMStorageAgent::InspectorDOMStorageAgent):
+        (WebCore::InspectorDOMStorageAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDOMStorageAgent::getDOMStorageItems):
+        (WebCore::InspectorDOMStorageAgent::storageId):
+        (WebCore::InspectorDOMStorageAgent::didDispatchDOMStorageEvent):
+        * inspector/InspectorDOMStorageAgent.h:
+        * inspector/InspectorDatabaseAgent.cpp:
+        (WebCore::InspectorDatabaseAgent::InspectorDatabaseAgent):
+        (WebCore::InspectorDatabaseAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorDatabaseAgent::getDatabaseTableNames):
+        * inspector/InspectorDatabaseAgent.h:
+        * inspector/InspectorDatabaseResource.cpp:
+        (WebCore::InspectorDatabaseResource::bind):
+        * inspector/InspectorDebuggerAgent.cpp:
+        (WebCore::InspectorDebuggerAgent::InspectorDebuggerAgent):
+        (WebCore::InspectorDebuggerAgent::didCreateFrontendAndBackend):
+        (WebCore::breakpointActionTypeForString):
+        (WebCore::InspectorDebuggerAgent::setBreakpointByUrl):
+        (WebCore::InspectorDebuggerAgent::setBreakpoint):
+        (WebCore::InspectorDebuggerAgent::resolveBreakpoint):
+        (WebCore::scriptToInspectorObject):
+        (WebCore::InspectorDebuggerAgent::searchInContent):
+        (WebCore::InspectorDebuggerAgent::setScriptSource):
+        (WebCore::InspectorDebuggerAgent::getFunctionDetails):
+        (WebCore::InspectorDebuggerAgent::evaluateOnCallFrame):
+        (WebCore::InspectorDebuggerAgent::compileScript):
+        (WebCore::InspectorDebuggerAgent::runScript):
+        (WebCore::InspectorDebuggerAgent::currentCallFrames):
+        (WebCore::InspectorDebuggerAgent::didParseSource):
+        (WebCore::InspectorDebuggerAgent::didPause):
+        (WebCore::InspectorDebuggerAgent::didContinue):
+        (WebCore::InspectorDebuggerAgent::clear):
+        * inspector/InspectorDebuggerAgent.h:
+        * inspector/InspectorForwarding.h:
+        * inspector/InspectorFrontendClientLocal.cpp:
+        (WebCore::InspectorFrontendClientLocal::evaluateAsBoolean):
+        * inspector/InspectorFrontendHost.cpp:
+        (WebCore::FrontendMenuProvider::create):
+        (WebCore::FrontendMenuProvider::disconnect):
+        (WebCore::FrontendMenuProvider::FrontendMenuProvider):
+        (WebCore::FrontendMenuProvider::contextMenuItemSelected):
+        (WebCore::FrontendMenuProvider::contextMenuCleared):
+        (WebCore::InspectorFrontendHost::showContextMenu):
+        * inspector/InspectorHeapProfilerAgent.cpp:
+        (WebCore::InspectorHeapProfilerAgent::InspectorHeapProfilerAgent):
+        (WebCore::InspectorHeapProfilerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorHeapProfilerAgent::createSnapshotHeader):
+        (WebCore::InspectorHeapProfilerAgent::getProfileHeaders):
+        (WebCore::InspectorHeapProfilerAgent::getObjectByHeapObjectId):
+        (WebCore::InspectorHeapProfilerAgent::getHeapObjectId):
+        * inspector/InspectorHeapProfilerAgent.h:
+        * inspector/InspectorIndexedDBAgent.cpp:
+        (WebCore::InspectorIndexedDBAgent::InspectorIndexedDBAgent):
+        (WebCore::InspectorIndexedDBAgent::didCreateFrontendAndBackend):
+        * inspector/InspectorIndexedDBAgent.h:
+        * inspector/InspectorInputAgent.cpp:
+        (WebCore::InspectorInputAgent::InspectorInputAgent):
+        (WebCore::InspectorInputAgent::didCreateFrontendAndBackend):
+        * inspector/InspectorInputAgent.h:
+        * inspector/InspectorInstrumentation.cpp:
+        * inspector/InspectorInstrumentation.h:
+        * inspector/InspectorLayerTreeAgent.cpp:
+        (WebCore::InspectorLayerTreeAgent::InspectorLayerTreeAgent):
+        (WebCore::InspectorLayerTreeAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorLayerTreeAgent::layersForNode):
+        (WebCore::InspectorLayerTreeAgent::gatherLayersUsingRenderObjectHierarchy):
+        (WebCore::InspectorLayerTreeAgent::gatherLayersUsingRenderLayerHierarchy):
+        (WebCore::InspectorLayerTreeAgent::buildObjectForLayer):
+        (WebCore::InspectorLayerTreeAgent::buildObjectForIntRect):
+        (WebCore::InspectorLayerTreeAgent::reasonsForCompositingLayer):
+        * inspector/InspectorLayerTreeAgent.h:
+        * inspector/InspectorMemoryAgent.cpp:
+        (WebCore::InspectorMemoryAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorMemoryAgent::InspectorMemoryAgent):
+        * inspector/InspectorMemoryAgent.h:
+        * inspector/InspectorOverlay.cpp:
+        * inspector/InspectorOverlay.h:
+        * inspector/InspectorPageAgent.cpp:
+        (WebCore::InspectorPageAgent::resourceTypeJson):
+        (WebCore::InspectorPageAgent::cachedResourceTypeJson):
+        (WebCore::InspectorPageAgent::InspectorPageAgent):
+        (WebCore::InspectorPageAgent::didCreateFrontendAndBackend):
+        (WebCore::buildObjectForCookie):
+        (WebCore::buildArrayForCookies):
+        (WebCore::InspectorPageAgent::getCookies):
+        (WebCore::InspectorPageAgent::getResourceTree):
+        (WebCore::InspectorPageAgent::searchInResource):
+        (WebCore::buildObjectForSearchResult):
+        (WebCore::InspectorPageAgent::searchInResources):
+        (WebCore::InspectorPageAgent::buildObjectForFrame):
+        (WebCore::InspectorPageAgent::buildObjectForFrameTree):
+        * inspector/InspectorPageAgent.h:
+        * inspector/InspectorProfilerAgent.cpp:
+        (WebCore::InspectorProfilerAgent::InspectorProfilerAgent):
+        (WebCore::InspectorProfilerAgent::createProfileHeader):
+        (WebCore::InspectorProfilerAgent::createSnapshotHeader):
+        (WebCore::InspectorProfilerAgent::getProfileHeaders):
+        (WebCore::InspectorProfilerAgent::getCPUProfile):
+        (WebCore::InspectorProfilerAgent::didCreateFrontendAndBackend):
+        (WebCore::InspectorProfilerAgent::getObjectByHeapObjectId):
+        (WebCore::InspectorProfilerAgent::getHeapObjectId):
+        * inspector/InspectorProfilerAgent.h:
+        * inspector/InspectorResourceAgent.cpp:
+        (WebCore::InspectorResourceAgent::didCreateFrontendAndBackend):
+        (WebCore::buildObjectForTiming):
+        (WebCore::buildObjectForResourceRequest):
+        (WebCore::buildObjectForResourceResponse):
+        (WebCore::buildObjectForCachedResource):
+        (WebCore::InspectorResourceAgent::willSendRequest):
+        (WebCore::InspectorResourceAgent::didReceiveResponse):
+        (WebCore::InspectorResourceAgent::didLoadResourceFromMemoryCache):
+        (WebCore::InspectorResourceAgent::buildInitiatorObject):
+        (WebCore::InspectorResourceAgent::willSendWebSocketHandshakeRequest):
+        (WebCore::InspectorResourceAgent::didReceiveWebSocketHandshakeResponse):
+        (WebCore::InspectorResourceAgent::didReceiveWebSocketFrame):
+        (WebCore::InspectorResourceAgent::didSendWebSocketFrame):
+        (WebCore::InspectorResourceAgent::InspectorResourceAgent):
+        * inspector/InspectorResourceAgent.h:
+        * inspector/InspectorRuntimeAgent.cpp:
+        (WebCore::InspectorRuntimeAgent::InspectorRuntimeAgent):
+        (WebCore::buildErrorRangeObject):
+        (WebCore::InspectorRuntimeAgent::parse):
+        (WebCore::InspectorRuntimeAgent::evaluate):
+        (WebCore::InspectorRuntimeAgent::callFunctionOn):
+        (WebCore::InspectorRuntimeAgent::getProperties):
+        * inspector/InspectorRuntimeAgent.h:
+        * inspector/InspectorStyleSheet.cpp:
+        (WebCore::buildSourceRangeObject):
+        (WebCore::buildMediaObject):
+        (WebCore::fillMediaListChain):
+        (WebCore::InspectorStyle::buildObjectForStyle):
+        (WebCore::InspectorStyle::buildArrayForComputedStyle):
+        (WebCore::InspectorStyle::styleWithProperties):
+        (WebCore::InspectorStyleSheet::create):
+        (WebCore::InspectorStyleSheet::InspectorStyleSheet):
+        (WebCore::InspectorStyleSheet::buildObjectForStyleSheet):
+        (WebCore::InspectorStyleSheet::buildObjectForStyleSheetInfo):
+        (WebCore::selectorsFromSource):
+        (WebCore::InspectorStyleSheet::buildObjectForSelectorList):
+        (WebCore::InspectorStyleSheet::buildObjectForRule):
+        (WebCore::InspectorStyleSheet::buildObjectForStyle):
+        (WebCore::InspectorStyleSheet::resourceStyleSheetText):
+        (WebCore::InspectorStyleSheet::buildArrayForRuleList):
+        (WebCore::InspectorStyleSheetForInlineStyle::create):
+        (WebCore::InspectorStyleSheetForInlineStyle::InspectorStyleSheetForInlineStyle):
+        * inspector/InspectorStyleSheet.h:
+        (WebCore::InspectorCSSId::InspectorCSSId):
+        (WebCore::InspectorStyleSheet::canBind):
+        * inspector/InspectorStyleTextEditor.cpp:
+        * inspector/InspectorTimelineAgent.cpp:
+        (WebCore::InspectorTimelineAgent::didCreateFrontendAndBackend):
+        (WebCore::toProtocol):
+        (WebCore::InspectorTimelineAgent::innerAddRecordToTimeline):
+        (WebCore::InspectorTimelineAgent::setDOMCounters):
+        (WebCore::InspectorTimelineAgent::InspectorTimelineAgent):
+        (WebCore::InspectorTimelineAgent::sendEvent):
+        * inspector/InspectorTimelineAgent.h:
+        (WebCore::InspectorTimelineAgent::TimelineRecordEntry::TimelineRecordEntry):
+        * inspector/InspectorWebAgentBase.h: Renamed from Source/WebCore/inspector/InspectorAgentRegistry.h.
+        (WebCore::InspectorAgentBase::InspectorAgentBase):
+        * inspector/InspectorWorkerAgent.cpp:
+        (WebCore::InspectorWorkerAgent::InspectorWorkerAgent):
+        (WebCore::InspectorWorkerAgent::didCreateFrontendAndBackend):
+        * inspector/InspectorWorkerAgent.h:
+        * inspector/InstrumentingAgents.cpp:
+        * inspector/NetworkResourcesData.cpp:
+        * inspector/PageConsoleAgent.cpp:
+        (WebCore::InspectableNode::get):
+        * inspector/PageDebuggerAgent.cpp:
+        * inspector/PageDebuggerAgent.h:
+        * inspector/PageRuntimeAgent.cpp:
+        (WebCore::PageRuntimeAgent::didCreateFrontendAndBackend):
+        * inspector/PageRuntimeAgent.h:
+        * inspector/ScriptArguments.cpp:
+        (WebCore::ScriptArguments::create):
+        (WebCore::ScriptArguments::ScriptArguments):
+        (WebCore::ScriptArguments::argumentAt):
+        (WebCore::ScriptArguments::getFirstArgumentAsString):
+        * inspector/ScriptArguments.h:
+        * inspector/ScriptCallFrame.cpp:
+        (WebCore::ScriptCallFrame::buildInspectorObject):
+        * inspector/ScriptCallFrame.h:
+        * inspector/ScriptCallStack.cpp:
+        (WebCore::ScriptCallStack::buildInspectorArray):
+        * inspector/ScriptCallStack.h:
+        * inspector/ScriptDebugListener.h:
+        * inspector/TimelineRecordFactory.cpp:
+        * inspector/TimelineRecordFactory.h:
+        (WebCore::TimelineRecordFactory::createWebSocketCreateData):
+        (WebCore::TimelineRecordFactory::createGenericWebSocketData):
+        * inspector/WorkerConsoleAgent.cpp:
+        * inspector/WorkerDebuggerAgent.cpp:
+        * inspector/WorkerInspectorController.cpp:
+        * inspector/WorkerInspectorController.h:
+        * inspector/WorkerRuntimeAgent.cpp:
+        (WebCore::WorkerRuntimeAgent::didCreateFrontendAndBackend):
+        * inspector/WorkerRuntimeAgent.h:
+        * page/Console.cpp:
+        * page/ContentSecurityPolicy.cpp:
+        * page/Frame.cpp:
+        * page/PageConsole.cpp:
+        * plugins/PluginView.cpp:
+        (WebCore::PluginView::performRequest):
+        * testing/Internals.cpp:
+        (WebCore::Internals::parserMetaData):
+        * testing/Internals.h:
+        * workers/SharedWorkerGlobalScope.cpp:
+        (WebCore::createConnectEvent):
+        * workers/WorkerGlobalScope.cpp:
+        (WebCore::WorkerGlobalScope::importScripts):
+        * workers/WorkerThread.cpp:
+        * xml/XMLTreeViewer.cpp:
+        * xml/parser/XMLDocumentParser.cpp:
+        * xml/parser/XMLDocumentParserLibxml2.cpp:
+
+2013-12-11  Laszlo Vidacs  <lac@inf.u-szeged.hu>
+
+        Store SHA1 hash in std::array
+        https://bugs.webkit.org/show_bug.cgi?id=125446
+
+        Reviewed by Darin Adler.
+
+        Change Vector to std::array and use typedef.
+
+        * Modules/websockets/WebSocketHandshake.cpp:
+        (WebCore::WebSocketHandshake::getExpectedWebSocketAccept):
+        * inspector/DOMPatchSupport.cpp:
+        (WebCore::DOMPatchSupport::createDigest):
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::HostTLSCertificateSet::computeCertificateHash):
+
+2013-12-11  Alexey Proskuryakov  <ap@apple.com>
+
+        WebCrypto keys should support structured clone
+        https://bugs.webkit.org/show_bug.cgi?id=125590
+
+        Reviewed by Oliver Hunt.
+
+        Tests: crypto/subtle/aes-postMessage.html
+               crypto/subtle/hmac-postMessage.html
+               crypto/subtle/postMessage-worker.html
+               crypto/subtle/rsa-postMessage.html
+
+        * crypto/CryptoAlgorithmIdentifier.h:
+        (WebCore::CryptoAlgorithmIdentifier):
+        * bindings/js/JSCryptoAlgorithmDictionary.cpp:
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForEncrypt):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDecrypt):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForSign):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForVerify):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDigest):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForGenerateKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForDeriveBits):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForImportKey):
+        (WebCore::JSCryptoAlgorithmDictionary::createParametersForExportKey):
+        AES_KW was added to WebCrypto spec editor's draft yesterday night. Now that we're
+        adding a matching enum for structired clone serialization, it's as good a time as
+        any to update the order of values to match.
+
+        * bindings/js/SerializedScriptValue.cpp:
+        (WebCore::countUsages):
+        (WebCore::CloneSerializer::dumpIfTerminal):
+        (WebCore::CloneSerializer::write):
+        (WebCore::CloneDeserializer::read):
+        (WebCore::CloneDeserializer::readHMACKey):
+        (WebCore::CloneDeserializer::readAESKey):
+        (WebCore::CloneDeserializer::readRSAKey):
+        (WebCore::CloneDeserializer::readCryptoKey):
+        (WebCore::CloneDeserializer::readTerminal):
+        Added serialization/deserialization for CryptoKey. This doesn't update version
+        number, because we don't currently store structured clones in persistent storage -
+        and even if we did, we wouldn't want to invalidate everything users already stored.
+
+        * crypto/CryptoAlgorithmRegistry.cpp:
+        (WebCore::CryptoAlgorithmRegistry::shared):
+        (WebCore::registryMutex):
+        (WebCore::CryptoAlgorithmRegistry::getIdentifierForName):
+        (WebCore::CryptoAlgorithmRegistry::nameForIdentifier):
+        (WebCore::CryptoAlgorithmRegistry::create):
+        (WebCore::CryptoAlgorithmRegistry::registerAlgorithm):
+        * crypto/CryptoKey.idl:
+        With structured clone, it is now possible to send a Key to a web worker. That's
+        of no practical use because the crypto API is not exposed in workers, but we
+        shouldn't crash anyway.
+
+        * crypto/keys/CryptoKeyAES.cpp:
+        (WebCore::CryptoKeyAES::CryptoKeyAES):
+        (WebCore::CryptoKeyAES::isValidAESAlgorithm):
+        * crypto/keys/CryptoKeyAES.h:
+        Exposed isValidAESAlgorithm, so that a caller could know whether the constructor
+        will assert.
+
+        * CMakeLists.txt:
+        * GNUmakefile.am:
+        * WebCore.vcxproj/WebCore.vcxproj.filters:
+        * WebCore.vcxproj/WebCoreCommon.props:
+        Added crypto/keys to search paths to avoid build breakage.
+
+2013-12-11  Bear Travis  <betravis@adobe.com>
+
+        Web Inspector: [CSS Shapes] Highlight margin-shape for shape-outside
+        https://bugs.webkit.org/show_bug.cgi?id=125175
+
+        Reviewed by Darin Adler.
+
+        In addition to highlighting the shape, also highlight the shape created
+        by shape-margin with a slightly more transparent color. This patch modifies
+        the shape info passed to the Inspector Overlay to include a path for both
+        the raw shape and the shape with margin.
+
+        Test: inspector-protocol/model/highlight-shape-outside-margin.html
+
+        * inspector/InspectorOverlay.cpp:
+        (WebCore::buildObjectForShapeOutside): Call Shape::buildDisplayPaths rather than
+        Shape::buildPath, and pass along any relevant paths to the Inspector overlay.
+        * inspector/InspectorOverlayPage.js:
+        (_drawShapeHighlight): Draw the margin shape in addition to the raw shape.
+        * rendering/shapes/BoxShape.cpp:
+        (WebCore::addRoundedRect): Add a rounded rect to the path.
+        (WebCore::BoxShape::buildDisplayPaths): Create the applicable [margin/padding/raw] shapes.
+        * rendering/shapes/BoxShape.h:
+        * rendering/shapes/PolygonShape.cpp:
+        (WebCore::addPolygon): Add a set of vertices as a polygon to the path.
+        (WebCore::PolygonShape::buildDisplayPaths): Create the applicable [margin/padding/raw] shapes.
+        * rendering/shapes/PolygonShape.h:
+        * rendering/shapes/RasterShape.h:
+        (WebCore::RasterShape::buildDisplayPaths): Ditto.
+        * rendering/shapes/RectangleShape.cpp:
+        (WebCore::RectangleShape::buildDisplayPaths): Ditto.
+        * rendering/shapes/RectangleShape.h:
+        * rendering/shapes/Shape.h:
+
+2013-12-11  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Expose accessibility objects WAI-ARIA landmark roles
+        https://bugs.webkit.org/show_bug.cgi?id=125584
+
+        Reviewed by Chris Fleizach.
+
+        Exposed accessibility objects with landmark roles with the proper
+        AtkRole, to be provided by the next stable release of ATK.
+
+        * accessibility/atk/WebKitAccessibleWrapperAtk.cpp:
+        (webkitAccessibleGetAttributes):
+        (atkRole):
+
+2013-12-11  José Dapena Paz  <jdapena@igalia.com> and Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Add a UPower-based BatteryProvider
+        https://bugs.webkit.org/show_bug.cgi?id=115719
+
+        Reviewed by Martin Robinson.
+
+        Introduce the BatteryProviderUPower, a provider of the system's battery status that produces the information
+        using the upower-glib library.
+
+        The BatteryProviderUPower creates a new UPower client when the provider should start emitting updates and hooks
+        up to device alteration signals. These only fire recalculation of the battery status when a battery device is altered.
+
+        When recalculating, every battery device is taken into account, accumulating the energy capacities when both empty
+        and full, the current rate of energy charging/discharging, and the battery status (whether the device is charging or
+        discharging). This gives a set of data that covers the overall battery status of the system.
+
+        This data is then used to calculate the battery status as perceived by the WebCore implementation. Charging is determined
+        by examining the integral sign of the current combined energy rate. Charging and discharging times are calculated, when
+        appropriate, by dividing the chargable/dischargable capacity with the current combined energy rate. The battery level is
+        calculated by dividing the current energy capacity with the full energy capacity (i.e. the combined capacity of all
+        the batteries that the system possesses). The status is (indirectly) passed onto BatteryManager by invoking the
+        updateBatteryStatus method on the client, with the first parameter representing the battery charging/discharging state,
+        the second parameter representing the time left until the battery is fully charged (when charging) or fully
+        depleted (when discharging), and the third parameter representing the current battery level.
+
+        Whenever the implementation cannot provide any information about the battery status of the system, the client's
+        updateBatteryStatus method is invoked with the first parameter reporting the unavailability of any information
+        about the battery status. The other two parameters can be omitted as they default to 0 when not given and are neither
+        available nor useful in such circumstances. The client should handle such an update by reporting the 'default' battery
+        status - charging, the battery level being at 1.0 and both the charging and discharging time having the value of
+        the positive infinity (as per the Battery Status API specification).
+
+        The implementation is heavily inspired by a similar approach to calculating battery status in GNOME Settings Daemon.
+
+        No new tests - no new functionality. The feature is not yet enabled. When enabled, the relevant tests pass.
+
+        * GNUmakefile.list.am: Add the BatteryProviderUPower(Client) build targets.
+        * platform/glib/BatteryProviderUPower.cpp: Added.
+        (powerDeviceAlterationCallback):
+        (BatteryProviderUPower::BatteryProviderUPower):
+        (BatteryProviderUPower::startUpdating):
+        (BatteryProviderUPower::stopUpdating):
+        (BatteryProviderUPower::updateBatteryStatus):
+        * platform/glib/BatteryProviderUPower.h: Added.
+        (WebCore):
+        (BatteryProviderUPower):
+        * platform/glib/BatteryProviderUPowerClient.h: Added.
+        (WebCore):
+        (BatteryProviderUPowerClient):
+
 2013-12-11  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
 
         Improving createOffer and createAnswer LayoutTests

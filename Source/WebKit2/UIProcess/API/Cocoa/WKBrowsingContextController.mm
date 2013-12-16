@@ -43,6 +43,7 @@
 #import "WKRetainPtr.h"
 #import "WKURLRequestNS.h"
 #import "WKURLResponseNS.h"
+#import "WebCertificateInfo.h"
 #import "WebContext.h"
 #import "WebData.h"
 #import "WebPageProxy.h"
@@ -111,6 +112,7 @@ NSString * const WKActionIsMainFrameKey = @"WKActionIsMainFrameKey";
 NSString * const WKActionNavigationTypeKey = @"WKActionNavigationTypeKey";
 NSString * const WKActionMouseButtonKey = @"WKActionMouseButtonKey";
 NSString * const WKActionModifierFlagsKey = @"WKActionModifierFlagsKey";
+NSString * const WKActionOriginalURLRequestKey = @"WKActionOriginalURLRequestKey";
 NSString * const WKActionURLRequestKey = @"WKActionURLRequestKey";
 NSString * const WKActionURLResponseKey = @"WKActionURLResponseKey";
 NSString * const WKActionFrameNameKey = @"WKActionFrameNameKey";
@@ -332,11 +334,38 @@ static void releaseNSData(unsigned char*, const void* data)
     return _page->estimatedProgress();
 }
 
+static inline LayoutMilestones layoutMilestones(WKRenderingProgressEvents events)
+{
+    LayoutMilestones milestones = 0;
+
+    if (events & WKRenderingProgressEventFirstLayout)
+        milestones |= DidFirstLayout;
+
+    if (events & WKRenderingProgressEventFirstPaintWithSignificantArea)
+        milestones |= DidHitRelevantRepaintedObjectsAreaThreshold;
+
+    return milestones;
+}
+
+- (void)setObservedRenderingProgressEvents:(WKRenderingProgressEvents)events
+{
+    _observedRenderingProgressEvents = events;
+    _page->listenForLayoutMilestones(layoutMilestones(events));
+}
+
 #pragma mark Active Document Introspection
 
 - (NSString *)title
 {
     return _page->pageLoadState().title();
+}
+
+- (NSArray *)certificateChain
+{
+    if (WebFrameProxy* mainFrame = _page->mainFrame())
+        return mainFrame->certificateInfo() ? (NSArray *)mainFrame->certificateInfo()->certificateInfo().certificateChain() : nil;
+
+    return nil;
 }
 
 #pragma mark Zoom
@@ -511,6 +540,37 @@ static void didChangeBackForwardList(WKPageRef page, WKBackForwardListItemRef ad
     [loadDelegate browsingContextControllerDidChangeBackForwardList:browsingContext addedItem:added removedItems:removed];
 }
 
+static void processDidCrash(WKPageRef page, const void* clientInfo)
+{
+    WKBrowsingContextController *browsingContext = (WKBrowsingContextController *)clientInfo;
+    auto loadDelegate = browsingContext->_loadDelegate.get();
+
+    if ([loadDelegate respondsToSelector:@selector(browsingContextControllerWebProcessDidCrash:)])
+        [(id <WKBrowsingContextLoadDelegatePrivate>)loadDelegate browsingContextControllerWebProcessDidCrash:browsingContext];
+}
+
+static inline WKRenderingProgressEvents renderingProgressEvents(WKLayoutMilestones milestones)
+{
+    WKRenderingProgressEvents events = 0;
+
+    if (milestones & kWKDidFirstLayout)
+        events |= WKRenderingProgressEventFirstLayout;
+
+    if (milestones & kWKDidHitRelevantRepaintedObjectsAreaThreshold)
+        events |= WKRenderingProgressEventFirstPaintWithSignificantArea;
+
+    return events;
+}
+
+static void didLayout(WKPageRef page, WKLayoutMilestones milestones, WKTypeRef userData, const void* clientInfo)
+{
+    WKBrowsingContextController *browsingContext = (WKBrowsingContextController *)clientInfo;
+    auto loadDelegate = browsingContext->_loadDelegate.get();
+
+    if ([loadDelegate respondsToSelector:@selector(browsingContextController:renderingProgressDidChange:)])
+        [loadDelegate browsingContextController:browsingContext renderingProgressDidChange:renderingProgressEvents(milestones)];
+}
+
 static void setUpPageLoaderClient(WKBrowsingContextController *browsingContext, WebPageProxy& page)
 {
     WKPageLoaderClientV3 loaderClient;
@@ -532,6 +592,10 @@ static void setUpPageLoaderClient(WKBrowsingContextController *browsingContext, 
     loaderClient.didChangeProgress = didChangeProgress;
     loaderClient.didFinishProgress = didFinishProgress;
     loaderClient.didChangeBackForwardList = didChangeBackForwardList;
+
+    loaderClient.processDidCrash = processDidCrash;
+
+    loaderClient.didLayout = didLayout;
 
     page.initializeLoaderClient(&loaderClient.base);
 }
@@ -561,13 +625,13 @@ static WKPolicyDecisionHandler makePolicyDecisionBlock(WKFramePolicyListenerRef 
 
 static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, WebPageProxy& page)
 {
-    WKPagePolicyClientV1 policyClient;
+    WKPagePolicyClientInternal policyClient;
     memset(&policyClient, 0, sizeof(policyClient));
 
-    policyClient.base.version = 1;
+    policyClient.base.version = 2;
     policyClient.base.clientInfo = browsingContext;
 
-    policyClient.decidePolicyForNavigationAction = [](WKPageRef page, WKFrameRef frame, WKFrameNavigationType navigationType, WKEventModifiers modifiers, WKEventMouseButton mouseButton, WKFrameRef originatingFrame, WKURLRequestRef request, WKFramePolicyListenerRef listener, WKTypeRef userData, const void* clientInfo)
+    policyClient.decidePolicyForNavigationAction = [](WKPageRef page, WKFrameRef frame, WKFrameNavigationType navigationType, WKEventModifiers modifiers, WKEventMouseButton mouseButton, WKFrameRef originatingFrame, WKURLRequestRef originalRequest, WKURLRequestRef request, WKFramePolicyListenerRef listener, WKTypeRef userData, const void* clientInfo)
     {
         WKBrowsingContextController *browsingContext = (WKBrowsingContextController *)clientInfo;
         auto policyDelegate = browsingContext->_policyDelegate.get();
@@ -578,6 +642,7 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
                 WKActionNavigationTypeKey: @(navigationType),
                 WKActionModifierFlagsKey: @(modifiers),
                 WKActionMouseButtonKey: @(mouseButton),
+                WKActionOriginalURLRequestKey: adoptNS(WKURLRequestCopyNSURLRequest(originalRequest)).get(),
                 WKActionURLRequestKey: adoptNS(WKURLRequestCopyNSURLRequest(request)).get()
             };
 

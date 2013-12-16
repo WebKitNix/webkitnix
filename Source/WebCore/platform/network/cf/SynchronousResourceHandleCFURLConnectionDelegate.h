@@ -44,6 +44,9 @@ public:
 #endif // USE(NETWORK_CFDATA_ARRAY_CALLBACK)
 
 private:
+    virtual void setupRequest(CFMutableURLRequestRef) OVERRIDE;
+    virtual void setupConnectionScheduling(CFURLConnectionRef) OVERRIDE;
+
     virtual CFURLRequestRef willSendRequest(CFURLRequestRef, CFURLResponseRef) OVERRIDE;
     virtual void didReceiveResponse(CFURLResponseRef) OVERRIDE;
     virtual CFCachedURLResponseRef willCacheResponse(CFCachedURLResponseRef) OVERRIDE;
@@ -52,6 +55,14 @@ private:
     virtual Boolean shouldUseCredentialStorage() OVERRIDE;
 #if USE(PROTECTION_SPACE_AUTH_CALLBACK)
     virtual Boolean canRespondToProtectionSpace(CFURLProtectionSpaceRef) OVERRIDE;
+#endif // USE(PROTECTION_SPACE_AUTH_CALLBACK)
+
+    virtual void continueWillSendRequest(CFURLRequestRef) OVERRIDE;
+    virtual void continueDidReceiveResponse() OVERRIDE;
+    virtual void continueShouldUseCredentialStorage(bool) OVERRIDE;
+    virtual void continueWillCacheResponse(CFCachedURLResponseRef) OVERRIDE;
+#if USE(PROTECTION_SPACE_AUTH_CALLBACK)
+    virtual void continueCanAuthenticateAgainstProtectionSpace(bool) OVERRIDE;
 #endif // USE(PROTECTION_SPACE_AUTH_CALLBACK)
 };
 

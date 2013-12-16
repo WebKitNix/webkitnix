@@ -31,22 +31,26 @@
 
 #if ENABLE(INSPECTOR) && ENABLE(SQL_DATABASE)
 
-#include "InspectorBaseAgent.h"
-#include "InspectorFrontend.h"
+#include "InspectorWebAgentBase.h"
+#include "InspectorWebBackendDispatchers.h"
+#include "InspectorWebFrontendDispatchers.h"
 #include <wtf/HashMap.h>
 #include <wtf/PassOwnPtr.h>
 #include <wtf/text/WTFString.h>
 
+namespace Inspector {
+class InspectorArray;
+}
+
 namespace WebCore {
 
 class Database;
-class InspectorArray;
 class InspectorDatabaseResource;
 class InstrumentingAgents;
 
 typedef String ErrorString;
 
-class InspectorDatabaseAgent : public InspectorBaseAgent, public InspectorDatabaseBackendDispatcherHandler {
+class InspectorDatabaseAgent : public InspectorAgentBase, public Inspector::InspectorDatabaseBackendDispatcherHandler {
 public:
     static PassOwnPtr<InspectorDatabaseAgent> create(InstrumentingAgents* instrumentingAgents)
     {
@@ -54,7 +58,7 @@ public:
     }
     ~InspectorDatabaseAgent();
 
-    virtual void didCreateFrontendAndBackend(InspectorFrontendChannel*, InspectorBackendDispatcher*) OVERRIDE;
+    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) OVERRIDE;
     virtual void willDestroyFrontendAndBackend() OVERRIDE;
 
     void clearResources();
@@ -62,7 +66,7 @@ public:
     // Called from the front-end.
     virtual void enable(ErrorString*);
     virtual void disable(ErrorString*);
-    virtual void getDatabaseTableNames(ErrorString*, const String& databaseId, RefPtr<TypeBuilder::Array<String>>& names);
+    virtual void getDatabaseTableNames(ErrorString*, const String& databaseId, RefPtr<Inspector::TypeBuilder::Array<String>>& names);
     virtual void executeSQL(ErrorString*, const String& databaseId, const String& query, PassRefPtr<ExecuteSQLCallback>);
 
     // Called from the injected script.
@@ -75,8 +79,8 @@ private:
     Database* databaseForId(const String& databaseId);
     InspectorDatabaseResource* findByFileName(const String& fileName);
 
-    std::unique_ptr<InspectorDatabaseFrontendDispatcher> m_frontendDispatcher;
-    RefPtr<InspectorDatabaseBackendDispatcher> m_backendDispatcher;
+    std::unique_ptr<Inspector::InspectorDatabaseFrontendDispatcher> m_frontendDispatcher;
+    RefPtr<Inspector::InspectorDatabaseBackendDispatcher> m_backendDispatcher;
     typedef HashMap<String, RefPtr<InspectorDatabaseResource>> DatabaseResourcesMap;
     DatabaseResourcesMap m_resources;
     bool m_enabled;

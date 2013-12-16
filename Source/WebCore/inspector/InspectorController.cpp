@@ -41,8 +41,6 @@
 #include "InjectedScriptManager.h"
 #include "InspectorAgent.h"
 #include "InspectorApplicationCacheAgent.h"
-#include "InspectorBackendDispatchers.h"
-#include "InspectorBaseAgent.h"
 #include "InspectorCSSAgent.h"
 #include "InspectorCanvasAgent.h"
 #include "InspectorClient.h"
@@ -51,7 +49,6 @@
 #include "InspectorDOMStorageAgent.h"
 #include "InspectorDatabaseAgent.h"
 #include "InspectorDebuggerAgent.h"
-#include "InspectorFrontend.h"
 #include "InspectorFrontendClient.h"
 #include "InspectorHeapProfilerAgent.h"
 #include "InspectorIndexedDBAgent.h"
@@ -64,15 +61,19 @@
 #include "InspectorProfilerAgent.h"
 #include "InspectorResourceAgent.h"
 #include "InspectorTimelineAgent.h"
+#include "InspectorWebBackendDispatchers.h"
+#include "InspectorWebFrontendDispatchers.h"
 #include "InspectorWorkerAgent.h"
 #include "InstrumentingAgents.h"
 #include "MainFrame.h"
+#include "Page.h"
 #include "PageConsoleAgent.h"
 #include "PageDebuggerAgent.h"
 #include "PageRuntimeAgent.h"
-#include "Page.h"
-#include "ScriptObject.h"
 #include "Settings.h"
+#include <inspector/InspectorBackendDispatcher.h>
+
+using namespace Inspector;
 
 namespace WebCore {
 

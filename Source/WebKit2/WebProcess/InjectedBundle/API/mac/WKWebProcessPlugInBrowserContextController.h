@@ -31,6 +31,7 @@
 
 @class WKDOMDocument;
 @class WKDOMRange;
+@protocol WKWebProcessPlugInLoadDelegate;
 
 WK_API_CLASS
 @interface WKWebProcessPlugInBrowserContextController : NSObject
@@ -38,6 +39,8 @@ WK_API_CLASS
 @property(readonly) WKDOMDocument *mainFrameDocument;
 
 @property(readonly) WKDOMRange *selectedRange;
+
+@property (weak) id <WKWebProcessPlugInLoadDelegate> loadDelegate;
 
 @end
 

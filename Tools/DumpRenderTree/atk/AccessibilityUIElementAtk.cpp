@@ -81,6 +81,15 @@ const String attributesMap[][2] = {
     { "AXUnknownSortDirection", "unknown" }
 };
 
+#if ATK_CHECK_VERSION(2, 11, 3)
+const char* landmarkStringBanner = "AXLandmarkBanner";
+const char* landmarkStringComplementary = "AXLandmarkComplementary";
+const char* landmarkStringContentinfo = "AXLandmarkContentInfo";
+const char* landmarkStringMain = "AXLandmarkMain";
+const char* landmarkStringNavigation = "AXLandmarkNavigation";
+const char* landmarkStringSearch = "AXLandmarkSearch";
+#endif
+
 String jsStringToWTFString(JSStringRef attribute)
 {
     size_t bufferSize = JSStringGetMaximumUTF8CStringSize(attribute);
@@ -178,8 +187,28 @@ String getAtkAttributeSetAsString(AtkObject* accessible, AtkAttributeType type)
     return builder.toString();
 }
 
-inline const char* roleToString(AtkRole role)
+const char* roleToString(AtkObject* object)
 {
+    AtkRole role = atk_object_get_role(object);
+
+#if ATK_CHECK_VERSION(2, 11, 3)
+    if (role == ATK_ROLE_LANDMARK) {
+        String xmlRolesValue = getAttributeSetValueForId(object, ObjectAttributeType, "xml-roles");
+        if (equalIgnoringCase(xmlRolesValue, "banner"))
+            return landmarkStringBanner;
+        if (equalIgnoringCase(xmlRolesValue, "complementary"))
+            return landmarkStringComplementary;
+        if (equalIgnoringCase(xmlRolesValue, "contentinfo"))
+            return landmarkStringContentinfo;
+        if (equalIgnoringCase(xmlRolesValue, "main"))
+            return landmarkStringMain;
+        if (equalIgnoringCase(xmlRolesValue, "navigation"))
+            return landmarkStringNavigation;
+        if (equalIgnoringCase(xmlRolesValue, "search"))
+            return landmarkStringSearch;
+    }
+#endif
+
     switch (role) {
     case ATK_ROLE_ALERT:
         return "AXAlert";
@@ -195,6 +224,8 @@ inline const char* roleToString(AtkRole role)
         return "AXColumnHeader";
     case ATK_ROLE_COMBO_BOX:
         return "AXComboBox";
+    case ATK_ROLE_COMMENT:
+        return "AXComment";
     case ATK_ROLE_DOCUMENT_FRAME:
         return "AXDocument";
     case ATK_ROLE_DOCUMENT_WEB:
@@ -251,6 +282,8 @@ inline const char* roleToString(AtkRole role)
         return "AXRadioMenuItem";
     case ATK_ROLE_ROW_HEADER:
         return "AXRowHeader";
+    case ATK_ROLE_CHECK_MENU_ITEM:
+        return "AXCheckMenuItem";
     case ATK_ROLE_RULER:
         return "AXRuler";
     case ATK_ROLE_SCROLL_BAR:
@@ -293,6 +326,20 @@ inline const char* roleToString(AtkRole role)
         return "AXWindow";
     case ATK_ROLE_UNKNOWN:
         return "AXUnknown";
+#if ATK_CHECK_VERSION(2, 11, 3)
+    case ATK_ROLE_ARTICLE:
+        return "AXArticle";
+    case ATK_ROLE_DEFINITION:
+        return "AXDefinition";
+    case ATK_ROLE_LOG:
+        return "AXLog";
+    case ATK_ROLE_MARQUEE:
+        return "AXMarquee";
+    case ATK_ROLE_MATH:
+        return "AXMath";
+    case ATK_ROLE_TIMER:
+        return "AXTimer";
+#endif
     default:
         // We want to distinguish ATK_ROLE_UNKNOWN from a known AtkRole which
         // our DRT isn't properly handling.
@@ -335,7 +382,7 @@ String attributesOfElement(AccessibilityUIElement* element)
     builder.append("AXParent: ");
     AccessibilityUIElement parent = element->parentElement();
     if (AtkObject* atkParent = parent.platformUIElement()) {
-        builder.append(roleToString(atk_object_get_role(atkParent)));
+        builder.append(roleToString(atkParent));
         const char* parentName = atk_object_get_name(atkParent);
         if (parentName && g_utf8_strlen(parentName, -1))
             builder.append(String::format(": %s", parentName));
@@ -679,11 +726,10 @@ JSStringRef AccessibilityUIElement::role()
     if (!ATK_IS_OBJECT(m_element))
         return JSStringCreateWithCharacters(0, 0);
 
-    AtkRole role = atk_object_get_role(ATK_OBJECT(m_element));
-    if (!role)
+    if (!atk_object_get_role(ATK_OBJECT(m_element)))
         return JSStringCreateWithCharacters(0, 0);
 
-    GOwnPtr<char> roleStringWithPrefix(g_strdup_printf("AXRole: %s", roleToString(role)));
+    GOwnPtr<char> roleStringWithPrefix(g_strdup_printf("AXRole: %s", roleToString(ATK_OBJECT(m_element))));
     return JSStringCreateWithUTF8CString(roleStringWithPrefix.get());
 }
 

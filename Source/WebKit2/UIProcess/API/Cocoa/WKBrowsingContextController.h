@@ -36,6 +36,11 @@
 @protocol WKBrowsingContextLoadDelegate;
 @protocol WKBrowsingContextPolicyDelegate;
 
+typedef NS_OPTIONS(NSUInteger, WKRenderingProgressEvents) {
+    WKRenderingProgressEventFirstLayout = 1 << 0,
+    WKRenderingProgressEventFirstPaintWithSignificantArea = 1 << 2,
+};
+
 WK_API_CLASS
 @interface WKBrowsingContextController : NSObject
 
@@ -121,11 +126,14 @@ WK_API_CLASS
 
 @property(readonly) double estimatedProgress;
 
+@property (nonatomic) WKRenderingProgressEvents observedRenderingProgressEvents;
+
 #pragma mark Active Document Introspection
 
 /* Title of the document associated with the active load. */
 @property(readonly) NSString *title;
 
+@property (readonly) NSArray *certificateChain;
 
 #pragma mark Zoom
 

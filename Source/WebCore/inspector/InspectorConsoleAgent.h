@@ -29,14 +29,15 @@
 
 #include "ConsoleAPITypes.h"
 #include "ConsoleTypes.h"
-#include "InspectorBaseAgent.h"
-#include "InspectorFrontend.h"
+#include "InspectorWebAgentBase.h"
+#include "InspectorWebBackendDispatchers.h"
+#include "InspectorWebFrontendDispatchers.h"
 #include "ScriptState.h"
 #include <wtf/Forward.h>
 #include <wtf/HashMap.h>
 #include <wtf/Noncopyable.h>
-#include <wtf/text/StringHash.h>
 #include <wtf/Vector.h>
+#include <wtf/text/StringHash.h>
 
 namespace WebCore {
 
@@ -52,7 +53,7 @@ class ScriptProfile;
 
 typedef String ErrorString;
 
-class InspectorConsoleAgent : public InspectorBaseAgent, public InspectorConsoleBackendDispatcherHandler {
+class InspectorConsoleAgent : public InspectorAgentBase, public Inspector::InspectorConsoleBackendDispatcherHandler {
     WTF_MAKE_NONCOPYABLE(InspectorConsoleAgent);
 public:
     InspectorConsoleAgent(InstrumentingAgents*, InjectedScriptManager*);
@@ -64,7 +65,7 @@ public:
     bool enabled() const { return m_enabled; }
     void reset();
 
-    virtual void didCreateFrontendAndBackend(InspectorFrontendChannel*, InspectorBackendDispatcher*) OVERRIDE;
+    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) OVERRIDE;
     virtual void willDestroyFrontendAndBackend() OVERRIDE;
 
     void addMessageToConsole(MessageSource, MessageType, MessageLevel, const String& message, JSC::ExecState*, PassRefPtr<ScriptArguments>, unsigned long requestIdentifier = 0);
@@ -100,8 +101,8 @@ protected:
     virtual bool developerExtrasEnabled() = 0;
 
     InjectedScriptManager* m_injectedScriptManager;
-    std::unique_ptr<InspectorConsoleFrontendDispatcher> m_frontendDispatcher;
-    RefPtr<InspectorConsoleBackendDispatcher> m_backendDispatcher;
+    std::unique_ptr<Inspector::InspectorConsoleFrontendDispatcher> m_frontendDispatcher;
+    RefPtr<Inspector::InspectorConsoleBackendDispatcher> m_backendDispatcher;
     ConsoleMessage* m_previousMessage;
     Vector<OwnPtr<ConsoleMessage>> m_consoleMessages;
     int m_expiredConsoleMessageCount;
