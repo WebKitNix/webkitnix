@@ -40,6 +40,7 @@ using namespace TestWebKitAPI::Util;
 
 PageLoader::PageLoader(WKViewRef view)
     : m_view(view)
+    , m_shouldRepaint(false)
     , m_didFinishLoadAndRepaint(false)
 {
     std::memset(&m_loaderClient, 0, sizeof(m_loaderClient));
@@ -57,13 +58,27 @@ void PageLoader::didForceRepaint(WKErrorRef, void* context)
 
 void PageLoader::didFinishLoadForFrame(WKPageRef page, WKFrameRef, WKTypeRef, const void* context)
 {
-    WKPageForceRepaint(page, const_cast<void*>(context), &PageLoader::didForceRepaint);
+    PageLoader* self = reinterpret_cast<PageLoader*>(const_cast<void*>(context));
+    if (self->m_shouldRepaint)
+        WKPageForceRepaint(page, const_cast<void*>(context), &PageLoader::didForceRepaint);
+    else
+        self->m_didFinishLoadAndRepaint = true;
+}
+
+void PageLoader::waitForLoadURL(const char* resource)
+{
+    WKRetainPtr<WKURLRef> urlRef = adoptWK(createURLForResource(resource, "html"));
+    WKPageLoadURL(WKViewGetPage(m_view), urlRef.get());
+    m_shouldRepaint = false;
+    Util::run(&m_didFinishLoadAndRepaint);
+    m_didFinishLoadAndRepaint = false;
 }
 
 void PageLoader::waitForLoadURLAndRepaint(const char* resource)
 {
     WKRetainPtr<WKURLRef> urlRef = adoptWK(createURLForResource(resource, "html"));
     WKPageLoadURL(WKViewGetPage(m_view), urlRef.get());
+    m_shouldRepaint = true;
     Util::run(&m_didFinishLoadAndRepaint);
     m_didFinishLoadAndRepaint = false;
 }

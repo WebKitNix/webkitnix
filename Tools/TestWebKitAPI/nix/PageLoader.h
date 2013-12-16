@@ -55,6 +55,7 @@ class PageLoader
 public:
     PageLoader(WKViewRef);
 
+    void waitForLoadURL(const char* resource);
     void waitForLoadURLAndRepaint(const char* resource);
     void forceRepaint();
 
@@ -63,6 +64,7 @@ public:
 
 private:
     WKViewRef m_view;
+    bool m_shouldRepaint;
     bool m_didFinishLoadAndRepaint;
     WKPageLoaderClientV3 m_loaderClient;
 

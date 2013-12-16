@@ -24,7 +24,6 @@
  */
 
 #include "config.h"
-#include "GLUtilities.h"
 #include "NIXView.h"
 #include "PageLoader.h"
 #include "PlatformUtilities.h"
@@ -43,17 +42,11 @@ static void alert(WKPageRef, WKStringRef alertText, WKFrameRef, const void* clie
 
 TEST(WebKitNix, ScreenSize)
 {
-    // FIXME: Util::run block forever if we doesn't have a viewNeedsDisplay callback.
-    const WKSize size = WKSizeMake(150, 100);
-    ToolsNix::GLOffscreenBuffer offscreenBuffer(size.width, size.height);
-    ASSERT_TRUE(offscreenBuffer.makeCurrent());
-
     WKRetainPtr<WKContextRef> context = adoptWK(WKContextCreate());
     WKRetainPtr<WKViewRef> view = adoptWK(WKViewCreate(context.get(), 0));
 
     WKViewInitialize(view.get());
     NIXViewSetScreenRect(view.get(), WKRectMake(0, 0, 1234, 4321));
-    Util::ForceRepaintClient forceRepaintClient(view.get());
 
     WKStringRef alertText = 0;
     WKPageUIClientV2 uiClient;
@@ -63,7 +56,7 @@ TEST(WebKitNix, ScreenSize)
     uiClient.runJavaScriptAlert = &alert;
     WKPageSetPageUIClient(WKViewGetPage(view.get()), &uiClient.base);
     Util::PageLoader loader(view.get());
-    loader.waitForLoadURLAndRepaint("../nix/ScreenSize");
+    loader.waitForLoadURL("../nix/ScreenSize");
 
     ASSERT_TRUE(alertText);
     EXPECT_WK_STREQ(alertText, "1234x4321");

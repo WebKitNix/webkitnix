@@ -32,15 +32,9 @@
 
 namespace TestWebKitAPI {
 
-static bool loadDone;
 static bool audioRenderingDone;
 
-static void didFinishLoadForFrame(WKPageRef, WKFrameRef, WKTypeRef, const void*)
-{
-    loadDone = true;
-}
-
-static void didReceiveMessageFromInjectedBundle(WKContextRef, WKStringRef messageName, WKTypeRef, const void*)
+static void didReceiveMessageFromInjectedBundle(WKContextRef, WKStringRef messageName, WKTypeRef, const void* clientInfo)
 {
     audioRenderingDone = WKStringIsEqualToUTF8CString(messageName, "AudioDataVectorRendered");
 }
@@ -61,19 +55,9 @@ TEST(WebKitNix, WebAudio)
     injectedBundleClient.didReceiveMessageFromInjectedBundle = didReceiveMessageFromInjectedBundle;
     WKContextSetInjectedBundleClient(context.get(), &injectedBundleClient.base);
 
-    WKPageLoaderClientV3 loaderClient;
-    memset(&loaderClient, 0, sizeof(loaderClient));
-    loaderClient.base.version = 3;
-    loaderClient.didFinishLoadForFrame = didFinishLoadForFrame;
-    WKPageSetPageLoaderClient(WKViewGetPage(view.get()), &loaderClient.base);
+    Util::PageLoader loader(view.get());
+    loader.waitForLoadURL("../nix/webaudio");
 
-    WKRetainPtr<WKURLRef> url = adoptWK(Util::createURLForResource("../nix/webaudio", "html"));
-    WKPageLoadURL(WKViewGetPage(view.get()), url.get());
-
-    loadDone = false;
-    Util::run(&loadDone);
-
-    audioRenderingDone = false;
     Util::run(&audioRenderingDone);
 }
 
