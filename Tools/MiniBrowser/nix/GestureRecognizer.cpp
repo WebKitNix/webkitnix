@@ -34,6 +34,11 @@ static const int PanDistanceThreshold = 10;
 static const int MaxDoubleTapInterval = 500;
 static const int LongTapInterval = 1000;
 
+static constexpr double sqr(double x)
+{
+    return x * x;
+}
+
 static WKPoint computeCenter(WKPoint a, WKPoint b)
 {
     return WKPointMake((a.x + b.x) / 2, (a.y + b.y) / 2);
@@ -41,7 +46,7 @@ static WKPoint computeCenter(WKPoint a, WKPoint b)
 
 static double computeDistance(WKPoint a, WKPoint b)
 {
-    return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+    return sqrt(sqr(a.x - b.x) + sqr(a.y - b.y));
 }
 
 static bool hasTouchPointPressed(const NIXTouchEvent& event)
