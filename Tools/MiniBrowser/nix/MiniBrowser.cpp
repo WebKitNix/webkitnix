@@ -595,7 +595,8 @@ void MiniBrowser::handlePinch(double timestamp, WKPoint delta, double scale, WKP
     // Scrolling: If the center of the pinch initially was position (120,120) in content
     //            coordinates, them during the page must be scrolled to keep the pinch center
     //            at the same coordinates.
-    WKPoint position = WKPointMake(WKViewGetContentPosition(m_view).x - delta.x, WKViewGetContentPosition(m_view).y - delta.y);
+    WKPoint viewPosition = WKViewGetContentPosition(m_view);
+    WKPoint position = WKPointMake(viewPosition.x - delta.x, viewPosition.y - delta.y);
 
     WKViewSetContentPosition(m_view, position);
     scaleAtPoint(contentCenter, scale, LowerMinimumScale);
