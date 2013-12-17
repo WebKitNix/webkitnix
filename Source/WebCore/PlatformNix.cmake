@@ -268,6 +268,7 @@ if (WTF_USE_CURL)
     list(APPEND WebCore_SOURCES
         platform/network/NetworkStorageSessionStub.cpp
 
+        platform/network/curl/CertificateInfoCurl.cpp
         platform/network/curl/CookieDatabaseBackingStore.cpp
         platform/network/curl/CookieJarCurl.cpp
         platform/network/curl/CookieManager.cpp

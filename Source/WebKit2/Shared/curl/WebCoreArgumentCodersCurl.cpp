@@ -37,6 +37,17 @@ using namespace WebCore;
 
 namespace CoreIPC {
 
+void ArgumentCoder<CertificateInfo>::encode(ArgumentEncoder& encoder, const CertificateInfo& certificateInfo)
+{
+    notImplemented();
+}
+
+bool ArgumentCoder<CertificateInfo>::decode(ArgumentDecoder& decoder, CertificateInfo& certificateInfo)
+{
+    notImplemented();
+    return true;
+}
+
 void ArgumentCoder<ResourceRequest>::encodePlatformData(ArgumentEncoder&, const ResourceRequest&)
 {
     notImplemented();

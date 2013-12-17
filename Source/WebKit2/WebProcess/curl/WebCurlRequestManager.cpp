@@ -35,7 +35,7 @@ const char* WebCurlRequestManager::supplementName()
 
 WebCurlRequestManager::WebCurlRequestManager(WebProcess* process) : m_process(process)
 {
-    m_process->addMessageReceiver(Messages::WebCurlRequestManager::messageReceiverName(), this);
+    m_process->addMessageReceiver(Messages::WebCurlRequestManager::messageReceiverName(), *this);
 }
 
 WebCurlRequestManager::~WebCurlRequestManager()
