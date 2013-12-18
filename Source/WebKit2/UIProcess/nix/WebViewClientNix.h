@@ -47,7 +47,7 @@ public:
     void doneWithTouchEvent(WebView*, const NIXTouchEvent&, bool wasEventHandled);
     void didFindZoomableArea(WebView*, WKPoint target, WKRect area);
     void updateTextInputState(WebView*, const EditorState&);
-    void setCursor(WebView*, unsigned int);
+    void setCursor(WebView*, unsigned);
     void didChangeTooltip(WebView*, const WKStringRef tooltip);
 };
 

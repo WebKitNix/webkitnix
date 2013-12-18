@@ -46,7 +46,7 @@ void WebViewClientNix::didFindZoomableArea(WebView* view, WKPoint target, WKRect
     m_client.didFindZoomableArea(toAPI(view), target, area, m_client.base.clientInfo);
 }
 
-void WebViewClientNix::setCursor(WebView* view, unsigned int shape)
+void WebViewClientNix::setCursor(WebView* view, unsigned shape)
 {
     if (!m_client.setCursor)
         return;

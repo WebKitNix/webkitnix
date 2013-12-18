@@ -101,7 +101,7 @@ public:
     void updateUrlText(const char*);
     bool isUrlBarFocused();
 
-    void setWebViewCursor(unsigned int);
+    void setWebViewCursor(unsigned);
 
     void passFocusToWebView();
     void passFocusToUrlBar();

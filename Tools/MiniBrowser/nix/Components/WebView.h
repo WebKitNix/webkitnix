@@ -40,7 +40,7 @@ public:
     void makeCurrent();
     void swapBuffers();
 
-    void setCursor(unsigned int);
+    void setCursor(unsigned);
 
 private:
     struct GLContextData;

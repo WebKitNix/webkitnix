@@ -85,9 +85,9 @@ void WebView::handleEvent(const XEvent& event)
     }
 }
 
-static unsigned int cursorShape(int type)
+static unsigned cursorShape(int type)
 {
-    static unsigned int cursorShapes[] = {
+    static unsigned cursorShapes[] = {
         XC_left_ptr,                // "cursor/pointer",
         XC_X_cursor,                // "cursor/cross",
         XC_hand2,                   // "cursor/hand",
@@ -136,7 +136,7 @@ static unsigned int cursorShape(int type)
     return cursorShapes[type];
 }
 
-void WebView::setCursor(unsigned int shape)
+void WebView::setCursor(unsigned shape)
 {
     XDefineCursor(m_display, m_window, XCreateFontCursor(m_display, cursorShape(shape)));
 }
