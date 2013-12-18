@@ -751,25 +751,25 @@ class CppStyleTest(CppStyleTestBase):
     def test_runtime_selfinit(self):
         self.assert_multi_line_lint(
             '''\
-            Foo::Foo(Bar r, Bel l)
-                : r_(r_)
-                , l_(l_) { }''',
+            Foo::Foo(Bar raa, Bel laa)
+                : raa_(raa_)
+                , laa_(laa_) { }''',
             ['You seem to be initializing a member variable with itself.'
             '  [runtime/init] [4]',
             'You seem to be initializing a member variable with itself.'
             '  [runtime/init] [4]'])
         self.assert_multi_line_lint(
             '''\
-            Foo::Foo(Bar r, Bel l)
-                : r_(r)
-                , l_(l) { }''',
+            Foo::Foo(Bar raa, Bel laa)
+                : raa_(raa)
+                , laa_(laa) { }''',
             '')
         self.assert_multi_line_lint(
             '''\
-            Foo::Foo(Bar r)
-                : r_(r)
-                , l_(r_)
-                , ll_(l_) { }''',
+            Foo::Foo(Bar raa)
+                : raa_(raa)
+                , laa_(raa_)
+                , llaa_(laa_) { }''',
             '')
 
     def test_runtime_rtti(self):
@@ -2066,7 +2066,11 @@ class CppStyleTest(CppStyleTestBase):
         self.assert_lint('int *b;',
                          'Declaration has space between type name and * in int *b  [whitespace/declaration] [3]',
                          'foo.cpp')
+        self.assert_lint('int * b;',
+                         'Declaration has space between type name and * in int * b  [whitespace/declaration] [3]',
+                         'foo.cpp')
         self.assert_lint('return *b;', '', 'foo.cpp')
+        self.assert_lint('return a * b;', '', 'foo.cpp')
         self.assert_lint('delete *b;', '', 'foo.cpp')
         self.assert_lint('int *b;', '', 'foo.c')
         self.assert_lint('int* b;',
@@ -3310,20 +3314,20 @@ class NoNonVirtualDestructorsTest(CppStyleTestBase):
 
         self.assert_multi_line_lint(
             '''\
-                ENUM_CLASS(Foo) {
+                enum class Foo {
                     FOO_ONE = 1,
                     FOO_TWO
                 };
-                ENUM_CLASS(Foo) { FOO_ONE };
-                ENUM_CLASS(Foo) {FooOne, fooTwo};
-                ENUM_CLASS(Foo) {
+                enum class Foo { FOO_ONE };
+                enum class Foo {FooOne, fooTwo};
+                enum class Foo {
                     FOO_ONE
                 };''',
             ['enum members should use InterCaps with an initial capital letter.  [readability/enum_casing] [4]'] * 5)
 
         self.assert_multi_line_lint(
             '''\
-                ENUM_CLASS(Foo) {
+                enum class Foo {
                     fooOne = 1,
                     FooTwo = 2
                 };''',
@@ -3331,11 +3335,11 @@ class NoNonVirtualDestructorsTest(CppStyleTestBase):
 
         self.assert_multi_line_lint(
             '''\
-                ENUM_CLASS(Foo) {
+                enum class Foo {
                     FooOne = 1,
                     FooTwo
                 } fooVar = FooOne;
-                ENUM_CLASS(Enum123) {
+                enum class Enum123 {
                     FooOne,
                     FooTwo = FooOne,
                 };''',
@@ -3367,10 +3371,10 @@ class NoNonVirtualDestructorsTest(CppStyleTestBase):
             '};',
             '')
         self.assert_lint(
-            'ENUM_CLASS(CPP11EnumClass) { Value1, Value2 };',
+            'enum class CPP11EnumClass { Value1, Value2 };',
             '')
         self.assert_lint(
-            'ENUM_CLASS(MyEnum) {\n'
+            'enum class MyEnum {\n'
             '    Value1,\n'
             '    Value2\n'
             '};',
@@ -4300,14 +4304,14 @@ class WebKitStyleTest(CppStyleTestBase):
             '    1\n'
             '};', '')
         self.assert_multi_line_lint(
-            'ENUM_CLASS(CPP11EnumClass)\n'
+            'enum class CPP11EnumClass\n'
             '{\n'
             '    Value1,\n'
             '    Value2\n'
             '};',
             'This { should be at the end of the previous line  [whitespace/braces] [4]')
         self.assert_multi_line_lint(
-            'ENUM_CLASS(CPP11EnumClass) {\n'
+            'enum class CPP11EnumClass {\n'
             '    Value1,\n'
             '    Value2\n'
             '};', '')
@@ -4673,6 +4677,14 @@ class WebKitStyleTest(CppStyleTestBase):
                          '_length' + name_underscore_error_message)
         self.assert_lint('unsigned long long _length;',
                          '_length' + name_underscore_error_message)
+        self.assert_lint('    ::blaspace::Options::Options(double defaultLongTimeout)',
+                         '')
+        self.assert_lint('    ::blaspace::Options::Options(double _default_long_timeout)',
+                         '_default_long_timeout' + name_underscore_error_message)
+        self.assert_lint('    blaspace::Options::Options(double _default_long_timeout)',
+                         '_default_long_timeout' + name_underscore_error_message)
+        self.assert_lint('    Options::Options(double _default_long_timeout)',
+                         '_default_long_timeout' + name_underscore_error_message)
 
         # Allow underscores in Objective C files.
         self.assert_lint('unsigned long long _length;',

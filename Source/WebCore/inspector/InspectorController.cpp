@@ -89,7 +89,7 @@ InspectorController::InspectorController(Page* page, InspectorClient* inspectorC
     , m_hasRemoteFrontend(false)
 #endif
 {
-    OwnPtr<InspectorAgent> inspectorAgentPtr(InspectorAgent::create(page, m_injectedScriptManager.get(), m_instrumentingAgents.get()));
+    OwnPtr<InspectorAgent> inspectorAgentPtr(InspectorAgent::create(page, m_instrumentingAgents.get()));
     m_inspectorAgent = inspectorAgentPtr.get();
     m_agents.append(inspectorAgentPtr.release());
 
@@ -172,7 +172,6 @@ InspectorController::InspectorController(Page* page, InspectorClient* inspectorC
 #endif
         , domStorageAgent
         , m_domAgent
-        , m_debuggerAgent
     );
 
 #if ENABLE(JAVASCRIPT_DEBUGGER)
@@ -357,11 +356,6 @@ bool InspectorController::enabled() const
 Page* InspectorController::inspectedPage() const
 {
     return m_page;
-}
-
-void InspectorController::setInjectedScriptForOrigin(const String& origin, const String& source)
-{
-    m_inspectorAgent->setInjectedScriptForOrigin(origin, source);
 }
 
 void InspectorController::dispatchMessageFromFrontend(const String& message)

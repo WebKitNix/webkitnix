@@ -28,10 +28,14 @@
 
 #if WK_API_ENABLED
 
-#import "WeakObjCPtr.h"
+#import "APIData.h"
 #import "ObjCObjectGraph.h"
 #import "WKBackForwardListInternal.h"
 #import "WKBackForwardListItemInternal.h"
+#import "WKBrowsingContextGroupInternal.h"
+#import "WKBrowsingContextHandleInternal.h"
+#import "WKBrowsingContextLoadDelegatePrivate.h"
+#import "WKBrowsingContextPolicyDelegate.h"
 #import "WKErrorRecoveryAttempting.h"
 #import "WKFrame.h"
 #import "WKFramePolicyListener.h"
@@ -40,19 +44,14 @@
 #import "WKNSURLAuthenticationChallenge.h"
 #import "WKNSURLExtras.h"
 #import "WKNSURLProtectionSpace.h"
+#import "WKProcessGroupInternal.h"
 #import "WKRetainPtr.h"
 #import "WKURLRequestNS.h"
 #import "WKURLResponseNS.h"
+#import "WeakObjCPtr.h"
 #import "WebCertificateInfo.h"
 #import "WebContext.h"
-#import "WebData.h"
 #import "WebPageProxy.h"
-
-#import "WKBrowsingContextGroupInternal.h"
-#import "WKBrowsingContextHandleInternal.h"
-#import "WKBrowsingContextLoadDelegatePrivate.h"
-#import "WKBrowsingContextPolicyDelegate.h"
-#import "WKProcessGroupInternal.h"
 
 using namespace WebCore;
 using namespace WebKit;
@@ -93,6 +92,16 @@ private:
     virtual void didChangeActiveURL() OVERRIDE
     {
         [m_controller didChangeValueForKey:@"activeURL"];
+    }
+
+    virtual void willChangeHasOnlySecureContent() OVERRIDE
+    {
+        [m_controller willChangeValueForKey:@"hasOnlySecureContent"];
+    }
+
+    virtual void didChangeHasOnlySecureContent() OVERRIDE
+    {
+        [m_controller didChangeValueForKey:@"hasOnlySecureContent"];
     }
 
     virtual void willChangeEstimatedProgress() OVERRIDE
@@ -185,7 +194,7 @@ static NSString * const frameErrorKey = @"WKBrowsingContextFrameErrorKey";
 
 - (void)loadRequest:(NSURLRequest *)request userData:(id)userData
 {
-    RefPtr<WebURLRequest> wkURLRequest = WebURLRequest::create(request);
+    RefPtr<API::URLRequest> wkURLRequest = API::URLRequest::create(request);
 
     RefPtr<ObjCObjectGraph> wkUserData;
     if (userData)
@@ -242,17 +251,18 @@ static void releaseNSData(unsigned char*, const void* data)
 
 - (void)loadData:(NSData *)data MIMEType:(NSString *)MIMEType textEncodingName:(NSString *)encodingName baseURL:(NSURL *)baseURL userData:(id)userData
 {
-    RefPtr<WebData> wkData;
+    RefPtr<API::Data> apiData;
     if (data) {
+        // FIXME: This should copy the data.
         [data retain];
-        wkData = WebData::createWithoutCopying((const unsigned char*)[data bytes], [data length], releaseNSData, data);
+        apiData = API::Data::createWithoutCopying((const unsigned char*)[data bytes], [data length], releaseNSData, data);
     }
 
     RefPtr<ObjCObjectGraph> wkUserData;
     if (userData)
         wkUserData = ObjCObjectGraph::create(userData);
 
-    _page->loadData(wkData.get(), MIMEType, encodingName, [baseURL _web_originalDataAsWTFString], wkUserData.get());
+    _page->loadData(apiData.get(), MIMEType, encodingName, [baseURL _web_originalDataAsWTFString], wkUserData.get());
 }
 
 - (void)stopLoading
@@ -268,6 +278,28 @@ static void releaseNSData(unsigned char*, const void* data)
 - (void)reloadFromOrigin
 {
     _page->reload(true);
+}
+
+- (NSString *)applicationNameForUserAgent
+{
+    const String& applicationName = _page->applicationNameForUserAgent();
+    return !applicationName ? nil : (NSString *)applicationName;
+}
+
+- (void)setApplicationNameForUserAgent:(NSString *)applicationNameForUserAgent
+{
+    _page->setApplicationNameForUserAgent(applicationNameForUserAgent);
+}
+
+- (NSString *)customUserAgent
+{
+    const String& customUserAgent = _page->customUserAgent();
+    return !customUserAgent ? nil : (NSString *)customUserAgent;
+}
+
+- (void)setCustomUserAgent:(NSString *)customUserAgent
+{
+    _page->setCustomUserAgent(customUserAgent);
 }
 
 #pragma mark Back/Forward
@@ -327,6 +359,11 @@ static void releaseNSData(unsigned char*, const void* data)
 - (NSURL *)unreachableURL
 {
     return [NSURL _web_URLWithWTFString:_page->pageLoadState().unreachableURL()];
+}
+
+- (BOOL)hasOnlySecureContent
+{
+    return _page->pageLoadState().hasOnlySecureContent();
 }
 
 - (double)estimatedProgress

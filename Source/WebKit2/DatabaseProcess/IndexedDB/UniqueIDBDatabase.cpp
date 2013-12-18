@@ -196,6 +196,118 @@ void UniqueIDBDatabase::didOpenBackingStoreAndReadMetadata(const IDBDatabaseMeta
     }
 }
 
+void UniqueIDBDatabase::openTransaction(const IDBTransactionIdentifier& identifier, const Vector<int64_t>& objectStoreIDs, WebCore::IndexedDB::TransactionMode mode, std::function<void(bool)> successCallback)
+{
+    postTransactionOperation(identifier, createAsyncTask(*this, &UniqueIDBDatabase::openBackingStoreTransaction, identifier, objectStoreIDs, mode), successCallback);
+}
+
+void UniqueIDBDatabase::beginTransaction(const IDBTransactionIdentifier& identifier, std::function<void(bool)> successCallback)
+{
+    postTransactionOperation(identifier, createAsyncTask(*this, &UniqueIDBDatabase::beginBackingStoreTransaction, identifier), successCallback);
+}
+
+void UniqueIDBDatabase::commitTransaction(const IDBTransactionIdentifier& identifier, std::function<void(bool)> successCallback)
+{
+    postTransactionOperation(identifier, createAsyncTask(*this, &UniqueIDBDatabase::commitBackingStoreTransaction, identifier), successCallback);
+}
+
+void UniqueIDBDatabase::resetTransaction(const IDBTransactionIdentifier& identifier, std::function<void(bool)> successCallback)
+{
+    postTransactionOperation(identifier, createAsyncTask(*this, &UniqueIDBDatabase::resetBackingStoreTransaction, identifier), successCallback);
+}
+
+void UniqueIDBDatabase::rollbackTransaction(const IDBTransactionIdentifier& identifier, std::function<void(bool)> successCallback)
+{
+    postTransactionOperation(identifier, createAsyncTask(*this, &UniqueIDBDatabase::rollbackBackingStoreTransaction, identifier), successCallback);
+}
+
+void UniqueIDBDatabase::postTransactionOperation(const IDBTransactionIdentifier& identifier, std::unique_ptr<AsyncTask> task, std::function<void(bool)> successCallback)
+{
+    ASSERT(isMainThread());
+
+    if (!m_acceptingNewRequests) {
+        successCallback(false);
+        return;
+    }
+
+    if (m_pendingTransactionRequests.contains(identifier)) {
+        LOG_ERROR("Attempting to queue an operation for a transaction that already has an operation pending. Each transaction should only have one operation pending at a time.");
+        successCallback(false);
+        return;
+    }
+
+    postDatabaseTask(std::move(task));
+
+    RefPtr<AsyncRequest> request = AsyncRequestImpl<bool>::create([successCallback](bool success) {
+        successCallback(success);
+    }, [successCallback]() {
+        successCallback(false);
+    });
+
+    m_pendingTransactionRequests.add(identifier, request.release());
+}
+
+void UniqueIDBDatabase::didCompleteTransactionOperation(const IDBTransactionIdentifier& identifier, bool success)
+{
+    ASSERT(isMainThread());
+
+    RefPtr<AsyncRequest> request = m_pendingTransactionRequests.take(identifier);
+    if (!request)
+        return;
+
+    request->completeRequest(success);
+}
+
+void UniqueIDBDatabase::openBackingStoreTransaction(const IDBTransactionIdentifier& identifier, const Vector<int64_t>& objectStoreIDs, WebCore::IndexedDB::TransactionMode mode)
+{
+    ASSERT(!isMainThread());
+    ASSERT(m_backingStore);
+
+    bool success = m_backingStore->establishTransaction(identifier, objectStoreIDs, mode);
+
+    postMainThreadTask(createAsyncTask(*this, &UniqueIDBDatabase::didCompleteTransactionOperation, identifier, success));
+}
+
+void UniqueIDBDatabase::beginBackingStoreTransaction(const IDBTransactionIdentifier& identifier)
+{
+    ASSERT(!isMainThread());
+    ASSERT(m_backingStore);
+
+    bool success = m_backingStore->beginTransaction(identifier);
+
+    postMainThreadTask(createAsyncTask(*this, &UniqueIDBDatabase::didCompleteTransactionOperation, identifier, success));
+}
+
+void UniqueIDBDatabase::commitBackingStoreTransaction(const IDBTransactionIdentifier& identifier)
+{
+    ASSERT(!isMainThread());
+    ASSERT(m_backingStore);
+
+    bool success = m_backingStore->commitTransaction(identifier);
+
+    postMainThreadTask(createAsyncTask(*this, &UniqueIDBDatabase::didCompleteTransactionOperation, identifier, success));
+}
+
+void UniqueIDBDatabase::resetBackingStoreTransaction(const IDBTransactionIdentifier& identifier)
+{
+    ASSERT(!isMainThread());
+    ASSERT(m_backingStore);
+
+    bool success = m_backingStore->resetTransaction(identifier);
+
+    postMainThreadTask(createAsyncTask(*this, &UniqueIDBDatabase::didCompleteTransactionOperation, identifier, success));
+}
+
+void UniqueIDBDatabase::rollbackBackingStoreTransaction(const IDBTransactionIdentifier& identifier)
+{
+    ASSERT(!isMainThread());
+    ASSERT(m_backingStore);
+
+    bool success = m_backingStore->rollbackTransaction(identifier);
+
+    postMainThreadTask(createAsyncTask(*this, &UniqueIDBDatabase::didCompleteTransactionOperation, identifier, success));
+}
+
 String UniqueIDBDatabase::absoluteDatabaseDirectory() const
 {
     ASSERT(isMainThread());

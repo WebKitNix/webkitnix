@@ -21,11 +21,11 @@
 #include "config.h"
 #include "WebKitWebView.h"
 
+#include "APIData.h"
 #include "ImageOptions.h"
 #include "WebCertificateInfo.h"
 #include "WebContextMenuItem.h"
 #include "WebContextMenuItemData.h"
-#include "WebData.h"
 #include "WebKitAuthenticationDialog.h"
 #include "WebKitAuthenticationRequestPrivate.h"
 #include "WebKitBackForwardListPrivate.h"
@@ -2027,7 +2027,7 @@ void webkit_web_view_load_request(WebKitWebView* webView, WebKitURIRequest* requ
 
     ResourceRequest resourceRequest;
     webkitURIRequestGetResourceRequest(request, resourceRequest);
-    RefPtr<WebURLRequest> urlRequest = WebURLRequest::create(resourceRequest);
+    RefPtr<API::URLRequest> urlRequest = API::URLRequest::create(resourceRequest);
     getPage(webView)->loadURLRequest(urlRequest.get());
 }
 
@@ -2795,7 +2795,7 @@ gboolean webkit_web_view_can_show_mime_type(WebKitWebView* webView, const char* 
 }
 
 struct ViewSaveAsyncData {
-    RefPtr<WebData> webData;
+    RefPtr<API::Data> webData;
     GRefPtr<GFile> file;
 };
 WEBKIT_DEFINE_ASYNC_DATA_STRUCT(ViewSaveAsyncData)

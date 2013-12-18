@@ -28,6 +28,7 @@
 
 #if ENABLE(INDEXED_DATABASE) && ENABLE(DATABASE_PROCESS)
 
+#include "SQLiteIDBTransaction.h"
 #include <WebCore/FileSystem.h>
 #include <WebCore/IDBDatabaseMetadata.h>
 #include <WebCore/SQLiteDatabase.h>
@@ -41,11 +42,24 @@ namespace WebKit {
 // Current version of the metadata schema being used in the metadata database.
 static const int currentMetadataVersion = 1;
 
+static int64_t generateDatabaseId()
+{
+    static int64_t databaseID = 0;
+
+    ASSERT(!isMainThread());
+    return ++databaseID;
+}
+
 UniqueIDBDatabaseBackingStoreSQLite::UniqueIDBDatabaseBackingStoreSQLite(const UniqueIDBDatabaseIdentifier& identifier, const String& databaseDirectory)
     : m_identifier(identifier)
     , m_absoluteDatabaseDirectory(databaseDirectory)
 {
     // The backing store is meant to be created and used entirely on a background thread.
+    ASSERT(!isMainThread());
+}
+
+UniqueIDBDatabaseBackingStoreSQLite::~UniqueIDBDatabaseBackingStoreSQLite()
+{
     ASSERT(!isMainThread());
 }
 
@@ -173,7 +187,74 @@ std::unique_ptr<IDBDatabaseMetadata> UniqueIDBDatabaseBackingStoreSQLite::getOrE
     if (!metadata)
         LOG_ERROR("Unable to establish IDB database at path '%s'", metadataDBFilename.utf8().data());
 
+    // The database id is a runtime concept and doesn't need to be stored in the metadata database.
+    metadata->id = generateDatabaseId();
+
     return metadata;
+}
+
+bool UniqueIDBDatabaseBackingStoreSQLite::establishTransaction(const IDBTransactionIdentifier& identifier, const Vector<int64_t>&, WebCore::IndexedDB::TransactionMode)
+{
+    ASSERT(!isMainThread());
+
+    if (!m_transactions.add(identifier, SQLiteIDBTransaction::create(identifier)).isNewEntry) {
+        LOG_ERROR("Attempt to establish transaction identifier that already exists");
+        return false;
+    }
+
+    return true;
+}
+
+bool UniqueIDBDatabaseBackingStoreSQLite::beginTransaction(const IDBTransactionIdentifier& identifier)
+{
+    ASSERT(!isMainThread());
+
+    SQLiteIDBTransaction* transaction = m_transactions.get(identifier);
+    if (!transaction) {
+        LOG_ERROR("Attempt to begin a transaction that hasn't been established");
+        return false;
+    }
+
+    return transaction->begin();
+}
+
+bool UniqueIDBDatabaseBackingStoreSQLite::commitTransaction(const IDBTransactionIdentifier& identifier)
+{
+    ASSERT(!isMainThread());
+
+    SQLiteIDBTransaction* transaction = m_transactions.get(identifier);
+    if (!transaction) {
+        LOG_ERROR("Attempt to commit a transaction that hasn't been established");
+        return false;
+    }
+
+    return transaction->commit();
+}
+
+bool UniqueIDBDatabaseBackingStoreSQLite::resetTransaction(const IDBTransactionIdentifier& identifier)
+{
+    ASSERT(!isMainThread());
+
+    SQLiteIDBTransaction* transaction = m_transactions.get(identifier);
+    if (!transaction) {
+        LOG_ERROR("Attempt to reset a transaction that hasn't been established");
+        return false;
+    }
+
+    return transaction->reset();
+}
+
+bool UniqueIDBDatabaseBackingStoreSQLite::rollbackTransaction(const IDBTransactionIdentifier& identifier)
+{
+    ASSERT(!isMainThread());
+
+    SQLiteIDBTransaction* transaction = m_transactions.get(identifier);
+    if (!transaction) {
+        LOG_ERROR("Attempt to rollback a transaction that hasn't been established");
+        return false;
+    }
+
+    return transaction->rollback();
 }
 
 } // namespace WebKit

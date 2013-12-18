@@ -76,7 +76,7 @@ PassRefPtr<WebPageProxy> WebUIClient::createNewPage(WebPageProxy* page, const Re
     if (!m_client.base.version)
         return adoptRef(toImpl(m_client.createNewPage_deprecatedForUseWithV0(toAPI(page), toAPI(featuresMap.get()), toAPI(modifiers), toAPI(button), m_client.base.clientInfo)));
 
-    RefPtr<WebURLRequest> request = WebURLRequest::create(resourceRequest);    
+    RefPtr<API::URLRequest> request = API::URLRequest::create(resourceRequest);    
     return adoptRef(toImpl(m_client.createNewPage(toAPI(page), toAPI(request.get()), toAPI(featuresMap.get()), toAPI(modifiers), toAPI(button), m_client.base.clientInfo)));
 } 
 
@@ -420,7 +420,7 @@ void WebUIClient::runModal(WebPageProxy* page)
     m_client.runModal(toAPI(page), m_client.base.clientInfo);
 }
 
-void WebUIClient::saveDataToFileInDownloadsFolder(WebPageProxy* page, const String& suggestedFilename, const String& mimeType, const String& originatingURLString, WebData* data)
+void WebUIClient::saveDataToFileInDownloadsFolder(WebPageProxy* page, const String& suggestedFilename, const String& mimeType, const String& originatingURLString, API::Data* data)
 {
     if (!m_client.saveDataToFileInDownloadsFolder)
         return;

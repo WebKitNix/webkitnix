@@ -1,3 +1,449 @@
+2013-12-18  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: WebKit not sending AXMenuClosed notification
+        https://bugs.webkit.org/show_bug.cgi?id=125783
+
+        Reviewed by Mario Sanchez Prada.
+
+        * platform/mac/accessibility/aria-menu-closed-notification-expected.txt: Added.
+        * platform/mac/accessibility/aria-menu-closed-notification.html: Added.
+
+2013-12-18  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        Fix ASSERTION FAILED in WebCore::SVGLengthContext::determineViewport
+        https://bugs.webkit.org/show_bug.cgi?id=120284
+
+        Reviewed by Philip Rogers.
+
+        Added tests of handling root <svg> elements.
+        Blink merge: https://chromium.googlesource.com/chromium/blink/+/a7dedf81eb7008276bb6854f0e46465e039788f8
+
+        * svg/custom/svg-length-value-handled-expected.txt: Added.
+        * svg/custom/svg-length-value-handled.svg: Added.
+            Tests whether root svg elements sizes are handled.
+        * svg/dom/svg-root-lengths-expected.txt: Added.
+        * svg/dom/svg-root-lengths.html: Added.
+            Tests the correct handling of root svg elements sizes.
+
+2013-12-18  Darin Adler  <darin@apple.com>
+
+        Additional refinement in MathMLSelectElement toggle implementation
+        https://bugs.webkit.org/show_bug.cgi?id=125785
+
+        Reviewed by Andreas Kling.
+
+        * mathml/presentation/maction-toggle-expected.html: Updated incorrect expected
+        result, which expected an already-handled event to be re-handled by a parent
+        element during the bubbling process.
+        * mathml/presentation/maction-toggle.html: Ditto.
+
+2013-12-18  Rob Buis  <rob.buis@samsung.com>
+
+        [CSS Shapes] Implement interpolation between keywords in basic shapes
+        https://bugs.webkit.org/show_bug.cgi?id=125108
+
+        Reviewed by Simon Fraser.
+
+        Add tests to shape-outside-animation when animating using keywords for the circle/ellipse center positions.
+        Also add tests for invalid mixing of keyword and values in the center coordinate to parsing-test-utils.js.
+
+        * fast/shapes/parsing/parsing-shape-inside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-outside-expected.txt:
+        * fast/shapes/parsing/parsing-test-utils.js:
+        * fast/shapes/shape-outside-floats/shape-outside-animation-expected.txt:
+        * fast/shapes/shape-outside-floats/shape-outside-animation.html:
+
+2013-12-18  Dániel Bátyai  <dbatyai.u-szeged@partner.samsung.com>
+
+        CSS: Null-pointer dereference with negative 'orphans' value.
+        https://bugs.webkit.org/show_bug.cgi?id=125924
+
+        Reviewed by Andreas Kling.
+
+        Test with negative orphans value.
+
+        * fast/css/negative-orphans-crash-expected.txt: Added.
+        * fast/css/negative-orphans-crash.html: Added.
+
+2013-12-18  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: HTML spec change indicates @aria-required should trump @required on any element
+        https://bugs.webkit.org/show_bug.cgi?id=122145
+
+        Reviewed by Mario Sanchez Prada.
+
+        * accessibility/aria-required-expected.txt:
+        * accessibility/aria-required.html:
+
+2013-12-18  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Rebaseline tests after r160715.
+
+        * platform/efl/css2.1/t0905-c414-flt-wrap-00-e-expected.png:
+        * platform/efl/css2.1/t0905-c414-flt-wrap-00-e-expected.txt:
+        * platform/efl/fast/backgrounds/background-position-parsing-expected.png:
+        * platform/efl/fast/backgrounds/background-position-parsing-expected.txt:
+        * platform/efl/fast/backgrounds/size/contain-and-cover-zoomed-expected.png:
+        * platform/efl/fast/backgrounds/size/contain-and-cover-zoomed-expected.txt:
+        * platform/efl/fast/block/float/016-expected.png:
+        * platform/efl/fast/block/float/016-expected.txt:
+
+2013-12-17  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Periodically monitor source buffers.
+        https://bugs.webkit.org/show_bug.cgi?id=125898
+
+        Reviewed by Eric Carlson.
+
+        * media/media-source/media-source-monitor-source-buffers-expected.txt: Added.
+        * media/media-source/media-source-monitor-source-buffers.html: Added.
+
+2013-12-17  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Remove InspectorFrontendHost.setInjectedScriptForOrigin
+        https://bugs.webkit.org/show_bug.cgi?id=125906
+
+        Reviewed by Timothy Hatcher.
+
+        * http/tests/inspector/injected-script-for-origin-expected.txt: Removed.
+        * http/tests/inspector/injected-script-for-origin.html: Removed.
+        * http/tests/inspector/resources/injected-script-for-origin-frame.html: Removed.
+
+2013-12-17  Eric Carlson  <eric.carlson@apple.com>
+
+        ASSERT setting pseudoID with registered DOMSubtreeModified listener
+        https://bugs.webkit.org/show_bug.cgi?id=125900
+
+        Reviewed by Ryosuke Niwa.
+
+        * fast/dom/attribute-set-before-element-in-tree-expected.txt: Added.
+        * fast/dom/attribute-set-before-element-in-tree.html: Added.
+
+2013-12-17  Jer Noble  <jer.noble@apple.com>
+
+        [MSE] Update duration after appending samples, per spec.
+        https://bugs.webkit.org/show_bug.cgi?id=125703
+
+        Reviewed by Eric Carlson.
+
+        * media/media-source/media-source-duration-after-append-expected.txt: Added.
+        * media/media-source/media-source-duration-after-append.html: Added.
+
+2013-12-17  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Video element's width and height content attributes should not influence intrinsic width and height
+        https://bugs.webkit.org/show_bug.cgi?id=125822
+
+        Reviewed by Darin Adler.
+
+        * media/video-intrinsic-width-height-expected.txt: Added.
+        * media/video-intrinsic-width-height.html: Added.
+
+2013-12-17  Gavin Barraclough  <barraclough@apple.com>
+
+        Remove PageVisibilityStateUnloaded
+        https://bugs.webkit.org/show_bug.cgi?id=125869
+
+        Reviewed by Anders Carlsson.
+
+        This is not currently supported by WebKit, remove this enum value.
+        We can always add this back later if/when we add support for this state.
+
+        * fast/events/page-visibility-transition-test-expected.txt:
+        * fast/events/page-visibility-transition-test.html:
+            - remove test for visibility state "unloaded"; this is no longer supported (it never really was).
+
+2013-12-17  Alexey Proskuryakov  <ap@apple.com>
+
+        Sanitize skip entries for pop-up menu tests.
+
+        Pop-up menus are native controls on Mac, and block test progress when opened.
+
+        * platform/mac/TestExpectations: Combined entries for these tests together, and
+        updated comments.
+
+2013-12-17  Brent Fulgham  <bfulgham@apple.com>
+
+        Unreviewed test update for Windows.
+
+        * platform/win/TestExpectations: Exclude a few more media-based
+        test files.
+
+2013-12-17  Alexey Proskuryakov  <ap@apple.com>
+
+        Layout Test webaudio/delaynode-max-default-delay.html is flaky
+        https://bugs.webkit.org/show_bug.cgi?id=121646
+
+        * platform/mac/TestExpectations: Marking as such.
+
+2013-12-17  Radu Stavila  <stavila@adobe.com>
+
+        [CSS Regions] Positioned elements in regions get clipped if they fall outside the region
+        https://bugs.webkit.org/show_bug.cgi?id=117120
+
+        Reviewed by Mihnea Ovidenie.
+
+        Added tests for the correct painting of the borders of differently positioned elements overflowing regions.
+
+        * fast/regions/absolute-in-relative-overflow-expected.html: Added.
+        * fast/regions/absolute-in-relative-overflow.html: Added.
+        * fast/regions/static-in-relative-overflow-expected.html: Added.
+        * fast/regions/static-in-relative-overflow.html: Added.
+        * fast/regions/sticky-border-overflow-expected.html: Added.
+        * fast/regions/sticky-border-overflow.html: Added.
+
+2013-12-17  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r160717.
+        http://trac.webkit.org/changeset/160717
+        https://bugs.webkit.org/show_bug.cgi?id=125863
+
+        New tests are failing, and possibly broke an existing test
+        (Requested by ap on #webkit).
+
+        * fast/regions/repaint/fixed-in-named-flow-cb-changed-expected.txt: Removed.
+        * fast/regions/repaint/fixed-in-named-flow-cb-changed.html: Removed.
+        * fast/regions/repaint/fixed-in-named-flow-cb-changed2-expected.txt: Removed.
+        * fast/regions/repaint/fixed-in-named-flow-cb-changed2.html: Removed.
+
+2013-12-17  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Invalid dir attributes should resolve to ltr
+        https://bugs.webkit.org/show_bug.cgi?id=125830
+
+        Reviewed by Darin Adler.
+
+        * fast/dom/HTMLElement/set-and-clear-dir-attribute-expected.txt: Added.
+        * fast/dom/HTMLElement/set-and-clear-dir-attribute.html: Added.
+
+2013-12-17  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Incorrect repaint of fixed element with transformed parent
+        https://bugs.webkit.org/show_bug.cgi?id=125756
+
+        Reviewed by Darin Adler.
+
+        Add tests for a fixed positioned element with a parent that:
+        1. dynamically gets a transform, in which case the fixed positioned element should be positioned
+        relative to its parent
+        2. dynamically loses its transform, in which case the fixed positioned element should be positioned
+        relative to the view.
+
+        * fast/regions/repaint/fixed-in-named-flow-cb-changed-expected.txt: Added.
+        * fast/regions/repaint/fixed-in-named-flow-cb-changed.html: Added.
+        * fast/regions/repaint/fixed-in-named-flow-cb-changed2-expected.txt: Added.
+        * fast/regions/repaint/fixed-in-named-flow-cb-changed2.html: Added.
+
+2013-12-17  Bem Jones-Bey  <bjonesbe@adobe.com>
+
+        REGRESSION(r159166?): fast/block/float/float-with-fractional-height-vertical-lr.html, fast/block/float/float-with-fractional-height.html are failing
+        https://bugs.webkit.org/show_bug.cgi?id=124506
+
+        Reviewed by Dirk Schulze.
+
+        Remove lines for tests that have been fixed by this patch.
+
+        * platform/efl/TestExpectations:
+        * platform/gtk/TestExpectations:
+
+2013-12-17  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] Expose accessibility objects for <dl>, <dt> and <dd>
+        https://bugs.webkit.org/show_bug.cgi?id=125857
+
+        Reviewed by Chris Fleizach.
+
+        Update test to update expectations.
+
+        * platform/gtk/accessibility/roles-exposed-expected.txt:
+        * platform/gtk/accessibility/roles-exposed.html:
+
+        Updated test expectations for other test using description lists.
+
+        * platform/efl-wk1/accessibility/lists-expected.txt:
+        * platform/efl-wk2/accessibility/lists-expected.txt:
+        * platform/gtk/accessibility/lists-expected.txt:
+
+
+2013-12-17  Frédéric Wang  <fred.wang@free.fr>
+
+        Ensure inferred mrows for msqrt, mstyle, merror, mphantom and math.
+        https://bugs.webkit.org/show_bug.cgi?id=124841
+
+        Reviewed by Darin Adler.
+
+        * mathml/presentation/inferred-mrow-baseline-expected.txt: Added.
+        * mathml/presentation/inferred-mrow-baseline.html: Added.
+        * mathml/presentation/inferred-mrow-stretchy-expected.txt: Added.
+        * mathml/presentation/inferred-mrow-stretchy.html: Added.
+
+2013-12-17  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Temporarily disable mediate tests to get bots green.
+
+        * platform/win/TestExpectations: Turn off additional media-related
+        tests. These will be reactivated soon.
+
+2013-12-17  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSS Regions] Move regions tests from fast/repaint into fast/regions
+        https://bugs.webkit.org/show_bug.cgi?id=78786
+
+        Reviewed by Dirk Schulze.
+
+        Moved regions repaint tests from fast/repaint into fast/regions/repaint.
+        Moved regions repaint tests from fast/regions into fast/regions/repaint.
+        Adjusted paths, TestExpectations.
+
+        * fast/regions/repaint/element-in-named-flow-absolute-from-fixed-expected.txt: Renamed from LayoutTests/fast/regions/element-in-named-flow-absolute-from-fixed-expected.txt.
+        * fast/regions/repaint/element-in-named-flow-absolute-from-fixed.html: Renamed from LayoutTests/fast/regions/element-in-named-flow-absolute-from-fixed.html.
+        * fast/regions/repaint/element-in-named-flow-fixed-from-absolute-expected.txt: Renamed from LayoutTests/fast/regions/element-in-named-flow-fixed-from-absolute-expected.txt.
+        * fast/regions/repaint/element-in-named-flow-fixed-from-absolute.html: Renamed from LayoutTests/fast/regions/element-in-named-flow-fixed-from-absolute.html.
+        * fast/regions/repaint/element-inflow-fixed-from-outflow-static-expected.txt: Renamed from LayoutTests/fast/regions/element-inflow-fixed-from-outflow-static-expected.txt.
+        * fast/regions/repaint/element-inflow-fixed-from-outflow-static.html: Renamed from LayoutTests/fast/regions/element-inflow-fixed-from-outflow-static.html.
+        * fast/regions/repaint/element-outflow-static-from-inflow-fixed-expected.txt: Renamed from LayoutTests/fast/regions/element-outflow-static-from-inflow-fixed-expected.txt.
+        * fast/regions/repaint/element-outflow-static-from-inflow-fixed.html: Renamed from LayoutTests/fast/regions/element-outflow-static-from-inflow-fixed.html.
+        * fast/regions/repaint/fixed-in-named-flow-scroll-expected.txt: Renamed from LayoutTests/fast/regions/fixed-in-named-flow-scroll-expected.txt.
+        * fast/regions/repaint/fixed-in-named-flow-scroll.html: Renamed from LayoutTests/fast/regions/fixed-in-named-flow-scroll.html.
+        * fast/regions/repaint/increasing-region-content-height-expected.txt: Renamed from LayoutTests/fast/repaint/increasing-region-content-height-expected.txt.
+        * fast/regions/repaint/increasing-region-content-height.html: Renamed from LayoutTests/fast/repaint/increasing-region-content-height.html.
+        * fast/regions/repaint/japanese-rl-selection-repaint-in-regions.html: Renamed from LayoutTests/fast/repaint/japanese-rl-selection-repaint-in-regions.html.
+        * fast/regions/repaint/line-flow-with-floats-in-regions.html: Added.
+        * fast/regions/repaint/overflow-flipped-writing-mode-block-in-regions.html: Renamed from LayoutTests/fast/repaint/overflow-flipped-writing-mode-block-in-regions.html.
+        * fast/regions/repaint/region-painting-composited-element-expected.html: Renamed from LayoutTests/fast/repaint/region-painting-composited-element-expected.html.
+        * fast/regions/repaint/region-painting-composited-element.html: Renamed from LayoutTests/fast/repaint/region-painting-composited-element.html.
+        * fast/regions/repaint/region-painting-in-composited-view-expected.html: Renamed from LayoutTests/fast/repaint/region-painting-in-composited-view-expected.html.
+        * fast/regions/repaint/region-painting-in-composited-view.html: Renamed from LayoutTests/fast/repaint/region-painting-in-composited-view.html.
+        * fast/regions/repaint/region-painting-invalidation.html: Renamed from LayoutTests/fast/repaint/region-painting-invalidation.html.
+        * fast/regions/repaint/region-painting-via-layout.html: Renamed from LayoutTests/fast/repaint/region-painting-via-layout.html.
+        * fast/regions/repaint/repaint-regions-overflow-expected.txt: Renamed from LayoutTests/fast/repaint/repaint-regions-overflow-expected.txt.
+        * fast/regions/repaint/repaint-regions-overflow.html: Renamed from LayoutTests/fast/repaint/repaint-regions-overflow.html.
+        * fast/repaint/line-flow-with-floats-in-regions.html: Removed.
+        * platform/efl/TestExpectations:
+        * platform/efl/fast/regions/repaint/japanese-rl-selection-repaint-in-regions-expected.txt: Renamed from LayoutTests/platform/efl/fast/repaint/japanese-rl-selection-repaint-in-regions-expected.txt.
+        * platform/gtk/TestExpectations:
+        * platform/mac/fast/regions/repaint/japanese-rl-selection-repaint-in-regions-expected.png: Renamed from LayoutTests/platform/mac/fast/repaint/japanese-rl-selection-repaint-in-regions-expected.png.
+        * platform/mac/fast/regions/repaint/japanese-rl-selection-repaint-in-regions-expected.txt: Renamed from LayoutTests/platform/mac/fast/repaint/japanese-rl-selection-repaint-in-regions-expected.txt.
+        * platform/mac/fast/regions/repaint/line-flow-with-floats-in-regions-expected.png: Renamed from LayoutTests/platform/mac/fast/repaint/line-flow-with-floats-in-regions-expected.png.
+        * platform/mac/fast/regions/repaint/line-flow-with-floats-in-regions-expected.txt: Renamed from LayoutTests/platform/mac/fast/repaint/line-flow-with-floats-in-regions-expected.txt.
+        * platform/mac/fast/regions/repaint/overflow-flipped-writing-mode-block-in-regions-expected.png: Renamed from LayoutTests/platform/mac/fast/repaint/overflow-flipped-writing-mode-block-in-regions-expected.png.
+        * platform/mac/fast/regions/repaint/overflow-flipped-writing-mode-block-in-regions-expected.txt: Renamed from LayoutTests/platform/mac/fast/repaint/overflow-flipped-writing-mode-block-in-regions-expected.txt.
+        * platform/mac/fast/regions/repaint/region-painting-invalidation-expected.png: Renamed from LayoutTests/platform/mac/fast/repaint/region-painting-invalidation-expected.png.
+        * platform/mac/fast/regions/repaint/region-painting-invalidation-expected.txt: Renamed from LayoutTests/platform/mac/fast/repaint/region-painting-invalidation-expected.txt.
+        * platform/mac/fast/regions/repaint/region-painting-via-layout-expected.png: Renamed from LayoutTests/platform/mac/fast/repaint/region-painting-via-layout-expected.png.
+        * platform/mac/fast/regions/repaint/region-painting-via-layout-expected.txt: Renamed from LayoutTests/platform/mac/fast/repaint/region-painting-via-layout-expected.txt.
+        * platform/win/TestExpectations:
+        * platform/wincairo/TestExpectations:
+
+2013-12-17  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [GTK][WK2] rowAtIndex is not implemented in DRT/WKTR
+        https://bugs.webkit.org/show_bug.cgi?id=116971
+
+        Unreviewed. Moving test expectation to the right place, as this is
+        an issue that actually affects both to Webkit1 and Webkit2.
+
+        * platform/gtk-wk2/TestExpectations: Removed expectation.
+        * platform/gtk/TestExpectations: Added expectation.
+
+2013-12-17  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Remove left-over test expectations in fast/regions/layers
+        https://bugs.webkit.org/show_bug.cgi?id=125841
+
+        Reviewed by Dirk Schulze.
+
+        The original tests were removed part of https://bugs.webkit.org/show_bug.cgi?id=121828
+        and added back as expectations only when https://bugs.webkit.org/show_bug.cgi?id=118665
+        landed.
+        They should be removed.
+
+        * fast/regions/layers/dynamic-layer-added-with-no-layout-expected.txt: Removed.
+        * fast/regions/layers/dynamic-layer-removed-with-no-layout-expected.txt: Removed.
+        * fast/regions/layers/regions-promoted-to-layers-expected.txt: Removed.
+        * fast/regions/layers/regions-promoted-to-layers-horizontal-bt-expected.txt: Removed.
+        * fast/regions/layers/regions-promoted-to-layers-vertical-lr-expected.txt: Removed.
+        * fast/regions/layers/regions-promoted-to-layers-vertical-rl-expected.txt: Removed.
+
+2013-12-17  Mihai Maerean  <mmaerean@adobe.com>
+
+        Fix hit testing for divs with a hierarchy of css transformed and non-transformed elements
+        https://bugs.webkit.org/show_bug.cgi?id=124777
+
+        Reviewed by Darin Adler.
+
+        * transforms/3d/hit-testing/hover-rotated-with-children-negative-z.html: Added.
+        * transforms/3d/hit-testing/hover-rotated-with-children-negative-z-expected.txt: Added.
+        * transforms/3d/hit-testing/negative-zoffset-hit-test.html: Added.
+        * transforms/3d/hit-testing/negative-zoffset-hit-test-expected.txt: Added.
+        * transforms/3d/hit-testing/overlapping-layers-hit-test.html: Added.
+        * transforms/3d/hit-testing/overlapping-layers-hit-test-expected.txt: Added.
+
+2013-12-16  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        Checking RTCPeerConnection signalingState before setting local/remoteDescription
+        https://bugs.webkit.org/show_bug.cgi?id=125655
+
+        Reviewed by Eric Carlson.
+
+        Before setting a session description RTCPeerConnection must check if it is in valid state for that SDP type.
+
+        * fast/mediastream/RTCPeerConnection-have-local-answer.html: Added.
+        * fast/mediastream/RTCPeerConnection-have-local-offer-expected.txt: Added.
+        * fast/mediastream/RTCPeerConnection-have-local-offer.html: Added.
+        * fast/mediastream/RTCPeerConnection-have-local-pranswer-expected.txt: Added.
+        * fast/mediastream/RTCPeerConnection-have-local-pranswer.html: Added.
+        * fast/mediastream/RTCPeerConnection-have-remote-offer-expected.txt: Added.
+        * fast/mediastream/RTCPeerConnection-have-remote-offer.html: Added.
+        * fast/mediastream/RTCPeerConnection-have-remote-pranswer-expected.txt: Added.
+        * fast/mediastream/RTCPeerConnection-have-remote-pranswer.html: Added.
+        * fast/mediastream/RTCPeerConnection-remoteDescription-expected.txt:
+        * fast/mediastream/RTCPeerConnection-remoteDescription.html:
+        * fast/mediastream/RTCPeerConnection-stable-expected.txt: Added.
+        * fast/mediastream/RTCPeerConnection-stable.html: Added.
+
+2013-12-16  Oliver Hunt  <oliver@apple.com>
+
+        Cache getters and custom accessors on the prototype chain
+        https://bugs.webkit.org/show_bug.cgi?id=125602
+
+        Reviewed by Michael Saboff.
+
+        Added a bunch of new tests
+
+        * js/regress/chain-custom-getter-expected.txt: Added.
+        * js/regress/chain-custom-getter.html: Added.
+        * js/regress/chain-getter-access-expected.txt: Added.
+        * js/regress/chain-getter-access.html: Added.
+        * js/regress/proto-custom-getter-expected.txt: Added.
+        * js/regress/proto-custom-getter.html: Added.
+        * js/regress/proto-getter-access-expected.txt: Added.
+        * js/regress/proto-getter-access.html: Added.
+        * js/regress/resources/regress-pre.js:
+          Made sure that noInline always exists (either using testRunner.neverInlineFunction
+          or a no-op function if nothing else is available)
+        * js/regress/script-tests/chain-custom-getter.js: Added.
+        (foo):
+        * js/regress/script-tests/chain-getter-access.js: Added.
+        (o.get value):
+        (foo):
+        * js/regress/script-tests/proto-custom-getter.js: Added.
+        (foo):
+        * js/regress/script-tests/proto-getter-access.js: Added.
+        (o.get value):
+        (foo):
+        * js/regress/script-tests/simple-custom-getter.js: Added.
+        (cycles.30000.numberObject.Number.foo):
+        * js/regress/script-tests/simple-getter-access.js: Added.
+        (o.get value):
+        (foo):
+        * js/regress/simple-custom-getter-expected.txt: Added.
+        * js/regress/simple-custom-getter.html: Added.
+        * js/regress/simple-getter-access-expected.txt: Added.
+        * js/regress/simple-getter-access.html: Added.
+
 2013-12-16  Hans Muller  <hmuller@adobe.com>
 
         [CSS Shapes] Add support for the computing the included intervals for a BoxShape

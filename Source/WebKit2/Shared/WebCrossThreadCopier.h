@@ -27,10 +27,12 @@
 #define WebCrossThreadCopier_h
 
 #include <WebCore/CrossThreadCopier.h>
+#include <wtf/Vector.h>
 
 #if ENABLE(INDEXED_DATABASE)
 
 namespace WebKit {
+class IDBTransactionIdentifier;
 class UniqueIDBDatabaseIdentifier;
 }
 
@@ -38,6 +40,14 @@ namespace WebCore {
 
 template<> struct CrossThreadCopierBase<false, false, WebKit::UniqueIDBDatabaseIdentifier> {
     static WebKit::UniqueIDBDatabaseIdentifier copy(const WebKit::UniqueIDBDatabaseIdentifier&);
+};
+
+template<> struct CrossThreadCopierBase<false, false, WebKit::IDBTransactionIdentifier> {
+    static WebKit::IDBTransactionIdentifier copy(const WebKit::IDBTransactionIdentifier&);
+};
+
+template<> struct CrossThreadCopierBase<false, false, Vector<int64_t>> {
+    static Vector<int64_t> copy(const Vector<int64_t>&);
 };
 
 } // namespace WebCore

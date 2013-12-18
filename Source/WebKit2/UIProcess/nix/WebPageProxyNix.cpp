@@ -31,7 +31,7 @@
 #include "NotImplemented.h"
 #include "WebBackForwardList.h"
 #include "WebBackForwardListItem.h"
-#include "WebData.h"
+#include "APIData.h"
 #include "WebPageMessages.h"
 #include "WebProcessProxy.h"
 #include "WebKitVersion.h"
@@ -98,7 +98,7 @@ void WebPageProxy::initializeUIPopupMenuClient(const WKPageUIPopupMenuClientBase
     m_uiPopupMenuClient.initialize(client);
 }
 
-PassRefPtr<WebData> WebPageProxy::sessionStateData(WebPageProxySessionStateFilterCallback filter, void* context) const
+PassRefPtr<API::Data> WebPageProxy::sessionStateData(WebPageProxySessionStateFilterCallback filter, void* context) const
 {
     auto encoder = std::make_unique<CoreIPC::ArgumentEncoder>();
     unsigned index = m_backForwardList->currentIndex();
@@ -115,7 +115,7 @@ PassRefPtr<WebData> WebPageProxy::sessionStateData(WebPageProxySessionStateFilte
     }
     SessionState state(filtered, index);
     state.encode(*encoder);
-    return WebData::create(encoder->buffer(), encoder->bufferSize());
+    return API::Data::create(encoder->buffer(), encoder->bufferSize());
 }
 
 static uint64_t generateNewItemID()
@@ -124,7 +124,7 @@ static uint64_t generateNewItemID()
     return next += 2;
 }
 
-void WebPageProxy::restoreFromSessionStateData(WebData* data)
+void WebPageProxy::restoreFromSessionStateData(API::Data* data)
 {
     // Clear the back/forward list even if the list is empty.
     m_backForwardList->clear();

@@ -222,12 +222,15 @@ PlatformSample MediaSampleAVFObjC::platformSample()
 static bool CMSampleBufferIsRandomAccess(CMSampleBufferRef sample)
 {
     CFArrayRef attachments = CMSampleBufferGetSampleAttachmentsArray(sample, false);
+    if (!attachments)
+        return true;
+
     for (CFIndex i = 0, count = CFArrayGetCount(attachments); i < count; ++i) {
         CFDictionaryRef attachmentDict = (CFDictionaryRef)CFArrayGetValueAtIndex(attachments, i);
-        if (!CFDictionaryContainsKey(attachmentDict, kCMSampleAttachmentKey_NotSync))
-            return true;
+        if (CFDictionaryContainsKey(attachmentDict, kCMSampleAttachmentKey_NotSync))
+            return false;
     }
-    return false;
+    return true;
 }
 
 MediaSample::SampleFlags MediaSampleAVFObjC::flags() const
@@ -466,7 +469,7 @@ void SourceBufferPrivateAVFObjC::trackDidChangeEnabled(VideoTrackPrivateMediaSou
             m_displayLayer = [[getAVSampleBufferDisplayLayerClass() alloc] init];
             [m_displayLayer requestMediaDataWhenReadyOnQueue:dispatch_get_main_queue() usingBlock:^{
                 if (m_client)
-                    m_client->sourceBufferPrivateDidBecomeReadyForMoreSamples(this);
+                    m_client->sourceBufferPrivateDidBecomeReadyForMoreSamples(this, AtomicString::number(trackID));
             }];
             if (m_mediaSource)
                 m_mediaSource->player()->addDisplayLayer(m_displayLayer.get());
@@ -535,8 +538,9 @@ void SourceBufferPrivateAVFObjC::enqueueSample(PassRefPtr<MediaSample> prpMediaS
         m_mediaSource->player()->setHasAvailableVideoFrame(true);
 }
 
-bool SourceBufferPrivateAVFObjC::isReadyForMoreSamples()
+bool SourceBufferPrivateAVFObjC::isReadyForMoreSamples(AtomicString trackID)
 {
+    UNUSED_PARAM(trackID);
     return [m_displayLayer isReadyForMoreMediaData];
 }
 

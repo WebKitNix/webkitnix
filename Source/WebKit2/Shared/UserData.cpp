@@ -27,10 +27,12 @@
 #include "UserData.h"
 
 #include "APIArray.h"
+#include "APIData.h"
 #include "APIFrameHandle.h"
 #include "APIGeometry.h"
 #include "APINumber.h"
 #include "APIString.h"
+#include "APIURLRequest.h"
 #include "ArgumentCoders.h"
 #include "ArgumentEncoder.h"
 #include "MutableDictionary.h"
@@ -118,11 +120,15 @@ void UserData::encode(CoreIPC::ArgumentEncoder& encoder, const API::Object& obje
         static_cast<const API::Boolean&>(object).encode(encoder);
         break;
 
+    case API::Object::Type::Data:
+        static_cast<const API::Data&>(object).encode(encoder);
+        break;
+    
     case API::Object::Type::Dictionary: {
         auto& dictionary = static_cast<const ImmutableDictionary&>(object);
         auto& map = dictionary.map();
 
-        encoder << map.size();
+        encoder << static_cast<uint64_t>(map.size());
         for (const auto& keyValuePair : map) {
             encoder << keyValuePair.key;
             encode(encoder, keyValuePair.value.get());
@@ -164,6 +170,10 @@ void UserData::encode(CoreIPC::ArgumentEncoder& encoder, const API::Object& obje
         break;
     }
 
+    case API::Object::Type::URLRequest:
+        static_cast<const API::URLRequest&>(object).encode(encoder);
+        break;
+
     case API::Object::Type::UInt64:
         static_cast<const API::UInt64&>(object).encode(encoder);
         break;
@@ -200,6 +210,11 @@ bool UserData::decode(CoreIPC::ArgumentDecoder& decoder, RefPtr<API::Object>& re
 
     case API::Object::Type::Boolean:
         if (!API::Boolean::decode(decoder, result))
+            return false;
+        break;
+
+    case API::Object::Type::Data:
+        if (!API::Data::decode(decoder, result))
             return false;
         break;
 
@@ -285,6 +300,11 @@ bool UserData::decode(CoreIPC::ArgumentDecoder& decoder, RefPtr<API::Object>& re
         result = WebURL::create(string);
         break;
     }
+
+    case API::Object::Type::URLRequest:
+        if (!API::URLRequest::decode(decoder, result))
+            return false;
+        break;
 
     case API::Object::Type::UInt64:
         if (!API::UInt64::decode(decoder, result))

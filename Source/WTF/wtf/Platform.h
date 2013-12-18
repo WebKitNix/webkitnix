@@ -879,6 +879,11 @@
 #endif
 #endif
 
+/* CSS Selector JIT Compiler */
+#if !defined(ENABLE_CSS_SELECTOR_JIT)
+#define ENABLE_CSS_SELECTOR_JIT 0
+#endif
+
 /* Accelerated compositing */
 #if PLATFORM(MAC) || PLATFORM(IOS) || (PLATFORM(WIN) && !USE(WINGDI) && !PLATFORM(WIN_CAIRO))
 #define WTF_USE_ACCELERATED_COMPOSITING 1
@@ -892,7 +897,6 @@
 #define WTF_USE_OPENGL 1
 #define WTF_USE_OPENGL_ES_2 1
 #define WTF_USE_EGL 1
-#define WTF_USE_GRAPHICS_SURFACE 1
 #endif
 
 #if USE(TEXTURE_MAPPER) && USE(3D_GRAPHICS) && !defined(WTF_USE_TEXTURE_MAPPER_GL)
@@ -935,7 +939,7 @@
    since most ports try to support sub-project independence, adding new headers
    to WTF causes many ports to break, and so this way we can address the build
    breakages one port at a time. */
-#if !defined(WTF_USE_EXPORT_MACROS) && (PLATFORM(MAC) || (PLATFORM(WIN) && (defined(_MSC_VER) && _MSC_VER >= 1600)))
+#if !defined(WTF_USE_EXPORT_MACROS) && (PLATFORM(MAC) || PLATFORM(WIN))
 #define WTF_USE_EXPORT_MACROS 1
 #endif
 

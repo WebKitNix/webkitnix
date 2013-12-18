@@ -28,6 +28,7 @@
 
 #include "APINumber.h"
 #include "APIString.h"
+#include "APIURLRequest.h"
 #include "ImageOptions.h"
 #include "SameDocumentNavigationType.h"
 #include "WKBase.h"
@@ -46,7 +47,6 @@
 #include "WebFindOptions.h"
 #include "WebSecurityOrigin.h"
 #include "WebURL.h"
-#include "WebURLRequest.h"
 #include "WebURLResponse.h"
 #include <WebCore/ContextMenuItem.h>
 #include <WebCore/FloatRect.h>
@@ -60,6 +60,7 @@
 
 namespace API {
 class Array;
+class Data;
 class Point;
 class Rect;
 class Size;
@@ -75,12 +76,10 @@ class WebArchiveResource;
 class WebCertificateInfo;
 class WebConnection;
 class WebContextMenuItem;
-class WebData;
 class WebGraphicsContext;
 class WebImage;
 class WebSecurityOrigin;
 class WebSerializedScriptValue;
-class WebURLRequest;
 class WebURLResponse;
 class WebUserContentURLPattern;
 
@@ -96,7 +95,7 @@ WK_ADD_API_MAPPING(WKBooleanRef, API::Boolean)
 WK_ADD_API_MAPPING(WKCertificateInfoRef, WebCertificateInfo)
 WK_ADD_API_MAPPING(WKConnectionRef, WebConnection)
 WK_ADD_API_MAPPING(WKContextMenuItemRef, WebContextMenuItem)
-WK_ADD_API_MAPPING(WKDataRef, WebData)
+WK_ADD_API_MAPPING(WKDataRef, API::Data)
 WK_ADD_API_MAPPING(WKDictionaryRef, ImmutableDictionary)
 WK_ADD_API_MAPPING(WKDoubleRef, API::Double)
 WK_ADD_API_MAPPING(WKErrorRef, WebError)
@@ -112,7 +111,7 @@ WK_ADD_API_MAPPING(WKStringRef, API::String)
 WK_ADD_API_MAPPING(WKTypeRef, API::Object)
 WK_ADD_API_MAPPING(WKUInt64Ref, API::UInt64)
 WK_ADD_API_MAPPING(WKURLRef, WebURL)
-WK_ADD_API_MAPPING(WKURLRequestRef, WebURLRequest)
+WK_ADD_API_MAPPING(WKURLRequestRef, API::URLRequest)
 WK_ADD_API_MAPPING(WKURLResponseRef, WebURLResponse)
 WK_ADD_API_MAPPING(WKUserContentURLPatternRef, WebUserContentURLPattern)
 
@@ -205,9 +204,9 @@ inline ProxyingRefPtr<WebError> toAPI(const WebCore::ResourceError& error)
     return ProxyingRefPtr<WebError>(WebError::create(error));
 }
 
-inline ProxyingRefPtr<WebURLRequest> toAPI(const WebCore::ResourceRequest& request)
+inline ProxyingRefPtr<API::URLRequest> toAPI(const WebCore::ResourceRequest& request)
 {
-    return ProxyingRefPtr<WebURLRequest>(WebURLRequest::create(request));
+    return ProxyingRefPtr<API::URLRequest>(API::URLRequest::create(request));
 }
 
 inline ProxyingRefPtr<WebURLResponse> toAPI(const WebCore::ResourceResponse& response)
@@ -853,8 +852,6 @@ inline WebCore::PageVisibilityState toPageVisibilityState(WKPageVisibilityState 
         return WebCore::PageVisibilityStateHidden;
     case kWKPageVisibilityStatePrerender:
         return WebCore::PageVisibilityStatePrerender;
-    case kWKPageVisibilityStateUnloaded:
-        return WebCore::PageVisibilityStateUnloaded;
     }
 
     ASSERT_NOT_REACHED();
