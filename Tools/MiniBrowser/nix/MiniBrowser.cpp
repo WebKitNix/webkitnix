@@ -38,6 +38,20 @@ const double EPSILON = 1e-4;
 
 using namespace std;
 
+class MiniBrowserRef {
+public:
+    explicit MiniBrowserRef(const void* clientInfo)
+        : m_miniBrowser(static_cast<MiniBrowser*>(const_cast<void*>(clientInfo)))
+    {
+    }
+    MiniBrowser* operator->()
+    {
+        return m_miniBrowser;
+    }
+private:
+    MiniBrowser* m_miniBrowser;
+};
+
 MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     : m_control(new BrowserControl(this, options.width, options.height, options.url))
     , m_view(0)
@@ -363,7 +377,7 @@ void MiniBrowser::updateDisplay()
 
 gboolean MiniBrowser::callUpdateDisplay(gpointer data)
 {
-    MiniBrowser* browser = reinterpret_cast<MiniBrowser*>(data);
+    MiniBrowserRef browser(data);
 
     assert(browser->m_displayUpdateScheduled);
     browser->m_displayUpdateScheduled = false;
@@ -410,7 +424,7 @@ void MiniBrowser::adjustScrollPosition()
 void MiniBrowser::viewNeedsDisplay(WKViewRef, WKRect area, const void* clientInfo)
 {
     UNUSED_PARAM(area);
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     mb->scheduleUpdateDisplay();
 }
 
@@ -432,21 +446,21 @@ void MiniBrowser::webProcessCrashed(WKViewRef, WKURLRef url, const void* clientI
     string yn;
     getline(cin, yn);
     if (yn == "y" || yn == "Y" || yn == "") {
-        MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+        MiniBrowserRef mb(clientInfo);
         WKPageLoadURL(mb->pageRef(), url);
     }
 }
 
 void MiniBrowser::webProcessRelaunched(WKViewRef, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     cout << "The web process has been restarted.\n";
     mb->scheduleUpdateDisplay();
 }
 
 void MiniBrowser::pageDidRequestScroll(WKViewRef, WKPoint position, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     if (!NIXViewIsSuspended(mb->m_view))
         WKViewSetContentPosition(mb->m_view, mb->adjustScrollPositionToBoundaries(position));
     mb->scheduleUpdateDisplay();
@@ -454,7 +468,7 @@ void MiniBrowser::pageDidRequestScroll(WKViewRef, WKPoint position, const void* 
 
 void MiniBrowser::didChangeContentsSize(WKViewRef, WKSize size, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     mb->m_contentsSize = size;
 
     if (mb->isMobileMode())
@@ -463,7 +477,7 @@ void MiniBrowser::didChangeContentsSize(WKViewRef, WKSize size, const void* clie
 
 void MiniBrowser::didRenderFrame(WKViewRef view, WKSize contentsSize, WKRect coveredRect, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     mb->m_contentsSize = contentsSize;
 
     if (mb->isMobileMode() && mb->m_viewShouldAutoZoom) {
@@ -474,7 +488,7 @@ void MiniBrowser::didRenderFrame(WKViewRef view, WKSize contentsSize, WKRect cov
 
 void MiniBrowser::didChangeViewportAttributes(WKViewRef, WKViewportAttributesRef attributes, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
 
     mb->m_viewportMinScale = NIXViewportAttributesGetMinimumScale(attributes);
     mb->m_viewportMaxScale = NIXViewportAttributesGetMaximumScale(attributes);
@@ -484,7 +498,7 @@ void MiniBrowser::didChangeViewportAttributes(WKViewRef, WKViewportAttributesRef
 
 void MiniBrowser::didFindZoomableArea(WKViewRef, WKPoint target, WKRect area, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
 
     // Zoomable area width is the same as web page width, and this is fully visible.
     if (mb->m_contentsSize.width == area.size.width && mb->m_contentsSize.width == NIXViewVisibleContentsSize(mb->m_view).width)
@@ -508,7 +522,7 @@ void MiniBrowser::didFindZoomableArea(WKViewRef, WKPoint target, WKRect area, co
 
 void MiniBrowser::doneWithTouchEvent(WKViewRef, const NIXTouchEvent* event, bool wasEventHandled, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     if (wasEventHandled) {
         mb->m_gestureRecognizer.reset();
         return;
@@ -519,7 +533,7 @@ void MiniBrowser::doneWithTouchEvent(WKViewRef, const NIXTouchEvent* event, bool
 
 void MiniBrowser::setCursor(WKViewRef, unsigned int shape, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     if (!mb->isMobileMode())
         mb->m_control->setWebViewCursor(shape);
 }
@@ -697,7 +711,7 @@ static inline bool WKRectIsEqual(const WKRect& a, const WKRect& b)
 
 void MiniBrowser::updateTextInputState(WKViewRef, const NIXTextInputState* state, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
 
     if (mb->m_postponeTextInputUpdates)
         return;
@@ -744,7 +758,7 @@ void MiniBrowser::showPopupMenu(WKPageRef page, WKPopupMenuListenerRef menuListe
 
     renderPopupMenu(itemsRef, popupItemTexts);
 
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     mb->m_menuListenerRef = menuListenerRef;
     mb->m_control->createPopupMenu(rect, popupItemTexts);
 }
@@ -842,9 +856,9 @@ WKStringRef MiniBrowser::runJavaScriptPrompt(WKPageRef, WKStringRef message, WKS
     return WKStringCreateWithUTF8CString(userInput.c_str());
 }
 
-void MiniBrowser::didStartProgress(WKPageRef page, const void* clientInfo)
+void MiniBrowser::didStartProgress(WKPageRef, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     mb->m_control->setLoadProgress(0.0);
     mb->m_control->removePopupMenu();
     mb->m_control->resetTooltip();
@@ -852,7 +866,7 @@ void MiniBrowser::didStartProgress(WKPageRef page, const void* clientInfo)
 
 void MiniBrowser::didChangeProgress(WKPageRef page, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     mb->m_control->setLoadProgress(WKPageGetEstimatedProgress(page));
 }
 
@@ -861,7 +875,7 @@ void MiniBrowser::didReceiveTitleForFrame(WKPageRef, WKStringRef title, WKFrameR
     if (!WKFrameIsMainFrame(frame))
         return;
 
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     std::string titleStr = createStdStringFromWKString(title) + " - MiniBrowser";
     mb->m_control->setWindowTitle(titleStr.c_str());
 }
@@ -877,13 +891,13 @@ void MiniBrowser::updateActiveUrlText()
 
 void MiniBrowser::didStartProvisionalLoadForFrame(WKPageRef page, WKFrameRef, WKTypeRef, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     mb->updateActiveUrlText();
 }
 
 void MiniBrowser::didFinishDocumentLoadForFrame(WKPageRef page, WKFrameRef, WKTypeRef, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     mb->updateActiveUrlText();
     mb->m_viewShouldAutoZoom = true;
 }
@@ -928,7 +942,7 @@ bool MiniBrowser::handleTLSError(WKErrorRef error)
 
 void MiniBrowser::didFailProvisionalLoadWithErrorForFrame(WKPageRef page, WKFrameRef frame, WKErrorRef error, WKTypeRef, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
 
     if (!WKFrameIsMainFrame(frame) || mb->handleTLSError(error))
         return;
@@ -977,7 +991,7 @@ std::string MiniBrowser::activeUrl()
 
 void MiniBrowser::didChangeTooltip(WKViewRef, const WKStringRef tooltip, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+    MiniBrowserRef mb(clientInfo);
     if (!mb->isMobileMode())
         mb->m_control->handleTooltipChange(createStdStringFromWKString(tooltip));
 }
