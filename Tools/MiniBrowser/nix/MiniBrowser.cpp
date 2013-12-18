@@ -427,11 +427,14 @@ string createStdStringFromWKString(WKStringRef wkStr)
 
 void MiniBrowser::webProcessCrashed(WKViewRef, WKURLRef url, const void* clientInfo)
 {
-    MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
-    //const string urlString = createStdStringFromWKString(url);
-    //cerr << "The web process has crashed on '" << urlString << "', reloading page...\n";
-    //WKURLRef wkUrl = WKURLCreateWithUTF8CString(urlString.c_str());
-    WKPageLoadURL(mb->pageRef(), url);
+    WKRetainPtr<WKStringRef> urlString = adoptWK(WKURLCopyString(url));
+    cerr << "The web process has crashed on '" << createStdStringFromWKString(urlString.get()) << "', reloading page? [Yn]: ";
+    string yn;
+    getline(cin, yn);
+    if (yn == "y" || yn == "Y" || yn == "") {
+        MiniBrowser* mb = static_cast<MiniBrowser*>(const_cast<void*>(clientInfo));
+        WKPageLoadURL(mb->pageRef(), url);
+    }
 }
 
 void MiniBrowser::webProcessRelaunched(WKViewRef, const void* clientInfo)
