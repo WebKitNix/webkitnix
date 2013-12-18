@@ -113,7 +113,6 @@ public:
 
     virtual double scale();
 
-    void setTouchEmulationMode(bool enabled);
     bool isMobileMode() const { return !m_options.desktopModeEnabled; }
 private:
 

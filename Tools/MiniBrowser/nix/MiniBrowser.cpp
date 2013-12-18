@@ -129,7 +129,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
 
     if (options.forceTouchEmulationEnabled || isMobileMode()) {
         cout << "Touch Emulation Mode enabled. Hold Control key to build and emit a multi-touch event: each mouse button should be a different touch point. Release Control Key to clear all tracking pressed touches.\n";
-        setTouchEmulationMode(true);
+        m_touchMocker = new TouchMocker(m_view);
     }
 
     if (!options.userAgent.empty())
@@ -187,16 +187,6 @@ MiniBrowser::~MiniBrowser()
     WKRelease(m_view);
     delete m_control;
     delete m_touchMocker;
-}
-
-void MiniBrowser::setTouchEmulationMode(bool enabled)
-{
-    if (enabled && !m_touchMocker) {
-        m_touchMocker = new TouchMocker(m_view);
-    } else if (!enabled && m_touchMocker) {
-        delete m_touchMocker;
-        m_touchMocker = 0;
-    }
 }
 
 static NIXMouseEvent convertToRightButtonClick(double timestamp, const NIXTouchPoint& touch)
