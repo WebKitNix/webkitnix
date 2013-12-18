@@ -33,6 +33,8 @@
 
 WebView::WebView(Display* display, Window parent, XContext context, BrowserControl* control, WKRect size)
     : VisualComponent(display, control, size)
+    , m_mouseCursor(0)
+    , m_mouseCursorShape(XC_left_ptr)
 {
     createXWindow(parent, context);
 
@@ -44,6 +46,8 @@ WebView::WebView(Display* display, Window parent, XContext context, BrowserContr
 WebView::~WebView()
 {
     destroyGLContext();
+    if (m_mouseCursor)
+        XFreeCursor(m_display, m_mouseCursor);
     XDestroyWindow(m_display, m_window);
 }
 
@@ -138,5 +142,13 @@ static unsigned cursorShape(int type)
 
 void WebView::setCursor(unsigned shape)
 {
-    XDefineCursor(m_display, m_window, XCreateFontCursor(m_display, cursorShape(shape)));
+    unsigned newCursorShape = cursorShape(shape);
+    if (newCursorShape == m_mouseCursorShape)
+        return;
+
+    if (m_mouseCursor)
+        XFreeCursor(m_display, m_mouseCursor);
+    m_mouseCursorShape = newCursorShape;
+    m_mouseCursor = XCreateFontCursor(m_display, m_mouseCursorShape);
+    XDefineCursor(m_display, m_window, m_mouseCursor);
 }

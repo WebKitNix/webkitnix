@@ -50,6 +50,9 @@ private:
     void createGLContext();
     void destroyGLContext();
 
+    Cursor m_mouseCursor;
+    unsigned m_mouseCursorShape;
+
     GLContextData* m_glContextData;
 };
 
