@@ -137,12 +137,12 @@ private:
 
     WKRetainPtr<WKContextRef> m_context;
     WKRetainPtr<WKPageGroupRef> m_pageGroup;
-    BrowserControl* m_control;
+    std::unique_ptr<BrowserControl> m_control;
     WKViewRef m_view;
     WKRect m_viewRect;
     GMainLoop* m_mainLoop;
     const Options& m_options;
-    TouchMocker* m_touchMocker;
+    std::unique_ptr<TouchMocker> m_touchMocker;
     bool m_displayUpdateScheduled;
     WKSize m_contentsSize;
     GestureRecognizer m_gestureRecognizer;
