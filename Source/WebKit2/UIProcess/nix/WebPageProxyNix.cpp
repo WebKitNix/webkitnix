@@ -29,6 +29,9 @@
 
 #include "PageClient.h"
 #include "NotImplemented.h"
+#include "WebBackForwardList.h"
+#include "WebBackForwardListItem.h"
+#include "WebData.h"
 #include "WebPageMessages.h"
 #include "WebProcessProxy.h"
 #include "WebKitVersion.h"
@@ -93,6 +96,70 @@ void WebPageProxy::loadRecentSearches(const String&, Vector<String>&)
 void WebPageProxy::initializeUIPopupMenuClient(const WKPageUIPopupMenuClientBase* client)
 {
     m_uiPopupMenuClient.initialize(client);
+}
+
+PassRefPtr<WebData> WebPageProxy::sessionStateData(WebPageProxySessionStateFilterCallback filter, void* context) const
+{
+    auto encoder = std::make_unique<CoreIPC::ArgumentEncoder>();
+    unsigned index = m_backForwardList->currentIndex();
+    const BackForwardListItemVector& entries = m_backForwardList->entries();
+    BackForwardListItemVector filtered;
+    WKPageRef pageRef = toAPI(const_cast<WebPageProxy*>(this));
+    for (unsigned i = 0; i < entries.size(); ++i) {
+        if (filter && !filter(pageRef, WKPageGetSessionHistoryURLValueType(), toURLRef(entries[i]->originalURL().impl()), context)) {
+            if (i < index)
+                --index;
+            continue;
+        }
+        filtered.append(entries[i]);
+    }
+    SessionState state(filtered, index);
+    state.encode(*encoder);
+    return WebData::create(encoder->buffer(), encoder->bufferSize());
+}
+
+static uint64_t generateNewItemID()
+{
+    static uint64_t next = 2;
+    return next += 2;
+}
+
+void WebPageProxy::restoreFromSessionStateData(WebData* data)
+{
+    // Clear the back/forward list even if the list is empty.
+    m_backForwardList->clear();
+    if (!data)
+        return;
+
+    auto decoder = std::make_unique<CoreIPC::ArgumentDecoder>(data->bytes(), data->size());
+
+    SessionState state;
+    if (!SessionState::decode(*(decoder.get()), state))
+        return;
+
+    const BackForwardListItemVector& entries = state.list();
+    if (state.isEmpty())
+        return;
+
+    // Currently our representation retrieves the same itemID from the previous
+    // session state items. We need to update these to avoid clashes in the WebProcessProxy
+    // history item map.
+    for (size_t i = 0; i < entries.size(); ++i) {
+        WebBackForwardListItem* originalItem = entries[i].get();
+
+        WebBackForwardListItem* item = WebBackForwardListItem::create(originalItem->originalURL(),
+            originalItem->url(), originalItem->title(), originalItem->backForwardData().data(),
+            originalItem->backForwardData().size(), generateNewItemID()).leakRef();
+
+        m_backForwardList->addItem(item);
+        process().registerNewWebBackForwardListItem(item);
+        if (i == state.currentIndex()) {
+            auto transaction = m_pageLoadState.transaction();
+            m_pageLoadState.setPendingAPIRequestURL(transaction, item->url());
+        }
+    }
+
+    process().send(Messages::WebPage::RestoreSessionAndNavigateToCurrentItem(state), m_pageID);
 }
 
 } // namespace WebKit

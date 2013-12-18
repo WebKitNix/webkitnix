@@ -1568,56 +1568,15 @@ void WebPageProxy::terminateProcess()
     resetStateAfterProcessExited();
 }
 
-#if !USE(CF)
-PassRefPtr<WebData> WebPageProxy::sessionStateData(WebPageProxySessionStateFilterCallback filter, void* context) const
+#if !USE(CF) && !PLATFORM(NIX)
+PassRefPtr<WebData> WebPageProxy::sessionStateData(WebPageProxySessionStateFilterCallback, void* /*context*/) const
 {
-    auto encoder = std::make_unique<CoreIPC::ArgumentEncoder>();
-    unsigned index = m_backForwardList->currentIndex();
-    const BackForwardListItemVector& entries = m_backForwardList->entries();
-    BackForwardListItemVector filtered;
-    WKPageRef pageRef = toAPI(const_cast<WebPageProxy*>(this));
-    for (unsigned i = 0; i < entries.size(); ++i) {
-        if (filter && !filter(pageRef, WKPageGetSessionHistoryURLValueType(), toURLRef(entries[i]->originalURL().impl()), context)) {
-            if (i < index)
-                --index;
-            continue;
-        }
-        filtered.append(entries[i]);
-    }
-    SessionState state(filtered, index);
-    state.encode(*encoder);
-    return WebData::create(encoder->buffer(), encoder->bufferSize());
+    // FIXME: Return session state data for saving Page state.
+    return 0;
 }
 
-void WebPageProxy::restoreFromSessionStateData(WebData* data)
-{
-
-    // Clear the back/forward list even if the list is empty.
-    m_backForwardList->clear();
-    if (!data)
-        return;
-
-    auto decoder = std::make_unique<CoreIPC::ArgumentDecoder>(data->bytes(), data->size());
-
-    SessionState state;
-    if (!SessionState::decode(*(decoder.get()), state))
-        return;
-
-    const BackForwardListItemVector& entries = state.list();
-    if (state.isEmpty())
-        return;
-
-    for (size_t i = 0; i < entries.size(); ++i) {
-        WebBackForwardListItem* item = entries[i].get();
-        m_backForwardList->addItem(item);
-        process().registerNewWebBackForwardListItem(item);
-        if (i == state.currentIndex()) {
-            auto transaction = m_pageLoadState.transaction();
-            m_pageLoadState.setPendingAPIRequestURL(transaction, item->url());
-        }
-    }
-
-    process().send(Messages::WebPage::RestoreSessionAndNavigateToCurrentItem(state), m_pageID);
+void WebPageProxy::restoreFromSessionStateData(WebData*)
+    // FIXME: Restore the Page from the passed in session state data.
 }
 #endif
 
