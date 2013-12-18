@@ -45,8 +45,6 @@ TEST(WebKit2, WebWorker)
     WKRetainPtr<WKContextRef> context = adoptWK(Util::createContextForInjectedBundleTest("WebWorkerTest"));
     PlatformWebView view(context.get());
 
-    WKViewInitialize(view.platformView());
-
     WKPageLoaderClientV3 pageLoaderClient;
     memset(&pageLoaderClient, 0, sizeof(pageLoaderClient));
     pageLoaderClient.base.version = 3;
