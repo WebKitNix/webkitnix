@@ -23,10 +23,47 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-@protocol BundleInterface <NSObject>
+#include "config.h"
+#include "WriteBarrierBuffer.h"
 
-- (void)sayHello;
-- (void)testMethodWithString:(NSString *)string double:(double)d integer:(int)i;
-- (void)testMethodWithArray:(NSArray *)array dictionary:(NSDictionary *)dictinoary request:(NSURLRequest *)request;
+#include "GCAssertions.h"
+#include "Heap.h"
+#include "JSCell.h"
+#include "Structure.h"
 
-@end
+namespace JSC {
+
+WriteBarrierBuffer::WriteBarrierBuffer(unsigned capacity)
+    : m_currentIndex(0)
+    , m_capacity(capacity)
+    , m_buffer(static_cast<JSCell**>(fastMalloc(sizeof(JSCell*) * capacity)))
+{
+}
+
+WriteBarrierBuffer::~WriteBarrierBuffer()
+{
+    fastFree(m_buffer);
+    m_buffer = 0;
+}
+
+void WriteBarrierBuffer::flush(Heap& heap)
+{
+    ASSERT(m_currentIndex <= m_capacity);
+    for (size_t i = 0; i < m_currentIndex; ++i)
+        heap.writeBarrier(m_buffer[i]);
+    m_currentIndex = 0;
+}
+
+void WriteBarrierBuffer::reset()
+{
+    m_currentIndex = 0;
+}
+
+void WriteBarrierBuffer::add(JSCell* cell)
+{
+    ASSERT_GC_OBJECT_LOOKS_VALID(cell);
+    ASSERT(m_currentIndex < m_capacity);
+    m_buffer[m_currentIndex++] = cell;
+}
+
+} // namespace JSC

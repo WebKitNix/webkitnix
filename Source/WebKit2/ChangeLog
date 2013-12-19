@@ -1,3 +1,246 @@
+2013-12-19  Nick Diego Yamane  <nick.yamane@openbossa.org>
+
+        [CoordinatedGraphics] Regressions in WebView's contentScaleFactor/contentPosition
+        https://bugs.webkit.org/show_bug.cgi?id=125943
+
+        Reviewed by Noam Rosenthal.
+
+        When WebView::pageDidRequestScroll is called it is scaling position requested
+        to scroll before store it as contentPosition, that is not necessary since WebView
+        already stores the requested contentScaleFactor so it's able to do that internally
+        when needed, what simplifies the API and improves the readability of webview's code.
+        This patch reverts changes from https://bugs.webkit.org/show_bug.cgi?id=118548, which
+        was causing some regressions in contentScaleFactor/contentPosition related stuff.
+        Besides that WebView::pageDidRequestScroll calls viewClient callback with the wrong
+        position (different from the position stored in WebView).
+
+        * UIProcess/API/efl/EwkView.cpp:
+        (EwkView::scrollBy):
+        * UIProcess/CoordinatedGraphics/WebView.cpp:
+        (WebKit::WebView::transformToScene):
+        (WebKit::WebView::updateViewportSize):
+        (WebKit::WebView::pageDidRequestScroll):
+        * UIProcess/efl/PageViewportControllerClientEfl.cpp:
+        (WebKit::PageViewportControllerClientEfl::setViewportPosition):
+2013-12-18  Tim Horton  <timothy_horton@apple.com>
+
+        WebKit2 View Gestures: Move WebProcess-side geometry collection into its own class
+        https://bugs.webkit.org/show_bug.cgi?id=125967
+
+        Reviewed by Anders Carlsson.
+
+        Move the messages dispatched by ViewGestureController that grab geometry
+        from the WebProcess out of the DrawingArea and into ViewGestureGeometryCollector.
+        This class will grow when smart magnification is implemented.
+
+        * UIProcess/mac/TiledCoreAnimationDrawingAreaProxy.h:
+        * UIProcess/mac/TiledCoreAnimationDrawingAreaProxy.mm:
+        * WebProcess/WebPage/DrawingArea.h:
+        * WebProcess/WebPage/DrawingArea.messages.in:
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        Remove BeginTransientZoom() message.
+
+        * DerivedSources.make:
+        * UIProcess/DrawingAreaProxy.h:
+        
+        * UIProcess/mac/ViewGestureController.cpp:
+        (WebKit::ViewGestureController::didCollectGeometryForMagnificationGesture):
+        (WebKit::ViewGestureController::handleMagnificationGesture):
+        * UIProcess/mac/ViewGestureController.h:
+        * UIProcess/mac/ViewGestureController.messages.in:
+        Make use of ViewGestureGeometryCollector and rename didBeginTransientZoom to didCollectGeometryForMagnificationGesture.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+        Add new files.
+        
+        * WebProcess/WebPage/ViewGestureGeometryCollector.cpp: Added.
+        (WebKit::ViewGestureGeometryCollector::ViewGestureGeometryCollector):
+        (WebKit::ViewGestureGeometryCollector::~ViewGestureGeometryCollector):
+        (WebKit::ViewGestureGeometryCollector::collectGeometryForMagnificationGesture):
+        * WebProcess/WebPage/ViewGestureGeometryCollector.h: Added.
+        * WebProcess/WebPage/ViewGestureGeometryCollector.messages.in: Added.
+        Move the code to collect the visible content rect and return it to the ViewGestureController into its own class.
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        * WebProcess/WebPage/WebPage.h:
+        Move m_pageID to the top of WebPage's initialization list so that
+        it can be safely used from other members' constructors.
+
+        Add a ViewGestureGeometryCollector member and construct it.
+
+2013-12-18  Gustavo Noronha Silva  <gns@gnome.org>
+
+        Unreviewed cmake build fix for GTK+.
+
+        * PlatformGTK.cmake: fix paths for files that were moved.
+
+2013-12-18  Anders Carlsson  <andersca@apple.com>
+
+        MessageReceiverMap::addMessageReceiver should assert that destinationID is not zero
+        https://bugs.webkit.org/show_bug.cgi?id=125965
+
+        Reviewed by Tim Horton.
+
+        * Platform/CoreIPC/MessageReceiverMap.cpp:
+        (CoreIPC::MessageReceiverMap::addMessageReceiver):
+
+2013-12-18  Anders Carlsson  <andersca@apple.com>
+
+        Deprecate some WKMutableDictionary functions
+        https://bugs.webkit.org/show_bug.cgi?id=125962
+
+        Reviewed by Tim Horton.
+
+        * Shared/API/c/WKDeprecatedFunctions.cpp:
+        (WKDictionaryIsMutable):
+        (WKDictionaryAddItem):
+        (WKDictionaryRemoveItem):
+        * Shared/API/c/WKMutableDictionary.cpp:
+        * Shared/API/c/WKMutableDictionary.h:
+
+2013-12-18  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Allow the web process plug-in to intercept resource requests
+        https://bugs.webkit.org/show_bug.cgi?id=125959
+
+        Reviewed by Anders Carlsson.
+
+        * WebProcess/InjectedBundle/API/Cocoa/WKWebProcessPlugInLoadDelegate.h: Declared new
+        delegate method.
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextController.mm:
+        (willSendRequestForFrame): Implemented this WKBundlePageResourceClient callback by calling
+        the load delegate.
+        (setUpResourceLoadClient): Added. Initializes the resource load client with the above
+        function.
+        (-[WKWebProcessPlugInBrowserContextController setLoadDelegate:]): Added calls to initialize
+        and clear the resource load client.
+
+2013-12-18  Yongjun Zhang  <yongjun_zhang@apple.com>
+
+        https://bugs.webkit.org/show_bug.cgi?id=125941
+        Add Obj C API for injected bundle PageGroup class.
+
+        Reviewed by Dan Bernstein.
+
+        Add Obj C API (WKWebProcessPlugInPageGroup) for injected bundle PageGroup class. And add APIs to
+        expose the main frame and page group from WKWebProcessPlugInBrowsingContextController.
+
+        * Shared/Cocoa/APIObject.mm:
+        (API::Object::newObject): Create wrapper object for InjectedPageGroup object.
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/InjectedBundle/API/Cocoa/WKWebProcessPlugInPageGroup.h: Added.
+        * WebProcess/InjectedBundle/API/Cocoa/WKWebProcessPlugInPageGroup.mm: Added.
+        (-[WKWebProcessPlugInPageGroup identifier]):
+        (-[WKWebProcessPlugInPageGroup dealloc]):
+        (-[WKWebProcessPlugInPageGroup API::]):
+        * WebProcess/InjectedBundle/API/Cocoa/WKWebProcessPlugInPageGroupInternal.h: Added.
+        (WebKit::wrapper):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextController.h: Add API to expose the main frame and page group
+            for WKWebPocessPlugInBrowserContextController.
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextController.mm:
+        (-[WKWebProcessPlugInBrowserContextController mainFrame]):
+        (-[WKWebProcessPlugInBrowserContextController pageGroup]):
+
+2013-12-18  Tim Horton  <timothy_horton@apple.com>
+
+        PDFPlugin: Never make a NSEventType = 0
+        https://bugs.webkit.org/show_bug.cgi?id=125955
+
+        Reviewed by Dan Bernstein.
+
+        * WebProcess/Plugins/PDF/PDFPlugin.mm:
+        (WebKit::getEventTypeFromWebEvent):
+        Make getEventTypeFromWebEvent return its NSEventType as an out arg, and
+        make the return value represent whether or not we set it.
+
+        (WebKit::PDFPlugin::nsEventForWebMouseEvent):
+        (WebKit::PDFPlugin::handleKeyboardEvent):
+        Make use of getEventTypeFromWebEvent.
+
+2013-12-18  Anders Carlsson  <andersca@apple.com>
+
+        WKRemoteObjectRegistry should invoke invocations
+        https://bugs.webkit.org/show_bug.cgi?id=125945
+
+        Reviewed by Tim Horton.
+
+        * Shared/API/Cocoa/WKRemoteObjectRegistry.mm:
+        (-[WKRemoteObjectRegistry _invokeMessageWithInterfaceIdentifier:encodedInvocation:]):
+
+2013-12-18  Gavin Barraclough  <barraclough@apple.com>
+
+        Fix page visibility api test, initialization in WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=125933
+
+        Reviewed by Anders Carlsson.
+
+        The API test for page visibility is broken, fix this. This revealed a recent regression in WebKit2
+        (introduced in https://bugs.webkit.org/show_bug.cgi?id=123379), caused by a typo removing a '!'.
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::setVisibilityState):
+            - Fix regression, accidentally removed a '!'.
+
+2013-12-18  Anders Carlsson  <andersca@apple.com>
+
+        Fix 32-bit build.
+
+        * Shared/API/Cocoa/RemoteObjectRegistry.mm:
+        (WebKit::RemoteObjectRegistry::invokeMethod):
+
+2013-12-18  Anders Carlsson  <andersca@apple.com>
+
+        Make WKObjectRegistry objects be per page
+        https://bugs.webkit.org/show_bug.cgi?id=125937
+
+        Reviewed by Andreas Kling.
+
+        Remove WKObjectRegistry from WKConnection. Also, add a C++ object that is in charge 
+        of actually sending and receiving messages.
+
+        * DerivedSources.make:
+        * Shared/API/Cocoa/RemoteObjectRegistry.h: Added.
+        * Shared/API/Cocoa/RemoteObjectRegistry.messages.in: Added.
+        * Shared/API/Cocoa/RemoteObjectRegistry.mm: Added.
+        (WebKit::RemoteObjectRegistry::RemoteObjectRegistry):
+        (WebKit::RemoteObjectRegistry::~RemoteObjectRegistry):
+        (WebKit::RemoteObjectRegistry::sendInvocation):
+        (WebKit::RemoteObjectRegistry::invokeMethod):
+        * Shared/API/Cocoa/WKRemoteObjectRegistry.mm:
+        (-[WKRemoteObjectRegistry _initWithMessageSender:IPC::]):
+        (-[WKRemoteObjectRegistry _invalidate]):
+        (-[WKRemoteObjectRegistry _sendInvocation:interface:]):
+        (-[WKRemoteObjectRegistry WebKit::]):
+        (-[WKRemoteObjectRegistry _invokeMethod:]):
+        * Shared/API/Cocoa/WKRemoteObjectRegistryInternal.h:
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController dealloc]):
+        (-[WKBrowsingContextController remoteObjectRegistry]):
+        * UIProcess/API/Cocoa/WKBrowsingContextControllerPrivate.h:
+        * UIProcess/API/Cocoa/WKConnection.h:
+        * UIProcess/API/Cocoa/WKConnection.mm:
+        (didReceiveMessage):
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextController.mm:
+        (-[WKWebProcessPlugInBrowserContextController remoteObjectRegistry]):
+        * WebProcess/InjectedBundle/API/mac/WKWebProcessPlugInBrowserContextControllerPrivate.h:
+
+2013-12-18  Conrad Shultz  <conrad_shultz@apple.com>
+
+        API to set a favicon
+        https://bugs.webkit.org/show_bug.cgi?id=125892
+
+        Reviewed by Brian Weinstein.
+
+        * UIProcess/API/C/WKIconDatabase.cpp:
+        (WKIconDatabaseSetIconDataForIconURL):
+        Call WebIconDatabase::setIconDataForIconURL().
+
+        * UIProcess/API/C/WKIconDatabase.h:
+        Declare WKIconDatabaseSetIconDataForIconURL().
+
 2013-12-18  Anders Carlsson  <andersca@apple.com>
 
         Fix Dictionary encoding

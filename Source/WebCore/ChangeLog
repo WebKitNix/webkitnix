@@ -1,3 +1,583 @@
+2013-12-16  Darin Adler  <darin@apple.com>
+
+        Improve "bad parent" and "bad child list" assertions in line boxes
+        https://bugs.webkit.org/show_bug.cgi?id=125656
+
+        Reviewed by Sam Weinig.
+
+        * rendering/InlineBox.cpp:
+        (WebCore::InlineBox::root): Use parent() function with assertions rather than
+        using m_parent function, which skips the assertions.
+        * rendering/RenderText.cpp:
+        (WebCore::RenderText::removeAndDestroyTextBoxes): Call invalidateParentChildLists
+        if we are in the optimized document-destruction code path and destroying children
+        without removing them from their parents.
+        * rendering/RenderTextLineBoxes.cpp:
+        (WebCore::RenderTextLineBoxes::invalidateParentChildLists): Added.
+        * rendering/RenderTextLineBoxes.h: Added invalidateParentChildLists.
+
+2013-12-19  Dan Bernstein  <mitz@apple.com>
+
+        <rdar://problem/15696824> [CFNetwork] Loading stops at server redirects
+        https://bugs.webkit.org/show_bug.cgi?id=125984
+
+        Reviewed by Anders Carlsson.
+
+        * platform/network/cf/ResourceHandleCFNet.cpp:
+        (WebCore::ResourceHandle::willSendRequest): If the client uses async callbacks, call its
+        willSendRequestAsync callback instead if willSendRequest.
+
+2013-12-19  Andreas Kling  <akling@apple.com>
+
+        CascadedProperties: Deferred properties should have inline capacity.
+        <https://webkit.org/b/125994>
+
+        Give CascadedProperties::m_deferredProperties an inline capacity
+        of 8 to sidestep malloc churn (0.2% of HTML5-8266 profile.)
+
+        Reviewed by Antti Koivisto.
+
+2013-12-19  Andreas Kling  <akling@apple.com>
+
+        Two small refinements to matched properties cache.
+        <https://webkit.org/b/125992>
+
+        - Avoid computing the matched properties hash if we're banned from
+          using the cache anyway.
+
+        - When adding a new entry to the cache, use move semantics to avoid
+          creating a transient copy of all the data.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-19  Andreas Kling  <akling@apple.com>
+
+        CascadedProperties should use a bitset to track property presence.
+        <https://webkit.org/b/125991>
+
+        Avoid zeroing out a bunch of memory in the CascadedProperties ctor
+        by using a bitset to track whether each property is present in the
+        cascaded set.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-19  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Fix description of parameters in Page.setGeolocationOverride
+        https://bugs.webkit.org/show_bug.cgi?id=125983
+
+        Reviewed by Joseph Pecoraro.
+
+        No new tests, no changes in behavior.
+
+        * inspector/protocol/Page.json:
+
+2013-12-18  Jer Noble  <jer.noble@apple.com>
+
+        [MSE][Mac] Add AVSampleBufferRendererSynchronizer support.
+        https://bugs.webkit.org/show_bug.cgi?id=125954
+
+        Reviewed by Eric Carlson.
+
+        Instead of slaving all the various renderer's CMTimebases to one master timebase,
+        use AVSampleBufferRenderSynchronizer, which essentially does the same thing.
+
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateMediaSourceAVFObjC.h:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateMediaSourceAVFObjC.mm:
+        (WebCore::CMTimebaseEffectiveRateChangedCallback): Added; call effectiveRateChanged().
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::MediaPlayerPrivateMediaSourceAVFObjC): Set up
+            the synchronizer and all the observers.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::~MediaPlayerPrivateMediaSourceAVFObjC): Tear down
+            the same.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::isAvailable): Require the
+            AVSampleBufferRenderSynchronizer class.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::playInternal): Convert Clock -> Synchronizer.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::pauseInternal): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::paused): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::currentTimeDouble): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::seekInternal): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::setRateDouble): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::ensureLayer): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::destroyLayer): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::effectiveRateChanged): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::addDisplayLayer): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::removeDisplayLayer): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::addAudioRenderer): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::removeAudioRenderer): Ditto.
+
+        Drive-by fix; audio samples can't be subdivided, and video samples are
+        rarely combined, so remove the call to CMSampleBufferCallForEachSample:
+        * platform/graphics/avfoundation/objc/SourceBufferPrivateAVFObjC.mm:
+        (WebCore::SourceBufferPrivateAVFObjC::didProvideMediaDataForTrackID):
+
+2013-12-18  Andreas Kling  <akling@apple.com>
+
+        CSS: Fall back to cache-less cascade when encountering explicitly inherited value.
+        <https://webkit.org/b/125968>
+
+        When encountering an explicitly inherited value for a property that's not
+        "statically inherited", drop out of the matched properties cache path
+        immediately instead of waiting for some coincidence to trigger it later on.
+
+        Fixes 3 asserting table tests:
+
+        - fast/table/border-collapsing/cached-69296.html
+        - tables/mozilla/bugs/bug27038-3.html
+        - tables/mozilla_expected_failures/marvin/backgr_border-table-row-group.html
+
+        Reviewed by Antti Koivisto.
+
+2013-12-18  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Crash in WebCore::LogicalSelectionOffsetCaches::LogicalSelectionOffsetCaches
+        https://bugs.webkit.org/show_bug.cgi?id=125970
+
+        Reviewed by Antti Koivisto.
+
+        The bug was caused by containingBlockForAbsolutePosition returning a non-RenderBlock render object.
+        Fixed the bug by obtaining its containg block.
+
+        Also changed the return type of containingBlockForFixedPosition, containingBlockForAbsolutePosition,
+        containingBlockForObjectInFlow from RenderElement to RenderBlock as all callers of these functions
+        had assumed the return value to be an instance of RenderBlock.
+
+        Test: svg/text/select-text-inside-non-static-position.html
+
+        * rendering/LogicalSelectionOffsetCaches.h:
+        (WebCore::containingBlockForFixedPosition):
+        (WebCore::containingBlockForAbsolutePosition):
+        (WebCore::containingBlockForObjectInFlow):
+        (WebCore::LogicalSelectionOffsetCaches::LogicalSelectionOffsetCaches):
+
+2013-12-18  Andreas Kling  <akling@apple.com>
+
+        Don't waste cycles on zeroing every CascadedProperties::Property.
+        <https://webkit.org/b/125966>
+
+        The CascadedProperties constructor already zeroes out the whole
+        property array. Move the memset() to setDeferred() which is the only
+        other place we create a Property.
+
+        Brought to you by Instruments.app. Profile your code today!
+
+        Reviewed by Antti Koivisto.
+
+2013-12-18  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] Simplify the BoxShape implementation
+        https://bugs.webkit.org/show_bug.cgi?id=125548
+
+        Reviewed by Andreas Kling.
+
+        Reduce BoxShape's footprint by about 2/3rds. Instead of caching the
+        FloatRoundedRects which represent a BoxShape's shape-padding and shape-margin
+        boundaries, compute them as needed.
+
+        No new tests, this is just an internal refactoring.
+
+        * rendering/shapes/BoxShape.cpp:
+        (WebCore::BoxShape::shapeMarginLogicalBoundingBox): Now just computes the bounding box rect.
+        (WebCore::BoxShape::shapePaddingLogicalBoundingBox): Ditto.
+        (WebCore::BoxShape::shapeMarginBounds): Removed the caching logic.
+        (WebCore::BoxShape::shapePaddingBounds): Ditto.
+        (WebCore::BoxShape::getExcludedIntervals): Use the computed margin bounds, instead of the cached one.
+        (WebCore::BoxShape::getIncludedIntervals): Ditto (padding bounds).
+        * rendering/shapes/BoxShape.h:
+        (WebCore::BoxShape::BoxShape): Simplified the constructor.
+        * rendering/shapes/Shape.cpp:
+        (WebCore::createBoxShape):
+        (WebCore::Shape::createShape):
+
+2013-12-17  Jer Noble  <jer.noble@apple.com>
+
+        [MSE][Mac] Add AVSampleBufferAudioRenderer support.
+        https://bugs.webkit.org/show_bug.cgi?id=125905
+
+        Reviewed by Eric Carlson.
+
+        On platforms which support AVSampleBufferAudioRenderer, add support
+        for playback of audio CMSampleBufferRefs generated by AVStreamDataParser.
+
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateMediaSourceAVFObjC.h:
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateMediaSourceAVFObjC.mm:
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::isAvailable): Require AVSampleBufferAudioRenderer.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::setVolume): Pass through to every audio renderer.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::setMuted): Ditto.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::addAudioRenderer): Slave the renderer's
+            timebase to the master clock.
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::removeAudioRenderer):
+        * platform/graphics/avfoundation/objc/SourceBufferPrivateAVFObjC.h:
+        * platform/graphics/avfoundation/objc/SourceBufferPrivateAVFObjC.mm:
+        (WebCore::SourceBufferPrivateAVFObjC::SourceBufferPrivateAVFObjC): Drive by fix; initialize
+            m_enabledVideoTrackID.
+        (WebCore::SourceBufferPrivateAVFObjC::~SourceBufferPrivateAVFObjC): Call destroyRenderers().
+        (WebCore::callProcessCodedFrameForEachSample): Drive by fix; convert the bool return to an OSErr.
+        (WebCore::SourceBufferPrivateAVFObjC::destroyRenderers): Added; flush and destroy the audio
+            renderers.  
+        (WebCore::SourceBufferPrivateAVFObjC::removedFromMediaSource): Call destroyRenderers().
+        (WebCore::SourceBufferPrivateAVFObjC::trackDidChangeEnabled): Enable or disable the audio
+            renderer in response.
+        (WebCore::SourceBufferPrivateAVFObjC::flushAndEnqueueNonDisplayingSamples): Added audio
+            specific version.
+        (WebCore::SourceBufferPrivateAVFObjC::enqueueSample): Ditto.
+        (WebCore::SourceBufferPrivateAVFObjC::isReadyForMoreSamples): Ditto.
+        (WebCore::SourceBufferPrivateAVFObjC::didBecomeReadyForMoreSamples): Ditto.
+        (WebCore::SourceBufferPrivateAVFObjC::notifyClientWhenReadyForMoreSamples): Ditto.
+
+2013-12-18  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove leftover code from InspectorController after r108965
+        https://bugs.webkit.org/show_bug.cgi?id=125956
+
+        Reviewed by Joseph Pecoraro.
+
+        No new tests, no changes in behavior.
+
+        * inspector/InspectorController.h: PostWorkerNotificationToFrontendTask was removed in r108965.
+
+2013-12-18  Andreas Kling  <akling@apple.com>
+
+        CSS: Add a property cascading pass to style application.
+        <https://webkit.org/b/125213>
+
+        Add an intermediate pass to style application where we cascade all
+        style properties to figure out their final values before starting
+        to build RenderStyles.
+
+        This opens up various opportunities for further optimization.
+
+        Reviewed by Antti Koivisto.
+
+        * css/StyleResolver.cpp:
+        (WebCore::StyleResolver::CascadedProperties::Property::Property):
+        (WebCore::StyleResolver::CascadedProperties::CascadedProperties):
+        (WebCore::StyleResolver::CascadedProperties::property):
+        (WebCore::StyleResolver::CascadedProperties::set):
+        (WebCore::StyleResolver::CascadedProperties::addStyleProperties):
+        (WebCore::StyleResolver::CascadedProperties::addMatches):
+        (WebCore::StyleResolver::CascadedProperties::Property::apply):
+
+            Added. CascadedProperties is something of a container class
+            that takes CSS property/value/linkMatchType as input and boils
+            them down to the final values that will actually be used.
+
+            Most properties are poked into an unfancy array where latest
+            is greatest (unless !important, of course.) Some properties are
+            queued up to be applied in parse order, more on that below.
+
+        (WebCore::StyleResolver::applyCascadedProperties):
+        (WebCore::StyleResolver::applyMatchedProperties):
+
+            The brains of this patch. applyMatchedProperties() now creates
+            a CascadedProperties and uses it to figure out the final values
+            and uses applyCascadedProperties() to apply them. Deferred
+            properties (parse order) are applied last.
+
+            We may discover during property application that we won't be
+            able to use a matched properties cache item. This happens if
+            the effective zoom or font changes. If that happens, we start
+            the process over, now with the cache disabled. This may need
+            some optimization work.
+
+        (WebCore::extractDirectionAndWritingMode):
+
+            Directional properties ending in e.g -before or -after depend on
+            the direction and writing mode in effect, so we must begin with
+            resolving those properties before doing the full cascade.
+
+            This is done by simply walking the set of matched properties and
+            manually applying '-webkit-writing-mode' and 'direction'.
+
+            If this starts showing up in profiles, we can easily cache some
+            of the information in e.g RuleData to avoid the traversal here.
+
+        (WebCore::elementTypeHasAppearanceFromUAStyle):
+
+            To determine whether a form element is styled beyond the default
+            UA style sheet, StyleResolver caches the border and background
+            values from RenderStyle after applying the UA style sheet.
+
+            Those values are then compared against after all style is applied
+            and if some (platform-dependent) values differ, the element is
+            considered "styled."
+
+            This really only affects elements with -webkit-appearance values
+            in the default UA style sheet, so this function determines if an
+            element should take the goofy slow path for this.
+
+        (WebCore::shouldApplyPropertyInParseOrder):
+        (WebCore::StyleResolver::CascadedProperties::setDeferred):
+        (WebCore::StyleResolver::CascadedProperties::applyDeferredProperties):
+
+            Some CSS properties will write to the same RenderStyle fields when
+            applied, so in order to maintain previous behavior, we must apply
+            them in the order they were parsed.
+
+            We accomplish this by keeping an ordered queue of such properties
+            to apply separately after all the other properties.
+
+        (WebCore::StyleResolver::CascadedProperties::setPropertyInternal):
+
+            Helper for poking values into a CascadedProperties::Property.
+
+        * css/StyleResolver.h:
+        (WebCore::StyleResolver::state):
+
+            Expose the StyleResolver::State so CascadedProperties can access it.
+
+2013-12-16  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Add support for building WebKit1
+        https://bugs.webkit.org/show_bug.cgi?id=116377
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * PlatformGTK.cmake: Add a missing source required by WebKit1 to
+        the WebCore build.
+
+2013-12-18  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] Simplify RectangleShape implementation
+        https://bugs.webkit.org/show_bug.cgi?id=125536
+
+        Reviewed by Andreas Kling.
+
+        Instead of caching an instance of a private FloatRoundedRect (ish) class for
+        RectangleShape's shape-margin and shape-padding bounds, we just compute
+        the FloatRect and radii as needed. This reduces the classes footprint a little
+        and it simplifies the implementation.
+
+        Removed the private RectangleShape::ShapeBounds class and made its
+        cornerInterceptForWidth() method a static function. Added members for
+        the RectangleShape constructor args, and private getters for their properties.
+
+        There are no new tests because this is just an internal refactoring.
+
+        * rendering/shapes/RectangleShape.cpp:
+        (WebCore::RectangleShape::shapePaddingBounds):
+        (WebCore::RectangleShape::shapeMarginBounds):
+        (WebCore::ellipseXIntercept):
+        (WebCore::ellipseYIntercept):
+        (WebCore::RectangleShape::getExcludedIntervals):
+        (WebCore::RectangleShape::getIncludedIntervals):
+        (WebCore::cornerInterceptForWidth):
+        (WebCore::RectangleShape::firstIncludedIntervalLogicalTop):
+        (WebCore::RectangleShape::buildPath):
+        * rendering/shapes/RectangleShape.h:
+        (WebCore::RectangleShape::RectangleShape):
+        (WebCore::RectangleShape::rx):
+        (WebCore::RectangleShape::ry):
+        (WebCore::RectangleShape::x):
+        (WebCore::RectangleShape::y):
+        (WebCore::RectangleShape::width):
+        (WebCore::RectangleShape::height):
+        * rendering/shapes/Shape.cpp:
+        (WebCore::createCircleShape): Renamed this internal function (it was createShapeCircle) because it was inconsistent.
+        (WebCore::createEllipseShape): Ditto.
+        (WebCore::Shape::createShape):
+
+2013-12-18  Benjamin Poulain  <benjamin@webkit.org>
+
+        Add a simple stack abstraction for x86_64
+        https://bugs.webkit.org/show_bug.cgi?id=125908
+
+        Reviewed by Geoffrey Garen.
+
+        StackAllocator provides an abstraction to make it hard to make mistakes and protects from obvious
+        issues at runtime.
+
+        The key roles of StackAllocators are:
+        -Provide the necessary stack alignment for function calls (only x86_64 stack for now).
+        -Provide ways to save registers on the stack, restore or discard them as needed.
+        -Crash at runtime if an operation would obviously cause a stack inconsistency.
+
+        The way simple inconsistencies are detected is through the StackReference object
+        returned whenever something is added on the stack.
+        The object keeps a reference to the offset of what has been pushed. When the StackReference
+        is used to recover the register, if the offset is different, there is a missmatch between
+        push() and pop() after the object was pushed.
+
+        * cssjit/StackAllocator.h: Added.
+        (WebCore::StackAllocator::StackReference::StackReference):
+        (WebCore::StackAllocator::StackReference::operator unsigned):
+        (WebCore::StackAllocator::StackAllocator):
+        (WebCore::StackAllocator::~StackAllocator):
+        (WebCore::StackAllocator::push):
+        (WebCore::StackAllocator::pop):
+
+        (WebCore::StackAllocator::alignStackPreFunctionCall):
+        (WebCore::StackAllocator::unalignStackPostFunctionCall):
+        Those helpers provide a simple way to have a valid stack prior to a function call.
+        Since StackAllocator knows the offset and the platform rules, it can adjust the stack
+        if needed for x86_64.
+
+        (WebCore::StackAllocator::discard): Discard a single register or the full stack.
+
+        (WebCore::StackAllocator::combine): combining stacks is the way to solve branches
+        where the stack is used differently in each case.
+        To do that, the stack is first copied to A and B. Each branch works on its own
+        StackAllocator copy, then the two copies are linked together to the original stack.
+
+        The copies ensure the local consistency in each branch, linking the copies ensure global
+        consistencies and that both branches end in the same stack state.
+
+        (WebCore::StackAllocator::offsetToStackReference): Helper function to access the stack by address
+        through its StackReference.
+
+        (WebCore::StackAllocator::reset):
+
+2013-12-18  Alex Christensen  <achristensen@webkit.org>
+
+        [WinCairo] Preparation for GStreamer on Windows.
+        https://bugs.webkit.org/show_bug.cgi?id=125946
+
+        Reviewed by Brent Fulgham.
+
+        * WebCore.vcxproj/WebCore.vcxproj:
+        Use new GStreamer property sheets for WinCairo.
+        * WebCore.vcxproj/WebCoreCairo.props:
+        Include GStreamer directory.
+
+2013-12-18  Oliver Hunt  <oliver@apple.com>
+
+        Refactor CodeGeneratorJS - Move attribute function creation out of getOwnPropertyName guard
+        https://bugs.webkit.org/show_bug.cgi?id=125940
+
+        Reviewed by Simon Fraser.
+
+        This is just a huge block move of code out from behind the
+        ImplementationOverridesGetOwnProperty guard.
+
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateImplementation):
+
+2013-12-18  Tim Horton  <timothy_horton@apple.com>
+
+        [iOS] Frequent ASSERT(hasOneRef()) in SharedBuffer::releasePurgeableBuffer
+        https://bugs.webkit.org/show_bug.cgi?id=125939
+
+        Reviewed by Simon Fraser.
+
+        r146082 fixed these assertions by not making a purgeable buffer if a SharedBuffer
+        has multiple refs, but the check was put in ResourceBuffer::createPurgeableBuffer
+        instead of down in SharedBuffer::createPurgeableBuffer.
+
+        This is fine for most WebKit ports, because ResourceBuffer::createPurgeableBuffer
+        is the only caller of SharedBuffer::createPurgeableBuffer, but causes trouble for
+        not-quite-yet-upstreamed iOS SharedBuffer code, which adds another caller
+        of SharedBuffer::createPurgeableBuffer.
+
+        Push the early-return down into SharedBuffer::createPurgeableBuffer to ensure
+        that all callers are protected from creating a purgeable buffer if the SharedBuffer
+        has previously been vended elsewhere.
+
+        No new tests, has no effect on the current Open Source tree.
+
+        * loader/ResourceBuffer.cpp:
+        (WebCore::ResourceBuffer::createPurgeableBuffer):
+        * platform/SharedBuffer.cpp:
+        (WebCore::SharedBuffer::createPurgeableBuffer):
+
+2013-12-18  Beth Dakin  <bdakin@apple.com>
+
+        Starting a momentum scroll while rubber banding can cause scrolling to jump back 
+        when the rubberband snaps
+        https://bugs.webkit.org/show_bug.cgi?id=119507
+        -and corresponding-
+        <rdar://problem/14655893>
+
+        Reviewed by Simon Fraser.
+
+        This line of code was added with the very first implementation of rubber-banding. 
+        As far as I can tell, it was always a belt-and-suspenders line of code that is a 
+        no-op in all normal rubber-banding. In this J-shaped scrolling case, this line of 
+        code is what causes the bug to occur because this line of code assumes that your 
+        rubber-band is always trying to take you back to the origin. 
+        * platform/mac/ScrollElasticityController.mm:
+        (WebCore::ScrollElasticityController::snapRubberBandTimerFired):
+
+2013-12-18  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: make aria-hidden=false work with subtrees
+        https://bugs.webkit.org/show_bug.cgi?id=125592
+
+        Reviewed by Mario Sanchez Prada.
+
+        When a hidden object uses aria-hidden=false, that needs to apply to
+        the entire sub-tree (not just the object with aria-hidden on it as it does now).
+
+        Enabling this had the side effect of exposing non-rendered text nodes, so there's
+        some extra checks to ensure we don't include those elements in this cases.
+
+        Test: accessibility/aria-hidden-false-works-in-subtrees.html
+
+        * accessibility/AXObjectCache.cpp:
+        (WebCore::isNodeAriaVisible):
+        * accessibility/AccessibilityNodeObject.cpp:
+        (WebCore::AccessibilityNodeObject::computeAccessibilityIsIgnored):
+
+2013-12-18  Oliver Hunt  <oliver@apple.com>
+
+        Simplify bindings codegen for adding getOwnPropertySlot overrides
+        https://bugs.webkit.org/show_bug.cgi?id=125934
+
+        Reviewed by Alexey Proskuryakov.
+
+        Simple refactoring no change in behavior.
+
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (InstanceOverridesGetOwnPropertySlot):
+        (PrototypeOverridesGetOwnPropertySlot):
+        (GenerateHeader):
+        (GenerateImplementation):
+
+2013-12-18  Conrad Shultz  <conrad_shultz@apple.com>
+
+        AudioSessionManagerMac.cpp: kLowPowerVideoBufferSize unused before OS X 10.9
+        https://bugs.webkit.org/show_bug.cgi?id=125935
+
+        Reviewed by Jer Noble.
+
+        * platform/audio/mac/AudioSessionManagerMac.cpp:
+        Add __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090 guard.
+
+2013-12-18  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Some basic DebuggerAgent cleanup
+        https://bugs.webkit.org/show_bug.cgi?id=125901
+
+        Reviewed by Timothy Hatcher.
+
+        * inspector/InspectorDebuggerAgent.h:
+        Remove virtual from not really virtual method.
+
+        * inspector/InspectorDebuggerAgent.cpp:
+        (WebCore::InspectorDebuggerAgent::enable):
+        (WebCore::InspectorDebuggerAgent::disable):
+        Use member variable instead of private function.
+
+        (WebCore::InspectorDebuggerAgent::setPauseOnExceptions):
+        Inline the three lines from the private function.
+
+2013-12-18  Martin Hodovan  <mhodovan@inf.u-szeged.hu>
+
+        REGRESSION (r155536): Broken error recovery in @media at-rule
+        https://bugs.webkit.org/show_bug.cgi?id=125637
+
+        Reviewed by Darin Adler.
+
+        Error recovery in @media is broken if any of its rules misses the opening '{'.
+        The problem is that when the parser recognises the mistake it removes only the last
+        WHITESPACE token instead of the whole selector and tries to recover the selector again.
+        it swallows everything until it finds the next opening bracket. thats why the '}' brackets
+        of both subrules and even the @media rule are ignored, and the whole @media will be
+        considered invalid. By joining the selector and its trailing whitespace the error recovery
+        ignores the bad selector only and keep the @media rule.
+
+        Test: fast/css/media-error-recovery.html
+
+        * css/CSSGrammar.y.in:
+
 2013-12-18  Chris Fleizach  <cfleizach@apple.com>
 
         AX: WebKit not sending AXMenuClosed notification

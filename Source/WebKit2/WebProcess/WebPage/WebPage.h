@@ -89,6 +89,7 @@
 #if PLATFORM(MAC)
 #include "DictionaryPopupInfo.h"
 #include "LayerHostingContext.h"
+#include "ViewGestureGeometryCollector.h"
 #include <wtf/RetainPtr.h>
 OBJC_CLASS CALayer;
 OBJC_CLASS NSDictionary;
@@ -868,6 +869,8 @@ private:
 
     void reportUsedFeatures();
 
+    uint64_t m_pageID;
+
     OwnPtr<WebCore::Page> m_page;
     RefPtr<WebFrame> m_mainFrame;
     RefPtr<InjectedBundleBackForwardList> m_backForwardList;
@@ -941,6 +944,8 @@ private:
 
     WebCore::KeyboardEvent* m_keyboardEventBeingInterpreted;
 
+    ViewGestureGeometryCollector m_viewGestureGeometryCollector;
+
 #elif HAVE(ACCESSIBILITY) && (PLATFORM(GTK) || PLATFORM(EFL))
     GRefPtr<WebPageAccessibilityObject> m_accessibilityObject;
 
@@ -1006,7 +1011,6 @@ private:
 #endif
 
     SandboxExtensionTracker m_sandboxExtensionTracker;
-    uint64_t m_pageID;
 
     RefPtr<SandboxExtension> m_pendingDropSandboxExtension;
     Vector<RefPtr<SandboxExtension>> m_pendingDropExtensionsForFileUpload;

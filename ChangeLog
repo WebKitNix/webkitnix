@@ -1,3 +1,46 @@
+2013-12-18  Gustavo Noronha Silva  <gns@gnome.org>
+
+        [GTK][CMake] make libjavascriptcoregtk a public shared library again
+        https://bugs.webkit.org/show_bug.cgi?id=125512
+
+        Reviewed by Martin Robinson.
+
+        * CMakeLists.txt: make JavaScriptCore always be a shared library for the GTK+ port.
+        * Source/cmake/WebKitHelpers.cmake: make -fvisibility=hidden not be applied for GTK+,
+        visibility of some symbols is required for threading to be initialized properly by
+        WebKit2 processes, and we will rely on a linker script that will be added later on,
+        for production builds.
+
+2013-12-16  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Add support for building WebKit1
+        https://bugs.webkit.org/show_bug.cgi?id=116377
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * Source/cmake/OptionsGTK.cmake: Turn off some features that do not build properly
+        for WebKit1 and stop using the version script which we haven't implemented yet. Turn
+        on WebKit1.
+
+2013-12-18  Gustavo Noronha Silva  <gns@gnome.org>
+
+        [GTK][CMake] Use thin archives if building on Linux, only way to get non-shared-core debug builds
+        https://bugs.webkit.org/show_bug.cgi?id=125951
+
+        Reviewed by Martin Robinson.
+
+        * Source/cmake/OptionsGTK.cmake: append T for thin archives to the flags passed to ar,
+        also use u, which is used in the autotools build (it avoids adding a file twice).
+
+2013-12-18  Gustavo Noronha Silva  <gns@gnome.org>
+
+        [GTK][CMake] Remove binary size optimizations we do not use in the autotools build
+        https://bugs.webkit.org/show_bug.cgi?id=125947
+
+        Reviewed by Martin Robinson.
+
+        * Source/cmake/OptionsGTK.cmake: remove the relevant flags.
+
 2013-12-18  Carlos Garcia Campos  <cgarcia@igalia.com>
 
         Unreviewed. Update NEWS and Versions.m4 for 2.3.3 release.

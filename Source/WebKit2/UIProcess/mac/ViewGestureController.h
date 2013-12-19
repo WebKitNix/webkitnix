@@ -54,7 +54,7 @@ private:
     virtual void didReceiveMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&) OVERRIDE;
 
     // Message handlers.
-    void didBeginTransientZoom(WebCore::FloatRect visibleContentBounds);
+    void didCollectGeometryForMagnificationGesture(WebCore::FloatRect visibleContentBounds);
 
     void endMagnificationGesture();
     WebCore::FloatPoint scaledMagnificationOrigin(WebCore::FloatPoint origin, double scale);

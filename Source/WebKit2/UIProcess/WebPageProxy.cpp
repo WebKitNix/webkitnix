@@ -321,7 +321,7 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Web
     platformInitialize();
 
 #if ENABLE(PAGE_VISIBILITY_API)
-    if (isViewVisible())
+    if (!isViewVisible())
         m_visibilityState = PageVisibilityStateHidden;
 #endif
 #ifndef NDEBUG
