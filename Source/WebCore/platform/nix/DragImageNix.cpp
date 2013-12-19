@@ -67,4 +67,10 @@ DragImageRef createDragImageIconForCachedImage(CachedImage*)
     return 0;
 }
 
+DragImageRef createDragImageIconForCachedImageFilename(const String&)
+{
+    notImplemented();
+    return 0;
+}
+
 }

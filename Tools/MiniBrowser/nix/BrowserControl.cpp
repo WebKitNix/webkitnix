@@ -415,7 +415,7 @@ void BrowserControl::handlePointerMoveEvent(const XPointerMovedEvent& event)
 {
     NIXMouseEvent ev;
     ev.type = kNIXInputEventTypeMouseMove;
-    ev.button = kWKEventMouseButtonNoButton;
+    ev.button = m_lastClickButton;
     ev.x = event.x;
     ev.y = event.y;
     ev.globalX = event.x_root;

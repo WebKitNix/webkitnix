@@ -26,6 +26,7 @@ list(APPEND WebCore_SOURCES
     page/TouchAdjustment.cpp
 
     page/nix/EventHandlerNix.cpp
+    page/nix/DragControllerNix.cpp
 
     platform/ContextMenuItemNone.cpp
     platform/ContextMenuNone.cpp
