@@ -576,10 +576,9 @@ void MiniBrowser::handlePanning(double timestamp, WKPoint delta)
     // to respect any boundaries other than the physical constraints of the device from where
     // the user input came. This will be adjusted after the user interaction ends.
     WKPoint position = WKViewGetContentPosition(m_view);
-    float dprWithContentScale = m_options.devicePixelRatio * WKViewGetContentScaleFactor(m_view);
     if ((m_contentsSize.width - NIXViewVisibleContentsSize(m_view).width) > 0)
-        position.x -= delta.x / dprWithContentScale;
-    position.y -= delta.y / dprWithContentScale;
+        position.x -= delta.x / m_options.devicePixelRatio;
+    position.y -= delta.y / m_options.devicePixelRatio;
     WKViewSetContentPosition(m_view, position);
 }
 
