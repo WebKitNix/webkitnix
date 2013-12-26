@@ -67,9 +67,7 @@ public:
     void setScreenRect(const WebCore::FloatRect&);
 protected:
     // WebKit::WebView
-    virtual void didChangeContentScaleFactor(float) OVERRIDE;
     virtual void didChangeContentPosition(const WebCore::FloatPoint&) OVERRIDE;
-    virtual void didChangePageScaleFactor(double scaleFactor) OVERRIDE;
     virtual void pageDidRequestScroll(const WebCore::IntPoint&) OVERRIDE;
     virtual void didRenderFrame(const WebCore::IntSize&, const WebCore::IntRect&) OVERRIDE;
 

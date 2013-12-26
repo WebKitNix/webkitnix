@@ -182,11 +182,13 @@ set(WebKit2_SOURCES
 
     Shared/APIArray.cpp
     Shared/APIData.cpp
+    Shared/APIError.cpp
     Shared/APIFrameHandle.cpp
     Shared/APIGeometry.cpp
     Shared/APIPageHandle.cpp
     Shared/APIObject.cpp
     Shared/APIURLRequest.cpp
+    Shared/APIURLResponse.cpp
     Shared/ActivityAssertion.cpp
     Shared/CacheModel.cpp
     Shared/ChildProcess.cpp
@@ -215,7 +217,6 @@ set(WebKit2_SOURCES
     Shared/WebContextMenuItem.cpp
     Shared/WebContextMenuItemData.cpp
     Shared/WebCoreArgumentCoders.cpp
-    Shared/WebError.cpp
     Shared/WebEvent.cpp
     Shared/WebEventConversion.cpp
     Shared/WebGeolocationPosition.cpp
@@ -237,7 +238,6 @@ set(WebKit2_SOURCES
     Shared/WebRenderObject.cpp
     Shared/WebResourceBuffer.cpp
     Shared/WebTouchEvent.cpp
-    Shared/WebURLResponse.cpp
     Shared/WebWheelEvent.cpp
 
     Shared/API/c/WKArray.cpp
@@ -707,7 +707,8 @@ if (WebKit2_WebProcess_OUTPUT_NAME)
     set_target_properties(WebProcess PROPERTIES OUTPUT_NAME ${WebKit2_WebProcess_OUTPUT_NAME})
 endif ()
 
-set_target_properties(WebKit2 PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+POPULATE_LIBRARY_VERSION(WEBKIT2)
+set_target_properties(WebKit2 PROPERTIES VERSION ${WEBKIT2_VERSION} SOVERSION ${WEBKIT2_VERSION_MAJOR})
 
 # We need to link WebCore and JavaScriptCore using --whole-archive to be sure all functions exported in
 # static libraries will be shipped inside the shared object.

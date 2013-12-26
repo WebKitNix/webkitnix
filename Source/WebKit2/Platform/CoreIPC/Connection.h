@@ -34,11 +34,11 @@
 #include "MessageReceiver.h"
 #include "WorkQueue.h"
 #include <atomic>
+#include <condition_variable>
 #include <wtf/Deque.h>
 #include <wtf/Forward.h>
 #include <wtf/PassRefPtr.h>
 #include <wtf/OwnPtr.h>
-#include <wtf/Threading.h>
 #include <wtf/text/CString.h>
 
 #if OS(DARWIN)
@@ -159,7 +159,7 @@ public:
 
     template<typename T> bool send(T&& message, uint64_t destinationID, unsigned messageSendFlags = 0);
     template<typename T> bool sendSync(T&& message, typename T::Reply&& reply, uint64_t destinationID, double timeout = NoTimeout, unsigned syncSendFlags = 0);
-    template<typename T> bool waitForAndDispatchImmediately(uint64_t destinationID, double timeout);
+    template<typename T> bool waitForAndDispatchImmediately(uint64_t destinationID, std::chrono::milliseconds timeout);
 
     std::unique_ptr<MessageEncoder> createSyncMessageEncoder(StringReference messageReceiverName, StringReference messageName, uint64_t destinationID, uint64_t& syncRequestID);
     bool sendMessage(std::unique_ptr<MessageEncoder>, unsigned messageSendFlags = 0);
@@ -181,7 +181,7 @@ private:
     
     bool isValid() const { return m_client; }
     
-    std::unique_ptr<MessageDecoder> waitForMessage(StringReference messageReceiverName, StringReference messageName, uint64_t destinationID, double timeout);
+    std::unique_ptr<MessageDecoder> waitForMessage(StringReference messageReceiverName, StringReference messageName, uint64_t destinationID, std::chrono::milliseconds timeout);
     
     std::unique_ptr<MessageDecoder> waitForSyncReply(uint64_t syncRequestID, double timeout, unsigned syncSendFlags);
 
@@ -238,8 +238,8 @@ private:
     Mutex m_outgoingMessagesLock;
     Deque<std::unique_ptr<MessageEncoder>> m_outgoingMessages;
     
-    ThreadCondition m_waitForMessageCondition;
-    Mutex m_waitForMessageMutex;
+    std::condition_variable m_waitForMessageCondition;
+    std::mutex m_waitForMessageMutex;
     HashMap<std::pair<std::pair<StringReference, StringReference>, uint64_t>, std::unique_ptr<MessageDecoder>> m_waitForMessageMap;
 
     // Represents a sync request for which we're waiting on a reply.
@@ -340,7 +340,7 @@ template<typename T> bool Connection::sendSync(T&& message, typename T::Reply&& 
     return replyDecoder->decode(reply);
 }
 
-template<typename T> bool Connection::waitForAndDispatchImmediately(uint64_t destinationID, double timeout)
+template<typename T> bool Connection::waitForAndDispatchImmediately(uint64_t destinationID, std::chrono::milliseconds timeout)
 {
     std::unique_ptr<MessageDecoder> decoder = waitForMessage(T::receiverName(), T::name(), destinationID, timeout);
     if (!decoder)

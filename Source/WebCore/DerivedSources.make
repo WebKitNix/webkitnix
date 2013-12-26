@@ -452,6 +452,7 @@ BINDING_IDLS = \
     $(WebCore)/html/track/TrackEvent.idl \
     $(WebCore)/html/track/VideoTrack.idl \
     $(WebCore)/html/track/VideoTrackList.idl \
+    $(WebCore)/inspector/CommandLineAPIHost.idl \
     $(WebCore)/inspector/InjectedScriptHost.idl \
     $(WebCore)/inspector/InspectorFrontendHost.idl \
     $(WebCore)/inspector/ScriptProfile.idl \
@@ -1118,6 +1119,13 @@ InjectedScriptSource.h : InjectedScriptSource.js
 	python "$(WebCore)/inspector/Scripts/jsmin.py" <"$(WebCore)/inspector/InjectedScriptSource.js" > ./InjectedScriptSource.min.js
 	perl "$(WebCore)/inspector/xxd.pl" InjectedScriptSource_js ./InjectedScriptSource.min.js InjectedScriptSource.h
 	rm -f ./InjectedScriptSource.min.js
+
+all : CommandLineAPIModuleSource.h
+
+CommandLineAPIModuleSource.h : CommandLineAPIModuleSource.js
+	python "$(WebCore)/inspector/Scripts/jsmin.py" <"$(WebCore)/inspector/CommandLineAPIModuleSource.js" > ./CommandLineAPIModuleSource.min.js
+	perl "$(WebCore)/inspector/xxd.pl" CommandLineAPIModuleSource_js ./CommandLineAPIModuleSource.min.js CommandLineAPIModuleSource.h
+	rm -f ./CommandLineAPIModuleSource.min.js
 
 all : InjectedScriptCanvasModuleSource.h
 

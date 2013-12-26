@@ -23,6 +23,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// FIXME: Remove this once everything has been moved over to the IPC namespace.
+#define CoreIPC IPC
+
 #include "config.h"
 #include "PlatformWebView.h"
 

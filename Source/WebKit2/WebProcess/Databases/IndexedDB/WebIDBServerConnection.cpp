@@ -36,7 +36,6 @@
 #include "SecurityOriginData.h"
 #include "WebProcess.h"
 #include "WebToDatabaseProcessConnection.h"
-
 #include <WebCore/IDBDatabaseMetadata.h>
 #include <WebCore/SecurityOrigin.h>
 
@@ -47,7 +46,7 @@ namespace WebKit {
 static uint64_t generateServerConnectionIdentifier()
 {
     ASSERT(isMainThread());
-    DEFINE_STATIC_LOCAL(uint64_t, identifier, (0));
+    static uint64_t identifier = 0;
     return ++identifier;
 }
 
@@ -71,6 +70,9 @@ WebIDBServerConnection::WebIDBServerConnection(const String& databaseName, const
 WebIDBServerConnection::~WebIDBServerConnection()
 {
     WebProcess::shared().webToDatabaseProcessConnection()->removeWebIDBServerConnection(*this);
+
+    for (const auto& it : m_serverRequests)
+        it.value->requestAborted();
 }
 
 bool WebIDBServerConnection::isClosed()
@@ -96,14 +98,14 @@ void WebIDBServerConnection::getOrEstablishIDBDatabaseMetadata(GetIDBDatabaseMet
     ASSERT(!m_serverRequests.contains(requestID));
     m_serverRequests.add(requestID, serverRequest.release());
 
-    LOG(IDB, "WebProcess getOrEstablishIDBDatabaseMetadata request ID %llu", requestID);
+    LOG(IDB, "WebProcess getOrEstablishIDBDatabaseMetadata request ID %llu", static_cast<unsigned long long>(requestID));
 
     send(Messages::DatabaseProcessIDBConnection::GetOrEstablishIDBDatabaseMetadata(requestID));
 }
 
 void WebIDBServerConnection::didGetOrEstablishIDBDatabaseMetadata(uint64_t requestID, bool success, const IDBDatabaseMetadata& metadata)
 {
-    LOG(IDB, "WebProcess didGetOrEstablishIDBDatabaseMetadata request ID %llu", requestID);
+    LOG(IDB, "WebProcess didGetOrEstablishIDBDatabaseMetadata request ID %llu", static_cast<unsigned long long>(requestID));
 
     RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
 
@@ -129,7 +131,7 @@ void WebIDBServerConnection::openTransaction(int64_t transactionID, const HashSe
     ASSERT(!m_serverRequests.contains(requestID));
     m_serverRequests.add(requestID, serverRequest.release());
 
-    LOG(IDB, "WebProcess openTransaction ID %lli (request ID %llu)", transactionID, requestID);
+    LOG(IDB, "WebProcess openTransaction ID %lli (request ID %llu)", static_cast<long long>(transactionID), static_cast<unsigned long long>(requestID));
 
     Vector<int64_t> objectStoreIDVector;
     copyToVector(objectStoreIDs, objectStoreIDVector);
@@ -138,7 +140,7 @@ void WebIDBServerConnection::openTransaction(int64_t transactionID, const HashSe
 
 void WebIDBServerConnection::didOpenTransaction(uint64_t requestID, bool success)
 {
-    LOG(IDB, "WebProcess didOpenTransaction request ID %llu", requestID);
+    LOG(IDB, "WebProcess didOpenTransaction request ID %llu", static_cast<unsigned long long>(requestID));
 
     RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
 
@@ -156,14 +158,14 @@ void WebIDBServerConnection::beginTransaction(int64_t transactionID, std::functi
     ASSERT(!m_serverRequests.contains(requestID));
     m_serverRequests.add(requestID, serverRequest.release());
 
-    LOG(IDB, "WebProcess beginTransaction ID %lli (request ID %llu)", transactionID, requestID);
+    LOG(IDB, "WebProcess beginTransaction ID %lli (request ID %llu)", static_cast<long long>(transactionID), static_cast<unsigned long long>(requestID));
 
     send(Messages::DatabaseProcessIDBConnection::BeginTransaction(requestID, transactionID));
 }
 
 void WebIDBServerConnection::didBeginTransaction(uint64_t requestID, bool)
 {
-    LOG(IDB, "WebProcess didBeginTransaction request ID %llu", requestID);
+    LOG(IDB, "WebProcess didBeginTransaction request ID %llu", static_cast<unsigned long long>(requestID));
 
     RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
 
@@ -185,14 +187,14 @@ void WebIDBServerConnection::commitTransaction(int64_t transactionID, BoolCallba
     ASSERT(!m_serverRequests.contains(requestID));
     m_serverRequests.add(requestID, serverRequest.release());
 
-    LOG(IDB, "WebProcess commitTransaction ID %lli (request ID %llu)", transactionID, requestID);
+    LOG(IDB, "WebProcess commitTransaction ID %lli (request ID %llu)", static_cast<long long>(transactionID), static_cast<unsigned long long>(requestID));
 
     send(Messages::DatabaseProcessIDBConnection::CommitTransaction(requestID, transactionID));
 }
 
 void WebIDBServerConnection::didCommitTransaction(uint64_t requestID, bool success)
 {
-    LOG(IDB, "WebProcess didCommitTransaction request ID %llu", requestID);
+    LOG(IDB, "WebProcess didCommitTransaction request ID %llu", static_cast<unsigned long long>(requestID));
 
     RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
 
@@ -210,14 +212,14 @@ void WebIDBServerConnection::resetTransaction(int64_t transactionID, std::functi
     ASSERT(!m_serverRequests.contains(requestID));
     m_serverRequests.add(requestID, serverRequest.release());
 
-    LOG(IDB, "WebProcess resetTransaction ID %lli (request ID %llu)", transactionID, requestID);
+    LOG(IDB, "WebProcess resetTransaction ID %lli (request ID %llu)", static_cast<long long>(transactionID), static_cast<unsigned long long>(requestID));
 
     send(Messages::DatabaseProcessIDBConnection::ResetTransaction(requestID, transactionID));
 }
 
 void WebIDBServerConnection::didResetTransaction(uint64_t requestID, bool)
 {
-    LOG(IDB, "WebProcess didResetTransaction request ID %llu", requestID);
+    LOG(IDB, "WebProcess didResetTransaction request ID %llu", static_cast<unsigned long long>(requestID));
 
     RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
 
@@ -235,14 +237,14 @@ void WebIDBServerConnection::rollbackTransaction(int64_t transactionID, std::fun
     ASSERT(!m_serverRequests.contains(requestID));
     m_serverRequests.add(requestID, serverRequest.release());
 
-    LOG(IDB, "WebProcess rollbackTransaction ID %lli (request ID %llu)", transactionID, requestID);
+    LOG(IDB, "WebProcess rollbackTransaction ID %lli (request ID %llu)", static_cast<long long>(transactionID), static_cast<unsigned long long>(requestID));transactionID, requestID);
 
     send(Messages::DatabaseProcessIDBConnection::RollbackTransaction(requestID, transactionID));
 }
 
 void WebIDBServerConnection::didRollbackTransaction(uint64_t requestID, bool)
 {
-    LOG(IDB, "WebProcess didRollbackTransaction request ID %llu", requestID);
+    LOG(IDB, "WebProcess didRollbackTransaction request ID %llu", static_cast<unsigned long long>(requestID));
 
     RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
 
@@ -296,8 +298,33 @@ void WebIDBServerConnection::deleteObjectStore(IDBTransactionBackend&, const Del
 {
 }
 
-void WebIDBServerConnection::changeDatabaseVersion(IDBTransactionBackend&, const IDBDatabaseBackend::VersionChangeOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::changeDatabaseVersion(IDBTransactionBackend&, const IDBDatabaseBackend::VersionChangeOperation& operation, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured changing database version"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess changeDatabaseVersion request ID %llu", static_cast<unsigned long long>(requestID));
+
+    send(Messages::DatabaseProcessIDBConnection::ChangeDatabaseVersion(requestID, operation.transaction()->id(), static_cast<uint64_t>(operation.version())));
+}
+
+void WebIDBServerConnection::didChangeDatabaseVersion(uint64_t requestID, bool success)
+{
+    LOG(IDB, "WebProcess didChangeDatabaseVersion request ID %llu", static_cast<unsigned long long>(requestID));
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    serverRequest->completeRequest(success ? nullptr : IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured changing database version"));
 }
 
 void WebIDBServerConnection::cursorAdvance(IDBCursorBackend&, const CursorAdvanceOperation&, std::function<void()> completionCallback)

@@ -2334,7 +2334,7 @@ void RenderLayer::scrollTo(int x, int y)
             updateCompositingLayersAfterScroll();
 #endif
         return;
-}
+    }
     m_scrollOffset = newScrollOffset;
 
     InspectorInstrumentation::willScrollLayer(&renderer().frame());
@@ -2423,7 +2423,6 @@ void RenderLayer::scrollRectToVisible(const LayoutRect& rect, const ScrollAlignm
     // We may end up propagating a scroll event. It is important that we suspend events until 
     // the end of the function since they could delete the layer or the layer's renderer().
     FrameView& frameView = renderer().view().frameView();
-    frameView.pauseScheduledEvents();
 
     bool restrictedByLineClamp = false;
     if (renderer().parent()) {
@@ -2507,8 +2506,6 @@ void RenderLayer::scrollRectToVisible(const LayoutRect& rect, const ScrollAlignm
 
     if (parentLayer)
         parentLayer->scrollRectToVisible(newRect, alignX, alignY);
-
-    frameView.resumeScheduledEvents();
 }
 
 void RenderLayer::updateCompositingLayersAfterScroll()
@@ -3901,10 +3898,10 @@ bool RenderLayer::setupFontSubpixelQuantization(GraphicsContext* context, bool& 
         return false;
 
     bool scrollingOnMainThread = true;
-#if ENABLE(THREADED_SCROLLING)
+#if ENABLE(ASYNC_SCROLLING)
     if (Page* page = renderer().frame().page()) {
         if (ScrollingCoordinator* scrollingCoordinator = page->scrollingCoordinator())
-            scrollingOnMainThread = scrollingCoordinator->shouldUpdateScrollLayerPositionOnMainThread();
+            scrollingOnMainThread = scrollingCoordinator->shouldUpdateScrollLayerPositionSynchronously();
     }
 #endif
 
@@ -6276,9 +6273,12 @@ void RenderLayer::repaintIncludingDescendants()
         curr->repaintIncludingDescendants();
 
     // If this is a region, we must also repaint the flow thread's layer since it is the one
-    // doing the actual painting of the flowed content.
-    if (renderer().isRenderNamedFlowFragmentContainer())
-        toRenderBlockFlow(&renderer())->renderNamedFlowFragment()->flowThread()->layer()->repaintIncludingDescendants();
+    // doing the actual painting of the flowed content, but only if the region is valid.
+    if (renderer().isRenderNamedFlowFragmentContainer()) {
+        RenderNamedFlowFragment* region = toRenderBlockFlow(renderer()).renderNamedFlowFragment();
+        if (region->isValid())
+            region->flowThread()->layer()->repaintIncludingDescendants();
+    }
 }
 
 #if USE(ACCELERATED_COMPOSITING)

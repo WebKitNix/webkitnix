@@ -1,3 +1,412 @@
+2013-12-25  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r161033 and r161074.
+        http://trac.webkit.org/changeset/161033
+        http://trac.webkit.org/changeset/161074
+        https://bugs.webkit.org/show_bug.cgi?id=126240
+
+        Oliver says that a rollout would be better (Requested by ap on
+        #webkit).
+
+        * API/JSObjectRef.cpp:
+        (JSObjectSetProperty):
+        * dfg/DFGOperations.cpp:
+        (JSC::DFG::operationPutByValInternal):
+        * interpreter/Interpreter.cpp:
+        (JSC::Interpreter::execute):
+        * jit/JITOperations.cpp:
+        * llint/LLIntSlowPaths.cpp:
+        (JSC::LLInt::LLINT_SLOW_PATH_DECL):
+        * runtime/Arguments.cpp:
+        (JSC::Arguments::putByIndex):
+        * runtime/ArrayPrototype.cpp:
+        (JSC::putProperty):
+        (JSC::arrayProtoFuncPush):
+        * runtime/JSCJSValue.cpp:
+        (JSC::JSValue::putToPrimitiveByIndex):
+        * runtime/JSCell.cpp:
+        (JSC::JSCell::putByIndex):
+        * runtime/JSFunction.cpp:
+        (JSC::JSFunction::put):
+        * runtime/JSGenericTypedArrayViewInlines.h:
+        (JSC::JSGenericTypedArrayView<Adaptor>::putByIndex):
+        * runtime/JSONObject.cpp:
+        (JSC::Walker::walk):
+        * runtime/JSObject.cpp:
+        (JSC::JSObject::putByIndex):
+        (JSC::JSObject::putDirectNonIndexAccessor):
+        (JSC::JSObject::deleteProperty):
+        * runtime/JSObject.h:
+        (JSC::JSObject::putDirect):
+        * runtime/Lookup.h:
+        (JSC::putEntry):
+        (JSC::lookupPut):
+        * runtime/PutPropertySlot.h:
+        (JSC::PutPropertySlot::PutPropertySlot):
+        (JSC::PutPropertySlot::setNewProperty):
+        (JSC::PutPropertySlot::isCacheable):
+
+2013-12-25  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG PhantomArguments shouldn't rely on a dead Phi graph
+        https://bugs.webkit.org/show_bug.cgi?id=126218
+
+        Reviewed by Oliver Hunt.
+        
+        This change dramatically rationalizes our handling of PhantomArguments (i.e.
+        speculative elision of arguments object allocation).
+        
+        It's now the case that if we decide that we can elide arguments allocation, we just
+        turn the arguments-creating node into a PhantomArguments and mark all locals that
+        it's stored to as being arguments aliases. Being an arguments alias and being a
+        PhantomArguments means basically the same thing: in DFG execution you have the empty
+        value, on OSR exit an arguments object is allocated in your place, and all operations
+        that use the value now just refer directly to the actual arguments in the call frame
+        header (or the arguments we know that we passed to the call, in case of inlining).
+        
+        This means that we no longer have arguments simplification creating a dead Phi graph
+        that then has to be interpreted by the OSR exit logic. That sort of never made any
+        sense.
+        
+        This means that PhantomArguments now has a clear story in SSA: basically SSA just
+        gets rid of the "locals" but everything else is the same.
+        
+        Finally, this means that we can more easily get rid of forward exiting. As I was
+        working on the code to get rid of forward exiting, I realized that I'd have to
+        carefully preserve the special meanings of MovHint and SetLocal in the case of
+        PhantomArguments. It was really bizarre: even the semantics of MovHint were tied to
+        our specific treatment of PhantomArguments. After this change this is no longer the
+        case.
+        
+        One of the really cool things about this change is that arguments reification now
+        just becomes a special kind of FlushFormat. This further unifies things: it means
+        that a MovHint(PhantomArguments) and a SetLocal(PhantomArguments) both have the same
+        meaning, since both of them dictate that the way we recover the local on exit is by
+        reifying arguments. Previously, the SetLocal(PhantomArguments) case needed some
+        special handling to accomplish this.
+        
+        A downside of this approach is that we will now emit code to store the empty value
+        into aliased arguments variables, and we will even emit code to load that empty value
+        as well. As far as I can tell this doesn't cost anything, since PhantomArguments are
+        most profitable in cases where it allows us to simplify control flow and kill the
+        arguments locals entirely. Of course, this isn't an issue in SSA form since SSA form
+        also eliminates the locals.
+
+        * dfg/DFGArgumentsSimplificationPhase.cpp:
+        (JSC::DFG::ArgumentsSimplificationPhase::run):
+        (JSC::DFG::ArgumentsSimplificationPhase::detypeArgumentsReferencingPhantomChild):
+        * dfg/DFGFlushFormat.cpp:
+        (WTF::printInternal):
+        * dfg/DFGFlushFormat.h:
+        (JSC::DFG::resultFor):
+        (JSC::DFG::useKindFor):
+        (JSC::DFG::dataFormatFor):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileCurrentBlock):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGValueSource.h:
+        (JSC::DFG::ValueSource::ValueSource):
+        (JSC::DFG::ValueSource::forFlushFormat):
+        * dfg/DFGVariableAccessData.h:
+        (JSC::DFG::VariableAccessData::flushFormat):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::buildExitArguments):
+
+2013-12-23  Oliver Hunt  <oliver@apple.com>
+
+        Refactor PutPropertySlot to be aware of custom properties
+        https://bugs.webkit.org/show_bug.cgi?id=126187
+
+        Reviewed by msaboff.
+
+        Refactor PutPropertySlot, making the constructor take the thisValue
+        used as a target.  This results in a wide range of boilerplate changes
+        to pass the new parameter.
+
+        * API/JSObjectRef.cpp:
+        (JSObjectSetProperty):
+        * dfg/DFGOperations.cpp:
+        (JSC::DFG::operationPutByValInternal):
+        * interpreter/Interpreter.cpp:
+        (JSC::Interpreter::execute):
+        * jit/JITOperations.cpp:
+        * llint/LLIntSlowPaths.cpp:
+        (JSC::LLInt::LLINT_SLOW_PATH_DECL):
+        * runtime/Arguments.cpp:
+        (JSC::Arguments::putByIndex):
+        * runtime/ArrayPrototype.cpp:
+        (JSC::putProperty):
+        (JSC::arrayProtoFuncPush):
+        * runtime/JSCJSValue.cpp:
+        (JSC::JSValue::putToPrimitiveByIndex):
+        * runtime/JSCell.cpp:
+        (JSC::JSCell::putByIndex):
+        * runtime/JSFunction.cpp:
+        (JSC::JSFunction::put):
+        * runtime/JSGenericTypedArrayViewInlines.h:
+        (JSC::JSGenericTypedArrayView<Adaptor>::putByIndex):
+        * runtime/JSONObject.cpp:
+        (JSC::Walker::walk):
+        * runtime/JSObject.cpp:
+        (JSC::JSObject::putByIndex):
+        (JSC::JSObject::putDirectNonIndexAccessor):
+        (JSC::JSObject::deleteProperty):
+        * runtime/JSObject.h:
+        (JSC::JSObject::putDirect):
+        * runtime/Lookup.h:
+        (JSC::putEntry):
+        (JSC::lookupPut):
+        * runtime/PutPropertySlot.h:
+        (JSC::PutPropertySlot::PutPropertySlot):
+        (JSC::PutPropertySlot::setCustomProperty):
+        (JSC::PutPropertySlot::thisValue):
+        (JSC::PutPropertySlot::isCacheable):
+
+2013-12-23  Benjamin Poulain  <benjamin@webkit.org>
+
+        Add class matching to the Selector Code Generator
+        https://bugs.webkit.org/show_bug.cgi?id=126176
+
+        Reviewed by Antti Koivisto and Oliver Hunt.
+
+        Add test and branch based on BaseIndex addressing for x86_64.
+        Fast loops are needed to compete with clang on tight loops.
+
+        * assembler/MacroAssembler.h:
+        * assembler/MacroAssemblerX86_64.h:
+        (JSC::MacroAssemblerX86_64::branch64):
+        (JSC::MacroAssemblerX86_64::branchPtr):
+        * assembler/X86Assembler.h:
+        (JSC::X86Assembler::cmpq_rm):
+
+2013-12-23  Oliver Hunt  <oliver@apple.com>
+
+        Update custom setter implementations to perform type checks
+        https://bugs.webkit.org/show_bug.cgi?id=126171
+
+        Reviewed by Daniel Bates.
+
+        Modify the setter function signature to take encoded values
+        as we're changing the setter usage everywhere anyway.
+
+        * runtime/Lookup.h:
+        (JSC::putEntry):
+
+2013-12-23  Lucas Forschler  <lforschler@apple.com>
+
+        <rdar://problem/15682948> Update copyright strings
+        
+        Reviewed by Dan Bernstein.
+
+        * Info.plist:
+        * JavaScriptCore.vcxproj/JavaScriptCore.resources/Info.plist:
+
+2013-12-23  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Clean up compiler optimizations flags for libWTF, libJSC
+        https://bugs.webkit.org/show_bug.cgi?id=126157
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * GNUmakefile.am: Remove the -fstrict-aliasing and -O3 compiler flags for libWTF.la. -O3 gets
+        overridden by -O2 that's listed in CXXFLAGS (or -O0 in case of debug builds) and -fstrict-aliasing
+        is enabled when -O2 is used (and shouldn't be enabled in debug builds anyway).
+
+2013-12-22  Martin Robinson  <mrobinson@igalia.com>
+
+        [CMake] Fix typo from r160812
+        https://bugs.webkit.org/show_bug.cgi?id=126145
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * CMakeLists.txt: Fix typo when detecting the type of library.
+
+2013-12-22  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK][CMake] libtool-compatible soversion calculation
+        https://bugs.webkit.org/show_bug.cgi?id=125511
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * CMakeLists.txt: Use the POPULATE_LIBRARY_VERSION macro and the
+        library-specific version information.
+
+2013-12-23  Gustavo Noronha Silva  <gns@gnome.org>
+
+        [GTK] [CMake] Generate pkg-config files
+        https://bugs.webkit.org/show_bug.cgi?id=125685
+
+        Reviewed by Martin Robinson.
+
+        * PlatformGTK.cmake: Added. Generate javascriptcoregtk-3.0.pc.
+
+2013-12-22  Benjamin Poulain  <benjamin@webkit.org>
+
+        Create a skeleton for CSS Selector code generation
+        https://bugs.webkit.org/show_bug.cgi?id=126044
+
+        Reviewed by Antti Koivisto and Gavin Barraclough.
+
+        * assembler/LinkBuffer.h:
+        Add a new owner UID for code compiled for CSS.
+        Export the symbols needed to link code from WebCore.
+
+2013-12-19  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Clean up DFG write barriers
+        https://bugs.webkit.org/show_bug.cgi?id=126047
+
+        Reviewed by Filip Pizlo.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::storeToWriteBarrierBuffer): Use the register allocator to 
+        determine which registers need saving instead of saving every single one of them.
+        (JSC::DFG::SpeculativeJIT::osrWriteBarrier): We don't need to save live register state 
+        because the write barriers during OSR execute when there are no live registers. Also we  
+        don't need to use pushes to pad the stack pointer for pokes on x86; we can just use an add.
+        (JSC::DFG::SpeculativeJIT::writeBarrier):
+        * dfg/DFGSpeculativeJIT.h:
+        * jit/Repatch.cpp:
+        (JSC::emitPutReplaceStub):
+        (JSC::emitPutTransitionStub):
+        * runtime/VM.h: Get rid of writeBarrierRegisterBuffer since it's no longer used.
+
+2013-12-20  Balazs Kilvady  <kilvadyb@homejinni.com>
+
+        [MIPS] Missing MacroAssemblerMIPS::branchTest8(ResultCondition, BaseIndex, TrustedImm32)
+        https://bugs.webkit.org/show_bug.cgi?id=126062
+
+        Reviewed by Mark Hahnenberg.
+
+        * assembler/MacroAssemblerMIPS.h:
+        (JSC::MacroAssemblerMIPS::branchTest8):
+
+2013-12-20  Julien Brianceau  <jbriance@cisco.com>
+
+        [sh4] Add missing implementation in MacroAssembler to fix build.
+        https://bugs.webkit.org/show_bug.cgi?id=126063
+
+        Reviewed by Mark Hahnenberg.
+
+        * assembler/MacroAssemblerSH4.h:
+        (JSC::MacroAssemblerSH4::branchTest8):
+
+2013-12-20  Julien Brianceau  <jbriance@cisco.com>
+
+        [arm] Add missing implementation in MacroAssembler to fix CPU(ARM_TRADITIONAL) build.
+        https://bugs.webkit.org/show_bug.cgi?id=126064
+
+        Reviewed by Mark Hahnenberg.
+
+        * assembler/MacroAssemblerARM.h:
+        (JSC::MacroAssemblerARM::branchTest8):
+
+2013-12-19  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Add InspectorFrontendHost.debuggableType to let the frontend know it's backend is JavaScript or Web
+        https://bugs.webkit.org/show_bug.cgi?id=126016
+
+        Reviewed by Timothy Hatcher.
+
+        * inspector/remote/RemoteInspector.mm:
+        (Inspector::RemoteInspector::listingForDebuggable):
+        * inspector/remote/RemoteInspectorConstants.h:
+        Include a debuggable type identifier in the debuggable listing,
+        so the remote frontend can know if it is debugging a Web Page
+        or JS Context.
+
+2013-12-19  Benjamin Poulain  <benjamin@webkit.org>
+
+        Add an utility class to simplify generating function calls
+        https://bugs.webkit.org/show_bug.cgi?id=125972
+
+        Reviewed by Geoffrey Garen.
+
+        Split branchTest32 in two functions: test32AndSetFlags and branchOnFlags.
+        This is done to allow code where the flags are set, multiple operation that
+        do not modify the flags occur, then the flags are used.
+
+        This is used for function calls to test the return value while discarding the
+        return register.
+
+        * assembler/MacroAssemblerX86Common.h:
+        (JSC::MacroAssemblerX86Common::test32AndSetFlags):
+        (JSC::MacroAssemblerX86Common::branchOnFlags):
+        (JSC::MacroAssemblerX86Common::branchTest32):
+
+2013-12-19  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Put write barriers in the right places in the baseline JIT
+        https://bugs.webkit.org/show_bug.cgi?id=125975
+
+        Reviewed by Filip Pizlo.
+
+        * jit/JIT.cpp:
+        (JSC::JIT::privateCompileSlowCases):
+        * jit/JIT.h:
+        * jit/JITInlines.h:
+        (JSC::JIT::callOperation):
+        (JSC::JIT::emitArrayProfilingSite):
+        * jit/JITOpcodes.cpp:
+        (JSC::JIT::emit_op_enter):
+        (JSC::JIT::emitSlow_op_enter):
+        * jit/JITOpcodes32_64.cpp:
+        (JSC::JIT::emit_op_enter):
+        (JSC::JIT::emitSlow_op_enter):
+        * jit/JITPropertyAccess.cpp:
+        (JSC::JIT::emit_op_put_by_val):
+        (JSC::JIT::emitGenericContiguousPutByVal):
+        (JSC::JIT::emitArrayStoragePutByVal):
+        (JSC::JIT::emit_op_put_by_id):
+        (JSC::JIT::emitPutGlobalProperty):
+        (JSC::JIT::emitPutGlobalVar):
+        (JSC::JIT::emitPutClosureVar):
+        (JSC::JIT::emit_op_init_global_const):
+        (JSC::JIT::checkMarkWord):
+        (JSC::JIT::emitWriteBarrier):
+        (JSC::JIT::privateCompilePutByVal):
+        * jit/JITPropertyAccess32_64.cpp:
+        (JSC::JIT::emitGenericContiguousPutByVal):
+        (JSC::JIT::emitArrayStoragePutByVal):
+        (JSC::JIT::emit_op_put_by_id):
+        (JSC::JIT::emitSlow_op_put_by_id):
+        (JSC::JIT::emitPutGlobalProperty):
+        (JSC::JIT::emitPutGlobalVar):
+        (JSC::JIT::emitPutClosureVar):
+        (JSC::JIT::emit_op_init_global_const):
+        * jit/Repatch.cpp:
+        (JSC::emitPutReplaceStub):
+        (JSC::emitPutTransitionStub):
+        (JSC::repatchPutByID):
+        * runtime/CommonSlowPaths.cpp:
+        (JSC::SLOW_PATH_DECL):
+        * runtime/CommonSlowPaths.h:
+
+2013-12-19  Brent Fulgham  <bfulgham@apple.com>
+
+        Implement ArrayBuffer.isView
+        https://bugs.webkit.org/show_bug.cgi?id=126004
+
+        Reviewed by Filip Pizlo.
+
+        Test coverage in webgl/1.0.2/resources/webgl_test_files/conformance/typedarrays/array-unit-tests.html
+
+        * runtime/JSArrayBufferConstructor.cpp:
+        (JSC::JSArrayBufferConstructor::finishCreation): Add 'isView' to object constructor.
+        (JSC::arrayBufferFuncIsView): New method.
+
+2013-12-19  Mark Lam  <mark.lam@apple.com>
+
+        Fix broken C loop LLINT build.
+        https://bugs.webkit.org/show_bug.cgi?id=126024.
+
+        Reviewed by Oliver Hunt.
+
+        * runtime/VM.h:
+
 2013-12-18  Mark Hahnenberg  <mhahnenberg@apple.com>
 
         DelayedReleaseScope is in the wrong place

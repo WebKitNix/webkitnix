@@ -1,3 +1,65 @@
+2013-12-25  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Clean up generated sources directories
+        https://bugs.webkit.org/show_bug.cgi?id=126216
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * PlatformGTK.cmake: Use the new derived source variables.
+
+2013-12-23  Andy Estes  <aestes@apple.com>
+
+        Roll out r161043. It broke 32-bit Mac builds.
+
+2013-12-23  Andy Estes  <aestes@apple.com>
+
+        [iOS] Upstream PLATFORM(IOS) changes to Source/WebKit/
+        https://bugs.webkit.org/show_bug.cgi?id=125746
+
+        Reviewed by David Kilzer.
+
+        * WebKit.xcodeproj/project.pbxproj: Added WebDatabaseManagerInternal.h
+        and iOS.xcconfig.
+
+2013-12-22  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK][CMake] libtool-compatible soversion calculation
+        https://bugs.webkit.org/show_bug.cgi?id=125511
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * CMakeLists.txt: Use the POPULATE_LIBRARY_VERSION macro and the
+        library-specific version information.
+
+2013-12-23  Gustavo Noronha Silva  <gns@gnome.org>
+
+        [GTK] [CMake] Generate pkg-config files
+        https://bugs.webkit.org/show_bug.cgi?id=125685
+
+        Reviewed by Martin Robinson.
+
+        * PlatformGTK.cmake: generate webkitgtk-3.0.pc.
+
+2013-12-22  Martin Robinson  <mrobinson@igalia.com>
+
+        Small build fix for GTK+ with the CMake build
+
+        * CMakeLists.txt: Remove duplicate include directory and add missing directories
+        necessary for GTK+.
+
+2013-12-20  Simon Fraser  <simon.fraser@apple.com>
+
+        Try to fix the Windows build.
+
+        * WebKit.vcxproj/WebKitExportGenerator/WebKitExports.def.in:
+
+2013-12-20  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Unreviewed build fix after r160908.
+
+        * WebKit.vcxproj/WebKitExportGenerator/WebKitExports.def.in: Add
+        missing export.
+
 2013-12-18  Gustavo Noronha Silva  <gns@gnome.org>
 
         Unreviewed cmake build fix for GTK+.

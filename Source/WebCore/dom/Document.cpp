@@ -328,7 +328,7 @@ static Widget* widgetForElement(Element* focusedElement)
 static bool acceptsEditingFocus(Node* node)
 {
     ASSERT(node);
-    ASSERT(node->rendererIsEditable());
+    ASSERT(node->hasEditableStyle());
 
     Node* root = node->rootEditableElement();
     Frame* frame = node->document().frame();
@@ -559,7 +559,6 @@ Document::~Document()
     ASSERT(!renderView());
     ASSERT(!m_inPageCache);
     ASSERT(m_ranges.isEmpty());
-    ASSERT(!m_styleRecalcTimer.isActive());
     ASSERT(!m_parentTreeScope);
 
 #if ENABLE(DEVICE_ORIENTATION) && PLATFORM(IOS)
@@ -1745,7 +1744,6 @@ void Document::recalcStyle(Style::Change change)
         PostAttachCallbackDisabler disabler(*this);
         WidgetHierarchyUpdatesSuspensionScope suspendWidgetHierarchyUpdates;
 
-        frameView.pauseScheduledEvents();
         frameView.beginDeferredRepaints();
 
         if (m_pendingStyleRecalcShouldForce)
@@ -1772,7 +1770,6 @@ void Document::recalcStyle(Style::Change change)
         if (m_styleResolver)
             m_styleSheetCollection.resetCSSFeatureFlags();
 
-        frameView.resumeScheduledEvents();
         frameView.endDeferredRepaints();
     }
 
@@ -1797,7 +1794,10 @@ void Document::recalcStyle(Style::Change change)
 void Document::updateStyleIfNeeded()
 {
     ASSERT(isMainThread());
-    ASSERT(!view() || (!view()->isInLayout() && !view()->isPainting()));
+    ASSERT(!view() || !view()->isPainting());
+
+    if (!view() || view()->isInLayout())
+        return;
 
     if (m_optimizedStyleSheetUpdateTimer.isActive())
         styleResolverChanged(RecalcStyleIfNeeded);
@@ -1967,8 +1967,6 @@ void Document::createRenderTree()
 
     if (m_documentElement)
         Style::attachRenderTree(*m_documentElement);
-
-    setAttached(true);
 }
 
 static void pageWheelEventHandlerCountChanged(Page& page)
@@ -2061,7 +2059,6 @@ void Document::destroyRenderTree()
         Style::detachRenderTree(*m_documentElement);
 
     clearChildNeedsStyleRecalc();
-    setAttached(false);
 
     unscheduleStyleRecalc();
 
@@ -3084,7 +3081,7 @@ bool Document::canReplaceChild(Node* newChild, Node* oldChild)
     }
     
     // Then, see how many doctypes and elements might be added by the new child.
-    if (newChild->nodeType() == DOCUMENT_FRAGMENT_NODE) {
+    if (newChild->isDocumentFragment()) {
         for (Node* c = newChild->firstChild(); c; c = c->nextSibling()) {
             switch (c->nodeType()) {
             case ATTRIBUTE_NODE:
@@ -3712,6 +3709,11 @@ void Document::enqueueWindowEvent(PassRefPtr<Event> event)
 void Document::enqueueDocumentEvent(PassRefPtr<Event> event)
 {
     event->setTarget(this);
+    m_eventQueue.enqueueEvent(event);
+}
+
+void Document::enqueueOverflowEvent(PassRefPtr<Event> event)
+{
     m_eventQueue.enqueueEvent(event);
 }
 
@@ -5436,6 +5438,9 @@ void Document::webkitDidExitFullScreenForElement(Element*)
     
     if (m_fullScreenRenderer)
         m_fullScreenRenderer->unwrapRenderer();
+
+    if (m_fullScreenElement->parentNode())
+        m_fullScreenElement->parentNode()->setNeedsStyleRecalc(ReconstructRenderTree);
 
     m_fullScreenElement = nullptr;
     scheduleForcedStyleRecalc();

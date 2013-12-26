@@ -693,7 +693,7 @@ RenderBlockFlow& RootInlineBox::blockFlow() const
 
 static bool isEditableLeaf(InlineBox* leaf)
 {
-    return leaf && leaf->renderer().node() && leaf->renderer().node()->rendererIsEditable();
+    return leaf && leaf->renderer().node() && leaf->renderer().node()->hasEditableStyle();
 }
 
 InlineBox* RootInlineBox::closestLeafChildForPoint(const IntPoint& pointInContents, bool onlyEditableLeaves)
@@ -748,6 +748,13 @@ BidiStatus RootInlineBox::lineBreakBidiStatus() const
 
 void RootInlineBox::setLineBreakInfo(RenderObject* obj, unsigned breakPos, const BidiStatus& status)
 {
+    // When setting lineBreakObj, the RenderObject must not be a RenderInline
+    // with no line boxes, otherwise all sorts of invariants are broken later.
+    // This has security implications because if the RenderObject does not
+    // point to at least one line box, then that RenderInline can be deleted
+    // later without resetting the lineBreakObj, leading to use-after-free.
+    ASSERT_WITH_SECURITY_IMPLICATION(!obj || obj->isText() || !(obj->isRenderInline() && obj->isBox() && !toRenderBox(obj)->inlineBoxWrapper()));
+
     m_lineBreakObj = obj;
     m_lineBreakPos = breakPos;
     m_lineBreakBidiStatusEor = status.eor;

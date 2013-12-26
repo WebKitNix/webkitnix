@@ -138,7 +138,7 @@
 #endif
 
 #if USE(AUDIO_SESSION)
-#include "AudioSessionManager.h"
+#include "MediaSessionManager.h"
 #endif
 
 #if ENABLE(MEDIA_CONTROLS_SCRIPT)
@@ -342,7 +342,7 @@ HTMLMediaElement::HTMLMediaElement(const QualifiedName& tagName, Document& docum
     , m_audioSourceNode(0)
 #endif
 #if USE(AUDIO_SESSION)
-    , m_audioSessionManagerToken(AudioSessionManagerToken::create(tagName == videoTag ? AudioSessionManager::Video : AudioSessionManager::Audio))
+    , m_mediaSessionManagerToken(MediaSessionManagerToken::create(*this))
 #endif
     , m_reportedExtraMemoryCost(0)
 #if ENABLE(MEDIA_STREAM)
@@ -734,7 +734,7 @@ void HTMLMediaElement::removedFrom(ContainerNode& insertionPoint)
 
 void HTMLMediaElement::willAttachRenderers()
 {
-    ASSERT(!attached());
+    ASSERT(!renderer());
 
 #if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
     if (shouldUseVideoPluginProxy())
@@ -5106,7 +5106,7 @@ bool HTMLMediaElement::createMediaControls()
     if (isFullscreen())
         mediaControls->enteredFullscreen();
 
-    ensureUserAgentShadowRoot().appendChild(mediaControls, ASSERT_NO_EXCEPTION, AttachLazily);
+    ensureUserAgentShadowRoot().appendChild(mediaControls, ASSERT_NO_EXCEPTION);
 
     if (!controls() || !inDocument())
         mediaControls->hide();
@@ -5702,6 +5702,16 @@ unsigned long long HTMLMediaElement::fileSize() const
     
     return 0;
 }
+
+#if USE(AUDIO_SESSION)
+MediaSessionManager::MediaType HTMLMediaElement::mediaType() const
+{
+    if (hasTagName(HTMLNames::videoTag))
+        return MediaSessionManager::Video;
+
+    return MediaSessionManager::Audio;
+}
+#endif
 
 }
 

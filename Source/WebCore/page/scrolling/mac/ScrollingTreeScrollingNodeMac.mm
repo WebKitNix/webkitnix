@@ -26,7 +26,7 @@
 #import "config.h"
 #import "ScrollingTreeScrollingNodeMac.h"
 
-#if ENABLE(THREADED_SCROLLING)
+#if ENABLE(ASYNC_SCROLLING)
 
 #import "FrameView.h"
 #import "NSScrollerImpDetails.h"
@@ -46,7 +46,7 @@
 
 namespace WebCore {
 
-static void logThreadedScrollingMode(unsigned mainThreadScrollingReasons);
+static void logThreadedScrollingMode(unsigned synchronousScrollingReasons);
 static void logWheelEventHandlerCountChanged(unsigned);
 
 
@@ -92,10 +92,8 @@ void ScrollingTreeScrollingNodeMac::updateBeforeChildren(ScrollingStateNode* sta
         m_horizontalScrollbarPainter = scrollingStateNode->horizontalScrollbarPainter();
     }
 
-    if (scrollingStateNode->hasChangedProperty(ScrollingStateScrollingNode::ShouldUpdateScrollLayerPositionOnMainThread)) {
-        unsigned mainThreadScrollingReasons = this->shouldUpdateScrollLayerPositionOnMainThread();
-
-        if (mainThreadScrollingReasons) {
+    if (scrollingStateNode->hasChangedProperty(ScrollingStateScrollingNode::ReasonsForSynchronousScrolling)) {
+        if (shouldUpdateScrollLayerPositionSynchronously()) {
             // We're transitioning to the slow "update scroll layer position on the main thread" mode.
             // Initialize the probable main thread scroll position with the current scroll layer position.
             if (scrollingStateNode->hasChangedProperty(ScrollingStateScrollingNode::RequestedScrollPosition))
@@ -107,7 +105,7 @@ void ScrollingTreeScrollingNodeMac::updateBeforeChildren(ScrollingStateNode* sta
         }
 
         if (scrollingTree().scrollingPerformanceLoggingEnabled())
-            logThreadedScrollingMode(mainThreadScrollingReasons);
+            logThreadedScrollingMode(synchronousScrollingReasons());
     }
 
     if (scrollingStateNode->hasChangedProperty(ScrollingStateScrollingNode::WheelEventHandlerCount)) {
@@ -277,9 +275,22 @@ void ScrollingTreeScrollingNodeMac::stopSnapRubberbandTimer()
     m_snapRubberbandTimer = nullptr;
 }
 
+void ScrollingTreeScrollingNodeMac::adjustScrollPositionToBoundsIfNecessary()
+{
+    IntPoint currentScrollPosition = absoluteScrollPosition();
+    IntPoint minPosition = minimumScrollPosition();
+    IntPoint maxPosition = maximumScrollPosition();
+
+    int nearestXWithinBounds = std::max<int>(std::min<int>(currentScrollPosition.x(), maxPosition.x()), minPosition.x());
+    int nearestYWithinBounds = std::max<int>(std::min<int>(currentScrollPosition.y(), maxPosition.y()), minPosition.y());
+
+    IntPoint nearestPointWithinBounds(nearestXWithinBounds, nearestYWithinBounds);
+    immediateScrollBy(nearestPointWithinBounds - currentScrollPosition);
+}
+
 IntPoint ScrollingTreeScrollingNodeMac::scrollPosition() const
 {
-    if (shouldUpdateScrollLayerPositionOnMainThread())
+    if (shouldUpdateScrollLayerPositionSynchronously())
         return m_probableMainThreadScrollPosition;
 
     CGPoint scrollLayerPosition = m_scrollLayer.get().position;
@@ -302,7 +313,7 @@ void ScrollingTreeScrollingNodeMac::setScrollPositionWithoutContentEdgeConstrain
 {
     updateMainFramePinState(scrollPosition);
 
-    if (shouldUpdateScrollLayerPositionOnMainThread()) {
+    if (shouldUpdateScrollLayerPositionSynchronously()) {
         m_probableMainThreadScrollPosition = scrollPosition;
         scrollingTree().updateMainFrameScrollPosition(scrollPosition, SetScrollingLayerPosition);
         return;
@@ -314,7 +325,7 @@ void ScrollingTreeScrollingNodeMac::setScrollPositionWithoutContentEdgeConstrain
 
 void ScrollingTreeScrollingNodeMac::setScrollLayerPosition(const IntPoint& position)
 {
-    ASSERT(!shouldUpdateScrollLayerPositionOnMainThread());
+    ASSERT(!shouldUpdateScrollLayerPositionSynchronously());
     m_scrollLayer.get().position = CGPointMake(-position.x() + scrollOrigin().x(), -position.y() + scrollOrigin().y());
 
     ScrollBehaviorForFixedElements behaviorForFixed = scrollBehaviorForFixedElements();
@@ -447,20 +458,20 @@ void ScrollingTreeScrollingNodeMac::logExposedUnfilledArea()
     m_lastScrollHadUnfilledPixels = unfilledArea;
 }
 
-static void logThreadedScrollingMode(unsigned mainThreadScrollingReasons)
+static void logThreadedScrollingMode(unsigned synchronousScrollingReasons)
 {
-    if (mainThreadScrollingReasons) {
+    if (synchronousScrollingReasons) {
         StringBuilder reasonsDescription;
 
-        if (mainThreadScrollingReasons & ScrollingCoordinator::ForcedOnMainThread)
+        if (synchronousScrollingReasons & ScrollingCoordinator::ForcedOnMainThread)
             reasonsDescription.append("forced,");
-        if (mainThreadScrollingReasons & ScrollingCoordinator::HasSlowRepaintObjects)
+        if (synchronousScrollingReasons & ScrollingCoordinator::HasSlowRepaintObjects)
             reasonsDescription.append("slow-repaint objects,");
-        if (mainThreadScrollingReasons & ScrollingCoordinator::HasViewportConstrainedObjectsWithoutSupportingFixedLayers)
+        if (synchronousScrollingReasons & ScrollingCoordinator::HasViewportConstrainedObjectsWithoutSupportingFixedLayers)
             reasonsDescription.append("viewport-constrained objects,");
-        if (mainThreadScrollingReasons & ScrollingCoordinator::HasNonLayerViewportConstrainedObjects)
+        if (synchronousScrollingReasons & ScrollingCoordinator::HasNonLayerViewportConstrainedObjects)
             reasonsDescription.append("non-layer viewport-constrained objects,");
-        if (mainThreadScrollingReasons & ScrollingCoordinator::IsImageDocument)
+        if (synchronousScrollingReasons & ScrollingCoordinator::IsImageDocument)
             reasonsDescription.append("image document,");
 
         // Strip the trailing comma.
@@ -478,4 +489,4 @@ void logWheelEventHandlerCountChanged(unsigned count)
 
 } // namespace WebCore
 
-#endif // ENABLE(THREADED_SCROLLING)
+#endif // ENABLE(ASYNC_SCROLLING)

@@ -35,7 +35,7 @@ namespace WebCore {
 class FloatPoint;
 class RenderElement;
 
-typedef void (*NodeCallback)(Node*, unsigned);
+typedef void (*NodeCallback)(Node&, unsigned);
 
 namespace Private { 
     template<class GenericNode, class GenericNodeContainer>
@@ -90,10 +90,10 @@ public:
     unsigned childNodeCount() const;
     Node* childNode(unsigned index) const;
 
-    bool insertBefore(PassRefPtr<Node> newChild, Node* refChild, ExceptionCode& = ASSERT_NO_EXCEPTION, AttachBehavior = AttachNow);
-    bool replaceChild(PassRefPtr<Node> newChild, Node* oldChild, ExceptionCode& = ASSERT_NO_EXCEPTION, AttachBehavior = AttachNow);
+    bool insertBefore(PassRefPtr<Node> newChild, Node* refChild, ExceptionCode& = ASSERT_NO_EXCEPTION);
+    bool replaceChild(PassRefPtr<Node> newChild, Node* oldChild, ExceptionCode& = ASSERT_NO_EXCEPTION);
     bool removeChild(Node* child, ExceptionCode& = ASSERT_NO_EXCEPTION);
-    bool appendChild(PassRefPtr<Node> newChild, ExceptionCode& = ASSERT_NO_EXCEPTION, AttachBehavior = AttachNow);
+    bool appendChild(PassRefPtr<Node> newChild, ExceptionCode& = ASSERT_NO_EXCEPTION);
 
     // These methods are only used during parsing.
     // They don't send DOM mutation events or handle reparenting.
@@ -108,7 +108,6 @@ public:
     void cloneChildNodes(ContainerNode* clone);
 
     virtual LayoutRect boundingBox() const OVERRIDE;
-    virtual void scheduleSetNeedsStyleRecalc(StyleChangeType = FullStyleChange) OVERRIDE FINAL;
 
     enum ChildChangeType { ElementInserted, ElementRemoved, TextInserted, TextRemoved, TextChanged, AllChildrenRemoved, NonContentsChildChanged };
     enum ChildChangeSource { ChildChangeSourceParser, ChildChangeSourceAPI };
@@ -141,7 +140,7 @@ public:
 protected:
     explicit ContainerNode(Document*, ConstructionType = CreateContainer);
 
-    static void queuePostAttachCallback(NodeCallback, Node*, unsigned = 0);
+    static void queuePostAttachCallback(NodeCallback, Node&, unsigned = 0);
     static bool postAttachCallbacksAreSuspended();
 
     template<class GenericNode, class GenericNodeContainer>
@@ -159,8 +158,8 @@ private:
     void insertBeforeCommon(Node& nextChild, Node& oldChild);
 
     static void dispatchPostAttachCallbacks();
-    void suspendPostAttachCallbacks();
-    void resumePostAttachCallbacks();
+    static void suspendPostAttachCallbacks(Document&);
+    static void resumePostAttachCallbacks(Document&);
 
     bool getUpperLeftCorner(FloatPoint&) const;
     bool getLowerRightCorner(FloatPoint&) const;
@@ -168,7 +167,7 @@ private:
     void notifyChildInserted(Node& child, ChildChangeSource);
     void notifyChildRemoved(Node& child, Node* previousSibling, Node* nextSibling, ChildChangeSource);
 
-    void updateTreeAfterInsertion(Node& child, AttachBehavior);
+    void updateTreeAfterInsertion(Node& child);
 
     bool isContainerNode() const WTF_DELETED_FUNCTION;
 
@@ -314,23 +313,6 @@ private:
     unsigned m_currentIndex;
     OwnPtr<Vector<RefPtr<Node>>> m_childNodes; // Lazily instantiated.
     ChildNodesLazySnapshot* m_nextSnapshot;
-};
-
-class PostAttachCallbackDisabler {
-public:
-    PostAttachCallbackDisabler(ContainerNode& node)
-        : m_node(node)
-    {
-        m_node.suspendPostAttachCallbacks();
-    }
-
-    ~PostAttachCallbackDisabler()
-    {
-        m_node.resumePostAttachCallbacks();
-    }
-
-private:
-    ContainerNode& m_node;
 };
 
 } // namespace WebCore

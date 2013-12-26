@@ -31,19 +31,26 @@
 #ifndef InjectedScriptModule_h
 #define InjectedScriptModule_h
 
+#include "InjectedScript.h"
 #include "InjectedScriptBase.h"
 #include "ScriptState.h"
 #include <wtf/text/WTFString.h>
+
+#if ENABLE(INSPECTOR)
+
+namespace JSC {
+class JSValue;
+}
 
 namespace WebCore {
 
 class InjectedScriptManager;
 
-#if ENABLE(INSPECTOR)
-
 class InjectedScriptModule : public InjectedScriptBase {
 public:
     virtual String source() const = 0;
+    virtual JSC::JSValue host(InjectedScriptManager*, JSC::ExecState*) const = 0;
+    virtual bool returnsObject() const = 0;
 
 protected:
     // Do not expose constructor in the child classes as well. Instead provide
@@ -51,10 +58,11 @@ protected:
     // and call its ensureInjected() method immediately.
     InjectedScriptModule(const String& name);
     void ensureInjected(InjectedScriptManager*, JSC::ExecState*);
+    void ensureInjected(InjectedScriptManager*, InjectedScript);
 };
 
-#endif
-
 } // namespace WebCore
+
+#endif // ENABLE(INSPECTOR)
 
 #endif

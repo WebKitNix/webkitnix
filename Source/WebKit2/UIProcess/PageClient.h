@@ -111,8 +111,10 @@ public:
     // Return whether the view is in a window.
     virtual bool isViewInWindow() = 0;
 
-    // Return the layer hosting mode for the view.
-    virtual LayerHostingMode viewLayerHostingMode() { return LayerHostingModeDefault; }
+#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
+    // Return whether the layer is window server hosted.
+    virtual bool isLayerWindowServerHosted() = 0;
+#endif
 
     virtual void processDidCrash() = 0;
     virtual void didRelaunchProcess() = 0;
@@ -123,7 +125,6 @@ public:
     virtual void toolTipChanged(const String&, const String&) = 0;
 
 #if PLATFORM(NIX)
-    virtual void didChangePageScaleFactor(double scaleFactor) = 0;
     virtual void notifyLoadIsBackForward() = 0;
     virtual void didStartedMainFrameLayout() = 0;
 #endif

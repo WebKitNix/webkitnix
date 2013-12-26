@@ -40,9 +40,8 @@ public:
 private:
     // DrawingAreaProxy
     virtual void deviceScaleFactorDidChange() OVERRIDE;
-    virtual void layerHostingModeDidChange() OVERRIDE;
     virtual void sizeDidChange() OVERRIDE;
-    virtual void waitForPossibleGeometryUpdate(double timeout = didUpdateBackingStoreStateTimeout) OVERRIDE;
+    virtual void waitForPossibleGeometryUpdate(std::chrono::milliseconds timeout = didUpdateBackingStoreStateTimeout()) OVERRIDE;
     virtual void colorSpaceDidChange() OVERRIDE;
     virtual void minimumLayoutSizeDidChange() OVERRIDE;
 

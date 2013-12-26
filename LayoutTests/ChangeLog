@@ -1,3 +1,570 @@
+2013-12-25  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r161033 and r161074.
+        http://trac.webkit.org/changeset/161033
+        http://trac.webkit.org/changeset/161074
+        https://bugs.webkit.org/show_bug.cgi?id=126240
+
+        Oliver says that a rollout would be better (Requested by ap on
+        #webkit).
+
+        * TestExpectations:
+
+2013-12-25  Alexey Proskuryakov  <ap@apple.com>
+
+        [Mac] [WK2] http/tests/security/cross-frame-access-put.html fails
+        https://bugs.webkit.org/show_bug.cgi?id=116649
+
+        * platform/mac-wk2/TestExpectations: Removing an expectation for this old bug that
+        was no longer occurring. Failures on this test are now tracked via bug 126238.
+
+2013-12-25  Alexey Proskuryakov  <ap@apple.com>
+
+        REGRESSION (r161033): http/tests/security/cross-frame-access-put.html fails
+        https://bugs.webkit.org/show_bug.cgi?id=126238
+
+        * TestExpectations: Marking the test as failing for now.
+
+2013-12-25  Alexey Proskuryakov  <ap@apple.com>
+
+        REGRESSION (Lazy tree creation): css3/calc/transitions-dependent.html is frequently failing
+        https://bugs.webkit.org/show_bug.cgi?id=126142
+
+        * TestExpectations: Marked it as flaky.
+
+2013-12-25  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG PhantomArguments shouldn't rely on a dead Phi graph
+        https://bugs.webkit.org/show_bug.cgi?id=126218
+
+        Reviewed by Oliver Hunt.
+        
+        Added a test for an obvious case that I don't think we had coverage for in
+        microbenchmarks. Of course, this case was already covered by more complex tests.
+
+        * js/regress/inline-arguments-aliased-access-expected.txt: Added.
+        * js/regress/inline-arguments-aliased-access.html: Added.
+        * js/regress/script-tests/inline-arguments-aliased-access.js: Added.
+        (foo):
+        (bar):
+
+2013-12-25  Dirk Schulze  <krit@webkit.org>
+
+        Support <box> values parsing on 'clip-path' property
+        https://bugs.webkit.org/show_bug.cgi?id=126147
+
+        Reviewed by Ryosuke Niwa.
+
+        Add test to check different combinations of the reference boxes
+        content-box, padding-box, border-box, margin-box and bounding-box
+        with other clip-path values.
+
+        * fast/masking/parsing-clip-path-shape.html:
+
+2013-12-24  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Remove the test expectations added after r161051 now that the changeset has been rolled out.
+
+        The assertion failure is tracked by https://webkit.org/b/126219.
+
+        * TestExpectations:
+
+2013-12-24  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Unreviewed, rolling out r161051.
+        http://trac.webkit.org/changeset/161051
+        https://bugs.webkit.org/show_bug.cgi?id=45994
+
+        Caused two DFG tests to hit assertions due to a separate bug
+
+        * http/tests/xmlhttprequest/exceptions-expected.txt:
+        * http/tests/xmlhttprequest/exceptions.html:
+        * http/tests/xmlhttprequest/status-after-abort-expected.txt:
+        * http/tests/xmlhttprequest/zero-length-response-expected.txt:
+        * js/dom/dfg-custom-getter-throw-expected.txt:
+        * js/dom/script-tests/dfg-custom-getter-throw-inlined.js:
+        (foo):
+        (bar):
+        * js/dom/script-tests/dfg-custom-getter-throw.js:
+        (foo):
+        (bar):
+
+2013-12-24  Radu Stavila  <stavila@adobe.com>
+
+        Rename fast/regions/repaint/increasing-region-content-height.html to something more clear
+        https://bugs.webkit.org/show_bug.cgi?id=126209
+
+        Reviewed by Mihnea Ovidenie.
+
+        Renamed test file name to better reflect the scenario it tests.
+
+        * fast/regions/repaint/repaint-element-inside-relative-region-expected.txt: Renamed from LayoutTests/fast/regions/repaint/increasing-region-content-height-expected.txt.
+        * fast/regions/repaint/repaint-element-inside-relative-region.html: Renamed from LayoutTests/fast/regions/repaint/increasing-region-content-height.html.
+
+2013-12-24  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Suppress assertions in js/dom/dfg-custom-getter-throw.html and js/dom/dfg-custom-getter-throw-inlined.html for now.
+
+        * TestExpectations:
+
+2013-12-24  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Crash while repainting an invalid region
+        https://bugs.webkit.org/show_bug.cgi?id=126152
+
+        Reviewed by Daniel Bates.
+
+        * fast/regions/repaint/invalid-region-repaint-crash-expected.txt: Added.
+        * fast/regions/repaint/invalid-region-repaint-crash.html: Added.
+
+2013-12-24  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Add a test for reattaching collapsed whitespace when siblings change style
+        https://bugs.webkit.org/show_bug.cgi?id=126053
+
+        Reviewed by Dan Bernstein.
+
+        Merge the test from https://chromium.googlesource.com/chromium/blink/+/dd5636728643ff958aebeaf064d38754b0d5904b
+        so that we may not introduce the same regression in WebKit.
+
+        * fast/css/collapsed-whitespace-reattach-in-style-recalc-expected.txt: Added.
+        * fast/css/collapsed-whitespace-reattach-in-style-recalc.html: Added.
+
+2013-12-23  Ryosuke Niwa  <rniwa@webkit.org>
+
+        XMLHttpRequest: status and statusText throw DOM Exception 11 when the state is UNSENT or OPENED.
+        https://bugs.webkit.org/show_bug.cgi?id=45994
+
+        Reviewed by Alexey Proskuryakov.
+
+        Rebaselined and fixed tests as done in https://chromium.googlesource.com/chromium/blink/+/23c90460de16e04c5aba7ed942fba76cb79fdb9b.
+
+        * http/tests/xmlhttprequest/exceptions-expected.txt:
+        * http/tests/xmlhttprequest/exceptions.html:
+        * http/tests/xmlhttprequest/status-after-abort-expected.txt:
+        * http/tests/xmlhttprequest/zero-length-response-expected.txt:
+
+        * js/dom/dfg-custom-getter-throw-expected.txt:
+        * js/dom/script-tests/dfg-custom-getter-throw-inlined.js: Fixed the test.
+        (foo): Use responseText instead of status so that it throws when responseType is "arraybuffer".
+        (bar): Set responseType to "arraybuffer" to cause an exception to be thrown.
+        * js/dom/script-tests/dfg-custom-getter-throw.js: Ditto.
+        (foo):
+        (bar):
+
+2013-12-23  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Fix fast/regions/assert-flow-thread-compositing.html test description
+        https://bugs.webkit.org/show_bug.cgi?id=126203
+
+        Reviewed by Dirk Schulze.
+
+        Correct description of successful behaviour for fast/regions/assert-flow-thread-compositing.html.
+
+        * fast/regions/assert-flow-thread-compositing-expected.txt:
+        * fast/regions/assert-flow-thread-compositing.html:
+
+2013-12-23  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Add a test for submitting a form targeted at an iframe
+        https://bugs.webkit.org/show_bug.cgi?id=126175
+
+        Reviewed by Alexey Proskuryakov.
+
+        Merge the test from https://chromium.googlesource.com/chromium/blink/+/9220cbdaae8413f3c8316c022f98579af120bf10
+        so that we may not introduce the same regression in WebKit.
+
+        * http/tests/misc/form-target-iframe-inline-expected.txt: Added.
+        * http/tests/misc/form-target-iframe-inline.html: Added.
+
+2013-12-23  Alexey Proskuryakov  <ap@apple.com>
+
+        svg/animations/getCurrentTime-pause-unpause.html is flaky
+        https://bugs.webkit.org/show_bug.cgi?id=124933
+
+        * platform/mac/TestExpectations: Marking as such.
+
+2013-12-23  Ryosuke Niwa  <rniwa@webkit.org>
+
+        REGRESSION (r160847): fast/dynamic/paused-event-dispatch.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=126163
+
+        Unreviewed. Try increasing the timeouts after r160896.
+
+        * fast/dynamic/paused-event-dispatch.html:
+
+2013-12-23  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r160945.
+        http://trac.webkit.org/changeset/160945
+        https://bugs.webkit.org/show_bug.cgi?id=126164
+
+        Seems to have broken multiple canvas tests (Requested by ap on
+        #webkit).
+
+        * fast/canvas/canvas-backing-store-reuse-expected.txt: Removed.
+        * fast/canvas/canvas-backing-store-reuse.html: Removed.
+
+2013-12-23  Alexey Proskuryakov  <ap@apple.com>
+
+        Layout tests editing/selection/5057506.html and editing/selection/5057506-2.html
+        frequently time out on Mac WK2
+        https://bugs.webkit.org/show_bug.cgi?id=124437
+
+        * platform/mac-wk2/TestExpectations: Marked the latter test accordingly. It used
+        to me marked as image failure, but I don't see this happen recently on the dashboard.
+
+2013-12-23  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Rebaseline tests after 160908.
+
+        * platform/efl/TestExpectations:
+        * platform/efl/editing/inserting/break-blockquote-after-delete-expected.png: Added.
+        * platform/efl/editing/inserting/break-blockquote-after-delete-expected.txt: Added.
+        * platform/efl/fast/css-generated-content/table-row-group-to-inline-expected.txt:
+        * platform/efl/fast/dynamic/011-expected.txt:
+        * platform/efl/fast/forms/formmove3-expected.txt:
+        * platform/efl/fast/forms/preserveFormDuringResidualStyle-expected.txt:
+        * platform/efl/fast/invalid/001-expected.txt:
+        * platform/efl/fast/invalid/003-expected.txt:
+        * platform/efl/fast/invalid/004-expected.txt:
+        * platform/efl/fast/invalid/007-expected.txt:
+        * platform/efl/fast/invalid/019-expected.txt:
+        * platform/efl/fast/multicol/span/span-as-immediate-child-generated-content-expected.txt:
+        * platform/efl/fast/multicol/span/span-as-immediate-columns-child-dynamic-expected.txt:
+        * platform/efl/fast/multicol/span/span-as-nested-columns-child-dynamic-expected.txt:
+        * platform/efl/fast/ruby/ruby-base-merge-block-children-crash-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug113235-1-expected.txt:
+        * platform/efl/tables/mozilla/bugs/bug647-expected.txt:
+        * platform/efl/tables/mozilla/other/wa_table_tr_align-expected.txt:
+
+2013-12-22  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Crash when trying to select content from invalid region
+        https://bugs.webkit.org/show_bug.cgi?id=126113
+
+        Reviewed by Antti Koivisto.
+
+        * fast/regions/selection/invalid-region-selection-crash-expected.txt: Added.
+        * fast/regions/selection/invalid-region-selection-crash.html: Added.
+
+2013-12-22  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Clean-up selection tests a bit
+        https://bugs.webkit.org/show_bug.cgi?id=126135
+
+        Reviewed by Dirk Schulze.
+
+        Move function clearSelection in helper.js. Combine checkResult() from position-for-point* and position-for-point-1*
+        into a single function, checkSelectionResult() and  move it into helper.js too. 
+
+        * fast/regions/resources/helper.js:
+        * fast/regions/selection/position-for-point-1-vert-lr.html:
+        * fast/regions/selection/position-for-point-1-vert-rl.html:
+        * fast/regions/selection/position-for-point-1.html:
+        * fast/regions/selection/position-for-point-vert-lr.html:
+        * fast/regions/selection/position-for-point-vert-rl.html:
+        * fast/regions/selection/position-for-point.html:
+        * fast/regions/selection/selecting-text-through-different-region-flows.html:
+
+2013-12-09  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Allow ImageBuffer to re-use IOSurfaces
+        https://bugs.webkit.org/show_bug.cgi?id=125477
+
+        Reviewed by Geoff Garen.
+
+        Now that we're re-using the backing store of canvases, this
+        test makes sure that if we draw to a canvas, then destroy it,
+        then create a new canvas (which should share the same backing
+        store) that it doesn't have the stale data in it
+
+        * fast/canvas/canvas-backing-store-reuse-expected.txt: Added.
+        * fast/canvas/canvas-backing-store-reuse.html: Added.
+
+2013-12-19  Antti Koivisto  <antti@apple.com>
+
+        Create render tree lazily
+        https://bugs.webkit.org/show_bug.cgi?id=120685
+
+        Reviewed by Andreas Kling.
+        
+        Most of these are non-visible render tree dump changes (they become simpler).
+
+        * editing/selection/click-on-head-margin-expected.txt:
+        * fast/css-generated-content/before-content-continuation-chain-expected.txt:
+        * fast/css/transition-color-unspecified.html:
+        * fast/dom/adopt-node-crash-2-expected.txt:
+        * fast/dom/modify-node-and-while-in-the-callback-too-crash-expected.txt:
+        * fast/forms/radio/radio_checked_dynamic-expected.txt:
+        * fast/frames/lots-of-iframes-expected.txt:
+        * fast/frames/sandboxed-iframe-autofocus-denied-expected.txt:
+        * fast/table/table-row-style-not-updated-with-after-content-expected.txt:
+        * fullscreen/full-screen-render-inline-expected.txt:
+        * fullscreen/parent-flow-inline-with-block-child-expected.txt:
+        * platform/mac/editing/inserting/break-blockquote-after-delete-expected.txt:
+        * platform/mac/fast/css-generated-content/table-row-group-to-inline-expected.txt:
+        * platform/mac/fast/dynamic/011-expected.txt:
+        * platform/mac/fast/forms/formmove3-expected.txt:
+        * platform/mac/fast/forms/preserveFormDuringResidualStyle-expected.txt:
+        * platform/mac/fast/invalid/001-expected.txt:
+        * platform/mac/fast/invalid/003-expected.txt:
+        * platform/mac/fast/invalid/004-expected.txt:
+        * platform/mac/fast/invalid/007-expected.txt:
+        * platform/mac/fast/invalid/019-expected.txt:
+        * platform/mac/fast/multicol/span/span-as-immediate-child-generated-content-expected.txt:
+        * platform/mac/fast/multicol/span/span-as-immediate-columns-child-dynamic-expected.txt:
+        * platform/mac/fast/multicol/span/span-as-nested-columns-child-dynamic-expected.txt:
+        * platform/mac/fast/ruby/ruby-base-merge-block-children-crash-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug113235-1-expected.txt:
+        * platform/mac/tables/mozilla/bugs/bug647-expected.txt:
+        * platform/mac/tables/mozilla/other/wa_table_tr_align-expected.txt:
+        * plugins/plugin-remove-readystatechange-expected.txt:
+        * svg/custom/system-language-crash-expected.txt:
+        * transitions/equivalent-background-image-no-transition.html:
+        * transitions/repeated-firing-background-color.html:
+        * transitions/transition-duration-cleared-in-transitionend-crash.html:
+
+            Adopt a few transition test cases to new behavior.
+
+2013-12-20  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] [WK2] platform/gtk/accessibility/roles-exposed.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=125854
+
+        Reviewed by Chris Fleizach.
+
+        Updated tests and expectations to keep them passing after the
+        change done in DRT, without changing their actual purpose.
+
+        * platform/gtk/accessibility/roles-exposed.html: Make sure we
+        print "AXRole: (no element)" when accessibilityElementByID() does
+        not return a valid object, not to confuse it with cases where the
+        returned string for the role is an empty string.
+        * platform/gtk/accessibility/roles-exposed-expected.txt: Update
+        test expectations to reflect the "AXRole: (no element)" string
+        that is now being exposed. Also, replace the (wrongly added) PASS
+        expectations with FAIL for rowgroups, which are currently not
+        being exposed for ATK either.
+
+        * accessibility/deleting-iframe-destroys-axcache.html: Just
+        consider the first and third sons of the accessibility object for
+        the body (instead of the grandsons), so the test can run both in
+        Mac, where sons and grandsons are exposed, and ATK, where only
+        sons are exposed (no StaticText objects exposed there).
+
+        * accessibility/non-data-table-cell-title-ui-element.html: Use
+        accessibilityElementById() to get the accessibility object for the
+        "skip" table header instead of navigating with childAtIndex(),
+        since the hierarchy is not the same for Mac and ATK based ports.
+
+        * platform/mac/accessibility/search-predicate.html: Do not rely on
+        shouldBe() together with the string "AXRole: " when asking for the
+        role of objects that should no longer be in the accessibility
+        tree, and use shouldBeUndefined() instead.
+        * platform/mac/accessibility/search-when-element-starts-in-table.html: Ditto.
+
+        * platform/mac/accessibility/search-predicate-expected.txt: Update
+        expectations according to the usage of shouldBeUndefined().
+        * platform/mac/accessibility/search-when-element-starts-in-table-expected.txt: Ditto.
+
+        * platform/mac/TestExpectations: Add loading-iframe-updates-axtree.html
+        here, since it seems not to be returning the expected values for
+        either the scrollarea and the webarea in the iframe (see bug 126066).
+
+        * platform/mac-wk2/TestExpectations: Add search-when-element-starts-in-table.html
+        here, since it does not return an undefined object in WebKit2 when
+        the search query should return no results (see bug 125996).
+
+2013-12-20  Radu Stavila  <stavila@adobe.com>
+
+        [CSS Regions] When changing flow-from/flow-into on :hover, elements overflowing the region are not correctly repainted
+        https://bugs.webkit.org/show_bug.cgi?id=117259
+
+        Reviewed by Antti Koivisto.
+
+        Added new tests and rebased existing test.
+
+        * fast/regions/hover-single-flow-from-none-overflow-expected.html: Added.
+        * fast/regions/hover-single-flow-from-none-overflow.html: Added.
+        * fast/regions/hover-single-flow-from-none-overflow-top-expected.html: Added.
+        * fast/regions/hover-single-flow-from-none-overflow-top.html: Added.
+        * fast/regions/repaint/repaint-regions-overflow-expected.txt: Rebased.
+
+2013-12-20  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        Programmatically-inserted children lack accessibility events
+        https://bugs.webkit.org/show_bug.cgi?id=100275
+
+        Reviewed by Chris Fleizach.
+
+        Add new test to chack that children-changed signals are properly
+        emitted when adding/removing elements in the accessibility hierarchy.
+
+        * accessibility/children-changed-sends-notification-expected.txt: Added.
+        * accessibility/children-changed-sends-notification.html: Added.
+
+        Update test to filter out unrelated non-loading events.
+        * accessibility/loading-iframe-sends-notification.html: Updated.
+
+        Skip the test on the Mac as it does not expose these kind of
+        notifications when children are being added or removed.
+        * platform/mac/TestExpectations: Skip newly added test.
+
+2013-12-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        REGRESSION(r160847): fast/events/overflowchanged-inside-selection-collapse-crash.html fails
+        https://bugs.webkit.org/show_bug.cgi?id=126037
+
+        Reviewed by Anders Carlsson.
+
+        Since overflowchanged event is now asynchronous, make the call to testRunner.notifyDone() also asynchronous.
+
+        * TestExpectations:
+        * fast/dynamic/paused-event-dispatch.html:
+
+2013-12-19  Oliver Hunt  <oliver@apple.com>
+
+        DOM bindings should use thisValue for attributes
+        https://bugs.webkit.org/show_bug.cgi?id=126011
+
+        Reviewed by Antti Koivisto.
+
+        * js/dom/dom-attributes-on-mismatch-type.html: Added.
+        * js/dom/dom-attributes-on-mismatch-type-expected.txt: Added.
+
+2013-12-19  Brent Fulgham  <bfulgham@apple.com>
+
+        Implement ArrayBuffer.isView
+        https://bugs.webkit.org/show_bug.cgi?id=126004
+
+        Reviewed by Filip Pizlo.
+
+        * webgl/1.0.2/resources/webgl_test_files/conformance/typedarrays/array-unit-tests.html:
+        Correct test for 'isView' to actually check for 'isView' function.
+
+2013-12-19  Alexey Proskuryakov  <ap@apple.com>
+
+        Layout Test plugins/destroy-during-npp-new.html is flaky
+        https://bugs.webkit.org/show_bug.cgi?id=126027
+
+        * plugins/destroy-during-npp-new.html: Streamlined the test a little bit to see
+        what changes, if anything. There should be no effect on what is tested.
+
+2013-12-19  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Test that text-decoration-skip: ink is the same as regular underlines if no descenders
+        https://bugs.webkit.org/show_bug.cgi?id=125985
+
+        Reviewed by Simon Fraser.
+
+        If there are no descenders in the underlined text, using the text-decoration-skip: ink
+        CSS property should behave as if it wasn't specified (and the underline is a normal one)
+
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-no-descenders-expected.html: Added.
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-no-descenders.html: Added.
+
+2013-12-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Add a failing test expectation to fast/dynamic/paused-event-dispatch.html
+        while I investigate.
+
+        * TestExpectations:
+
+2013-12-19  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r160842.
+        http://trac.webkit.org/changeset/160842
+        https://bugs.webkit.org/show_bug.cgi?id=126003
+
+        broke accessibility/loading-iframe-updates-axtree.html
+        (Requested by ap on #webkit).
+
+        * accessibility/deleting-iframe-destroys-axcache.html:
+        * accessibility/loading-iframe-updates-axtree-expected.txt:
+        * accessibility/loading-iframe-updates-axtree.html:
+        * accessibility/non-data-table-cell-title-ui-element.html:
+        * platform/gtk/accessibility/roles-exposed-expected.txt:
+        * platform/gtk/accessibility/roles-exposed.html:
+        * platform/mac-wk2/TestExpectations:
+        * platform/mac/accessibility/search-predicate-expected.txt:
+        * platform/mac/accessibility/search-predicate.html:
+        * platform/mac/accessibility/search-when-element-starts-in-table-expected.txt:
+        * platform/mac/accessibility/search-when-element-starts-in-table.html:
+
+2013-12-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        overflowchanged event could cause a crash
+        https://bugs.webkit.org/show_bug.cgi?id=125978
+
+        Reviewed by Tim Horton.
+
+        Add a regression test.
+
+        * fast/events/overflowchanged-inside-selection-collapse-crash-expected.txt: Added.
+        * fast/events/overflowchanged-inside-selection-collapse-crash.html: Added.
+
+2013-12-19  Mario Sanchez Prada  <mario.prada@samsung.com>
+
+        [ATK] [WK2] platform/gtk/accessibility/roles-exposed.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=125854
+
+        Reviewed by Chris Fleizach.
+
+        Updated tests and expectations to keep them passing after the
+        change done in DRT, without changing their actual purpose.
+
+        * platform/gtk/accessibility/roles-exposed.html: Make sure we
+        print "AXRole: (no element)" when accessibilityElementByID() does
+        not return a valid object, not to confuse it with cases where the
+        returned string for the role is an empty string.
+        * platform/gtk/accessibility/roles-exposed-expected.txt: Update
+        test expectations to reflect the "AXRole: (no element)" string
+        that is now being exposed. Also, replace the (wrongly added) PASS
+        expectations with FAIL for rowgroups, which are currently not
+        being exposed for ATK either.
+
+        * accessibility/deleting-iframe-destroys-axcache.html: Just
+        consider the first and third sons of the accessibility object for
+        the body (instead of the grandsons), so the test can run both in
+        Mac, where sons and grandsons are exposed, and ATK, where only
+        sons are exposed (no StaticText objects exposed there).
+
+        * accessibility/non-data-table-cell-title-ui-element.html: Use
+        accessibilityElementById() to get the accessibility object for the
+        "skip" table header instead of navigating with childAtIndex(),
+        since the hierarchy is not the same for Mac and ATK based ports.
+
+        * accessibility/loading-iframe-updates-axtree.html: Use the new
+        web area inside the iframe to compare against the old one, instead
+        of doing it the other way around, to avoid calling isEqual for an
+        undefined value (the old web area).
+        * accessibility/loading-iframe-updates-axtree-expected.txt:
+        Removed line comparing the old and new web areas inside the iframe.
+
+        * platform/mac/accessibility/search-predicate.html: Do not rely on
+        shouldBe() together with the string "AXRole: " when asking for the
+        role of objects that should no longer be in the accessibility
+        tree, and use shouldBeUndefined() instead.
+        * platform/mac/accessibility/search-when-element-starts-in-table.html: Ditto.
+
+        * platform/mac/accessibility/search-predicate-expected.txt: Update
+        expectations according to the usage of shouldBeUndefined().
+        * platform/mac/accessibility/search-when-element-starts-in-table-expected.txt: Ditto.
+
+        * platform/mac-wk2/TestExpectations: Add search-when-element-starts-in-table.html
+        here, since it does not return an undefined object in WebKit2 when
+        the search query should return no results (see bug 125996).
+
+2013-12-19  Alexey Proskuryakov  <ap@apple.com>
+
+        platform/mac/editing/attributed-string tests all flakily assert
+        https://bugs.webkit.org/show_bug.cgi?id=123029
+
+        * platform/mac/TestExpectations: Marked as flakily asserting.
+
 2013-12-18  Ryosuke Niwa  <rniwa@webkit.org>
 
         Rebaseline the test I added in r160819.

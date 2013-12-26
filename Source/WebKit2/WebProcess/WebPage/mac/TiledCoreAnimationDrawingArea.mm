@@ -52,7 +52,7 @@
 #import <WebCore/TiledBacking.h>
 #import <wtf/MainThread.h>
 
-#if ENABLE(THREADED_SCROLLING)
+#if ENABLE(ASYNC_SCROLLING)
 #import <WebCore/ScrollingCoordinator.h>
 #import <WebCore/ScrollingThread.h>
 #import <WebCore/ScrollingTree.h>
@@ -73,6 +73,7 @@ TiledCoreAnimationDrawingArea::TiledCoreAnimationDrawingArea(WebPage* webPage, c
     , m_isPaintingSuspended(!(parameters.viewState & ViewState::IsVisible))
     , m_clipsToExposedRect(false)
     , m_updateIntrinsicContentSizeTimer(this, &TiledCoreAnimationDrawingArea::updateIntrinsicContentSizeTimerFired)
+    , m_transientZoomScale(1)
 {
     m_webPage->corePage()->settings().setForceCompositingMode(true);
 
@@ -186,9 +187,9 @@ void TiledCoreAnimationDrawingArea::scheduleCompositingLayerFlush()
 
 void TiledCoreAnimationDrawingArea::didInstallPageOverlay(PageOverlay* pageOverlay)
 {
-#if ENABLE(THREADED_SCROLLING)
+#if ENABLE(ASYNC_SCROLLING)
     if (ScrollingCoordinator* scrollingCoordinator = m_webPage->corePage()->scrollingCoordinator())
-        scrollingCoordinator->setForceMainThreadScrollLayerPositionUpdates(true);
+        scrollingCoordinator->setForceSynchronousScrollLayerPositionUpdates(true);
 #endif
 
     createPageOverlayLayer(pageOverlay);
@@ -202,10 +203,10 @@ void TiledCoreAnimationDrawingArea::didUninstallPageOverlay(PageOverlay* pageOve
     if (m_pageOverlayLayers.size())
         return;
 
-#if ENABLE(THREADED_SCROLLING)
+#if ENABLE(ASYNC_SCROLLING)
     if (Page* page = m_webPage->corePage()) {
         if (ScrollingCoordinator* scrollingCoordinator = page->scrollingCoordinator())
-            scrollingCoordinator->setForceMainThreadScrollLayerPositionUpdates(false);
+            scrollingCoordinator->setForceSynchronousScrollLayerPositionUpdates(false);
     }
 #endif
 }
@@ -241,7 +242,7 @@ void TiledCoreAnimationDrawingArea::updatePreferences(const WebPreferencesStore&
 {
     Settings& settings = m_webPage->corePage()->settings();
 
-#if ENABLE(THREADED_SCROLLING)
+#if ENABLE(ASYNC_SCROLLING)
     if (ScrollingCoordinator* scrollingCoordinator = m_webPage->corePage()->scrollingCoordinator()) {
         bool scrollingPerformanceLoggingEnabled = m_webPage->scrollingPerformanceLoggingEnabled();
         ScrollingThread::dispatch(bind(&ScrollingTree::setScrollingPerformanceLoggingEnabled, scrollingCoordinator->scrollingTree(), scrollingPerformanceLoggingEnabled));
@@ -302,7 +303,7 @@ void TiledCoreAnimationDrawingArea::dispatchAfterEnsuringUpdatedScrollPosition(c
 {
     Function<void ()> function = functionRef;
 
-#if ENABLE(THREADED_SCROLLING)
+#if ENABLE(ASYNC_SCROLLING)
     if (!m_webPage->corePage()->scrollingCoordinator()) {
         function();
         return;
@@ -504,14 +505,8 @@ void TiledCoreAnimationDrawingArea::setDeviceScaleFactor(float deviceScaleFactor
         it->value->noteDeviceOrPageScaleFactorChangedIncludingDescendants();
 }
 
-void TiledCoreAnimationDrawingArea::setLayerHostingMode(uint32_t opaqueLayerHostingMode)
+void TiledCoreAnimationDrawingArea::setLayerHostingMode(LayerHostingMode)
 {
-    LayerHostingMode layerHostingMode = static_cast<LayerHostingMode>(opaqueLayerHostingMode);
-    if (layerHostingMode == m_webPage->layerHostingMode())
-        return;
-
-    m_webPage->setLayerHostingMode(layerHostingMode);
-
     updateLayerHostingContext();
 
     // Finally, inform the UIProcess that the context has changed.
@@ -729,6 +724,7 @@ void TiledCoreAnimationDrawingArea::adjustTransientZoom(double scale, FloatPoint
     shadowLayer->setPosition(origin + shadowBounds.center());
 
     m_transientZoomScale = scale;
+    m_transientZoomOrigin = origin;
 }
 
 static RetainPtr<CABasicAnimation> transientZoomSnapAnimationForKeyPath(String keyPath)
@@ -765,7 +761,7 @@ void TiledCoreAnimationDrawingArea::commitTransientZoom(double scale, FloatPoint
     constrainedOrigin.moveBy(-visibleContentRect.location());
     constrainedOrigin = -constrainedOrigin;
 
-    if (m_transientZoomScale == scale && roundedIntPoint(origin) == roundedIntPoint(constrainedOrigin)) {
+    if (m_transientZoomScale == scale && roundedIntPoint(m_transientZoomOrigin) == roundedIntPoint(constrainedOrigin)) {
         // We're already at the right scale and position, so we don't need to animate.
         applyTransientZoomToPage(scale, origin);
         return;
@@ -829,6 +825,8 @@ void TiledCoreAnimationDrawingArea::applyTransientZoomToPage(double scale, Float
     unscrolledOrigin.moveBy(-visibleContentRect.location());
     m_webPage->scalePage(scale, roundedIntPoint(-unscrolledOrigin));
     flushLayers();
+
+    m_transientZoomScale = 1;
 }
 
 } // namespace WebKit

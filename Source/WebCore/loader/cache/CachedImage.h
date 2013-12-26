@@ -24,7 +24,6 @@
 #define CachedImage_h
 
 #include "CachedResource.h"
-#include "Image.h"
 #include "ImageObserver.h"
 #include "IntRect.h"
 #include "IntSizeHash.h"
@@ -45,12 +44,13 @@ class SecurityOrigin;
 
 struct Length;
 
-class CachedImage FINAL : public CachedResource, public ImageObserver {
+class CachedImage : public CachedResource, public ImageObserver {
     friend class MemoryCache;
 
 public:
     CachedImage(const ResourceRequest&);
     CachedImage(Image*);
+    CachedImage(const URL&, Image*);
     virtual ~CachedImage();
 
     Image* image(); // Returns the nullImage() if the image is not available yet.
@@ -78,6 +78,11 @@ public:
     // This method takes a zoom multiplier that can be used to increase the natural size of the image by the zoom.
     LayoutSize imageSizeForRenderer(const RenderObject*, float multiplier, SizeType = UsedSize); // returns the size of the complete image.
     void computeIntrinsicDimensions(Length& intrinsicWidth, Length& intrinsicHeight, FloatSize& intrinsicRatio);
+
+#if USE(CF)
+    // FIXME: Remove the USE(CF) once we make MemoryCache::addImageToCache() platform-independent.
+    virtual bool isManual() const { return false; }
+#endif
 
     static void resumeAnimatingImagesForLoader(CachedResourceLoader*);
 
@@ -120,8 +125,6 @@ private:
     virtual bool isImage() const OVERRIDE { return true; }
     virtual bool stillNeedsLoad() const OVERRIDE { return !errorOccurred() && status() == Unknown && !isLoading(); }
 
-    virtual bool decodedDataIsPurgeable() const OVERRIDE { return m_image && m_image->decodedDataIsPurgeable(); }
-
     // ImageObserver
     virtual void decodedSizeChanged(const Image*, int delta) OVERRIDE;
     virtual void didDraw(const Image*) OVERRIDE;
@@ -142,6 +145,22 @@ private:
 #endif
     bool m_shouldPaintBrokenImage;
 };
+
+#if USE(CF)
+// FIXME: We should look to incorporate the functionality of CachedImageManual
+// into CachedImage or find a better place for this class.
+// FIXME: Remove the USE(CF) once we make MemoryCache::addImageToCache() platform-independent.
+class CachedImageManual : public CachedImage {
+public:
+    CachedImageManual(const URL&, Image*);
+    void addFakeClient() { addClient(m_fakeClient.get()); }
+    void removeFakeClient() { removeClient(m_fakeClient.get()); }
+    virtual bool isManual() const OVERRIDE { return true; }
+    virtual bool mustRevalidateDueToCacheHeaders(CachePolicy) const;
+private:
+    std::unique_ptr<CachedResourceClient> m_fakeClient;
+};
+#endif
 
 }
 

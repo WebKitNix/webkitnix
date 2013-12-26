@@ -28,6 +28,7 @@
 
 #include <wtf/CurrentTime.h>
 #include <wtf/HashSet.h>
+#include <wtf/NeverDestroyed.h>
 #include <wtf/RunLoop.h>
 #include <wtf/text/WTFString.h>
 #include <wtf/threads/BinarySemaphore.h>
@@ -63,13 +64,13 @@ private:
     typedef HashMap<RunLoop*, SyncMessageState*> SyncMessageStateMap;
     static SyncMessageStateMap& syncMessageStateMap()
     {
-        DEFINE_STATIC_LOCAL(SyncMessageStateMap, syncMessageStateMap, ());
+        static NeverDestroyed<SyncMessageStateMap> syncMessageStateMap;
         return syncMessageStateMap;
     }
 
     static Mutex& syncMessageStateMapMutex()
     {
-        DEFINE_STATIC_LOCAL(Mutex, syncMessageStateMapMutex, ());
+        static NeverDestroyed<Mutex> syncMessageStateMapMutex;
         return syncMessageStateMapMutex;
     }
 
@@ -375,7 +376,7 @@ bool Connection::sendSyncReply(std::unique_ptr<MessageEncoder> encoder)
     return sendMessage(std::move(encoder));
 }
 
-std::unique_ptr<MessageDecoder> Connection::waitForMessage(StringReference messageReceiverName, StringReference messageName, uint64_t destinationID, double timeout)
+std::unique_ptr<MessageDecoder> Connection::waitForMessage(StringReference messageReceiverName, StringReference messageName, uint64_t destinationID, std::chrono::milliseconds timeout)
 {
     // First, check if this message is already in the incoming messages queue.
     {
@@ -393,12 +394,10 @@ std::unique_ptr<MessageDecoder> Connection::waitForMessage(StringReference messa
         }
     }
 
-    double absoluteTime = currentTime() + timeout;
-    
     std::pair<std::pair<StringReference, StringReference>, uint64_t> messageAndDestination(std::make_pair(std::make_pair(messageReceiverName, messageName), destinationID));
     
     {
-        MutexLocker locker(m_waitForMessageMutex);
+        std::lock_guard<std::mutex> lock(m_waitForMessageMutex);
 
         // We don't support having multiple clients wait for the same message.
         ASSERT(!m_waitForMessageMap.contains(messageAndDestination));
@@ -409,7 +408,7 @@ std::unique_ptr<MessageDecoder> Connection::waitForMessage(StringReference messa
     
     // Now wait for it to be set.
     while (true) {
-        MutexLocker locker(m_waitForMessageMutex);
+        std::unique_lock<std::mutex> lock(m_waitForMessageMutex);
 
         auto it = m_waitForMessageMap.find(messageAndDestination);
         if (it->value) {
@@ -420,7 +419,7 @@ std::unique_ptr<MessageDecoder> Connection::waitForMessage(StringReference messa
         }
 
         // Now we wait.
-        if (!m_waitForMessageCondition.timedWait(m_waitForMessageMutex, absoluteTime)) {
+        if (m_waitForMessageCondition.wait_for(lock, timeout) == std::cv_status::timeout) {
             // We timed out, now remove the pending wait.
             m_waitForMessageMap.remove(messageAndDestination);
 
@@ -645,14 +644,14 @@ void Connection::processIncomingMessage(std::unique_ptr<MessageDecoder> message)
 
     // Check if we're waiting for this message.
     {
-        MutexLocker locker(m_waitForMessageMutex);
+        std::lock_guard<std::mutex> lock(m_waitForMessageMutex);
 
         auto it = m_waitForMessageMap.find(std::make_pair(std::make_pair(message->messageReceiverName(), message->messageName()), message->destinationID()));
         if (it != m_waitForMessageMap.end()) {
             it->value = std::move(message);
             ASSERT(it->value);
         
-            m_waitForMessageCondition.signal();
+            m_waitForMessageCondition.notify_one();
             return;
         }
     }

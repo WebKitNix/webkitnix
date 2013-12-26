@@ -23,14 +23,35 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import <WebKit2/WKBase.h>
-#import <WebKit2/WKContentView.h>
+#include "config.h"
+#include "MediaSessionManager.h"
 
-@interface WKContentView (Private)
+#if USE(AUDIO_SESSION) && PLATFORM(MAC)
 
-@property (readonly) WKPageRef _pageRef;
+#include "AudioSession.h"
+#include "Logging.h"
+#include "Settings.h"
 
-- (id)initWithFrame:(CGRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef;
-- (id)initWithFrame:(CGRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef relatedToPage:(WKPageRef)relatedPage;
+using namespace WebCore;
 
-@end
+static const size_t kWebAudioBufferSize = 128;
+
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+static const size_t kLowPowerVideoBufferSize = 4096;
+#endif
+
+void MediaSessionManager::updateSessionState()
+{
+    LOG(Media, "MediaSessionManager::updateSessionState() - types: Video(%d), Audio(%d), WebAudio(%d)", count(Video), count(Audio), count(WebAudio));
+
+    if (has(WebAudio))
+        AudioSession::sharedSession().setPreferredBufferSize(kWebAudioBufferSize);
+    // FIXME: <http://webkit.org/b/116725> Figure out why enabling the code below
+    // causes media LayoutTests to fail on 10.8.
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+    else if ((has(Video) || has(Audio)) && Settings::lowPowerVideoAudioBufferSizeEnabled())
+        AudioSession::sharedSession().setPreferredBufferSize(kLowPowerVideoBufferSize);
+#endif
+}
+
+#endif // USE(AUDIO_SESSION) && PLATFORM(MAC)

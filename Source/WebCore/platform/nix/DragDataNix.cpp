@@ -87,7 +87,7 @@ String DragData::asURL(Frame*, FilenameConversionPolicy, String*) const
 
 PassRefPtr<DocumentFragment> DragData::asFragment(Frame*, Range&, bool, bool&) const
 {
-    return 0;
+    return nullptr;
 }
 
 }

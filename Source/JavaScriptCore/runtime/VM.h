@@ -388,8 +388,6 @@ namespace JSC {
         const ClassInfo* const jsArrayClassInfo;
         const ClassInfo* const jsFinalObjectClassInfo;
 
-        void* writeBarrierRegisterBuffer[GPRInfo::numberOfRegisters];
-
         ReturnAddressPtr exceptionLocation;
         JSValue hostCallReturnValue;
         ExecState* newCallFrameReturnValue;

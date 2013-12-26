@@ -91,6 +91,7 @@
 #include <WebCore/RenderEmbeddedObject.h>
 #include <WebCore/TextCheckerClient.h>
 #include <WebCore/WindowFeatures.h>
+#include <wtf/NeverDestroyed.h>
 #include <stdio.h>
 
 #if USE(COORDINATED_GRAPHICS)
@@ -130,6 +131,7 @@ DEFINE_DEBUG_ONLY_GLOBAL(WTF::RefCountedLeakCounter, webPageProxyCounter, ("WebP
 
 class ExceededDatabaseQuotaRecords {
     WTF_MAKE_NONCOPYABLE(ExceededDatabaseQuotaRecords); WTF_MAKE_FAST_ALLOCATED;
+    friend NeverDestroyed<ExceededDatabaseQuotaRecords>;
 public:
     struct Record {
         uint64_t frameID;
@@ -164,7 +166,7 @@ private:
 
 ExceededDatabaseQuotaRecords& ExceededDatabaseQuotaRecords::shared()
 {
-    DEFINE_STATIC_LOCAL(ExceededDatabaseQuotaRecords, records, ());
+    static NeverDestroyed<ExceededDatabaseQuotaRecords> records;
     return records;
 }
 
@@ -244,11 +246,6 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Web
     , m_pageScaleFactor(1)
     , m_intrinsicDeviceScaleFactor(1)
     , m_customDeviceScaleFactor(0)
-#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
-    , m_layerHostingMode(LayerHostingModeInWindowServer)
-#else
-    , m_layerHostingMode(LayerHostingModeDefault)
-#endif
     , m_drawsBackground(true)
     , m_drawsTransparentBackground(false)
     , m_areMemoryCacheClientCallsEnabled(true)
@@ -957,12 +954,20 @@ void WebPageProxy::updateViewState(ViewState::Flags flagsToUpdate)
         m_viewState |= ViewState::IsVisible;
     if (flagsToUpdate & ViewState::IsInWindow && m_pageClient.isViewInWindow())
         m_viewState |= ViewState::IsInWindow;
+#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
+    if (flagsToUpdate & ViewState::IsLayerWindowServerHosted && m_pageClient.isLayerWindowServerHosted())
+        m_viewState |= ViewState::IsLayerWindowServerHosted;
+#endif
 }
 
 void WebPageProxy::viewStateDidChange(ViewState::Flags mayHaveChanged, WantsReplyOrNot wantsReply)
 {
     if (!isValid())
         return;
+
+    // If the in-window state may have changed, then so may the layer hosting.
+    if (mayHaveChanged & ViewState::IsInWindow)
+        mayHaveChanged |= ViewState::IsLayerWindowServerHosted;
 
     // Record the prior view state, update the flags that may have changed,
     // and check which flags have actually changed.
@@ -992,22 +997,13 @@ void WebPageProxy::viewStateDidChange(ViewState::Flags mayHaveChanged, WantsRepl
 #endif
     }
 
-    if (mayHaveChanged & ViewState::IsInWindow) {
-        if (m_viewState & ViewState::IsInWindow) {
-            LayerHostingMode layerHostingMode = m_pageClient.viewLayerHostingMode();
-            if (m_layerHostingMode != layerHostingMode) {
-                m_layerHostingMode = layerHostingMode;
-                m_drawingArea->layerHostingModeDidChange();
-            }
-        }
 #if ENABLE(INPUT_TYPE_COLOR_POPOVER)
-        else {
-            // When leaving the current page, close the popover color well.
-            if (m_colorPicker)
-                endColorPicker();
-        }
-#endif
+    if (mayHaveChanged & ViewState::IsInWindow && !(m_viewState & ViewState::IsInWindow)) {
+        // When leaving the current page, close the popover color well.
+        if (m_colorPicker)
+            endColorPicker();
     }
+#endif
 
     updateBackingStoreDiscardableState();
 }
@@ -1024,7 +1020,7 @@ void WebPageProxy::waitForDidUpdateViewState()
     m_waitingForDidUpdateViewState = true;
 
     if (!m_process->isLaunching()) {
-        const double viewStateUpdateTimeout = 0.25;
+        auto viewStateUpdateTimeout = std::chrono::milliseconds(250);
         m_process->connection()->waitForAndDispatchImmediately<Messages::WebPageProxy::DidUpdateViewState>(m_pageID, viewStateUpdateTimeout);
     }
 }
@@ -1074,10 +1070,11 @@ void WebPageProxy::setMaintainsInactiveSelection(bool newValue)
     
 void WebPageProxy::executeEditCommand(const String& commandName)
 {
+    static NeverDestroyed<String> ignoreSpellingCommandName(ASCIILiteral("ignoreSpelling"));
+
     if (!isValid())
         return;
 
-    DEFINE_STATIC_LOCAL(String, ignoreSpellingCommandName, (ASCIILiteral("ignoreSpelling")));
     if (commandName == ignoreSpellingCommandName)
         ++m_pendingLearnOrIgnoreWordMessageCount;
 
@@ -1845,9 +1842,6 @@ void WebPageProxy::setGapBetweenPages(double gap)
 void WebPageProxy::pageScaleFactorDidChange(double scaleFactor)
 {
     m_pageScaleFactor = scaleFactor;
-#if PLATFORM(NIX)
-    m_pageClient.didChangePageScaleFactor(m_pageScaleFactor);
-#endif
 }
 
 void WebPageProxy::pageZoomFactorDidChange(double zoomFactor)
@@ -2013,7 +2007,7 @@ void WebPageProxy::getMainResourceDataOfFrame(WebFrameProxy* frame, PassRefPtr<D
     m_process->send(Messages::WebPage::GetMainResourceDataOfFrame(frame->frameID(), callbackID), m_pageID);
 }
 
-void WebPageProxy::getResourceDataFromFrame(WebFrameProxy* frame, WebURL* resourceURL, PassRefPtr<DataCallback> prpCallback)
+void WebPageProxy::getResourceDataFromFrame(WebFrameProxy* frame, API::URL* resourceURL, PassRefPtr<DataCallback> prpCallback)
 {
     RefPtr<DataCallback> callback = prpCallback;
     if (!isValid()) {
@@ -3717,7 +3711,7 @@ void WebPageProxy::printFinishedCallback(const ResourceError& printError, uint64
         return;
     }
 
-    RefPtr<WebError> error = WebError::create(printError);
+    RefPtr<API::Error> error = API::Error::create(printError);
     callback->performCallbackWithReturnValue(error.get());
 }
 #endif
@@ -3947,11 +3941,8 @@ void WebPageProxy::initializeCreationParameters()
     m_creationParameters.scrollPinningBehavior = m_scrollPinningBehavior;
     m_creationParameters.backgroundExtendsBeyondPage = m_backgroundExtendsBeyondPage;
 
-#if PLATFORM(MAC)
-    m_creationParameters.layerHostingMode = m_layerHostingMode;
-#if !PLATFORM(IOS)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
     m_creationParameters.colorSpace = m_pageClient.colorSpace();
-#endif // !PLATFORM(IOS)
 #endif
 }
 

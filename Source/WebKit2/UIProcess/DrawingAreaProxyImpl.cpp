@@ -113,11 +113,6 @@ void DrawingAreaProxyImpl::deviceScaleFactorDidChange()
     backingStoreStateDidChange(RespondImmediately);
 }
 
-void DrawingAreaProxyImpl::layerHostingModeDidChange()
-{
-    m_webPageProxy->process().send(Messages::DrawingArea::SetLayerHostingMode(m_webPageProxy->layerHostingMode()), m_webPageProxy->pageID());
-}
-
 void DrawingAreaProxyImpl::setBackingStoreIsDiscardable(bool isBackingStoreDiscardable)
 {
     if (m_isBackingStoreDiscardable == isBackingStoreDiscardable)
@@ -313,9 +308,8 @@ void DrawingAreaProxyImpl::waitForAndDispatchDidUpdateBackingStoreState()
     // message, if multiple DidUpdateBackingStoreState messages are waiting to be processed. For instance, we could
     // choose the most recent one, or the one that is closest to our current size.
 
-    // The timeout, in seconds, we use when waiting for a DidUpdateBackingStoreState message when we're asked to paint.
-    static const double didUpdateBackingStoreStateTimeout = 0.5;
-    m_webPageProxy->process().connection()->waitForAndDispatchImmediately<Messages::DrawingAreaProxy::DidUpdateBackingStoreState>(m_webPageProxy->pageID(), didUpdateBackingStoreStateTimeout);
+    // The timeout we use when waiting for a DidUpdateBackingStoreState message when we're asked to paint is 500 milliseconds.
+    m_webPageProxy->process().connection()->waitForAndDispatchImmediately<Messages::DrawingAreaProxy::DidUpdateBackingStoreState>(m_webPageProxy->pageID(), std::chrono::milliseconds(500));
 #endif
 }
 

@@ -1850,10 +1850,10 @@ def check_spacing(file_extension, clean_lines, line_number, error):
     # FIXME: It's not ok to have spaces around binary operators like .
 
     # You should always have whitespace around binary operators.
-    # Alas, we can't test <, >, <<, or >> because they're legitimately used sans spaces
-    # (a->b, vector<int> a).  The only time we can tell is a < with no >, and
+    # Alas, we can't test <, >, <<, >>, or && because they're legitimately used sans spaces
+    # (a->b, vector<int> a, Foo&& a).  The only time we can tell is a < with no >, and
     # only if it's not template params list spilling into the next line.
-    matched = search(r'[^<>=!\s](==|!=|\+=|-=|\*=|/=|/|\|=|&=|<<=|>>=|<=|>=|\|\||\||&&)[^<>=!\s]', line)
+    matched = search(r'[^<>=!\s](==|!=|\+=|-=|\*=|/=|/|\|=|&=|<<=|>>=|<=|>=|\|\||\|)[^<>=!\s]', line)
     if not matched:
         # Note that while it seems that the '<[^<]*' term in the following
         # regexp could be simplified to '<.*', which would indeed match
@@ -1924,7 +1924,7 @@ def check_spacing(file_extension, clean_lines, line_number, error):
 
     if file_extension == 'cpp':
         # C++ should have the & or * beside the type not the variable name.
-        matched = match(r'\s*(?P<pre_part>[\w\s]+)\s+(?P<pointer_operator>\*|\&)\s*\w+', line)
+        matched = match(r'\s*(?P<pre_part>\w[\w\s]+)\s+(?P<pointer_operator>\*|\&)\s*\w+', line)
         if matched and not matched.group('pre_part').startswith('return') and not matched.group('pre_part').startswith('delete'):
             error(line_number, 'whitespace/declaration', 3,
                   'Declaration has space between type name and %s in %s' % (matched.group('pointer_operator'), matched.group(0).strip()))
@@ -2363,7 +2363,7 @@ def check_braces(clean_lines, line_number, error):
         # ')', or ') const' and doesn't begin with 'if|for|while|switch|else'.
         # We also allow '#' for #endif and '=' for array initialization.
         previous_line = get_previous_non_blank_line(clean_lines, line_number)[0]
-        if ((not search(r'[;:}{)=]\s*$|\)\s*((const|OVERRIDE)\s*)*\s*$', previous_line)
+        if ((not search(r'[;:}{)=]\s*$|\)\s*((const|OVERRIDE)\s*)?(->\s*\S+)?\s*$', previous_line)
              or search(r'\b(if|for|foreach|while|switch|else|NS_ENUM)\b', previous_line))
             and previous_line.find('#') < 0):
             error(line_number, 'whitespace/braces', 4,

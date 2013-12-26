@@ -66,6 +66,7 @@
 #include <wtf/text/StringBuilder.h>
 
 #if PLATFORM(IOS)
+#include "MainFrame.h"
 #include "Region.h"
 #include "RenderScrollbar.h"
 #include "TileCache.h"
@@ -2263,13 +2264,14 @@ bool RenderLayerCompositor::requiresCompositingForCanvas(RenderLayerModelObject&
         return false;
 
     if (renderer.isCanvas()) {
-        HTMLCanvasElement* canvas = toHTMLCanvasElement(renderer.element());
 #if USE(COMPOSITING_FOR_SMALL_CANVASES)
         bool isCanvasLargeEnoughToForceCompositing = true;
 #else
+        HTMLCanvasElement* canvas = toHTMLCanvasElement(renderer.element());
         bool isCanvasLargeEnoughToForceCompositing = canvas->size().area() >= canvasAreaThresholdRequiringCompositing;
 #endif
-        return canvas->renderingContext() && canvas->renderingContext()->isAccelerated() && (canvas->renderingContext()->is3d() || isCanvasLargeEnoughToForceCompositing);
+        CanvasCompositingStrategy compositingStrategy = canvasCompositingStrategy(renderer);
+        return compositingStrategy == CanvasAsLayerContents || (compositingStrategy == CanvasPaintedToLayer && isCanvasLargeEnoughToForceCompositing);
     }
 
     return false;
@@ -2657,15 +2659,18 @@ float RenderLayerCompositor::contentsScaleMultiplierForNewTiles(const GraphicsLa
 {
 #if PLATFORM(IOS)
     TileCache* tileCache = nullptr;
-    if (Page* page = this->page())
-        tileCache = page->mainFrame().view().tileCache();
+    if (Page* page = this->page()) {
+        if (FrameView* frameView = page->mainFrame().view())
+            tileCache = frameView->tileCache();
+    }
 
     if (!tileCache)
         return 1;
 
     return tileCache->tilingMode() == TileCache::Zooming ? 0.125 : 1;
-#endif
+#else
     return 1;
+#endif
 }
 
 void RenderLayerCompositor::didCommitChangesForLayer(const GraphicsLayer*) const
@@ -3041,8 +3046,7 @@ void RenderLayerCompositor::ensureRootLayer()
 #if PLATFORM(IOS)
         // Page scale is applied above this on iOS, so we'll just say that our root layer applies it.
         Frame& frame = m_renderView.frameView().frame();
-        Page* page = frame.page();
-        if (page && &page->mainFrame() == &frame)
+        if (frame.isMainFrame())
             m_rootContentLayer->setAppliesPageScale();
 #endif
 

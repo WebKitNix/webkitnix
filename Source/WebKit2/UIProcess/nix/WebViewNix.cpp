@@ -131,14 +131,6 @@ void WebViewNix::didRelaunchProcess()
     m_client.webProcessDidRelaunch(this);
 }
 
-void WebViewNix::didChangeContentScaleFactor(float scaleFactor)
-{
-    if (isSuspended())
-        return;
-    page()->scalePage(scaleFactor, roundedIntPoint(contentPosition()));
-    updateViewportSize();
-}
-
 void WebViewNix::pageDidRequestScroll(const IntPoint& position)
 {
     if (m_duringFrameRendering && (m_pendingScaleOrPositionChange || position != m_contentPosition)) {
@@ -153,8 +145,8 @@ void WebViewNix::didRenderFrame(const WebCore::IntSize& contentsSize, const WebC
     m_duringFrameRendering = false;
     if (m_pendingScaleOrPositionChange) {
         m_pendingScaleOrPositionChange = false;
-        if (m_scaleAfterTransition != m_contentScaleFactor)
-            m_contentScaleFactor = m_scaleAfterTransition;
+        if (m_scaleAfterTransition != contentScaleFactor())
+            setContentScaleFactor(m_scaleAfterTransition);
 
         if (m_contentPosition != m_contentPositionAfterTransition)
             setContentPosition(m_contentPositionAfterTransition);
@@ -166,15 +158,6 @@ void WebViewNix::didRenderFrame(const WebCore::IntSize& contentsSize, const WebC
     }
 
     WebView::didRenderFrame(contentsSize, coveredRect);
-}
-
-void WebViewNix::didChangePageScaleFactor(double scaleFactor)
-{
-    if (m_duringFrameRendering && (m_pendingScaleOrPositionChange || scaleFactor != m_contentScaleFactor)) {
-        m_pendingScaleOrPositionChange = true;
-        m_scaleAfterTransition = scaleFactor;
-    } else
-        m_contentScaleFactor = scaleFactor;
 }
 
 void WebViewNix::didChangeContentPosition(const WebCore::FloatPoint& trajectoryVector)

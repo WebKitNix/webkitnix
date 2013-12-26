@@ -1,5 +1,26 @@
 include(GNUInstallDirs)
 
+set(PROJECT_VERSION_MAJOR 2)
+set(PROJECT_VERSION_MINOR 3)
+set(PROJECT_VERSION_PATCH 3)
+set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+
+# Libtool library version, not to be confused with API version.
+# See http://www.gnu.org/software/libtool/manual/html_node/Libtool-versioning.html
+CALCULATE_LIBRARY_VERSIONS_FROM_LIBTOOL_TRIPLE(WEBKIT 22 0 22)
+CALCULATE_LIBRARY_VERSIONS_FROM_LIBTOOL_TRIPLE(WEBKIT2 32 0 7)
+CALCULATE_LIBRARY_VERSIONS_FROM_LIBTOOL_TRIPLE(JAVASCRIPTCORE 16 2 16)
+
+# This is a little confusing: WEBKIT_MICRO_VERSION and friends are used as
+# macros in files like WebKitVersion.h.in to expose the project version to
+# the API. Meanwhile WEBKIT_VERSION_MICRO (note the transposed words) is used
+# by the CMake files to hold the *library* version number, which we calculated
+# from the libtool triple above. We should consider ditching these below
+# and using PROJECT_VERSION_* directly.
+set(WEBKIT_MICRO_VERSION ${PROJECT_VERSION_PATCH})
+set(WEBKIT_MINOR_VERSION ${PROJECT_VERSION_MINOR})
+set(WEBKIT_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
+
 # FIXME: We want to expose fewer options to downstream, but for now everything is public.
 WEBKIT_OPTION_BEGIN()
 WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_3D_RENDERING ON)
@@ -59,14 +80,15 @@ if (NOT ENABLE_VIDEO AND ENABLE_VIDEO_TRACK)
 endif ()
 WEBKIT_OPTION_END()
 
-set(PROJECT_VERSION_MAJOR 0)
-set(PROJECT_VERSION_MINOR 1)
-set(PROJECT_VERSION_PATCH 0)
-set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
-
-set(WEBKIT_MICRO_VERSION ${PROJECT_VERSION_PATCH})
-set(WEBKIT_MINOR_VERSION ${PROJECT_VERSION_MINOR})
-set(WEBKIT_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
+# These are used to generate the pkg-config files, note we only support GTK 3.0
+# builds with cmake.
+set(WEBKITGTK_API_VERSION 3.0)
+set(GTK_API_VERSION 3.0)
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix ${CMAKE_INSTALL_PREFIX})
+set(libdir "${prefix}/${CMAKE_INSTALL_LIBDIR}")
+set(includedir "${prefix}/include")
+set(VERSION ${PROJECT_VERSION})
 
 set(ENABLE_WEBCORE ON)
 set(ENABLE_INSPECTOR ON)
@@ -78,7 +100,7 @@ set(WTF_USE_ICU_UNICODE 1)
 set(WTF_USE_SOUP 1)
 
 set(WTF_OUTPUT_NAME WTFGTK)
-set(JavaScriptCore_OUTPUT_NAME javascriptcoregtk)
+set(JavaScriptCore_OUTPUT_NAME javascriptcoregtk-3.0)
 set(WebCore_OUTPUT_NAME WebCoreGTK)
 set(WebKit_OUTPUT_NAME webkitgtk-3.0)
 set(WebKit2_OUTPUT_NAME webkit2gtk-3.0)
@@ -127,6 +149,7 @@ find_package(Xt REQUIRED)
 find_package(ATK REQUIRED)
 find_package(WebP REQUIRED)
 find_package(GStreamer 1.0.3 REQUIRED COMPONENTS ${GSTREAMER_COMPONENTS})
+find_package(ATSPI 2.5.3)
 
 # We don't use find_package for GLX because it is part of -lGL, unlike EGL.
 find_package(OpenGL)
@@ -172,3 +195,13 @@ if (ENABLE_INDEXED_DATABASE)
 endif ()
 
 set(CPACK_SOURCE_GENERATOR TBZ2)
+
+set(DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR ${DERIVED_SOURCES_DIR}/webkitdom)
+set(DERIVED_SOURCES_WEBKITGTK_DIR ${DERIVED_SOURCES_DIR}/webkitgtk)
+set(DERIVED_SOURCES_WEBKITGTK_API_DIR ${DERIVED_SOURCES_WEBKITGTK_DIR}/webkit)
+set(DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR ${DERIVED_SOURCES_DIR}/webkitdom)
+set(DERIVED_SOURCES_WEBKIT2GTK_DIR ${DERIVED_SOURCES_DIR}/webkit2gtk)
+set(DERIVED_SOURCES_WEBKIT2GTK_API_DIR ${DERIVED_SOURCES_WEBKIT2GTK_DIR}/webkit2)
+set(FORWARDING_HEADERS_DIR ${DERIVED_SOURCES_DIR}/ForwardingHeaders)
+set(FORWARDING_HEADERS_WEBKIT2GTK_DIR ${FORWARDING_HEADERS_DIR}/webkit2gtk)
+set(FORWARDING_HEADERS_WEBKIT2GTK_EXTENSION_DIR ${FORWARDING_HEADERS_DIR}/webkit2gtk-webextension)

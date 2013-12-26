@@ -30,13 +30,16 @@
 #ifndef InjectedScriptManager_h
 #define InjectedScriptManager_h
 
-#include "ScriptState.h"
 #include <wtf/Forward.h>
 #include <wtf/HashMap.h>
 #include <wtf/text/WTFString.h>
 
 namespace Deprecated {
 class ScriptObject;
+}
+
+namespace JSC {
+class ExecState;
 }
 
 namespace Inspector {
@@ -48,17 +51,19 @@ namespace WebCore {
 class DOMWindow;
 class InjectedScript;
 class InjectedScriptHost;
+class CommandLineAPIHost;
 
 class InjectedScriptManager {
     WTF_MAKE_NONCOPYABLE(InjectedScriptManager); WTF_MAKE_FAST_ALLOCATED;
 public:
     static PassOwnPtr<InjectedScriptManager> createForPage();
     static PassOwnPtr<InjectedScriptManager> createForWorker();
-    ~InjectedScriptManager();
+    virtual ~InjectedScriptManager();
 
-    void disconnect();
+    virtual void disconnect();
 
     InjectedScriptHost* injectedScriptHost();
+    virtual CommandLineAPIHost* commandLineAPIHost() const { return nullptr; }
 
     InjectedScript injectedScriptFor(JSC::ExecState*);
     InjectedScript injectedScriptForId(int);
@@ -71,9 +76,11 @@ public:
     typedef bool (*InspectedStateAccessCheck)(JSC::ExecState*);
     InspectedStateAccessCheck inspectedStateAccessCheck() const { return m_inspectedStateAccessCheck; }
 
-private:
+protected:
     explicit InjectedScriptManager(InspectedStateAccessCheck);
+    virtual void didCreateInjectedScript(InjectedScript);
 
+private:
     String injectedScriptSource();
     Deprecated::ScriptObject createInjectedScript(const String& source, JSC::ExecState*, int id);
 

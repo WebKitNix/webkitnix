@@ -3,7 +3,6 @@ add_custom_target(forwarding-headersNixForTestWebKitAPI
     COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT2_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include CoordinatedGraphics
     COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${TESTWEBKITAPI_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include nix
 )
-set(ForwardingHeadersForTestWebKitAPI_NAME forwarding-headersNixForTestWebKitAPI)
 
 if (WTF_USE_CURL)
     add_custom_target(forwarding-headersNetworkForTestWebKitAPI
@@ -16,9 +15,11 @@ else ()
         COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${TESTWEBKITAPI_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
     )
 endif ()
-set(ForwardingNetworkHeadersForTestWebKitAPI_NAME forwarding-headersNetworkForTestWebKitAPI)
+set(ForwardingHeadersForTestWebKitAPI_NAME forwarding-headersNixForTestWebKitAPI)
+add_dependencies(forwarding-headersNixForTestWebKitAPI forwarding-headersNetworkForTestWebKitAPI)
 
 include_directories(
+    ${DERIVED_SOURCES_WEBKIT2_DIR}/include
     ${WEBKIT2_DIR}/UIProcess/API/nix
     ${GLIB_INCLUDE_DIRS}
     ${CAIRO_INCLUDE_DIRS}

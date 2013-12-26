@@ -33,6 +33,9 @@ webkit.org/b/100984 media/progress-events-generated-correctly.html [ Failure ]
 fast/dom/Window/slow-unload-handler.html
 fast/dom/Window/slow-unload-handler-only-frame-is-stopped.html
 
+# This test fails on release and crashes on debug because of trying to use isEqual() with undefined objects
+webkit.org/b/126066 accessibility/loading-iframe-updates-axtree.html [ Failure Crash ]
+
 webkit.org/b/116636 accessibility/document-attributes.html [ Failure ]
 
 # Accessibility tests with missing AccessibilityController functionality.
@@ -40,6 +43,7 @@ webkit.org/b/116637 accessibility/selection-states.html [ Failure ]
 
 # Accessibility tests for notifications that don't exist or aren't needed on Mac OS X.
 accessibility/aria-checkbox-sends-notification.html
+accessibility/children-changed-sends-notification.html
 accessibility/menu-list-sends-change-notification.html
 accessibility/multiselect-list-reports-active-option.html
 
@@ -1303,3 +1307,7 @@ webkit.org/b/87748 fast/forms/select/optgroup-clicking.html [ Skip ]
 webkit.org/b/73304 fast/forms/select/menulist-popup-crash.html [ Skip ]
 webkit.org/b/113220 fast/forms/select/popup-closes-on-blur.html [ Skip ]
 webkit.org/b/74384 fast/forms/select/menulist-onchange-fired-with-key-up-down.html [ WontFix ] # Additionally, this is not an expected behavior on Mac.
+
+webkit.org/b/123029 [ Debug ] platform/mac/editing/attributed-string [ Pass Crash ]
+
+webkit.org/b/124933 svg/animations/getCurrentTime-pause-unpause.html [ Pass Failure ]

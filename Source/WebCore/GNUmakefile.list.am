@@ -5,6 +5,7 @@ webcore_built_sources += \
 	DerivedSources/WebCore/CSSPropertyNames.cpp \
 	DerivedSources/WebCore/CSSValueKeywords.h \
 	DerivedSources/WebCore/CSSValueKeywords.cpp \
+	DerivedSources/WebCore/CommandLineAPIModuleSource.h \
 	DerivedSources/WebCore/EventFactory.cpp \
 	DerivedSources/WebCore/EventHeaders.h \
 	DerivedSources/WebCore/EventInterfaces.h \
@@ -104,6 +105,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSClipboard.h \
 	DerivedSources/WebCore/JSCloseEvent.cpp \
 	DerivedSources/WebCore/JSCloseEvent.h \
+	DerivedSources/WebCore/JSCommandLineAPIHost.cpp \
+	DerivedSources/WebCore/JSCommandLineAPIHost.h \
 	DerivedSources/WebCore/JSComment.cpp \
 	DerivedSources/WebCore/JSComment.h \
 	DerivedSources/WebCore/JSCompositionEvent.cpp \
@@ -1547,6 +1550,7 @@ dom_binding_idls += \
 	$(WebCore)/html/track/TrackEvent.idl \
 	$(WebCore)/html/track/VideoTrack.idl \
 	$(WebCore)/html/track/VideoTrackList.idl \
+	$(WebCore)/inspector/CommandLineAPIHost.idl \
 	$(WebCore)/inspector/InjectedScriptHost.idl \
 	$(WebCore)/inspector/InspectorFrontendHost.idl \
 	$(WebCore)/inspector/JavaScriptCallFrame.idl \
@@ -2292,6 +2296,7 @@ webcore_sources += \
 	Source/WebCore/bindings/js/JSCanvasRenderingContext2DCustom.cpp \
 	Source/WebCore/bindings/js/JSCanvasRenderingContextCustom.cpp \
 	Source/WebCore/bindings/js/JSClipboardCustom.cpp \
+	Source/WebCore/bindings/js/JSCommandLineAPIHostCustom.cpp \
 	Source/WebCore/bindings/js/JSCryptoCustom.cpp \
 	Source/WebCore/bindings/js/JSCustomSQLStatementErrorCallback.cpp \
 	Source/WebCore/bindings/js/JSCustomXPathNSResolver.cpp \
@@ -2733,6 +2738,11 @@ webcore_sources += \
 	Source/WebCore/css/WebKitCSSTransformValue.h \
 	Source/WebCore/css/WebKitCSSViewportRule.cpp \
 	Source/WebCore/css/WebKitCSSViewportRule.h \
+	Source/WebCore/cssjit/FunctionCall.h \
+	Source/WebCore/cssjit/RegisterAllocator.h \
+	Source/WebCore/cssjit/SelectorCompiler.cpp \
+	Source/WebCore/cssjit/SelectorCompiler.h \
+	Source/WebCore/cssjit/StackAllocator.h \
 	Source/WebCore/dom/ActiveDOMObject.cpp \
 	Source/WebCore/dom/ActiveDOMObject.h \
 	Source/WebCore/dom/Attr.cpp \
@@ -3766,6 +3776,10 @@ webcore_sources += \
 	Source/WebCore/icu/unicode/utypes.h \
 	Source/WebCore/icu/unicode/uversion.h \
 	Source/WebCore/inspector/BindingVisitors.h \
+	Source/WebCore/inspector/CommandLineAPIHost.cpp \
+	Source/WebCore/inspector/CommandLineAPIHost.h \
+	Source/WebCore/inspector/CommandLineAPIModule.cpp \
+	Source/WebCore/inspector/CommandLineAPIModule.h \
 	Source/WebCore/inspector/ConsoleAPITypes.h \
 	Source/WebCore/inspector/ConsoleMessage.cpp \
 	Source/WebCore/inspector/ConsoleMessage.h \
@@ -3870,6 +3884,8 @@ webcore_sources += \
 	Source/WebCore/inspector/PageConsoleAgent.h \
 	Source/WebCore/inspector/PageDebuggerAgent.cpp \
 	Source/WebCore/inspector/PageDebuggerAgent.h \
+	Source/WebCore/inspector/PageInjectedScriptManager.cpp \
+	Source/WebCore/inspector/PageInjectedScriptManager.h \
 	Source/WebCore/inspector/PageRuntimeAgent.cpp \
 	Source/WebCore/inspector/PageRuntimeAgent.h \
 	Source/WebCore/inspector/ScriptArguments.cpp \

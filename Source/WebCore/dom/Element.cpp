@@ -36,6 +36,7 @@
 #include "ContainerNodeAlgorithms.h"
 #include "DOMTokenList.h"
 #include "DocumentSharedObjectPool.h"
+#include "ElementIterator.h"
 #include "ElementRareData.h"
 #include "EventDispatcher.h"
 #include "FlowThreadController.h"
@@ -461,12 +462,10 @@ bool Element::isFocusable() const
         return e->renderer() && e->renderer()->style().visibility() == VISIBLE;
     }
 
-    if (renderer())
-        ASSERT(!renderer()->needsLayout());
-    else {
+    if (!renderer()) {
         // If the node is in a display:none tree it might say it needs style recalc but
         // the whole document is actually up to date.
-        ASSERT(!document().childNeedsStyleRecalc());
+        ASSERT(!needsStyleRecalc() || !document().childNeedsStyleRecalc());
     }
 
     // FIXME: Even if we are not visible, we might have a child that is visible.
@@ -1448,28 +1447,6 @@ void Element::unregisterNamedFlowContentElement()
         document().renderView()->flowThreadController().unregisterNamedFlowContentElement(*this);
 }
 
-void Element::lazyReattach(ShouldSetAttached shouldSetAttached)
-{
-    if (attached())
-        Style::detachRenderTreeInReattachMode(*this);
-    lazyAttach(shouldSetAttached);
-}
-
-void Element::lazyAttach(ShouldSetAttached shouldSetAttached)
-{
-    for (Node* node = this; node; node = NodeTraversal::next(node, this)) {
-        if (!node->isTextNode() && !node->isElementNode())
-            continue;
-        if (node->hasChildNodes())
-            node->setChildNeedsStyleRecalc();
-        if (node->isElementNode())
-            toElement(node)->setStyleChange(FullStyleChange);
-        if (shouldSetAttached == SetAttached)
-            node->setAttached(true);
-    }
-    markAncestorsWithChildNeedsStyleRecalc();
-}
-
 PassRef<RenderStyle> Element::styleForRenderer()
 {
     if (hasCustomStyleResolveCallbacks()) {
@@ -1523,7 +1500,7 @@ void Element::addShadowRoot(PassRefPtr<ShadowRoot> newShadowRoot)
     // Set some flag here and recreate shadow hosts' renderer in
     // Element::recalcStyle.
     if (attached())
-        lazyReattach();
+        setNeedsStyleRecalc(ReconstructRenderTree);
 
     InspectorInstrumentation::didPushShadowRoot(this, shadowRoot);
 }
@@ -2171,7 +2148,7 @@ RenderStyle* Element::computedStyle(PseudoId pseudoElementSpecifier)
         return usedStyle;
     }
 
-    if (!attached()) {
+    if (!inDocument()) {
         // FIXME: Try to do better than this. Ensure that styleForElement() works for elements that are not in the
         // document tree and figure out when to destroy the computed style for such elements.
         return nullptr;
@@ -2188,21 +2165,24 @@ void Element::setStyleAffectedByEmpty()
     ensureElementRareData().setStyleAffectedByEmpty(true);
 }
 
-void Element::setChildrenAffectedByActive(bool value)
+void Element::setChildrenAffectedByActive()
 {
-    if (value || hasRareData())
-        ensureElementRareData().setChildrenAffectedByActive(value);
+    ensureElementRareData().setChildrenAffectedByActive(true);
 }
 
-void Element::setChildrenAffectedByDrag(bool value)
+void Element::setChildrenAffectedByDrag()
 {
-    if (value || hasRareData())
-        ensureElementRareData().setChildrenAffectedByDrag(value);
+    ensureElementRareData().setChildrenAffectedByDrag(true);
 }
 
-void Element::setChildrenAffectedByForwardPositionalRules()
+void Element::setChildrenAffectedByDirectAdjacentRules(Element* element)
 {
-    ensureElementRareData().setChildrenAffectedByForwardPositionalRules(true);
+    element->setChildrenAffectedByDirectAdjacentRules();
+}
+
+void Element::setChildrenAffectedByForwardPositionalRules(Element* element)
+{
+    element->ensureElementRareData().setChildrenAffectedByForwardPositionalRules(true);
 }
 
 void Element::setChildrenAffectedByBackwardPositionalRules()
@@ -2533,8 +2513,10 @@ bool Element::childShouldCreateRenderer(const Node& child) const
 {
 #if ENABLE(SVG)
     // Only create renderers for SVG elements whose parents are SVG elements, or for proper <svg xmlns="svgNS"> subdocuments.
-    if (child.isSVGElement())
-        return child.hasTagName(SVGNames::svgTag) || isSVGElement();
+    if (child.isSVGElement()) {
+        ASSERT(!isSVGElement());
+        return child.hasTagName(SVGNames::svgTag) && toSVGElement(child).isValid();
+    }
 #endif
     return ContainerNode::childShouldCreateRenderer(child);
 }
@@ -2952,9 +2934,13 @@ void Element::detachAllAttrNodesFromElement()
 
 void Element::resetComputedStyle()
 {
-    if (!hasRareData())
+    if (!hasRareData() || !elementRareData()->computedStyle())
         return;
     elementRareData()->resetComputedStyle();
+    for (auto& child : elementDescendants(*this)) {
+        if (child.hasRareData())
+            child.elementRareData()->resetComputedStyle();
+    }
 }
 
 void Element::clearStyleDerivedDataBeforeDetachingRenderer()
@@ -3059,7 +3045,8 @@ void Element::cloneAttributesFromElement(const Element& other)
     else
         m_elementData = other.m_elementData->makeUniqueCopy();
 
-    for (unsigned i = 0; i < m_elementData->length(); ++i) {
+    unsigned length = m_elementData->length();
+    for (unsigned i = 0; i < length; ++i) {
         const Attribute& attribute = const_cast<const ElementData*>(m_elementData.get())->attributeAt(i);
         attributeChanged(attribute.name(), attribute.value(), ModifiedByCloning);
     }

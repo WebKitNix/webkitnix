@@ -1,3 +1,146 @@
+2013-12-25  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        [Nix] Building with DRAG_SUPPORT enabled
+        https://bugs.webkit.org/show_bug.cgi?id=126233
+
+        Reviewed by Daniel Bates.
+
+        * wtf/nix/FeatureDefinesNix.h:
+
+2013-12-24  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r160959.
+        http://trac.webkit.org/changeset/160959
+        https://bugs.webkit.org/show_bug.cgi?id=126222
+
+        Caused Windows build to fail (Requested by rfong on #webkit).
+
+        * wtf/ByteSpinLock.h:
+        (WTF::ByteSpinLock::lock):
+        * wtf/Threading.h:
+        * wtf/ThreadingPrimitives.h:
+        (WTF::pauseBriefly):
+        * wtf/ThreadingPthreads.cpp:
+        (WTF::yield):
+        * wtf/ThreadingWin.cpp:
+        (WTF::yield):
+
+2013-12-23  Benjamin Poulain  <bpoulain@apple.com>
+
+        Fix the build after r161031
+
+        I enabled ENABLE_CSS_SELECTOR_JIT by accident.
+
+        * wtf/Platform.h:
+
+2013-12-23  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Clean up compiler optimizations flags for libWTF, libJSC
+        https://bugs.webkit.org/show_bug.cgi?id=126157
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * GNUmakefile.am: Remove the -fstrict-aliasing and -O3 compiler flags for libWTF.la. -O3 gets
+        overridden by -O2 that's listed in CXXFLAGS (or -O0 in case of debug builds) and -fstrict-aliasing
+        is enabled when -O2 is used (and shouldn't be enabled in debug builds anyway).
+
+2013-12-20  Anders Carlsson  <andersca@apple.com>
+
+        Replace yield() and pauseBriefly() with std::this_thread::yield()
+        https://bugs.webkit.org/show_bug.cgi?id=126105
+
+        Reviewed by Sam Weinig.
+
+        * wtf/ByteSpinLock.h:
+        (WTF::ByteSpinLock::lock):
+        * wtf/Threading.h:
+        * wtf/ThreadingPrimitives.h:
+        * wtf/ThreadingPthreads.cpp:
+        * wtf/ThreadingWin.cpp:
+
+2013-12-20  Anders Carlsson  <andersca@apple.com>
+
+        Speed up case folding for 8-bit strings
+        https://bugs.webkit.org/show_bug.cgi?id=126098
+
+        Reviewed by Geoffrey Garen.
+
+        Add a case folding lookup table for 8-bit strings and use it instead of calling down to u_foldCase.
+        On a simple microbenchmark using a lookup table is about 15x faster.
+
+        * wtf/text/StringHash.h:
+        (WTF::CaseFoldingHash::foldCase):
+        * wtf/text/StringImpl.cpp:
+        (WTF::equalIgnoringCase):
+        * wtf/text/StringImpl.h:
+
+2013-12-20  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Faster implementation of text-decoration-skip: ink
+        https://bugs.webkit.org/show_bug.cgi?id=125718
+
+        Reviewed by Simon Fraser.
+
+        This creates a new preprocessor define, CSS3_TEXT_DECORATION_SKIP_INK,
+        which enables the use of the text-decoration-skip: ink CSS value.
+        Creating this new value simplifies the logic about when to enable the
+        codepath for this CSS value.
+
+        * wtf/Platform.h:
+
+2013-12-20  Simon Fraser  <simon.fraser@apple.com>
+
+        Change "threaded scrolling" terminology to "asynchronous scrolling"
+        https://bugs.webkit.org/show_bug.cgi?id=126094
+
+        Reviewed by Tim Horton.
+
+        Rename ENABLE_THREADED_SCROLLING to ENABLE_ASYNC_SCROLLING.
+
+        * wtf/FeatureDefines.h:
+
+2013-12-20  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        Build fails in debug mode after r160834.
+        https://bugs.webkit.org/show_bug.cgi?id=126059
+
+        Reviewed by Csaba Osztrogonác.
+
+        Debug mode build failed due to comparing signed and unsigned in
+        ASSERT(). Now both values are unsigned.
+
+        * wtf/dtoa/double-conversion.cc:
+
+2013-12-19  Alex Christensen  <achristensen@webkit.org>
+
+        Final preparations for GStreamer on Windows.
+        https://bugs.webkit.org/show_bug.cgi?id=125958
+
+        Reviewed by Benjamin Poulain.
+
+        * WTF.vcxproj/WTFDebugWinCairo.props:
+        * WTF.vcxproj/WTFReleaseWinCairo.props:
+        Include WinCairo.props.
+        * wtf/Platform.h:
+        Use GLib and GStreamer on WinCairo with video.
+
+2013-12-18  Daniel Bates  <dabates@apple.com>
+
+        WTF, JavaScriptCore fails to build with trunk clang: operators new, new[],
+        delete, delete[] cannot be declared inline
+        https://bugs.webkit.org/show_bug.cgi?id=124186
+        <rdar://problem/15644039>
+
+        Reviewed by Geoffrey Garen and Anders Carlsson.
+
+        Following <http://llvm.org/viewvc/llvm-project?view=revision&revision=193044>
+        (http://llvm.org/bugs/show_bug.cgi?id=17591>), Clang emits warnings when
+        operator new, delete are inlined. Such definitions cannot be inline per
+        replacement.functions (17.6.4.6/3) of the C++ standard. For now,
+        disable these warnings instead of exporting these functions.
+
+        * wtf/FastMalloc.h:
+
 2013-12-19  Hugo Parente Lima  <hugo.lima@openbossa.org>
 
         WTF fails to compile with gcc 4.8.2 and -Werror=array-bounds

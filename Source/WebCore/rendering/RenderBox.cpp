@@ -821,7 +821,7 @@ bool RenderBox::canBeProgramaticallyScrolled() const
     if (scrollsOverflow() && hasScrollableOverflow)
         return true;
 
-    return element() && element()->rendererIsEditable();
+    return element() && element()->hasEditableStyle();
 }
 
 bool RenderBox::usesCompositedScrolling() const
@@ -3051,7 +3051,7 @@ LayoutUnit RenderBox::containingBlockLogicalWidthForPositioned(const RenderBoxMo
 #if PLATFORM(IOS)
             if (view().hasCustomFixedPosition(*this)) {
                 const RenderBox& containingBlockBox = toRenderBox(*containingBlock);
-                return customContainingBlockLogicalWidth(containingBlockBox.style(), &view(), containingBlockBox);
+                return customContainingBlockLogicalWidth(containingBlockBox.style(), view(), containingBlockBox);
             }
 #endif
             return toRenderBox(containingBlock)->clientLogicalWidth();

@@ -30,6 +30,8 @@
 
 #include "CCallHelpers.h"
 #include "CallFrameInlines.h"
+#include "DFGOperations.h"
+#include "DFGSpeculativeJIT.h"
 #include "FTLThunks.h"
 #include "GCAwareJITStubRoutine.h"
 #include "LinkBuffer.h"
@@ -771,6 +773,58 @@ static V_JITOperation_ESsiJJI appropriateListBuildingPutByIdFunction(const PutPr
     return operationPutByIdNonStrictBuildList;
 }
 
+#if ENABLE(GGC)
+static MacroAssembler::Call storeToWriteBarrierBuffer(CCallHelpers& jit, GPRReg cell, GPRReg scratch1, GPRReg scratch2, ScratchRegisterAllocator& allocator)
+{
+    ASSERT(scratch1 != scratch2);
+    WriteBarrierBuffer* writeBarrierBuffer = &jit.vm()->heap.writeBarrierBuffer();
+    jit.move(MacroAssembler::TrustedImmPtr(writeBarrierBuffer), scratch1);
+    jit.load32(MacroAssembler::Address(scratch1, WriteBarrierBuffer::currentIndexOffset()), scratch2);
+    MacroAssembler::Jump needToFlush = jit.branch32(MacroAssembler::AboveOrEqual, scratch2, MacroAssembler::Address(scratch1, WriteBarrierBuffer::capacityOffset()));
+
+    jit.add32(MacroAssembler::TrustedImm32(1), scratch2);
+    jit.store32(scratch2, MacroAssembler::Address(scratch1, WriteBarrierBuffer::currentIndexOffset()));
+
+    jit.loadPtr(MacroAssembler::Address(scratch1, WriteBarrierBuffer::bufferOffset()), scratch1);
+    // We use an offset of -sizeof(void*) because we already added 1 to scratch2.
+    jit.storePtr(cell, MacroAssembler::BaseIndex(scratch1, scratch2, MacroAssembler::ScalePtr, static_cast<int32_t>(-sizeof(void*))));
+
+    MacroAssembler::Jump done = jit.jump();
+    needToFlush.link(&jit);
+
+    ScratchBuffer* scratchBuffer = jit.vm()->scratchBufferForSize(allocator.desiredScratchBufferSize());
+    allocator.preserveUsedRegistersToScratchBuffer(jit, scratchBuffer, scratch1);
+
+    // We need these extra slots because setupArgumentsWithExecState will use poke on x86.
+#if CPU(X86)
+    jit.subPtr(MacroAssembler::TrustedImm32(sizeof(void*) * 3), MacroAssembler::stackPointerRegister);
+#endif
+
+    jit.setupArgumentsWithExecState(cell);
+    MacroAssembler::Call call = jit.call();
+
+#if CPU(X86)
+    jit.addPtr(MacroAssembler::TrustedImm32(sizeof(void*) * 3), MacroAssembler::stackPointerRegister);
+#endif
+    allocator.restoreUsedRegistersFromScratchBuffer(jit, scratchBuffer, scratch1);
+
+    done.link(&jit);
+
+    return call;
+}
+
+static MacroAssembler::Call writeBarrier(CCallHelpers& jit, GPRReg owner, GPRReg scratch1, GPRReg scratch2, ScratchRegisterAllocator& allocator)
+{
+    ASSERT(owner != scratch1);
+    ASSERT(owner != scratch2);
+
+    MacroAssembler::Jump definitelyNotMarked = DFG::SpeculativeJIT::genericWriteBarrier(jit, owner, scratch1, scratch2);
+    MacroAssembler::Call call = storeToWriteBarrierBuffer(jit, owner, scratch1, scratch2, allocator);
+    definitelyNotMarked.link(&jit);
+    return call;
+}
+#endif // ENABLE(GGC)
+
 static void emitPutReplaceStub(
     ExecState* exec,
     JSValue,
@@ -788,70 +842,59 @@ static void emitPutReplaceStub(
     GPRReg valueTagGPR = static_cast<GPRReg>(stubInfo.patch.valueTagGPR);
 #endif
     GPRReg valueGPR = static_cast<GPRReg>(stubInfo.patch.valueGPR);
-    GPRReg scratchGPR = TempRegisterSet(stubInfo.patch.usedRegisters).getFreeGPR();
-    bool needToRestoreScratch = false;
-#if ENABLE(WRITE_BARRIER_PROFILING)
-    GPRReg scratchGPR2;
-    const bool writeBarrierNeeded = true;
-#else
-    const bool writeBarrierNeeded = false;
+
+    ScratchRegisterAllocator allocator(stubInfo.patch.usedRegisters);
+    allocator.lock(baseGPR);
+#if USE(JSVALUE32_64)
+    allocator.lock(valueTagGPR);
 #endif
+    allocator.lock(valueGPR);
     
-    MacroAssembler stubJit;
-    
-    if (scratchGPR == InvalidGPRReg && (writeBarrierNeeded || isOutOfLineOffset(slot.cachedOffset()))) {
-#if USE(JSVALUE64)
-        scratchGPR = AssemblyHelpers::selectScratchGPR(baseGPR, valueGPR);
-#else
-        scratchGPR = AssemblyHelpers::selectScratchGPR(baseGPR, valueGPR, valueTagGPR);
+    GPRReg scratchGPR1 = allocator.allocateScratchGPR();
+#if ENABLE(GGC)
+    GPRReg scratchGPR2 = allocator.allocateScratchGPR();
 #endif
-        needToRestoreScratch = true;
-        stubJit.pushToSave(scratchGPR);
-    }
+
+    CCallHelpers stubJit(vm, exec->codeBlock());
+
+    allocator.preserveReusedRegistersByPushing(stubJit);
 
     MacroAssembler::Jump badStructure = stubJit.branchPtr(
         MacroAssembler::NotEqual,
         MacroAssembler::Address(baseGPR, JSCell::structureOffset()),
         MacroAssembler::TrustedImmPtr(structure));
-    
-#if ENABLE(WRITE_BARRIER_PROFILING)
-#if USE(JSVALUE64)
-    scratchGPR2 = AssemblyHelpers::selectScratchGPR(baseGPR, valueGPR, scratchGPR);
-#else
-    scratchGPR2 = AssemblyHelpers::selectScratchGPR(baseGPR, valueGPR, valueTagGPR, scratchGPR);
-#endif
-    stubJit.pushToSave(scratchGPR2);
-    AssemblyHelpers::writeBarrier(stubJit, baseGPR, scratchGPR, scratchGPR2, WriteBarrierForPropertyAccess);
-    stubJit.popToRestore(scratchGPR2);
-#endif
-    
+
 #if USE(JSVALUE64)
     if (isInlineOffset(slot.cachedOffset()))
         stubJit.store64(valueGPR, MacroAssembler::Address(baseGPR, JSObject::offsetOfInlineStorage() + offsetInInlineStorage(slot.cachedOffset()) * sizeof(JSValue)));
     else {
-        stubJit.loadPtr(MacroAssembler::Address(baseGPR, JSObject::butterflyOffset()), scratchGPR);
-        stubJit.store64(valueGPR, MacroAssembler::Address(scratchGPR, offsetInButterfly(slot.cachedOffset()) * sizeof(JSValue)));
+        stubJit.loadPtr(MacroAssembler::Address(baseGPR, JSObject::butterflyOffset()), scratchGPR1);
+        stubJit.store64(valueGPR, MacroAssembler::Address(scratchGPR1, offsetInButterfly(slot.cachedOffset()) * sizeof(JSValue)));
     }
 #elif USE(JSVALUE32_64)
     if (isInlineOffset(slot.cachedOffset())) {
         stubJit.store32(valueGPR, MacroAssembler::Address(baseGPR, JSObject::offsetOfInlineStorage() + offsetInInlineStorage(slot.cachedOffset()) * sizeof(JSValue) + OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload)));
         stubJit.store32(valueTagGPR, MacroAssembler::Address(baseGPR, JSObject::offsetOfInlineStorage() + offsetInInlineStorage(slot.cachedOffset()) * sizeof(JSValue) + OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag)));
     } else {
-        stubJit.loadPtr(MacroAssembler::Address(baseGPR, JSObject::butterflyOffset()), scratchGPR);
-        stubJit.store32(valueGPR, MacroAssembler::Address(scratchGPR, offsetInButterfly(slot.cachedOffset()) * sizeof(JSValue) + OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload)));
-        stubJit.store32(valueTagGPR, MacroAssembler::Address(scratchGPR, offsetInButterfly(slot.cachedOffset()) * sizeof(JSValue) + OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag)));
+        stubJit.loadPtr(MacroAssembler::Address(baseGPR, JSObject::butterflyOffset()), scratchGPR1);
+        stubJit.store32(valueGPR, MacroAssembler::Address(scratchGPR1, offsetInButterfly(slot.cachedOffset()) * sizeof(JSValue) + OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload)));
+        stubJit.store32(valueTagGPR, MacroAssembler::Address(scratchGPR1, offsetInButterfly(slot.cachedOffset()) * sizeof(JSValue) + OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag)));
     }
+#endif
+    
+#if ENABLE(GGC)
+    MacroAssembler::Call writeBarrierOperation = writeBarrier(stubJit, baseGPR, scratchGPR1, scratchGPR2, allocator);
 #endif
     
     MacroAssembler::Jump success;
     MacroAssembler::Jump failure;
     
-    if (needToRestoreScratch) {
-        stubJit.popToRestore(scratchGPR);
+    if (allocator.didReuseRegisters()) {
+        allocator.restoreReusedRegistersByPopping(stubJit);
         success = stubJit.jump();
         
         badStructure.link(&stubJit);
-        stubJit.popToRestore(scratchGPR);
+        allocator.restoreReusedRegistersByPopping(stubJit);
         failure = stubJit.jump();
     } else {
         success = stubJit.jump();
@@ -859,6 +902,9 @@ static void emitPutReplaceStub(
     }
     
     LinkBuffer patchBuffer(*vm, &stubJit, exec->codeBlock());
+#if ENABLE(GGC)
+    patchBuffer.link(writeBarrierOperation, operationFlushWriteBarrierBuffer);
+#endif
     patchBuffer.link(success, stubInfo.callReturnLocation.labelAtOffset(stubInfo.patch.deltaCallToDone));
     patchBuffer.link(failure, failureLabel);
             
@@ -900,29 +946,21 @@ static void emitPutTransitionStub(
     
     CCallHelpers stubJit(vm);
     
+    bool needThirdScratch = false;
+    if (structure->outOfLineCapacity() != oldStructure->outOfLineCapacity()
+        && oldStructure->outOfLineCapacity()) {
+        needThirdScratch = true;
+    }
+
     GPRReg scratchGPR1 = allocator.allocateScratchGPR();
     ASSERT(scratchGPR1 != baseGPR);
     ASSERT(scratchGPR1 != valueGPR);
     
-    bool needSecondScratch = false;
-    bool needThirdScratch = false;
-#if ENABLE(WRITE_BARRIER_PROFILING)
-    needSecondScratch = true;
-#endif
-    if (structure->outOfLineCapacity() != oldStructure->outOfLineCapacity()
-        && oldStructure->outOfLineCapacity()) {
-        needSecondScratch = true;
-        needThirdScratch = true;
-    }
+    GPRReg scratchGPR2 = allocator.allocateScratchGPR();
+    ASSERT(scratchGPR2 != baseGPR);
+    ASSERT(scratchGPR2 != valueGPR);
+    ASSERT(scratchGPR2 != scratchGPR1);
 
-    GPRReg scratchGPR2;
-    if (needSecondScratch) {
-        scratchGPR2 = allocator.allocateScratchGPR();
-        ASSERT(scratchGPR2 != baseGPR);
-        ASSERT(scratchGPR2 != valueGPR);
-        ASSERT(scratchGPR2 != scratchGPR1);
-    } else
-        scratchGPR2 = InvalidGPRReg;
     GPRReg scratchGPR3;
     if (needThirdScratch) {
         scratchGPR3 = allocator.allocateScratchGPR();
@@ -932,7 +970,7 @@ static void emitPutTransitionStub(
         ASSERT(scratchGPR3 != scratchGPR2);
     } else
         scratchGPR3 = InvalidGPRReg;
-            
+    
     allocator.preserveReusedRegistersByPushing(stubJit);
 
     MacroAssembler::JumpList failureCases;
@@ -953,13 +991,6 @@ static void emitPutTransitionStub(
         }
     }
 
-#if ENABLE(WRITE_BARRIER_PROFILING)
-    ASSERT(needSecondScratch);
-    ASSERT(scratchGPR2 != InvalidGPRReg);
-    // Must always emit this write barrier as the structure transition itself requires it
-    AssemblyHelpers::writeBarrier(stubJit, baseGPR, scratchGPR1, scratchGPR2, WriteBarrierForPropertyAccess);
-#endif
-    
     MacroAssembler::JumpList slowPath;
     
     bool scratchGPR1HasStorage = false;
@@ -1018,6 +1049,10 @@ static void emitPutTransitionStub(
     }
 #endif
     
+#if ENABLE(GGC)
+    MacroAssembler::Call writeBarrierOperation = writeBarrier(stubJit, baseGPR, scratchGPR1, scratchGPR2, allocator);
+#endif
+    
     MacroAssembler::Jump success;
     MacroAssembler::Jump failure;
             
@@ -1051,6 +1086,9 @@ static void emitPutTransitionStub(
     }
     
     LinkBuffer patchBuffer(*vm, &stubJit, exec->codeBlock());
+#if ENABLE(GGC)
+    patchBuffer.link(writeBarrierOperation, operationFlushWriteBarrierBuffer);
+#endif
     patchBuffer.link(success, stubInfo.callReturnLocation.labelAtOffset(stubInfo.patch.deltaCallToDone));
     if (allocator.didReuseRegisters())
         patchBuffer.link(failure, failureLabel);

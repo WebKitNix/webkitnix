@@ -1608,6 +1608,11 @@ class CppStyleTest(CppStyleTestBase):
             '    && condition3) {\n'
             '}\n',
             '')
+        self.assert_multi_line_lint(
+            'auto Foo:bar() -> Baz\n'
+            '{\n'
+            '}\n',
+            '')
 
     def test_mismatching_spaces_in_parens(self):
         self.assert_lint('if (foo ) {', 'Extra space before ) in if'
@@ -1746,12 +1751,12 @@ class CppStyleTest(CppStyleTestBase):
                          'Should have a space between // and comment  '
                          '[whitespace/comments] [4]',
                          'Missing spaces around ||  [whitespace/operators] [3]'])
-        self.assert_lint('a<Foo*> t <<= b&&c; // Test', 'Missing spaces around'
-                         ' &&  [whitespace/operators] [3]')
-        self.assert_lint('a<Foo*> t <<= b&&&c; // Test', 'Missing spaces around'
-                         ' &&  [whitespace/operators] [3]')
-        self.assert_lint('a<Foo*> t <<= b&&*c; // Test', 'Missing spaces around'
-                         ' &&  [whitespace/operators] [3]')
+        self.assert_lint('a<Foo*> t <<= b||c; // Test', 'Missing spaces around'
+                         ' ||  [whitespace/operators] [3]')
+        self.assert_lint('a<Foo*> t <<= b||&c; // Test', 'Missing spaces around'
+                         ' ||  [whitespace/operators] [3]')
+        self.assert_lint('a<Foo*> t <<= b||*c; // Test', 'Missing spaces around'
+                         ' ||  [whitespace/operators] [3]')
         self.assert_lint('a<Foo*> t <<= b && *c; // Test', '')
         self.assert_lint('a<Foo*> t <<= b && &c; // Test', '')
         self.assert_lint('a<Foo*> t <<= b || &c;  /*Test', 'Complex multi-line '
@@ -1767,6 +1772,7 @@ class CppStyleTest(CppStyleTestBase):
         self.assert_multi_line_lint('#include <sys/io.h>\n', '')
         self.assert_multi_line_lint('#import <foo/bar.h>\n', '')
         self.assert_multi_line_lint('#if __has_include(<ApplicationServices/ApplicationServicesPriv.h>)\n', '')
+        self.assert_lint('Foo&& a = bar();', '')
 
     def test_operator_methods(self):
         self.assert_lint('String operator+(const String&, const String&);', '')
@@ -2081,6 +2087,7 @@ class CppStyleTest(CppStyleTestBase):
                          'Declaration has space between type name and & in int &b  [whitespace/declaration] [3]',
                          'foo.cpp')
         self.assert_lint('return &b;', '', 'foo.cpp')
+        self.assert_lint('*foo = bar;', '', 'foo.cpp')
 
     def test_indent(self):
         self.assert_lint('static int noindent;', '')

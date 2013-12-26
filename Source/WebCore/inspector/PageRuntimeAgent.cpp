@@ -129,12 +129,13 @@ InjectedScript PageRuntimeAgent::injectedScriptForEval(ErrorString* errorString,
         JSC::ExecState* scriptState = mainWorldExecState(&m_inspectedPage->mainFrame());
         InjectedScript result = injectedScriptManager()->injectedScriptFor(scriptState);
         if (result.hasNoValue())
-            *errorString = "Internal error: main world execution context not found.";
+            *errorString = ASCIILiteral("Internal error: main world execution context not found.");
         return result;
     }
+
     InjectedScript injectedScript = injectedScriptManager()->injectedScriptForId(*executionContextId);
     if (injectedScript.hasNoValue())
-        *errorString = "Execution context with given id not found.";
+        *errorString = ASCIILiteral("Execution context with given id not found.");
     return injectedScript;
 }
 

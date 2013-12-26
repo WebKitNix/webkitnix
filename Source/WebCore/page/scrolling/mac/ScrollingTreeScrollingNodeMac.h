@@ -26,7 +26,7 @@
 #ifndef ScrollingTreeScrollingNodeMac_h
 #define ScrollingTreeScrollingNodeMac_h
 
-#if ENABLE(THREADED_SCROLLING)
+#if ENABLE(ASYNC_SCROLLING)
 
 #include "ScrollElasticityController.h"
 #include "ScrollbarThemeMac.h"
@@ -61,6 +61,7 @@ private:
     virtual void immediateScrollByWithoutContentEdgeConstraints(const FloatSize&) OVERRIDE;
     virtual void startSnapRubberbandTimer() OVERRIDE;
     virtual void stopSnapRubberbandTimer() OVERRIDE;
+    virtual void adjustScrollPositionToBoundsIfNecessary() OVERRIDE;
 
     IntPoint scrollPosition() const;
     void setScrollPosition(const IntPoint&);
@@ -93,6 +94,6 @@ private:
 
 } // namespace WebCore
 
-#endif // ENABLE(THREADED_SCROLLING)
+#endif // ENABLE(ASYNC_SCROLLING)
 
 #endif // ScrollingTreeScrollingNodeMac_h

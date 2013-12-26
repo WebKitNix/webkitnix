@@ -26,9 +26,12 @@
 #ifndef WKSharedAPICast_h
 #define WKSharedAPICast_h
 
+#include "APIError.h"
 #include "APINumber.h"
 #include "APIString.h"
+#include "APIURL.h"
 #include "APIURLRequest.h"
+#include "APIURLResponse.h"
 #include "ImageOptions.h"
 #include "SameDocumentNavigationType.h"
 #include "WKBase.h"
@@ -42,12 +45,9 @@
 #include "WKPageVisibilityTypes.h"
 #include "WKUserContentInjectedFrames.h"
 #include "WKUserScriptInjectionTime.h"
-#include "WebError.h"
 #include "WebEvent.h"
 #include "WebFindOptions.h"
 #include "WebSecurityOrigin.h"
-#include "WebURL.h"
-#include "WebURLResponse.h"
 #include <WebCore/ContextMenuItem.h>
 #include <WebCore/FloatRect.h>
 #include <WebCore/FrameLoaderTypes.h>
@@ -80,7 +80,6 @@ class WebGraphicsContext;
 class WebImage;
 class WebSecurityOrigin;
 class WebSerializedScriptValue;
-class WebURLResponse;
 class WebUserContentURLPattern;
 
 template<typename APIType> struct APITypeInfo { };
@@ -98,7 +97,7 @@ WK_ADD_API_MAPPING(WKContextMenuItemRef, WebContextMenuItem)
 WK_ADD_API_MAPPING(WKDataRef, API::Data)
 WK_ADD_API_MAPPING(WKDictionaryRef, ImmutableDictionary)
 WK_ADD_API_MAPPING(WKDoubleRef, API::Double)
-WK_ADD_API_MAPPING(WKErrorRef, WebError)
+WK_ADD_API_MAPPING(WKErrorRef, API::Error)
 WK_ADD_API_MAPPING(WKGraphicsContextRef, WebGraphicsContext)
 WK_ADD_API_MAPPING(WKImageRef, WebImage)
 WK_ADD_API_MAPPING(WKMutableDictionaryRef, MutableDictionary)
@@ -110,9 +109,9 @@ WK_ADD_API_MAPPING(WKSizeRef, API::Size)
 WK_ADD_API_MAPPING(WKStringRef, API::String)
 WK_ADD_API_MAPPING(WKTypeRef, API::Object)
 WK_ADD_API_MAPPING(WKUInt64Ref, API::UInt64)
-WK_ADD_API_MAPPING(WKURLRef, WebURL)
+WK_ADD_API_MAPPING(WKURLRef, API::URL)
 WK_ADD_API_MAPPING(WKURLRequestRef, API::URLRequest)
-WK_ADD_API_MAPPING(WKURLResponseRef, WebURLResponse)
+WK_ADD_API_MAPPING(WKURLResponseRef, API::URLResponse)
 WK_ADD_API_MAPPING(WKUserContentURLPatternRef, WebUserContentURLPattern)
 
 template<> struct APITypeInfo<WKMutableArrayRef> { typedef API::Array* ImplType; };
@@ -170,19 +169,19 @@ inline WKStringRef toCopiedAPI(const String& string)
     return toAPI(apiString.release().leakRef());
 }
 
-inline ProxyingRefPtr<WebURL> toURLRef(StringImpl* string)
+inline ProxyingRefPtr<API::URL> toURLRef(StringImpl* string)
 {
     if (!string)
-        return ProxyingRefPtr<WebURL>(0);
-    return ProxyingRefPtr<WebURL>(WebURL::create(String(string)));
+        return ProxyingRefPtr<API::URL>(0);
+    return ProxyingRefPtr<API::URL>(API::URL::create(String(string)));
 }
 
 inline WKURLRef toCopiedURLAPI(const String& string)
 {
     if (!string)
         return 0;
-    RefPtr<WebURL> webURL = WebURL::create(string);
-    return toAPI(webURL.release().leakRef());
+    RefPtr<API::URL> url = API::URL::create(string);
+    return toAPI(url.release().leakRef());
 }
 
 inline String toWTFString(WKStringRef stringRef)
@@ -199,9 +198,9 @@ inline String toWTFString(WKURLRef urlRef)
     return toImpl(urlRef)->string();
 }
 
-inline ProxyingRefPtr<WebError> toAPI(const WebCore::ResourceError& error)
+inline ProxyingRefPtr<API::Error> toAPI(const WebCore::ResourceError& error)
 {
-    return ProxyingRefPtr<WebError>(WebError::create(error));
+    return ProxyingRefPtr<API::Error>(API::Error::create(error));
 }
 
 inline ProxyingRefPtr<API::URLRequest> toAPI(const WebCore::ResourceRequest& request)
@@ -209,9 +208,9 @@ inline ProxyingRefPtr<API::URLRequest> toAPI(const WebCore::ResourceRequest& req
     return ProxyingRefPtr<API::URLRequest>(API::URLRequest::create(request));
 }
 
-inline ProxyingRefPtr<WebURLResponse> toAPI(const WebCore::ResourceResponse& response)
+inline ProxyingRefPtr<API::URLResponse> toAPI(const WebCore::ResourceResponse& response)
 {
-    return ProxyingRefPtr<WebURLResponse>(WebURLResponse::create(response));
+    return ProxyingRefPtr<API::URLResponse>(API::URLResponse::create(response));
 }
 
 inline WKSecurityOriginRef toCopiedAPI(WebCore::SecurityOrigin* origin)

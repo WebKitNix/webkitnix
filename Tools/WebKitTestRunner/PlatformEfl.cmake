@@ -1,12 +1,8 @@
 add_custom_target(forwarding-headersEflForWebKitTestRunner
     COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT_TESTRUNNER_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include efl
-)
-set(ForwardingHeadersForWebKitTestRunner_NAME forwarding-headersEflForWebKitTestRunner)
-
-add_custom_target(forwarding-headersSoupForWebKitTestRunner
     COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT_TESTRUNNER_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
 )
-set(ForwardingNetworkHeadersForWebKitTestRunner_NAME forwarding-headersSoupForWebKitTestRunner)
+set(ForwardingHeadersForWebKitTestRunner_NAME forwarding-headersEflForWebKitTestRunner)
 
 list(APPEND WebKitTestRunner_SOURCES
     ${WEBKIT_TESTRUNNER_DIR}/cairo/TestInvocationCairo.cpp
@@ -18,6 +14,12 @@ list(APPEND WebKitTestRunner_SOURCES
 )
 
 list(APPEND WebKitTestRunner_INCLUDE_DIRECTORIES
+    ${DERIVED_SOURCES_WEBCORE_DIR}
+    ${DERIVED_SOURCES_WEBCORE_DIR}/include
+    ${DERIVED_SOURCES_WEBKIT2_DIR}/include
+
+    ${WEBKIT2_DIR}/UIProcess/API/C/efl
+
     ${TOOLS_DIR}/DumpRenderTree/efl/
     ${WEBKIT2_DIR}/UIProcess/API/efl
     "${WTF_DIR}/wtf/gobject"
@@ -38,9 +40,16 @@ list(APPEND WebKitTestRunner_LIBRARIES
     ${EINA_LIBRARIES}
     ${EO_LIBRARIES}
     ${EVAS_LIBRARIES}
-    ${GLIB_LIBRARIES}
     ${OPENGL_LIBRARIES}
     WTF
+)
+
+list(APPEND WebKitTestRunnerInjectedBundle_LIBRARIES
+    ${ATK_LIBRARIES}
+    ${ECORE_LIBRARIES}
+    ${ECORE_FILE_LIBRARIES}
+    ${FONTCONFIG_LIBRARIES}
+    ${GLIB_GOBJECT_LIBRARIES}
 )
 
 if (ENABLE_ECORE_X)

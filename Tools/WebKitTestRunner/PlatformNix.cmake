@@ -19,7 +19,8 @@ else ()
         COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT_TESTRUNNER_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
     )
 endif ()
-set(ForwardingNetworkHeadersForWebKitTestRunner_NAME forwarding-headersNetworkForWebKitTestRunner)
+
+add_dependencies(forwarding-headersNixForWebKitTestRunner forwarding-headersNetworkForWebKitTestRunner)
 
 list(APPEND WebKitTestRunner_SOURCES
     ${WTF_DIR}/wtf/MD5.cpp
@@ -33,6 +34,12 @@ list(APPEND WebKitTestRunner_SOURCES
 )
 
 list(APPEND WebKitTestRunner_INCLUDE_DIRECTORIES
+    ${DERIVED_SOURCES_WEBCORE_DIR}
+    ${DERIVED_SOURCES_WEBCORE_DIR}/include
+    ${DERIVED_SOURCES_WEBKIT2_DIR}/include
+
+    # EFL is needed as our WKPopupItem is inside WK2/Shared.
+    ${WEBKIT2_DIR}/UIProcess/API/C/efl
     ${WEBKIT2_DIR}/UIProcess/API/nix
     ${WEBKIT2_DIR}/UIProcess/API/C/nix
     ${WEBKIT2_DIR}/UIProcess/API/C/CoordinatedGraphics

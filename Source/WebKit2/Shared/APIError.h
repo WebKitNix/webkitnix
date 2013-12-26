@@ -23,44 +23,50 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef WebError_h
-#define WebError_h
+#ifndef APIError_h
+#define APIError_h
 
 #include "APIObject.h"
 #include <WebCore/ResourceError.h>
 #include <wtf/PassRefPtr.h>
 
-namespace WebKit {
+namespace IPC {
+class ArgumentDecoder;
+class ArgumentEncoder;
+}
 
-// WebError - An error type suitable for vending to an API.
+namespace API {
 
-class WebError : public API::ObjectImpl<API::Object::Type::Error> {
+class Error : public ObjectImpl<Object::Type::Error> {
 public:
-    static PassRefPtr<WebError> create()
+    static PassRefPtr<Error> create()
     {
-        return adoptRef(new WebError);
+        return adoptRef(new Error);
     }
 
-    static PassRefPtr<WebError> create(const WebCore::ResourceError& error)
+    static PassRefPtr<Error> create(const WebCore::ResourceError& error)
     {
-        return adoptRef(new WebError(error));
+        return adoptRef(new Error(error));
     }
 
-    static const String& webKitErrorDomain();
+    static const WTF::String& webKitErrorDomain();
 
-    const String& domain() const { return m_platformError.domain(); }
+    const WTF::String& domain() const { return m_platformError.domain(); }
     int errorCode() const { return m_platformError.errorCode(); }
-    const String& failingURL() const { return m_platformError.failingURL(); }
-    const String& localizedDescription() const { return m_platformError.localizedDescription(); }
+    const WTF::String& failingURL() const { return m_platformError.failingURL(); }
+    const WTF::String& localizedDescription() const { return m_platformError.localizedDescription(); }
 
     const WebCore::ResourceError& platformError() const { return m_platformError; }
 
+    void encode(IPC::ArgumentEncoder&) const;
+    static bool decode(IPC::ArgumentDecoder&, RefPtr<Object>&);
+
 private:
-    WebError()
+    Error()
     {
     }
 
-    WebError(const WebCore::ResourceError& error)
+    Error(const WebCore::ResourceError& error)
         : m_platformError(error)
     {
     }
@@ -68,6 +74,6 @@ private:
     WebCore::ResourceError m_platformError;
 };
 
-} // namespace WebKit
+} // namespace API
 
-#endif // WebError_h
+#endif // APIError_h

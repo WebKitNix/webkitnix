@@ -32,6 +32,7 @@
 #include <WebCore/FloatPoint.h>
 #include <WebCore/IntRect.h>
 #include <WebCore/IntSize.h>
+#include <chrono>
 #include <stdint.h>
 #include <wtf/Noncopyable.h>
 
@@ -53,8 +54,6 @@ public:
     virtual void deviceScaleFactorDidChange() = 0;
 
     // FIXME: These should be pure virtual.
-    virtual void layerHostingModeDidChange() { }
-
     virtual void setBackingStoreIsDiscardable(bool) { }
 
     virtual void waitForBackingStoreUpdateOnNextPaint() { }
@@ -62,10 +61,10 @@ public:
     const WebCore::IntSize& size() const { return m_size; }
     void setSize(const WebCore::IntSize&, const WebCore::IntSize&, const WebCore::IntSize& scrollOffset);
 
-    // The timeout, in seconds, we use when waiting for a DidUpdateGeometry message.
-    static const double didUpdateBackingStoreStateTimeout;
+    // The timeout we use when waiting for a DidUpdateGeometry message.
+    static constexpr std::chrono::milliseconds didUpdateBackingStoreStateTimeout() { return std::chrono::milliseconds(500); }
 
-    virtual void waitForPossibleGeometryUpdate(double = didUpdateBackingStoreStateTimeout) { }
+    virtual void waitForPossibleGeometryUpdate(std::chrono::milliseconds = didUpdateBackingStoreStateTimeout()) { }
 
     virtual void colorSpaceDidChange() { }
     virtual void minimumLayoutSizeDidChange() { }

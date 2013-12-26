@@ -29,7 +29,25 @@
 #if USE(CONTENT_FILTERING)
 
 #import "ResourceResponse.h"
-#import "WebCoreSystemInterface.h"
+#import "SoftLinking.h"
+#import <objc/runtime.h>
+
+#if defined(__has_include) && __has_include(<WebContentAnalysis/WebFilterEvaluator.h>)
+#import <WebContentAnalysis/WebFilterEvaluator.h>
+#else
+static const OSStatus kWFEStateBuffering = 2;
+@interface WebFilterEvaluator : NSObject
++ (BOOL)isManagedSession;
+- (BOOL)wasBlocked;
+- (NSData *)addData:(NSData *)receivedData;
+- (NSData *)dataComplete;
+- (OSStatus)filterState;
+- (id)initWithResponse:(NSURLResponse *)response;
+@end
+#endif
+
+SOFT_LINK_PRIVATE_FRAMEWORK(WebContentAnalysis);
+SOFT_LINK_CLASS(WebContentAnalysis, WebFilterEvaluator);
 
 namespace WebCore {
 
@@ -39,21 +57,21 @@ PassRefPtr<ContentFilter> ContentFilter::create(const ResourceResponse& response
 }
 
 ContentFilter::ContentFilter(const ResourceResponse& response)
-    : m_platformContentFilter(adoptNS(wkFilterCreateInstance(response.nsURLResponse())))
+    : m_platformContentFilter(adoptNS([[getWebFilterEvaluatorClass() alloc] initWithResponse:response.nsURLResponse()]))
 {
     ASSERT(m_platformContentFilter);
 }
 
 bool ContentFilter::isEnabled()
 {
-    return wkFilterIsManagedSession();
+    return [getWebFilterEvaluatorClass() isManagedSession];
 }
 
 void ContentFilter::addData(const char* data, int length)
 {
     ASSERT(needsMoreData());
     ASSERT(![m_replacementData.get() length]);
-    m_replacementData = wkFilterAddData(m_platformContentFilter.get(), [NSData dataWithBytesNoCopy:(void*)data length:length freeWhenDone:NO]);
+    m_replacementData = [m_platformContentFilter addData:[NSData dataWithBytesNoCopy:(void*)data length:length freeWhenDone:NO]];
     ASSERT(needsMoreData() || [m_replacementData.get() length]);
 }
     
@@ -61,18 +79,18 @@ void ContentFilter::finishedAddingData()
 {
     ASSERT(needsMoreData());
     ASSERT(![m_replacementData.get() length]);
-    m_replacementData = wkFilterDataComplete(m_platformContentFilter.get());
+    m_replacementData = [m_platformContentFilter dataComplete];
     ASSERT(!needsMoreData());
 }
 
 bool ContentFilter::needsMoreData() const
 {
-    return wkFilterIsBuffering(m_platformContentFilter.get());
+    return [m_platformContentFilter filterState] == kWFEStateBuffering;
 }
 
 bool ContentFilter::didBlockData() const
 {
-    return wkFilterWasBlocked(m_platformContentFilter.get());
+    return [m_platformContentFilter wasBlocked];
 }
 
 const char* ContentFilter::getReplacementData(int& length) const

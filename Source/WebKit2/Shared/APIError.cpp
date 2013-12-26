@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2010 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,55 +23,34 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef AudioSessionManager_h
-#define AudioSessionManager_h
+#include "config.h"
+#include "APIError.h"
 
-#if USE(AUDIO_SESSION)
+#include "WebCoreArgumentCoders.h"
+#include <wtf/NeverDestroyed.h>
+#include <wtf/text/WTFString.h>
 
-#include "AudioSession.h"
-#include <wtf/HashCountedSet.h>
-#include <wtf/PassOwnPtr.h>
+namespace API {
 
-namespace WebCore {
-
-class AudioSessionManager {
-public:
-    static AudioSessionManager& sharedManager();
-
-    enum AudioType {
-        None,
-        Video,
-        Audio,
-        WebAudio,
-    };
-
-    bool has(AudioType);
-
-protected:
-    friend class AudioSessionManagerToken;
-    void incrementCount(AudioType);
-    void decrementCount(AudioType);
-    
-private:
-    AudioSessionManager();
-
-    void updateSessionState();
-
-    HashCountedSet<size_t> m_typeCount;
-};
-
-class AudioSessionManagerToken {
-public:
-    static PassOwnPtr<AudioSessionManagerToken> create(AudioSessionManager::AudioType);
-    ~AudioSessionManagerToken();
-
-private:
-    AudioSessionManagerToken(AudioSessionManager::AudioType);
-
-    AudioSessionManager::AudioType m_type;
-};
+const WTF::String& Error::webKitErrorDomain()
+{
+    static NeverDestroyed<WTF::String> webKitErrorDomainString(ASCIILiteral("WebKitErrorDomain"));
+    return webKitErrorDomainString;
 }
 
-#endif // USE(AUDIO_SESSION)
+void Error::encode(IPC::ArgumentEncoder& encoder) const
+{
+    encoder << platformError();
+}
 
-#endif // AudioSessionManager_h
+bool Error::decode(IPC::ArgumentDecoder& decoder, RefPtr<Object>& result)
+{
+    WebCore::ResourceError error;
+    if (!decoder.decode(error))
+        return false;
+    
+    result = create(error);
+    return true;
+}
+
+} // namespace WebKit

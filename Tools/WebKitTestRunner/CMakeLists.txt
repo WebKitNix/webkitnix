@@ -41,14 +41,10 @@ set(WebKitTestRunner_INCLUDE_DIRECTORIES
     ${WEBKIT2_DIR}/Shared/API/c
     ${WEBKIT2_DIR}/Shared/Plugins
     ${WEBKIT2_DIR}/UIProcess
-    ${WEBKIT2_DIR}/UIProcess/API/C/efl
     ${WEBKIT2_DIR}/UIProcess/API/C/soup
     ${WEBKIT2_DIR}/WebProcess/InjectedBundle
     ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/c
     ${WTF_DIR}
-    ${DERIVED_SOURCES_WEBCORE_DIR}
-    ${DERIVED_SOURCES_WEBCORE_DIR}/include
-    ${DERIVED_SOURCES_WEBKIT2_DIR}/include
     ${DERIVED_SOURCES_DIR}/InjectedBundle
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/Source
@@ -84,12 +80,6 @@ set(WebKitTestRunnerInjectedBundle_IDL_FILES
 
 set(WebKitTestRunnerInjectedBundle_LIBRARIES
     ${WebKitTestRunner_LIBRARIES}
-    ${ATK_LIBRARIES}
-    ${ECORE_LIBRARIES}
-    ${ECORE_FILE_LIBRARIES}
-    ${FONTCONFIG_LIBRARIES}
-    ${GLIB_LIBRARIES}
-    ${GLIB_GOBJECT_LIBRARIES}
 )
 
 IF (ENABLE_GAMEPAD)
@@ -116,4 +106,3 @@ add_executable(WebKitTestRunner ${WebKitTestRunner_SOURCES})
 target_link_libraries(WebKitTestRunner ${WebKitTestRunner_LIBRARIES})
 
 add_dependencies(WebKit2 ${ForwardingHeadersForWebKitTestRunner_NAME})
-add_dependencies(WebKit2 ${ForwardingNetworkHeadersForWebKitTestRunner_NAME})

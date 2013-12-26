@@ -26,9 +26,9 @@
 #include "config.h"
 #include "InjectedBundlePagePolicyClient.h"
 
+#include "APIError.h"
 #include "APIURLRequest.h"
 #include "WKBundleAPICast.h"
-#include "WebError.h"
 
 using namespace WebCore;
 
@@ -65,7 +65,7 @@ WKBundlePagePolicyAction InjectedBundlePagePolicyClient::decidePolicyForResponse
     if (!m_client.decidePolicyForResponse)
         return WKBundlePagePolicyActionPassThrough;
 
-    RefPtr<WebURLResponse> response = WebURLResponse::create(resourceResponse);
+    RefPtr<API::URLResponse> response = API::URLResponse::create(resourceResponse);
     RefPtr<API::URLRequest> request = API::URLRequest::create(resourceRequest);
 
     WKTypeRef userDataToPass = 0;

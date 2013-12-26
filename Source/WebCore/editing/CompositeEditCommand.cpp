@@ -626,6 +626,8 @@ bool CompositeEditCommand::canRebalance(const Position& position) const
     if (textNode->length() == 0)
         return false;
 
+    node->document().updateStyleIfNeeded();
+
     RenderObject* renderer = textNode->renderer();
     if (renderer && !renderer->style().collapseWhiteSpace())
         return false;
@@ -1276,7 +1278,7 @@ bool CompositeEditCommand::breakOutOfEmptyListItem()
     // FIXME: Can't we do something better when the immediate parent wasn't a list node?
     if (!listNode
         || (!listNode->hasTagName(ulTag) && !listNode->hasTagName(olTag))
-        || !listNode->rendererIsEditable()
+        || !listNode->hasEditableStyle()
         || listNode == emptyListItem->rootEditableElement())
         return false;
 
