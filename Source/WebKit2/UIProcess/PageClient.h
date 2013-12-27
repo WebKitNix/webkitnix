@@ -129,6 +129,8 @@ public:
     virtual void didStartedMainFrameLayout() = 0;
 #endif
 
+    virtual void pageScaleFactorDidChange() { }
+
     virtual bool decidePolicyForGeolocationPermissionRequest(WebFrameProxy&, WebSecurityOrigin&, GeolocationPermissionRequestProxy&)
     {
         return false;

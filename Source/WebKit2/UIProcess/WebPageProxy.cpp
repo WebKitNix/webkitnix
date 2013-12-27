@@ -1842,6 +1842,7 @@ void WebPageProxy::setGapBetweenPages(double gap)
 void WebPageProxy::pageScaleFactorDidChange(double scaleFactor)
 {
     m_pageScaleFactor = scaleFactor;
+    m_pageClient.pageScaleFactorDidChange();
 }
 
 void WebPageProxy::pageZoomFactorDidChange(double zoomFactor)

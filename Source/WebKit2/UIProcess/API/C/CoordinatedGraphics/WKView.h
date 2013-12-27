@@ -63,6 +63,7 @@ typedef struct WKViewClientV0 {
     WKViewPageDidChangeTooltipCallback               didChangeTooltip;
     WKViewDidFindZoomableAreaCallback                didFindZoomableArea;
     WKViewDoneWithTouchEventCallback                 doneWithTouchEvent;
+    WKViewCallback                                   didChangeContentScaleFactor;
 } WKViewClientV0;
 
 WK_EXPORT WKViewRef WKViewCreate(WKContextRef context, WKPageGroupRef pageGroup);

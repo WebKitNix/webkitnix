@@ -65,6 +65,7 @@ public:
     void didChangeViewportAttributes(WebView*, const WebCore::ViewportAttributes&);
     void didChangeTooltip(WebView*, const String& tooltip);
     void didFindZoomableArea(WebView*, const WebCore::IntPoint&, const WebCore::IntRect&);
+    void didChangeContentScaleFactor(WebView*);
 #if ENABLE(TOUCH_EVENTS)
     void doneWithTouchEvent(WebView*, const NativeWebTouchEvent&, bool);
 #endif

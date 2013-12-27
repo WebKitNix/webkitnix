@@ -160,6 +160,7 @@ protected:
     virtual void pageDidRequestScroll(const WebCore::IntPoint&) OVERRIDE;
     virtual void didRenderFrame(const WebCore::IntSize& contentsSize, const WebCore::IntRect& coveredRect) OVERRIDE;
     virtual void pageTransitionViewportReady() OVERRIDE;
+    virtual void pageScaleFactorDidChange() OVERRIDE;
 
     virtual void setCursor(const WebCore::Cursor&) OVERRIDE;
     virtual void setCursorHiddenUntilMouseMoves(bool) OVERRIDE;

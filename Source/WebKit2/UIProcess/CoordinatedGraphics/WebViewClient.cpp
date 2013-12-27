@@ -124,6 +124,14 @@ void WebViewClient::didFindZoomableArea(WebView* view, const IntPoint& target, c
     m_client.didFindZoomableArea(toAPI(view), toAPI(target), toAPI(area), m_client.base.clientInfo);
 }
 
+void WebViewClient::didChangeContentScaleFactor(WebView* view)
+{
+    if (!m_client.didChangeContentScaleFactor)
+        return;
+
+    m_client.didChangeContentScaleFactor(toAPI(view), m_client.base.clientInfo);
+}
+
 #if ENABLE(TOUCH_EVENTS)
 void WebViewClient::doneWithTouchEvent(WebView* view, const NativeWebTouchEvent& event, bool wasEventHandled)
 {

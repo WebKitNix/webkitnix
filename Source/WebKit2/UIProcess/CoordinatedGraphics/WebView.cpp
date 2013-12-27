@@ -533,6 +533,11 @@ void WebView::pageTransitionViewportReady()
     m_client.didCompletePageTransition(this);
 }
 
+void WebView::pageScaleFactorDidChange()
+{
+    m_client.didChangeContentScaleFactor(this);
+}
+
 void WebView::findZoomableAreaForPoint(const IntPoint& point, const IntSize& size)
 {
     m_page->findZoomableAreaForPoint(transformFromScene().mapPoint(point), transformFromScene().mapSize(size));
