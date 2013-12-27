@@ -70,8 +70,8 @@ public:
     bool isVisible() const { return m_visible; }
     void setVisible(bool);
 
-    void setContentScaleFactor(float);
-    float contentScaleFactor() const { return m_page->pageScaleFactor(); }
+    virtual void setContentScaleFactor(float);
+    virtual float contentScaleFactor() const { return m_page->pageScaleFactor(); }
 
     void setContentPosition(const WebCore::FloatPoint&);
     const WebCore::FloatPoint& contentPosition() const { return m_contentPosition; }

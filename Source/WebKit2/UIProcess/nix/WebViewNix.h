@@ -61,6 +61,9 @@ public:
 
     bool pendingScaleOrPositionChange() const { return m_pendingScaleOrPositionChange; }
 
+    virtual void setContentScaleFactor(float) OVERRIDE;
+    virtual float contentScaleFactor() const OVERRIDE;
+
     float scaleToFitContents();
     void adjustScaleToFitContents();
     void setScreenRect(const WebCore::FloatRect&);
@@ -75,6 +78,7 @@ protected:
     virtual void didCommitLoadForMainFrame() OVERRIDE;
     virtual void notifyLoadIsBackForward() OVERRIDE;
     virtual void didStartedMainFrameLayout() OVERRIDE;
+    virtual void pageScaleFactorDidChange() OVERRIDE;
 
 #if ENABLE(TOUCH_EVENTS)
     virtual void doneWithTouchEvent(const NativeWebTouchEvent&, bool wasEventHandled) OVERRIDE;
@@ -95,6 +99,7 @@ private:
     WebCore::IntPoint m_lastCursorPosition;
     WTF::RefPtr<WebContextMenuProxyNix> m_activeContextMenu;
 
+    float m_scaleFactorToSync;
     bool m_duringFrameRendering;
     bool m_pendingScaleOrPositionChange;
     WebCore::FloatPoint m_contentPositionAfterTransition;

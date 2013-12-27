@@ -59,6 +59,7 @@ PassRefPtr<WebView> WebView::create(WebContext* context, WebPageGroup* pageGroup
 WebViewNix::WebViewNix(WebContext* context, WebPageGroup* pageGroup)
     : WebView(context, pageGroup)
     , m_activeContextMenu(WebContextMenuProxyNix::create())
+    , m_scaleFactorToSync(0)
     , m_duringFrameRendering(false)
     , m_pendingScaleOrPositionChange(false)
     , m_scaleAfterTransition(1.0)
@@ -117,10 +118,29 @@ void WebViewNix::viewportInteractionStart()
 
 void WebViewNix::viewportInteractionStop()
 {
-    if (page()->pageScaleFactor() != contentScaleFactor())
-        page()->scalePage(contentScaleFactor(), roundedIntPoint(contentPosition()));
+    if (m_scaleFactorToSync && m_scaleFactorToSync != page()->pageScaleFactor())
+        page()->scalePage(m_scaleFactorToSync, roundedIntPoint(contentPosition()));
+
     updateViewportSize();
     resumeActiveDOMObjectsAndAnimations();
+}
+
+void WebViewNix::setContentScaleFactor(float scaleFactor)
+{
+    if (isSuspended()) {
+        m_scaleFactorToSync = scaleFactor;
+        return;
+    }
+
+    WebView::setContentScaleFactor(scaleFactor);
+}
+
+float WebViewNix::contentScaleFactor() const
+{
+    if (m_scaleFactorToSync)
+        return m_scaleFactorToSync;
+
+    return WebView::contentScaleFactor();
 }
 
 void WebViewNix::didRelaunchProcess()
@@ -225,6 +245,12 @@ float WebViewNix::scaleToFitContents()
 void WebViewNix::setScreenRect(const WebCore::FloatRect& rect)
 {
     m_page->setScreenRect(rect);
+}
+
+void WebViewNix::pageScaleFactorDidChange()
+{
+    m_scaleFactorToSync = 0;
+    WebView::pageScaleFactorDidChange();
 }
 
 } // namespace WebKit
