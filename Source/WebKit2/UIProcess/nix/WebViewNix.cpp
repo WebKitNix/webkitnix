@@ -63,8 +63,6 @@ WebViewNix::WebViewNix(WebContext* context, WebPageGroup* pageGroup)
     , m_pendingScaleOrPositionChange(false)
     , m_scaleAfterTransition(1.0)
     , m_loadIsBackForward(false)
-    , m_adjustScaleAfterFirstMainFrameRender(false)
-    , m_autoScaleToFitContents(true)
 {
 }
 
@@ -152,11 +150,6 @@ void WebViewNix::didRenderFrame(const WebCore::IntSize& contentsSize, const WebC
             setContentPosition(m_contentPositionAfterTransition);
     }
 
-    if (m_adjustScaleAfterFirstMainFrameRender) {
-        m_adjustScaleAfterFirstMainFrameRender = false;
-        adjustScaleToFitContents();
-    }
-
     WebView::didRenderFrame(contentsSize, coveredRect);
 }
 
@@ -214,13 +207,8 @@ void WebViewNix::notifyLoadIsBackForward()
 
 void WebViewNix::didStartedMainFrameLayout()
 {
-    if (m_loadIsBackForward || m_pendingScaleOrPositionChange) {
-        if (m_autoScaleToFitContents && !m_loadIsBackForward && m_page->useFixedLayout())
-            m_adjustScaleAfterFirstMainFrameRender = true;
-
+    if (m_loadIsBackForward || m_pendingScaleOrPositionChange)
         m_loadIsBackForward = false;
-        return;
-    }
 }
 
 void WebViewNix::adjustScaleToFitContents()
@@ -232,13 +220,6 @@ void WebViewNix::adjustScaleToFitContents()
 float WebViewNix::scaleToFitContents()
 {
     return size().width() / (m_contentsSize.width() * deviceScaleFactor());
-}
-
-void WebViewNix::setAutoScaleToFitContents(bool enable)
-{
-    m_autoScaleToFitContents = enable;
-    if (!m_autoScaleToFitContents)
-        m_adjustScaleAfterFirstMainFrameRender = false;
 }
 
 void WebViewNix::setScreenRect(const WebCore::FloatRect& rect)

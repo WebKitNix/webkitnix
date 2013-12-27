@@ -88,8 +88,6 @@ typedef struct NIXViewClientV0 {
     NIXViewDidChangeTooltipCallback                  didChangeTooltip;
 } NIXViewClientV0;
 
-WK_EXPORT void NIXViewSetAutoScaleToFitContents(WKViewRef, bool);
-
 WK_EXPORT float NIXViewGetScaleToFitContents(WKViewRef);
 
 WK_EXPORT void NIXViewScaleToFitContents(WKViewRef);

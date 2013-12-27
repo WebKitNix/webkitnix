@@ -63,7 +63,6 @@ public:
 
     float scaleToFitContents();
     void adjustScaleToFitContents();
-    void setAutoScaleToFitContents(bool);
     void setScreenRect(const WebCore::FloatRect&);
 protected:
     // WebKit::WebView
@@ -101,8 +100,6 @@ private:
     WebCore::FloatPoint m_contentPositionAfterTransition;
     double m_scaleAfterTransition;
     bool m_loadIsBackForward;
-    bool m_adjustScaleAfterFirstMainFrameRender;
-    bool m_autoScaleToFitContents;
 
     friend class WebView;
 };
