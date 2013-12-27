@@ -97,12 +97,11 @@ ForceRepaintClient::ForceRepaintClient(WKViewRef view)
     , m_clearB(0)
     , m_clearA(0)
 {
-    WKViewClientV0 viewClient;
-    memset(&viewClient, 0, sizeof(viewClient));
-    viewClient.base.version = 0;
-    viewClient.base.clientInfo = this;
-    viewClient.viewNeedsDisplay = viewNeedsDisplay;
-    WKViewSetViewClient(m_view, &viewClient.base);
+    std::memset(&m_viewClient, 0, sizeof(m_viewClient));
+    m_viewClient.base.version = 0;
+    m_viewClient.base.clientInfo = this;
+    m_viewClient.viewNeedsDisplay = viewNeedsDisplay;
+    WKViewSetViewClient(m_view, &m_viewClient.base);
 }
 
 void ForceRepaintClient::setClearColor(int r, int g, int b, int a)

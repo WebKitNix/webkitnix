@@ -39,6 +39,8 @@ public:
     void clear();
     void repaint();
 
+    WKViewClientV0& viewClient() { return m_viewClient; }
+
 private:
     static void viewNeedsDisplay(WKViewRef, WKRect, const void*);
 
@@ -47,6 +49,7 @@ private:
     int m_clearG;
     int m_clearB;
     int m_clearA;
+    WKViewClientV0 m_viewClient;
 };
 
 

@@ -28,9 +28,17 @@
 #include "NIXView.h"
 #include "PageLoader.h"
 #include "GLUtilities.h"
+#include "PlatformUtilities.h"
 #include <WebKit2/WKRetainPtr.h>
 
 namespace TestWebKitAPI {
+
+static bool scaleChanged = false;
+
+static void didChangeContentScaleFactor(WKViewRef, const void*)
+{
+    scaleChanged = true;
+}
 
 TEST(WebKitNix, WebViewViewport)
 {
@@ -50,6 +58,8 @@ TEST(WebKitNix, WebViewViewport)
 
     Util::ForceRepaintClient forceRepaintClient(view.get());
     forceRepaintClient.setClearColor(0, 0, 1, 1);
+    forceRepaintClient.viewClient().didChangeContentScaleFactor = didChangeContentScaleFactor;
+    WKViewSetViewClient(view.get(), &forceRepaintClient.viewClient().base);
 
     WKViewInitialize(view.get());
     WKPageSetUseFixedLayout(WKViewGetPage(view.get()), true);
@@ -67,6 +77,7 @@ TEST(WebKitNix, WebViewViewport)
     // Scale and scroll so that the first dot be at the topleft of the view.
     WKViewSetContentScaleFactor(view.get(), 0.5);
     WKViewSetContentPosition(view.get(), WKPointMake(400, 10000));
+    Util::run(&scaleChanged);
     loader.forceRepaint();
 
     // Now check that the black dots are in the expected places.

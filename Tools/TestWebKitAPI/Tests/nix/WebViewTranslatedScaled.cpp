@@ -28,10 +28,18 @@
 #include "PageLoader.h"
 #include "GLUtilities.h"
 #include "NIXView.h"
+#include "PlatformUtilities.h"
 #include <WebKit2/WKContext.h>
 #include <WebKit2/WKRetainPtr.h>
 
 namespace TestWebKitAPI {
+
+static bool scaleChanged = false;
+
+static void didChangeContentScaleFactor(WKViewRef, const void*)
+{
+    scaleChanged = true;
+}
 
 TEST(WebKitNix, WebViewTranslatedScaled)
 {
@@ -49,6 +57,8 @@ TEST(WebKitNix, WebViewTranslatedScaled)
 
     Util::ForceRepaintClient forceRepaintClient(view.get());
     forceRepaintClient.setClearColor(0, 0, 1, 1);
+    forceRepaintClient.viewClient().didChangeContentScaleFactor = didChangeContentScaleFactor;
+    WKViewSetViewClient(view.get(), &forceRepaintClient.viewClient().base);
 
     const int delta = 10;
     WKViewSetUserViewportTranslation(view.get(), delta, delta);
@@ -65,7 +75,9 @@ TEST(WebKitNix, WebViewTranslatedScaled)
     loader.waitForLoadURLAndRepaint("../nix/red-square");
 
     for (double scale = 1.0; scale < 3.0; scale++) {
+        scaleChanged = false;
         WKViewSetContentScaleFactor(view.get(), scale);
+        Util::run(&scaleChanged);
         loader.forceRepaint();
 
         ToolsNix::RGBAPixel outsideTheContent = offscreenBuffer.readPixelAtPoint(delta - 1, delta - 1);
