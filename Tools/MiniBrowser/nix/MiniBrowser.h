@@ -57,8 +57,11 @@ public:
     virtual void onWindowSizeChange(WKSize);
     virtual void onWindowClose();
 
-    virtual void pageGoBack() { WKPageGoBack(pageRef()); }
-    virtual void pageGoForward() { WKPageGoForward(pageRef()); }
+    bool isBackForwardLoad() { return m_backForwardLoad; }
+    void resetBackForwardLoadFlag() { m_backForwardLoad = false; }
+    void setViewAutoZoom(bool autoZoom) { m_viewShouldAutoZoom = autoZoom; }
+    virtual void pageGoBack();
+    virtual void pageGoForward();
     virtual void pageReload() { WKPageReload(pageRef()); }
     virtual void loadPage(const char* url) { WKPageLoadURL(pageRef(), WKURLCreateWithUTF8CString(url)); }
     virtual void addFocus() { WKViewSetIsFocused(m_view, true); }
@@ -72,13 +75,13 @@ public:
     static void webProcessRelaunched(WKViewRef, const void* clientInfo);
     static void pageDidRequestScroll(WKViewRef, WKPoint position, const void* clientInfo);
     static void didChangeContentsSize(WKViewRef, WKSize size, const void* clientInfo);
-    static void didRenderFrame(WKViewRef, WKSize contentsSize, WKRect coveredRect, const void* clientInfo);
     static void didChangeViewportAttributes(WKViewRef view, WKViewportAttributesRef attributes, const void* clientInfo);
     static void didFindZoomableArea(WKViewRef, WKPoint target, WKRect area, const void* clientInfo);
     static void doneWithTouchEvent(WKViewRef, const NIXTouchEvent* event, bool wasEventHandled, const void* clientInfo);
     static void setCursor(WKViewRef, unsigned int shape, const void *clientInfo);
     static void updateTextInputState(WKViewRef, const NIXTextInputState* state, const void* clientInfo);
     static void didChangeTooltip(WKViewRef, const WKStringRef tooltip, const void* clientInfo);
+    static void didCommitLoadForMainFrame(WKViewRef, const void* clientInfo);
 
     // GestureRecognizerClient.
     virtual void handleSingleTap(double timestamp, const NIXTouchPoint&);
@@ -159,6 +162,7 @@ private:
     float m_viewportInitScale;
     bool m_viewportUserScalable;
     bool m_viewShouldAutoZoom;
+    bool m_backForwardLoad;
 
     std::string m_activeUrlText;
 

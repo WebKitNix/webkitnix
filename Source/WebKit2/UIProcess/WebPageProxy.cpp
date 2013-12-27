@@ -761,9 +761,6 @@ void WebPageProxy::goForward()
 
     m_process->send(Messages::WebPage::GoForward(forwardItem->itemID()), m_pageID);
     m_process->responsivenessTimer()->start();
-#if PLATFORM(NIX)
-    m_pageClient.notifyLoadIsBackForward();
-#endif
 }
 
 bool WebPageProxy::canGoForward() const
@@ -791,9 +788,6 @@ void WebPageProxy::goBack()
 
     m_process->send(Messages::WebPage::GoBack(backItem->itemID()), m_pageID);
     m_process->responsivenessTimer()->start();
-#if PLATFORM(NIX)
-    m_pageClient.notifyLoadIsBackForward();
-#endif
 }
 
 bool WebPageProxy::canGoBack() const
@@ -814,9 +808,6 @@ void WebPageProxy::goToBackForwardItem(WebBackForwardListItem* item)
 
     m_process->send(Messages::WebPage::GoToBackForwardItem(item->itemID()), m_pageID);
     m_process->responsivenessTimer()->start();
-#if PLATFORM(NIX)
-    m_pageClient.notifyLoadIsBackForward();
-#endif
 }
 
 void WebPageProxy::tryRestoreScrollPosition()
@@ -2357,10 +2348,6 @@ void WebPageProxy::didFirstLayoutForFrame(uint64_t frameID, CoreIPC::MessageDeco
     MESSAGE_CHECK(frame);
 
     m_loaderClient.didFirstLayoutForFrame(this, frame, userData.get());
-#if PLATFORM(NIX)
-    if (frame == m_mainFrame.get())
-        m_pageClient.didStartedMainFrameLayout();
-#endif
 }
 
 void WebPageProxy::didFirstVisuallyNonEmptyLayoutForFrame(uint64_t frameID, CoreIPC::MessageDecoder& decoder)

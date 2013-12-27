@@ -95,6 +95,7 @@ set(test_webcore_BINARIES
 )
 
 set(test_webkit2_api_BINARIES
+    ../nix/WKViewRestoreZoomAndScrollBackForward
     ../nix/OverflowScroll
     ../nix/ScreenSize
     ../nix/SuspendResume

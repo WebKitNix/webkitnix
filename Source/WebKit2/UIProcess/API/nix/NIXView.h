@@ -66,6 +66,7 @@ struct NIXTextInputState {
 typedef struct NIXTextInputState NIXTextInputState;
 
 // NIXViewClient.
+typedef void (*NIXViewCallback)(WKViewRef, const void* clientInfo);
 typedef void (*NIXViewDoneWithTouchEventCallback)(WKViewRef view, const NIXTouchEvent* touchEvent, bool wasEventHandled, const void* clientInfo);
 typedef void (*NIXViewPageDidFindZoomableAreaCallback)(WKViewRef view, WKPoint target, WKRect area, const void* clientInfo);
 typedef void (*NIXViewPageUpdateTextInputStateCallback)(WKViewRef view, const NIXTextInputState* state, const void* clientInfo);
@@ -86,6 +87,7 @@ typedef struct NIXViewClientV0 {
     NIXViewPageUpdateTextInputStateCallback          updateTextInputState;
     NIXViewSetCursor                                 setCursor;
     NIXViewDidChangeTooltipCallback                  didChangeTooltip;
+    NIXViewCallback                                  didCommitLoadForMainFrame;
 } NIXViewClientV0;
 
 WK_EXPORT float NIXViewGetScaleToFitContents(WKViewRef);

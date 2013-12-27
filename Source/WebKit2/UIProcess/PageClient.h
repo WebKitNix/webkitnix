@@ -124,11 +124,6 @@ public:
 
     virtual void toolTipChanged(const String&, const String&) = 0;
 
-#if PLATFORM(NIX)
-    virtual void notifyLoadIsBackForward() = 0;
-    virtual void didStartedMainFrameLayout() = 0;
-#endif
-
     virtual void pageScaleFactorDidChange() { }
 
     virtual bool decidePolicyForGeolocationPermissionRequest(WebFrameProxy&, WebSecurityOrigin&, GeolocationPermissionRequestProxy&)

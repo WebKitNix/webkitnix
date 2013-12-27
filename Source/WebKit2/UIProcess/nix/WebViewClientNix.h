@@ -49,6 +49,7 @@ public:
     void updateTextInputState(WebView*, const EditorState&);
     void setCursor(WebView*, unsigned);
     void didChangeTooltip(WebView*, const WKStringRef tooltip);
+    void didCommitLoadForMainFrame(WebView*);
 };
 
 } // namespace WebKit

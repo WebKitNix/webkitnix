@@ -69,6 +69,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     , m_viewportInitScale(1)
     , m_viewShouldAutoZoom(true)
     , m_menuListenerRef(0)
+    , m_backForwardLoad(false)
 {
     WKStringRef bundlePath = WKStringCreateWithUTF8CString(options.injectedBundle.empty() ? MINIBROWSER_INJECTEDBUNDLE_DIR "libMiniBrowserInjectedBundle.so" : options.injectedBundle.c_str());
     m_context = adoptWK(WKContextCreateWithInjectedBundlePath(bundlePath));
@@ -98,6 +99,7 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     nixViewClient.didFindZoomableArea = MiniBrowser::didFindZoomableArea;
     nixViewClient.updateTextInputState = MiniBrowser::updateTextInputState;
     nixViewClient.setCursor = MiniBrowser::setCursor;
+    nixViewClient.didCommitLoadForMainFrame = MiniBrowser::didCommitLoadForMainFrame;
     NIXViewSetNixViewClient(m_view, &nixViewClient.base);
 
     WKViewClientV0 viewClient;
@@ -108,7 +110,6 @@ MiniBrowser::MiniBrowser(GMainLoop* mainLoop, const Options& options)
     viewClient.webProcessCrashed = MiniBrowser::webProcessCrashed;
     viewClient.webProcessDidRelaunch = MiniBrowser::webProcessRelaunched;
     viewClient.didChangeContentsSize = MiniBrowser::didChangeContentsSize;
-    viewClient.didRenderFrame = MiniBrowser::didRenderFrame;
     viewClient.didChangeContentsPosition = MiniBrowser::pageDidRequestScroll;
     viewClient.didChangeViewportAttributes = MiniBrowser::didChangeViewportAttributes;
     viewClient.didChangeTooltip = MiniBrowser::didChangeTooltip;
@@ -228,14 +229,26 @@ void MiniBrowser::handleKeyPress(NIXKeyEvent* event)
     if (event->modifiers & kNIXInputEventModifiersAltKey) {
         switch (event->key) {
         case kNIXKeyEventKey_Left:
-            WKPageGoBack(pageRef());
+            pageGoBack();
             return;
         case kNIXKeyEventKey_Right:
-            WKPageGoForward(pageRef());
+            pageGoForward();
             return;
         }
     }
     NIXViewSendKeyEvent(m_view, event);
+}
+
+void MiniBrowser::pageGoBack()
+{
+    m_backForwardLoad = true;
+    WKPageGoBack(pageRef());
+}
+
+void MiniBrowser::pageGoForward()
+{
+    m_backForwardLoad = true;
+    WKPageGoForward(pageRef());
 }
 
 void MiniBrowser::handleKeyRelease(NIXKeyEvent* event)
@@ -320,12 +333,6 @@ void MiniBrowser::onWindowSizeChange(WKSize size)
     m_viewRect.size.width = size.width - m_viewRect.origin.x;
     m_viewRect.size.height = size.height - m_viewRect.origin.y;
     WKViewSetSize(m_view, m_viewRect.size);
-
-    // zoom factor after automatic zooming is always <= 1.0
-    // zoom factor after manual zooming is always >= 1.0
-    // if the current zoom isn't manual we enable automatic zooming
-    if(scale() <= 1.0)
-        m_viewShouldAutoZoom = true;
 
     if (isMobileMode() && m_viewShouldAutoZoom)
         NIXViewScaleToFitContents(m_view);
@@ -459,19 +466,20 @@ void MiniBrowser::didChangeContentsSize(WKViewRef, WKSize size, const void* clie
     MiniBrowserRef mb(clientInfo);
     mb->m_contentsSize = size;
 
-    if (mb->isMobileMode())
-        mb->adjustScrollPosition();
-}
-
-void MiniBrowser::didRenderFrame(WKViewRef view, WKSize contentsSize, WKRect coveredRect, const void* clientInfo)
-{
-    MiniBrowserRef mb(clientInfo);
-    mb->m_contentsSize = contentsSize;
-
     if (mb->isMobileMode() && mb->m_viewShouldAutoZoom) {
         NIXViewScaleToFitContents(mb->m_view);
         mb->adjustScrollPosition();
     }
+}
+
+void MiniBrowser::didCommitLoadForMainFrame(WKViewRef view, const void* clientInfo)
+{
+    MiniBrowserRef mb(clientInfo);
+    if (mb->isBackForwardLoad()) {
+        mb->resetBackForwardLoadFlag();
+        mb->setViewAutoZoom(false);
+    } else
+        mb->setViewAutoZoom(true);
 }
 
 void MiniBrowser::didChangeViewportAttributes(WKViewRef, WKViewportAttributesRef attributes, const void* clientInfo)
@@ -639,8 +647,6 @@ void MiniBrowser::scaleAtPoint(const WKPoint& point, double scale, ScaleBehavior
 {
     if (!m_viewportUserScalable)
         return;
-
-    m_viewShouldAutoZoom = false;
 
     double minimumScale = double(WKViewGetSize(m_view).width) / m_contentsSize.width;
 
@@ -886,7 +892,6 @@ void MiniBrowser::didFinishDocumentLoadForFrame(WKPageRef page, WKFrameRef, WKTy
 {
     MiniBrowserRef mb(clientInfo);
     mb->updateActiveUrlText();
-    mb->m_viewShouldAutoZoom = true;
 }
 
 bool MiniBrowser::handleTLSError(WKErrorRef error)

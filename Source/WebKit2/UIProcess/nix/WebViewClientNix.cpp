@@ -83,4 +83,12 @@ void WebViewClientNix::didChangeTooltip(WebView* view, const WKStringRef tooltip
     m_client.didChangeTooltip(toAPI(view), tooltip, m_client.base.clientInfo);
 }
 
+void WebViewClientNix::didCommitLoadForMainFrame(WebView* view)
+{
+    if (!m_client.didCommitLoadForMainFrame)
+        return;
+
+    m_client.didCommitLoadForMainFrame(toAPI(view), m_client.base.clientInfo);
+}
+
 } // namespace WebKit

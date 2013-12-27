@@ -59,8 +59,6 @@ public:
     void viewportInteractionStart();
     void viewportInteractionStop();
 
-    bool pendingScaleOrPositionChange() const { return m_pendingScaleOrPositionChange; }
-
     virtual void setContentScaleFactor(float) OVERRIDE;
     virtual float contentScaleFactor() const OVERRIDE;
 
@@ -70,14 +68,10 @@ public:
 protected:
     // WebKit::WebView
     virtual void didChangeContentPosition(const WebCore::FloatPoint&) OVERRIDE;
-    virtual void pageDidRequestScroll(const WebCore::IntPoint&) OVERRIDE;
-    virtual void didRenderFrame(const WebCore::IntSize&, const WebCore::IntRect&) OVERRIDE;
 
     // PageClient.
     virtual void didFindZoomableArea(const WebCore::IntPoint& target, const WebCore::IntRect& area) OVERRIDE;
     virtual void didCommitLoadForMainFrame() OVERRIDE;
-    virtual void notifyLoadIsBackForward() OVERRIDE;
-    virtual void didStartedMainFrameLayout() OVERRIDE;
     virtual void pageScaleFactorDidChange() OVERRIDE;
 
 #if ENABLE(TOUCH_EVENTS)
@@ -100,11 +94,6 @@ private:
     WTF::RefPtr<WebContextMenuProxyNix> m_activeContextMenu;
 
     float m_scaleFactorToSync;
-    bool m_duringFrameRendering;
-    bool m_pendingScaleOrPositionChange;
-    WebCore::FloatPoint m_contentPositionAfterTransition;
-    double m_scaleAfterTransition;
-    bool m_loadIsBackForward;
 
     friend class WebView;
 };

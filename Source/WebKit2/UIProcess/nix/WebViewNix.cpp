@@ -60,10 +60,6 @@ WebViewNix::WebViewNix(WebContext* context, WebPageGroup* pageGroup)
     : WebView(context, pageGroup)
     , m_activeContextMenu(WebContextMenuProxyNix::create())
     , m_scaleFactorToSync(0)
-    , m_duringFrameRendering(false)
-    , m_pendingScaleOrPositionChange(false)
-    , m_scaleAfterTransition(1.0)
-    , m_loadIsBackForward(false)
 {
 }
 
@@ -149,30 +145,6 @@ void WebViewNix::didRelaunchProcess()
     m_client.webProcessDidRelaunch(this);
 }
 
-void WebViewNix::pageDidRequestScroll(const IntPoint& position)
-{
-    if (m_duringFrameRendering && (m_pendingScaleOrPositionChange || position != m_contentPosition)) {
-        m_pendingScaleOrPositionChange = true;
-        m_contentPositionAfterTransition = position;
-    } else
-        WebView::pageDidRequestScroll(position);
-}
-
-void WebViewNix::didRenderFrame(const WebCore::IntSize& contentsSize, const WebCore::IntRect& coveredRect)
-{
-    m_duringFrameRendering = false;
-    if (m_pendingScaleOrPositionChange) {
-        m_pendingScaleOrPositionChange = false;
-        if (m_scaleAfterTransition != contentScaleFactor())
-            setContentScaleFactor(m_scaleAfterTransition);
-
-        if (m_contentPosition != m_contentPositionAfterTransition)
-            setContentPosition(m_contentPositionAfterTransition);
-    }
-
-    WebView::didRenderFrame(contentsSize, coveredRect);
-}
-
 void WebViewNix::didChangeContentPosition(const WebCore::FloatPoint& trajectoryVector)
 {
     CoordinatedDrawingAreaProxy* drawingArea = reinterpret_cast<CoordinatedDrawingAreaProxy*>(page()->drawingArea());
@@ -190,10 +162,10 @@ void WebViewNix::didFindZoomableArea(const IntPoint& target, const IntRect& area
 
 void WebViewNix::didCommitLoadForMainFrame()
 {
-    m_duringFrameRendering = true;
-    m_pendingScaleOrPositionChange = false;
-    m_contentPositionAfterTransition = WebCore::FloatPoint();
-    m_scaleAfterTransition = 1.0;
+    m_scaleFactorToSync = 0;
+    setContentPosition(WebCore::FloatPoint());
+    WebView::didCommitLoadForMainFrame();
+    m_viewClientNix.didCommitLoadForMainFrame(this);
 }
 
 void WebViewNix::pageTransitionViewportReady()
@@ -218,17 +190,6 @@ void WebViewNix::updateTextInputState()
 PassRefPtr<WebPopupMenuProxy> WebViewNix::createPopupMenuProxy(WebPageProxy* page)
 {
     return WebPopupMenuListenerNix::create(page);
-}
-
-void WebViewNix::notifyLoadIsBackForward()
-{
-    m_loadIsBackForward = true;
-}
-
-void WebViewNix::didStartedMainFrameLayout()
-{
-    if (m_loadIsBackForward || m_pendingScaleOrPositionChange)
-        m_loadIsBackForward = false;
 }
 
 void WebViewNix::adjustScaleToFitContents()
