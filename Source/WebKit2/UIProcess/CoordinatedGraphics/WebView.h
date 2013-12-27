@@ -124,7 +124,6 @@ public:
 protected:
     WebView(WebContext*, WebPageGroup*);
 
-    virtual void didChangeContentScaleFactor(float /*scaleFactor*/) { }
     virtual void didChangeContentPosition(const WebCore::FloatPoint& /*trajectoryVector*/) { }
 
     void updateViewportSize();
