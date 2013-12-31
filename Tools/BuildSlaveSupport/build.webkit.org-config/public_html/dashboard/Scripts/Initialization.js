@@ -26,3 +26,4 @@
 var settings = new Settings;
 var buildbot = new WebKitBuildbot;
 var webkitTrac = new Trac("http://trac.webkit.org/");
+var ews = new EWS;

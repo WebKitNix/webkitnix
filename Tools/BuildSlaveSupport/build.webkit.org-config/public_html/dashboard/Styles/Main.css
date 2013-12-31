@@ -25,17 +25,16 @@
 
 * {
     box-sizing: border-box;
-    cursor: default;
     -webkit-user-select: none;
     -webkit-user-drag: none;
 }
 
-a:link {
-    cursor: pointer;
+a {
+    text-decoration: none;
 }
 
-.selectable {
-    -webkit-user-select: auto;
+a:hover {
+    text-decoration: underline;
 }
 
 div.cellButton {

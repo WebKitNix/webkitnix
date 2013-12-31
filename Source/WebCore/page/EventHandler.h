@@ -42,12 +42,27 @@
 #include <wtf/OwnPtr.h>
 #include <wtf/RefPtr.h>
 
+#if PLATFORM(IOS)
+#ifdef __OBJC__
+@class WebEvent;
+@class WAKView;
+#include "WAKAppKitStubs.h"
+#else
+class WebEvent;
+#endif
+#endif // PLATFORM(IOS)
+
 #if PLATFORM(MAC) && !defined(__OBJC__)
 class NSView;
 #endif
 
 #if ENABLE(TOUCH_EVENTS)
 #include <wtf/HashMap.h>
+#endif
+
+#if ENABLE(IOS_TOUCH_EVENTS)
+#include <wtf/HashSet.h>
+#include <wtf/Vector.h>
 #endif
 
 namespace WebCore {
@@ -79,6 +94,7 @@ class RenderWidget;
 class SVGElementInstance;
 class Scrollbar;
 class TextEvent;
+class Touch;
 class TouchEvent;
 class VisibleSelection;
 class WheelEvent;
@@ -92,6 +108,10 @@ extern const int ImageDragHysteresis;
 extern const int TextDragHysteresis;
 extern const int GeneralDragHysteresis;
 #endif // ENABLE(DRAG_SUPPORT)
+
+#if ENABLE(IOS_GESTURE_EVENTS)
+extern const float GestureUnknown;
+#endif
 
 enum AppendTrailingWhitespace { ShouldAppendTrailingWhitespace, DontAppendTrailingWhitespace };
 enum CheckDragHysteresis { ShouldCheckDragHysteresis, DontCheckDragHysteresis };
@@ -145,7 +165,9 @@ public:
 #endif
 
     void scheduleHoverStateUpdate();
+#if ENABLE(CURSOR_SUPPORT)
     void scheduleCursorUpdate();
+#endif
 
     void setResizingFrameSet(HTMLFrameSetElement*);
 
@@ -176,9 +198,27 @@ public:
     void defaultWheelEventHandler(Node*, WheelEvent*);
     bool handlePasteGlobalSelection(const PlatformMouseEvent&);
 
+#if ENABLE(IOS_TOUCH_EVENTS) || ENABLE(IOS_GESTURE_EVENTS)
+    typedef Vector<RefPtr<Touch>> TouchArray;
+    typedef HashMap<EventTarget*, TouchArray*> EventTargetTouchMap;
+    typedef HashSet<RefPtr<EventTarget>> EventTargetSet;
+#endif
 #if PLATFORM(NIX)
     void handleSingleTap(double timestamp, const PlatformTouchPoint&);
 #endif
+
+#if ENABLE(IOS_TOUCH_EVENTS)
+    bool dispatchTouchEvent(const PlatformTouchEvent&, const AtomicString&, const EventTargetTouchMap&, float, float);
+#endif
+
+#if ENABLE(IOS_GESTURE_EVENTS)
+    bool dispatchGestureEvent(const PlatformTouchEvent&, const AtomicString&, const EventTargetSet&, float, float);
+#endif
+
+#if PLATFORM(IOS)
+    void defaultTouchEventHandler(Node*, TouchEvent*);
+#endif
+
 #if ENABLE(TOUCH_ADJUSTMENT)
     bool bestClickableNodeForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntPoint& targetPoint, Node*& targetNode);
     bool bestContextMenuNodeForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntPoint& targetPoint, Node*& targetNode);
@@ -217,20 +257,42 @@ public:
     void sendScrollEvent(); // Ditto
 
 #if PLATFORM(MAC) && defined(__OBJC__)
+#if !PLATFORM(IOS)
     void mouseDown(NSEvent *);
     void mouseDragged(NSEvent *);
     void mouseUp(NSEvent *);
     void mouseMoved(NSEvent *);
     bool keyEvent(NSEvent *);
     bool wheelEvent(NSEvent *);
+#else
+    void mouseDown(WebEvent *);
+    void mouseUp(WebEvent *);
+    void mouseMoved(WebEvent *);
+    bool keyEvent(WebEvent *);
+    bool wheelEvent(WebEvent *);
+#endif
 
+#if ENABLE(IOS_TOUCH_EVENTS)
+    void touchEvent(WebEvent *);
+#endif
+
+#if !PLATFORM(IOS)
     void passMouseMovedEventToScrollbars(NSEvent *);
 
     void sendFakeEventsAfterWidgetTracking(NSEvent *initiatingEvent);
+#endif
 
+#if !PLATFORM(IOS)
     void setActivationEventNumber(int num) { m_activationEventNumber = num; }
 
     static NSEvent *currentNSEvent();
+#else
+    static WebEvent *currentEvent();
+#endif // !PLATFORM(IOS)
+#endif // PLATFORM(MAC) && defined(__OBJC__)
+
+#if PLATFORM(IOS)
+    void invalidateClick();
 #endif
 
 #if ENABLE(TOUCH_EVENTS)
@@ -270,7 +332,9 @@ private:
     OptionalCursor selectCursor(const HitTestResult&, bool shiftKey);
 
     void hoverTimerFired(Timer<EventHandler>*);
+#if ENABLE(CURSOR_SUPPORT)
     void cursorUpdateTimerFired(Timer<EventHandler>*);
+#endif
 
     bool logicalScrollOverflow(ScrollLogicalDirection, ScrollGranularity, Node* startingNode = 0);
     
@@ -295,10 +359,11 @@ private:
 
 #if ENABLE(TOUCH_EVENTS)
     bool dispatchSyntheticTouchEventIfEnabled(const PlatformMouseEvent&);
-    HitTestResult hitTestResultInFrame(Frame*, const LayoutPoint&, HitTestRequest::HitTestRequestType hitType = HitTestRequest::ReadOnly | HitTestRequest::Active | HitTestRequest::DisallowShadowContent);
 #endif
 
+#if !PLATFORM(IOS)
     void invalidateClick();
+#endif
 
     Node* nodeUnderMouse() const;
     
@@ -405,7 +470,9 @@ private:
     bool m_panScrollButtonPressed;
 
     Timer<EventHandler> m_hoverTimer;
+#if ENABLE(CURSOR_SUPPORT)
     Timer<EventHandler> m_cursorUpdateTimer;
+#endif
 
     OwnPtr<AutoscrollController> m_autoscrollController;
     bool m_mouseDownMayStartAutoscroll;
@@ -433,6 +500,21 @@ private:
     int m_clickCount;
     RefPtr<Node> m_clickNode;
 
+#if ENABLE(IOS_GESTURE_EVENTS)
+    float m_gestureInitialDiameter;
+    float m_gestureLastDiameter;
+    float m_gestureInitialRotation;
+    float m_gestureLastRotation;
+#endif
+
+#if ENABLE(IOS_TOUCH_EVENTS)
+    unsigned m_firstTouchID;
+
+    TouchArray m_touches;
+    EventTargetSet m_gestureTargets;
+    RefPtr<Frame> m_touchEventTargetSubframe;
+#endif
+
 #if ENABLE(DRAG_SUPPORT)
     RefPtr<Element> m_dragTarget;
     bool m_shouldOnlyFireDragOverEvent;
@@ -456,12 +538,14 @@ private:
 
     RefPtr<Element> m_previousWheelScrolledElement;
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) || PLATFORM(IOS)
     NSView *m_mouseDownView;
     bool m_sendingEventToSubview;
+#if !PLATFORM(IOS)
     int m_activationEventNumber;
 #endif
-#if ENABLE(TOUCH_EVENTS)
+#endif
+#if ENABLE(TOUCH_EVENTS) && !ENABLE(IOS_TOUCH_EVENTS)
     typedef HashMap<int, RefPtr<EventTarget>> TouchTargetMap;
     TouchTargetMap m_originatingTouchPointTargets;
     RefPtr<Document> m_originatingTouchPointDocument;

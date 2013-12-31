@@ -66,6 +66,26 @@ BuildbotIteration.prototype = {
         this._finished = x;
     },
 
+    get productive()
+    {
+        return this.loaded && this._finished && !this.willRetry;
+    },
+
+    get previousProductiveIteration()
+    {
+        for (var i = 0; i < this.queue.iterations.length - 1; ++i) {
+            if (this.queue.iterations[i] === this) {
+                while (++i < this.queue.iterations.length) {
+                    var iteration = this.queue.iterations[i];
+                    if (iteration.productive)
+                        return iteration;
+                }
+                break;
+            }
+        }
+        return null;
+    },
+
     update: function()
     {
         if (this.loaded && this._finished)
@@ -157,6 +177,7 @@ BuildbotIteration.prototype = {
             // Results values (same for the iteration and for each of its steps):
             // SUCCESS: 0, WARNINGS: 1, FAILURE: 2, SKIPPED: 3, EXCEPTION: 4, RETRY: 5.
             this.failed = !!data.results;
+            this.willRetry = data.results === 5;
 
             this.text = data.text.join(" ");
 

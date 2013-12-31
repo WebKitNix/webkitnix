@@ -168,6 +168,5 @@ set(test_webkit2_api_fail_BINARIES
     ForceRepaint
     NewFirstVisuallyNonEmptyLayoutFrames
     NewFirstVisuallyNonEmptyLayoutFails
-    PageVisibilityState
     WillLoad
 )

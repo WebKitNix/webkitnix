@@ -1,3 +1,690 @@
+2013-12-31  Andreas Kling  <akling@apple.com>
+
+        Out-of-line RenderStyle substructure copying helpers.
+        <https://webkit.org/b/126340>
+
+        This shrinks the .access() calls by moving memory allocation logic
+        out-of-line, though I'm really doing this to make Instruments.app
+        allocations output more readable.
+
+        Writes to e.g 'font' or 'color' will now be grouped under a single
+        StyleInheritedData::copy() call instead of being spread out over
+        setFontDescription(), setLineHeight(), setColor(), etc.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-31  Andreas Kling  <akling@apple.com>
+
+        RenderListItem should store its marker in a RenderPtr.
+        <https://webkit.org/b/126298>
+
+        Make RenderListItem::m_marker a RenderPtr<RenderListMarker> and
+        remove two manual destroy() calls. Tweaked code to reduce nesting.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-31  Andreas Kling  <akling@apple.com>
+
+        Element's renderer factory should return RenderPtrs.
+        <https://webkit.org/b/126318>
+
+        Rename Element::createRenderer() to createElementRenderer() and have
+        it return RenderPtr<RenderElement>. Propagate signature until it
+        builds again.
+
+        We leakPtr() the renderer at two call sites when handing things over
+        to raw pointer API. This'll get tidied up in subsequent patches.
+
+        Reviewed by Sam Weinig.
+
+2013-12-31  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [SOUP] Return early in ResourceHandle::receivedCancellation if the load has already cancelled
+        https://bugs.webkit.org/show_bug.cgi?id=126287
+
+        Reviewed by Martin Robinson.
+
+        This situation can happen when using the network process, because
+        the ReceivedCancellation message can be received when the resource
+        loader has already been removed, but the authentication challenge
+        still has a reference to the ResourceHandleClient.
+
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::ResourceHandle::receivedCancellation):
+
+2013-12-31  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [SOUP] The initiating page is lost after a redirection
+        https://bugs.webkit.org/show_bug.cgi?id=126293
+
+        Reviewed by Martin Robinson.
+
+        The initiating page id is attached to the initial soup request
+        object, but not to the one created after a redirection.
+
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::createSoupRequestAndMessageForHandle): Call
+        setSoupRequestInitiatingPageIDFromNetworkingContext() here if the
+        soup request is created successfully.
+        (WebCore::ResourceHandle::start): Remove the call to
+        setSoupRequestInitiatingPageIDFromNetworkingContext().
+
+2013-12-31  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [SOUP] Implement ResourceHandle::continueWillSendRequest()
+        https://bugs.webkit.org/show_bug.cgi?id=126291
+
+        Reviewed by Martin Robinson.
+
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::continueAfterWillSendRequest): Helper function that
+        continues with the load after willSendRequest has been called.
+        (WebCore::doRedirect): Call continueAfterWillSendRequest() when
+        client doesn't use async callbacks.
+        (WebCore::ResourceHandle::continueWillSendRequest): Call
+        continueAfterWillSendRequest().
+
+2013-12-30  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [SOUP] willSendRequest doesn't work after a redirect
+        https://bugs.webkit.org/show_bug.cgi?id=126290
+
+        Reviewed by Martin Robinson.
+
+        The problem is that we are creating the new soup request for the
+        redirect before calling ResourceHandleClient::willSendRequest() so
+        that any change made to the request by the client is ignored.
+
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::doRedirect): Create the new soup request and soup
+        message for the redirect after calling willSendRequest() on the
+        client.
+
+2013-12-30  Andreas Kling  <akling@apple.com>
+
+        InputType should return input renderers wrapped in RenderPtr.
+        <https://webkit.org/b/126307>
+
+        Rename InputType::createRenderer() to createInputRenderer() and
+        make it return RenderPtr<RenderElement>. Also made it non-const.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-30  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Cleanup static_cast<HTMLFormElement*> by using toHTMLFormElement()
+        https://bugs.webkit.org/show_bug.cgi?id=126309
+
+        Reviewed by Andreas Kling.
+
+        To detect bad type casts, it would be good to use toHTMLFormElement() instead of
+        using manual type cast. Additionally FORM_ASSOCIATED_ELEMENT_TYPE_CASTS is introduced newly
+        to do it.
+
+        No new tests, no behavior changes.
+
+        * html/FormAssociatedElement.h:
+        * html/HTMLFormControlElement.h:
+        * html/HTMLFormElement.cpp:
+        (WebCore::HTMLFormElement::submitImplicitly):
+        (WebCore::HTMLFormElement::validateInteractively):
+        (WebCore::HTMLFormElement::submit):
+        (WebCore::HTMLFormElement::reset):
+        (WebCore::HTMLFormElement::defaultButton):
+        (WebCore::HTMLFormElement::checkInvalidControlsAndCollectUnhandled):
+        (WebCore::HTMLFormElement::documentDidResumeFromPageCache):
+        * loader/FormSubmission.cpp:
+        (WebCore::FormSubmission::create):
+
+2013-12-30  Anders Carlsson  <andersca@apple.com>
+
+        Replace yield() and pauseBriefly() with std::this_thread::yield()
+        https://bugs.webkit.org/show_bug.cgi?id=126105
+
+        Reviewed by Sam Weinig.
+
+        * platform/sql/SQLiteDatabase.cpp:
+        (WebCore::SQLiteDatabase::interrupt):
+
+2013-12-30  Andreas Kling  <akling@apple.com>
+
+        Rename createRenderObject() to createRenderer().
+
+        Somewhat rubber-stamped by Antti Koivisto.
+
+2013-12-30  Andreas Kling  <akling@apple.com>
+
+        Document should store its RenderView in a RenderPtr.
+        <https://webkit.org/b/126299>
+
+        Make Document::m_renderView a RenderPtr<RenderView> and remove one
+        manual destroy() call. Also removed the setRenderView() helper and
+        inlined it at the two call sites.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-30  Martin Robinson  <mrobinson@igalia.com>
+
+        [CMake] [GTK] Add support for GObject introspection
+        https://bugs.webkit.org/show_bug.cgi?id=126162
+
+        Reviewed by Daniel Bates.
+
+        * PlatformGTK.cmake: Build a list of WebKitDOM headers and expose it to the
+        parent scope of the build.
+
+2013-12-30  Andreas Kling  <akling@apple.com>
+
+        Text::createTextRenderer() should return a RenderPtr.
+        <https://webkit.org/b/126292>
+
+        Make createTextRenderer() return a RenderPtr and remove one manual
+        destroy() call. Also, since it should always return a valid object,
+        I turned a null check into an assertion instead.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-30  Antti Koivisto  <antti@apple.com>
+
+        Remove attachChild
+        https://bugs.webkit.org/show_bug.cgi?id=126288
+
+        Reviewed by Andreas Kling.
+
+        * dom/ContainerNode.cpp:
+        (WebCore::destroyRenderTreeIfNeeded):
+        
+            Rename detachChild and move the tests here.
+
+        (WebCore::ContainerNode::takeAllChildrenFrom):
+        
+            No need to call attachRenderTree explicitly anymore.
+
+        (WebCore::ContainerNode::removeBetween):
+
+2013-12-29  Andreas Kling  <akling@apple.com>
+
+        RenderLayer: Store corner and resizer renderers in RenderPtrs.
+        <https://webkit.org/b/126274>
+
+        Turn RenderLayer::m_scrollCorner and m_resizer into RenderPtrs.
+        Removed manual destroy() calls as appropriate. Also tweaked some
+        code to reduce nesting.
+
+        Reviewed by Anders Carlsson.
+
+2013-12-30  Antti Koivisto  <antti@apple.com>
+
+        XML document builder should create render tree asynchronously
+        https://bugs.webkit.org/show_bug.cgi?id=126285
+
+        Reviewed by Andreas Kling.
+        
+        Stop creating renderers explicitly. 
+        Fix SVG <use> element to not rely on parse time render tree construction.
+
+        * svg/SVGUseElement.cpp:
+        (WebCore::SVGUseElement::svgAttributeChanged):
+        
+            Remove renderer check, we may not have created the render tree yet.
+
+        (WebCore::SVGUseElement::willAttachRenderers):
+        
+            Switch to willAttachRenderers from willRecalcStyle. The latter is only called as long as style
+            recalc doesn't start creating new renderers.
+
+        (WebCore::SVGUseElement::invalidateShadowTree):
+        
+            Remove renderer check, we may not have created the render tree yet. 
+            Invalidate with ReconstructRenderTree so willAttachRenderers will always get called.
+
+        * svg/SVGUseElement.h:
+        * xml/parser/XMLDocumentParser.cpp:
+        (WebCore::XMLDocumentParser::exitText):
+        * xml/parser/XMLDocumentParserLibxml2.cpp:
+        (WebCore::XMLDocumentParser::startElementNs):
+        (WebCore::XMLDocumentParser::cdataBlock):
+        
+            Remove explicit call to attachRenderTree. The render tree will be created lazily.
+
+2013-12-29  Joone Hur  <joone.hur@intel.com>
+
+        Reverted r156742. The same fix was reverted from Blink due to heap-use-after-free on ClusterFuzz.
+        https://bugs.webkit.org/show_bug.cgi?id=126275
+
+        https://codereview.chromium.org/102993011
+
+        Reviewed by Darin Adler.
+
+        * rendering/RenderBlock.cpp:
+        (WebCore::RenderBlock::updateFirstLetter):
+
+2013-12-29  ChangSeok Oh  <changseok.oh@collabora.com>
+
+        Remove unused functions in GraphicsContext3D.cpp
+        https://bugs.webkit.org/show_bug.cgi?id=126265
+
+        Reviewed by Andreas Kling.
+
+        platformGraphicsContext3D, platformTexture and platformLayer in GC3D.cpp
+        seem not used by any ports.
+
+        No new tests, no functionality changed.
+
+        * platform/graphics/GraphicsContext3D.cpp:
+
+2013-12-29  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Fix build error on 64bit debug build.
+        https://bugs.webkit.org/show_bug.cgi?id=126248
+
+        r161076 used ‘%lli’(for long long int) for int64_t(aka long int).
+        However, in a 64bit compile, int64_t is 'long int', not a 'long long int'.
+        To support 32bit and 64bit, we use static_cast<long long>.
+
+        * Modules/indexeddb/IDBTransactionBackend.cpp:
+        (WebCore::IDBTransactionBackend::commit):
+
+2013-12-29  Antti Koivisto  <antti@apple.com>
+
+        Remove some accidental commented out code.
+
+        * testing/Internals.cpp:
+        (WebCore::Internals::mallocStatistics):
+
+2013-12-29  Antti Koivisto  <antti@apple.com>
+
+        Fix build.
+
+        * xml/parser/XMLDocumentParser.cpp:
+
+2013-12-29  Antti Koivisto  <antti@apple.com>
+
+        Remove Node::attached()
+        https://bugs.webkit.org/show_bug.cgi?id=126276
+
+        Reviewed by Sam Weinig.
+
+        Node::attached() is poorly defined. Replace it with renderer() and inRenderedDocument() tests as appropriate.
+        
+        Also remove some unnecessary explicit attachRenderTree/detachRenderTree calls from the tree builders.
+
+2013-12-29  Andreas Kling  <akling@apple.com>
+
+        RenderLayer: Store reflection renderer in a RenderPtr.
+        <https://webkit.org/b/126273>
+
+        Reviewed by Anders Carlsson.
+
+        * rendering/RenderLayer.h:
+        * rendering/RenderLayer.cpp:
+        (WebCore::RenderLayer::RenderLayer):
+        (WebCore::RenderLayer::calculateClipRects):
+
+            Turn RenderLayer::m_reflection into a RenderPtr<RenderReplica>
+            instead of a raw pointer.
+
+        * WebCore.xcodeproj/project.pbxproj:
+
+            Add RenderPtr.h to private headers.
+
+2013-12-28  Andreas Kling  <akling@apple.com>
+
+        Add an owning smart pointer for RenderObjects and start using it.
+        <https://webkit.org/b/126251>
+
+        This patch adds a RenderPtr pointer, essentially an OwnPtr for
+        RenderObjects. The difference is that RenderPtr destroys the object
+        by calling destroy() on it.
+
+        This is necessary to implement the willBeDestroyed() mechanism in
+        RenderObject that notifies renderers just before they are about to
+        be deleted, while they can still do tree traversal, etc.
+
+        I also added a make_unique-alike helper so you can write:
+
+            auto renderer = createRenderObject<RenderImage>(...);
+
+        Put it all to use by making ContentData::createRenderer() return
+        RenderPtr<RenderObject> instead of raw RenderObject*.
+
+        Reviewed by Antti Koivisto.
+
+2013-12-28  Benjamin Poulain  <benjamin@webkit.org>
+
+        Add a missing include path for GTK
+        https://bugs.webkit.org/show_bug.cgi?id=126257
+
+        Reviewed by Philippe Normand.
+
+        * GNUmakefile.am:
+
+2013-12-28  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Unreviewed. Update GObject DOM symbols file after r160733.
+
+        * bindings/gobject/webkitdom.symbols:
+
+2013-12-28  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Downloads are broken with the network process enabled
+        https://bugs.webkit.org/show_bug.cgi?id=126131
+
+        Reviewed by Martin Robinson.
+
+        The problem is that the network process crashes when trying to
+        convert the handle to a download, because at that point the
+        download has finished and the handle is NULL. This happens because
+        we are not implementing ResourceHandle::continueDidReceiveResponse().
+
+        * platform/network/soup/ResourceHandleSoup.cpp:
+        (WebCore::nextMultipartResponsePartCallback): Call
+        continueAfterDidReceiveResponse() when not using async callbacks.
+        (WebCore::sendRequestCallback): Ditto.
+        (WebCore::continueAfterDidReceiveResponse): Helper function that
+        continues the load after didReceiveResponse.
+        (WebCore::ResourceHandle::continueDidReceiveResponse): Call
+        continueAfterDidReceiveResponse().
+
+2013-12-27  Daniel Bates  <dabates@apple.com>
+
+        Another attempt to fix the Windows build after <http://trac.webkit.org/changeset/161106>
+        (https://bugs.webkit.org/show_bug.cgi?id=126180)
+
+        * WebCore.vcxproj/WebCore.vcxproj.filters: Add files platform/audio/{AudioSession, AudioSessionListener}.h
+        * WebCore.vcxproj/WebCoreCommon.props: Add directory WebCore/platform/audio to the list of
+        include directories.
+
+2013-12-27  Daniel Bates  <dabates@apple.com>
+
+        Attempt to fix the Windows build after <http://trac.webkit.org/changeset/161106>
+        (https://bugs.webkit.org/show_bug.cgi?id=126180)
+
+        Add files platform/audio/AudioSession.{cpp, h} and platform/audio/AudioSessionListener.h
+        to the Visual Studio project. Note, the contents of these files are guarded by USE(AUDIO_SESSION),
+        which is only enabled on Mac and iOS at the time of writing.
+
+        I thought to try this approach to fix the build so as to avoid adding an extraneous
+        USE(AUDIO_SESSION)-guard around the #include "AudioSession.h" in Settings.cpp since
+        the contents of the file AudioSession.h is guarded by USE(AUDIO_SESSION).
+
+        * WebCore.vcxproj/WebCore.vcxproj:
+
+2013-12-27  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Upstream WebCore/page changes
+        https://bugs.webkit.org/show_bug.cgi?id=126180
+
+        Reviewed by Darin Adler.
+
+        * WebCore.xcodeproj/project.pbxproj:
+        * dom/EventNames.h:
+        (WebCore::EventNames::isGestureEventType): Added.
+        * page/AlternativeTextClient.h: Do not define WTF_USE_DICTATION_ALTERNATIVES when building for iOS.
+        * page/Chrome.cpp:
+        (WebCore::Chrome::Chrome):
+        (WebCore::Chrome::dispatchViewportPropertiesDidChange): Added; guarded by PLATFORM(IOS).
+        (WebCore::Chrome::setCursor): Make this an empty function when building for iOS.
+        (WebCore::Chrome::setCursorHiddenUntilMouseMoves): Ditto.
+        (WebCore::Chrome::didReceiveDocType): Added; iOS-specific.
+        * page/Chrome.h:
+        (WebCore::Chrome::setDispatchViewportDataDidChangeSuppressed): Added; guarded by PLATFORM(IOS).
+        * page/ChromeClient.h:
+        (WebCore::ChromeClient::didFlushCompositingLayers): Added; guarded by PLATFORM(IOS).
+        (WebCore::ChromeClient::fetchCustomFixedPositionLayoutRect): Added; guarded by PLATFORM(IOS).
+        (WebCore::ChromeClient::updateViewportConstrainedLayers): Added; guarded by PLATFORM(IOS).
+        * page/DOMTimer.cpp:
+        (WebCore::DOMTimer::install): Added iOS-specific code.
+        (WebCore::DOMTimer::fired): Ditto.
+        * page/DOMWindow.cpp:
+        (WebCore::DOMWindow::DOMWindow): Ditto.
+        (WebCore::DOMWindow::innerHeight): Ditto.
+        (WebCore::DOMWindow::innerWidth): Ditto.
+        (WebCore::DOMWindow::scrollX): Ditto.
+        (WebCore::DOMWindow::scrollY): Ditto.
+        (WebCore::DOMWindow::scrollBy): Ditto.
+        (WebCore::DOMWindow::scrollTo): Ditto.
+        (WebCore::DOMWindow::clearTimeout): Ditto.
+        (WebCore::DOMWindow::addEventListener): Ditto.
+        (WebCore::DOMWindow::incrementScrollEventListenersCount): Added; guarded by PLATFORM(IOS).
+        (WebCore::DOMWindow::decrementScrollEventListenersCount): Added; guarded by PLATFORM(IOS).
+        (WebCore::DOMWindow::resetAllGeolocationPermission): Added; Also added FIXME comment.
+        (WebCore::DOMWindow::removeEventListener): Added iOS-specific code.
+        (WebCore::DOMWindow::dispatchEvent): Modified to prevent dispatching duplicate pageshow and pagehide
+        events per <http://www.whatwg.org/specs/web-apps/current-work/multipage/history.html#event-pageshow>.
+        (WebCore::DOMWindow::removeAllEventListeners): Added iOS-specific code.
+        * page/DOMWindow.h:
+        * page/DOMWindow.idl: Added IOS_GESTURE_EVENTS-guarded attributes: ongesture{change, end, start}. Also
+        added IOS_TOUCH_EVENTS-guarded attributes: {Touch, TouchList}Constructor.
+        * page/EditorClient.h:
+        * page/EventHandler.cpp:
+        (WebCore::EventHandler::EventHandler): Added iOS-specific code.
+        (WebCore::EventHandler::clear): Ditto.
+        (WebCore::EventHandler::startPanScrolling): Make this an empty function when building for iOS.
+        (WebCore::EventHandler::handleMousePressEvent): Modified to invalidate a click when the clicked node is
+        null. Also, opt out of code for updating the scrollbars as UIKit manages scrollbars on iOS.
+        (WebCore::EventHandler::handleMouseMoveEvent): Opt of code for updating the scrollbars and cursor when building on iOS.
+        (WebCore::hitTestResultInFrame): Made this a file-local static function since it's only used in EventHandler.cpp.
+        (WebCore::EventHandler::dispatchSyntheticTouchEventIfEnabled): Added iOS-specific code.
+        * page/EventHandler.h:
+        * page/FocusController.h:
+        * page/Frame.cpp:
+        (WebCore::Frame::Frame): Added iOS-specific code.
+        (WebCore::Frame::scrollOverflowLayer): Added; iOS-specific.
+        (WebCore::Frame::overflowAutoScrollTimerFired): Added; iOS-specific.
+        (WebCore::Frame::startOverflowAutoScroll): Added; iOS-specific.
+        (WebCore::Frame::checkOverflowScroll): Added; iOS-specific.
+        (WebCore::Frame::willDetachPage): Added iOS-specific code.
+        (WebCore::Frame::createView): Ditto.
+        (WebCore::Frame::setSelectionChangeCallbacksDisabled): Added; iOS-specific.
+        (WebCore::Frame::selectionChangeCallbacksDisabled): Added; iOS-specific.
+        * page/Frame.h:
+        (WebCore::Frame::timersPaused): Added; guarded by PLATFORM(IOS).
+        * page/FrameView.cpp:
+        (WebCore::FrameView::FrameView): Added iOS-specific code.
+        (WebCore::FrameView::clear): Ditto.
+        (WebCore::FrameView::flushCompositingStateForThisFrame): Ditto.
+        (WebCore::FrameView::graphicsLayerForPlatformWidget): Added.
+        (WebCore::FrameView::scheduleLayerFlushAllowingThrottling): Added.
+        (WebCore::FrameView::layout): Added iOS-specific code.
+        (WebCore::countRenderedCharactersInRenderObjectWithThreshold): Added; helper function used by FrameView::renderedCharactersExceed().
+        Also added FIXME comment.
+        (WebCore::FrameView::renderedCharactersExceed): Added.
+        (WebCore::FrameView::visibleContentsResized): Added iOS-specific code.
+        (WebCore::FrameView::adjustTiledBackingCoverage): Ditto.
+        (WebCore::FrameView::performPostLayoutTasks): Ditto.
+        (WebCore::FrameView::sendResizeEventIfNeeded): Ditto.
+        (WebCore::FrameView::paintContents): Added iOS-specific code. Also added FIXME comments.
+        (WebCore::FrameView::setUseCustomFixedPositionLayoutRect): Added; iOS-specific.
+        (WebCore::FrameView::setCustomFixedPositionLayoutRect): Added; iOS-specific.
+        (WebCore::FrameView::updateFixedPositionLayoutRect): Added; iOS-specific.
+        * page/FrameView.h:
+        * page/Navigator.cpp:
+        (WebCore::Navigator::standalone): Added; iOS-specific.
+        * page/Navigator.h:
+        * page/Navigator.idl: Added WTF_PLATFORM_IOS-guarded attribute: standalone. Also added FIXME comment.
+        * page/NavigatorBase.cpp:
+        (WebCore::NavigatorBase::platform): Added iOS-specific code.
+        * page/Page.h:
+        (WebCore::Page::hasCustomHTMLTokenizerTimeDelay): Added; guarded by PLATFORM(IOS). Also added FIXME comment
+        to remove this method.
+        (WebCore::Page::customHTMLTokenizerTimeDelay): Added; guarded by PLATFORM(IOS). Also added FIXME comment
+        to remove this method.
+        * page/PageGroup.cpp:
+        (WebCore::PageGroup::removeVisitedLink): Added.
+        * page/PageGroup.h:
+        * page/Settings.cpp:
+        (WebCore::Settings::Settings):
+        (WebCore::Settings::setScriptEnabled): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setStandalone): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setAudioSessionCategoryOverride): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::audioSessionCategoryOverride): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setNetworkDataUsageTrackingEnabled): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::networkDataUsageTrackingEnabled): Added; guarded by PLATFORM(IOS).
+        (WebCore::sharedNetworkInterfaceNameGlobal): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setNetworkInterfaceName): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::networkInterfaceName): Added; guarded by PLATFORM(IOS).
+        * page/Settings.h:
+        (WebCore::Settings::setMaxParseDuration): Added; guarded by PLATFORM(IOS). Also added FIXME comment.
+        (WebCore::Settings::maxParseDuration): Added; guarded by PLATFORM(IOS). Also added FIXME comment.
+        (WebCore::Settings::standalone): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setTelephoneNumberParsingEnabled): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::telephoneNumberParsingEnabled): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setMediaDataLoadsAutomatically): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::mediaDataLoadsAutomatically): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setShouldTransformsAffectOverflow): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::shouldTransformsAffectOverflow): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setShouldDispatchJavaScriptWindowOnErrorEvents): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::shouldDispatchJavaScriptWindowOnErrorEvents): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setAlwaysUseBaselineOfPrimaryFont): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::alwaysUseBaselineOfPrimaryFont): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::setAlwaysUseAcceleratedOverflowScroll): Added; guarded by PLATFORM(IOS).
+        (WebCore::Settings::alwaysUseAcceleratedOverflowScroll): Added; guarded by PLATFORM(IOS).
+        * page/Settings.in: Added IOS_AIRPLAY-guarded setting: mediaPlaybackAllowsAirPlay.
+        * page/animation/CSSPropertyAnimation.cpp:
+        (WebCore::CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap): Added iOS-specific code and FIXME comment.
+        * page/ios/EventHandlerIOS.mm: Added.
+        * page/ios/FrameIOS.mm: Added.
+        * page/mac/ChromeMac.mm:
+        * page/mac/PageMac.cpp:
+        (WebCore::Page::addSchedulePair): Opt out of code when building for iOS.
+        (WebCore::Page::removeSchedulePair): Ditto.
+        * page/mac/SettingsMac.mm:
+        (WebCore::Settings::shouldEnableScreenFontSubstitutionByDefault): Added iOS-specific code.
+        * page/mac/WebCoreFrameView.h:
+
+2013-12-27  Gavin Barraclough  <barraclough@apple.com>
+
+        Merge PageVisibilityState & ViewState::IsVisible in WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=126214
+
+        Reviewed by Alexey Proskuryakov.
+
+        WebKit2 redundantly tracks the visibility of the view through two mechanisms - the visibility
+        state, and the view state. Remove visibility state from the WebKit2 layer. The visibility
+        state also tracks the prerender state - so split this out and handle it separately (a change
+        we should make in WebCore, too).
+
+        WebCore - changes the API tests exposed a bug, a view should only ever come out of the
+        prerender state when it becomes visible - redundant notifications that the view is still
+        hidden should be ignored.
+
+        * page/Page.cpp:
+        (WebCore::Page::setVisibilityState):
+            - ignore visibility state change to hidden, if the current state is prerender.
+
+2013-12-27  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Unreviewed Windows build fix for r160946.
+
+        Add another file to the Windows InspectorAllInOne.cpp.
+
+        * inspector/InspectorAllInOne.cpp:
+
+2013-12-27  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r161096.
+        http://trac.webkit.org/changeset/161096
+        https://bugs.webkit.org/show_bug.cgi?id=126256
+
+        Made lots of tests crash (Requested by ap on #webkit).
+
+        * dom/ContainerNode.cpp:
+        (WebCore::ContainerNode::insertBefore):
+        (WebCore::ContainerNode::replaceChild):
+        (WebCore::willRemoveChildren):
+        (WebCore::ContainerNode::appendChild):
+        * dom/Document.cpp:
+        (WebCore::Document::visibilityStateChanged):
+        (WebCore::Document::moveNodeIteratorsToNewDocument):
+        (WebCore::Document::updateRangesAfterChildrenChanged):
+        (WebCore::Document::nodeChildrenWillBeRemoved):
+        (WebCore::Document::nodeWillBeRemoved):
+        (WebCore::Document::textInserted):
+        (WebCore::Document::textRemoved):
+        (WebCore::Document::textNodesMerged):
+        (WebCore::Document::textNodeSplit):
+        (WebCore::Document::documentWillSuspendForPageCache):
+        (WebCore::Document::documentDidResumeFromPageCache):
+        (WebCore::Document::mediaVolumeDidChange):
+        (WebCore::Document::privateBrowsingStateDidChange):
+        (WebCore::Document::captionPreferencesChanged):
+        (WebCore::Document::validateAutoSizingNodes):
+        (WebCore::Document::resetAutoSizingNodes):
+        (WebCore::Document::webkitExitFullscreen):
+        * dom/MutationObserver.cpp:
+        (WebCore::MutationObserver::disconnect):
+        (WebCore::MutationObserver::getObservedNodes):
+        (WebCore::MutationObserver::deliver):
+        * dom/MutationObserverInterestGroup.cpp:
+        (WebCore::MutationObserverInterestGroup::isOldValueRequested):
+        (WebCore::MutationObserverInterestGroup::enqueueMutationRecord):
+        * dom/MutationObserverRegistration.cpp:
+        (WebCore::MutationObserverRegistration::clearTransientRegistrations):
+        (WebCore::MutationObserverRegistration::addRegistrationNodesToSet):
+        * dom/Node.cpp:
+        (WebCore::Node::dumpStatistics):
+        (WebCore::Document::invalidateNodeListAndCollectionCaches):
+        (WebCore::NodeListsNodeData::invalidateCaches):
+        (WebCore::Node::didMoveToNewDocument):
+        (WebCore::collectMatchingObserversForMutation):
+        (WebCore::Node::notifyMutationObserversNodeWillDetach):
+        * dom/NodeRareData.h:
+        (WebCore::NodeListsNodeData::adoptDocument):
+        * dom/ScriptExecutionContext.cpp:
+        (WebCore::ScriptExecutionContext::~ScriptExecutionContext):
+        (WebCore::ScriptExecutionContext::canSuspendActiveDOMObjects):
+        (WebCore::ScriptExecutionContext::suspendActiveDOMObjects):
+        (WebCore::ScriptExecutionContext::resumeActiveDOMObjects):
+        (WebCore::ScriptExecutionContext::stopActiveDOMObjects):
+        (WebCore::ScriptExecutionContext::closeMessagePorts):
+        (WebCore::ScriptExecutionContext::adjustMinimumTimerInterval):
+        (WebCore::ScriptExecutionContext::didChangeTimerAlignmentInterval):
+        * dom/WebKitNamedFlow.cpp:
+        (WebCore::WebKitNamedFlow::getRegionsByContent):
+        (WebCore::WebKitNamedFlow::getRegions):
+        (WebCore::WebKitNamedFlow::getContent):
+
+2013-12-26  Sam Weinig  <sam@webkit.org>
+
+        Convert some of WebCore/dom over to range-for loops
+        https://bugs.webkit.org/show_bug.cgi?id=126250
+
+        Reviewed by Andreas Kling.
+
+        * dom/ContainerNode.cpp:
+        * dom/Document.cpp:
+        * dom/MutationObserver.cpp:
+        * dom/MutationObserverInterestGroup.cpp:
+        * dom/MutationObserverRegistration.cpp:
+        * dom/Node.cpp:
+        * dom/NodeRareData.h:
+        * dom/ScriptExecutionContext.cpp:
+        * dom/WebKitNamedFlow.cpp:
+
+2013-12-26  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        [Nix] Cleanup Source/WebCore/PlatformNix.cmake
+        https://bugs.webkit.org/show_bug.cgi?id=126226
+
+        Reviewed by Csaba Osztrogonác.
+
+        No new tests needed.
+
+        * PlatformNix.cmake:
+
+2013-12-26  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Unreviewed attempt at Windows build fix.
+
+        I think Window's "AllInOne.cpp" is causing a using namespace JSC
+        to cause naming conflicts between Inspector::TypeBuilder::Debugger::types
+        and JSC::types. So removing the ambiguity.
+
+        * inspector/InjectedScript.cpp:
+        (WebCore::InjectedScript::getProperties):
+        (WebCore::InjectedScript::wrapCallFrames):
+
 2013-12-22  Andreas Kling  <akling@apple.com>
 
         Make Text::createTextRenderer() take a const RenderStyle&.

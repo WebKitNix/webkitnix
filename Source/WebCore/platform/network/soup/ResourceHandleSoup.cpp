@@ -236,6 +236,7 @@ static gboolean requestTimeoutCallback(void*);
 #if ENABLE(WEB_TIMING)
 static int  milisecondsSinceRequest(double requestTime);
 #endif
+static void continueAfterDidReceiveResponse(ResourceHandle*);
 
 static bool gIgnoreSSLErrors = false;
 
@@ -454,6 +455,20 @@ static bool shouldRedirectAsGET(SoupMessage* message, URL& newURL, bool crossOri
     return false;
 }
 
+static void continueAfterWillSendRequest(ResourceHandle* handle, const ResourceRequest& newRequest)
+{
+    // willSendRequest might cancel the load.
+    if (handle->cancelledOrClientless())
+        return;
+
+    if (!createSoupRequestAndMessageForHandle(handle, newRequest, true)) {
+        handle->getInternal()->client()->cannotShowURL(handle);
+        return;
+    }
+
+    handle->sendPendingRequest();
+}
+
 static void doRedirect(ResourceHandle* handle)
 {
     ResourceHandleInternal* d = handle->getInternal();
@@ -501,21 +516,19 @@ static void doRedirect(ResourceHandle* handle)
     } else
         applyAuthenticationToRequest(handle, newRequest, true);
 
-    cleanupSoupRequestOperation(handle);
-    if (!createSoupRequestAndMessageForHandle(handle, newRequest, true)) {
-        d->client()->cannotShowURL(handle);
-        return;
-    }
-
     // If we sent credentials with this request's URL, we don't want the response to carry them to
     // the WebKit layer. They were only placed in the URL for the benefit of libsoup.
     newRequest.removeCredentials();
 
+    cleanupSoupRequestOperation(handle);
+
     if (d->client()->usesAsyncCallbacks())
         d->client()->willSendRequestAsync(handle, newRequest, d->m_response);
-    else
+    else {
         d->client()->willSendRequest(handle, newRequest, d->m_response);
-    handle->sendPendingRequest();
+        continueAfterWillSendRequest(handle, newRequest);
+    }
+
 }
 
 static void redirectSkipCallback(GObject*, GAsyncResult* asyncResult, gpointer data)
@@ -652,21 +665,14 @@ static void nextMultipartResponsePartCallback(GObject* /*source*/, GAsyncResult*
     d->m_response.setURL(handle->firstRequest().url());
     d->m_response.updateFromSoupMessageHeaders(soup_multipart_input_stream_get_headers(d->m_multipartInputStream.get()));
 
-    if (handle->client()->usesAsyncCallbacks())
-        handle->client()->didReceiveResponseAsync(handle.get(), d->m_response);
-    else
-        handle->client()->didReceiveResponse(handle.get(), d->m_response);
-
-    if (handle->cancelledOrClientless()) {
-        cleanupSoupRequestOperation(handle.get());
-        return;
-    }
-
     d->m_previousPosition = 0;
 
-    handle->ensureReadBuffer();
-    g_input_stream_read_async(d->m_inputStream.get(), const_cast<char*>(d->m_soupBuffer->data), d->m_soupBuffer->length,
-        G_PRIORITY_DEFAULT, d->m_cancellable.get(), readCallback, handle.get());
+    if (handle->client()->usesAsyncCallbacks())
+        handle->client()->didReceiveResponseAsync(handle.get(), d->m_response);
+    else {
+        handle->client()->didReceiveResponse(handle.get(), d->m_response);
+        continueAfterDidReceiveResponse(handle.get());
+    }
 }
 
 static void sendRequestCallback(GObject*, GAsyncResult* result, gpointer data)
@@ -722,28 +728,37 @@ static void sendRequestCallback(GObject*, GAsyncResult* result, gpointer data)
         d->m_response.setExpectedContentLength(soup_request_get_content_length(d->m_soupRequest.get()));
     }
 
+    if (soupMessage && d->m_response.isMultipart())
+        d->m_multipartInputStream = adoptGRef(soup_multipart_input_stream_new(soupMessage, inputStream.get()));
+    else
+        d->m_inputStream = inputStream;
+
     if (d->client()->usesAsyncCallbacks())
         handle->client()->didReceiveResponseAsync(handle.get(), d->m_response);
-    else
+    else {
         handle->client()->didReceiveResponse(handle.get(), d->m_response);
+        continueAfterDidReceiveResponse(handle.get());
+    }
+}
 
+static void continueAfterDidReceiveResponse(ResourceHandle* handle)
+{
     if (handle->cancelledOrClientless()) {
-        cleanupSoupRequestOperation(handle.get());
+        cleanupSoupRequestOperation(handle);
         return;
     }
 
-    if (soupMessage && d->m_response.isMultipart()) {
-        d->m_multipartInputStream = adoptGRef(soup_multipart_input_stream_new(soupMessage, inputStream.get()));
+    ResourceHandleInternal* d = handle->getInternal();
+    if (d->m_soupMessage && d->m_multipartInputStream && !d->m_inputStream) {
         soup_multipart_input_stream_next_part_async(d->m_multipartInputStream.get(), G_PRIORITY_DEFAULT,
-            d->m_cancellable.get(), nextMultipartResponsePartCallback, handle.get());
+            d->m_cancellable.get(), nextMultipartResponsePartCallback, handle);
         return;
     }
 
-    d->m_inputStream = inputStream;
-
+    ASSERT(d->m_inputStream);
     handle->ensureReadBuffer();
     g_input_stream_read_async(d->m_inputStream.get(), const_cast<char*>(d->m_soupBuffer->data), d->m_soupBuffer->length,
-        G_PRIORITY_DEFAULT, d->m_cancellable.get(), readCallback, handle.get());
+        G_PRIORITY_DEFAULT, d->m_cancellable.get(), readCallback, handle);
 }
 
 static bool addFileToSoupMessageBody(SoupMessage* message, const String& fileNameString, size_t offset, size_t lengthToSend, unsigned long& totalBodySize)
@@ -1033,6 +1048,8 @@ static bool createSoupRequestAndMessageForHandle(ResourceHandle* handle, const R
         return false;
     }
 
+    setSoupRequestInitiatingPageIDFromNetworkingContext(d->m_soupRequest.get(), d->m_context.get());
+
     return true;
 }
 
@@ -1062,8 +1079,6 @@ bool ResourceHandle::start()
         this->scheduleFailure(InvalidURLFailure); // Error must not be reported immediately
         return true;
     }
-
-    setSoupRequestInitiatingPageIDFromNetworkingContext(d->m_soupRequest.get(), d->m_context.get());
 
     // Send the request only if it's not been explicitly deferred.
     if (!d->m_defersLoading)
@@ -1248,6 +1263,13 @@ void ResourceHandle::receivedCancellation(const AuthenticationChallenge& challen
     if (challenge != d->m_currentWebChallenge)
         return;
 
+    if (cancelledOrClientless()) {
+        clearAuthentication();
+        return;
+    }
+
+    ASSERT(challenge.soupSession());
+    ASSERT(challenge.soupMessage());
     soup_session_unpause_message(challenge.soupSession(), challenge.soupMessage());
 
     if (client())
@@ -1383,14 +1405,14 @@ void ResourceHandle::continueWillSendRequest(const ResourceRequest& request)
 {
     ASSERT(client());
     ASSERT(client()->usesAsyncCallbacks());
-    // FIXME: Implement this method if needed: https://bugs.webkit.org/show_bug.cgi?id=126114.
+    continueAfterWillSendRequest(this, request);
 }
 
 void ResourceHandle::continueDidReceiveResponse()
 {
     ASSERT(client());
     ASSERT(client()->usesAsyncCallbacks());
-    // FIXME: Implement this method if needed: https://bugs.webkit.org/show_bug.cgi?id=126114.
+    continueAfterDidReceiveResponse(this);
 }
 
 void ResourceHandle::continueShouldUseCredentialStorage(bool)

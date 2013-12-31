@@ -18,8 +18,8 @@ list(APPEND WebKit2_SOURCES
     ${DERIVED_SOURCES_WEBKIT2GTK_API_DIR}/WebKitEnumTypes.cpp
     ${DERIVED_SOURCES_WEBKIT2GTK_API_DIR}/WebKitMarshal.cpp
 
-    Platform/CoreIPC/unix/AttachmentUnix.cpp
-    Platform/CoreIPC/unix/ConnectionUnix.cpp
+    Platform/IPC/unix/AttachmentUnix.cpp
+    Platform/IPC/unix/ConnectionUnix.cpp
 
     Platform/gtk/LoggingGtk.cpp
     Platform/gtk/ModuleGtk.cpp
@@ -298,9 +298,11 @@ list(APPEND WebKit2_SOURCES
 )
 
 set(WebKit2_INSTALLED_HEADERS
+    ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitAuthenticationRequest.h
     ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitBackForwardList.h
     ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitBackForwardListItem.h
     ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitCertificateInfo.h
+    ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitCredential.h
     ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitContextMenu.h
     ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitContextMenuActions.h
     ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitContextMenuItem.h
@@ -338,19 +340,13 @@ set(WebKit2_INSTALLED_HEADERS
     ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitWebViewGroup.h
     ${WEBKIT2_DIR}/UIProcess/API/gtk/WebKitWindowProperties.h
     ${WEBKIT2_DIR}/UIProcess/API/gtk/webkit2.h
+)
 
-    ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitFrame.cpp
+set(WebKit2WebExtension_INSTALLED_HEADERS
     ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitFrame.h
-    ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitFramePrivate.h
-    ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitScriptWorld.cpp
     ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitScriptWorld.h
-    ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitScriptWorldPrivate.h
-    ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitWebExtension.cpp
     ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitWebExtension.h
-    ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitWebExtensionPrivate.h
-    ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitWebPage.cpp
     ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitWebPage.h
-    ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/WebKitWebPagePrivate.h
     ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/webkit-web-extension.h
 )
 
@@ -426,8 +422,10 @@ set(SharedWebKit2Libraries
     ${WebKit2_LIBRARIES}
 )
 
+# Since the GObjectDOMBindings convenience library exports API that is unused except
+# in embedding applications we need to instruct the linker to link all symbols explicitly.
 list(APPEND WebKit2_LIBRARIES
-    GObjectDOMBindings
+    -Wl,--whole-archive GObjectDOMBindings -Wl,--no-whole-archive
     WebCorePlatformGTK
 )
 
@@ -506,21 +504,20 @@ if (ENABLE_PLUGIN_PROCESS)
         Platform/Module.cpp
         Platform/WorkQueue.cpp
 
-        Platform/CoreIPC/ArgumentCoders.cpp
-        Platform/CoreIPC/ArgumentDecoder.cpp
-        Platform/CoreIPC/ArgumentEncoder.cpp
-        Platform/CoreIPC/Attachment.cpp
-        Platform/CoreIPC/Connection.cpp
-        Platform/CoreIPC/MessageDecoder.cpp
-        Platform/CoreIPC/MessageEncoder.cpp
-        Platform/CoreIPC/MessageReceiverMap.cpp
-
-        Platform/CoreIPC/unix/AttachmentUnix.cpp
-        Platform/CoreIPC/unix/ConnectionUnix.cpp
-
+        Platform/IPC/ArgumentCoders.cpp
+        Platform/IPC/ArgumentDecoder.cpp
+        Platform/IPC/ArgumentEncoder.cpp
+        Platform/IPC/Attachment.cpp
+        Platform/IPC/Connection.cpp
         Platform/IPC/DataReference.cpp
+        Platform/IPC/MessageDecoder.cpp
+        Platform/IPC/MessageEncoder.cpp
+        Platform/IPC/MessageReceiverMap.cpp
         Platform/IPC/MessageSender.cpp
         Platform/IPC/StringReference.cpp
+
+        Platform/IPC/unix/AttachmentUnix.cpp
+        Platform/IPC/unix/ConnectionUnix.cpp
 
         Platform/gtk/LoggingGtk.cpp
         Platform/gtk/ModuleGtk.cpp
@@ -648,3 +645,100 @@ add_library(webkit2gtkinjectedbundle MODULE
     "${WEBKIT2_DIR}/WebProcess/gtk/WebGtkInjectedBundleMain.cpp"
 )
 add_dependencies(webkit2gtkinjectedbundle GObjectDOMBindings)
+
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/WebKit2-3.0.gir
+    DEPENDS WebKit2
+    DEPENDS JavaScriptCore-3-gir
+    COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations
+        g-ir-scanner
+        --quiet
+        --warn-all
+        --symbol-prefix=webkit
+        --identifier-prefix=WebKit
+        --namespace=WebKit2
+        --nsversion=3.0
+        --include=GObject-2.0
+        --include=Gtk-3.0
+        --include=Soup-2.4
+        --include-uninstalled=${CMAKE_BINARY_DIR}/JavaScriptCore-3.0.gir
+        --library=webkit2gtk-3.0
+        --library=javascriptcoregtk-3.0
+        -L${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+        --no-libtool
+        --pkg=gobject-2.0
+        --pkg=gtk+-3.0
+        --pkg=libsoup-2.4
+        --pkg-export=webkit2gtk-3.0
+        --output=${CMAKE_BINARY_DIR}/WebKit2-3.0.gir
+        --c-include="webkit2/webkit2.h"
+        -DBUILDING_WEBKIT
+        -DWEBKIT2_COMPILATION
+        -I${CMAKE_SOURCE_DIR}/Source
+        -I${WEBKIT2_DIR}
+        -I${JAVASCRIPTCORE_DIR}/ForwardingHeaders
+        -I${DERIVED_SOURCES_DIR}
+        -I${DERIVED_SOURCES_WEBKIT2GTK_DIR}
+        -I${FORWARDING_HEADERS_WEBKIT2GTK_DIR}
+        ${DERIVED_SOURCES_WEBKIT2GTK_API_DIR}/WebKitEnumTypes.h
+        ${WebKit2_INSTALLED_HEADERS}
+        ${WEBKIT2_DIR}/UIProcess/API/gtk/*.cpp
+)
+
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/WebKit2WebExtension-3.0.gir
+    DEPENDS JavaScriptCore-3-gir
+    DEPENDS ${CMAKE_BINARY_DIR}/WebKit2-3.0.gir
+    COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations
+        g-ir-scanner
+        --quiet
+        --warn-all
+        --symbol-prefix=webkit
+        --identifier-prefix=WebKit
+        --namespace=WebKit2WebExtension
+        --nsversion=3.0
+        --include=GObject-2.0
+        --include=Gtk-3.0
+        --include=Soup-2.4
+        --include-uninstalled=${CMAKE_BINARY_DIR}/JavaScriptCore-3.0.gir
+        --include-uninstalled=${CMAKE_BINARY_DIR}/WebKit2-3.0.gir
+        --library=webkit2gtk-3.0
+        --library=javascriptcoregtk-3.0
+        -L${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+        --no-libtool
+        --pkg=gobject-2.0
+        --pkg=gtk+-3.0
+        --pkg=libsoup-2.4
+        --pkg-export=webkit2gtk-3.0
+        --output=${CMAKE_BINARY_DIR}/WebKit2WebExtension-3.0.gir
+        --c-include="webkit2/webkit-web-extension.h"
+        -DBUILDING_WEBKIT
+        -DWEBKIT2_COMPILATION
+        -I${CMAKE_SOURCE_DIR}/Source
+        -I${WEBKIT2_DIR}
+        -I${JAVASCRIPTCORE_DIR}/ForwardingHeaders
+        -I${DERIVED_SOURCES_DIR}
+        -I${DERIVED_SOURCES_WEBKIT2GTK_DIR}
+        -I${FORWARDING_HEADERS_DIR}
+        -I${FORWARDING_HEADERS_WEBKIT2GTK_DIR}
+        -I${FORWARDING_HEADERS_WEBKIT2GTK_EXTENSION_DIR}
+        -I${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk
+        ${GObjectDOMBindings_INSTALLED_HEADERS}
+        ${WebKit2WebExtension_INSTALLED_HEADERS}
+        ${WEBKIT2_DIR}/WebProcess/InjectedBundle/API/gtk/*.cpp
+)
+
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/WebKit2-3.0.typelib
+    DEPENDS ${CMAKE_BINARY_DIR}/WebKit2-3.0.gir
+    COMMAND g-ir-compiler --includedir=${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/WebKit2-3.0.gir -o ${CMAKE_BINARY_DIR}/WebKit2-3.0.typelib
+)
+
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/WebKit2WebExtension-3.0.typelib
+    DEPENDS ${CMAKE_BINARY_DIR}/WebKit2WebExtension-3.0.gir
+    COMMAND g-ir-compiler --includedir=${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/WebKit2WebExtension-3.0.gir -o ${CMAKE_BINARY_DIR}/WebKit2WebExtension-3.0.typelib
+)
+
+ADD_TYPELIB(${CMAKE_BINARY_DIR}/WebKit2-3.0.typelib)
+ADD_TYPELIB(${CMAKE_BINARY_DIR}/WebKit2WebExtension-3.0.typelib)

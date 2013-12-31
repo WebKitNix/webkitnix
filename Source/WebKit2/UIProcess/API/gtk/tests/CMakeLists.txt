@@ -1,4 +1,3 @@
-set(TEST_BINARY_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/WebKit2GObjectAPITests)
 set(TEST_LIBRARY_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/WebKit2GObjectAPITests)
 set(TEST_RESOURCES_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources)
 file(MAKE_DIRECTORY ${TEST_RESOURCES_DIR})
@@ -34,6 +33,7 @@ add_library(WebKit2APITestCore STATIC
     TestMain.cpp
     WebViewTest.cpp
 )
+add_dependencies(WebKit2APITestCore WebKit2)
 
 add_custom_target(test-gresource-bundle
     DEPENDS resources/webkit2gtk-tests.gresource.xml
@@ -69,7 +69,7 @@ macro(ADD_WK2_TEST test_name)
         ${LIBSOUP_LIBRARIES}
     )
     set_target_properties(${test_name} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${TEST_BINARY_DIR}
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/WebKit2GObjectAPITests
     )
 endmacro()
 

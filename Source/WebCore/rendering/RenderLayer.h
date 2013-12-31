@@ -46,6 +46,7 @@
 
 #include "PaintInfo.h"
 #include "RenderBox.h"
+#include "RenderPtr.h"
 #include "ScrollableArea.h"
 #include <wtf/OwnPtr.h>
 
@@ -365,7 +366,7 @@ public:
 
     bool hasReflection() const { return renderer().hasReflection(); }
     bool isReflection() const { return renderer().isReplica(); }
-    RenderReplica* reflection() const { return m_reflection; }
+    RenderReplica* reflection() const { return m_reflection.get(); }
     RenderLayer* reflectionLayer() const;
 
     const RenderLayer* root() const
@@ -1315,11 +1316,11 @@ private:
     OwnPtr<TransformationMatrix> m_transform;
     
     // May ultimately be extended to many replicas (with their own paint order).
-    RenderReplica* m_reflection;
-        
+    RenderPtr<RenderReplica> m_reflection;
+
     // Renderers to hold our custom scroll corner and resizer.
-    RenderScrollbarPart* m_scrollCorner;
-    RenderScrollbarPart* m_resizer;
+    RenderPtr<RenderScrollbarPart> m_scrollCorner;
+    RenderPtr<RenderScrollbarPart> m_resizer;
 
     // Pointer to the enclosing RenderLayer that caused us to be paginated. It is 0 if we are not paginated.
     RenderLayer* m_enclosingPaginationLayer;

@@ -166,9 +166,6 @@ void XMLDocumentParser::exitText()
     Vector<xmlChar> empty;
     m_bufferedText.swap(empty);
 
-    if (m_view && m_leafTextNode->parentNode() && m_leafTextNode->parentNode()->attached() && !m_leafTextNode->attached())
-        Style::attachTextRenderer(*m_leafTextNode);
-
     m_leafTextNode = 0;
 }
 

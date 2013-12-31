@@ -100,7 +100,7 @@ void WebPageProxy::initializeUIPopupMenuClient(const WKPageUIPopupMenuClientBase
 
 PassRefPtr<API::Data> WebPageProxy::sessionStateData(WebPageProxySessionStateFilterCallback filter, void* context) const
 {
-    auto encoder = std::make_unique<CoreIPC::ArgumentEncoder>();
+    auto encoder = std::make_unique<IPC::ArgumentEncoder>();
     unsigned index = m_backForwardList->currentIndex();
     const BackForwardListItemVector& entries = m_backForwardList->entries();
     BackForwardListItemVector filtered;
@@ -131,7 +131,7 @@ void WebPageProxy::restoreFromSessionStateData(API::Data* data)
     if (!data)
         return;
 
-    auto decoder = std::make_unique<CoreIPC::ArgumentDecoder>(data->bytes(), data->size());
+    auto decoder = std::make_unique<IPC::ArgumentDecoder>(data->bytes(), data->size());
 
     SessionState state;
     if (!SessionState::decode(*(decoder.get()), state))

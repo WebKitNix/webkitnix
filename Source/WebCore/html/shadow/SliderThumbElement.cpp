@@ -212,9 +212,9 @@ void SliderThumbElement::setPositionFromValue()
         renderer()->setNeedsLayout();
 }
 
-RenderElement* SliderThumbElement::createRenderer(PassRef<RenderStyle> style)
+RenderPtr<RenderElement> SliderThumbElement::createElementRenderer(PassRef<RenderStyle> style)
 {
-    return new RenderSliderThumb(*this, std::move(style));
+    return createRenderer<RenderSliderThumb>(*this, std::move(style));
 }
 
 bool SliderThumbElement::isDisabledFormControl() const
@@ -519,7 +519,7 @@ void SliderThumbElement::handleTouchEvent(TouchEvent* touchEvent)
 
 bool SliderThumbElement::shouldAcceptTouchEvents()
 {
-    return attached() && !isDisabledFormControl();
+    return renderer() && !isDisabledFormControl();
 }
 
 void SliderThumbElement::registerForTouchEvents()
@@ -611,9 +611,9 @@ PassRefPtr<SliderContainerElement> SliderContainerElement::create(Document& docu
     return adoptRef(new SliderContainerElement(document));
 }
 
-RenderElement* SliderContainerElement::createRenderer(PassRef<RenderStyle> style)
+RenderPtr<RenderElement> SliderContainerElement::createElementRenderer(PassRef<RenderStyle> style)
 {
-    return new RenderSliderContainer(*this, std::move(style));
+    return createRenderer<RenderSliderContainer>(*this, std::move(style));
 }
 
 const AtomicString& SliderContainerElement::shadowPseudoId() const

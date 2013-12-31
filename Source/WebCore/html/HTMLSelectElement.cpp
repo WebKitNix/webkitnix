@@ -315,7 +315,7 @@ void HTMLSelectElement::parseAttribute(const QualifiedName& name, const AtomicSt
 
         m_size = size;
         setNeedsValidityCheck();
-        if (m_size != oldSize && attached()) {
+        if (m_size != oldSize && renderer()) {
             Style::reattachRenderTree(*this);
             setRecalcListItems();
         }
@@ -347,14 +347,14 @@ bool HTMLSelectElement::canSelectAll() const
     return !usesMenuList();
 }
 
-RenderElement* HTMLSelectElement::createRenderer(PassRef<RenderStyle> style)
+RenderPtr<RenderElement> HTMLSelectElement::createElementRenderer(PassRef<RenderStyle> style)
 {
 #if !PLATFORM(IOS)
     if (usesMenuList())
-        return new RenderMenuList(*this, std::move(style));
-    return new RenderListBox(*this, std::move(style));
+        return createRenderer<RenderMenuList>(*this, std::move(style));
+    return createRenderer<RenderListBox>(*this, std::move(style));
 #else
-    return new RenderMenuList(*this, std::move(style));
+    return createRenderer<RenderMenuList>(*this, std::move(style));
 #endif
 }
 
@@ -1046,7 +1046,7 @@ void HTMLSelectElement::parseMultipleAttribute(const AtomicString& value)
     bool oldUsesMenuList = usesMenuList();
     m_multiple = !value.isNull();
     setNeedsValidityCheck();
-    if (oldUsesMenuList != usesMenuList() && attached())
+    if (oldUsesMenuList != usesMenuList() && renderer())
         Style::reattachRenderTree(*this);
 }
 

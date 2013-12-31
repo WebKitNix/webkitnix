@@ -10,8 +10,8 @@ list(APPEND WebKit2_SOURCES
     Platform/gtk/WorkQueueGtk.cpp
     Platform/unix/SharedMemoryUnix.cpp
 
-    Platform/CoreIPC/unix/ConnectionUnix.cpp
-    Platform/CoreIPC/unix/AttachmentUnix.cpp
+    Platform/IPC/unix/ConnectionUnix.cpp
+    Platform/IPC/unix/AttachmentUnix.cpp
 
     Shared/API/c/cairo/WKImageCairo.cpp
 

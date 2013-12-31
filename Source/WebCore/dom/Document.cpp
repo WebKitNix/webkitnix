@@ -457,7 +457,6 @@ Document::Document(Frame* frame, const URL& url, unsigned documentClasses, bool 
     , m_isViewSource(false)
     , m_sawElementsInKnownNamespaces(false)
     , m_isSrcdocDocument(false)
-    , m_renderView(nullptr)
     , m_eventQueue(*this)
     , m_weakFactory(this)
     , m_idAttributeName(idAttr)
@@ -1945,20 +1944,16 @@ void Document::clearStyleResolver()
     m_styleResolver.clear();
 }
 
-void Document::setRenderView(RenderView* renderView)
-{
-    m_renderView = renderView;
-    Node::setRenderer(renderView);
-}
-
 void Document::createRenderTree()
 {
-    ASSERT(!attached());
+    ASSERT(!renderView());
     ASSERT(!m_inPageCache);
     ASSERT(!m_axObjectCache || this != topDocument());
 
     // FIXME: It would be better if we could pass the resolved document style directly here.
-    setRenderView(new RenderView(*this, RenderStyle::create()));
+    m_renderView = createRenderer<RenderView>(*this, RenderStyle::create());
+    Node::setRenderer(m_renderView.get());
+
 #if USE(ACCELERATED_COMPOSITING)
     renderView()->setIsInWindow(true);
 #endif
@@ -1986,7 +1981,7 @@ void Document::didBecomeCurrentDocumentInFrame()
 
     m_frame->script().updateDocument();
 
-    if (!attached())
+    if (!hasLivingRenderTree())
         createRenderTree();
 
     updateViewportArguments();
@@ -2033,7 +2028,7 @@ void Document::disconnectFromFrame()
 
 void Document::destroyRenderTree()
 {
-    ASSERT(attached());
+    ASSERT(hasLivingRenderTree());
     ASSERT(!m_inPageCache);
 
     TemporaryChange<bool> change(m_renderTreeBeingDestroyed, true);
@@ -2062,9 +2057,8 @@ void Document::destroyRenderTree()
 
     unscheduleStyleRecalc();
 
-    if (renderView())
-        renderView()->destroy();
-    setRenderView(nullptr);
+    m_renderView = nullptr;
+    Node::setRenderer(nullptr);
 
 #if ENABLE(IOS_TEXT_AUTOSIZING)
     // Do this before the arena is cleared, which is needed to deref the RenderStyle on TextAutoSizingKey.
@@ -3210,7 +3204,7 @@ void Document::styleResolverChanged(StyleResolverUpdateFlag updateFlag)
 
     // Don't bother updating, since we haven't loaded all our style info yet
     // and haven't calculated the style selector for the first time.
-    if (!attached() || (!m_didCalculateStyleResolver && !haveStylesheetsLoaded())) {
+    if (!hasLivingRenderTree() || (!m_didCalculateStyleResolver && !haveStylesheetsLoaded())) {
         m_styleResolver.clear();
         return;
     }
@@ -5360,7 +5354,7 @@ bool Document::webkitFullscreenEnabled() const
 
 void Document::webkitWillEnterFullScreenForElement(Element* element)
 {
-    if (!attached() || inPageCache())
+    if (!hasLivingRenderTree() || inPageCache())
         return;
 
     ASSERT(element);
@@ -5405,7 +5399,7 @@ void Document::webkitDidEnterFullScreenForElement(Element*)
     if (!m_fullScreenElement)
         return;
 
-    if (!attached() || inPageCache())
+    if (!hasLivingRenderTree() || inPageCache())
         return;
 
     m_fullScreenElement->didBecomeFullscreenElement();
@@ -5418,7 +5412,7 @@ void Document::webkitWillExitFullScreenForElement(Element*)
     if (!m_fullScreenElement)
         return;
 
-    if (!attached() || inPageCache())
+    if (!hasLivingRenderTree() || inPageCache())
         return;
 
     m_fullScreenElement->willStopBeingFullscreenElement();
@@ -5429,7 +5423,7 @@ void Document::webkitDidExitFullScreenForElement(Element*)
     if (!m_fullScreenElement)
         return;
 
-    if (!attached() || inPageCache())
+    if (!hasLivingRenderTree() || inPageCache())
         return;
 
     m_fullScreenElement->setContainsFullScreenElementOnAncestorsCrossingFrameBoundaries(false);

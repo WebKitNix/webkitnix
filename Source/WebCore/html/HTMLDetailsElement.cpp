@@ -110,9 +110,9 @@ HTMLDetailsElement::HTMLDetailsElement(const QualifiedName& tagName, Document& d
     ASSERT(hasTagName(detailsTag));
 }
 
-RenderElement* HTMLDetailsElement::createRenderer(PassRef<RenderStyle> style)
+RenderPtr<RenderElement> HTMLDetailsElement::createElementRenderer(PassRef<RenderStyle> style)
 {
-    return new RenderBlockFlow(*this, std::move(style));
+    return createRenderer<RenderBlockFlow>(*this, std::move(style));
 }
 
 void HTMLDetailsElement::didAddUserAgentShadowRoot(ShadowRoot* root)
@@ -136,7 +136,7 @@ void HTMLDetailsElement::parseAttribute(const QualifiedName& name, const AtomicS
     if (name == openAttr) {
         bool oldValue = m_isOpen;
         m_isOpen = !value.isNull();
-        if (oldValue != m_isOpen && attached())
+        if (oldValue != m_isOpen && renderer())
             Style::reattachRenderTree(*this);
     } else
         HTMLElement::parseAttribute(name, value);

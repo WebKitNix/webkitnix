@@ -1,3 +1,388 @@
+2013-12-30  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Make the output directory of GObject unit tests binaries consistent with the CMake build
+        https://bugs.webkit.org/show_bug.cgi?id=126297
+
+        Reviewed by Philippe Normand.
+
+        * Scripts/run-gtk-tests: Looks for the tests in the new directories.
+        (TestRunner): Ditto.
+        (TestRunner._run_test): Ditto.
+
+2013-12-30  Alexey Proskuryakov  <ap@apple.com>
+
+        full_results.json should distinguish unexpected failures from expected ones
+        https://bugs.webkit.org/show_bug.cgi?id=126300
+
+        Reviewed by Timothy Hatcher.
+
+        * Scripts/webkitpy/layout_tests/models/test_run_results.py:
+        (summarize_results): Add "report" element to JSON, which tells the consumer how
+        this result was counted for summary.
+
+        * Scripts/webkitpy/layout_tests/run_webkit_tests_integrationtest.py:
+        Updated results to include the new element.
+
+        * Scripts/webkitpy/layout_tests/views/buildbot_results.py:
+        (print_unexpected_results): Added a comment pointing to another place that
+        summarizes results, and should stay in sync.
+
+2013-12-30  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Replace remaning CoreIPC namespace to IPC
+        https://bugs.webkit.org/show_bug.cgi?id=126305
+
+        Reviewed by Anders Carlsson.
+
+        * TestWebKitAPI/CMakeLists.txt: Replaced CoreIPC includes to IPC.
+        * TestWebKitAPI/efl/PlatformWebView.cpp: Removed temporal define for IPC.
+        * WebKitTestRunner/CMakeLists.txt: Replaced CoreIPC includes to IPC.
+        * WebKitTestRunner/efl/PlatformWebViewEfl.cpp: Removed temporal define for IPC.
+
+2013-12-30  Brendan Long  <self@brendanlong.com>
+
+        Add myself to the committers list.
+
+        Unreviewed.
+
+        * Scripts/webkitpy/common/config/contributors.json:
+
+2013-12-30  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Split WebKit2APITests/TestWebKitWebView
+        https://bugs.webkit.org/show_bug.cgi?id=126284
+
+        Reviewed by Philippe Normand.
+
+        Skip only WebKitWebView/mouse-target and all TestAuthentication
+        tests that are timing out when running under xvfb.
+
+        * Scripts/run-gtk-tests:
+        (TestRunner):
+
+2013-12-29  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        [EFL][WK2] Disable geolocation API test
+        https://bugs.webkit.org/show_bug.cgi?id=125851
+
+        Reviewed by Gyuyoung Kim.
+
+        Geolocation is turned off by default in EFL port, so it shouldn't be tested.
+
+        * TestWebKitAPI/PlatformEfl.cmake: Move Geolocation to test_webkit2_api_fail_BINARIES.
+
+2013-12-29  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Remove ewk_view_tiled
+        https://bugs.webkit.org/show_bug.cgi?id=125961
+
+        Reviewed by Gyuyoung Kim.
+
+        * DumpRenderTree/efl/DumpRenderTreeChrome.cpp:
+        (shouldUseTiledBackingStore):
+        Moved from DumpRenderTreeChrome to enable WebCore's TiledBackingStore
+        instead of switching ewk_view_tiled.
+        (DumpRenderTreeChrome::createView):
+        * DumpRenderTree/efl/DumpRenderTreeView.cpp:
+        (drtViewAdd):
+        * EWebLauncher/main.c: Removed ewk_view_tiled option.
+        (windowCreate):
+        (parseUserArguments):
+
+2013-12-29  Alexey Proskuryakov  <ap@apple.com>
+
+        Pending revision popover is slightly misplaced at build.webkit.org/dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=126278
+
+        Reviewed by Timothy Hatcher.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotQueueView.js:
+        (BuildbotQueueView.prototype._appendPendingRevisionCount): Create a span for the text,
+        as StatusLineView message element has extra padding, and doesn't fit the text snugly.
+        (BuildbotQueueView.prototype._revisionPopoverContentForIteration): Added bug number to a FIXME.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/StatusLineView.js:
+        (StatusLineView.prototype.set messageElement): Removed the getter, as we no longer need it.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/StatusLineView.css:
+        Removed display:inline-block hack for messageElement div, as we no longer use it for measuring text bounds.
+
+2013-12-29  Alexey Proskuryakov  <ap@apple.com>
+
+        Interrupted test runs should not count at build.webkit.org/dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=126279
+
+        Reviewed by Timothy Hatcher.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotIteration.js:
+        (BuildbotIteration.prototype.get productive):
+        (BuildbotIteration.prototype.get previousProductiveIteration): Replaced previous with
+        this accessor to skips iterations that don't have relevant data. We still want to
+        display them, but revision ranges should not be affected.
+        (BuildbotIteration.prototype.update): Record whether the iteration was up for retry.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotQueueView.js:
+        Use latest productive iteration instead of latest iteration for pending revision
+        count and popovers.
+
+2013-12-29  Alexey Proskuryakov  <ap@apple.com>
+
+        Please display (and link to) revision ranges at build.webkit.org/dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=122187
+
+        Reviewed by Timothy Hatcher.
+
+        Added popovers for revision numbers. Removed direct links, because they were misleading -
+        a test run covers a revision range, not just the latest revision. This also makes
+        selecting a revision for copy easier.
+
+        All revision numbers have the popovers for consistency, although they are most useful
+        for iterations that are not the last ones in a view, because the content is a delta
+        from previous iteration.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotBuilderQueueView.js:
+        (BuildbotBuilderQueueView.prototype.update.appendBuilderQueueStatus):
+        revisionLinksForIteration() is now named revisionContentForIteration().
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotTesterQueueView.js:
+        (BuildbotTesterQueueView.prototype.update.appendBuilderQueueStatus):
+        Ditto.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotIteration.js:
+        (BuildbotIteration.prototype.get previous): Added a function to go back in iteration history.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotQueueView.js:
+        Refactored to support the new popover variation. Replaced revisionLinksForIteration()
+        with a function that builds an element with popover.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/PopoverTracker.js:
+        Changed to take a function for popover presentation instead of delegate object.
+        We only need one delegate function, and it's easier to have multiple popovers per view class
+        this way.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/Main.css:
+        Removed a rule for selectable class. It's replaced with a semantic rule in StatusLineView.css.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/QueueView.css:
+        Renamed pending-commits-popover class to commit-history-popover.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/StatusLineView.css:
+        (.status-line .message .revision-number): Added a rule for revision numbers.
+
+2013-12-29  Alexey Proskuryakov  <ap@apple.com>
+
+        Please display information about pending runs in build.webkit.org/dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=122180
+
+        Reviewed by Timothy Hatcher.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotBuilderQueueView.js:
+        (BuildbotBuilderQueueView.prototype.update.appendBuilderQueueStatus): Added a semicolon at the end of a line.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotQueueView.js:
+        (BuildbotQueueView.prototype._latestFinishedIteration): Factored out of _appendPendingRevisionCount.
+        (BuildbotQueueView.prototype._appendPendingRevisionCount): Install a popover tracker over the element.
+        (BuildbotQueueView.prototype.lineForCommit): Build an element for a particular commit ot be shown in popover.
+        (BuildbotQueueView.prototype.presentPopoverForElement): Build and show popover content when PopoverTracker
+        asks us to.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Geometry.js: Added.
+        Taken from WebInspector with minimal changes:
+        - Changed root name from WebInspector to Dashboard.
+        - Removed some unused functionality.
+        - Added Rect.containsPoint.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Popover.js: Added.
+        Popover has extensive changes compared to WebInspector version, only drawing code is the same:
+        - Fixed to work in scrollable pages - WebInspector version assumes that window
+        and document coordinates are the same, and also erroneously dismisses a scrollable
+        popover if scrolling cascades out of it after reaching a bound.
+        - Simplified API and implementation to Dashboard needs, it is no longer possible to
+        change content of an existing popover.
+        - Rewrote visibility tracking to be more complete, and not rely on external tracker
+        object so much.
+        - Added code to flash scroll bars when showing a scrollable popover.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/PopoverTracker.js: Added.
+        Objects of this class show and hide popovers as appropriate for registered active elements.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/StatusLineView.js:
+        (StatusLineView.prototype.get messageElement): Added an accessor, so that we could
+        install a popover on message element. It's the only visible element in pending commit
+        line, but the line has different bounds, so we can't install a popover on it (it
+        would be incorrectly positioned if we did).
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Trac.js:
+        (Trac.prototype._convertCommitInfoElementToObject):
+        - Some trac installations report author in a different element, updated to support that.
+        - Changed to parse title out of description, because trac titles are ugly. Also,
+        we get a nice HTML with links from the description.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Utilities.js:
+        (Node.prototype.isAncestor): Copied from Web Inspector, only changing the form for
+        consistency with the rest of this file (add a property on prototype with assignment
+        instead of using Object.defineProperty).
+        (Node.prototype.isDescendant): Ditto.
+        (Node.prototype.isSelfOrAncestor): Ditto.
+        (Node.prototype.isSelfOrDescendant): Ditto.
+        (DOMTokenList.prototype.contains): Ditto.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/Popover.css: Added.
+        Like JS counterpart, mostly lifted from Web Inspector.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/QueueView.css:
+        Added style rules for pending commits popover.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/StatusLineView.css:
+        (.status-line.no-bubble .message): Changed to display:inline-block, so that it fits
+        to content, and we can show the popover in a correct place.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/index.html: Added new files.
+
+2013-12-27  Gavin Barraclough  <barraclough@apple.com>
+
+        Merge PageVisibilityState & ViewState::IsVisible in WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=126214
+
+        Reviewed by Alexey Proskuryakov.
+
+        WebKit2 redundantly tracks the visibility of the view through two mechanisms - the visibility
+        state, and the view state. Remove visibility state from the WebKit2 layer. The visibility
+        state also tracks the prerender state - so split this out and handle it separately (a change
+        we should make in WebCore, too).
+
+        Tools - WebKit2 no longer (poorly) supports a fake visibility state, so to test the page
+        visibility mechanisms we should actually be changing characteristics of the view that will
+        be detected by WebKit2 as a visibility change. This affects three things:
+            1) On setVisibilityState WebKitTestRunner must actually change visibility of the view.
+            2) The 'PageVisibilityState' test in the API tests is useless (as evidenced by the fact
+               that page visibility has been broken in WebKit2 for a couple of months, and didn't
+               catch this fact). Removed in favour of:
+            3) 'PageVisibilityStateWithWindowChanges' - this is the good stuff. This actually tests
+               the visibility mechanism. Beef this test up by adding coverage for: a) the prerender
+            state, b) document.hidden, and c) too many state change notifications (it already looks
+            for too few).
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/WebKit2/PageVisibilityState.cpp: Removed.
+            - Removed PageVisibilityState - this test was ineffective, API no longer supports this
+              test, and behaviour is covered by PageVisibilityStateWithWindowChanges.
+        * TestWebKitAPI/Tests/mac/PageVisibilityStateWithWindowChanges.mm:
+        (-[PageVisibilityStateDelegate webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:]):
+        (runJavaScriptAlert):
+            - Add checking for too many calls to the alert.
+        (TestWebKitAPI::PageVisibilityStateWithWindowChanges::setPrerender):
+            - Added methods to set visibility to prerender.
+        (TestWebKitAPI::PageVisibilityStateWithWindowChanges::runTest):
+            - Added checking of 'document.hidden'.
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::setVisibilityState):
+        * WebKitTestRunner/TestController.h:
+        * WebKitTestRunner/efl/TestControllerEfl.cpp:
+        (WTR::TestController::setHidden):
+        * WebKitTestRunner/gtk/TestControllerGtk.cpp:
+        (WTR::TestController::setHidden):
+        * WebKitTestRunner/mac/TestControllerMac.mm:
+        (WTR::TestController::setHidden):
+            - Add setHidden method; call this from setVisibilityState.
+
+2013-12-27  Alexey Proskuryakov  <ap@apple.com>
+
+        Display EWS status on bot watcher's dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=126224
+
+        Silence spurious exceptions, no visible behavior change.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/EWSQueue.js:
+        (EWSQueue.prototype.update): Removed code that was only needed for an experimental
+        feature that wasn't landed.
+
+2013-12-26  Alexey Proskuryakov  <ap@apple.com>
+
+        Display EWS status on bot watcher's dashboard
+        https://bugs.webkit.org/show_bug.cgi?id=126224
+
+        Reviewed by Timothy Hatcher.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Buildbot.js:
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Dashboard.js: Added.
+        Moved platform definitions out of Buildbot.js, as they are also needed for EWS.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/BuildbotQueueView.js:
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/QueueView.js: Added.
+        (QueueView):
+        (QueueView.prototype.updateSoon):
+        (QueueView.prototype.update):
+        (QueueView.prototype._updateHiddenState):
+        Moved auto-update and hide logic to a base class, as it equally applies to EWS.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/EWS.js: Added.
+        This is a peer to Buildbot.js and WebKitBuildbot.js.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/EWSQueue.js: Added.
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/EWSQueueView.js: Added.
+        Quite simple for now, only keeping track of queue size.
+        
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Initialization.js:
+        Initialize EWS.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Main.js:
+        Create EWS views.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/WebKitBuildbot.js:
+        Updated for Buildbot.Platform rename, it's now Dashboard.Platform.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/BuildbotBuilderQueueView.css: Removed.
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/BuildbotQueueView.css: Removed.
+        These were empty, no reason to waste the time loading them.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/BuildbotTesterQueueView.css: Removed.
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/QueueView.css: Copied from Tools/BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/BuildbotQueueView.css.
+        Renamed, as these styles apply to all queues, not just buildbot ones (and they have to, as columns should look alike).
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/index.html:
+            - Changed page title, as it no longer displays just buildbot status.
+            - Updated subresource lists for the new, renamed and removed files.
+
+2013-12-26  Alexey Proskuryakov  <ap@apple.com>
+
+        EWS status JSON should include Access-Control-Allow-Origin
+        https://bugs.webkit.org/show_bug.cgi?id=126246
+
+        Reviewed by Ryosuke Niwa.
+
+        * QueueStatusServer/app.yaml: Update version.
+        * QueueStatusServer/handlers/queuestatusjson.py:
+        (QueueStatusJSON.get): Add the header field.
+
+2013-12-26  Alexey Proskuryakov  <ap@apple.com>
+
+        Some links at build.webkit.org/dashboard don't show status messages, and aren't keyboard accessible
+        https://bugs.webkit.org/show_bug.cgi?id=126234
+
+        Reviewed by Timothy Hatcher.
+
+        Changed elements that are semantically links from <div> to <a>.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/StatusLineView.js:
+        (StatusLineView): Create <a> or <div> elements conditionally on whether we have a URL.
+        Don't try simulate a link with CSS/JS, it's not needed any more.
+        (StatusLineView.prototype._clicked): Removed.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/BuildbotQueueView.css:
+        Removed text-decoration rules, default ones in Main.css now work for queue elements.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/Main.css:
+        Simplified cursor rules.
+        Added a universal rule for links to only show underline on hover, as this is what
+        we want almost everywhere.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Styles/StatusLineView.css:
+        (.status-line .bubble): Added text-decoration: none, as this is the one place where
+        we don't want it even on hover.
+        (.status-line .label): Force display: block for consistent layout between <a>
+        and <div>.
+
 2013-12-25  Alexey Proskuryakov  <ap@apple.com>
 
         Please clarify "pending" reporting at build.webkit.org/dashboard
@@ -45,7 +430,7 @@
         listeners of changes. It uses an RSS interface to Trac, because there is no JSON one.
 
         * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/Utilities.js:
-        (loadXML): Added a function to load XML asynchronouly, just like existing JSON.load.
+        (loadXML): Added a function to load XML asynchronously, just like existing JSON.load.
 
         * BuildSlaveSupport/build.webkit.org-config/public_html/dashboard/Scripts/WebKitBuildbot.js:
         Removed tracRevisionURL() function. Now that we have a Trac object, it just makes
