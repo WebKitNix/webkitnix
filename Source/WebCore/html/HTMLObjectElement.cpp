@@ -373,21 +373,19 @@ void HTMLObjectElement::renderFallbackContent()
     if (!inDocument())
         return;
 
+    setNeedsStyleRecalc(ReconstructRenderTree);
+
     // Before we give up and use fallback content, check to see if this is a MIME type issue.
     if (m_imageLoader && m_imageLoader->image() && m_imageLoader->image()->status() != CachedResource::LoadError) {
         m_serviceType = m_imageLoader->image()->response().mimeType();
         if (!isImageType()) {
             // If we don't think we have an image type anymore, then clear the image from the loader.
             m_imageLoader->setImage(0);
-            Style::reattachRenderTree(*this);
             return;
         }
     }
 
     m_useFallbackContent = true;
-
-    // FIXME: Style gets recalculated which is suboptimal.
-    Style::reattachRenderTree(*this);
 }
 
 // FIXME: This should be removed, all callers are almost certainly wrong.
@@ -463,7 +461,7 @@ bool HTMLObjectElement::containsJavaApplet() const
     if (MIMETypeRegistry::isJavaAppletMIMEType(getAttribute(typeAttr)))
         return true;
 
-    for (auto& child : elementChildren(*this)) {
+    for (auto& child : childrenOfType<Element>(*this)) {
         if (child.hasTagName(paramTag) && equalIgnoringCase(child.getNameAttribute(), "type")
             && MIMETypeRegistry::isJavaAppletMIMEType(child.getAttribute(valueAttr).string()))
             return true;

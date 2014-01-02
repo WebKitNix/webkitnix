@@ -34,6 +34,7 @@
 #include "ElementRareData.h"
 #include "ElementTraversal.h"
 #include "FlowThreadController.h"
+#include "InsertionPoint.h"
 #include "NodeRenderStyle.h"
 #include "NodeRenderingTraversal.h"
 #include "NodeTraversal.h"
@@ -61,7 +62,9 @@ namespace Style {
 enum DetachType { NormalDetach, ReattachDetach };
 
 static void attachRenderTree(Element&, PassRefPtr<RenderStyle>);
+static void attachTextRenderer(Text&);
 static void detachRenderTree(Element&, DetachType);
+static void resolveTree(Element&, Change);
 
 Change determineChange(const RenderStyle* s1, const RenderStyle* s2, Settings* settings)
 {
@@ -296,7 +299,7 @@ static RenderObject* nextSiblingRenderer(const Text& textNode)
 
 static void reattachTextRenderersForWhitespaceOnlySiblingsAfterAttachIfNeeded(Node& current)
 {
-    if (current.isInsertionPoint())
+    if (isInsertionPoint(current))
         return;
     // This function finds sibling text renderers where the results of textRendererIsNeeded may have changed as a result of
     // the current node gaining or losing the renderer. This can only affect white space text nodes.
@@ -431,10 +434,32 @@ void updateTextRendererAfterContentChange(Text& textNode, unsigned offsetOfRepla
     textRenderer->setTextWithOffset(textNode.dataImpl(), offsetOfReplacedData, lengthOfReplacedData);
 }
 
+static void attachDistributedChildren(InsertionPoint& insertionPoint)
+{
+    if (ShadowRoot* shadowRoot = insertionPoint.containingShadowRoot())
+        ContentDistributor::ensureDistribution(shadowRoot);
+    for (Node* current = insertionPoint.firstDistributed(); current; current = insertionPoint.nextDistributedTo(current)) {
+        if (current->isTextNode()) {
+            if (current->renderer())
+                continue;
+            attachTextRenderer(*toText(current));
+            continue;
+        }
+        if (current->isElementNode()) {
+            if (current->renderer())
+                detachRenderTree(*toElement(current));
+            attachRenderTree(*toElement(current), nullptr);
+        }
+    }
+}
+
 static void attachChildren(ContainerNode& current)
 {
+    if (isInsertionPoint(current))
+        attachDistributedChildren(toInsertionPoint(current));
+
     for (Node* child = current.firstChild(); child; child = child->nextSibling()) {
-        ASSERT(!child->renderer() || current.shadowRoot() || current.isInsertionPoint());
+        ASSERT(!child->renderer() || current.shadowRoot() || isInsertionPoint(current));
         if (child->renderer())
             continue;
         if (child->isTextNode()) {
@@ -549,8 +574,23 @@ static void attachRenderTree(Element& current, PassRefPtr<RenderStyle> resolvedS
         current.didAttachRenderers();
 }
 
+static void detachDistributedChildren(InsertionPoint& insertionPoint)
+{
+    for (Node* current = insertionPoint.firstDistributed(); current; current = insertionPoint.nextDistributedTo(current)) {
+        if (current->isTextNode()) {
+            detachTextRenderer(*toText(current));
+            continue;
+        }
+        if (current->isElementNode())
+            detachRenderTree(*toElement(current));
+    }
+}
+
 static void detachChildren(ContainerNode& current, DetachType detachType)
 {
+    if (isInsertionPoint(current))
+        detachDistributedChildren(toInsertionPoint(current));
+
     for (Node* child = current.firstChild(); child; child = child->nextSibling()) {
         if (child->isTextNode()) {
             Style::detachTextRenderer(*toText(child));
@@ -875,27 +915,9 @@ void resolveTree(Document& document, Change change)
     resolveTree(*documentElement, change);
 }
 
-void attachRenderTree(Element& element)
-{
-    attachRenderTree(element, nullptr);
-    reattachTextRenderersForWhitespaceOnlySiblingsAfterAttachIfNeeded(element);
-}
-
 void detachRenderTree(Element& element)
 {
     detachRenderTree(element, NormalDetach);
-}
-
-void detachRenderTreeInReattachMode(Element& element)
-{
-    detachRenderTree(element, ReattachDetach);
-}
-
-void reattachRenderTree(Element& current)
-{
-    if (current.renderer())
-        detachRenderTree(current, ReattachDetach);
-    attachRenderTree(current);
 }
 
 }

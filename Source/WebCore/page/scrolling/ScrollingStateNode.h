@@ -46,16 +46,14 @@ class TextStream;
 
 class ScrollingStateNode {
 public:
-    ScrollingStateNode(ScrollingStateTree*, ScrollingNodeID);
+    ScrollingStateNode(ScrollingNodeType, ScrollingStateTree&, ScrollingNodeID);
     virtual ~ScrollingStateNode();
+    
+    ScrollingNodeType nodeType() const { return m_nodeType; }
 
-    virtual bool isScrollingNode() const { return false; }
-    virtual bool isFixedNode() const { return false; }
-    virtual bool isStickyNode() const { return false; }
-
-    virtual PassOwnPtr<ScrollingStateNode> clone() = 0;
-    PassOwnPtr<ScrollingStateNode> cloneAndReset();
-    void cloneAndResetChildren(ScrollingStateNode*);
+    virtual PassOwnPtr<ScrollingStateNode> clone(ScrollingStateTree& adoptiveTree) = 0;
+    PassOwnPtr<ScrollingStateNode> cloneAndReset(ScrollingStateTree& adoptiveTree);
+    void cloneAndResetChildren(ScrollingStateNode&, ScrollingStateTree& adoptiveTree);
 
     enum {
         ScrollLayer = 0,
@@ -64,7 +62,7 @@ public:
     typedef unsigned ChangedProperties;
 
     bool hasChangedProperties() const { return m_changedProperties; }
-    bool hasChangedProperty(unsigned propertyBit) { return m_changedProperties & (1 << propertyBit); }
+    bool hasChangedProperty(unsigned propertyBit) const { return m_changedProperties & (1 << propertyBit); }
     void resetChangedProperties() { m_changedProperties = 0; }
     void setPropertyChanged(unsigned propertyBit) { m_changedProperties |= (1 << propertyBit); }
 
@@ -75,8 +73,7 @@ public:
     void setScrollLayer(GraphicsLayer*);
     void setScrollPlatformLayer(PlatformLayer*);
 
-    ScrollingStateTree* scrollingStateTree() const { return m_scrollingStateTree; }
-    void setScrollingStateTree(ScrollingStateTree* tree) { m_scrollingStateTree = tree; }
+    ScrollingStateTree& scrollingStateTree() const { return m_scrollingStateTree; }
 
     ScrollingNodeID scrollingNodeID() const { return m_nodeID; }
 
@@ -91,9 +88,7 @@ public:
     String scrollingStateTreeAsText() const;
 
 protected:
-    ScrollingStateNode(const ScrollingStateNode&);
-
-    ScrollingStateTree* m_scrollingStateTree;
+    ScrollingStateNode(const ScrollingStateNode&, ScrollingStateTree&);
 
 private:
     void dump(TextStream&, int indent) const;
@@ -102,8 +97,11 @@ private:
     ChangedProperties changedProperties() const { return m_changedProperties; }
     void willBeRemovedFromStateTree();
 
+    const ScrollingNodeType m_nodeType;
     ScrollingNodeID m_nodeID;
     ChangedProperties m_changedProperties;
+
+    ScrollingStateTree& m_scrollingStateTree;
 
     ScrollingStateNode* m_parent;
     OwnPtr<Vector<OwnPtr<ScrollingStateNode>>> m_children;

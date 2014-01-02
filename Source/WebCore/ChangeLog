@@ -1,3 +1,552 @@
+2014-01-02  Andreas Kling  <akling@apple.com>
+
+        Simplify the insides of DocumentSharedObjectPool and reduce memory usage.
+
+        Merging Blink r164152 by Elliott Sprehn.
+
+        Instead of storing an OwnPtr to an object that has a pointer to the
+        ShareableElementData as well as a pointer into the ShareableElementData
+        and the length we can just store a RefPtr to the SharableElementData.
+
+        This also reduces the memory usage of the pool by 2 pointers per entry.
+
+        * dom/DocumentSharedObjectPool.h:
+        * dom/DocumentSharedObjectPool.cpp:
+        (WebCore::attributeHash):
+        (WebCore::hasSameAttributes):
+        (WebCore::DocumentSharedObjectPool::cachedShareableElementDataWithAttributes):
+
+2014-01-02  Dirk Schulze  <krit@webkit.org>
+
+        Support <box> values computed style for 'clip-path' property
+        https://bugs.webkit.org/show_bug.cgi?id=126148
+
+        Reviewed by Simon Fraser.
+
+        Calculate computed style for 'clip-path' property.
+
+        Updated tests to check for computed style.
+
+        * css/BasicShapeFunctions.cpp: Add box value bounding-box.
+        (WebCore::valueForBox):
+        (WebCore::boxForValue):
+        * css/CSSComputedStyleDeclaration.cpp: Return the computed style
+            for 'clip-path'.
+        (WebCore::ComputedStyleExtractor::propertyValue):
+        * css/DeprecatedStyleBuilder.cpp: Create CSSValueLists for 'clip-th'.
+        (WebCore::ApplyPropertyClipPath::applyValue):
+        * rendering/ClipPathOperation.h: Add bounding-box value.
+        (WebCore::ShapeClipPathOperation::pathForReferenceRect):
+        (WebCore::ShapeClipPathOperation::setReferenceBox):
+        (WebCore::ShapeClipPathOperation::referenceBox):
+        (WebCore::BoxClipPathOperation::create):
+        (WebCore::BoxClipPathOperation::pathForReferenceRect):
+        (WebCore::BoxClipPathOperation::referenceBox):
+        (WebCore::BoxClipPathOperation::BoxClipPathOperation):
+        * rendering/shapes/ShapeInfo.h: Add bounding-box value.
+        (WebCore::ShapeInfo::setShapeSize):
+        (WebCore::ShapeInfo::logicalTopOffset):
+        (WebCore::ShapeInfo::logicalLeftOffset):
+        * rendering/style/BasicShapes.cpp: Add bounding-box value.
+        (WebCore::BasicShape::referenceBoxSize):
+        * rendering/style/BasicShapes.h:
+
+2014-01-02  Antti Koivisto  <antti@apple.com>
+
+        Always resolve style from root
+        https://bugs.webkit.org/show_bug.cgi?id=126380
+
+        Reviewed by Andreas Kling.
+        
+        Forced style resolve that does not start from the root is never really correct. 
+        Remove the few remaining instances.
+
+        * dom/ShadowRoot.cpp:
+        (WebCore::ShadowRoot::setResetStyleInheritance):
+        
+            Update style asynchronously.
+
+        * dom/ShadowRoot.h:
+        * dom/Text.h:
+        * html/HTMLPlugInImageElement.cpp:
+        (WebCore::HTMLPlugInImageElement::createElementRenderer):
+        (WebCore::HTMLPlugInImageElement::documentWillSuspendForPageCache):
+        (WebCore::HTMLPlugInImageElement::documentDidResumeFromPageCache):
+        
+            Delete the render tree synchronously on suspend and rebuild it asynchronously on resume.
+            No need for m_customStyleForPageCache hack.
+
+        * html/HTMLPlugInImageElement.h:
+        
+            Remove m_customStyleForPageCache.
+
+        * style/StyleResolveTree.cpp:
+        * style/StyleResolveTree.h:
+        
+            Remove Element version of resolveTree from the interface.
+
+        * svg/SVGUseElement.h:
+
+2014-01-02  Antti Koivisto  <antti@apple.com>
+
+        Remove PlaceholderDocument
+        https://bugs.webkit.org/show_bug.cgi?id=126382
+
+        Reviewed by Andreas Kling.
+
+        Remove PlaceholderDocument class and replace it with a bit in Document.
+
+        * WebCore.xcodeproj/project.pbxproj:
+        * dom/Document.cpp:
+        (WebCore::Document::Document):
+        (WebCore::Document::createRenderTree):
+        * dom/Document.h:
+        
+            Also make Synthesized a construction flag instead of a boolean parameter.
+
+        (WebCore::Document::createNonRenderedPlaceholder):
+        * html/HTMLDocument.cpp:
+        (WebCore::HTMLDocument::HTMLDocument):
+        * html/HTMLDocument.h:
+        (WebCore::HTMLDocument::create):
+        (WebCore::HTMLDocument::createSynthesizedDocument):
+        * loader/DocumentWriter.cpp:
+        (WebCore::DocumentWriter::createDocument):
+        * loader/PlaceholderDocument.cpp: Removed.
+        * loader/PlaceholderDocument.h: Removed.
+        * pdf/ios/PDFDocument.h:
+        (WebCore::PDFDocument::PDFDocument):
+
+2014-01-01  Antti Koivisto  <antti@apple.com>
+
+        Remove public attachRenderTree
+        https://bugs.webkit.org/show_bug.cgi?id=126368
+
+        Reviewed by Andreas Kling.
+
+        Remove the remaining explicit render tree construction.
+
+        * dom/Document.cpp:
+        (WebCore::Document::createRenderTree):
+        
+           Use recalcStyle() instead of calling attachRenderTree directly.
+
+        * html/HTMLViewSourceDocument.cpp:
+        (WebCore::HTMLViewSourceDocument::addText):
+        
+            Remove forgotten attachTextRenderer.
+
+        * html/shadow/InsertionPoint.cpp:
+        (WebCore::InsertionPoint::InsertionPoint):
+        
+            Remove willAttachRenderers/didAttachRenderers hack.
+
+        * html/shadow/InsertionPoint.h:
+        (WebCore::toInsertionPoint):
+        * loader/PlaceholderDocument.cpp:
+        (WebCore::PlaceholderDocument::createRenderTree):
+        
+            Seriously, nothing to do here.
+
+        * style/StyleResolveTree.cpp:
+        (WebCore::Style::attachDistributedChildren):
+        (WebCore::Style::attachChildren):
+        (WebCore::Style::detachDistributedChildren):
+        (WebCore::Style::detachChildren):
+        
+            Making attaching and detaching distributed insertion point children part of ResolveTree internals.
+
+        * style/StyleResolveTree.h:
+        
+            Remove interfaces with no clients.
+
+2014-01-01  Seokju Kwon  <seokju@webkit.org>
+
+        Remove stale ScriptProfiler methods
+        https://bugs.webkit.org/show_bug.cgi?id=126373
+
+        Reviewed by Darin Adler.
+
+        No new tests, No change behavior. 
+
+        * bindings/js/ScriptProfiler.h: Remove dead code.
+
+2014-01-01  Andreas Kling  <akling@apple.com>
+
+        Remove ChromeClient::fullScreenRendererChanged().
+        <https://webkit.org/b/126370>
+
+        This hook was added in r75277 to notify WebFullScreenController when
+        the full screen renderer changed. In r110216 the code was refactored,
+        making this notification unnecessary.
+
+        Reviewed by Antti Koivisto.
+
+2014-01-01  Simon Fraser  <simon.fraser@apple.com>
+
+        Fix the build by exposing some more scrolling state node headers
+        as Private in WebCore.framework.
+
+        * WebCore.xcodeproj/project.pbxproj:
+
+2014-01-01  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Unreviewed build fix after r160903 when ACCESSIBILITY is disabled
+
+        * accessibility/AccessibilityObject.h:
+        (WebCore::AccessibilityObject::children):
+
+2014-01-01  Andreas Kling  <akling@apple.com>
+
+        RenderScrollbar: Map of scrollbar parts should use RenderPtr.
+        <https://webkit.org/b/126367>
+
+        Turn RenderScrollbar::m_parts into HashMap of RenderPtrs. This makes
+        renderer destruction automatic and lets us remove some code.
+
+        Reviewed by Antti Koivisto.
+
+        * rendering/RenderPtr.h:
+
+            Add HashTraits for RenderPtr so we can use them as values in
+            WTF hash tables.
+
+        * rendering/RenderScrollbar.h:
+        * rendering/RenderScrollbar.cpp:
+        (WebCore::RenderScrollbar::~RenderScrollbar):
+        (WebCore::RenderScrollbar::setParent):
+        (WebCore::RenderScrollbar::updateScrollbarParts):
+        (WebCore::RenderScrollbar::updateScrollbarPart):
+
+            Remove now-unneeded kludges of logic to manually delete scrollbar
+            part renderers in various scenarios.
+
+2014-01-01  Antti Koivisto  <antti@apple.com>
+
+        Remove reattachRenderTree
+        https://bugs.webkit.org/show_bug.cgi?id=126366
+
+        Reviewed by Andreas Kling.
+
+        Remove the last remaining client.
+
+        * html/HTMLSelectElement.cpp:
+        (WebCore::HTMLSelectElement::parseAttribute):
+        
+            Reconstruct render tree asynchronously.
+
+        (WebCore::HTMLSelectElement::scrollToSelection):
+        (WebCore::HTMLSelectElement::setOptionsChangedOnRenderer):
+        (WebCore::HTMLSelectElement::selectOption):
+        
+            It is not safe to cast the renderer based on usesMenuList test. Switch to RenderObject::isMenuList test.
+
+        (WebCore::HTMLSelectElement::parseMultipleAttribute):
+        
+            Reconstruct render tree asynchronously.
+
+        (WebCore::HTMLSelectElement::platformHandleKeydownEvent):
+        (WebCore::HTMLSelectElement::menuListDefaultEventHandler):
+        (WebCore::HTMLSelectElement::defaultEventHandler):
+        * style/StyleResolveTree.cpp:
+        * style/StyleResolveTree.h:
+        
+            Remove the function.
+
+2014-01-01  Simon Fraser  <simon.fraser@apple.com>
+
+        Create a ThreadedScrollingTree subclass of ScrollingTree, and push all knowledge of the scrolling thread into it
+        https://bugs.webkit.org/show_bug.cgi?id=126362
+
+        Reviewed by Sam Weinig.
+
+        Eventually we'll have a ScrollingTree in situations where there is no scrolling
+        thread, so make the ScrollingTree base class thread-agnostic (but threadsafe),
+        and subclass it in ThreadedScrollingTree for scrolling-thread-specific functionality.
+        
+        The ScrollingTree base class also no longer needs to know about the
+        ScrollingCoordinator.
+
+        ScrollingCoordinatorMac creates a ThreadedScrollingTree.
+
+        * WebCore.exp.in:
+        * WebCore.xcodeproj/project.pbxproj: Add ThreadedScrollingTree.*
+        Make some headers Private that we'll need in WebKit2 soon.
+        * page/scrolling/ScrollingStateTree.h: Drive-by cleanup: clone() was unimplemented.
+        * page/scrolling/ScrollingTree.cpp:
+        (WebCore::ScrollingTree::ScrollingTree):
+        (WebCore::ScrollingTree::~ScrollingTree):
+        (WebCore::ScrollingTree::shouldHandleWheelEventSynchronously): Wrap up some logic that
+        involves taking the mutex, so ThreadedScrollingTree can conveniently call it.
+        (WebCore::ScrollingTree::handleWheelEvent):
+        (WebCore::ScrollingTree::commitNewTreeState):
+        (WebCore::ScrollingTree::setMainFrameScrollPosition):
+        (WebCore::ScrollingTree::isHandlingProgrammaticScroll):
+        * page/scrolling/ScrollingTree.h:
+        (WebCore::ScrollingTree::isThreadedScrollingTree):
+        (WebCore::ScrollingTree::invalidate):
+        * page/scrolling/ThreadedScrollingTree.cpp: Added.
+        (WebCore::ThreadedScrollingTree::create):
+        (WebCore::ThreadedScrollingTree::ThreadedScrollingTree):
+        (WebCore::ThreadedScrollingTree::~ThreadedScrollingTree):
+        (WebCore::ThreadedScrollingTree::tryToHandleWheelEvent):
+        (WebCore::ThreadedScrollingTree::handleWheelEvent):
+        (WebCore::derefScrollingCoordinator):
+        (WebCore::ThreadedScrollingTree::invalidate):
+        (WebCore::ThreadedScrollingTree::commitNewTreeState):
+        (WebCore::ThreadedScrollingTree::updateMainFrameScrollPosition):
+        (WebCore::ThreadedScrollingTree::handleWheelEventPhase):
+        * page/scrolling/ThreadedScrollingTree.h: Added.
+        (WebCore::ThreadedScrollingTree::isThreadedScrollingTree):
+        * page/scrolling/mac/ScrollingCoordinatorMac.h:
+        * page/scrolling/mac/ScrollingCoordinatorMac.mm:
+        (WebCore::ScrollingCoordinatorMac::ScrollingCoordinatorMac):
+        (WebCore::ScrollingCoordinatorMac::handleWheelEvent):
+
+2014-01-01  Andreas Kling  <akling@apple.com>
+
+        FrameView: Store scroll corner renderer in a RenderPtr.
+        <https://webkit.org/b/126364>
+
+        Make FrameView::m_scrollCorner a RenderPtr<RenderScrollbarPart> and
+        remove two manual destroy() calls.
+
+        Reviewed by Antti Koivisto.
+
+2014-01-01  Antti Koivisto  <antti@apple.com>
+
+        Remove elementChildren/elementDescendants shorthands
+        https://bugs.webkit.org/show_bug.cgi?id=126363
+
+        Reviewed by Anders Carlsson.
+
+        Just use childrenOfType<Element>/descendantsOfType<Element> instead. They are not that much longer
+        and consistency is valuable.
+
+        * accessibility/AccessibilityNodeObject.cpp:
+        (WebCore::AccessibilityNodeObject::canvasHasFallbackContent):
+        (WebCore::siblingWithAriaRole):
+        * accessibility/AccessibilityTable.cpp:
+        (WebCore::AccessibilityTable::isDataTable):
+        * css/StyleInvalidationAnalysis.cpp:
+        (WebCore::StyleInvalidationAnalysis::invalidateStyle):
+        * dom/ChildNodeList.cpp:
+        (WebCore::ChildNodeList::namedItem):
+        * dom/Document.cpp:
+        (WebCore::Document::buildAccessKeyMap):
+        (WebCore::Document::childrenChanged):
+        * dom/Element.cpp:
+        (WebCore::Element::resetComputedStyle):
+        * dom/ElementChildIterator.h:
+        * dom/ElementDescendantIterator.h:
+        * dom/SelectorQuery.cpp:
+        (WebCore::elementsForLocalName):
+        (WebCore::anyElement):
+        (WebCore::SelectorDataList::executeSingleTagNameSelectorData):
+        (WebCore::SelectorDataList::executeSingleClassNameSelectorData):
+        (WebCore::SelectorDataList::executeSingleSelectorData):
+        (WebCore::SelectorDataList::executeSingleMultiSelectorData):
+        * editing/ApplyStyleCommand.cpp:
+        (WebCore::ApplyStyleCommand::cleanupUnstyledAppleStyleSpans):
+        * editing/ReplaceSelectionCommand.cpp:
+        (WebCore::removeHeadContents):
+        * editing/markup.cpp:
+        (WebCore::completeURLs):
+        * html/HTMLFieldSetElement.cpp:
+        (WebCore::HTMLFieldSetElement::refreshElementsIfNeeded):
+        * html/HTMLObjectElement.cpp:
+        (WebCore::HTMLObjectElement::containsJavaApplet):
+        * loader/PlaceholderDocument.cpp:
+        (WebCore::PlaceholderDocument::createRenderTree):
+        * rendering/RenderChildIterator.h:
+        * svg/SVGSVGElement.cpp:
+        (WebCore::SVGSVGElement::getElementById):
+        * svg/SVGUseElement.cpp:
+        (WebCore::subtreeContainsDisallowedElement):
+        (WebCore::removeDisallowedElementsFromSubtree):
+
+2014-01-01  Antti Koivisto  <antti@apple.com>
+
+        Do less synchronous render tree construction
+        https://bugs.webkit.org/show_bug.cgi?id=126359
+
+        Reviewed by Anders Carlsson.
+
+        Remove some now-unnecessary attachRenderTree calls.
+
+        * html/HTMLDetailsElement.cpp:
+        (WebCore::HTMLDetailsElement::parseAttribute):
+        * html/HTMLInputElement.cpp:
+        (WebCore::HTMLInputElement::parseAttribute):
+        * html/HTMLObjectElement.cpp:
+        (WebCore::HTMLObjectElement::renderFallbackContent):
+        * html/HTMLPlugInElement.cpp:
+        (WebCore::HTMLPlugInElement::didAddUserAgentShadowRoot):
+        * html/HTMLPlugInImageElement.cpp:
+        (WebCore::HTMLPlugInImageElement::willRecalcStyle):
+        (WebCore::HTMLPlugInImageElement::createShadowIFrameSubtree):
+        (WebCore::HTMLPlugInImageElement::restartSnapshottedPlugIn):
+        * html/HTMLViewSourceDocument.cpp:
+        (WebCore::HTMLViewSourceDocument::createContainingTable):
+        (WebCore::HTMLViewSourceDocument::addSpanWithClassName):
+        (WebCore::HTMLViewSourceDocument::addLine):
+        (WebCore::HTMLViewSourceDocument::finishLine):
+        (WebCore::HTMLViewSourceDocument::addBase):
+        (WebCore::HTMLViewSourceDocument::addLink):
+        * xml/XMLErrors.cpp:
+        (WebCore::XMLErrors::insertErrorMessageBlock):
+
+2014-01-01  Simon Fraser  <simon.fraser@apple.com>
+
+        Updating the scrolling tree should use references to state nodes
+        https://bugs.webkit.org/show_bug.cgi?id=126360
+
+        Reviewed by Anders Carlsson.
+
+        Change functions related to ScrollingTreeNode updating to take
+        const references to state nodes rather than pointers.
+
+        * page/scrolling/ScrollingStateNode.h:
+        (WebCore::ScrollingStateNode::hasChangedProperty):
+        * page/scrolling/ScrollingTree.cpp:
+        (WebCore::ScrollingTree::commitNewTreeState):
+        (WebCore::ScrollingTree::updateTreeFromStateNode): The node can be nil so
+        this continues to take a pointer.
+        (WebCore::ScrollingTree::removeDestroyedNodes):
+        * page/scrolling/ScrollingTree.h:
+        * page/scrolling/ScrollingTreeNode.h:
+        (WebCore::ScrollingTreeNode::updateAfterChildren):
+        * page/scrolling/ScrollingTreeScrollingNode.cpp:
+        (WebCore::ScrollingTreeScrollingNode::updateBeforeChildren):
+        * page/scrolling/ScrollingTreeScrollingNode.h:
+        * page/scrolling/mac/ScrollingTreeFixedNode.h:
+        * page/scrolling/mac/ScrollingTreeFixedNode.mm:
+        (WebCore::ScrollingTreeFixedNode::updateBeforeChildren):
+        * page/scrolling/mac/ScrollingTreeScrollingNodeMac.h:
+        * page/scrolling/mac/ScrollingTreeScrollingNodeMac.mm:
+        (WebCore::ScrollingTreeScrollingNodeMac::updateBeforeChildren):
+        (WebCore::ScrollingTreeScrollingNodeMac::updateAfterChildren):
+        * page/scrolling/mac/ScrollingTreeStickyNode.h:
+        * page/scrolling/mac/ScrollingTreeStickyNode.mm:
+        (WebCore::ScrollingTreeStickyNode::updateBeforeChildren):
+
+2014-01-01  Simon Fraser  <simon.fraser@apple.com>
+
+        Add a typedef for PlatformLayerID on GraphicsLayer, and migrate RemoteLayerTreeTransaction to use it
+        https://bugs.webkit.org/show_bug.cgi?id=126346
+
+        Reviewed by Tim Horton.
+
+        Remote scrolling tree code is soon going to use RemoteLayerTreeTransaction::LayerID,
+        so it makes more sense to put this layerID type on GraphicsLayer as
+        GraphicsLayer::PlatformLayerID.
+        
+        Also add some type cast macros for PlatformCALayer and subclasses, and use them
+        where appropriate.
+
+        * platform/graphics/GraphicsLayer.h:
+        * platform/graphics/ca/GraphicsLayerCA.cpp:
+        (WebCore::GraphicsLayerCA::setName):
+        * platform/graphics/ca/PlatformCALayer.h:
+        (WebCore::PlatformCALayer::isPlatformCALayerMac):
+        (WebCore::PlatformCALayer::isPlatformCALayerRemote):
+        (WebCore::PlatformCALayer::PlatformCALayer):
+        * platform/graphics/ca/mac/PlatformCALayerMac.h:
+
+2013-12-31  Simon Fraser  <simon.fraser@apple.com>
+
+        ScrollingStateNodes should have a reference to the ScrollingStateTree
+        https://bugs.webkit.org/show_bug.cgi?id=126348
+
+        Reviewed by Sam Weinig.
+
+        Make ScrollingStateNodes always belong to a ScrollingStateTree, and thus
+        have a reference to the tree rather than a pointer. When cloning nodes,
+        they are adopted by a new ScrollingStateTree, which adds them to its
+        node map (which didn't happen before).
+        
+        In subclasses access the ScrollingStateTree through a member function.
+
+        * page/scrolling/ScrollingStateFixedNode.cpp:
+        (WebCore::ScrollingStateFixedNode::create):
+        (WebCore::ScrollingStateFixedNode::ScrollingStateFixedNode):
+        (WebCore::ScrollingStateFixedNode::clone):
+        (WebCore::ScrollingStateFixedNode::updateConstraints):
+        * page/scrolling/ScrollingStateFixedNode.h:
+        * page/scrolling/ScrollingStateNode.cpp:
+        (WebCore::ScrollingStateNode::ScrollingStateNode):
+        (WebCore::ScrollingStateNode::cloneAndReset):
+        (WebCore::ScrollingStateNode::cloneAndResetChildren):
+        (WebCore::ScrollingStateNode::willBeRemovedFromStateTree):
+        * page/scrolling/ScrollingStateNode.h:
+        (WebCore::ScrollingStateNode::scrollingStateTree):
+        * page/scrolling/ScrollingStateScrollingNode.cpp:
+        (WebCore::ScrollingStateScrollingNode::create):
+        (WebCore::ScrollingStateScrollingNode::ScrollingStateScrollingNode):
+        (WebCore::ScrollingStateScrollingNode::clone):
+        (WebCore::ScrollingStateScrollingNode::setViewportRect):
+        (WebCore::ScrollingStateScrollingNode::setTotalContentsSize):
+        (WebCore::ScrollingStateScrollingNode::setScrollOrigin):
+        (WebCore::ScrollingStateScrollingNode::setScrollableAreaParameters):
+        (WebCore::ScrollingStateScrollingNode::setFrameScaleFactor):
+        (WebCore::ScrollingStateScrollingNode::setNonFastScrollableRegion):
+        (WebCore::ScrollingStateScrollingNode::setWheelEventHandlerCount):
+        (WebCore::ScrollingStateScrollingNode::setSynchronousScrollingReasons):
+        (WebCore::ScrollingStateScrollingNode::setScrollBehaviorForFixedElements):
+        (WebCore::ScrollingStateScrollingNode::setRequestedScrollPosition):
+        (WebCore::ScrollingStateScrollingNode::setHeaderHeight):
+        (WebCore::ScrollingStateScrollingNode::setFooterHeight):
+        * page/scrolling/ScrollingStateScrollingNode.h:
+        * page/scrolling/ScrollingStateStickyNode.cpp:
+        (WebCore::ScrollingStateStickyNode::create):
+        (WebCore::ScrollingStateStickyNode::ScrollingStateStickyNode):
+        (WebCore::ScrollingStateStickyNode::clone):
+        (WebCore::ScrollingStateStickyNode::updateConstraints):
+        * page/scrolling/ScrollingStateStickyNode.h:
+        * page/scrolling/ScrollingStateTree.cpp:
+        (WebCore::ScrollingStateTree::attachNode):
+        (WebCore::ScrollingStateTree::commit):
+        (WebCore::ScrollingStateTree::addNode):
+        * page/scrolling/ScrollingStateTree.h:
+        * page/scrolling/mac/ScrollingStateNodeMac.mm:
+        (WebCore::ScrollingStateNode::setScrollLayer):
+        * page/scrolling/mac/ScrollingStateScrollingNodeMac.mm:
+        (WebCore::ScrollingStateScrollingNode::setCounterScrollingLayer):
+        (WebCore::ScrollingStateScrollingNode::setHeaderLayer):
+        (WebCore::ScrollingStateScrollingNode::setFooterLayer):
+        (WebCore::ScrollingStateScrollingNode::setScrollbarPaintersFromScrollbars):
+
+2013-12-31  Simon Fraser  <simon.fraser@apple.com>
+
+        Give ScrollingStateNodes a nodeType()
+        https://bugs.webkit.org/show_bug.cgi?id=126347
+
+        Reviewed by Tim Horton.
+
+        When we start serializing ScrollingStateNodes to send to the UI process,
+        it's more convenient if they have a nodeType member rather than virtual functions,
+        so give them one, and fix the casting macros to use it. This allows us to use
+        a switch() on node creation, so the compiler will tell us if we forgot to create
+        a node type.
+
+        * page/scrolling/ScrollingStateFixedNode.cpp:
+        (WebCore::ScrollingStateFixedNode::ScrollingStateFixedNode):
+        * page/scrolling/ScrollingStateFixedNode.h:
+        * page/scrolling/ScrollingStateNode.cpp:
+        (WebCore::ScrollingStateNode::ScrollingStateNode):
+        * page/scrolling/ScrollingStateNode.h: const ScrollingNodeType field
+        (can't be modified after construction), and move the m_scrollingStateTree
+        member after it (the awkward protected:/private: will be cleaned up in a later patch).
+        (WebCore::ScrollingStateNode::nodeType):
+        * page/scrolling/ScrollingStateScrollingNode.cpp:
+        (WebCore::ScrollingStateScrollingNode::ScrollingStateScrollingNode):
+        * page/scrolling/ScrollingStateScrollingNode.h:
+        * page/scrolling/ScrollingStateStickyNode.cpp:
+        (WebCore::ScrollingStateStickyNode::ScrollingStateStickyNode):
+        * page/scrolling/ScrollingStateStickyNode.h:
+        * page/scrolling/ScrollingTree.cpp:
+        (WebCore::ScrollingTree::updateTreeFromStateNode):
+
 2013-12-31  Andreas Kling  <akling@apple.com>
 
         Out-of-line RenderStyle substructure copying helpers.

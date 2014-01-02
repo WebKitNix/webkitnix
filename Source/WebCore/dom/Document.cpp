@@ -390,7 +390,7 @@ bool TextAutoSizingTraits::isDeletedValue(const TextAutoSizingKey& value)
 }
 #endif
 
-Document::Document(Frame* frame, const URL& url, unsigned documentClasses, bool isSynthesized)
+Document::Document(Frame* frame, const URL& url, unsigned documentClasses, unsigned constructionFlags)
     : ContainerNode(nullptr, CreateDocument)
     , TreeScope(this)
 #if ENABLE(TOUCH_EVENTS) && PLATFORM(IOS)
@@ -453,7 +453,8 @@ Document::Document(Frame* frame, const URL& url, unsigned documentClasses, bool 
     , m_inPageCache(false)
     , m_accessKeyMapValid(false)
     , m_documentClasses(documentClasses)
-    , m_isSynthesized(isSynthesized)
+    , m_isSynthesized(constructionFlags & Synthesized)
+    , m_isNonRenderedPlaceholder(constructionFlags & NonRenderedPlaceholder)
     , m_isViewSource(false)
     , m_sawElementsInKnownNamespaces(false)
     , m_isSrcdocDocument(false)
@@ -686,7 +687,7 @@ void Document::buildAccessKeyMap(TreeScope* scope)
 {
     ASSERT(scope);
     ContainerNode* rootNode = scope->rootNode();
-    for (auto& element : elementDescendants(*rootNode)) {
+    for (auto& element : descendantsOfType<Element>(*rootNode)) {
         const AtomicString& accessKey = element.fastGetAttribute(accesskeyAttr);
         if (!accessKey.isEmpty())
             m_elementsByAccessKey.set(accessKey.impl(), &element);
@@ -806,7 +807,7 @@ void Document::childrenChanged(const ChildChange& change)
     }
 #endif
 
-    Element* newDocumentElement = elementChildren(*this).first();
+    Element* newDocumentElement = childrenOfType<Element>(*this).first();
 
     if (newDocumentElement == m_documentElement)
         return;
@@ -1950,6 +1951,9 @@ void Document::createRenderTree()
     ASSERT(!m_inPageCache);
     ASSERT(!m_axObjectCache || this != topDocument());
 
+    if (m_isNonRenderedPlaceholder)
+        return;
+
     // FIXME: It would be better if we could pass the resolved document style directly here.
     m_renderView = createRenderer<RenderView>(*this, RenderStyle::create());
     Node::setRenderer(m_renderView.get());
@@ -1959,9 +1963,6 @@ void Document::createRenderTree()
 #endif
 
     recalcStyle(Style::Force);
-
-    if (m_documentElement)
-        Style::attachRenderTree(*m_documentElement);
 }
 
 static void pageWheelEventHandlerCountChanged(Page& page)
@@ -5465,18 +5466,11 @@ void Document::setFullScreenRenderer(RenderFullScreen* renderer)
     ASSERT(!m_fullScreenRenderer);
 
     m_fullScreenRenderer = renderer;
-    
-    // This notification can come in after the page has been destroyed.
-    if (page())
-        page()->chrome().client().fullScreenRendererChanged(m_fullScreenRenderer);
 }
 
 void Document::fullScreenRendererDestroyed()
 {
     m_fullScreenRenderer = nullptr;
-
-    if (page())
-        page()->chrome().client().fullScreenRendererChanged(nullptr);
 }
 
 void Document::fullScreenChangeDelayTimerFired(Timer<Document>*)
