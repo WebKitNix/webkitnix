@@ -79,7 +79,6 @@ void WebView::initialize()
 void WebView::setContentScaleFactor(float scaleFactor)
 {
     m_page->scalePage(scaleFactor, roundedIntPoint(contentPosition()));
-    updateViewportSize();
 }
 
 void WebView::setActive(bool active)
@@ -529,6 +528,7 @@ void WebView::pageTransitionViewportReady()
 
 void WebView::pageScaleFactorDidChange()
 {
+    updateViewportSize();
     m_client.didChangeContentScaleFactor(this);
 }
 

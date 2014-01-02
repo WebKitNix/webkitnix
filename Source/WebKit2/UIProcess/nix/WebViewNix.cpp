@@ -115,7 +115,7 @@ void WebViewNix::viewportInteractionStart()
 void WebViewNix::viewportInteractionStop()
 {
     if (m_scaleFactorToSync && m_scaleFactorToSync != page()->pageScaleFactor())
-        page()->scalePage(m_scaleFactorToSync, roundedIntPoint(contentPosition()));
+        WebView::setContentScaleFactor(m_scaleFactorToSync);
 
     updateViewportSize();
     resumeActiveDOMObjectsAndAnimations();
@@ -123,10 +123,9 @@ void WebViewNix::viewportInteractionStop()
 
 void WebViewNix::setContentScaleFactor(float scaleFactor)
 {
-    if (isSuspended()) {
-        m_scaleFactorToSync = scaleFactor;
+    m_scaleFactorToSync = scaleFactor;
+    if (isSuspended())
         return;
-    }
 
     WebView::setContentScaleFactor(scaleFactor);
 }
