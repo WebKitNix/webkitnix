@@ -141,16 +141,11 @@ void HistoryController::restoreScrollPositionAndViewState()
                 scrollingCoordinator->frameViewRootLayerDidChange(view);
         }
 
-        double currentScaleFactor = m_currentItem->pageScaleFactor();
-        IntPoint currentScrollPoint = m_currentItem->scrollPoint();
-        double previousScaleFactor = m_previousItem ? m_previousItem->pageScaleFactor() : currentScaleFactor;
-        IntPoint previousScrollPoint = m_previousItem ? m_previousItem->scrollPoint() : currentScrollPoint;
-
-        if (previousScaleFactor != currentScaleFactor || previousScrollPoint != currentScrollPoint) {
-            if (page && m_frame.isMainFrame() && currentScaleFactor)
-                page->setPageScaleFactor(currentScaleFactor, currentScrollPoint);
+        if (!view->wasScrolledByUser()) {
+            if (page && m_frame.isMainFrame() && m_currentItem->pageScaleFactor())
+                page->setPageScaleFactor(m_currentItem->pageScaleFactor(), m_currentItem->scrollPoint());
             else
-                view->setScrollPosition(currentScrollPoint);
+                view->setScrollPosition(m_currentItem->scrollPoint());
         }
     }
 #endif

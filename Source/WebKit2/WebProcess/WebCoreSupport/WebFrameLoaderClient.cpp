@@ -1215,7 +1215,7 @@ void WebFrameLoaderClient::transitionToCommittedForNewPage()
     bool shouldUseFixedLayout = isMainFrame && webPage->useFixedLayout();
     bool shouldDisableScrolling = isMainFrame && !webPage->mainFrameIsScrollable();
     bool shouldHideScrollbars = shouldUseFixedLayout || shouldDisableScrolling;
-#if PLATFORM(IOS)
+#if PLATFORM(IOS) || PLATFORM(NIX)
     IntRect currentFixedVisibleContentRect = IntRect();
 #else
     IntRect currentFixedVisibleContentRect = m_frame->coreFrame()->view() ? m_frame->coreFrame()->view()->fixedVisibleContentRect() : IntRect();
