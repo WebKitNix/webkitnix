@@ -53,7 +53,7 @@
 #import <wtf/MainThread.h>
 
 #if ENABLE(ASYNC_SCROLLING)
-#import <WebCore/ScrollingCoordinator.h>
+#import <WebCore/AsyncScrollingCoordinator.h>
 #import <WebCore/ScrollingThread.h>
 #import <WebCore/ScrollingTree.h>
 #endif
@@ -243,7 +243,7 @@ void TiledCoreAnimationDrawingArea::updatePreferences(const WebPreferencesStore&
     Settings& settings = m_webPage->corePage()->settings();
 
 #if ENABLE(ASYNC_SCROLLING)
-    if (ScrollingCoordinator* scrollingCoordinator = m_webPage->corePage()->scrollingCoordinator()) {
+    if (AsyncScrollingCoordinator* scrollingCoordinator = toAsyncScrollingCoordinator(m_webPage->corePage()->scrollingCoordinator())) {
         bool scrollingPerformanceLoggingEnabled = m_webPage->scrollingPerformanceLoggingEnabled();
         ScrollingThread::dispatch(bind(&ScrollingTree::setScrollingPerformanceLoggingEnabled, scrollingCoordinator->scrollingTree(), scrollingPerformanceLoggingEnabled));
     }
@@ -387,6 +387,21 @@ bool TiledCoreAnimationDrawingArea::flushLayers()
 
     [pool drain];
     return returnValue;
+}
+
+void TiledCoreAnimationDrawingArea::viewStateDidChange(ViewState::Flags changed)
+{
+    if (changed & ViewState::IsVisible) {
+        if (m_webPage->isVisible())
+            resumePainting();
+        else
+            suspendPainting();
+    }
+
+#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
+    if (changed & ViewState::IsLayerWindowServerHosted)
+        setLayerHostingMode(m_webPage->layerHostingMode());
+#endif
 }
 
 void TiledCoreAnimationDrawingArea::suspendPainting()

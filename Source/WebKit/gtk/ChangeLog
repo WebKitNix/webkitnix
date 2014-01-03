@@ -1,3 +1,41 @@
+2014-01-02  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        REGRESSION(r160304): [GTK] Disable libtool fast install
+        https://bugs.webkit.org/show_bug.cgi?id=126381
+
+        Reviewed by Martin Robinson.
+
+        * tests/GNUmakefile.am:
+
+2014-01-02  Gavin Barraclough  <barraclough@apple.com>
+
+        Merge didMoveOnscreen / page visibility to isVisible
+        https://bugs.webkit.org/show_bug.cgi?id=126268
+
+        Reviewed by Tim Horton.
+
+        The onscreen state most closely tracks view visibility (though currently
+        also tracks a mix of in-window state). Make more consistent, simplify,
+        and move all animation suspension logic to Page, so it can be controlled
+        by the PageThrottler.
+
+        * WebCoreSupport/DumpRenderTreeSupportGtk.cpp:
+        (DumpRenderTreeSupportGtk::setPageVisibility):
+            - setVisibilityState -> setIsVisible/setIsPrerender.
+
+2014-01-02  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Fix mismatched header guards in private WK1 header files
+        https://bugs.webkit.org/show_bug.cgi?id=126390
+
+        Reviewed by Martin Robinson.
+
+        Fix three mismatched header guards that are producing warnings when building with Clang.
+
+        * webkit/webkitsecurityoriginprivate.h:
+        * webkit/webkitviewportattributesprivate.h:
+        * webkit/webkitwebnavigationactionprivate.h:
+
 2013-12-30  Martin Robinson  <mrobinson@igalia.com>
 
         [GTK] Make the output directory of GObject unit tests binaries consistent with the CMake build

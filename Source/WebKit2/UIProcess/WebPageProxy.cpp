@@ -922,8 +922,6 @@ void WebPageProxy::scrollView(const IntRect& scrollRect, const IntSize& scrollOf
 void WebPageProxy::updateViewState(ViewState::Flags flagsToUpdate)
 {
     m_viewState &= ~flagsToUpdate;
-    if (flagsToUpdate & ViewState::WindowIsVisible && m_pageClient.isWindowVisible())
-        m_viewState |= ViewState::WindowIsVisible;
     if (flagsToUpdate & ViewState::IsFocused && m_pageClient.isViewFocused())
         m_viewState |= ViewState::IsFocused;
     if (flagsToUpdate & ViewState::WindowIsActive && m_pageClient.isViewWindowActive())
@@ -932,6 +930,8 @@ void WebPageProxy::updateViewState(ViewState::Flags flagsToUpdate)
         m_viewState |= ViewState::IsVisible;
     if (flagsToUpdate & ViewState::IsInWindow && m_pageClient.isViewInWindow())
         m_viewState |= ViewState::IsInWindow;
+    if (flagsToUpdate & ViewState::IsVisuallyIdle && m_pageClient.isVisuallyIdle())
+        m_viewState |= ViewState::IsVisuallyIdle;
 #if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
     if (flagsToUpdate & ViewState::IsLayerWindowServerHosted && m_pageClient.isLayerWindowServerHosted())
         m_viewState |= ViewState::IsLayerWindowServerHosted;
@@ -946,6 +946,9 @@ void WebPageProxy::viewStateDidChange(ViewState::Flags mayHaveChanged, WantsRepl
     // If the in-window state may have changed, then so may the layer hosting.
     if (mayHaveChanged & ViewState::IsInWindow)
         mayHaveChanged |= ViewState::IsLayerWindowServerHosted;
+    // If the visibility state may have changed, then so may the visually idle.
+    if (mayHaveChanged & ViewState::IsVisible)
+        mayHaveChanged |= ViewState::IsVisuallyIdle;
 
     // Record the prior view state, update the flags that may have changed,
     // and check which flags have actually changed.

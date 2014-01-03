@@ -433,9 +433,11 @@ EncodedJSValue jsTestInterfaceSupplementalNode(ExecState* exec, EncodedJSValue s
 
 #endif
 
-EncodedJSValue jsTestInterfaceConstructor(ExecState* exec, EncodedJSValue slotBase, EncodedJSValue, PropertyName)
+EncodedJSValue jsTestInterfaceConstructor(ExecState* exec, EncodedJSValue thisValue, EncodedJSValue, PropertyName)
 {
-    JSTestInterface* domObject = jsDynamicCast<JSTestInterface*>(JSValue::decode(slotBase));
+    JSTestInterface* domObject = jsDynamicCast<JSTestInterface*>(JSValue::decode(thisValue));
+    if (!domObject)
+        return throwVMTypeError(exec);
     if (!domObject)
         return throwVMTypeError(exec);
     return JSValue::encode(JSTestInterface::getConstructor(exec->vm(), domObject->globalObject()));
@@ -455,7 +457,7 @@ void JSTestInterface::putByIndex(JSCell* cell, ExecState* exec, unsigned index, 
     JSTestInterface* thisObject = jsCast<JSTestInterface*>(cell);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
     PropertyName propertyName = Identifier::from(exec, index);
-    PutPropertySlot slot(shouldThrow);
+    PutPropertySlot slot(thisObject, shouldThrow);
     if (thisObject->putDelegate(exec, propertyName, value, slot))
         return;
     Base::putByIndex(cell, exec, index, value, shouldThrow);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,35 +23,29 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JSPromiseResolverPrototype_h
-#define JSPromiseResolverPrototype_h
+#include "config.h"
+#include "UserActivity.h"
 
-#if ENABLE(PROMISES)
+namespace WebCore {
 
-#include "JSObject.h"
+#if !HAVE(NS_ACTIVITY)
 
-namespace JSC {
+UserActivity::UserActivity(const char*)
+    : m_count(0)
+{
+}
 
-class JSPromiseResolverPrototype : public JSNonFinalObject {
-public:
-    typedef JSNonFinalObject Base;
+void UserActivity::beginActivity()
+{
+    ++m_count;
+}
 
-    static JSPromiseResolverPrototype* create(ExecState*, JSGlobalObject*, Structure*);
-    static Structure* createStructure(VM&, JSGlobalObject*, JSValue);
+void UserActivity::endActivity()
+{
+    ASSERT(m_count);
+    --m_count;
+}
 
-    DECLARE_INFO;
+#endif
 
-protected:
-    void finishCreation(VM&, Structure*);
-    static const unsigned StructureFlags = OverridesGetOwnPropertySlot | JSObject::StructureFlags;
-
-private:
-    JSPromiseResolverPrototype(ExecState*, Structure*);
-    static bool getOwnPropertySlot(JSObject*, ExecState*, PropertyName, PropertySlot&);
-};
-
-} // namespace JSC
-
-#endif // ENABLE(PROMISES)
-
-#endif // JSPromiseResolverPrototype_h
+} // namespace WebCore

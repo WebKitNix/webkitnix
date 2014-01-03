@@ -42,6 +42,7 @@
 #import "WebContextMenuProxyMac.h"
 #import "WebEditCommandProxy.h"
 #import "WebPopupMenuProxyMac.h"
+#import "WindowServerConnection.h"
 #import <WebCore/AlternativeTextUIController.h>
 #import <WebCore/BitmapImage.h>
 #import <WebCore/Cursor.h>
@@ -209,14 +210,14 @@ bool PageClientImpl::isViewVisible()
     return true;
 }
 
-bool PageClientImpl::isWindowVisible()
-{
-    return [[m_wkView window] isVisible];
-}
-
 bool PageClientImpl::isViewInWindow()
 {
     return [m_wkView window];
+}
+
+bool PageClientImpl::isVisuallyIdle()
+{
+    return WindowServerConnection::shared().applicationWindowModificationsHaveStopped() || !isViewVisible();
 }
 
 #if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)

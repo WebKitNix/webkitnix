@@ -64,8 +64,8 @@ private:
     virtual bool isViewWindowActive();
     virtual bool isViewFocused();
     virtual bool isViewVisible();
-    virtual bool isWindowVisible();
     virtual bool isViewInWindow();
+    virtual bool isVisuallyIdle();
 #if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
     virtual bool isLayerWindowServerHosted();
 #endif

@@ -1,3 +1,290 @@
+2014-01-02  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        REGRESSION(r160304): [GTK] Disable libtool fast install
+        https://bugs.webkit.org/show_bug.cgi?id=126381
+
+        Reviewed by Martin Robinson.
+
+        Remove -no-fast-install ld flag since fast install is now disabled
+        globally.
+
+        * GNUmakefile.am:
+
+2014-01-02  Sam Weinig  <sam@webkit.org>
+
+        Update Promises to the https://github.com/domenic/promises-unwrapping spec
+        https://bugs.webkit.org/show_bug.cgi?id=120954
+
+        Reviewed by Filip Pizlo.
+
+        Update Promises to the revised spec. Notable changes:
+        - JSPromiseResolver is gone.
+        - TaskContext has been renamed Microtask and now has a virtual run() function.
+        - Instead of using custom InternalFunction subclasses, JSFunctions are used
+          with PrivateName properties for internal slots.
+
+        * CMakeLists.txt:
+        * DerivedSources.make:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * interpreter/CallFrame.h:
+        (JSC::ExecState::promiseConstructorTable):
+        * runtime/CommonIdentifiers.cpp:
+        (JSC::CommonIdentifiers::CommonIdentifiers):
+        * runtime/CommonIdentifiers.h:
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::reset):
+        (JSC::JSGlobalObject::visitChildren):
+        (JSC::JSGlobalObject::queueMicrotask):
+        * runtime/JSGlobalObject.h:
+        (JSC::JSGlobalObject::promiseConstructor):
+        (JSC::JSGlobalObject::promisePrototype):
+        (JSC::JSGlobalObject::promiseStructure):
+        * runtime/JSPromise.cpp:
+        (JSC::JSPromise::create):
+        (JSC::JSPromise::JSPromise):
+        (JSC::JSPromise::finishCreation):
+        (JSC::JSPromise::visitChildren):
+        (JSC::JSPromise::reject):
+        (JSC::JSPromise::resolve):
+        (JSC::JSPromise::appendResolveReaction):
+        (JSC::JSPromise::appendRejectReaction):
+        (JSC::triggerPromiseReactions):
+        * runtime/JSPromise.h:
+        (JSC::JSPromise::status):
+        (JSC::JSPromise::result):
+        (JSC::JSPromise::constructor):
+        * runtime/JSPromiseCallback.cpp: Removed.
+        * runtime/JSPromiseCallback.h: Removed.
+        * runtime/JSPromiseConstructor.cpp:
+        (JSC::constructPromise):
+        (JSC::JSPromiseConstructor::getCallData):
+        (JSC::JSPromiseConstructorFuncCast):
+        (JSC::JSPromiseConstructorFuncResolve):
+        (JSC::JSPromiseConstructorFuncReject):
+        * runtime/JSPromiseConstructor.h:
+        * runtime/JSPromiseDeferred.cpp: Added.
+        (JSC::JSPromiseDeferred::create):
+        (JSC::JSPromiseDeferred::JSPromiseDeferred):
+        (JSC::JSPromiseDeferred::finishCreation):
+        (JSC::JSPromiseDeferred::visitChildren):
+        (JSC::createJSPromiseDeferredFromConstructor):
+        (JSC::updateDeferredFromPotentialThenable):
+        * runtime/JSPromiseDeferred.h: Added.
+        (JSC::JSPromiseDeferred::createStructure):
+        (JSC::JSPromiseDeferred::promise):
+        (JSC::JSPromiseDeferred::resolve):
+        (JSC::JSPromiseDeferred::reject):
+        * runtime/JSPromiseFunctions.cpp: Added.
+        (JSC::deferredConstructionFunction):
+        (JSC::createDeferredConstructionFunction):
+        (JSC::identifyFunction):
+        (JSC::createIdentifyFunction):
+        (JSC::promiseAllCountdownFunction):
+        (JSC::createPromiseAllCountdownFunction):
+        (JSC::promiseResolutionHandlerFunction):
+        (JSC::createPromiseResolutionHandlerFunction):
+        (JSC::rejectPromiseFunction):
+        (JSC::createRejectPromiseFunction):
+        (JSC::resolvePromiseFunction):
+        (JSC::createResolvePromiseFunction):
+        (JSC::throwerFunction):
+        (JSC::createThrowerFunction):
+        * runtime/JSPromiseFunctions.h: Added.
+        * runtime/JSPromisePrototype.cpp:
+        (JSC::JSPromisePrototypeFuncThen):
+        (JSC::JSPromisePrototypeFuncCatch):
+        * runtime/JSPromiseReaction.cpp: Added.
+        (JSC::createExecutePromiseReactionMicroTask):
+        (JSC::ExecutePromiseReactionMicroTask::run):
+        (JSC::JSPromiseReaction::create):
+        (JSC::JSPromiseReaction::JSPromiseReaction):
+        (JSC::JSPromiseReaction::finishCreation):
+        (JSC::JSPromiseReaction::visitChildren):
+        * runtime/JSPromiseReaction.h: Added.
+        (JSC::JSPromiseReaction::createStructure):
+        (JSC::JSPromiseReaction::deferred):
+        (JSC::JSPromiseReaction::handler):
+        * runtime/JSPromiseResolver.cpp: Removed.
+        * runtime/JSPromiseResolver.h: Removed.
+        * runtime/JSPromiseResolverConstructor.cpp: Removed.
+        * runtime/JSPromiseResolverConstructor.h: Removed.
+        * runtime/JSPromiseResolverPrototype.cpp: Removed.
+        * runtime/JSPromiseResolverPrototype.h: Removed.
+        * runtime/Microtask.h: Added.
+        * runtime/VM.cpp:
+        (JSC::VM::VM):
+        (JSC::VM::~VM):
+        * runtime/VM.h:
+
+2014-01-02  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Add support for StoreBarrier and friends to the FTL
+        https://bugs.webkit.org/show_bug.cgi?id=126040
+
+        Reviewed by Filip Pizlo.
+
+        * ftl/FTLAbstractHeapRepository.h:
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLIntrinsicRepository.h:
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileStoreBarrier):
+        (JSC::FTL::LowerDFGToLLVM::compileConditionalStoreBarrier):
+        (JSC::FTL::LowerDFGToLLVM::compileStoreBarrierWithNullCheck):
+        (JSC::FTL::LowerDFGToLLVM::loadMarkByte):
+        (JSC::FTL::LowerDFGToLLVM::emitStoreBarrier):
+        * heap/Heap.cpp:
+        (JSC::Heap::Heap):
+        * heap/Heap.h:
+        (JSC::Heap::writeBarrierBuffer):
+
+2014-01-02  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Storing new CopiedSpace memory into a JSObject should fire a write barrier
+        https://bugs.webkit.org/show_bug.cgi?id=126025
+
+        Reviewed by Filip Pizlo.
+
+        Technically this is creating a pointer between a (potentially) old generation object and a young 
+        generation chunk of memory, thus there needs to be a barrier.
+
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * dfg/DFGOperations.cpp:
+        * heap/CopyWriteBarrier.h: Added. This class functions similarly to the WriteBarrier class. It 
+        acts as a proxy for pointers to CopiedSpace. Assignments to the field cause a write barrier to 
+        fire for the object that is the owner of the CopiedSpace memory. This is to ensure during nursery 
+        collections that objects with new backing stores are visited, even if they are old generation objects. 
+        (JSC::CopyWriteBarrier::CopyWriteBarrier):
+        (JSC::CopyWriteBarrier::operator!):
+        (JSC::CopyWriteBarrier::operator UnspecifiedBoolType*):
+        (JSC::CopyWriteBarrier::get):
+        (JSC::CopyWriteBarrier::operator*):
+        (JSC::CopyWriteBarrier::operator->):
+        (JSC::CopyWriteBarrier::set):
+        (JSC::CopyWriteBarrier::setWithoutWriteBarrier):
+        (JSC::CopyWriteBarrier::clear):
+        * heap/Heap.h:
+        * runtime/JSArray.cpp:
+        (JSC::JSArray::unshiftCountSlowCase):
+        (JSC::JSArray::shiftCountWithArrayStorage):
+        (JSC::JSArray::unshiftCountWithArrayStorage):
+        * runtime/JSCell.h:
+        (JSC::JSCell::unvalidatedStructure):
+        * runtime/JSGenericTypedArrayViewInlines.h:
+        (JSC::JSGenericTypedArrayView<Adaptor>::slowDownAndWasteMemory):
+        * runtime/JSObject.cpp:
+        (JSC::JSObject::copyButterfly):
+        (JSC::JSObject::getOwnPropertySlotByIndex):
+        (JSC::JSObject::putByIndex):
+        (JSC::JSObject::enterDictionaryIndexingModeWhenArrayStorageAlreadyExists):
+        (JSC::JSObject::createInitialIndexedStorage):
+        (JSC::JSObject::createArrayStorage):
+        (JSC::JSObject::deletePropertyByIndex):
+        (JSC::JSObject::getOwnPropertyNames):
+        (JSC::JSObject::putByIndexBeyondVectorLengthWithoutAttributes):
+        (JSC::JSObject::countElements):
+        (JSC::JSObject::increaseVectorLength):
+        (JSC::JSObject::ensureLengthSlow):
+        * runtime/JSObject.h:
+        (JSC::JSObject::butterfly):
+        (JSC::JSObject::setStructureAndButterfly):
+        (JSC::JSObject::setButterflyWithoutChangingStructure):
+        (JSC::JSObject::JSObject):
+        (JSC::JSObject::putDirectInternal):
+        (JSC::JSObject::putDirectWithoutTransition):
+        * runtime/MapData.cpp:
+        (JSC::MapData::ensureSpaceForAppend):
+        * runtime/Structure.cpp:
+        (JSC::Structure::materializePropertyMap):
+
+2013-12-23  Oliver Hunt  <oliver@apple.com>
+
+        Refactor PutPropertySlot to be aware of custom properties
+        https://bugs.webkit.org/show_bug.cgi?id=126187
+
+        Reviewed by Antti Koivisto.
+
+        Refactor PutPropertySlot, making the constructor take the thisValue
+        used as a target.  This results in a wide range of boilerplate changes
+        to pass the new parameter.
+
+        * API/JSObjectRef.cpp:
+        (JSObjectSetProperty):
+        * dfg/DFGOperations.cpp:
+        (JSC::DFG::operationPutByValInternal):
+        * interpreter/Interpreter.cpp:
+        (JSC::Interpreter::execute):
+        * jit/JITOperations.cpp:
+        * llint/LLIntSlowPaths.cpp:
+        (JSC::LLInt::LLINT_SLOW_PATH_DECL):
+        * runtime/Arguments.cpp:
+        (JSC::Arguments::putByIndex):
+        * runtime/ArrayPrototype.cpp:
+        (JSC::putProperty):
+        (JSC::arrayProtoFuncPush):
+        * runtime/JSCJSValue.cpp:
+        (JSC::JSValue::putToPrimitiveByIndex):
+        * runtime/JSCell.cpp:
+        (JSC::JSCell::putByIndex):
+        * runtime/JSFunction.cpp:
+        (JSC::JSFunction::put):
+        * runtime/JSGenericTypedArrayViewInlines.h:
+        (JSC::JSGenericTypedArrayView<Adaptor>::putByIndex):
+        * runtime/JSONObject.cpp:
+        (JSC::Walker::walk):
+        * runtime/JSObject.cpp:
+        (JSC::JSObject::putByIndex):
+        (JSC::JSObject::putDirectNonIndexAccessor):
+        (JSC::JSObject::deleteProperty):
+        * runtime/JSObject.h:
+        (JSC::JSObject::putDirect):
+        * runtime/Lookup.h:
+        (JSC::putEntry):
+        (JSC::lookupPut):
+        * runtime/PutPropertySlot.h:
+        (JSC::PutPropertySlot::PutPropertySlot):
+        (JSC::PutPropertySlot::setCustomProperty):
+        (JSC::PutPropertySlot::thisValue):
+        (JSC::PutPropertySlot::isCacheable):
+
+2014-01-01  Filip Pizlo  <fpizlo@apple.com>
+
+        Rationalize DFG DCE
+        https://bugs.webkit.org/show_bug.cgi?id=125523
+
+        Reviewed by Mark Hahnenberg.
+        
+        Adds the ability to DCE more things. It's now the case that if a node is completely
+        pure, we clear NodeMustGenerate and the node becomes a DCE candidate.
+
+        * dfg/DFGAbstractInterpreterInlines.h:
+        (JSC::DFG::AbstractInterpreter<AbstractStateType>::executeEffects):
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGClobberize.h:
+        (JSC::DFG::clobberize):
+        * dfg/DFGDCEPhase.cpp:
+        (JSC::DFG::DCEPhase::cleanVariables):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        * dfg/DFGGraph.h:
+        (JSC::DFG::Graph::clobbersWorld):
+        * dfg/DFGNodeType.h:
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileAdd):
+        * dfg/DFGSpeculativeJIT.h:
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * ftl/FTLLowerDFGToLLVM.cpp:
+        (JSC::FTL::LowerDFGToLLVM::compileNode):
+        (JSC::FTL::LowerDFGToLLVM::compileValueAdd):
+
 2014-01-02  Benjamin Poulain  <benjamin@webkit.org>
 
         Attempt to fix the build of WebCore's code generator on CMake based system

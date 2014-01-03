@@ -1,3 +1,367 @@
+2014-01-03  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Define WebProcess::usesNetworkProcess unconditionally
+        https://bugs.webkit.org/show_bug.cgi?id=126208
+
+        Reviewed by Martin Robinson.
+
+        Returning false when network process is not enabled like
+        WebContext does. This way we reduce the amount of ifdefs used when
+        checking whether network process is in use.
+
+        * UIProcess/gtk/WebContextGtk.cpp:
+        (WebKit::WebContext::platformInitializeWebProcess): Remove #ifdef
+        and only setup network features when not using network process.
+        * WebProcess/WebCoreSupport/WebPlatformStrategies.cpp:
+        (WebKit::WebPlatformStrategies::isAvailable): Remove #ifdef.
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::downloadManager):
+        (WebKit::WebProcess::shouldTerminate):
+        (WebKit::WebProcess::usesNetworkProcess):
+        * WebProcess/WebProcess.h:
+        * WebProcess/mac/WebProcessMac.mm:
+        (WebKit::WebProcess::platformSetCacheModel): Remove #ifdef.
+        (WebKit::WebProcess::platformInitializeWebProcess): Ditto.
+        * WebProcess/soup/WebProcessSoup.cpp:
+        (WebKit::WebProcess::platformSetCacheModel): Ditto.
+        (WebKit::WebProcess::platformClearResourceCaches): Ditto.
+        (WebKit::WebProcess::platformInitializeWebProcess): Ditto.
+        (WebKit::WebProcess::platformTerminate): Only remove the language
+        observer when not using network process.
+        (WebKit::WebProcess::setIgnoreTLSErrors): Assert when this is
+        called with network process enabled.
+        (WebKit::WebProcess::allowSpecificHTTPSCertificateForHost): Ditto.
+
+2014-01-03  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        VibrationPattern should allocate an single vector instance for single integer input
+        https://bugs.webkit.org/show_bug.cgi?id=126417
+
+        Reviewed by Gyuyoung Kim.
+
+        Fix a vibration unit test regression after r161139. Also remove unnecessary test cases. 
+
+        * UIProcess/API/efl/tests/test_ewk2_view.cpp:
+        (EWK2ViewTest::loadVibrationHTMLString):
+        (TEST_F):
+
+2014-01-02  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Add API to WebKitResponsePolicyDecision to check if the MIME type can be shown
+        https://bugs.webkit.org/show_bug.cgi?id=124652
+
+        Reviewed by Martin Robinson.
+
+        * UIProcess/API/gtk/WebKitPolicyClient.cpp:
+        (decidePolicyForResponse): Pass canShowMIMEType to
+        webkitResponsePolicyDecisionCreate.
+        * UIProcess/API/gtk/WebKitResponsePolicyDecision.cpp:
+        (webkit_response_policy_decision_is_mime_type_supported): Return
+        canShowMIMEType.
+        (webkitResponsePolicyDecisionCreate): Set the canShowMIMEType
+        member from the given parameter.
+        * UIProcess/API/gtk/WebKitResponsePolicyDecision.h:
+        * UIProcess/API/gtk/WebKitResponsePolicyDecisionPrivate.h:
+        * UIProcess/API/gtk/WebKitWebView.cpp:
+        (webkitWebViewDecidePolicy): Use the new API instead of
+        webkit_web_view_can_show_mime_type() since it's more efficient.
+        * UIProcess/API/gtk/docs/webkit2gtk-sections.txt: Add new symbol.
+        * UIProcess/API/gtk/tests/TestWebKitPolicyClient.cpp:
+        (testResponsePolicy): Test the new API.
+
+2014-01-02  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        REGRESSION(r160304): [GTK] Disable libtool fast install
+        https://bugs.webkit.org/show_bug.cgi?id=126381
+
+        Reviewed by Martin Robinson.
+
+        Remove -no-fast-install ld flag since fast install is now disabled
+        globally.
+
+        * GNUmakefile.am:
+        * UIProcess/API/gtk/tests/GNUmakefile.am:
+
+2014-01-02  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL][WK2] Remove defaultPageGroupIdentifier not to make the confusion
+        https://bugs.webkit.org/show_bug.cgi?id=126249
+
+        Reviewed by Gyuyoung Kim.
+
+        ewk_page_group_create always creates new page group,
+        but the identifiers of page groups will be same as "defaultPageGroupIdentifier" when passed 0 or "".
+        It is unnecessary and just makes the confusion.
+
+        This patch let WebPageGroup generate unique identifier if 0 or "" is passed as argument.
+
+        * UIProcess/API/efl/ewk_page_group.cpp:
+        (EwkPageGroup::create):
+        * UIProcess/API/efl/ewk_page_group_private.h:
+
+2014-01-02  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Switch from WTF::Function to std::function in WebProcessTest
+        https://bugs.webkit.org/show_bug.cgi?id=126397
+
+        Reviewed by Anders Carlsson.
+
+        Use std::function<> and std::bind() instead of WTF::Function and WTF::bind,
+        following the effort of using STL concepts where possible.
+
+        * UIProcess/API/gtk/tests/WebProcessTest.cpp:
+        (WebProcessTest::add):
+        * UIProcess/API/gtk/tests/WebProcessTest.h:
+
+2014-01-02  Gavin Barraclough  <barraclough@apple.com>
+
+        Refactor NSActivity handling code from ChildProcess to UserActivity
+        https://bugs.webkit.org/show_bug.cgi?id=126330
+
+        Reviewed by Sam Weinig.
+
+        UserActivity is a mechanism to express to the operating system (where appropriate)
+        that a user initiated activity is taking place, and as such that resources should be
+        made available to the process accordingly.
+
+        Currently we hold a single NSActivity, at the WebKit layer. This refactoring allows us
+        to hold different activity tokens for different user actions (which simplifies the
+        handling, and aides debugging since the token can more accurately express the activity
+        taking place), and also will allow us to avoid the layering difficulty of calling back
+        up the stack to WebKit to register that an activity is taking place.
+
+        * Shared/ChildProcess.cpp:
+        (WebKit::ChildProcess::ChildProcess):
+            - removed fields to directly manage NSActivity, use UserActivity objects instead.
+        * Shared/ChildProcess.h:
+        (WebKit::ChildProcess::processSuppressionEnabled):
+            - changed to initialize new fields.
+        * Shared/mac/ChildProcessMac.mm:
+        (WebKit::ChildProcess::setProcessSuppressionEnabled):
+            - implemented in terms of UserActivity m_processSuppressionDisabled.
+        (WebKit::ChildProcess::incrementActiveTaskCount):
+            - implemented in terms of UserActivity m_activeTasks.
+        (WebKit::ChildProcess::decrementActiveTaskCount):
+            - implemented in terms of UserActivity m_activeTasks.
+        (WebKit::ChildProcess::platformInitialize):
+            - implemented in terms of UserActivity m_processSuppressionDisabled.
+
+2014-01-02  Gavin Barraclough  <barraclough@apple.com>
+
+        Propagate WindowServer modifications state to WebProcess
+        https://bugs.webkit.org/show_bug.cgi?id=126356
+
+        Reviewed by Sam Weinig.
+
+        This will be necessary to move control of process suppression to the WebProcess.
+        IsVisuallyIdle implies the process has stopped painting, or painted rects are
+        occluded and not actually being composited. State is provided on a per
+        WindowServer connection basis, and as such may produce (safe) false positives.
+
+        * Shared/ViewState.h:
+            - added IsVisuallyIdle.
+        * UIProcess/API/mac/PageClientImpl.h:
+        * UIProcess/API/mac/PageClientImpl.mm:
+        (WebKit::PageClientImpl::isVisuallyIdle):
+            - added, on mac checks WindowServerConnection.
+        * UIProcess/PageClient.h:
+        (WebKit::PageClient::isVisuallyIdle):
+            - base implementation purely based on isViewVisible.
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::windowServerConnectionStateChanged):
+            - broadcast the state change.
+        * UIProcess/WebContext.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::updateViewState):
+        (WebKit::WebPageProxy::viewStateDidChange):
+            - propagate IsVisuallyIdle.
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::windowServerConnectionStateChanged):
+            - broadcast the state change.
+        * UIProcess/WebProcessProxy.h:
+            - add windowServerConnectionStateChanged.
+        * UIProcess/mac/WebContextMac.mm:
+        (WebKit::WebContext::updateProcessSuppressionStateOfGlobalChildProcesses):
+            - moved from static in fle to static member of class.
+        (WebKit::WebContext::platformInitialize):
+            - no need to enableOcclusionNotifications.
+        (WebKit::WebContext::canEnableProcessSuppressionForNetworkProcess):
+        (WebKit::WebContext::canEnableProcessSuppressionForWebProcess):
+        (WebKit::WebContext::canEnableProcessSuppressionForGlobalChildProcesses):
+            - changed to call WindowServerConnection.
+        (WebKit::WebContext::processSuppressionEnabledChanged):
+            - don't remove/reregister occlusion notifications.
+        * UIProcess/mac/WindowServerConnection.h: Added.
+        (WebKit::WindowServerConnection::applicationIsOccluded):
+        (WebKit::WindowServerConnection::applicationWindowModificationsHaveStopped):
+            - accessors.
+        * UIProcess/mac/WindowServerConnection.mm: Added.
+        (WebKit::WindowServerConnection::applicationBecameOccluded):
+        (WebKit::WindowServerConnection::applicationWindowModificationsStopped):
+        (WebKit::WindowServerConnection::applicationBecameVisible):
+        (WebKit::WindowServerConnection::applicationWindowModificationsStarted):
+            - handle notifications from the WindowServer.
+        (WebKit::WindowServerConnection::windowServerConnectionStateChanged):
+            - broadcast the state change.
+        (WebKit::WindowServerConnection::shared):
+            - accessor for singleton object.
+        (WebKit::WindowServerConnection::WindowServerConnection):
+            - constructor inizializes fields & register notification handlers.
+        * WebKit2.xcodeproj/project.pbxproj:
+            - added new files.
+        * config.h:
+            - added HAVE_WINDOW_SERVER_OCCLUSION_NOTIFICATIONS.
+
+2014-01-02  Gavin Barraclough  <barraclough@apple.com>
+
+        Remove WindowIsVisible
+        https://bugs.webkit.org/show_bug.cgi?id=126270
+
+        Reviewed by Tim Horton.
+
+        We currently track visibility in two ways - ViewState::IsVisible and ViewState::WindowIsVisible.
+        The latter detects that the content is hidden in fewer cases than the former, and as such, the
+        former is always preferable.
+
+        This affects the hidden state provided to FocusController::contentAreaDidShowOrHide and to
+        Plugin::windowVisibilityChanged.
+
+        * Shared/ViewState.h:
+            - remove WindowIsVisible.
+        * UIProcess/API/mac/PageClientImpl.h:
+        * UIProcess/API/mac/PageClientImpl.mm:
+            - remove isWindowVisible.
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView viewDidMoveToWindow]):
+        (-[WKView _windowDidMiniaturize:]):
+        (-[WKView _windowDidDeminiaturize:]):
+        (-[WKView _windowDidOrderOffScreen:]):
+        (-[WKView _windowDidOrderOnScreen:]):
+            - remove ViewState::WindowIsVisible.
+        * UIProcess/PageClient.h:
+            - remove isWindowVisible.
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::updateViewState):
+            - remove handling of ViewState::WindowIsVisible.
+        * WebProcess/Plugins/PluginView.cpp:
+        (WebKit::PluginView::setIsVisible):
+        (WebKit::PluginView::didInitializePlugin):
+        * WebProcess/Plugins/PluginView.h:
+            - setWindowIsVisible -> setIsVisible.
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        (WebKit::WebPage::setViewIsVisible):
+        (WebKit::WebPage::setViewState):
+        (WebKit::WebPage::windowAndWebPageAreFocused):
+        * WebProcess/WebPage/WebPage.h:
+        (WebKit::WebPage::isVisible):
+            - remove m_windowIsVisible, setWindowIsVisible (implementation moved to setViewIsVisible).
+
+2014-01-02  Gavin Barraclough  <barraclough@apple.com>
+
+        Refactor ViewState handling for drawing area / plugins
+        https://bugs.webkit.org/show_bug.cgi?id=126272
+
+        Reviewed by Tim Horton.
+
+        Instead of all ViewState changes being handled by the WebPage, notify the DrawingArea & PluginView to better encapsulate.
+
+        * WebProcess/Plugins/PluginView.cpp:
+        (WebKit::PluginView::viewStateDidChange):
+        (WebKit::PluginView::platformViewStateDidChange):
+            - added, handle changes in ViewState relevant to PluginView.
+        (WebKit::PluginView::didInitializePlugin):
+            - helper function removed.
+        * WebProcess/Plugins/PluginView.h:
+            - added/removed function declarations.
+        * WebProcess/WebPage/DrawingArea.h:
+        (WebKit::DrawingArea::viewStateDidChange):
+            - declare viewStateDidChange.
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::setActive):
+            - no need to notify plugin.
+        (WebKit::WebPage::setViewIsVisible):
+            - no need to notify drawing area.
+        (WebKit::WebPage::setViewState):
+            - send viewStateDidChange to drawing area / plugin.
+        (WebKit::WebPage::setWindowIsVisible):
+            - no need to notify plugin.
+        * WebProcess/WebPage/WebPage.h:
+        (WebKit::WebPage::layerHostingMode):
+            - removed setLayerHostingMode.
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+            - declare viewStateDidChange.
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::viewStateDidChange):
+            - added, handle changes in ViewState relevant to DrawingArea.
+
+2014-01-02  Alexey Proskuryakov  <ap@apple.com>
+
+        Merge didMoveOnscreen / page visibility to isVisible
+        https://bugs.webkit.org/show_bug.cgi?id=126268
+
+        Build fix.
+
+        * UIProcess/WebContext.h: Removed some accidental input.
+
+2014-01-02  Gavin Barraclough  <barraclough@apple.com>
+
+        Merge didMoveOnscreen / page visibility to isVisible
+        https://bugs.webkit.org/show_bug.cgi?id=126268
+
+        Reviewed by Tim Horton.
+
+        The onscreen state most closely tracks view visibility (though currently
+        also tracks a mix of in-window state). Make more consistent, simplify,
+        and move all animation suspension logic to Page, so it can be controlled
+        by the PageThrottler.
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        (WebKit::WebPage::setViewIsVisible):
+            - updateVisibilityState -> setIsVisible.
+        (WebKit::WebPage::setIsInWindow):
+            - remove redundant willMoveOffscreen/didMoveOnscreen calls - this is handled
+              by setIsVisible.
+        (WebKit::WebPage::setMayStartMediaWhenInWindow):
+            - isOnscreen -> isInWindow. We start media when the view is in a window, not
+              when the view is visible.
+        (WebKit::WebPage::setVisibilityStatePrerender):
+            - setVisibilityState -> setIsPrerender.
+
+2013-12-23  Oliver Hunt  <oliver@apple.com>
+
+        Refactor PutPropertySlot to be aware of custom properties
+        https://bugs.webkit.org/show_bug.cgi?id=126187
+
+        Reviewed by Antti Koivisto.
+
+        Update for new method signatures.
+
+        * WebProcess/Plugins/Netscape/NPJSObject.cpp:
+        (WebKit::NPJSObject::setProperty):
+
+2014-01-02  Simon Fraser  <simon.fraser@apple.com>
+
+        Add AsyncScrollingCoordinator, which is a base class for threaded and future remote ScrollingCoordinators
+        https://bugs.webkit.org/show_bug.cgi?id=126389
+
+        Reviewed by Tim Horton.
+        
+        Add AsyncScrollingCoordinator, a ScrollingCoordinator that knows about ScrollingStateTrees
+        and ScrollingTrees, but leaves it up to subclasses to decide when and how to commit.
+        
+        * WebProcess/WebPage/EventDispatcher.cpp:
+        (WebKit::EventDispatcher::addScrollingTreeForPage): The ScrollingTree is exposed on
+        AsyncScrollingCoordinator now, not ScrollingCoordinator, so we have to cast here.
+        * WebProcess/WebPage/WebPage.cpp: m_useThreadedScrolling -> m_useAsyncScrolling terminology change.
+        (WebKit::WebPage::WebPage):
+        (WebKit::WebPage::~WebPage):
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::updatePreferences): Cast to AsyncScrollingCoordinator in order
+        to get to the ScrollingTree.
+
 2014-01-01  Simon Fraser  <simon.fraser@apple.com>
 
         Create a ThreadedScrollingTree subclass of ScrollingTree, and push all knowledge of the scrolling thread into it

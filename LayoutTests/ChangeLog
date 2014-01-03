@@ -1,3 +1,169 @@
+2014-01-03  Alexey Proskuryakov  <ap@apple.com>
+
+        Line ending conversion should be able to handle strings with null chars
+        https://bugs.webkit.org/show_bug.cgi?id=126202
+
+        This is a merge from Blink.
+
+        Reviewed by Alexey Proskuryakov.
+
+        * http/tests/local/formdata/send-form-data-with-string-containing-null-expected.txt: Added.
+        * http/tests/local/formdata/send-form-data-with-string-containing-null.html: Added.
+
+2014-01-03  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+
+        * platform/gtk/TestExpectations: Add failure and flakiness expectations for a couple of tests.
+        * platform/gtk/svg/custom/object-no-size-attributes-expected.txt: Rebaseline.
+
+2014-01-02  Brent Fulgham  <bfulgham@apple.com>
+
+        [WebGL] Correct symbol lookup logic to handle 1-element arrays
+        https://bugs.webkit.org/show_bug.cgi?id=126411
+        <rdar://problem/15394564>
+
+        Reviewed by Dean Jackson.
+
+        * webgl/1.0.2/resources/webgl_test_files/conformance/glsl/misc/shader-with-array-of-structs-containing-arrays.html: Add test for accessing the
+        single-element array.
+
+2014-01-02  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        Unreviewed EFL gardening. Remove warnings in parsing TestExpectations.
+
+        * platform/efl-wk1/TestExpectations:
+        * platform/efl-wk2/TestExpectations:
+        * platform/efl/TestExpectations:
+
+2014-01-02  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        Unreviewed EFL gardening. Rebaselining after r161140.
+
+        * platform/efl/fast/table/dynamic-caption-add-before-child-expected.png:
+        * platform/efl/fast/table/dynamic-caption-add-before-child-expected.txt:
+
+2014-01-02  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Crash in WebCore::translateIntersectionPointsToSkipInkBoundaries
+        https://bugs.webkit.org/show_bug.cgi?id=126252
+
+        Reviewed by Alexey Proskuryakov.
+
+        This test causes intermediateTuples, a Vector of tuples of floats, to have enough
+        entries to cause a realloc. In my tests, the realloc seems to always allocate the 
+        next area of memory (without unmapping any old pages), so this test only crashes
+        if guardMalloc is used.
+
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-crash-many-gaps-expected.txt: Added.
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-crash-many-gaps.html: Added.
+
+2014-01-02  Sam Weinig  <sam@webkit.org>
+
+        Update Promises to the https://github.com/domenic/promises-unwrapping spec
+        https://bugs.webkit.org/show_bug.cgi?id=120954
+
+        Reviewed by Filip Pizlo.
+
+        * crypto/subtle/argument-conversion.html:
+        * crypto/subtle/resources/common.js:
+        * crypto/subtle/sha-1.html:
+        * crypto/subtle/sha-224.html:
+        * crypto/subtle/sha-256.html:
+        * crypto/subtle/sha-384.html:
+        * crypto/subtle/sha-512.html:
+        * js/dom/Promise-already-fulfilled-expected.txt: Removed.
+        * js/dom/Promise-already-fulfilled.html: Removed.
+        * js/dom/Promise-already-rejected.html:
+        * js/dom/Promise-already-resolved.html:
+        * js/dom/Promise-catch-expected.txt:
+        * js/dom/Promise-catch-in-workers-expected.txt:
+        * js/dom/Promise-catch.html:
+        * js/dom/Promise-chain.html:
+        * js/dom/Promise-exception-expected.txt:
+        * js/dom/Promise-exception.html:
+        * js/dom/Promise-expected.txt:
+        * js/dom/Promise-fulfill-expected.txt: Removed.
+        * js/dom/Promise-fulfill-in-workers-expected.txt: Removed.
+        * js/dom/Promise-fulfill-in-workers.html: Removed.
+        * js/dom/Promise-fulfill.html: Removed.
+        * js/dom/Promise-init-callback-receiver-expected.txt: Added.
+        * js/dom/Promise-init-callback-receiver.html: Added.
+        * js/dom/Promise-init-expected.txt:
+        * js/dom/Promise-init-in-workers-expected.txt:
+        * js/dom/Promise-init.html:
+        * js/dom/Promise-onFulfilled-deep-expected.txt: Added.
+        * js/dom/Promise-onFulfilled-deep.html: Added.
+        * js/dom/Promise-onRejected-deep-expected.txt: Added.
+        * js/dom/Promise-onRejected-deep.html: Added.
+        * js/dom/Promise-reject.html:
+        * js/dom/Promise-resolve-chain.html:
+        * js/dom/Promise-resolve-expected.txt:
+        * js/dom/Promise-resolve-in-workers-expected.txt:
+        * js/dom/Promise-resolve-state-expected.txt: Added.
+        * js/dom/Promise-resolve-state-in-workers-expected.txt: Added.
+        * js/dom/Promise-resolve-state-in-workers.html: Added.
+        * js/dom/Promise-resolve-state.html: Added.
+        * js/dom/Promise-resolve-with-itself-expected.txt: Added.
+        * js/dom/Promise-resolve-with-itself.html: Added.
+        * js/dom/Promise-resolve-with-then-exception.html:
+        * js/dom/Promise-resolve-with-then-fulfill-expected.txt:
+        * js/dom/Promise-resolve-with-then-fulfill.html:
+        * js/dom/Promise-resolve-with-then-reject-expected.txt:
+        * js/dom/Promise-resolve-with-then-reject.html:
+        * js/dom/Promise-resolve.html:
+        * js/dom/Promise-simple-expected.txt:
+        * js/dom/Promise-simple-fulfill-expected.txt: Removed.
+        * js/dom/Promise-simple-fulfill-inside-callback-expected.txt: Removed.
+        * js/dom/Promise-simple-fulfill-inside-callback.html: Removed.
+        * js/dom/Promise-simple-fulfill.html: Removed.
+        * js/dom/Promise-simple-in-workers-expected.txt:
+        * js/dom/Promise-simple-resolve-expected.txt: Added.
+        * js/dom/Promise-simple-resolve.html: Added.
+        * js/dom/Promise-simple.html:
+        * js/dom/Promise-static-all-expected.txt: Added.
+        * js/dom/Promise-static-all.html: Added.
+        * js/dom/Promise-static-cast-expected.txt: Added.
+        * js/dom/Promise-static-cast.html: Added.
+        * js/dom/Promise-static-fulfill-expected.txt: Removed.
+        * js/dom/Promise-static-fulfill.html: Removed.
+        * js/dom/Promise-static-race-expected.txt: Added.
+        * js/dom/Promise-static-race.html: Added.
+        * js/dom/Promise-static-resolve.html:
+        * js/dom/Promise-then-callback-receiver-expected.txt: Added.
+        * js/dom/Promise-then-callback-receiver.html: Added.
+        * js/dom/Promise-then-expected.txt:
+        * js/dom/Promise-then-in-workers-expected.txt:
+        * js/dom/Promise-then-without-callbacks.html:
+        * js/dom/Promise-then.html:
+        * js/dom/Promise-types-expected.txt:
+        * js/dom/Promise-types.html:
+        * js/dom/Promise.html:
+        * js/resources/Promise-catch-in-workers.js:
+        * js/resources/Promise-fulfill-in-workers.js: Removed.
+        * js/resources/Promise-init-in-workers.js:
+        * js/resources/Promise-reject-in-workers.js:
+        * js/resources/Promise-resolve-in-workers.js:
+        * js/resources/Promise-resolve-state-in-workers.js: Added.
+        * js/resources/Promise-simple-in-workers.js:
+        * js/resources/Promise-then-in-workers.js:
+        * js/resources/Promise-then-without-callbacks-in-workers.js:
+
+2014-01-02  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Allow ImageBuffer to re-use IOSurfaces
+        https://bugs.webkit.org/show_bug.cgi?id=125477
+
+        Reviewed by Geoff Garen.
+
+        Now that we're re-using the backing store of canvases, this 
+        test makes sure that if we draw to a canvas, then destroy it, 
+        then create a new canvas (which should share the same backing 
+        store) that it doesn't have the stale data in it 
+
+        * fast/canvas/canvas-backing-store-reuse-expected.txt: Added.
+        * fast/canvas/canvas-backing-store-reuse.html: Added.
+
 2014-01-02  Dirk Schulze  <krit@webkit.org>
 
         Support <box> values computed style for 'clip-path' property

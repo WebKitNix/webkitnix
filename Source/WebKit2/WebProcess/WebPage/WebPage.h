@@ -346,7 +346,7 @@ public:
     void addPluginView(PluginView*);
     void removePluginView(PluginView*);
 
-    bool windowIsVisible() const { return m_windowIsVisible; }
+    bool isVisible() const { return m_viewState & ViewState::IsVisible; }
 
 #if PLATFORM(MAC)
     LayerHostingMode layerHostingMode() const
@@ -357,7 +357,6 @@ public:
         return LayerHostingModeDefault;
 #endif
     }
-    void setLayerHostingMode(LayerHostingMode);
 
     void updatePluginsActiveAndFocusedState();
     const WebCore::FloatRect& windowFrameInScreenCoordinates() const { return m_windowFrameInScreenCoordinates; }
@@ -734,7 +733,6 @@ private:
     void setActive(bool);
     void setFocused(bool);
     void setViewIsVisible(bool);
-    void setWindowIsVisible(bool);
     void setInitialFocus(bool forward, bool isKeyboardEventValid, const WebKeyboardEvent&);
     void setWindowResizerSize(const WebCore::IntSize&);
     void setIsInWindow(bool);
@@ -913,9 +911,6 @@ private:
 
     bool m_mainFrameIsScrollable;
 
-    // Whether the containing window is visible or not.
-    bool m_windowIsVisible;
-
 #if ENABLE(PRIMARY_SNAPSHOTTED_PLUGIN_HEURISTIC)
     bool m_readyToFindPrimarySnapshottedPlugin;
     bool m_didFindPrimarySnapshottedPlugin;
@@ -1056,7 +1051,7 @@ private:
     
     WebCore::ScrollPinningBehavior m_scrollPinningBehavior;
 
-    bool m_useThreadedScrolling;
+    bool m_useAsyncScrolling;
 
     ViewState::Flags m_viewState;
 

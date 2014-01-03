@@ -239,7 +239,6 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     , m_artificialPluginInitializationDelayEnabled(false)
     , m_scrollingPerformanceLoggingEnabled(false)
     , m_mainFrameIsScrollable(true)
-    , m_windowIsVisible(false)
 #if ENABLE(PRIMARY_SNAPSHOTTED_PLUGIN_HEURISTIC)
     , m_readyToFindPrimarySnapshottedPlugin(false)
     , m_didFindPrimarySnapshottedPlugin(false)
@@ -285,7 +284,7 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     , m_backgroundColor(Color::white)
     , m_maximumRenderingSuppressionToken(0)
     , m_scrollPinningBehavior(DoNotPin)
-    , m_useThreadedScrolling(false)
+    , m_useAsyncScrolling(false)
     , m_viewState(parameters.viewState)
 {
     ASSERT(m_pageID);
@@ -319,10 +318,10 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     m_drawingArea->setPaintingEnabled(false);
 
 #if ENABLE(ASYNC_SCROLLING)
-    m_useThreadedScrolling = parameters.store.getBoolValueForKey(WebPreferencesKey::threadedScrollingEnabledKey());
+    m_useAsyncScrolling = parameters.store.getBoolValueForKey(WebPreferencesKey::threadedScrollingEnabledKey());
     if (!m_drawingArea->supportsThreadedScrolling())
-        m_useThreadedScrolling = false;
-    m_page->settings().setScrollingCoordinatorEnabled(m_useThreadedScrolling);
+        m_useAsyncScrolling = false;
+    m_page->settings().setScrollingCoordinatorEnabled(m_useAsyncScrolling);
 #endif
 
     m_mainFrame = WebFrame::createWithCoreMainFrame(this, &m_page->mainFrame());
@@ -428,11 +427,11 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
 #endif
 
 #if ENABLE(ASYNC_SCROLLING)
-    if (m_useThreadedScrolling)
+    if (m_useAsyncScrolling)
         WebProcess::shared().eventDispatcher().addScrollingTreeForPage(this);
 #endif
 
-    updateVisibilityState(true);
+    m_page->setIsVisible(m_viewState & ViewState::IsVisible, true);
 }
 
 WebPage::~WebPage()
@@ -443,7 +442,7 @@ WebPage::~WebPage()
     ASSERT(!m_page);
 
 #if ENABLE(ASYNC_SCROLLING)
-    if (m_useThreadedScrolling)
+    if (m_useAsyncScrolling)
         WebProcess::shared().eventDispatcher().removeScrollingTreeForPage(this);
 #endif
 
@@ -1984,30 +1983,13 @@ void WebPage::centerSelectionInVisibleArea()
 void WebPage::setActive(bool isActive)
 {
     m_page->focusController().setActive(isActive);
-
-#if PLATFORM(MAC)    
-    // Tell all our plug-in views that the window focus changed.
-    for (auto* pluginView : m_pluginViews)
-        pluginView->setWindowIsFocused(isActive);
-#endif
 }
 
 void WebPage::setViewIsVisible(bool isVisible)
 {
-    if (!isVisible) {
-        m_drawingArea->suspendPainting();
-        m_page->suspendScriptedAnimations();
-    } else {
-        m_drawingArea->resumePainting();
-        // FIXME: this seems redundant; for the view to be visible the window must be visible too!
-        // refactoring for now, will change the logic later.
-        if (m_windowIsVisible) {
-            m_page->resumeScriptedAnimations();
-            m_page->resumeAnimatingImages();
-        }
-    }
+    corePage()->focusController().setContentIsVisible(isVisible);
 
-    updateVisibilityState();
+    m_page->setIsVisible(m_viewState & ViewState::IsVisible, false);
 }
 
 void WebPage::setDrawsBackground(bool drawsBackground)
@@ -2131,7 +2113,6 @@ void WebPage::setIsInWindow(bool isInWindow)
     if (!isInWindow) {
         m_setCanStartMediaTimer.stop();
         m_page->setCanStartMedia(false);
-        m_page->willMoveOffscreen();
         
         if (pageWasInWindow)
             WebProcess::shared().pageWillLeaveWindow(m_pageID);
@@ -2142,8 +2123,6 @@ void WebPage::setIsInWindow(bool isInWindow)
         if (m_mayStartMediaWhenInWindow)
             m_setCanStartMediaTimer.startOneShot(0);
 
-        m_page->didMoveOnscreen();
-        
         if (!pageWasInWindow)
             WebProcess::shared().pageDidEnterWindow(m_pageID);
     }
@@ -2159,10 +2138,10 @@ void WebPage::setViewState(ViewState::Flags viewState, bool wantsDidUpdateViewSt
     ViewState::Flags changed = m_viewState ^ viewState;
     m_viewState = viewState;
 
+    m_drawingArea->viewStateDidChange(changed);
+
     // We want to make sure to update the active state while hidden, so if the view is hidden then update the active state
     // early (in case it becomes visible), and if the view was visible then update active state later (in case it hides).
-    if (changed & ViewState::WindowIsVisible)
-        setWindowIsVisible(viewState & ViewState::WindowIsVisible);
     if (changed & ViewState::IsFocused)
         setFocused(viewState & ViewState::IsFocused);
     if (changed & ViewState::WindowIsActive && !(m_viewState & ViewState::IsVisible))
@@ -2173,10 +2152,9 @@ void WebPage::setViewState(ViewState::Flags viewState, bool wantsDidUpdateViewSt
         setActive(viewState & ViewState::WindowIsActive);
     if (changed & ViewState::IsInWindow)
         setIsInWindow(viewState & ViewState::IsInWindow);
-#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
-    if (changed & ViewState::IsLayerWindowServerHosted)
-        setLayerHostingMode(layerHostingMode());
-#endif
+
+    for (auto* pluginView : m_pluginViews)
+        pluginView->viewStateDidChange(changed);
 
     if (wantsDidUpdateViewState)
         m_sendDidUpdateViewStateTimer.startOneShot(0);
@@ -3130,28 +3108,7 @@ void WebPage::sendSetWindowFrame(const FloatRect& windowFrame)
     send(Messages::WebPageProxy::SetWindowFrame(windowFrame));
 }
 
-void WebPage::setWindowIsVisible(bool windowIsVisible)
-{
-    m_windowIsVisible = windowIsVisible;
-
-    corePage()->focusController().setContainingWindowIsVisible(windowIsVisible);
-
 #if PLATFORM(MAC)
-    // Tell all our plug-in views that the window visibility changed.
-    for (auto* pluginView : m_pluginViews)
-        pluginView->setWindowIsVisible(windowIsVisible);
-#endif
-}
-
-#if PLATFORM(MAC)
-void WebPage::setLayerHostingMode(LayerHostingMode layerHostingMode)
-{
-    for (auto* pluginView : m_pluginViews)
-        pluginView->setLayerHostingMode(layerHostingMode);
-
-    m_drawingArea->setLayerHostingMode(layerHostingMode);
-}
-
 void WebPage::windowAndViewFramesChanged(const FloatRect& windowFrameInScreenCoordinates, const FloatRect& windowFrameInUnflippedScreenCoordinates, const FloatRect& viewFrameInWindowCoordinates, const FloatPoint& accessibilityViewCoordinates)
 {
     m_windowFrameInScreenCoordinates = windowFrameInScreenCoordinates;
@@ -3191,7 +3148,7 @@ bool WebPage::windowIsFocused() const
 
 bool WebPage::windowAndWebPageAreFocused() const
 {
-    if (!m_windowIsVisible)
+    if (!isVisible())
         return false;
 
     return m_page->focusController().isFocused() && m_page->focusController().isActive();
@@ -3610,7 +3567,7 @@ void WebPage::setMayStartMediaWhenInWindow(bool mayStartMedia)
         return;
 
     m_mayStartMediaWhenInWindow = mayStartMedia;
-    if (m_mayStartMediaWhenInWindow && m_page->isOnscreen())
+    if (m_mayStartMediaWhenInWindow && m_page->isInWindow())
         m_setCanStartMediaTimer.startOneShot(0);
 }
 
@@ -3779,49 +3736,10 @@ FrameView* WebPage::mainFrameView() const
     return 0;
 }
 
-void WebPage::updateVisibilityState(bool isInitialState)
-{
-    bool isVisible = m_viewState & ViewState::IsVisible;
-    if (!m_page)
-        return;
-
-#if ENABLE(PAGE_VISIBILITY_API)
-
-    FrameView* view = m_page->mainFrame().view();
-
-    if (isVisible) {
-        m_page->didMoveOnscreen();
-        if (view)
-            view->show();
-    }
-
-    PageVisibilityState state = isVisible ? PageVisibilityStateVisible : PageVisibilityStateHidden;
-    m_page->setVisibilityState(state, isInitialState);
-
-    if (!isVisible) {
-        m_page->willMoveOffscreen();
-        if (view)
-            view->hide();
-    }
-
-#elif ENABLE(HIDDEN_PAGE_DOM_TIMER_THROTTLING)
-
-    PageVisibilityState state = isVisible ? PageVisibilityStateVisible : PageVisibilityStateHidden;
-    m_page->setVisibilityState(state, isInitialState);
-
-#else
-    UNUSED_PARAM(isVisible);
-    UNUSED_PARAM(isInitialState);
-#endif
-}
-
 void WebPage::setVisibilityStatePrerender()
 {
-#if ENABLE(PAGE_VISIBILITY_API) || ENABLE(HIDDEN_PAGE_DOM_TIMER_THROTTLING)
-    if (!m_page)
-        return;
-    m_page->setVisibilityState(PageVisibilityStatePrerender, true);
-#endif
+    if (m_page)
+        m_page->setIsPrerender();
 }
 
 void WebPage::setThrottled(bool isThrottled)

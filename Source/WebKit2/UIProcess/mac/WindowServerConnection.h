@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,38 +23,37 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JSPromiseResolverConstructor_h
-#define JSPromiseResolverConstructor_h
+#ifndef WindowServerConnection_h
+#define WindowServerConnection_h
 
-#if ENABLE(PROMISES)
+namespace WebKit {
 
-#include "InternalFunction.h"
-
-namespace JSC {
-
-class JSPromiseResolverPrototype;
-
-class JSPromiseResolverConstructor : public InternalFunction {
+class WindowServerConnection {
 public:
-    typedef InternalFunction Base;
+    static WindowServerConnection& shared();
 
-    static JSPromiseResolverConstructor* create(VM&, Structure*, JSPromiseResolverPrototype*);
-    static Structure* createStructure(VM&, JSGlobalObject*, JSValue);
-
-    DECLARE_INFO;
-
-protected:
-    void finishCreation(VM&, JSPromiseResolverPrototype*);
-    static const unsigned StructureFlags = InternalFunction::StructureFlags;
+    bool applicationIsOccluded() const { return m_applicationIsOccluded; }
+    bool applicationWindowModificationsHaveStopped() const { return m_applicationWindowModificationsHaveStopped; }
 
 private:
-    JSPromiseResolverConstructor(VM&, Structure*);
-    static ConstructType getConstructData(JSCell*, ConstructData&);
-    static CallType getCallData(JSCell*, CallData&);
+    WindowServerConnection();
+
+#if HAVE(WINDOW_SERVER_OCCLUSION_NOTIFICATIONS)
+    void windowServerConnectionStateChanged();
+
+    void applicationBecameOccluded(bool occluded);
+    void applicationWindowModificationsStopped(bool stopped);
+
+    static void applicationBecameVisible(uint32_t, void*, uint32_t, void*, uint32_t);
+    static void applicationBecameOccluded(uint32_t, void*, uint32_t, void*, uint32_t);
+    static void applicationWindowModificationsStarted(uint32_t, void*, uint32_t, void*, uint32_t);
+    static void applicationWindowModificationsStopped(uint32_t, void*, uint32_t, void*, uint32_t);
+#endif
+
+    bool m_applicationIsOccluded;
+    bool m_applicationWindowModificationsHaveStopped;
 };
 
-} // namespace JSC
+} // namespace WebKit
 
-#endif // ENABLE(PROMISES)
-
-#endif // JSPromiseResolverConstructor_h
+#endif // WindowServerConnection_h

@@ -50,7 +50,7 @@ JSON.load = function(url, callback)
     request.send();
 };
 
-function loadXML(url, callback) {
+function loadXML(url, callback, options) {
     console.assert(url);
 
     if (!(callback instanceof Function))
@@ -67,6 +67,8 @@ function loadXML(url, callback) {
     };
 
     request.open("GET", url);
+    if ((typeof options === "object") && options.hasOwnProperty("withCredentials"))
+        request.withCredentials = options.withCredentials;
     request.send();
 };
 

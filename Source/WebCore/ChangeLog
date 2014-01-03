@@ -1,3 +1,519 @@
+2014-01-02  Gavin Barraclough  <barraclough@apple.com>
+
+        Refactor NSActivity handling code from ChildProcess to UserActivity
+        https://bugs.webkit.org/show_bug.cgi?id=126330
+
+        Reviewed by Sam Weinig.
+
+        UserActivity is a mechanism to express to the operating system (where appropriate)
+        that a user initiated activity is taking place, and as such that resources should be
+        made available to the process accordingly.
+
+        Currently we hold a single NSActivity, at the WebKit layer. This refactoring allows us
+        to hold different activity tokens for different user actions (which simplifies the
+        handling, and aides debugging since the token can more accurately express the activity
+        taking place), and also will allow us to avoid the layering difficulty of calling back
+        up the stack to WebKit to register that an activity is taking place.
+
+        * WebCore.xcodeproj/project.pbxproj:
+            - added new files.
+        * platform/UserActivity.cpp: Added.
+        (WebCore::UserActivity::UserActivity):
+            - nop implementation - ignore description.
+        (WebCore::UserActivity::beginActivity):
+        (WebCore::UserActivity::endActivity):
+            - nop implementation - just inc/dec m_count.
+        * platform/UserActivity.h: Added.
+        (WebCore::UserActivity::isActive):
+            - returns true if one or more instance of this activity is in progress.
+        * platform/mac/UserActivityMac.mm: Added.
+        (WebCore::UserActivity::UserActivity):
+            - constructor accepts one argument, a description string.
+        (WebCore::UserActivity::isValid):
+            - used by assertions.
+        (WebCore::UserActivity::beginActivity):
+        (WebCore::UserActivity::endActivity):
+            - track start/end of an activity - calls to these methods should be balanced.
+        (WebCore::UserActivity::hysteresisTimerFired):
+              - used to implement hysteresis in releasing  NSActivity.
+
+2014-01-03  Alexey Proskuryakov  <ap@apple.com>
+
+        Line ending conversion should be able to handle strings with null chars
+        https://bugs.webkit.org/show_bug.cgi?id=126202
+
+        This is a merge from Blink.
+
+        Reviewed by Alexey Proskuryakov.
+
+        Test: http/tests/local/formdata/send-form-data-with-string-containing-null.html
+
+        * platform/text/LineEnding.cpp: (WebCore::normalizeToCROrLF): Do it right.
+
+2014-01-03  Alberto Garcia  <berto@igalia.com>
+
+        WebKit-GTK 1.8.1 does not build on OS X 10.7
+        https://bugs.webkit.org/show_bug.cgi?id=88407
+
+        Reviewed by Carlos Garcia Campos.
+
+        Replace non-portable 'echo -n' with 'true'.
+
+        * GNUmakefile.am:
+
+2014-01-03  peavo@outlook.com  <peavo@outlook.com>
+
+        [WinCairo] Compile error.
+        https://bugs.webkit.org/show_bug.cgi?id=126428
+
+        Reviewed by Brent Fulgham.
+
+        The NativeImagePtr type is not an CGImageRef on WinCairo, cannot use CFRetain.
+
+        * loader/cache/MemoryCache.cpp: Replace USE(CF) with USE(CG).
+        * loader/cache/MemoryCache.h: Ditto.
+
+2014-01-03  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] Simplify FloatRoundedRect, BoxShape construction
+        https://bugs.webkit.org/show_bug.cgi?id=125995
+
+        Reviewed by Andreas Kling.
+
+        Cleanup of various internal Shape issues:
+        - Removed unnecessary Shape() initialization list entries in Shape subclasses
+          per https://bugs.webkit.org/show_bug.cgi?id=125548#c2.
+        - Used const references instead of pointers for non-deprecated Shape:createShape() logic.
+        - Replaced createShape() overloads for Rasters and Boxes with functions named
+          createRasterShape() and createBoxShape().
+        - Added a FloatRoundedRect::Radii() constructor to reduce the parameter list
+          length of the FloatRoundedRect constructor in createBoxShape().
+
+        There are no new tests, this is just internal refactoring.
+
+        * platform/graphics/FloatRoundedRect.h:
+        (WebCore::FloatRoundedRect::Radii::Radii):
+        * rendering/shapes/BoxShape.h:
+        (WebCore::BoxShape::BoxShape):
+        * rendering/shapes/PolygonShape.h:
+        (WebCore::PolygonShape::PolygonShape):
+        * rendering/shapes/RasterShape.h:
+        (WebCore::RasterShape::RasterShape):
+        * rendering/shapes/RectangleShape.h:
+        (WebCore::RectangleShape::RectangleShape):
+        * rendering/shapes/Shape.cpp:
+        (WebCore::createInsetShape):
+        (WebCore::Shape::createShape):
+        (WebCore::Shape::createRasterShape):
+        (WebCore::Shape::createBoxShape):
+        * rendering/shapes/Shape.h:
+        * rendering/shapes/ShapeInfo.cpp:
+        (WebCore::ShapeInfo<RenderType>::computedShape):
+
+2014-01-03  Andreas Kling  <akling@apple.com>
+
+        Remove unused Document::openSearchDescriptionURL().
+        <https://webkit.org/b/126419>
+
+        Reviewed by Antti Koivisto.
+
+        * dom/Document.h:
+        * dom/Document.cpp:
+
+            Scrub leftovers from the defunct Chromium port.
+
+2014-01-03  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        VibrationPattern should allocate an single vector instance for single integer input
+        https://bugs.webkit.org/show_bug.cgi?id=126417
+
+        Reviewed by Gyuyoung Kim.
+
+        When the Vibration pattern is set with a single integer, the VibrationPattern should
+        be set with this integer as a vibration time. But the VibrationPattern(unsigned vector) was
+        initialized with a single parameter, the vibration time, so the time was used to set
+        the size of vector.
+
+        * Modules/vibration/NavigatorVibration.cpp:
+        (WebCore::NavigatorVibration::vibrate):
+
+2014-01-02  Jaehun Lim  <ljaehun.lim@samsung.com>
+
+        IconController.cpp needs to include <wtf/text/CString.h>
+        https://bugs.webkit.org/show_bug.cgi?id=126415
+
+        Reviewed by Gyuyoung Kim.
+
+        Build fails in IconController.cpp when ICONDATABASE is disabled.
+        WebKit/Source/WebCore/loader/icon/IconController.cpp:124:110: error: invalid use of incomplete type ‘class WTF::CString’
+        IconController.cpp needs #include <wtf/text/CString.h>.
+
+        No new tests. Just build fix.
+
+        * loader/icon/IconController.cpp: Add #include statement.
+
+2014-01-02  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL] Previous scrollbar is remained sometimes
+        https://bugs.webkit.org/show_bug.cgi?id=126414
+
+        Reviewed by Gyuyoung Kim.
+
+        * platform/efl/ScrollbarEfl.cpp:
+        (ScrollbarEfl::invalidate):
+        Updated scrollbar visibility in Scrollbar::invalidate().
+        * platform/efl/ScrollbarEfl.h:
+        Removed show()/hide() which never been called() for scrollbar.
+
+2014-01-02  Brent Fulgham  <bfulgham@apple.com>
+
+        [WebGL] Correct symbol lookup logic to handle 1-element arrays
+        https://bugs.webkit.org/show_bug.cgi?id=126411
+        <rdar://problem/15394564>
+
+        Reviewed by Dean Jackson.
+
+        Tested by revisions to webgl/1.0.2/conformance/glsl/misc/shader-with-array-of-structs-containing-arrays.html
+
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::getUniformLocation): Revise to
+        handle access to zeroeth element of the array.
+
+2014-01-02  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Crash in WebCore::translateIntersectionPointsToSkipInkBoundaries
+        https://bugs.webkit.org/show_bug.cgi?id=126252
+
+        Reviewed by Alexey Proskuryakov.
+
+        lastIntermediate was a iterator pointing into a Vector, which was being re-used
+        even while appending to the Vector. If any of the append operators triggered
+        a realloc, the iterator would point to the old free'ed memory.
+
+        Test: fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-crash-many-gaps.html
+
+        * rendering/InlineTextBox.cpp:
+        (WebCore::translateIntersectionPointsToSkipInkBoundaries):
+
+2014-01-02  Brent Fulgham  <bfulgham@apple.com>
+
+        [WebGL] Correct symbol lookup logic to handle 1-element arrays
+        https://bugs.webkit.org/show_bug.cgi?id=126411
+        <rdar://problem/15394564>
+
+        Reviewed by Dean Jackson.
+
+        * html/canvas/WebGLRenderingContext.cpp:
+        (WebCore::WebGLRenderingContext::getUniformLocation): Revise code to handle the case of single-element
+        arrays.
+
+2014-01-02  Sam Weinig  <sam@webkit.org>
+
+        Update Promises to the https://github.com/domenic/promises-unwrapping spec
+        https://bugs.webkit.org/show_bug.cgi?id=120954
+
+        Reviewed by Filip Pizlo.
+
+        * ForwardingHeaders/runtime/JSPromiseDeferred.h: Added.
+        * ForwardingHeaders/runtime/JSPromiseResolver.h: Removed.
+        * bindings/js/JSDOMGlobalObjectTask.cpp:
+        (WebCore::JSGlobalObjectTask::JSGlobalObjectTask):
+        * bindings/js/JSDOMGlobalObjectTask.h:
+        * bindings/js/JSDOMPromise.cpp:
+        (WebCore::DeferredWrapper::DeferredWrapper):
+        (WebCore::DeferredWrapper::promise):
+        (WebCore::DeferredWrapper::resolve):
+        (WebCore::DeferredWrapper::reject):
+        * bindings/js/JSDOMPromise.h:
+        (WebCore::DeferredWrapper::resolve):
+        (WebCore::DeferredWrapper::reject):
+        (WebCore::DeferredWrapper::resolve<String>):
+        (WebCore::DeferredWrapper::resolve<bool>):
+        (WebCore::char>>):
+        (WebCore::DeferredWrapper::reject<String>):
+        * bindings/js/JSDOMWindowBase.cpp:
+        (WebCore::JSDOMWindowBase::queueTaskToEventLoop):
+        * bindings/js/JSDOMWindowBase.h:
+        * bindings/js/JSSubtleCryptoCustom.cpp:
+        (WebCore::JSSubtleCrypto::encrypt):
+        (WebCore::JSSubtleCrypto::decrypt):
+        (WebCore::JSSubtleCrypto::sign):
+        (WebCore::JSSubtleCrypto::verify):
+        (WebCore::JSSubtleCrypto::digest):
+        (WebCore::JSSubtleCrypto::generateKey):
+        (WebCore::JSSubtleCrypto::importKey):
+        (WebCore::JSSubtleCrypto::exportKey):
+        (WebCore::JSSubtleCrypto::wrapKey):
+        (WebCore::JSSubtleCrypto::unwrapKey):
+        * bindings/js/JSWorkerGlobalScopeBase.cpp:
+        (WebCore::JSWorkerGlobalScopeBase::queueTaskToEventLoop):
+        * bindings/js/JSWorkerGlobalScopeBase.h:
+
+2014-01-02  Tim Horton  <timothy_horton@apple.com>
+
+        ImageBufferBackingStoreCache should use DeferrableOneShotTimer
+        https://bugs.webkit.org/show_bug.cgi?id=126155
+
+        Reviewed by Anders Carlsson.
+
+        Since ImageBufferBackingStoreCache's purge timer is pushed out every time
+        a backing store is deallocated, we can easily waste a lot of time rescheduling
+        the timer. Since it's a cache purge timer and doesn't need that kind of precision,
+        adopt DeferrableOneShotTimer, which is much more performant when deferred frequently.
+
+        * platform/graphics/cg/ImageBufferBackingStoreCache.cpp:
+        (WebCore::ImageBufferBackingStoreCache::ImageBufferBackingStoreCache):
+        (WebCore::ImageBufferBackingStoreCache::timerFired):
+        (WebCore::ImageBufferBackingStoreCache::schedulePurgeTimer):
+        * platform/graphics/cg/ImageBufferBackingStoreCache.h:
+
+2014-01-02  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Allow ImageBuffer to re-use IOSurfaces
+        https://bugs.webkit.org/show_bug.cgi?id=125477
+
+        Reviewed by Geoff Garen. Modifications reviewed by Tim Horton.
+
+        This patch is taken from r160945, but the modifications to ImageBufferCG.cpp
+        have been reverted.
+
+        This test adds a static class, ImageBufferBackingStoreCache, that vends 
+        IOSurfaces. It remembers IOSurfaces that have been returned to it until 
+        a configurable timeout. 
+
+        The storage used by this class is in the form of a HashMap from a 
+        bucketed size to the IOSurface. There are many other data structures 
+        that could be used, but this implementation gives a 80% hit rate on 
+        normal browsing of some example sites with Canvas and 
+        text-decoration-skip: ink. Because the buckets are fairly 
+        small (rounding the width and height up to multiples of 8), traversing the 
+        bucket contents takes on average 2 steps.  
+
+        Test: fast/canvas/canvas-backing-store-reuse.html 
+
+        * WebCore.xcodeproj/project.pbxproj: Added new caching class 
+        * platform/graphics/cg/ImageBufferBackingStoreCache.cpp: Added. 
+        (WebCore::createIOSurface): Copied from ImageBufferCG.cpp 
+        (WebCore::ImageBufferBackingStoreCache::timerFired): Forget the cache 
+        contents 
+        (WebCore::ImageBufferBackingStoreCache::schedulePurgeTimer): 
+        (WebCore::ImageBufferBackingStoreCache::get): Static getter 
+        (WebCore::ImageBufferBackingStoreCache::ImageBufferBackingStoreCache): 
+        (WebCore::ImageBufferBackingStoreCache::insertIntoCache): Memory-management 
+        creation function 
+        (WebCore::ImageBufferBackingStoreCache::takeFromCache): Memory-management 
+        deletion function 
+        (WebCore::ImageBufferBackingStoreCache::isAcceptableSurface): Does this cached 
+        IOSurface fit the bill? 
+        (WebCore::ImageBufferBackingStoreCache::tryTakeFromCache): Lookup 
+        a bucket and walk through its contents 
+        (WebCore::ImageBufferBackingStoreCache::getOrAllocate): Public function 
+        for clients who want a IOSurface from the cache 
+        (WebCore::ImageBufferBackingStoreCache::deallocate): Public 
+        function for clients to return an IOSurface to the pool 
+        * platform/graphics/cg/ImageBufferBackingStoreCache.h: Added. 
+        (WebCore::ImageBuffer::ImageBuffer): 
+        (WebCore::ImageBuffer::~ImageBuffer): 
+
+2014-01-02  Piotr Grad  <p.grad@samsung.com>
+
+        Video-seek-with-negative-playback was flaky.
+        https://bugs.webkit.org/show_bug.cgi?id=126379
+
+        Reviewed by Eric Carlson.
+
+        No new tests. Covered by existing tests.
+
+        m_player->setRate() should be called before updating m_playbackRate, because potentiallyPlaying() depends
+        on endedPlayback(), which checks m_playbackRate.
+
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::setPlaybackRate):
+
+2014-01-02  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Tapping any link crashes in WebCore::EventHandler::mouseMoved()
+        (also crashes when scrolling certain sites)
+        https://bugs.webkit.org/show_bug.cgi?id=126401
+        <rdar://problem/15739334>
+
+        Reviewed by Tim Horton.
+
+        * page/ios/EventHandlerIOS.mm:
+        (WebCore::currentEventSlot): Make the shared variable have static-storage duration.
+
+2014-01-02  Gavin Barraclough  <barraclough@apple.com>
+
+        Remove WindowIsVisible
+        https://bugs.webkit.org/show_bug.cgi?id=126270
+
+        Reviewed by Tim Horton.
+
+        We currently track visibility in two ways - ViewState::IsVisible and ViewState::WindowIsVisible.
+        The latter detects that the content is hidden in fewer cases than the former, and as such, the
+        former is always preferable.
+
+        This affects the hidden state provided to FocusController::contentAreaDidShowOrHide and to
+        Plugin::windowVisibilityChanged.
+
+        * WebCore.exp.in:
+        * page/FocusController.cpp:
+        (WebCore::FocusController::FocusController):
+        (WebCore::FocusController::setContentIsVisible):
+        * page/FocusController.h:
+            - rename ContainingWindowIsVisible -> ContentIsVisible.
+
+2014-01-02  Gavin Barraclough  <barraclough@apple.com>
+
+        Merge didMoveOnscreen / page visibility to isVisible
+        https://bugs.webkit.org/show_bug.cgi?id=126268
+
+        Reviewed by Tim Horton.
+
+        The onscreen state most closely tracks view visibility (though currently
+        also tracks a mix of in-window state). Make more consistent, simplify,
+        and move all animation suspension logic to Page, so it can be controlled
+        by the PageThrottler.
+
+        * WebCore.exp.in:
+        * page/EventHandler.cpp:
+        (WebCore::EventHandler::fakeMouseMoveEventTimerFired):
+        * page/FrameView.cpp:
+        (WebCore::FrameView::shouldSetCursor):
+        * page/Page.cpp:
+        (WebCore::Page::Page):
+            - initialize new variables.
+        (WebCore::Page::setIsVisible):
+            - merge setVisibilityState, didMoveOnscreen, willMoveOffscreen.
+        (WebCore::Page::setIsPrerender):
+            - switches visibility state from hidden to prerender.
+        (WebCore::Page::visibilityState):
+            - computed from m_isVisible, m_isPrerender.
+        (WebCore::Page::hiddenPageCSSAnimationSuspensionStateChanged):
+            - m_visibilityState -> m_isVisible.
+        * page/Page.h:
+            - remove didMoveOnscreen/willMoveOffscreen
+              m_isOnscreen & m_visibilityState -> m_isVisible & m_isPrerender
+              setVisibilityState -> setIsVisible & setIsPrerender.
+        (WebCore::Page::isVisible):
+            - isOnscreen -> isVisible.
+
+2014-01-02  Oliver Hunt  <oliver@apple.com>
+
+        Update bindings test results
+
+        * bindings/scripts/test/JS/JSTestActiveDOMObject.cpp:
+        (WebCore::jsTestActiveDOMObjectConstructor):
+        * bindings/scripts/test/JS/JSTestCustomNamedGetter.cpp:
+        (WebCore::jsTestCustomNamedGetterConstructor):
+        * bindings/scripts/test/JS/JSTestEventConstructor.cpp:
+        (WebCore::jsTestEventConstructorConstructor):
+        * bindings/scripts/test/JS/JSTestEventTarget.cpp:
+        (WebCore::jsTestEventTargetConstructor):
+        * bindings/scripts/test/JS/JSTestException.cpp:
+        (WebCore::jsTestExceptionConstructor):
+        * bindings/scripts/test/JS/JSTestGenerateIsReachable.cpp:
+        (WebCore::jsTestGenerateIsReachableConstructor):
+        * bindings/scripts/test/JS/JSTestInterface.cpp:
+        (WebCore::jsTestInterfaceConstructor):
+        * bindings/scripts/test/JS/JSTestMediaQueryListListener.cpp:
+        (WebCore::jsTestMediaQueryListListenerConstructor):
+        * bindings/scripts/test/JS/JSTestNamedConstructor.cpp:
+        (WebCore::jsTestNamedConstructorConstructor):
+        * bindings/scripts/test/JS/JSTestNode.cpp:
+        (WebCore::jsTestNodeConstructor):
+        * bindings/scripts/test/JS/JSTestObj.cpp:
+        (WebCore::jsTestObjConstructor):
+        * bindings/scripts/test/JS/JSTestOverloadedConstructors.cpp:
+        (WebCore::jsTestOverloadedConstructorsConstructor):
+        * bindings/scripts/test/JS/JSTestSerializedScriptValueInterface.cpp:
+        (WebCore::jsTestSerializedScriptValueInterfaceConstructor):
+        * bindings/scripts/test/JS/JSTestTypedefs.cpp:
+        (WebCore::jsTestTypedefsConstructor):
+        * bindings/scripts/test/JS/JSattribute.cpp:
+        (WebCore::jsattributeConstructor):
+        * bindings/scripts/test/JS/JSreadonly.cpp:
+        (WebCore::jsreadonlyConstructor):
+
+2013-12-23  Oliver Hunt  <oliver@apple.com>
+
+        Refactor PutPropertySlot to be aware of custom properties
+        https://bugs.webkit.org/show_bug.cgi?id=126187
+
+        Reviewed by Antti Koivisto.
+
+        Update the bindings code generation and custom objects
+        to the new function signatures
+
+        * bindings/js/JSDOMWindowCustom.cpp:
+        (WebCore::JSDOMWindow::put):
+        * bindings/objc/WebScriptObject.mm:
+        (-[WebScriptObject setValue:forKey:]):
+        * bindings/scripts/CodeGeneratorJS.pm:
+        (GenerateImplementation):
+        * bindings/scripts/test/JS/JSTestInterface.cpp:
+        (WebCore::JSTestInterface::putByIndex):
+        * bridge/NP_jsobject.cpp:
+        (_NPN_SetProperty):
+
+2014-01-02  Simon Fraser  <simon.fraser@apple.com>
+
+        Add AsyncScrollingCoordinator, which is a base class for threaded and future remote ScrollingCoordinators
+        https://bugs.webkit.org/show_bug.cgi?id=126389
+
+        Reviewed by Tim Horton.
+
+        Add AsyncScrollingCoordinator, a ScrollingCoordinator that knows about ScrollingStateTrees
+        and ScrollingTrees, but leaves it up to subclasses to decide when and how to commit.
+
+        * WebCore.xcodeproj/project.pbxproj: Added AsyncScrollingCoordinator.*
+        * page/scrolling/AsyncScrollingCoordinator.cpp: Copied from Source/WebCore/page/scrolling/mac/ScrollingCoordinatorMac.mm.
+        (WebCore::AsyncScrollingCoordinator::AsyncScrollingCoordinator):
+        (WebCore::AsyncScrollingCoordinator::~AsyncScrollingCoordinator):
+        (WebCore::AsyncScrollingCoordinator::frameViewLayoutUpdated):
+        (WebCore::AsyncScrollingCoordinator::frameViewRootLayerDidChange):
+        (WebCore::AsyncScrollingCoordinator::requestScrollPositionUpdate):
+        (WebCore::AsyncScrollingCoordinator::scrollableAreaScrollbarLayerDidChange):
+        (WebCore::AsyncScrollingCoordinator::attachToStateTree):
+        (WebCore::AsyncScrollingCoordinator::detachFromStateTree):
+        (WebCore::AsyncScrollingCoordinator::clearStateTree):
+        (WebCore::AsyncScrollingCoordinator::syncChildPositions):
+        (WebCore::AsyncScrollingCoordinator::ensureRootStateNodeForFrameView):
+        (WebCore::AsyncScrollingCoordinator::updateScrollingNode):
+        (WebCore::AsyncScrollingCoordinator::updateViewportConstrainedNode):
+        (WebCore::AsyncScrollingCoordinator::setScrollLayerForNode):
+        (WebCore::AsyncScrollingCoordinator::setCounterScrollingLayerForNode):
+        (WebCore::AsyncScrollingCoordinator::setHeaderLayerForNode):
+        (WebCore::AsyncScrollingCoordinator::setFooterLayerForNode):
+        (WebCore::AsyncScrollingCoordinator::setNonFastScrollableRegionForNode):
+        (WebCore::AsyncScrollingCoordinator::setWheelEventHandlerCountForNode):
+        (WebCore::AsyncScrollingCoordinator::setScrollBehaviorForFixedElementsForNode):
+        (WebCore::AsyncScrollingCoordinator::setScrollbarPaintersFromScrollbarsForNode):
+        (WebCore::AsyncScrollingCoordinator::setSynchronousScrollingReasons):
+        (WebCore::AsyncScrollingCoordinator::updateMainFrameScrollLayerPosition):
+        (WebCore::AsyncScrollingCoordinator::recomputeWheelEventHandlerCountForFrameView):
+        (WebCore::AsyncScrollingCoordinator::isRubberBandInProgress):
+        (WebCore::AsyncScrollingCoordinator::setScrollPinningBehavior):
+        (WebCore::AsyncScrollingCoordinator::scrollingStateTreeAsText):
+        * page/scrolling/AsyncScrollingCoordinator.h: Copied from Source/WebCore/page/scrolling/mac/ScrollingCoordinatorMac.h.
+        (WebCore::AsyncScrollingCoordinator::scrollingTree):
+        (WebCore::AsyncScrollingCoordinator::setScrollingTree):
+        (WebCore::AsyncScrollingCoordinator::scrollingStateTree):
+        (WebCore::AsyncScrollingCoordinator::releaseScrollingTree):
+        * page/scrolling/ScrollingCoordinator.h: Add casting support.
+        (WebCore::ScrollingCoordinator::isAsyncScrollingCoordinator):
+        * page/scrolling/ThreadedScrollingTree.h: commitNewTreeState() needs to be public.
+        * page/scrolling/mac/ScrollingCoordinatorMac.h:
+        * page/scrolling/mac/ScrollingCoordinatorMac.mm: Lots of code moved to AsyncScrollingCoordinator.
+        (WebCore::ScrollingCoordinatorMac::ScrollingCoordinatorMac):
+        (WebCore::ScrollingCoordinatorMac::~ScrollingCoordinatorMac):
+        (WebCore::ScrollingCoordinatorMac::pageDestroyed):
+        (WebCore::ScrollingCoordinatorMac::commitTreeStateIfNeeded):
+        (WebCore::ScrollingCoordinatorMac::handleWheelEvent):
+        (WebCore::ScrollingCoordinatorMac::scheduleTreeStateCommit):
+        (WebCore::ScrollingCoordinatorMac::commitTreeState):
+        (WebCore::ScrollingCoordinatorMac::updateTiledScrollingIndicator):
+
 2014-01-02  Andreas Kling  <akling@apple.com>
 
         Simplify the insides of DocumentSharedObjectPool and reduce memory usage.
