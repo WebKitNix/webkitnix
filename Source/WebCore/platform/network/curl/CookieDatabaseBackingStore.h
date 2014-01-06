@@ -68,7 +68,7 @@ private:
     void sendChangesToDatabase();
     void dbTimerCallback(Timer<CookieDatabaseBackingStore>*);
 
-    typedef pair<const RefPtr<ParsedCookie>, Action> CookieAction;
+    typedef std::pair<const RefPtr<ParsedCookie>, Action> CookieAction;
     Vector<CookieAction> m_changedCookies;
 
     SQLiteDatabase m_db;
