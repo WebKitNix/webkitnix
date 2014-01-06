@@ -93,6 +93,8 @@ list(APPEND WebKit_SOURCES
 )
 
 list(APPEND WebKitGTK_INSTALLED_HEADERS
+    ${DERIVED_SOURCES_WEBKITGTK_API_DIR}/webkitenumtypes.h
+    ${DERIVED_SOURCES_WEBKITGTK_API_DIR}/webkitversion.h
     ${WEBKIT_DIR}/gtk/webkit/webkit.h
     ${WEBKIT_DIR}/gtk/webkit/webkitapplicationcache.h
     ${WEBKIT_DIR}/gtk/webkit/webkitdefines.h
@@ -165,7 +167,7 @@ add_custom_command(
     DEPENDS WebKit
     DEPENDS JavaScriptCore-3-gir
     COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations
-        g-ir-scanner
+        ${INTROSPECTION_SCANNER}
         --quiet
         --warn-all
         --symbol-prefix=webkit
@@ -194,7 +196,6 @@ add_custom_command(
         -I${DERIVED_SOURCES_WEBKITGTK_DIR}
         -I${WEBCORE_DIR}/platform/gtk
         ${GObjectDOMBindings_INSTALLED_HEADERS}
-        ${DERIVED_SOURCES_WEBKITGTK_API_DIR}/webkitenumtypes.h
         ${WebKitGTK_INSTALLED_HEADERS}
         ${WEBKIT_DIR}/gtk/webkit/*.cpp
 )
@@ -202,7 +203,23 @@ add_custom_command(
 add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/WebKit-3.0.typelib
     DEPENDS ${CMAKE_BINARY_DIR}/WebKit-3.0.gir
-    COMMAND g-ir-compiler --includedir=${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/WebKit-3.0.gir -o ${CMAKE_BINARY_DIR}/WebKit-3.0.typelib
+    COMMAND ${INTROSPECTION_COMPILER} --includedir=${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/WebKit-3.0.gir -o ${CMAKE_BINARY_DIR}/WebKit-3.0.typelib
 )
 
 ADD_TYPELIB(${CMAKE_BINARY_DIR}/WebKit-3.0.typelib)
+
+install(FILES "${CMAKE_BINARY_DIR}/Source/WebKit/gtk/webkitgtk-3.0.pc"
+        DESTINATION "${LIB_INSTALL_DIR}/pkgconfig"
+)
+install(FILES "${WEBKIT_DIR}/gtk/resources/error.html"
+        DESTINATION "${DATA_INSTALL_DIR}/resources"
+)
+install(FILES ${WebKitGTK_INSTALLED_HEADERS}
+        DESTINATION "${WEBKITGTK_HEADER_INSTALL_DIR}/webkit"
+)
+install(FILES ${CMAKE_BINARY_DIR}/WebKit-3.0.gir
+        DESTINATION ${INTROSPECTION_INSTALL_GIRDIR}
+)
+install(FILES ${CMAKE_BINARY_DIR}/WebKit-3.0.typelib
+        DESTINATION ${INTROSPECTION_INSTALL_TYPELIBDIR}
+)

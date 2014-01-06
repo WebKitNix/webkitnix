@@ -303,10 +303,10 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Web
     , m_mediaVolume(1)
     , m_mayStartMediaWhenInWindow(true)
     , m_waitingForDidUpdateViewState(false)
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+#if PLATFORM(MAC)
     , m_exposedRectChangedTimer(this, &WebPageProxy::exposedRectChangedTimerFired)
-    , m_clipsToExposedRect(false)
-    , m_lastSentClipsToExposedRect(false)
+    , m_clipsToExposedRect(ClipsToExposedRect::DoNotClip)
+    , m_lastSentClipsToExposedRect(ClipsToExposedRect::DoNotClip)
 #endif
     , m_scrollPinningBehavior(DoNotPin)
 {
@@ -514,6 +514,11 @@ void WebPageProxy::initializeWebPage()
 #if PLATFORM(MAC)
     send(Messages::WebPage::SetSmartInsertDeleteEnabled(m_isSmartInsertDeleteEnabled));
 #endif
+}
+
+bool WebPageProxy::isProcessSuppressible() const
+{
+    return (m_viewState & ViewState::IsVisuallyIdle) && m_pageGroup->preferences()->pageVisibilityBasedProcessSuppressionEnabled();
 }
 
 void WebPageProxy::close()
@@ -959,9 +964,10 @@ void WebPageProxy::viewStateDidChange(ViewState::Flags mayHaveChanged, WantsRepl
     if (changed)
         m_process->send(Messages::WebPage::SetViewState(m_viewState, wantsReply == WantsReplyOrNot::DoesWantReply), m_pageID);
 
-    if (changed & ViewState::IsVisible) {
-        m_process->pageVisibilityChanged(this);
+    if (changed & ViewState::IsVisuallyIdle)
+        m_process->pageSuppressibilityChanged(this);
 
+    if (changed & ViewState::IsVisible) {
         if (!isViewVisible()) {
             // If we've started the responsiveness timer as part of telling the web process to update the backing store
             // state, it might not send back a reply (since it won't paint anything if the web page is hidden) so we
@@ -4412,5 +4418,32 @@ void WebPageProxy::setScrollPinningBehavior(ScrollPinningBehavior pinning)
     if (isValid())
         m_process->send(Messages::WebPage::SetScrollPinningBehavior(pinning), m_pageID);
 }
+
+#if PLATFORM(MAC) || PLATFORM(IOS)
+void WebPageProxy::viewExposedRectChanged(const FloatRect& exposedRect, ClipsToExposedRect clipsToExposedRect)
+{
+    if (!isValid())
+        return;
+
+    m_exposedRect = exposedRect;
+    m_clipsToExposedRect = clipsToExposedRect;
+
+    if (!m_exposedRectChangedTimer.isActive())
+        m_exposedRectChangedTimer.startOneShot(0);
+}
+
+void WebPageProxy::exposedRectChangedTimerFired(Timer<WebPageProxy>*)
+{
+    if (!isValid())
+        return;
+
+    if (m_exposedRect == m_lastSentExposedRect && m_clipsToExposedRect == m_lastSentClipsToExposedRect)
+        return;
+
+    process().send(Messages::WebPage::ViewExposedRectChanged(m_exposedRect, m_clipsToExposedRect == ClipsToExposedRect::Clip), m_pageID);
+    m_lastSentExposedRect = m_exposedRect;
+    m_lastSentClipsToExposedRect = m_clipsToExposedRect;
+}
+#endif
 
 } // namespace WebKit

@@ -283,12 +283,8 @@ public:
 #endif
 
 #if PLATFORM(MAC)
-    void setProcessSuppressionEnabled(bool);
-    bool processSuppressionEnabled() const { return m_processSuppressionEnabled; }
-    bool canEnableProcessSuppressionForNetworkProcess() const;
-    bool canEnableProcessSuppressionForWebProcess(const WebProcessProxy*) const;
-    static bool canEnableProcessSuppressionForGlobalChildProcesses();
-    void updateProcessSuppressionStateOfChildProcesses();
+    bool processSuppressionEnabled() const;
+    static bool processSuppressionIsEnabledForAllContexts();
 #endif
 
     void windowServerConnectionStateChanged();
@@ -319,7 +315,7 @@ public:
 #endif
 
 #if PLATFORM(MAC)
-    static void updateProcessSuppressionStateOfGlobalChildProcesses();
+    void updateProcessSuppressionState() const;
 #endif
 
 private:
@@ -396,7 +392,6 @@ private:
     String platformDefaultCookieStorageDirectory() const;
 
 #if PLATFORM(MAC)
-    void processSuppressionEnabledChanged();
     void registerNotificationObservers();
     void unregisterNotificationObservers();
 #endif
@@ -451,7 +446,7 @@ private:
 
     // Messages that were posted before any pages were created.
     // The client should use initialization messages instead, so that a restarted process would get the same state.
-    Vector<pair<String, RefPtr<API::Object>>> m_messagesToInjectedBundlePostedToEmptyContext;
+    Vector<std::pair<String, RefPtr<API::Object>>> m_messagesToInjectedBundlePostedToEmptyContext;
 
     CacheModel m_cacheModel;
 
@@ -504,10 +499,6 @@ private:
     
     HashMap<uint64_t, RefPtr<DictionaryCallback>> m_dictionaryCallbacks;
     HashMap<uint64_t, RefPtr<StatisticsRequest>> m_statisticsRequests;
-
-#if PLATFORM(MAC)
-    bool m_processSuppressionEnabled;
-#endif
 
 #if USE(SOUP)
     bool m_ignoreTLSErrors;

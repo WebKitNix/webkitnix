@@ -66,7 +66,7 @@ WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_VIBRATION OFF)
 WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_VIDEO ON)
 WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_VIDEO_TRACK ON)
 WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_VIEW_MODE_CSS_MEDIA ON)
-WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_WEB_AUDIO OFF)
+WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_WEB_AUDIO ON)
 WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_WEB_TIMING ON)
 WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_WEBGL OFF)
 WEBKIT_OPTION_DEFAULT_PORT_VALUE(ENABLE_XHR_TIMEOUT ON)
@@ -117,7 +117,30 @@ set(WebKit2_OUTPUT_NAME webkit2gtk-3.0)
 set(WebKit2_WebProcess_OUTPUT_NAME WebKitWebProcess)
 
 set(DATA_BUILD_DIR "${CMAKE_BINARY_DIR}/share/${WebKit_OUTPUT_NAME}")
-set(DATA_INSTALL_DIR "${DATADIR}/webkitgtk-3.0")
+set(DATA_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/webkitgtk-3.0")
+set(LIB_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}" CACHE PATH "Where to install libraries")
+set(EXEC_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}" CACHE PATH "Where to install executables")
+set(LIBEXEC_INSTALL_DIR "${CMAKE_INSTALL_LIBEXECDIR}" CACHE PATH "Where to install executables executed by the library")
+set(WEBKITGTK_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/webkitgtk-3.0")
+
+add_definitions(-DBUILDING_GTK__=1)
+add_definitions(-DGETTEXT_PACKAGE="WebKitGTK-3.0")
+add_definitions(-DDATA_DIR="${CMAKE_INSTALL_DATADIR}")
+add_definitions(-DWEBKITGTK_API_VERSION_STRING="3.0")
+add_definitions(-DUSER_AGENT_GTK_MAJOR_VERSION=537)
+add_definitions(-DUSER_AGENT_GTK_MINOR_VERSION=30)
+
+if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
+    add_definitions(-DWTF_USE_GSTREAMER)
+endif ()
+
+if (ENABLE_WEB_AUDIO)
+    add_definitions(-DWTF_USE_WEBAUDIO_GSTREAMER)
+endif ()
+
+# FIXME: These need to be configurable.
+add_definitions(-DWTF_PLATFORM_X11=1)
+add_definitions(-DMOZ_X11)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> cruT <TARGET> <LINK_FLAGS> <OBJECTS>")
@@ -125,17 +148,6 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(CMAKE_CXX_ARCHIVE_APPEND "<CMAKE_AR> ruT <TARGET> <LINK_FLAGS> <OBJECTS>")
     set(CMAKE_C_ARCHIVE_APPEND "<CMAKE_AR> ruT <TARGET> <LINK_FLAGS> <OBJECTS>")
 endif ()
-
-add_definitions(-DBUILDING_GTK__=1)
-add_definitions(-DGETTEXT_PACKAGE="WebKitGTK-3.0")
-add_definitions(-DDATA_DIR="${DATADIR}")
-add_definitions(-DWEBKITGTK_API_VERSION_STRING="3.0")
-add_definitions(-DUSER_AGENT_GTK_MAJOR_VERSION=537)
-add_definitions(-DUSER_AGENT_GTK_MINOR_VERSION=30)
-
-# FIXME: These need to be configurable.
-add_definitions(-DWTF_PLATFORM_X11=1)
-add_definitions(-DMOZ_X11)
 
 find_package(Cairo 1.10.2 REQUIRED)
 find_package(Fontconfig 2.8.0 REQUIRED)
@@ -160,6 +172,7 @@ find_package(ATK REQUIRED)
 find_package(WebP REQUIRED)
 find_package(GStreamer 1.0.3 REQUIRED COMPONENTS ${GSTREAMER_COMPONENTS})
 find_package(ATSPI 2.5.3)
+find_package(GObjectIntrospection)
 
 # We don't use find_package for GLX because it is part of -lGL, unlike EGL.
 find_package(OpenGL)
@@ -215,6 +228,7 @@ set(DERIVED_SOURCES_WEBKIT2GTK_API_DIR ${DERIVED_SOURCES_WEBKIT2GTK_DIR}/webkit2
 set(FORWARDING_HEADERS_DIR ${DERIVED_SOURCES_DIR}/ForwardingHeaders)
 set(FORWARDING_HEADERS_WEBKIT2GTK_DIR ${FORWARDING_HEADERS_DIR}/webkit2gtk)
 set(FORWARDING_HEADERS_WEBKIT2GTK_EXTENSION_DIR ${FORWARDING_HEADERS_DIR}/webkit2gtk-webextension)
+set(SHOULD_INSTALL_JS_SHELL ON)
 
 # Add a typelib file to the list of all typelib dependencies. This makes it easy to
 # expose a 'gir' target with all gobject-introspection files.

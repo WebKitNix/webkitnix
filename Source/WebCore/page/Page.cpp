@@ -260,8 +260,11 @@ ViewportArguments Page::viewportArguments() const
 
 ScrollingCoordinator* Page::scrollingCoordinator()
 {
-    if (!m_scrollingCoordinator && m_settings->scrollingCoordinatorEnabled())
-        m_scrollingCoordinator = ScrollingCoordinator::create(this);
+    if (!m_scrollingCoordinator && m_settings->scrollingCoordinatorEnabled()) {
+        m_scrollingCoordinator = chrome().client().createScrollingCoordinator(this);
+        if (!m_scrollingCoordinator)
+            m_scrollingCoordinator = ScrollingCoordinator::create(this);
+    }
 
     return m_scrollingCoordinator.get();
 }
@@ -906,9 +909,9 @@ void Page::resumeScriptedAnimations()
     }
 }
 
-void Page::setThrottled(bool throttled)
+void Page::setIsVisuallyIdle(bool isVisuallyIdle)
 {
-    m_pageThrottler->setThrottled(throttled);
+    m_pageThrottler->setIsVisuallyIdle(isVisuallyIdle);
 }
 
 void Page::userStyleSheetLocationChanged()

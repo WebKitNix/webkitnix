@@ -1,3 +1,84 @@
+2014-01-05  Sam Weinig  <sam@webkit.org>
+
+        [JS] Implement Promise.race()
+        https://bugs.webkit.org/show_bug.cgi?id=126506
+
+        Reviewed by Oliver Hunt.
+
+        * runtime/CommonIdentifiers.h:
+        Add identifier for "cast".
+    
+        * runtime/JSPromiseConstructor.cpp:
+        (JSC::abruptRejection):
+        Helper for the RejectIfAbrupt abstract operation.
+  
+        (JSC::JSPromiseConstructorFuncRace):
+        Add implementation of Promise.race()
+
+2014-01-05  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Ensure that the autotools build and the CMake install the same files
+        https://bugs.webkit.org/show_bug.cgi?id=116379
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * PlatformGTK.cmake: Install API headers, gir files, and the pkg-config file.
+
+2014-01-04  Yusuke Suzuki  <utatane.tea@gmail.com>
+
+        Use Compiler macros instead of raw "final" and "override"
+        https://bugs.webkit.org/show_bug.cgi?id=126490
+
+        Reviewed by Sam Weinig.
+
+        * runtime/JSPromiseReaction.cpp:
+
+2014-01-04  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Improve the way we locate gobject-introspection
+        https://bugs.webkit.org/show_bug.cgi?id=126452
+
+        Reviewed by Philippe Normand.
+
+        * PlatformGTK.cmake: Use the new introspection variables.
+
+2014-01-04  Zan Dobersek  <zdobersek@igalia.com>
+
+        Explicitly use the std:: nested name specifier when using std::pair, std::make_pair
+        https://bugs.webkit.org/show_bug.cgi?id=126439
+
+        Reviewed by Andreas Kling.
+
+        Instead of relying on std::pair and std::make_pair symbols being present in the current scope
+        through the pair and make_pair symbols, the std:: specifier should be used explicitly.
+
+        * bytecode/Opcode.cpp:
+        (JSC::compareOpcodePairIndices):
+        (JSC::OpcodeStats::~OpcodeStats):
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::BytecodeGenerator):
+        * parser/ASTBuilder.h:
+        (JSC::ASTBuilder::makeBinaryNode):
+        * parser/Parser.cpp:
+        (JSC::Parser<LexerType>::parseIfStatement):
+        * runtime/Structure.cpp:
+        (JSC::StructureTransitionTable::contains):
+        (JSC::StructureTransitionTable::get):
+        (JSC::StructureTransitionTable::add):
+
+2014-01-03  David Farler  <dfarler@apple.com>
+
+        [super dealloc] missing in Source/JavaScriptCore/API/tests/testapi.mm, fails to build with -Werror,-Wobjc-missing-super-calls
+        https://bugs.webkit.org/show_bug.cgi?id=126454
+
+        Reviewed by Geoffrey Garen.
+
+        * API/tests/testapi.mm:
+        (-[TextXYZ dealloc]):
+        add [super dealloc]
+        (-[EvilAllocationObject dealloc]):
+        add [super dealloc]
+
 2014-01-02  Carlos Garcia Campos  <cgarcia@igalia.com>
 
         REGRESSION(r160304): [GTK] Disable libtool fast install

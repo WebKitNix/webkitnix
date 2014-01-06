@@ -1,3 +1,376 @@
+2014-01-06  László Langó  <lango@inf.u-szeged.hu>
+
+        Use unsigned consistently, and check for invalid casts when calling into SharedBuffer from other code.
+        https://bugs.webkit.org/show_bug.cgi?id=124579
+
+        Reviewed by Anders Carlsson.
+
+        * NetworkProcess/NetworkResourceLoader.cpp:
+        (WebKit::NetworkResourceLoader::didReceiveData):
+        (WebKit::NetworkResourceLoader::willStopBufferingData):
+        * NetworkProcess/NetworkResourceLoader.h:
+        * Shared/Downloads/soup/DownloadSoup.cpp:
+        (WebKit::DownloadClient::didReceiveData):
+
+2014-01-04  Simon Fraser  <simon.fraser@apple.com>
+
+        Add encoding of ViewportConstraint and ScrollingParameter types
+        https://bugs.webkit.org/show_bug.cgi?id=126497
+
+        Reviewed by Andreas Kling.
+        
+        Add encoding/decoding of ScrollableAreaParameters, FixedPositionViewportConstraints
+        and StickyPositionViewportConstraints.
+
+        * Shared/WebCoreArgumentCoders.cpp:
+        (IPC::ArgumentCoder<WebCore::ScrollableAreaParameters>::encode):
+        (IPC::ArgumentCoder<WebCore::ScrollableAreaParameters>::decode):
+        (IPC::ArgumentCoder<WebCore::FixedPositionViewportConstraints>::encode):
+        (IPC::ArgumentCoder<WebCore::FixedPositionViewportConstraints>::decode):
+        (IPC::ArgumentCoder<WebCore::StickyPositionViewportConstraints>::encode):
+        (IPC::ArgumentCoder<WebCore::StickyPositionViewportConstraints>::decode):
+        * Shared/WebCoreArgumentCoders.h:
+
+2014-01-05  Simon Fraser  <simon.fraser@apple.com>
+
+        Move responsibility for remote layer tree committing to RemoteLayerTreeDrawingArea
+        https://bugs.webkit.org/show_bug.cgi?id=126501
+
+        Reviewed by Sam Weinig.
+        
+        Soon we shall need to do atomic commits of both the remote layer tree, and
+        the remote scrolling tree. Pave the way by moving responsibility for remote
+        layer tree committing to RemoteLayerTreeDrawingArea.
+        
+        So move the flushing logic from RemoteLayerTreeHost to RemoteLayerTreeDrawingArea.
+        After this change, RemoteLayerTreeHost doesn't do much and could possibly be
+        removed in future.
+        
+        Also add type-safe casting to GraphicsLayer and DrawingArea.
+
+        * DerivedSources.make: Out with RemoteLayerTreeHost, in with RemoteLayerTreeDrawingAreaProxy
+        * UIProcess/mac/RemoteLayerTreeDrawingAreaProxy.h:
+        (WebKit::RemoteLayerTreeDrawingAreaProxy::remoteLayerTreeHost):
+        * UIProcess/mac/RemoteLayerTreeDrawingAreaProxy.messages.in: Renamed from Source/WebKit2/UIProcess/mac/RemoteLayerTreeHost.messages.in.
+        * UIProcess/mac/RemoteLayerTreeDrawingAreaProxy.mm:
+        (WebKit::RemoteLayerTreeDrawingAreaProxy::RemoteLayerTreeDrawingAreaProxy): Add message receiver.
+        (WebKit::RemoteLayerTreeDrawingAreaProxy::~RemoteLayerTreeDrawingAreaProxy): Remove message receiver.
+        (WebKit::RemoteLayerTreeDrawingAreaProxy::commitLayerTree): Hand the transaction off to the layer
+        tree host.
+        * UIProcess/mac/RemoteLayerTreeHost.h:
+        * UIProcess/mac/RemoteLayerTreeHost.mm:
+        (WebKit::RemoteLayerTreeHost::RemoteLayerTreeHost): No longer a message receiver.
+        (WebKit::RemoteLayerTreeHost::~RemoteLayerTreeHost):
+        (WebKit::RemoteLayerTreeHost::updateLayerTree):
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/WebPage/DrawingArea.h:
+        (WebKit::DrawingArea::type):
+        * WebProcess/WebPage/mac/GraphicsLayerCARemote.h:
+        * WebProcess/WebPage/mac/PlatformCALayerRemote.h:
+        * WebProcess/WebPage/mac/RemoteLayerTreeContext.h:
+        * WebProcess/WebPage/mac/RemoteLayerTreeContext.mm:
+        (WebKit::RemoteLayerTreeContext::RemoteLayerTreeContext):
+        (WebKit::RemoteLayerTreeContext::flushOutOfTreeLayers):
+        (WebKit::RemoteLayerTreeContext::buildTransaction):
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.h:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.mm:
+        (WebKit::RemoteLayerTreeDrawingArea::RemoteLayerTreeDrawingArea):
+        (WebKit::RemoteLayerTreeDrawingArea::setRootCompositingLayer):
+        (WebKit::RemoteLayerTreeDrawingArea::setLayerTreeStateIsFrozen):
+        (WebKit::RemoteLayerTreeDrawingArea::forceRepaint):
+        (WebKit::RemoteLayerTreeDrawingArea::scheduleCompositingLayerFlush):
+        (WebKit::RemoteLayerTreeDrawingArea::layerFlushTimerFired):
+        (WebKit::RemoteLayerTreeDrawingArea::flushLayers):
+
+2014-01-05  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Ensure that the autotools build and the CMake install the same files
+        https://bugs.webkit.org/show_bug.cgi?id=116379
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * CMakeLists.txt: Install the plugin process to the new LIBEXEC directory, which
+        for non-GTK+ platforms is the same as EXEC.
+        * PlatformGTK.cmake: Install API headers, gir files, and the pkg-config file. Move
+        a couple installed and generated headers to the installed headers list. Rename the
+        headers list to be consistent with the WebKit1 build. No longer use a variable for
+        the name of the plugin process, as it's unnecessary.
+
+2014-01-05  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Stop installing WebKit2 C API headers
+        https://bugs.webkit.org/show_bug.cgi?id=126489
+
+        Reviewed by Martin Robinson.
+
+        We are not actually maintaining the API/ABI compatibility of the
+        WebKit2 C API, it's only used internally by the public GTK+ API
+        and nobody is using it.
+
+        * GNUmakefile.am:
+        * GNUmakefile.list.am:
+
+2014-01-05  Gavin Barraclough  <barraclough@apple.com>
+
+        Move process suppression of WebProcess to Page (from UIProcess)
+        https://bugs.webkit.org/show_bug.cgi?id=126480
+
+        Reviewed by Sam Weinig.
+
+        Let each page take a UserActivity rather than having to coalesce this state, and take different activity
+        tokens for normal visibility and suppression disabled, so we can see why the process is not suppressed.
+
+        * Shared/mac/ChildProcessMac.mm:
+        (WebKit::ChildProcess::platformInitialize):
+            - Don't start with process supression disabled; this is unnecessary,
+              message from the UIProcess should wake.
+        * UIProcess/mac/WebProcessProxyMac.mm:
+        (WebKit::WebProcessProxy::updateProcessSuppressionState):
+            - Don't send explicit messages to supress the WebProcess, it handles this for itself.
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+            - call setIsVisuallyIdle.
+        (WebKit::WebPage::setViewState):
+            - call setIsVisuallyIdle.
+        (WebKit::WebPage::updatePreferences):
+            - Use m_suppressionDisabled to disable supression if the WebPreference is set.
+        (WebKit::WebPage::setIsVisuallyIdle):
+            - setThrottled -> setIsVisuallyIdle.
+        * WebProcess/WebPage/WebPage.h:
+            - setThrottled -> setIsVisuallyIdle, added m_suppressionDisabled.
+        * WebProcess/WebProcess.cpp:
+        * WebProcess/WebProcess.h:
+        (WebKit::WebProcess::shouldForceScreenFontSubstitution):
+            - Removed setProcessSuppressionEnabled - WebPage now detects the supression change.
+
+2014-01-04  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Improve the way we locate gobject-introspection
+        https://bugs.webkit.org/show_bug.cgi?id=126452
+
+        Reviewed by Philippe Normand.
+
+        * PlatformGTK.cmake: Use the new introspection variables.
+
+2014-01-04  Zan Dobersek  <zdobersek@igalia.com>
+
+        Explicitly use the std:: nested name specifier when using std::pair, std::make_pair
+        https://bugs.webkit.org/show_bug.cgi?id=126439
+
+        Reviewed by Andreas Kling.
+
+        Instead of relying on std::pair and std::make_pair symbols being present in the current scope
+        through the pair and make_pair symbols, the std:: specifier should be used explicitly.
+
+        * Shared/mac/ArgumentCodersMac.mm:
+        (IPC::encode):
+        * UIProcess/Notifications/WebNotificationManagerProxy.cpp:
+        (WebKit::WebNotificationManagerProxy::show):
+        (WebKit::WebNotificationManagerProxy::cancel):
+        (WebKit::WebNotificationManagerProxy::didDestroyNotification):
+        * UIProcess/Notifications/WebNotificationManagerProxy.h:
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::createNewWebProcess):
+        * UIProcess/WebContext.h:
+
+2014-01-03  Piotr Grad  <p.grad@samsung.com>
+
+        Build brake after 161045 on EFL port with WebKit2 and gcc 4.6.3
+        https://bugs.webkit.org/show_bug.cgi?id=126383
+
+        Reviewed by Sam Weinig.
+
+        Class identifier was missing.
+
+        * DatabaseProcess/DatabaseProcess.h:
+        * NetworkProcess/NetworkProcess.h:
+        * PluginProcess/PluginProcess.h:
+        * Shared/mac/CookieStorageShim.h:
+        * UIProcess/Plugins/PluginProcessManager.h:
+        * UIProcess/WebPageProxy.cpp:
+        * WebProcess/WebCoreSupport/WebPlatformStrategies.h:
+        * WebProcess/WebProcess.h:
+
+2014-01-03  Seokju Kwon  <seokju@webkit.org>
+
+        Unreviewed build fix on non-Mac port
+
+        * Shared/API/c/WKDeprecatedFunctions.cpp: Add ENABLE(MAC) guard for "WKContextPrivateMac.h".
+
+2014-01-03  Gavin Barraclough  <barraclough@apple.com>
+
+        Simplify process suppression state calculation
+        https://bugs.webkit.org/show_bug.cgi?id=126473
+
+        Reviewed by Geoffrey Garen & Sam Weinig.
+
+        Don't check the application occlusion state (this is covered by the pages already),
+        and let the page check visually idle. Remove layers of functions.
+
+        * UIProcess/Network/NetworkProcessProxy.cpp:
+        (WebKit::NetworkProcessProxy::didFinishLaunching):
+            - Let the network process nap if all processes in its context are napping.*
+              (* Except not really. We currently leak a boost onto the process anyway.)
+        * UIProcess/Plugins/PluginProcessProxy.cpp:
+        (WebKit::PluginProcessProxy::didFinishLaunching):
+            - Let the plugin process nap if all processes in all contexts are napping.
+        * UIProcess/WebContext.h:
+            - Remove canEnableProcessSuppressionForNetworkProcess & canEnableProcessSuppressionForWebProcess
+            - canEnableProcessSuppressionForGlobalChildProcesses -> processSuppressionIsEnabledForAllContexts
+            - combine updateProcessSuppressionStateOfChildProcesses & updateProcessSuppressionStateOfGlobalChildProcesses
+                -> updateProcessSuppressionState
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::isProcessSuppressible):
+            - WebProcess is supressible if IsVisuallyIdle.
+        (WebKit::WebPageProxy::viewStateDidChange):
+            - WebProcessProxy should updateProcessSuppressionState when IsVisuallyIdle changes.
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::createWebPage):
+        (WebKit::WebProcessProxy::addExistingWebPage):
+        (WebKit::WebProcessProxy::pageSuppressibilityChanged):
+        (WebKit::WebProcessProxy::pagePreferencesChanged):
+            - pageIsProcessSuppressible -> isProcessSuppressible
+        * UIProcess/WebProcessProxy.h:
+        * UIProcess/mac/WebContextMac.mm:
+        (WebKit::WebContext::updateProcessSuppressionState):
+            - Update supression state of network & plugin processes.
+        (WebKit::WebContext::processSuppressionIsEnabledForAllContexts):
+            - Changed iterator style, made a static member of WebContext.
+        * UIProcess/mac/WebProcessProxyMac.mm:
+        (WebKit::WebProcessProxy::updateProcessSuppressionState):
+            - Ask the WebContext to update supression state.
+        * UIProcess/mac/WindowServerConnection.h:
+        * UIProcess/mac/WindowServerConnection.mm:
+        (WebKit::WindowServerConnection::windowServerConnectionStateChanged):
+        (WebKit::WindowServerConnection::WindowServerConnection):
+            - Remove application occlusion state.
+
+2014-01-03  Tim Horton  <timothy_horton@apple.com>
+
+        [iOS] [WK2] TileController creates all tiles on first paint, making it slow and consuming lots of memory
+        https://bugs.webkit.org/show_bug.cgi?id=126457
+
+        Reviewed by Simon Fraser.
+
+        Instead of making all of the tiles all of the time, we should use the
+        view-exposed-rect mechanism to inform TileController about what portion
+        of the WKContentView is currently exposed by the WKScrollView.
+
+        * UIProcess/API/ios/WKContentView.h:
+        * UIProcess/API/ios/WKContentView.mm:
+        (-[WKContentView setViewportSize:]):
+        (-[WKContentView didFinishScrollTo:]):
+        (-[WKContentView didScrollTo:]):
+        Inform the WebPageProxy that our exposed rect changed.
+
+        * UIProcess/API/ios/WKView.mm:
+        (-[WKView scrollViewDidScroll:]):
+        Inform the WKContentView that we've scrolled at all.
+        Rename the existing WKContentView didScrollTo: to didFinishScrollTo:,
+        because it is expected to only fire when a scroll lands. Add didScrollTo:,
+        which fires continually as scrolling progresses.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::viewExposedRectChanged):
+        (WebKit::WebPageProxy::exposedRectChangedTimerFired):
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::viewExposedRect):
+        * UIProcess/mac/WebPageProxyMac.mm:
+        Move view-exposed-rect stuff to WebPageProxy so it can be built on both
+        Mac and iOS, and un-!PLATFORM(IOS) some of the related members.
+
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.h:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.mm:
+        (WebKit::RemoteLayerTreeDrawingArea::RemoteLayerTreeDrawingArea):
+        (WebKit::RemoteLayerTreeDrawingArea::setExposedRect):
+        (WebKit::RemoteLayerTreeDrawingArea::setClipsToExposedRect):
+        (WebKit::RemoteLayerTreeDrawingArea::updateScrolledExposedRect):
+        (WebKit::RemoteLayerTreeDrawingArea::updateMainFrameClipsToExposedRect):
+        (WebKit::RemoteLayerTreeDrawingArea::mainFrameTiledBacking):
+        Steal TiledCoreAnimationDrawingArea's exposed-rect code.
+        Note that on iOS, we don't need to manually offset the exposed rect by
+        the scroll position, because the scroll position is already baked into
+        the exposed rect, and WebCore's notion of the scroll position will be
+        inaccurate until the scroll lands.
+
+2014-01-03  Simon Fraser  <simon.fraser@apple.com>
+
+        Give all PlatformCALayers a PlatformLayerID, not just remote ones
+        https://bugs.webkit.org/show_bug.cgi?id=126466
+
+        Reviewed by Tim Horton.
+
+        The ScrollingStateTree has references to both GraphicsLayers and PlatformLayers
+        which is confusing, and is necessary because the underlying PlatformLayer
+        inside a GraphicsLayer can change. In order to hide some of this complexity,
+        expose GraphicsLayer::primaryLayerID() which is a PlatformLayerID that clients
+        can hold onto to test for underlying layer swapping.
+        
+        GraphicsLayerCARemote and PlatformCALayerRemote can now just use the
+        primaryLayerID() function exposed via the base class.
+
+        * WebProcess/WebPage/mac/GraphicsLayerCARemote.cpp:
+        * WebProcess/WebPage/mac/GraphicsLayerCARemote.h:
+        * WebProcess/WebPage/mac/PlatformCALayerRemote.cpp:
+        (PlatformCALayerRemote::PlatformCALayerRemote):
+        (PlatformCALayerRemote::recursiveBuildTransaction):
+        * WebProcess/WebPage/mac/PlatformCALayerRemote.h:
+
+2014-01-03  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Expose session state API
+        https://bugs.webkit.org/show_bug.cgi?id=126463
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextController.h: Declared new property and method.
+        * UIProcess/API/Cocoa/WKBrowsingContextController.mm:
+        (-[WKBrowsingContextController sessionState]): Added. Calls WebPageProxy::sessionStateData.
+        (-[WKBrowsingContextController restoreFromSessionState:]): Added. Calls
+        WebPageProxy::restoreFromSessionState.
+
+2014-01-03  Gavin Barraclough  <barraclough@apple.com>
+
+        Remove SPI, user default for disabling process suppression
+        https://bugs.webkit.org/show_bug.cgi?id=126458
+
+        Reviewed by Sam Weinig.
+
+        * Shared/API/c/WKDeprecatedFunctions.cpp:
+        (WKContextGetProcessSuppressionEnabled):
+        (WKContextSetProcessSuppressionEnabled):
+            - depracated SPI.
+        * UIProcess/API/C/mac/WKContextPrivateMac.mm:
+            - depracated SPI.
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::WebContext):
+            - removed m_processSuppressionEnabled.
+        * UIProcess/WebContext.h:
+            - removed setProcessSuppressionEnabled, processSuppressionEnabled implementation,
+              processSuppressionEnabledChanged, m_processSuppressionEnabled.
+        * UIProcess/mac/WebContextMac.mm:
+        (WebKit::WebContext::platformInitialize):
+            - removed m_processSuppressionEnabled.
+        (WebKit::WebContext::processSuppressionEnabled):
+            - check whether all pages in all processes are suppressible.
+        (WebKit::WebContext::canEnableProcessSuppressionForNetworkProcess):
+            - removed call to omitProcessSuppression, m_processSuppressionEnabled -> processSuppressionEnabled().
+        (WebKit::WebContext::canEnableProcessSuppressionForWebProcess):
+            - removed call to omitProcessSuppression, processSuppressionEnabled (we don't care if a page in a difference process is not suppresible).
+        (WebKit::WebContext::canEnableProcessSuppressionForGlobalChildProcesses):
+            - removed call to omitProcessSuppression, s_processSuppressionEnabledForAllContexts -> processSuppressionIsEnabledForAllContexts().
+
+2014-01-03  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        [WK2][CoordinatedGraphics] Removing repeated protected keyword in WebView
+        https://bugs.webkit.org/show_bug.cgi?id=126462
+
+        Reviewed by Simon Fraser.
+
+        * UIProcess/CoordinatedGraphics/WebView.h:
+
 2014-01-03  Carlos Garcia Campos  <cgarcia@igalia.com>
 
         Define WebProcess::usesNetworkProcess unconditionally

@@ -36,6 +36,9 @@
 #include "Region.h"
 #include "ScrollingStateTree.h"
 #include "ScrollingThread.h"
+#include "ScrollingTreeFixedNode.h"
+#include "ScrollingTreeScrollingNodeMac.h"
+#include "ScrollingTreeStickyNode.h"
 #include "ThreadedScrollingTree.h"
 #include "TiledBacking.h"
 #include <wtf/Functional.h>
@@ -90,10 +93,9 @@ bool ScrollingCoordinatorMac::handleWheelEvent(FrameView*, const PlatformWheelEv
 
 void ScrollingCoordinatorMac::scheduleTreeStateCommit()
 {
-    if (m_scrollingStateTreeCommitterTimer.isActive())
-        return;
+    ASSERT(scrollingStateTree()->hasChangedProperties());
 
-    if (!scrollingStateTree()->hasChangedProperties())
+    if (m_scrollingStateTreeCommitterTimer.isActive())
         return;
 
     m_scrollingStateTreeCommitterTimer.startOneShot(0);
@@ -108,7 +110,7 @@ void ScrollingCoordinatorMac::commitTreeState()
 {
     ASSERT(scrollingStateTree()->hasChangedProperties());
 
-    OwnPtr<ScrollingStateTree> treeState = scrollingStateTree()->commit();
+    OwnPtr<ScrollingStateTree> treeState = scrollingStateTree()->commit(LayerRepresentation::PlatformLayerRepresentation);
     ScrollingThread::dispatch(bind(&ThreadedScrollingTree::commitNewTreeState, toThreadedScrollingTree(scrollingTree()), treeState.release()));
 
     updateTiledScrollingIndicator();
@@ -134,6 +136,22 @@ void ScrollingCoordinatorMac::updateTiledScrollingIndicator()
     
     tiledBacking->setScrollingModeIndication(indicatorMode);
 }
+
+PassOwnPtr<ScrollingTreeNode> ScrollingCoordinatorMac::createScrollingTreeNode(ScrollingNodeType nodeType, ScrollingNodeID nodeID)
+{
+    ASSERT(scrollingTree());
+
+    switch (nodeType) {
+    case ScrollingNode:
+        return ScrollingTreeScrollingNodeMac::create(*scrollingTree(), nodeID);
+    case FixedNode:
+        return ScrollingTreeFixedNode::create(*scrollingTree(), nodeID);
+    case StickyNode:
+        return ScrollingTreeStickyNode::create(*scrollingTree(), nodeID);
+    }
+    return nullptr;
+}
+
 
 } // namespace WebCore
 

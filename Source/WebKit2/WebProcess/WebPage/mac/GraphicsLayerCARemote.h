@@ -45,13 +45,13 @@ public:
 
     virtual ~GraphicsLayerCARemote();
     
-    PlatformLayerID primaryLayerID() const;
-
 #if ENABLE(CSS_FILTERS)
     virtual bool filtersCanBeComposited(const WebCore::FilterOperations& filters) OVERRIDE;
 #endif
 
 private:
+    virtual bool isGraphicsLayerCARemote() const { return true; }
+
     virtual PassRefPtr<WebCore::PlatformCALayer> createPlatformCALayer(WebCore::PlatformCALayer::LayerType, WebCore::PlatformCALayerClient* owner) OVERRIDE;
     virtual PassRefPtr<WebCore::PlatformCALayer> createPlatformCALayer(PlatformLayer*, WebCore::PlatformCALayerClient* owner) OVERRIDE;
 
@@ -63,6 +63,8 @@ private:
 
     RemoteLayerTreeContext* m_context;
 };
+
+GRAPHICSLAYER_TYPE_CASTS(GraphicsLayerCARemote, isGraphicsLayerCARemote());
 
 } // namespace WebKit
 

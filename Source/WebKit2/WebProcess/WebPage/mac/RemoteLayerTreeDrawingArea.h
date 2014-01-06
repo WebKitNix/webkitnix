@@ -29,6 +29,7 @@
 #include "DrawingArea.h"
 #include "GraphicsLayerCARemote.h"
 #include <WebCore/GraphicsLayerClient.h>
+#include <WebCore/Timer.h>
 #include <wtf/HashMap.h>
 
 namespace WebCore {
@@ -69,6 +70,9 @@ private:
     virtual void forceRepaint() OVERRIDE;
     virtual bool forceRepaintAsync(uint64_t) OVERRIDE { return false; }
 
+    virtual void setExposedRect(const WebCore::FloatRect&) OVERRIDE;
+    virtual void setClipsToExposedRect(bool) OVERRIDE;
+
     // WebCore::GraphicsLayerClient
     virtual void notifyAnimationStarted(const WebCore::GraphicsLayer*, double time) OVERRIDE { }
     virtual void notifyFlushRequired(const WebCore::GraphicsLayer*) OVERRIDE { }
@@ -80,13 +84,31 @@ private:
     virtual bool allowCompositingLayerVisualDegradation() const OVERRIDE { return false; }
 #endif
 
+    void updateMainFrameClipsToExposedRect();
+    void updateScrolledExposedRect();
+
+    void layerFlushTimerFired(WebCore::Timer<RemoteLayerTreeDrawingArea>*);
+    void flushLayers();
+
+    WebCore::TiledBacking* mainFrameTiledBacking() const;
+
     std::unique_ptr<RemoteLayerTreeContext> m_remoteLayerTreeContext;
     RefPtr<WebCore::PlatformCALayer> m_rootLayer;
 
     HashMap<PageOverlay*, std::unique_ptr<GraphicsLayerCARemote>> m_pageOverlayLayers;
 
     WebCore::IntSize m_viewSize;
+
+    WebCore::FloatRect m_exposedRect;
+    WebCore::FloatRect m_scrolledExposedRect;
+    bool m_clipsToExposedRect;
+
+    WebCore::Timer<RemoteLayerTreeDrawingArea> m_layerFlushTimer;
+    bool m_isFlushingSuspended;
+    bool m_hasDeferredFlush;
 };
+
+DRAWING_AREA_TYPE_CASTS(RemoteLayerTreeDrawingArea, type() == DrawingAreaTypeRemoteLayerTree);
 
 } // namespace WebKit
 

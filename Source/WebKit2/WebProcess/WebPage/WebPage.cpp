@@ -286,6 +286,7 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     , m_scrollPinningBehavior(DoNotPin)
     , m_useAsyncScrolling(false)
     , m_viewState(parameters.viewState)
+    , m_processSuppressionDisabledByWebPreference("Process suppression is disabled.")
 {
     ASSERT(m_pageID);
     // FIXME: This is a non-ideal location for this Setting and
@@ -432,6 +433,7 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
 #endif
 
     m_page->setIsVisible(m_viewState & ViewState::IsVisible, true);
+    setIsVisuallyIdle(m_viewState & ViewState::IsVisuallyIdle);
 }
 
 WebPage::~WebPage()
@@ -2152,6 +2154,8 @@ void WebPage::setViewState(ViewState::Flags viewState, bool wantsDidUpdateViewSt
         setActive(viewState & ViewState::WindowIsActive);
     if (changed & ViewState::IsInWindow)
         setIsInWindow(viewState & ViewState::IsInWindow);
+    if (changed & ViewState::IsVisuallyIdle)
+        setIsVisuallyIdle(viewState & ViewState::IsVisuallyIdle);
 
     for (auto* pluginView : m_pluginViews)
         pluginView->viewStateDidChange(changed);
@@ -2614,6 +2618,14 @@ void WebPage::updatePreferences(const WebPreferencesStore& store)
 #if ENABLE(MEDIA_SOURCE)
     settings.setMediaSourceEnabled(store.getBoolValueForKey(WebPreferencesKey::mediaSourceEnabledKey()));
 #endif
+
+    if (store.getBoolValueForKey(WebPreferencesKey::pageVisibilityBasedProcessSuppressionEnabledKey())) {
+        if (m_processSuppressionDisabledByWebPreference.isActive())
+            m_processSuppressionDisabledByWebPreference.endActivity();
+    } else {
+        if (!m_processSuppressionDisabledByWebPreference.isActive())
+            m_processSuppressionDisabledByWebPreference.beginActivity();
+    }
 
     platformPreferencesDidChange(store);
 
@@ -3742,10 +3754,9 @@ void WebPage::setVisibilityStatePrerender()
         m_page->setIsPrerender();
 }
 
-void WebPage::setThrottled(bool isThrottled)
+void WebPage::setIsVisuallyIdle(bool isVisuallyIdle)
 {
-    if (m_page)
-        m_page->setThrottled(isThrottled);
+    m_page->setIsVisuallyIdle(isVisuallyIdle);
 }
 
 void WebPage::setScrollingPerformanceLoggingEnabled(bool enabled)

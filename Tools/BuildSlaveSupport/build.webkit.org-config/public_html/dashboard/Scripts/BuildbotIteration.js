@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,6 +47,14 @@ BuildbotIteration = function(queue, id, finished)
 };
 
 BaseObject.addConstructorFunctions(BuildbotIteration);
+
+// JSON result values for both individual steps and the whole iteration.
+BuildbotIteration.SUCCESS = 0;
+BuildbotIteration.WARNINGS = 1;
+BuildbotIteration.FAILURE = 2;
+BuildbotIteration.SKIPPED = 3;
+BuildbotIteration.EXCEPTION = 4;
+BuildbotIteration.RETRY = 5;
 
 BuildbotIteration.Event = {
     Updated: "updated"
@@ -154,6 +162,10 @@ BuildbotIteration.prototype = {
             var internalRevisionProperty = data.properties.findFirst(function(property) { return property[0] === "internal_got_revision"; });
             this.internalRevision = internalRevisionProperty ? parseInt(internalRevisionProperty[1], 10) : null;
 
+            var compileWebKitStep = data.steps.findFirst(function(step) { return step.name === "compile-webkit"; });
+            if (compileWebKitStep)
+                this.webkitCompilationFailed = compileWebKitStep.results[0] !== BuildbotIteration.SUCCESS;
+
             var layoutTestResults = collectTestResults.call(this, data, "layout-test");
             this.layoutTestResults = layoutTestResults ? new BuildbotTestResults(this, layoutTestResults) : null;
 
@@ -174,10 +186,8 @@ BuildbotIteration.prototype = {
 
             this.loaded = true;
 
-            // Results values (same for the iteration and for each of its steps):
-            // SUCCESS: 0, WARNINGS: 1, FAILURE: 2, SKIPPED: 3, EXCEPTION: 4, RETRY: 5.
             this.failed = !!data.results;
-            this.willRetry = data.results === 5;
+            this.willRetry = data.results === BuildbotIteration.RETRY;
 
             this.text = data.text.join(" ");
 
@@ -189,5 +199,71 @@ BuildbotIteration.prototype = {
 
             this.dispatchEventToListeners(BuildbotIteration.Event.Updated);
         }.bind(this));
+    },
+
+    loadLayoutTestResults: function(callback)
+    {
+        function collectResults(subtree, predicate)
+        {
+            // Results object is a trie:
+            // directory
+            //   subdirectory
+            //     test1.html
+            //       expected:"PASS"
+            //       actual: "IMAGE"
+            //       report: "REGRESSION"
+            //     test2.html
+            //       expected:"FAIL"
+            //       actual:"TEXT"
+
+            var result = [];
+            for (var key in subtree) {
+                var value = subtree[key];
+                console.assert(typeof value === "object");
+                var isIndividualTest = value.hasOwnProperty("actual") && value.hasOwnProperty("expected");
+                if (isIndividualTest) {
+                    // Possible values for actual and expected keys: PASS, FAIL, AUDIO, IMAGE, TEXT, IMAGE+TEXT, TIMEOUT, CRASH, MISSING.
+                    // Both actual and expected can be space separated lists. Actual contains two values when retrying a failed test
+                    // gives a different result (retrying may be disabled in tester configuration).
+                    // Possible values for report key (when present): REGRESSION, MISSING, FLAKY.
+
+                    if (predicate(value)) {
+                        var item = {path: key};
+                        if (value.actual.contains("CRASH"))
+                            item.crash = true;
+                        if (value.actual.contains("TIMEOUT"))
+                            item.timeout = true;
+                        result.push(item);
+                    }
+
+                } else {
+                    var nestedTests = collectResults(value, predicate);
+                    for (var i = 0, end = nestedTests.length; i < end; ++i)
+                        nestedTests[i].path = key + "/" + nestedTests[i].path;
+                    result = result.concat(nestedTests);
+                }
+            }
+
+            return result;
+        }
+
+        JSON.load(this.queue.buildbot.layoutTestFullResultsURLForIteration(this), function(data) {
+            if (data.error) {
+                console.log(data.error);
+                callback();
+                return;
+            }
+
+            this.layoutTestResults.regressions = collectResults(data.tests, function(info) { return info["report"] === "REGRESSION" });
+            console.assert(data.num_regressions === this.layoutTestResults.regressions.length);
+
+            this.layoutTestResults.flakyTests = collectResults(data.tests, function(info) { return info["report"] === "FLAKY" });
+            console.assert(data.num_flaky === this.layoutTestResults.flakyTests.length);
+
+            this.layoutTestResults.testsWithMissingResults = collectResults(data.tests, function(info) { return info["report"] === "MISSING" });
+            console.assert(data.num_missing === this.layoutTestResults.testsWithMissingResults.length);
+
+            callback();
+        }.bind(this), "ADD_RESULTS");
     }
 };

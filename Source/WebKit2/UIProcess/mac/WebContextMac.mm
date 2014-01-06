@@ -85,8 +85,6 @@ namespace WebKit {
 NSString *SchemeForCustomProtocolRegisteredNotificationName = @"WebKitSchemeForCustomProtocolRegisteredNotification";
 NSString *SchemeForCustomProtocolUnregisteredNotificationName = @"WebKitSchemeForCustomProtocolUnregisteredNotification";
 
-static bool s_processSuppressionEnabledForAllContexts = true;
-
 static void registerUserDefaultsIfNeeded()
 {
     static bool didRegister;
@@ -103,42 +101,21 @@ static void registerUserDefaultsIfNeeded()
     [[NSUserDefaults standardUserDefaults] registerDefaults:registrationDictionary];
 }
 
-void WebContext::updateProcessSuppressionStateOfGlobalChildProcesses()
+void WebContext::updateProcessSuppressionState() const
 {
-    // The plan is to have all child processes become context specific.  This function
-    // can be removed once that is complete.
-#if ENABLE(NETSCAPE_PLUGIN_API) || ENABLE(SHARED_WORKER_PROCESS)
-    bool canEnable = WebContext::canEnableProcessSuppressionForGlobalChildProcesses();
+#if ENABLE(NETWORK_PROCESS)
+    if (m_usesNetworkProcess && m_networkProcess)
+        m_networkProcess->setProcessSuppressionEnabled(processSuppressionEnabled());
 #endif
 #if ENABLE(NETSCAPE_PLUGIN_API)
-    PluginProcessManager::shared().setProcessSuppressionEnabled(canEnable);
+    PluginProcessManager::shared().setProcessSuppressionEnabled(processSuppressionIsEnabledForAllContexts());
 #endif
-}
-
-static bool processSuppressionIsEnabledForAllContexts()
-{
-    bool result = true;
-    const Vector<WebContext*>& contexts = WebContext::allContexts();
-    for (size_t i = 0, count = contexts.size(); i < count; ++i) {
-        if (!contexts[i]->processSuppressionEnabled()) {
-            result = false;
-            break;
-        }
-    }
-    return result;
-}
-
-static bool omitProcessSuppression()
-{
-    static bool result = [[NSUserDefaults standardUserDefaults] boolForKey:@"WebKit2OmitProcessSuppression"];
-    return result;
 }
 
 void WebContext::platformInitialize()
 {
     registerUserDefaultsIfNeeded();
     registerNotificationObservers();
-    ASSERT(m_processSuppressionEnabled);
 }
 
 String WebContext::platformDefaultApplicationCacheDirectory() const
@@ -400,53 +377,22 @@ void WebContext::getPasteboardItemsCount(uint64_t& itemsCount)
 
 #endif
 
-void WebContext::setProcessSuppressionEnabled(bool enabled)
+bool WebContext::processSuppressionEnabled() const
 {
-    if (m_processSuppressionEnabled == enabled)
-        return;
-    m_processSuppressionEnabled = enabled;
-    processSuppressionEnabledChanged();
-}
-
-void WebContext::updateProcessSuppressionStateOfChildProcesses()
-{
-#if ENABLE(NETWORK_PROCESS)
-    bool canEnable = canEnableProcessSuppressionForNetworkProcess();
-    if (usesNetworkProcess() && networkProcess())
-        networkProcess()->setProcessSuppressionEnabled(canEnable);
-#endif
-    size_t processCount = m_processes.size();
-    for (size_t i = 0; i < processCount; ++i) {
-        WebProcessProxy* process = m_processes[i].get();
-        process->updateProcessSuppressionState();
+    for (const auto& process : m_processes) {
+        if (!process->allPagesAreProcessSuppressible())
+            return false;
     }
+    return true;
 }
 
-bool WebContext::canEnableProcessSuppressionForNetworkProcess() const
+bool WebContext::processSuppressionIsEnabledForAllContexts()
 {
-    return (WindowServerConnection::shared().applicationIsOccluded() || WindowServerConnection::shared().applicationWindowModificationsHaveStopped()) && m_processSuppressionEnabled && !omitProcessSuppression();
-}
-
-bool WebContext::canEnableProcessSuppressionForWebProcess(const WebKit::WebProcessProxy *webProcess) const
-{
-    return (WindowServerConnection::shared().applicationIsOccluded() || WindowServerConnection::shared().applicationWindowModificationsHaveStopped() || webProcess->allPagesAreProcessSuppressible())
-           && m_processSuppressionEnabled && !omitProcessSuppression();
-}
-
-bool WebContext::canEnableProcessSuppressionForGlobalChildProcesses()
-{
-    return (WindowServerConnection::shared().applicationIsOccluded() || WindowServerConnection::shared().applicationWindowModificationsHaveStopped()) && s_processSuppressionEnabledForAllContexts && !omitProcessSuppression();
-}
-
-void WebContext::processSuppressionEnabledChanged()
-{
-    updateProcessSuppressionStateOfChildProcesses();
-
-    bool newProcessSuppressionEnabledForAllContexts = processSuppressionIsEnabledForAllContexts();
-    if (s_processSuppressionEnabledForAllContexts != newProcessSuppressionEnabledForAllContexts) {
-        s_processSuppressionEnabledForAllContexts = newProcessSuppressionEnabledForAllContexts;
-        updateProcessSuppressionStateOfGlobalChildProcesses();
+    for (const auto* context : WebContext::allContexts()) {
+        if (!context->processSuppressionEnabled())
+            return false;
     }
+    return true;
 }
 
 void WebContext::registerNotificationObservers()

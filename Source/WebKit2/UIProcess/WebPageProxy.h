@@ -430,6 +430,7 @@ public:
     WebCore::IntSize viewSize() const;
     bool isViewVisible() const { return m_viewState & ViewState::IsVisible; }
     bool isViewWindowActive() const;
+    bool isProcessSuppressible() const;
 
     void executeEditCommand(const String& commandName);
     void validateCommand(const String& commandName, PassRefPtr<ValidateCommandCallback>);
@@ -468,7 +469,9 @@ public:
 
 #if PLATFORM(MAC)
     void windowAndViewFramesChanged(const WebCore::FloatRect& viewFrameInWindowCoordinates, const WebCore::FloatPoint& accessibilityViewCoordinates);
-    void viewExposedRectChanged(const WebCore::FloatRect& exposedRect, bool);
+    enum class ClipsToExposedRect { DoNotClip, Clip };
+    void viewExposedRectChanged(const WebCore::FloatRect& exposedRect, ClipsToExposedRect);
+    WebCore::FloatRect viewExposedRect() const { return m_exposedRect; }
     void exposedRectChangedTimerFired(WebCore::Timer<WebPageProxy>*);
     void setMainFrameIsScrollable(bool);
 
@@ -1368,13 +1371,11 @@ private:
     bool m_waitingForDidUpdateViewState;
 
 #if PLATFORM(MAC)
-#if !PLATFORM(IOS)
     WebCore::Timer<WebPageProxy> m_exposedRectChangedTimer;
-#endif // PLATFORM(IOS)
     WebCore::FloatRect m_exposedRect;
     WebCore::FloatRect m_lastSentExposedRect;
-    bool m_clipsToExposedRect;
-    bool m_lastSentClipsToExposedRect;
+    ClipsToExposedRect m_clipsToExposedRect;
+    ClipsToExposedRect m_lastSentClipsToExposedRect;
 #endif
 
 #if PLATFORM(MAC)
