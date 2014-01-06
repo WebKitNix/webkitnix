@@ -35,7 +35,7 @@
 
 using namespace WebCore;
 
-namespace CoreIPC {
+namespace IPC {
 
 void ArgumentCoder<CertificateInfo>::encode(ArgumentEncoder& encoder, const CertificateInfo& certificateInfo)
 {

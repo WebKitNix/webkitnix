@@ -45,7 +45,7 @@ void WebProcess::platformClearResourceCaches(ResourceCachesToClear)
     // implement
 }
 
-void WebProcess::platformInitializeWebProcess(const WebProcessCreationParameters& parameters, CoreIPC::MessageDecoder&)
+void WebProcess::platformInitializeWebProcess(const WebProcessCreationParameters& parameters, IPC::MessageDecoder&)
 {
     WebCore::CookieManager::getInstance().setCookieJarPath(parameters.cookieStorageDirectory);
 
