@@ -28,7 +28,7 @@ namespace WebKit {
 
 class WebProcess;
 
-class WebCurlRequestManager : public WebProcessSupplement, private CoreIPC::MessageReceiver {
+class WebCurlRequestManager : public WebProcessSupplement, private IPC::MessageReceiver {
     WTF_MAKE_NONCOPYABLE(WebCurlRequestManager);
 public:
     explicit WebCurlRequestManager(WebProcess*);
@@ -37,8 +37,8 @@ public:
     static const char* supplementName();
 
 private:
-    // CoreIPC::MessageReceiver
-    void didReceiveMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&) OVERRIDE;
+    // IPC::MessageReceiver
+    void didReceiveMessage(IPC::Connection*, IPC::MessageDecoder&) OVERRIDE;
 
     void setHostAllowsAnyHTTPSCertificate(const String&);
 
