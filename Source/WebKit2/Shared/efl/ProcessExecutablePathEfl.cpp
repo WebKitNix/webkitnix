@@ -27,6 +27,7 @@
 #include "ProcessExecutablePath.h"
 
 #include "FileSystem.h"
+#include <glib.h>
 #include <libgen.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -38,6 +39,12 @@ namespace WebKit {
 
 static String findProcessPath(const char* processName)
 {
+    static const char* execDirectory = g_getenv("WEBKIT_EXEC_PATH");
+    if (execDirectory) {
+        String processPath = WebCore::pathByAppendingComponent(WebCore::filenameToString(execDirectory), processName);
+        if (WebCore::fileExists(processPath))
+            return processPath;
+    }
 #if OS(UNIX)
     char readLinkBuffer[PATH_MAX] = {0};
 
