@@ -46,8 +46,6 @@ InspectorBackend.registerCommand("Page.getResourceContent", [{"name": "frameId",
 InspectorBackend.registerCommand("Page.searchInResource", [{"name": "frameId", "type": "string", "optional": false}, {"name": "url", "type": "string", "optional": false}, {"name": "query", "type": "string", "optional": false}, {"name": "caseSensitive", "type": "boolean", "optional": true}, {"name": "isRegex", "type": "boolean", "optional": true}], ["result"]);
 InspectorBackend.registerCommand("Page.searchInResources", [{"name": "text", "type": "string", "optional": false}, {"name": "caseSensitive", "type": "boolean", "optional": true}, {"name": "isRegex", "type": "boolean", "optional": true}], ["result"]);
 InspectorBackend.registerCommand("Page.setDocumentContent", [{"name": "frameId", "type": "string", "optional": false}, {"name": "html", "type": "string", "optional": false}], []);
-InspectorBackend.registerCommand("Page.canOverrideDeviceMetrics", [], ["result"]);
-InspectorBackend.registerCommand("Page.setDeviceMetricsOverride", [{"name": "width", "type": "number", "optional": false}, {"name": "height", "type": "number", "optional": false}, {"name": "fontScaleFactor", "type": "number", "optional": false}, {"name": "fitWindow", "type": "boolean", "optional": false}], []);
 InspectorBackend.registerCommand("Page.setShowPaintRects", [{"name": "result", "type": "boolean", "optional": false}], []);
 InspectorBackend.registerCommand("Page.canShowDebugBorders", [], ["show"]);
 InspectorBackend.registerCommand("Page.setShowDebugBorders", [{"name": "show", "type": "boolean", "optional": false}], []);
@@ -57,12 +55,6 @@ InspectorBackend.registerCommand("Page.canContinuouslyPaint", [], ["value"]);
 InspectorBackend.registerCommand("Page.setContinuousPaintingEnabled", [{"name": "enabled", "type": "boolean", "optional": false}], []);
 InspectorBackend.registerCommand("Page.getScriptExecutionStatus", [], ["result"]);
 InspectorBackend.registerCommand("Page.setScriptExecutionDisabled", [{"name": "value", "type": "boolean", "optional": false}], []);
-InspectorBackend.registerCommand("Page.setGeolocationOverride", [{"name": "latitude", "type": "number", "optional": true}, {"name": "longitude", "type": "number", "optional": true}, {"name": "accuracy", "type": "number", "optional": true}], []);
-InspectorBackend.registerCommand("Page.clearGeolocationOverride", [], []);
-InspectorBackend.registerCommand("Page.canOverrideGeolocation", [], ["result"]);
-InspectorBackend.registerCommand("Page.setDeviceOrientationOverride", [{"name": "alpha", "type": "number", "optional": false}, {"name": "beta", "type": "number", "optional": false}, {"name": "gamma", "type": "number", "optional": false}], []);
-InspectorBackend.registerCommand("Page.clearDeviceOrientationOverride", [], []);
-InspectorBackend.registerCommand("Page.canOverrideDeviceOrientation", [], ["result"]);
 InspectorBackend.registerCommand("Page.setTouchEmulationEnabled", [{"name": "enabled", "type": "boolean", "optional": false}], []);
 InspectorBackend.registerCommand("Page.setEmulatedMedia", [{"name": "media", "type": "string", "optional": false}], []);
 InspectorBackend.registerCommand("Page.getCompositingBordersVisible", [], ["result"]);
@@ -121,7 +113,6 @@ InspectorBackend.registerEvent("Network.webSocketFrameError", ["requestId", "tim
 InspectorBackend.registerEvent("Network.webSocketFrameSent", ["requestId", "timestamp", "response"]);
 InspectorBackend.registerCommand("Network.enable", [], []);
 InspectorBackend.registerCommand("Network.disable", [], []);
-InspectorBackend.registerCommand("Network.setUserAgentOverride", [{"name": "userAgent", "type": "string", "optional": false}], []);
 InspectorBackend.registerCommand("Network.setExtraHTTPHeaders", [{"name": "headers", "type": "object", "optional": false}], []);
 InspectorBackend.registerCommand("Network.getResponseBody", [{"name": "requestId", "type": "string", "optional": false}], ["body", "base64Encoded"]);
 InspectorBackend.registerCommand("Network.replayXHR", [{"name": "requestId", "type": "string", "optional": false}], []);
@@ -170,16 +161,6 @@ InspectorBackend.registerCommand("ApplicationCache.getFramesWithManifests", [], 
 InspectorBackend.registerCommand("ApplicationCache.enable", [], []);
 InspectorBackend.registerCommand("ApplicationCache.getManifestForFrame", [{"name": "frameId", "type": "string", "optional": false}], ["manifestURL"]);
 InspectorBackend.registerCommand("ApplicationCache.getApplicationCacheForFrame", [{"name": "frameId", "type": "string", "optional": false}], ["applicationCache"]);
-
-// FileSystem.
-InspectorBackend.registerFileSystemDispatcher = InspectorBackend.registerDomainDispatcher.bind(InspectorBackend, "FileSystem");
-InspectorBackend.registerCommand("FileSystem.enable", [], []);
-InspectorBackend.registerCommand("FileSystem.disable", [], []);
-InspectorBackend.registerCommand("FileSystem.requestFileSystemRoot", [{"name": "origin", "type": "string", "optional": false}, {"name": "type", "type": "string", "optional": false}], ["errorCode", "root"]);
-InspectorBackend.registerCommand("FileSystem.requestDirectoryContent", [{"name": "url", "type": "string", "optional": false}], ["errorCode", "entries"]);
-InspectorBackend.registerCommand("FileSystem.requestMetadata", [{"name": "url", "type": "string", "optional": false}], ["errorCode", "metadata"]);
-InspectorBackend.registerCommand("FileSystem.requestFileContent", [{"name": "url", "type": "string", "optional": false}, {"name": "readAsText", "type": "boolean", "optional": false}, {"name": "start", "type": "number", "optional": true}, {"name": "end", "type": "number", "optional": true}, {"name": "charset", "type": "string", "optional": true}], ["errorCode", "content", "charset"]);
-InspectorBackend.registerCommand("FileSystem.deleteEntry", [{"name": "url", "type": "string", "optional": false}], ["errorCode"]);
 
 // DOM.
 InspectorBackend.registerDOMDispatcher = InspectorBackend.registerDomainDispatcher.bind(InspectorBackend, "DOM");

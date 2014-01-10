@@ -96,7 +96,7 @@ public:
     }
     void clearSegments() { m_segments.clear(); }
     bool adjustLogicalLineTop(float minSegmentWidth);
-    LayoutUnit computeFirstFitPositionForFloat(const LayoutSize) const;
+    LayoutUnit computeFirstFitPositionForFloat(const FloatSize) const;
 
     void setNeedsLayout(bool value) { m_needsLayout = value; }
     bool needsLayout() { return m_needsLayout; }
@@ -107,12 +107,12 @@ public:
     }
 
 protected:
-    virtual BasicShape::ReferenceBox resolvedBox() const OVERRIDE
+    virtual LayoutBox resolvedLayoutBox() const OVERRIDE
     {
-        if (shapeValue()->box() == BasicShape::None)
-            return BasicShape::ContentBox;
+        if (shapeValue()->layoutBox() == BoxMissing)
+            return ContentBox;
 
-        return shapeValue()->box();
+        return shapeValue()->layoutBox();
     }
 
 private:

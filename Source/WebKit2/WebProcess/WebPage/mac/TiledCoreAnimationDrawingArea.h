@@ -55,7 +55,7 @@ public:
     TiledCoreAnimationDrawingArea(WebPage*, const WebPageCreationParameters&);
     virtual ~TiledCoreAnimationDrawingArea();
 
-    virtual void viewStateDidChange(ViewState::Flags changed) OVERRIDE;
+    virtual void viewStateDidChange(WebCore::ViewState::Flags changed) OVERRIDE;
 
 private:
     // DrawingArea
@@ -78,8 +78,9 @@ private:
     virtual void mainFrameContentSizeChanged(const WebCore::IntSize&) OVERRIDE;
 
     virtual void setExposedRect(const WebCore::FloatRect&) OVERRIDE;
-    virtual void setClipsToExposedRect(bool) OVERRIDE;
-    virtual bool supportsThreadedScrolling() OVERRIDE { return true; }
+    virtual WebCore::FloatRect exposedRect() const OVERRIDE { return m_scrolledExposedRect; }
+
+    virtual bool supportsAsyncScrolling() OVERRIDE { return true; }
 
     virtual void didChangeScrollOffsetForAnyFrame() OVERRIDE;
 
@@ -102,7 +103,7 @@ private:
     virtual void setDeviceScaleFactor(float) OVERRIDE;
     void suspendPainting();
     void resumePainting();
-    void setLayerHostingMode(LayerHostingMode);
+    void setLayerHostingMode(LayerHostingMode) OVERRIDE;
     virtual void setColorSpace(const ColorSpaceData&) OVERRIDE;
 
     virtual void adjustTransientZoom(double scale, WebCore::FloatPoint origin) OVERRIDE;
@@ -119,7 +120,6 @@ private:
     void updateDebugInfoLayer(bool showLayer);
 
     void updateIntrinsicContentSizeTimerFired(WebCore::Timer<TiledCoreAnimationDrawingArea>*);
-    void updateMainFrameClipsToExposedRect();
     void updateScrolledExposedRect();
     
     void invalidateAllPageOverlays();
@@ -143,7 +143,6 @@ private:
 
     WebCore::FloatRect m_exposedRect;
     WebCore::FloatRect m_scrolledExposedRect;
-    bool m_clipsToExposedRect;
 
     WebCore::IntSize m_lastSentIntrinsicContentSize;
     WebCore::Timer<TiledCoreAnimationDrawingArea> m_updateIntrinsicContentSizeTimer;

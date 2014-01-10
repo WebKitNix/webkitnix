@@ -33,13 +33,13 @@
 #include "DrawingAreaProxy.h"
 #include "EditorState.h"
 #include "GeolocationPermissionRequestManagerProxy.h"
+#include "LayerTreeContext.h"
 #include "MessageSender.h"
 #include "NotificationPermissionRequestManagerProxy.h"
 #include "PageLoadState.h"
 #include "PlatformProcessIdentifier.h"
 #include "SandboxExtension.h"
 #include "ShareableBitmap.h"
-#include "ViewState.h"
 #include "WKBase.h"
 #include "WKPagePrivate.h"
 #include "WebColorPicker.h"
@@ -67,6 +67,7 @@
 #include <WebCore/ScrollTypes.h>
 #include <WebCore/TextChecking.h>
 #include <WebCore/TextGranularity.h>
+#include <WebCore/ViewState.h>
 #include <wtf/HashMap.h>
 #include <wtf/HashSet.h>
 #include <wtf/OwnPtr.h>
@@ -140,6 +141,7 @@ class NativeWebKeyboardEvent;
 class NativeWebMouseEvent;
 class NativeWebWheelEvent;
 class PageClient;
+class RemoteScrollingCoordinatorProxy;
 class StringPairVector;
 class WebBackForwardList;
 class WebBackForwardListItem;
@@ -339,6 +341,10 @@ public:
     WebFrameProxy* frameSetLargestFrame() const { return m_frameSetLargestFrame.get(); }
 
     DrawingAreaProxy* drawingArea() const { return m_drawingArea.get(); }
+    
+#if ENABLE(ASYNC_SCROLLING)
+    RemoteScrollingCoordinatorProxy* scrollingCoordinatorProxy() const { return m_scrollingCoordinatorProxy.get(); }
+#endif
 
     WebBackForwardList& backForwardList() { return m_backForwardList.get(); }
 
@@ -423,12 +429,12 @@ public:
     void scrollView(const WebCore::IntRect& scrollRect, const WebCore::IntSize& scrollOffset);
 
     enum class WantsReplyOrNot { DoesNotWantReply, DoesWantReply };
-    void viewStateDidChange(ViewState::Flags mayHaveChanged, WantsReplyOrNot = WantsReplyOrNot::DoesNotWantReply);
-    bool isInWindow() const { return m_viewState & ViewState::IsInWindow; }
+    void viewStateDidChange(WebCore::ViewState::Flags mayHaveChanged, WantsReplyOrNot = WantsReplyOrNot::DoesNotWantReply);
+    bool isInWindow() const { return m_viewState & WebCore::ViewState::IsInWindow; }
     void waitForDidUpdateViewState();
 
     WebCore::IntSize viewSize() const;
-    bool isViewVisible() const { return m_viewState & ViewState::IsVisible; }
+    bool isViewVisible() const { return m_viewState & WebCore::ViewState::IsVisible; }
     bool isViewWindowActive() const;
     bool isProcessSuppressible() const;
 
@@ -441,6 +447,8 @@ public:
     void extendSelection(WebCore::TextGranularity);
     void requestAutocorrectionData(const String& textForAutocorrection, PassRefPtr<AutocorrectionDataCallback>);
     void applyAutocorrection(const String& correction, const String& originalText, PassRefPtr<StringCallback>);
+    void requestAutocorrectionContext(PassRefPtr<AutocorrectionContextCallback>);
+    void getAutocorrectionContext(String& contextBefore, String& markedText, String& selectedText, String& contextAfter, uint64_t& location, uint64_t& length);
 #endif
 
     const EditorState& editorState() const { return m_editorState; }
@@ -469,10 +477,6 @@ public:
 
 #if PLATFORM(MAC)
     void windowAndViewFramesChanged(const WebCore::FloatRect& viewFrameInWindowCoordinates, const WebCore::FloatPoint& accessibilityViewCoordinates);
-    enum class ClipsToExposedRect { DoNotClip, Clip };
-    void viewExposedRectChanged(const WebCore::FloatRect& exposedRect, ClipsToExposedRect);
-    WebCore::FloatRect viewExposedRect() const { return m_exposedRect; }
-    void exposedRectChangedTimerFired(WebCore::Timer<WebPageProxy>*);
     void setMainFrameIsScrollable(bool);
 
     void setComposition(const String& text, Vector<WebCore::CompositionUnderline> underlines, uint64_t selectionStart, uint64_t selectionEnd, uint64_t replacementRangeStart, uint64_t replacementRangeEnd);
@@ -870,7 +874,7 @@ private:
     void platformInitialize();
     void initializeCreationParameters();
 
-    void updateViewState(ViewState::Flags flagsToUpdate = ViewState::AllFlags);
+    void updateViewState(WebCore::ViewState::Flags flagsToUpdate = WebCore::ViewState::AllFlags);
 
     void resetState();
     void resetStateAfterProcessExited();
@@ -1094,6 +1098,7 @@ private:
     void gestureCallback(const WebCore::IntPoint&, uint32_t, uint32_t, uint32_t, uint64_t);
     void touchesCallback(const WebCore::IntPoint&, uint32_t, uint64_t);
     void autocorrectionDataCallback(const Vector<WebCore::FloatRect>&, const String&, float, uint64_t, uint64_t);
+    void autocorrectionContextCallback(const String&, const String&, const String&, const String&, uint64_t, uint64_t, uint64_t);
     void interpretKeyEvent(const EditorState&, bool isCharEvent, bool& handled);
 #endif
 #if PLATFORM(GTK)
@@ -1178,6 +1183,10 @@ private:
 #endif
 
     std::unique_ptr<DrawingAreaProxy> m_drawingArea;
+#if ENABLE(ASYNC_SCROLLING)
+    std::unique_ptr<RemoteScrollingCoordinatorProxy> m_scrollingCoordinatorProxy;
+#endif
+
     Ref<WebProcessProxy> m_process;
     Ref<WebPageGroup> m_pageGroup;
     RefPtr<WebFrameProxy> m_mainFrame;
@@ -1213,6 +1222,7 @@ private:
     HashMap<uint64_t, RefPtr<GestureCallback>> m_gestureCallbacks;
     HashMap<uint64_t, RefPtr<TouchesCallback>> m_touchesCallbacks;
     HashMap<uint64_t, RefPtr<AutocorrectionDataCallback>> m_autocorrectionCallbacks;
+    HashMap<uint64_t, RefPtr<AutocorrectionContextCallback>> m_autocorrectionContextCallbacks;
 #endif
 #if PLATFORM(GTK)
     HashMap<uint64_t, RefPtr<PrintFinishedCallback>> m_printFinishedCallbacks;
@@ -1231,7 +1241,7 @@ private:
     GeolocationPermissionRequestManagerProxy m_geolocationPermissionRequestManager;
     NotificationPermissionRequestManagerProxy m_notificationPermissionRequestManager;
 
-    ViewState::Flags m_viewState;
+    WebCore::ViewState::Flags m_viewState;
 
     bool m_canGoBack;
     bool m_canGoForward;
@@ -1252,6 +1262,8 @@ private:
     double m_pageScaleFactor;
     float m_intrinsicDeviceScaleFactor;
     float m_customDeviceScaleFactor;
+
+    LayerHostingMode m_layerHostingMode;
 
     bool m_drawsBackground;
     bool m_drawsTransparentBackground;
@@ -1369,14 +1381,6 @@ private:
     bool m_mayStartMediaWhenInWindow;
 
     bool m_waitingForDidUpdateViewState;
-
-#if PLATFORM(MAC)
-    WebCore::Timer<WebPageProxy> m_exposedRectChangedTimer;
-    WebCore::FloatRect m_exposedRect;
-    WebCore::FloatRect m_lastSentExposedRect;
-    ClipsToExposedRect m_clipsToExposedRect;
-    ClipsToExposedRect m_lastSentClipsToExposedRect;
-#endif
 
 #if PLATFORM(MAC)
     HashMap<String, String> m_temporaryPDFFiles;

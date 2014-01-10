@@ -181,6 +181,10 @@ public:
     virtual void copyFiltersFrom(const PlatformCALayer*) = 0;
 #endif
 
+#if ENABLE(CSS_COMPOSITING)
+    void setBlendMode(BlendMode);
+#endif
+
     virtual void setName(const String&) = 0;
 
     virtual void setSpeed(float) = 0;
@@ -205,6 +209,14 @@ public:
     virtual void printTree() const = 0;
 #endif // NDEBUG
 #endif // PLATFORM(WIN)
+
+#if PLATFORM(IOS)
+    bool isWebLayer();
+    void setBoundsOnMainThread(CGRect);
+    void setPositionOnMainThread(CGPoint);
+    void setAnchorPointOnMainThread(FloatPoint3D);
+    void setTileSize(const IntSize&);
+#endif
 
     virtual PassRefPtr<PlatformCALayer> createCompatibleLayer(LayerType, PlatformCALayerClient*) const = 0;
 

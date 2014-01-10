@@ -1,3 +1,88 @@
+2014-01-08  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Specify the executable and library output locations in the build
+        https://bugs.webkit.org/show_bug.cgi?id=126671
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * Source/cmake/OptionsGTK.cmake: Explicitly specify the output locations.
+
+2014-01-08  Dániel Bátyai  <dbatyai.u-szeged@partner.samsung.com>
+
+        [EFL] Make FTL buildable
+        https://bugs.webkit.org/show_bug.cgi?id=125777
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Source/cmake/OptionsEfl.cmake:
+        * Source/cmakeconfig.h.cmake:
+
+2014-01-08  Alberto Garcia  <berto@igalia.com>
+
+        REGRESSION(r160304): [GTK] Disable libtool fast install
+        https://bugs.webkit.org/show_bug.cgi?id=126381
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Don't disable the libtool fast-install mode unconditionally by
+        default.
+
+        If the fast-install mode is disabled, binaries are generated ready
+        to use the libraries directly from the build tree. If we use the
+        GNU linker, those binaries are then relinked when they are
+        installed.
+
+        However, libtool fails to do it properly when an installation
+        prefix is set with DESTDIR, and ends up installing the libtool
+        wrappers instead of the actual binaries.
+
+        * Source/autotools/SetupLibtool.m4:
+
+2014-01-07  Gustavo Noronha Silva  <gustavo.noronha@collabora.com>
+
+        Unreviewed GTK/CMake build fix: use the correct location for docs-build.stamp
+        in output and dependencies declarations, so docs are not built needlessly
+        every build.
+
+        * Source/PlatformGTK.cmake:
+
+2014-01-04  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Move all GTK/GObject unit tests to Tools/TestWebKitAPI
+        https://bugs.webkit.org/show_bug.cgi?id=126342
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * GNUmakefile.am: Remove unused variable.
+        * Source/PlatformGTK.cmake: No longer include the old unit tests directories.
+
+2014-01-06  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] configure errors out when building with libc++
+        https://bugs.webkit.org/show_bug.cgi?id=126431
+
+        Reviewed by Martin Robinson.
+
+        Ease up the Clang and libstdc++ combination test to only fail if libstdc++ < 4.8.1 is actually used.
+        This allows for libc++ to be used as well. The test is moved into SetupCompilerFlags.m4 and is done
+        after the CXXFLAGS variable is properly set up, that is when all the C++ compiler options are determined.
+
+        * Source/autotools/CheckSystemAndBasicDependencies.m4:
+        * Source/autotools/SetupCompilerFlags.m4:
+
+2014-01-06  Martin Robinson  <mrobinson@igalia.com>
+
+        [CMake] [GTK] Fix the build for the WebKitGTK+ developer configuration
+        https://bugs.webkit.org/show_bug.cgi?id=126505
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * Source/cmake/FindGLIB.cmake: Add support for finding the gio-unix include directory location.
+        * Source/cmake/FindGUdev.cmake: Added.
+        * Source/cmake/FindGeoClue.cmake: Added.
+        * Source/cmake/OptionsGTK.cmake: When gamepad is enabled look for gio-unix and GUdev. When
+        geolocation is enabled look for GeoClue.
+
 2014-01-06  Zan Dobersek  <zdobersek@igalia.com>
 
         [GTK] Use libc++ for C++11 on darwin

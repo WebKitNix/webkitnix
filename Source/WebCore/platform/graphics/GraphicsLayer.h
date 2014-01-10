@@ -44,6 +44,10 @@
 #include "FilterOperations.h"
 #endif
 
+#if ENABLE(CSS_COMPOSITING)
+#include "GraphicsTypes.h"
+#endif
+
 enum LayerTreeAsTextBehaviorFlags {
     LayerTreeAsTextBehaviorNormal = 0,
     LayerTreeAsTextDebug = 1 << 0, // Dump extra debugging info like layer addresses.
@@ -345,13 +349,23 @@ public:
     virtual bool setFilters(const FilterOperations& filters) { m_filters = filters; return true; }
 #endif
 
+#if ENABLE(CSS_COMPOSITING)
+    BlendMode blendMode() const { return m_blendMode; }
+    virtual void setBlendMode(BlendMode blendMode) { m_blendMode = blendMode; }
+#endif
+
     // Some GraphicsLayers paint only the foreground or the background content
     GraphicsLayerPaintingPhase paintingPhase() const { return m_paintingPhase; }
     void setPaintingPhase(GraphicsLayerPaintingPhase phase) { m_paintingPhase = phase; }
 
+    enum ShouldClipToLayer {
+        DoNotClipToLayer,
+        ClipToLayer
+    };
+
     virtual void setNeedsDisplay() = 0;
     // mark the given rect (in layer coords) as needing dispay. Never goes deep.
-    virtual void setNeedsDisplayInRect(const FloatRect&) = 0;
+    virtual void setNeedsDisplayInRect(const FloatRect&, ShouldClipToLayer = ClipToLayer) = 0;
 
     virtual void setContentsNeedsDisplay() { };
 
@@ -387,6 +401,9 @@ public:
     virtual void setContentsToImage(Image*) { }
     virtual bool shouldDirectlyCompositeImage(Image*) const { return true; }
     virtual void setContentsToMedia(PlatformLayer*) { } // video or plug-in
+#if PLATFORM(IOS)
+    virtual PlatformLayer* contentsLayerForMedia() const { return 0; }
+#endif
     // Pass an invalid color to remove the contents layer.
     virtual void setContentsToSolidColor(const Color&) { }
     virtual void setContentsToCanvas(PlatformLayer*) { }
@@ -437,6 +454,10 @@ public:
 
     virtual void setMaintainsPixelAlignment(bool maintainsAlignment) { m_maintainsPixelAlignment = maintainsAlignment; }
     virtual bool maintainsPixelAlignment() const { return m_maintainsPixelAlignment; }
+#if PLATFORM(IOS)
+    virtual FloatSize pixelAlignmentOffset() const { return FloatSize(); }
+    bool hasFlattenedPerspectiveTransform() const { return !preserves3D() && m_childrenTransform.hasPerspective(); }
+#endif
     
     virtual void setAppliesPageScale(bool appliesScale = true) { m_appliesPageScale = appliesScale; }
     virtual bool appliesPageScale() const { return m_appliesPageScale; }
@@ -553,6 +574,10 @@ protected:
     
 #if ENABLE(CSS_FILTERS)
     FilterOperations m_filters;
+#endif
+
+#if ENABLE(CSS_COMPOSITING)
+    BlendMode m_blendMode;
 #endif
 
     bool m_contentsOpaque : 1;

@@ -33,7 +33,6 @@
 #include "Page.h"
 #include "RenderLayer.h"
 #include "RenderSVGImage.h"
-#include "RenderSVGResource.h"
 #include "RenderSVGResourceClipper.h"
 #include "RenderSVGResourceFilter.h"
 #include "RenderSVGResourceMasker.h"
@@ -275,7 +274,7 @@ void SVGRenderingContext::renderSubtreeToImageBuffer(ImageBuffer* image, RenderE
     ASSERT(image);
     ASSERT(image->context());
 
-    PaintInfo info(image->context(), PaintInfo::infiniteRect(), PaintPhaseForeground, PaintBehaviorNormal);
+    PaintInfo info(image->context(), IntRect::infiniteRect(), PaintPhaseForeground, PaintBehaviorNormal);
 
     AffineTransform& contentTransformation = currentContentTransformation();
     AffineTransform savedContentTransformation = contentTransformation;

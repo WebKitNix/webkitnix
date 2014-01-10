@@ -146,7 +146,6 @@ set(test_webkit2_api_BINARIES
     SpacebarScrolling
     TerminateTwice
     UserMessage
-    WKConnection
     WKPreferences
     WKString
     WKStringJSString

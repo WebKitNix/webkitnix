@@ -1158,6 +1158,9 @@
     <ClCompile Include="..\platform\Timer.cpp">
       <Filter>platform</Filter>
     </ClCompile>
+    <ClCompile Include="..\platform\UserActivity.cpp">
+      <Filter>platform</Filter>
+    </ClCompile>
     <ClCompile Include="..\platform\UUID.cpp">
       <Filter>platform</Filter>
     </ClCompile>
@@ -4431,12 +4434,6 @@
     <ClCompile Include="..\bindings\js\JSImageDataCustom.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
-    <ClCompile Include="..\bindings\js\JSInjectedScriptHostCustom.cpp">
-      <Filter>bindings\js</Filter>
-    </ClCompile>
-    <ClCompile Include="..\bindings\js\JSInjectedScriptManager.cpp">
-      <Filter>bindings\js</Filter>
-    </ClCompile>
     <ClCompile Include="..\bindings\js\JSInspectorFrontendHostCustom.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
@@ -4818,22 +4815,7 @@
     <ClCompile Include="..\inspector\IdentifiersFactory.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
-    <ClCompile Include="..\inspector\InjectedScript.cpp">
-      <Filter>inspector</Filter>
-    </ClCompile>
-    <ClCompile Include="..\inspector\InjectedScriptBase.cpp">
-      <Filter>inspector</Filter>
-    </ClCompile>
     <ClCompile Include="..\inspector\InjectedScriptCanvasModule.cpp">
-      <Filter>inspector</Filter>
-    </ClCompile>
-    <ClCompile Include="..\inspector\InjectedScriptHost.cpp">
-      <Filter>inspector</Filter>
-    </ClCompile>
-    <ClCompile Include="..\inspector\InjectedScriptManager.cpp">
-      <Filter>inspector</Filter>
-    </ClCompile>
-    <ClCompile Include="..\inspector\InjectedScriptModule.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
     <ClCompile Include="..\inspector\InspectorAgent.cpp">
@@ -4902,6 +4884,9 @@
     <ClCompile Include="..\inspector\InspectorInstrumentation.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
+    <ClCompile Include="..\inspector\InspectorInstrumentationCookie.cpp">
+      <Filter>inspector</Filter>
+    </ClCompile>
     <ClCompile Include="..\inspector\InspectorLayerTreeAgent.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
@@ -4945,6 +4930,9 @@
       <Filter>inspector</Filter>
     </ClCompile>
     <ClCompile Include="..\inspector\PageDebuggerAgent.cpp">
+      <Filter>inspector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\inspector\PageInjectedScriptHost.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
     <ClCompile Include="..\inspector\PageInjectedScriptManager.cpp">
@@ -5807,9 +5795,6 @@
       <Filter>DerivedSources</Filter>
     </ClCompile>
     <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSImageData.cpp">
-      <Filter>DerivedSources</Filter>
-    </ClCompile>
-    <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSInjectedScriptHost.cpp">
       <Filter>DerivedSources</Filter>
     </ClCompile>
     <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSInspectorFrontendHost.cpp">
@@ -6809,6 +6794,9 @@
       <Filter>platform\graphics\opengl</Filter>
     </ClCompile>
     <ClCompile Include="..\platform\graphics\opengl\GraphicsContext3DOpenGLCommon.cpp">
+      <Filter>platform\graphics\opengl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\platform\graphics\opengl\TemporaryOpenGLSetting.cpp">
       <Filter>platform\graphics\opengl</Filter>
     </ClCompile>
     <ClCompile Include="..\page\CaptionUserPreferencesMediaAF.cpp">
@@ -8226,6 +8214,9 @@
       <Filter>platform</Filter>
     </ClInclude>
     <ClInclude Include="..\platform\TreeShared.h">
+      <Filter>platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\platform\UserActivity.h">
       <Filter>platform</Filter>
     </ClInclude>
     <ClInclude Include="..\platform\UUID.h">
@@ -12260,6 +12251,21 @@
     <ClInclude Include="..\ForwardingHeaders\heap\Strong.h">
       <Filter>ForwardingHeaders\heap</Filter>
     </ClInclude>
+    <ClInclude Include="..\ForwardingHeaders\inspector\InjectedScript.h">
+      <Filter>ForwardingHeaders\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ForwardingHeaders\inspector\InjectedScriptBase.h">
+      <Filter>ForwardingHeaders\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ForwardingHeaders\inspector\InjectedScriptHost.h">
+      <Filter>ForwardingHeaders\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ForwardingHeaders\inspector\InjectedScriptManager.h">
+      <Filter>ForwardingHeaders\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ForwardingHeaders\inspector\InjectedScriptModule.h">
+      <Filter>ForwardingHeaders\inspector</Filter>
+    </ClInclude>
     <ClInclude Include="..\ForwardingHeaders\inspector\InspectorAgentBase.h">
       <Filter>ForwardingHeaders\inspector</Filter>
     </ClInclude>
@@ -12269,6 +12275,9 @@
     <ClInclude Include="..\ForwardingHeaders\inspector\InspectorBackendDispatcher.h">
       <Filter>ForwardingHeaders\inspector</Filter>
     </ClInclude>
+    <ClInclude Include="..\ForwardingHeaders\inspector\InspectorEnvironment.h">
+      <Filter>ForwardingHeaders\inspector</Filter>
+    </ClInclude
     <ClInclude Include="..\ForwardingHeaders\inspector\InspectorFrontendChannel.h">
       <Filter>ForwardingHeaders\inspector</Filter>
     </ClInclude>
@@ -12395,9 +12404,6 @@
     <ClInclude Include="..\bridge\runtime_root.h">
       <Filter>bridge</Filter>
     </ClInclude>
-    <ClInclude Include="..\inspector\BindingVisitors.h">
-      <Filter>inspector</Filter>
-    </ClInclude>
     <ClInclude Include="..\inspector\CommandLineAPIHost.h">
       <Filter>inspector</Filter>
     </ClInclude>
@@ -12422,22 +12428,7 @@
     <ClInclude Include="..\inspector\IdentifiersFactory.h">
       <Filter>inspector</Filter>
     </ClInclude>
-    <ClInclude Include="..\inspector\InjectedScript.h">
-      <Filter>inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inspector\InjectedScriptBase.h">
-      <Filter>inspector</Filter>
-    </ClInclude>
     <ClInclude Include="..\inspector\InjectedScriptCanvasModule.h">
-      <Filter>inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inspector\InjectedScriptHost.h">
-      <Filter>inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inspector\InjectedScriptManager.h">
-      <Filter>inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inspector\InjectedScriptModule.h">
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\InspectorAgent.h">
@@ -12518,6 +12509,9 @@
     <ClInclude Include="..\inspector\InspectorInstrumentation.h">
       <Filter>inspector</Filter>
     </ClInclude>
+    <ClInclude Include="..\inspector\InspectorInstrumentationCookie.h">
+      <Filter>inspector</Filter>
+    </ClInclude>
     <ClInclude Include="..\inspector\InspectorLayerTreeAgent.h">
       <Filter>inspector</Filter>
     </ClInclude>
@@ -12570,6 +12564,9 @@
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\PageDebuggerAgent.h">
+      <Filter>inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inspector\PageInjectedScriptHost.h">
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\PageInjectedScriptManager.h">
@@ -13111,9 +13108,6 @@
     <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\InjectedScriptCanvasModuleSource.h">
       <Filter>DerivedSources</Filter>
     </ClInclude>
-    <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\InjectedScriptSource.h">
-      <Filter>DerivedSources</Filter>
-    </ClInclude>
     <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\InspectorOverlayPage.h">
       <Filter>DerivedSources</Filter>
     </ClInclude>
@@ -13631,9 +13625,6 @@
       <Filter>DerivedSources</Filter>
     </ClInclude>
     <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSImageData.h">
-      <Filter>DerivedSources</Filter>
-    </ClInclude>
-    <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSInjectedScriptHost.h">
       <Filter>DerivedSources</Filter>
     </ClInclude>
     <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSInspectorFrontendHost.h">
@@ -14588,6 +14579,12 @@
       <Filter>platform\audio</Filter>
     </ClInclude>
     <ClInclude Include="..\platform\audio\AudioSessionListener.h">
+      <Filter>platform\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\platform\audio\MediaSession.h">
+      <Filter>platform\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\platform\audio\MediaSessionManager.h">
       <Filter>platform\audio</Filter>
     </ClInclude>
     <ClInclude Include="..\platform\graphics\ANGLEWebKitBridge.h">

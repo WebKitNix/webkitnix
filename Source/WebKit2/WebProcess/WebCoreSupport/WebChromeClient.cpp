@@ -69,6 +69,10 @@
 #include <WebCore/SecurityOrigin.h>
 #include <WebCore/Settings.h>
 
+#if ENABLE(ASYNC_SCROLLING)
+#include "RemoteScrollingCoordinator.h"
+#endif
+
 using namespace WebCore;
 using namespace HTMLNames;
 
@@ -802,6 +806,17 @@ bool WebChromeClient::layerTreeStateIsFrozen() const
         return m_page->drawingArea()->layerTreeStateIsFrozen();
 
     return false;
+}
+#endif
+
+#if ENABLE(ASYNC_SCROLLING)
+PassRefPtr<ScrollingCoordinator> WebChromeClient::createScrollingCoordinator(Page* page) const
+{
+    ASSERT(m_page->corePage() == page);
+    if (m_page->drawingArea()->type() == DrawingAreaTypeRemoteLayerTree)
+        return RemoteScrollingCoordinator::create(m_page);
+
+    return 0;
 }
 #endif
 

@@ -62,6 +62,7 @@
 #include "WebCoreArgumentCoders.h"
 #include "WebEditCommandProxy.h"
 #include "WebEvent.h"
+#include "WebEventConversion.h"
 #include "WebFormSubmissionListenerProxy.h"
 #include "WebFramePolicyListenerProxy.h"
 #include "WebFullScreenManagerProxy.h"
@@ -93,6 +94,10 @@
 #include <WebCore/WindowFeatures.h>
 #include <wtf/NeverDestroyed.h>
 #include <stdio.h>
+
+#if ENABLE(ASYNC_SCROLLING)
+#include "RemoteScrollingCoordinatorProxy.h"
+#endif
 
 #if USE(COORDINATED_GRAPHICS)
 #include "CoordinatedLayerTreeHostProxyMessages.h"
@@ -246,6 +251,7 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Web
     , m_pageScaleFactor(1)
     , m_intrinsicDeviceScaleFactor(1)
     , m_customDeviceScaleFactor(0)
+    , m_layerHostingMode(LayerHostingModeDefault)
     , m_drawsBackground(true)
     , m_drawsTransparentBackground(false)
     , m_areMemoryCacheClientCallsEnabled(true)
@@ -303,14 +309,13 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Web
     , m_mediaVolume(1)
     , m_mayStartMediaWhenInWindow(true)
     , m_waitingForDidUpdateViewState(false)
-#if PLATFORM(MAC)
-    , m_exposedRectChangedTimer(this, &WebPageProxy::exposedRectChangedTimerFired)
-    , m_clipsToExposedRect(ClipsToExposedRect::DoNotClip)
-    , m_lastSentClipsToExposedRect(ClipsToExposedRect::DoNotClip)
-#endif
     , m_scrollPinningBehavior(DoNotPin)
 {
     updateViewState();
+
+#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
+    m_layerHostingMode = m_viewState & ViewState::IsInWindow ? m_pageClient.viewLayerHostingMode() : LayerHostingModeInWindowServer;
+#endif
 
     platformInitialize();
 
@@ -503,6 +508,11 @@ void WebPageProxy::initializeWebPage()
     m_drawingArea = m_pageClient.createDrawingAreaProxy();
     ASSERT(m_drawingArea);
 
+#if ENABLE(ASYNC_SCROLLING)
+    if (m_drawingArea->type() == DrawingAreaTypeRemoteLayerTree)
+        m_scrollingCoordinatorProxy = std::make_unique<RemoteScrollingCoordinatorProxy>(*this);
+#endif
+
 #if ENABLE(INSPECTOR_SERVER)
     if (pageGroup().preferences()->developerExtrasEnabled())
         inspector()->enableRemoteInspection();
@@ -546,10 +556,6 @@ void WebPageProxy::close()
     m_findMatchesClient.initialize(0);
 #if ENABLE(CONTEXT_MENUS)
     m_contextMenuClient.initialize(0);
-#endif
-
-#if PLATFORM(MAC) && !PLATFORM(IOS)
-    m_exposedRectChangedTimer.stop();
 #endif
 
     m_process->send(Messages::WebPage::Close(), m_pageID);
@@ -937,10 +943,6 @@ void WebPageProxy::updateViewState(ViewState::Flags flagsToUpdate)
         m_viewState |= ViewState::IsInWindow;
     if (flagsToUpdate & ViewState::IsVisuallyIdle && m_pageClient.isVisuallyIdle())
         m_viewState |= ViewState::IsVisuallyIdle;
-#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
-    if (flagsToUpdate & ViewState::IsLayerWindowServerHosted && m_pageClient.isLayerWindowServerHosted())
-        m_viewState |= ViewState::IsLayerWindowServerHosted;
-#endif
 }
 
 void WebPageProxy::viewStateDidChange(ViewState::Flags mayHaveChanged, WantsReplyOrNot wantsReply)
@@ -948,9 +950,6 @@ void WebPageProxy::viewStateDidChange(ViewState::Flags mayHaveChanged, WantsRepl
     if (!isValid())
         return;
 
-    // If the in-window state may have changed, then so may the layer hosting.
-    if (mayHaveChanged & ViewState::IsInWindow)
-        mayHaveChanged |= ViewState::IsLayerWindowServerHosted;
     // If the visibility state may have changed, then so may the visually idle.
     if (mayHaveChanged & ViewState::IsVisible)
         mayHaveChanged |= ViewState::IsVisuallyIdle;
@@ -967,17 +966,22 @@ void WebPageProxy::viewStateDidChange(ViewState::Flags mayHaveChanged, WantsRepl
     if (changed & ViewState::IsVisuallyIdle)
         m_process->pageSuppressibilityChanged(this);
 
-    if (changed & ViewState::IsVisible) {
-        if (!isViewVisible()) {
-            // If we've started the responsiveness timer as part of telling the web process to update the backing store
-            // state, it might not send back a reply (since it won't paint anything if the web page is hidden) so we
-            // stop the unresponsiveness timer here.
-            m_process->responsivenessTimer()->stop();
+    // If we've started the responsiveness timer as part of telling the web process to update the backing store
+    // state, it might not send back a reply (since it won't paint anything if the web page is hidden) so we
+    // stop the unresponsiveness timer here.
+    if ((changed & ViewState::IsVisible) && !isViewVisible())
+        m_process->responsivenessTimer()->stop();
+
+    if ((mayHaveChanged & ViewState::IsInWindow) && (m_viewState & ViewState::IsInWindow)) {
+        LayerHostingMode layerHostingMode = m_pageClient.viewLayerHostingMode();
+        if (m_layerHostingMode != layerHostingMode) {
+            m_layerHostingMode = layerHostingMode;
+            m_process->send(Messages::WebPage::SetLayerHostingMode(layerHostingMode), m_pageID);
         }
     }
 
 #if ENABLE(INPUT_TYPE_COLOR_POPOVER)
-    if (mayHaveChanged & ViewState::IsInWindow && !(m_viewState & ViewState::IsInWindow)) {
+    if ((mayHaveChanged & ViewState::IsInWindow) && !(m_viewState & ViewState::IsInWindow)) {
         // When leaving the current page, close the popover color well.
         if (m_colorPicker)
             endColorPicker();
@@ -1233,6 +1237,11 @@ static WebWheelEvent coalescedWheelEvent(Deque<NativeWebWheelEvent>& queue, Vect
 
 void WebPageProxy::handleWheelEvent(const NativeWebWheelEvent& event)
 {
+#if ENABLE(ASYNC_SCROLLING)
+    if (m_scrollingCoordinatorProxy && m_scrollingCoordinatorProxy->handleWheelEvent(platform(event)))
+        return;
+#endif
+
     if (!isValid())
         return;
 
@@ -3817,6 +3826,7 @@ void WebPageProxy::resetState()
     invalidateCallbackMap(m_gestureCallbacks);
     invalidateCallbackMap(m_touchesCallbacks);
     invalidateCallbackMap(m_autocorrectionCallbacks);
+    invalidateCallbackMap(m_autocorrectionContextCallbacks);
 #endif
 #if PLATFORM(GTK)
     invalidateCallbackMap(m_printFinishedCallbacks);
@@ -3907,6 +3917,7 @@ void WebPageProxy::initializeCreationParameters()
     m_creationParameters.autoSizingShouldExpandToViewHeight = m_autoSizingShouldExpandToViewHeight;
     m_creationParameters.scrollPinningBehavior = m_scrollPinningBehavior;
     m_creationParameters.backgroundExtendsBeyondPage = m_backgroundExtendsBeyondPage;
+    m_creationParameters.layerHostingMode = m_layerHostingMode;
 
 #if PLATFORM(MAC) && !PLATFORM(IOS)
     m_creationParameters.colorSpace = m_pageClient.colorSpace();
@@ -4418,32 +4429,5 @@ void WebPageProxy::setScrollPinningBehavior(ScrollPinningBehavior pinning)
     if (isValid())
         m_process->send(Messages::WebPage::SetScrollPinningBehavior(pinning), m_pageID);
 }
-
-#if PLATFORM(MAC) || PLATFORM(IOS)
-void WebPageProxy::viewExposedRectChanged(const FloatRect& exposedRect, ClipsToExposedRect clipsToExposedRect)
-{
-    if (!isValid())
-        return;
-
-    m_exposedRect = exposedRect;
-    m_clipsToExposedRect = clipsToExposedRect;
-
-    if (!m_exposedRectChangedTimer.isActive())
-        m_exposedRectChangedTimer.startOneShot(0);
-}
-
-void WebPageProxy::exposedRectChangedTimerFired(Timer<WebPageProxy>*)
-{
-    if (!isValid())
-        return;
-
-    if (m_exposedRect == m_lastSentExposedRect && m_clipsToExposedRect == m_lastSentClipsToExposedRect)
-        return;
-
-    process().send(Messages::WebPage::ViewExposedRectChanged(m_exposedRect, m_clipsToExposedRect == ClipsToExposedRect::Clip), m_pageID);
-    m_lastSentExposedRect = m_exposedRect;
-    m_lastSentClipsToExposedRect = m_clipsToExposedRect;
-}
-#endif
 
 } // namespace WebKit

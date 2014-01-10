@@ -126,7 +126,7 @@ public:
 
     void setRequiresOwnBackingStore(bool);
 
-    void setContentsNeedDisplay();
+    void setContentsNeedDisplay(GraphicsLayer::ShouldClipToLayer = GraphicsLayer::ClipToLayer);
     // r is in the coordinate space of the layer's render object
     void setContentsNeedDisplayInRect(const IntRect&);
 
@@ -253,7 +253,7 @@ private:
     void updateFilters(const RenderStyle*);
 #endif
 #if ENABLE(CSS_COMPOSITING)
-    void updateLayerBlendMode(const RenderStyle*);
+    void updateBlendMode(const RenderStyle*);
 #endif
     // Return the opacity value that this layer should use for compositing.
     float compositingOpacity(float rendererOpacity) const;

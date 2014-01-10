@@ -94,7 +94,6 @@ set(test_webkit2_api_BINARIES
     ShouldGoToBackForwardListItem
     TerminateTwice
     UserMessage
-    WKConnection
     WKPreferences
     WKString
     WKStringJSString

@@ -30,6 +30,8 @@
 #import "GraphicsLayerCARemote.h"
 #import "RemoteLayerTreeContext.h"
 #import "RemoteLayerTreeDrawingAreaProxyMessages.h"
+#import "RemoteScrollingCoordinator.h"
+#import "RemoteScrollingCoordinatorTransaction.h"
 #import "WebPage.h"
 #import <WebCore/Frame.h>
 #import <WebCore/FrameView.h>
@@ -44,7 +46,8 @@ namespace WebKit {
 RemoteLayerTreeDrawingArea::RemoteLayerTreeDrawingArea(WebPage* webPage, const WebPageCreationParameters&)
     : DrawingArea(DrawingAreaTypeRemoteLayerTree, webPage)
     , m_remoteLayerTreeContext(std::make_unique<RemoteLayerTreeContext>(webPage))
-    , m_clipsToExposedRect(false)
+    , m_exposedRect(FloatRect::infiniteRect())
+    , m_scrolledExposedRect(FloatRect::infiniteRect())
     , m_layerFlushTimer(this, &RemoteLayerTreeDrawingArea::layerFlushTimerFired)
     , m_isFlushingSuspended(false)
     , m_hasDeferredFlush(false)
@@ -52,7 +55,6 @@ RemoteLayerTreeDrawingArea::RemoteLayerTreeDrawingArea(WebPage* webPage, const W
     webPage->corePage()->settings().setForceCompositingMode(true);
 #if PLATFORM(IOS)
     webPage->corePage()->settings().setDelegatesPageScaling(true);
-    setClipsToExposedRect(true);
 #endif
 }
 
@@ -232,18 +234,8 @@ void RemoteLayerTreeDrawingArea::setExposedRect(const FloatRect& exposedRect)
     updateScrolledExposedRect();
 }
 
-void RemoteLayerTreeDrawingArea::setClipsToExposedRect(bool clipsToExposedRect)
-{
-    m_clipsToExposedRect = clipsToExposedRect;
-    updateScrolledExposedRect();
-    updateMainFrameClipsToExposedRect();
-}
-
 void RemoteLayerTreeDrawingArea::updateScrolledExposedRect()
 {
-    if (!m_clipsToExposedRect)
-        return;
-
     FrameView* frameView = m_webPage->corePage()->mainFrame().view();
     if (!frameView)
         return;
@@ -251,30 +243,18 @@ void RemoteLayerTreeDrawingArea::updateScrolledExposedRect()
     m_scrolledExposedRect = m_exposedRect;
 
 #if !PLATFORM(IOS)
-    IntPoint scrollPositionWithOrigin = frameView->scrollPosition() + toIntSize(frameView->scrollOrigin());
-    m_scrolledExposedRect.moveBy(scrollPositionWithOrigin);
+    if (!m_exposedRect.isInfinite()) {
+        IntPoint scrollPositionWithOrigin = frameView->scrollPosition() + toIntSize(frameView->scrollOrigin());
+        m_scrolledExposedRect.moveBy(scrollPositionWithOrigin);
+    }
 #endif
 
-    mainFrameTiledBacking()->setExposedRect(m_scrolledExposedRect);
+    frameView->setExposedRect(m_scrolledExposedRect);
 
-    for (auto it = m_pageOverlayLayers.begin(), end = m_pageOverlayLayers.end(); it != end; ++it) {
-        if (TiledBacking* tiledBacking = it->value->tiledBacking())
+    for (const auto& layer : m_pageOverlayLayers.values()) {
+        if (TiledBacking* tiledBacking = layer->tiledBacking())
             tiledBacking->setExposedRect(m_scrolledExposedRect);
     }
-}
-
-void RemoteLayerTreeDrawingArea::updateMainFrameClipsToExposedRect()
-{
-    if (TiledBacking* tiledBacking = mainFrameTiledBacking())
-        tiledBacking->setClipsToExposedRect(m_clipsToExposedRect);
-
-    for (auto it = m_pageOverlayLayers.begin(), end = m_pageOverlayLayers.end(); it != end; ++it)
-        if (TiledBacking* tiledBacking = it->value->tiledBacking())
-            tiledBacking->setClipsToExposedRect(m_clipsToExposedRect);
-
-    FrameView* frameView = m_webPage->corePage()->mainFrame().view();
-    if (!frameView)
-        return;
     
     frameView->adjustTiledBackingCoverage();
 }
@@ -319,7 +299,13 @@ void RemoteLayerTreeDrawingArea::flushLayers()
     RemoteLayerTreeTransaction layerTransaction;
     m_remoteLayerTreeContext->buildTransaction(layerTransaction, *m_rootLayer);
 
-    m_webPage->send(Messages::RemoteLayerTreeDrawingAreaProxy::CommitLayerTree(layerTransaction));
+    RemoteScrollingCoordinatorTransaction scrollingTransaction;
+#if ENABLE(ASYNC_SCROLLING)
+    if (m_webPage->scrollingCoordinator())
+        toRemoteScrollingCoordinator(m_webPage->scrollingCoordinator())->buildTransaction(scrollingTransaction);
+#endif
+
+    m_webPage->send(Messages::RemoteLayerTreeDrawingAreaProxy::CommitLayerTree(layerTransaction, scrollingTransaction));
 }
 
 } // namespace WebKit

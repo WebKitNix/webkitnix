@@ -1,3 +1,7 @@
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 include(GNUInstallDirs)
 
 set(PROJECT_VERSION_MAJOR 2)
@@ -152,7 +156,6 @@ endif ()
 find_package(Cairo 1.10.2 REQUIRED)
 find_package(Fontconfig 2.8.0 REQUIRED)
 find_package(Freetype 2.4.2 REQUIRED)
-find_package(GLIB 2.33.2 REQUIRED COMPONENTS gio gobject gthread gmodule)
 find_package(GTK3 3.6.0 REQUIRED)
 find_package(GDK3 3.6.0 REQUIRED)
 find_package(GTK2 2.24.10 REQUIRED)
@@ -173,6 +176,16 @@ find_package(WebP REQUIRED)
 find_package(GStreamer 1.0.3 REQUIRED COMPONENTS ${GSTREAMER_COMPONENTS})
 find_package(ATSPI 2.5.3)
 find_package(GObjectIntrospection)
+
+set(glib_components gio gobject gthread gmodule)
+if (ENABLE_GAMEPAD)
+    list(APPEND glib_components gio-unix)
+endif ()
+find_package(GLIB 2.33.2 REQUIRED COMPONENTS ${glib_components})
+
+if (ENABLE_GEOLOCATION)
+    find_package(GeoClue)
+endif ()
 
 # We don't use find_package for GLX because it is part of -lGL, unlike EGL.
 find_package(OpenGL)
@@ -215,6 +228,10 @@ endif ()
 if (ENABLE_INDEXED_DATABASE)
     set(WTF_USE_LEVELDB 1)
     add_definitions(-DWTF_USE_LEVELDB=1)
+endif ()
+
+if (ENABLE_GAMEPAD)
+    find_package(GUdev)
 endif ()
 
 set(CPACK_SOURCE_GENERATOR TBZ2)

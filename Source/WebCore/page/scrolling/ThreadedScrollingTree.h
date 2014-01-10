@@ -47,8 +47,6 @@ public:
 
     virtual ~ThreadedScrollingTree();
 
-    virtual bool isThreadedScrollingTree() const { return true; }
-
     virtual void commitNewTreeState(PassOwnPtr<ScrollingStateTree>) OVERRIDE;
 
     virtual void handleWheelEvent(const PlatformWheelEvent&) OVERRIDE;
@@ -62,6 +60,7 @@ public:
 
 private:
     explicit ThreadedScrollingTree(AsyncScrollingCoordinator*);
+    virtual bool isThreadedScrollingTree() const OVERRIDE { return true; }
 
     virtual PassOwnPtr<ScrollingTreeNode> createNode(ScrollingNodeType, ScrollingNodeID) OVERRIDE;
 

@@ -1,3 +1,204 @@
+2014-01-10  Hunseop Jeong  <hs85.jeong@samsung.com>
+
+        [EFL] Enable the DFG_JIT on ARMv7
+        https://bugs.webkit.org/show_bug.cgi?id=126742
+
+        Reviewed by Gyuyoung Kim.
+
+        Turn on ENABLE_DFG_JIT on ARMv7 for EFL.
+
+        * wtf/Platform.h:
+
+2014-01-07  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Marking should be generational
+        https://bugs.webkit.org/show_bug.cgi?id=126552
+
+        Reviewed by Geoffrey Garen.
+
+        * wtf/Bitmap.h:
+        (WTF::WordType>::count): Added a cast that became necessary when Bitmap
+        is used with smaller types than int32_t.
+
+2014-01-09  Simon Fraser  <simon.fraser@apple.com>
+
+        Enable async scrolling for iOS
+        https://bugs.webkit.org/show_bug.cgi?id=126730
+
+        Reviewed by Tim Horton.
+        
+        Turn on ENABLE_ASYNC_SCROLLING for iOS.
+
+        * wtf/FeatureDefines.h:
+
+2014-01-09  Anders Carlsson  <andersca@apple.com>
+
+        Remove Blackberry and QNX bits from WTF
+        https://bugs.webkit.org/show_bug.cgi?id=126726
+
+        Reviewed by Benjamin Poulain.
+
+        * wtf/Assertions.cpp:
+        * wtf/Atomics.h:
+        * wtf/CurrentTime.cpp:
+        (WTF::currentCPUTime):
+        * wtf/DateMath.cpp:
+        * wtf/DisallowCType.h:
+        * wtf/FeatureDefines.h:
+        * wtf/InlineASM.h:
+        * wtf/MathExtras.h:
+        * wtf/NumberOfCores.cpp:
+        (WTF::numberOfProcessorCores):
+        * wtf/OSAllocatorPosix.cpp:
+        (WTF::OSAllocator::reserveUncommitted):
+        (WTF::OSAllocator::commit):
+        (WTF::OSAllocator::decommit):
+        * wtf/Platform.h:
+        * wtf/PlatformBlackBerry.cmake: Removed.
+        * wtf/RAMSize.cpp:
+        (WTF::computeRAMSize):
+        * wtf/StackBounds.cpp:
+        * wtf/ThreadingPthreads.cpp:
+        (WTF::initializeThreading):
+        (WTF::initializeCurrentThreadInternal):
+        * wtf/blackberry/MainThreadBlackBerry.cpp: Removed.
+        * wtf/blackberry/RunLoopBlackBerry.cpp: Removed.
+        * wtf/text/AtomicString.h:
+        * wtf/text/StringImpl.h:
+        * wtf/text/WTFString.h:
+
+2014-01-09  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Upstream WebCore/platform changes
+        https://bugs.webkit.org/show_bug.cgi?id=126654
+
+        Rubber-stamped by David Kilzer.
+
+        * wtf/MainThread.cpp:
+        (WTF::canAccessThreadLocalDataForThread):
+        * wtf/MainThread.h:
+
+2014-01-09  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r161540.
+        http://trac.webkit.org/changeset/161540
+        https://bugs.webkit.org/show_bug.cgi?id=126704
+
+        Caused assertion failures on multiple tests (Requested by ap
+        on #webkit).
+
+        * wtf/Bitmap.h:
+        (WTF::WordType>::count):
+
+2014-01-07  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Marking should be generational
+        https://bugs.webkit.org/show_bug.cgi?id=126552
+
+        Reviewed by Geoffrey Garen.
+
+        * wtf/Bitmap.h:
+        (WTF::WordType>::count): Added a cast that became necessary when Bitmap
+        is used with smaller types than int32_t.
+
+2014-01-08  Anders Carlsson  <andersca@apple.com>
+
+        Add WTF::StringView and use it for grammar checking
+        https://bugs.webkit.org/show_bug.cgi?id=126644
+
+        Reviewed by Antti Koivisto.
+
+        Add a new StringView class which is an immutable reference to either an 8-bit or a 16-bit string.
+
+        This makes it easier to pass substrings around without having to either copy string data
+        or upconvert and use UChar pointers.
+
+        The StringView class is very loosely based on the std::string_view class which is proposed for a future version of C++,
+        see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3609.html for more details.
+
+        * GNUmakefile.list.am:
+        * WTF.vcxproj/WTF.vcxproj:
+        * WTF.vcxproj/WTF.vcxproj.filters:
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/CMakeLists.txt:
+        * wtf/Forward.h:
+        * wtf/text/StringView.h: Added.
+        (WTF::StringView::StringView):
+        (WTF::StringView::empty):
+        (WTF::StringView::characters8):
+        (WTF::StringView::characters16):
+        (WTF::StringView::isEmpty):
+        (WTF::StringView::length):
+        (WTF::StringView::is8Bit):
+        (WTF::StringView::substring):
+        (WTF::StringView::toString):
+        (WTF::StringView::toStringWithoutCopying):
+        (WTF::StringView::encodedCharacters):
+
+2014-01-07  David Farler  <dfarler@apple.com>
+
+        [ASAN] Building with trunk clang corrupts sandbox profile with comment from Compiler.h
+        https://bugs.webkit.org/show_bug.cgi?id=124532
+
+        Reviewed by David Kilzer.
+
+        * wtf/Compiler.h:
+        Remove this quirk - it does nothing.
+
+2014-01-06  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of ENABLE(VALUE_PROFILER). It's on all the time now.
+
+        Rubber stamped by Mark Hahnenberg.
+
+        * wtf/Platform.h:
+
+2014-01-06  Zan Dobersek  <zdobersek@igalia.com>
+
+        Remove using directives for the std namespace from WTF
+        https://bugs.webkit.org/show_bug.cgi?id=126524
+
+        Reviewed by Alexey Proskuryakov.
+
+        Remove the using directives for the std namespace throughout the WTF code.
+        The more explicit std:: nested name specifier should be used instead.
+
+        * wtf/MediaTime.cpp:
+        (WTF::MediaTime::createWithFloat):
+        (WTF::MediaTime::createWithDouble):
+        * wtf/text/StringImpl.cpp:
+        (WTF::StringImpl::create):
+        (WTF::StringImpl::lower):
+        (WTF::StringImpl::upper):
+        (WTF::StringImpl::foldCase):
+        (WTF::StringImpl::find):
+        (WTF::StringImpl::findIgnoringCase):
+        (WTF::reverseFindInner):
+        (WTF::StringImpl::reverseFind):
+        (WTF::reverseFindIgnoringCaseInner):
+        (WTF::StringImpl::reverseFindIgnoringCase):
+        (WTF::StringImpl::replace):
+        (WTF::StringImpl::utf8ForCharacters):
+        (WTF::StringImpl::utf8ForRange):
+        * wtf/text/WTFString.cpp:
+        (WTF::String::append):
+        (WTF::String::appendInternal):
+        (WTF::String::insert):
+        (WTF::String::substringSharingImpl):
+        (WTF::String::fromUTF8):
+        (WTF::toIntegralType):
+        * wtf/win/RunLoopWin.cpp:
+
+2014-01-03  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        DoublyLinkedLists can't be concatenated
+        https://bugs.webkit.org/show_bug.cgi?id=125976
+
+        Reviewed by Filip Pizlo.
+
+        * wtf/DoublyLinkedList.h:
+        (WTF::DoublyLinkedList<T>::append):
+
 2014-01-04  Zan Dobersek  <zdobersek@igalia.com>
 
         Explicitly use the std:: nested name specifier when using std::pair, std::make_pair

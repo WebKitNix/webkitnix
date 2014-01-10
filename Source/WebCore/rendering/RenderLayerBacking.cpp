@@ -142,6 +142,7 @@ RenderLayerBacking::RenderLayerBacking(RenderLayer& layer)
         tiledBacking->setIsInWindow(page->isInWindow());
 
         if (m_isMainFrameRenderViewLayer) {
+            tiledBacking->setExposedRect(renderer().frame().view()->exposedRect());
             tiledBacking->setUnparentsOffscreenTiles(true);
             if (page->settings().backgroundShouldExtendBeyondPage())
                 tiledBacking->setTileMargins(512, 512, 512, 512);
@@ -228,7 +229,7 @@ static TiledBacking::TileCoverage computeTileCoverage(RenderLayerBacking* backin
             backing->setDidSwitchToFullTileCoverageDuringLoading();
     }
     if (!(useMinimalTilesDuringLoading || useMinimalTilesDuringLiveResize)) {
-        bool clipsToExposedRect = backing->tiledBacking()->clipsToExposedRect();
+        bool clipsToExposedRect = !frameView.exposedRect().isInfinite();
         if (frameView.horizontalScrollbarMode() != ScrollbarAlwaysOff || clipsToExposedRect)
             tileCoverage |= TiledBacking::CoverageForHorizontalScrolling;
 
@@ -338,7 +339,7 @@ void RenderLayerBacking::createPrimaryGraphicsLayer()
     updateFilters(&renderer().style());
 #endif
 #if ENABLE(CSS_COMPOSITING)
-    updateLayerBlendMode(&renderer().style());
+    updateBlendMode(&renderer().style());
 #endif
 }
 
@@ -403,8 +404,12 @@ void RenderLayerBacking::updateFilters(const RenderStyle* style)
 #endif
 
 #if ENABLE(CSS_COMPOSITING)
-void RenderLayerBacking::updateLayerBlendMode(const RenderStyle*)
+void RenderLayerBacking::updateBlendMode(const RenderStyle* style)
 {
+    if (m_ancestorClippingLayer)
+        m_ancestorClippingLayer->setBlendMode(style->blendMode());
+    else
+        m_graphicsLayer->setBlendMode(style->blendMode());
 }
 #endif
 
@@ -646,7 +651,7 @@ bool RenderLayerBacking::updateGraphicsLayerConfiguration()
 
 static IntRect clipBox(RenderBox& renderer)
 {
-    LayoutRect result = PaintInfo::infiniteRect();
+    LayoutRect result = LayoutRect::infiniteRect();
     if (renderer.hasOverflowClip())
         result = renderer.overflowClipRect(LayoutPoint(), 0); // FIXME: Incorrect for CSS regions.
 
@@ -676,7 +681,7 @@ void RenderLayerBacking::updateGraphicsLayerGeometry()
 #endif
 
 #if ENABLE(CSS_COMPOSITING)
-    updateLayerBlendMode(&renderer().style());
+    updateBlendMode(&renderer().style());
 #endif
 
     bool isSimpleContainer = isSimpleContainerCompositingLayer();
@@ -753,7 +758,7 @@ void RenderLayerBacking::updateGraphicsLayerGeometry()
         // for a compositing layer, rootLayer is the layer itself.
         RenderLayer::ClipRectsContext clipRectsContext(compAncestor, 0, TemporaryClipRects, IgnoreOverlayScrollbarSize, IgnoreOverflowClip);
         IntRect parentClipRect = pixelSnappedIntRect(m_owningLayer.backgroundClipRect(clipRectsContext).rect()); // FIXME: Incorrect for CSS regions.
-        ASSERT(parentClipRect != PaintInfo::infiniteRect());
+        ASSERT(parentClipRect != IntRect::infiniteRect());
         m_ancestorClippingLayer->setPosition(FloatPoint(parentClipRect.location() - graphicsLayerParentLocation));
         m_ancestorClippingLayer->setSize(parentClipRect.size());
 
@@ -2069,12 +2074,13 @@ void RenderLayerBacking::setRequiresOwnBackingStore(bool requiresOwnBacking)
 }
 
 #if ENABLE(CSS_COMPOSITING)
-void RenderLayerBacking::setBlendMode(BlendMode)
+void RenderLayerBacking::setBlendMode(BlendMode blendMode)
 {
+    m_graphicsLayer->setBlendMode(blendMode);
 }
 #endif
 
-void RenderLayerBacking::setContentsNeedDisplay()
+void RenderLayerBacking::setContentsNeedDisplay(GraphicsLayer::ShouldClipToLayer shouldClip)
 {
     ASSERT(!paintsIntoCompositedAncestor());
 
@@ -2082,8 +2088,14 @@ void RenderLayerBacking::setContentsNeedDisplay()
     if (m_isMainFrameRenderViewLayer && frameView.isTrackingRepaints())
         frameView.addTrackedRepaintRect(owningLayer().absoluteBoundingBox());
     
-    if (m_graphicsLayer && m_graphicsLayer->drawsContent())
-        m_graphicsLayer->setNeedsDisplay();
+    if (m_graphicsLayer && m_graphicsLayer->drawsContent()) {
+        // By default, setNeedsDisplay will clip to the size of the GraphicsLayer, which does not include margin tiles.
+        // So if the TiledBacking has a margin that needs to be invalidated, we need to send in a rect to setNeedsDisplayInRect
+        // that is large enough to include the margin. TiledBacking::bounds() includes the margin.
+        TiledBacking* tiledBacking = this->tiledBacking();
+        FloatRect rectToRepaint = tiledBacking ? tiledBacking->bounds() : FloatRect(FloatPoint(0, 0), m_graphicsLayer->size());
+        m_graphicsLayer->setNeedsDisplayInRect(rectToRepaint, shouldClip);
+    }
     
     if (m_foregroundLayer && m_foregroundLayer->drawsContent())
         m_foregroundLayer->setNeedsDisplay();

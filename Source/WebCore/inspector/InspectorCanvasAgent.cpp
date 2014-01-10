@@ -34,13 +34,10 @@
 
 #include "InspectorCanvasAgent.h"
 
-#include "BindingVisitors.h"
 #include "DOMWindow.h"
 #include "HTMLCanvasElement.h"
 #include "HTMLNames.h"
-#include "InjectedScript.h"
 #include "InjectedScriptCanvasModule.h"
-#include "InjectedScriptManager.h"
 #include "InspectorPageAgent.h"
 #include "InspectorWebFrontendDispatchers.h"
 #include "InstrumentingAgents.h"
@@ -50,6 +47,8 @@
 #include "ScriptProfiler.h"
 #include "ScriptState.h"
 #include <bindings/ScriptObject.h>
+#include <inspector/InjectedScript.h>
+#include <inspector/InjectedScriptManager.h>
 
 using Inspector::TypeBuilder::Array;
 using Inspector::TypeBuilder::Canvas::ResourceId;

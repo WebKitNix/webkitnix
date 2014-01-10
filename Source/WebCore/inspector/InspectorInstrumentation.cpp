@@ -41,7 +41,6 @@
 #include "DOMWindow.h"
 #include "DOMWrapperWorld.h"
 #include "Database.h"
-#include "DeviceOrientationData.h"
 #include "DocumentLoader.h"
 #include "Event.h"
 #include "EventDispatcher.h"
@@ -104,37 +103,6 @@ static Frame* frameForScriptExecutionContext(ScriptExecutionContext* context)
     if (context->isDocument())
         frame = toDocument(context)->frame();
     return frame;
-}
-
-InspectorInstrumentationCookie::InspectorInstrumentationCookie()
-    : m_instrumentingAgents(0)
-    , m_timelineAgentId(0)
-{
-}
-
-InspectorInstrumentationCookie::InspectorInstrumentationCookie(InstrumentingAgents* agents, int timelineAgentId)
-    : m_instrumentingAgents(agents)
-    , m_timelineAgentId(timelineAgentId)
-{
-}
-
-InspectorInstrumentationCookie::InspectorInstrumentationCookie(const InspectorInstrumentationCookie& other)
-    : m_instrumentingAgents(other.m_instrumentingAgents)
-    , m_timelineAgentId(other.m_timelineAgentId)
-{
-}
-
-InspectorInstrumentationCookie& InspectorInstrumentationCookie::operator=(const InspectorInstrumentationCookie& other)
-{
-    if (this != &other) {
-        m_instrumentingAgents = other.m_instrumentingAgents;
-        m_timelineAgentId = other.m_timelineAgentId;
-    }
-    return *this;
-}
-
-InspectorInstrumentationCookie::~InspectorInstrumentationCookie()
-{
 }
 
 void InspectorInstrumentation::didClearWindowObjectInWorldImpl(InstrumentingAgents* instrumentingAgents, Frame* frame, DOMWrapperWorld& world)
@@ -619,44 +587,6 @@ void InspectorInstrumentation::didProcessRuleImpl(const InspectorInstrumentation
         cssAgent->didProcessRule();
 }
 
-void InspectorInstrumentation::applyUserAgentOverrideImpl(InstrumentingAgents* instrumentingAgents, String* userAgent)
-{
-    if (InspectorResourceAgent* resourceAgent = instrumentingAgents->inspectorResourceAgent())
-        resourceAgent->applyUserAgentOverride(userAgent);
-}
-
-void InspectorInstrumentation::applyScreenWidthOverrideImpl(InstrumentingAgents* instrumentingAgents, long* width)
-{
-    if (InspectorPageAgent* pageAgent = instrumentingAgents->inspectorPageAgent())
-        pageAgent->applyScreenWidthOverride(width);
-}
-
-void InspectorInstrumentation::applyScreenHeightOverrideImpl(InstrumentingAgents* instrumentingAgents, long* height)
-{
-    if (InspectorPageAgent* pageAgent = instrumentingAgents->inspectorPageAgent())
-        pageAgent->applyScreenHeightOverride(height);
-}
-
-bool InspectorInstrumentation::shouldApplyScreenWidthOverrideImpl(InstrumentingAgents* instrumentingAgents)
-{
-    if (InspectorPageAgent* pageAgent = instrumentingAgents->inspectorPageAgent()) {
-        long width = 0;
-        pageAgent->applyScreenWidthOverride(&width);
-        return !!width;
-    }
-    return false;
-}
-
-bool InspectorInstrumentation::shouldApplyScreenHeightOverrideImpl(InstrumentingAgents* instrumentingAgents)
-{
-    if (InspectorPageAgent* pageAgent = instrumentingAgents->inspectorPageAgent()) {
-        long height = 0;
-        pageAgent->applyScreenHeightOverride(&height);
-        return !!height;
-    }
-    return false;
-}
-
 void InspectorInstrumentation::applyEmulatedMediaImpl(InstrumentingAgents* instrumentingAgents, String* media)
 {
     if (InspectorPageAgent* pageAgent = instrumentingAgents->inspectorPageAgent())
@@ -684,8 +614,7 @@ void InspectorInstrumentation::markResourceAsCachedImpl(InstrumentingAgents* ins
 
 void InspectorInstrumentation::didLoadResourceFromMemoryCacheImpl(InstrumentingAgents* instrumentingAgents, DocumentLoader* loader, CachedResource* cachedResource)
 {
-    InspectorAgent* inspectorAgent = instrumentingAgents->inspectorAgent();
-    if (!inspectorAgent || !inspectorAgent->developerExtrasEnabled())
+    if (!instrumentingAgents->inspectorEnvironment().developerExtrasEnabled())
         return;
     if (InspectorResourceAgent* resourceAgent = instrumentingAgents->inspectorResourceAgent())
         resourceAgent->didLoadResourceFromMemoryCache(loader, cachedResource);
@@ -887,8 +816,7 @@ void InspectorInstrumentation::frameDetachedFromParentImpl(InstrumentingAgents* 
 
 void InspectorInstrumentation::didCommitLoadImpl(InstrumentingAgents* instrumentingAgents, Page* page, DocumentLoader* loader)
 {
-    InspectorAgent* inspectorAgent = instrumentingAgents->inspectorAgent();
-    if (!inspectorAgent || !inspectorAgent->developerExtrasEnabled())
+    if (!instrumentingAgents->inspectorEnvironment().developerExtrasEnabled())
         return;
 
     if (loader->frame()->isMainFrame()) {
@@ -926,10 +854,8 @@ void InspectorInstrumentation::didCommitLoadImpl(InstrumentingAgents* instrument
 
 void InspectorInstrumentation::frameDocumentUpdatedImpl(InstrumentingAgents* instrumentingAgents, Frame* frame)
 {
-    InspectorAgent* inspectorAgent = instrumentingAgents->inspectorAgent();
-    if (!inspectorAgent || !inspectorAgent->developerExtrasEnabled())
+    if (!instrumentingAgents->inspectorEnvironment().developerExtrasEnabled())
         return;
-
     if (InspectorDOMAgent* domAgent = instrumentingAgents->inspectorDOMAgent())
         domAgent->frameDocumentUpdated(frame);
 }
@@ -1096,8 +1022,7 @@ bool InspectorInstrumentation::profilerEnabledImpl(InstrumentingAgents* instrume
 #if ENABLE(SQL_DATABASE)
 void InspectorInstrumentation::didOpenDatabaseImpl(InstrumentingAgents* instrumentingAgents, PassRefPtr<Database> database, const String& domain, const String& name, const String& version)
 {
-    InspectorAgent* inspectorAgent = instrumentingAgents->inspectorAgent();
-    if (!inspectorAgent || !inspectorAgent->developerExtrasEnabled())
+    if (!instrumentingAgents->inspectorEnvironment().developerExtrasEnabled())
         return;
     if (InspectorDatabaseAgent* dbAgent = instrumentingAgents->inspectorDatabaseAgent())
         dbAgent->didOpenDatabase(database, domain, name, version);
@@ -1145,8 +1070,7 @@ void InspectorInstrumentation::workerGlobalScopeTerminatedImpl(InstrumentingAgen
 #if ENABLE(WEB_SOCKETS)
 void InspectorInstrumentation::didCreateWebSocketImpl(InstrumentingAgents* instrumentingAgents, unsigned long identifier, const URL& requestURL, const URL&, const String& protocol, Document* document)
 {
-    InspectorAgent* inspectorAgent = instrumentingAgents->inspectorAgent();
-    if (!inspectorAgent || !inspectorAgent->developerExtrasEnabled())
+    if (!instrumentingAgents->inspectorEnvironment().developerExtrasEnabled())
         return;
     if (InspectorResourceAgent* resourceAgent = instrumentingAgents->inspectorResourceAgent())
         resourceAgent->didCreateWebSocket(identifier, requestURL);
@@ -1328,22 +1252,6 @@ InstrumentingAgents* InspectorInstrumentation::instrumentingAgentsForNonDocument
     if (context->isWorkerGlobalScope())
         return instrumentationForWorkerGlobalScope(static_cast<WorkerGlobalScope*>(context));
     return 0;
-}
-
-#if ENABLE(GEOLOCATION)
-GeolocationPosition* InspectorInstrumentation::overrideGeolocationPositionImpl(InstrumentingAgents* instrumentingAgents, GeolocationPosition* position)
-{
-    if (InspectorPageAgent* pageAgent = instrumentingAgents->inspectorPageAgent())
-        position = pageAgent->overrideGeolocationPosition(position);
-    return position;
-}
-#endif
-
-DeviceOrientationData* InspectorInstrumentation::overrideDeviceOrientationImpl(InstrumentingAgents* instrumentingAgents, DeviceOrientationData* deviceOrientation)
-{
-    if (InspectorPageAgent* pageAgent = instrumentingAgents->inspectorPageAgent())
-        deviceOrientation = pageAgent->overrideDeviceOrientation(deviceOrientation);
-    return deviceOrientation;
 }
 
 #if USE(ACCELERATED_COMPOSITING)

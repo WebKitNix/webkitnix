@@ -30,6 +30,8 @@
 
 #if ENABLE(WEB_AUDIO)
 
+#if PLATFORM(MAC) && !PLATFORM(IOS)
+
 #include "AudioDestinationMac.h"
 
 #include "AudioIOCallback.h"
@@ -83,7 +85,7 @@ AudioDestinationMac::AudioDestinationMac(AudioIOCallback& callback, float sample
     , m_renderBus(AudioBus::create(2, kBufferSize, false))
     , m_sampleRate(sampleRate)
     , m_isPlaying(false)
-    , m_mediaSessionManagerToken(MediaSessionManagerToken::create(*this))
+    , m_mediaSession(MediaSession::create(*this))
 {
     // Open and initialize DefaultOutputUnit
     AudioComponent comp;
@@ -180,5 +182,7 @@ OSStatus AudioDestinationMac::inputProc(void* userData, AudioUnitRenderActionFla
 }
 
 } // namespace WebCore
+
+#endif // PLATFORM(MAC) && !PLATFORM(IOS)
 
 #endif // ENABLE(WEB_AUDIO)

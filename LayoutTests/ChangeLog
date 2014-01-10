@@ -1,3 +1,606 @@
+2014-01-10  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Disable accelerated compositing for fixed elements in regions tests
+        https://bugs.webkit.org/show_bug.cgi?id=126743
+
+        Reviewed by Dirk Schulze.
+
+        Once we enable the support of accelerated compositing for fixed positioned elements in regions
+        in https://bugs.webkit.org/show_bug.cgi?id=125144, those tests will be added into compositing/regions as well.
+
+        * fast/regions/fixed-inside-fixed-in-named-flow-expected.html:
+        * fast/regions/fixed-inside-fixed-in-named-flow.html:
+        * fast/regions/fixed-pos-elem-in-region-expected.html:
+        * fast/regions/fixed-pos-elem-in-region.html:
+
+2014-01-10  Antti Koivisto  <antti@apple.com>
+
+        Crash when mutating SVG text with transform
+        https://bugs.webkit.org/show_bug.cgi?id=126744
+
+        Reviewed by Dirk Schulze.
+
+        * svg/custom/mutation-text-transform-crash-expected.txt: Added.
+        * svg/custom/mutation-text-transform-crash.html: Added.
+
+2014-01-10  Frédéric Wang  <fred.wang@free.fr>
+
+        [SVG] Accept HTML and MathML namespaces as valid requiredExtensions
+        https://bugs.webkit.org/show_bug.cgi?id=88188
+
+        Reviewed by Dirk Schulze.
+
+        conditional-processing-1 verifies that indeed a renderer object is only
+        created for the first "valid" SVG element of a <switch>, contrary to
+        what an incorrect FIXME comment said. conditional-processing-2 verifies
+        that the <switch> takes into account XHTML and MathML namespaces in the
+        requiredExtensions attribute to decide which SVG element is "valid".
+        SVGTests.html verifies the SVGTests interface of SVG DOM: three
+        SVGStringList attributes (already tested in svg/dom/SVGStringList.html)
+        and the hasExtension() function.
+
+        * svg/custom/conditional-processing-1-expected.txt: Added.
+        * svg/custom/conditional-processing-1.svg: Added.
+        * svg/custom/conditional-processing-2-expected.txt: Added.
+        * svg/custom/conditional-processing-2.html: Added.
+        * svg/dom/SVGTests-expected.txt: Added.
+        * svg/dom/SVGTests.html: Added.
+        * svg/dom/script-tests/SVGTests.js: Added.
+
+2014-01-10  Mihai Tica  <mitica@adobe.com>
+
+        Add support for blendmode to Core Animation layer.
+        Patch by Rik Cabanier, Dean Jackson and Mihai Tica.
+
+        https://bugs.webkit.org/show_bug.cgi?id=99200
+
+        Reviewed by Dirk Schulze.
+
+        * css3/compositing/blend-mode-layers.html: Added.
+        * css3/compositing/blend-mode-overflow-expected.txt: Added.
+        * css3/compositing/blend-mode-overflow.html: Added.
+        * css3/compositing/blend-mode-reflection.html: Added.
+        * css3/compositing/blend-mode-should-not-have-compositing-layer-expected.txt: Added.
+        * css3/compositing/blend-mode-should-not-have-compositing-layer.html: Added.
+        * css3/compositing/blend-mode-simple.html: Added.
+        * css3/compositing/should-have-compositing-layer-expected.txt:
+        * platform/efl/TestExpectations: Efl doesn't support blend modes at the moment.
+        * platform/mac/css3/compositing/blend-mode-layers-expected.png: Added.
+        * platform/mac/css3/compositing/blend-mode-layers-expected.txt: Added.
+        * platform/mac/css3/compositing/blend-mode-overflow-expected.png: Added.
+        * platform/mac/css3/compositing/blend-mode-reflection-expected.png: Added.
+        * platform/mac/css3/compositing/blend-mode-reflection-expected.txt: Added.
+        * platform/mac/css3/compositing/blend-mode-simple-expected.png: Added.
+        * platform/mac/css3/compositing/blend-mode-simple-expected.txt: Added.
+
+2014-01-10  Andrei Bucur  <abucur@adobe.com>
+
+        [CSS Regions] Implement visual overflow computation for inline elements
+        https://bugs.webkit.org/show_bug.cgi?id=125291
+
+        Reviewed by David Hyatt.
+
+        Tests for inline elements overflow correct painting inside regions.
+
+        * fast/regions/overflow-in-variable-width-regions-inline-bt-expected.html: Added.
+        * fast/regions/overflow-in-variable-width-regions-inline-bt.html: Added.
+        * fast/regions/overflow-in-variable-width-regions-inline-continuation-expected.html: Added.
+        * fast/regions/overflow-in-variable-width-regions-inline-continuation.html: Added.
+        * fast/regions/overflow-in-variable-width-regions-inline-expected.html: Added.
+        * fast/regions/overflow-in-variable-width-regions-inline-lr-expected.html: Added.
+        * fast/regions/overflow-in-variable-width-regions-inline-lr.html: Added.
+        * fast/regions/overflow-in-variable-width-regions-inline-rl-expected.html: Added.
+        * fast/regions/overflow-in-variable-width-regions-inline-rl.html: Added.
+        * fast/regions/overflow-in-variable-width-regions-inline.html: Added.
+
+2014-01-09  Jer Noble  <jer.noble@apple.com>
+
+        [Mac] .mp3 media document controls missing their background
+        https://bugs.webkit.org/show_bug.cgi?id=126683
+
+        Reviewed by Eric Carlson.
+
+        * media/media-document-audio-controls-visible-expected.txt: Added.
+        * media/media-document-audio-controls-visible.html: Added.
+
+2014-01-09  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        text-decoration-skip: ink does not work with line wraps
+        https://bugs.webkit.org/show_bug.cgi?id=126729
+
+        Reviewed by Simon Fraser.
+
+        This test compares rending of a single element that wraps lines with one element per line.
+        Both elements have text-decoration-skip:ink turned on.
+
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-multiline-expected.html: Added.
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-multiline.html: Added.
+
+2014-01-09  Zoltan Horvath  <zoltan@webkit.org>
+
+        [CSS Shapes] First line gets incorrectly adjusted in shape-inside due to rounding
+        https://bugs.webkit.org/show_bug.cgi?id=126601
+
+        Reviewed by Bem Jones-Bey.
+
+        * fast/shapes/shape-inside/shape-inside-polygon-rounded-first-fit-expected.html: Added.
+        * fast/shapes/shape-inside/shape-inside-polygon-rounded-first-fit.html: Added.
+
+2014-01-09  Tim Horton  <timothy_horton@apple.com>
+
+        Rebaseline after r161568.
+
+        * platform/mac/fast/images/pdf-as-image-landscape-expected.png:
+        * platform/mac/fast/images/pdf-as-image-landscape-expected.txt:
+
+2014-01-09  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Narrow underlines are too tall
+        https://bugs.webkit.org/show_bug.cgi?id=126708
+
+        Reviewed by Simon Fraser.
+
+        This test clips to a region that should not be drawn in, then draws a scaled underline. It then compares
+        the output to an empty element.
+
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-tall-underlines-expected.html: Added.
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-tall-underlines.html: Added.
+
+2014-01-09  Alexey Proskuryakov  <ap@apple.com>
+
+        REGRESSION (r161429?): Frequent crashes on media/track/media-element-enqueue-event-crash.html
+        https://bugs.webkit.org/show_bug.cgi?id=117756
+
+        * platform/mac/TestExpectations: Skipping the test, it crashes very frequently.
+
+2014-01-09  Pascal Jacquemart  <p.jacquemart@samsung.com>
+
+        Cannot select multiple non-adjacent items in a multiple select control with the keyboard only
+        https://bugs.webkit.org/show_bug.cgi?id=15816
+
+        Reviewed by Chris Fleizach.
+
+        * fast/forms/listbox-non-contiguous-keyboard-selection-expected.txt: Added.
+        * fast/forms/listbox-non-contiguous-keyboard-selection.html: Added.
+        * platform/mac/TestExpectations:
+        Multiple non contiguous selection with keyboard not enabled on Mac
+
+2014-01-09  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove unused overriding protocols.
+        https://bugs.webkit.org/show_bug.cgi?id=126630
+
+        Reviewed by Timothy Hatcher.
+
+        * http/tests/inspector/extensions-useragent-expected.txt: Removed.
+        * http/tests/inspector/extensions-useragent.html: Removed.
+        * inspector/device-orientation-success-expected.txt: Removed.
+        * inspector/device-orientation-success.html: Removed.
+        * inspector/geolocation-error-expected.txt: Removed.
+        * inspector/geolocation-error.html: Removed.
+        * inspector/geolocation-success-expected.txt: Removed.
+        * inspector/geolocation-success.html: Removed.
+        * inspector/geolocation-watchPosition-expected.txt: Removed.
+        * inspector/geolocation-watchPosition.html: Removed.
+
+2014-01-09  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening. Rebaselining after r161521.
+
+        * platform/gtk/css1/text_properties/letter_spacing-expected.png:
+        * platform/gtk/css1/text_properties/letter_spacing-expected.txt:
+        * platform/gtk/css1/text_properties/word_spacing-expected.png:
+        * platform/gtk/css1/text_properties/word_spacing-expected.txt:
+        * platform/gtk/css2.1/t1604-c542-letter-sp-00-b-a-expected.txt:
+        * platform/gtk/fast/text/basic/013-expected.png:
+        * platform/gtk/fast/text/basic/013-expected.txt:
+        * platform/gtk/fast/text/text-letter-spacing-expected.txt:
+        * platform/gtk/svg/W3C-SVG-1.1/text-spacing-01-b-expected.png:
+        * platform/gtk/svg/W3C-SVG-1.1/text-spacing-01-b-expected.txt: Added.
+        * platform/gtk/svg/batik/text/textLayout-expected.txt: Added.
+        * platform/gtk/svg/custom/text-letter-spacing-expected.png:
+        * platform/gtk/svg/custom/text-letter-spacing-expected.txt:
+        * platform/gtk/svg/text/text-spacing-01-b-expected.png:
+        * platform/gtk/svg/text/text-spacing-01-b-expected.txt: Added.
+
+2014-01-08  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        REGRESSION(r161176): http/tests/misc/authentication-redirect-3/authentication-sent-to-redirect-same-origin-with-location-credentials.html is failing on GTK
+        https://bugs.webkit.org/show_bug.cgi?id=126518
+
+        Reviewed by Martin Robinson.
+
+        Unskip
+        http/tests/misc/authentication-redirect-3/authentication-sent-to-redirect-same-origin-with-location-credentials.html
+        and http/tests/security/redirect-BLOCKED-to-localURL.html.
+
+        * platform/gtk/TestExpectations:
+
+2014-01-08  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r161532.
+        http://trac.webkit.org/changeset/161532
+        https://bugs.webkit.org/show_bug.cgi?id=126677
+
+        Caused lots of assertion failures (Requested by ap on
+        #webkit).
+
+        * fast/xmlhttprequest/xmlhttprequest-get-expected.txt:
+        * http/tests/xmlhttprequest/loadstart-event-init-expected.txt: Removed.
+        * http/tests/xmlhttprequest/loadstart-event-init.html: Removed.
+        * http/tests/xmlhttprequest/onabort-progressevent-attributes-expected.txt: Removed.
+        * http/tests/xmlhttprequest/onabort-progressevent-attributes.html: Removed.
+        * http/tests/xmlhttprequest/onload-progressevent-attributes-expected.txt: Removed.
+        * http/tests/xmlhttprequest/onload-progressevent-attributes.html: Removed.
+        * http/tests/xmlhttprequest/upload-onabort-progressevent-attributes-expected.txt: Removed.
+        * http/tests/xmlhttprequest/upload-onabort-progressevent-attributes.html: Removed.
+        * http/tests/xmlhttprequest/upload-onload-progressevent-attributes-expected.txt: Removed.
+        * http/tests/xmlhttprequest/upload-onload-progressevent-attributes.html: Removed.
+
+2014-01-08  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        Unreviewed EFL gardening. Rebaseline after r161521.
+
+        * platform/efl/css1/text_properties/letter_spacing-expected.png:
+        * platform/efl/css1/text_properties/letter_spacing-expected.txt:
+        * platform/efl/css1/text_properties/word_spacing-expected.png:
+        * platform/efl/css1/text_properties/word_spacing-expected.txt:
+        * platform/efl/fast/text/basic/013-expected.png:
+        * platform/efl/fast/text/basic/013-expected.txt:
+        * platform/efl/fast/text/text-letter-spacing-expected.txt:
+        * platform/efl/svg/W3C-SVG-1.1/text-spacing-01-b-expected.png:
+        * platform/efl/svg/W3C-SVG-1.1/text-spacing-01-b-expected.txt: Added.
+        * platform/efl/svg/batik/text/textLayout-expected.txt: Added.
+        * platform/efl/svg/custom/text-letter-spacing-expected.png: Added.
+        * platform/efl/svg/custom/text-letter-spacing-expected.txt: Added.
+        * platform/efl/svg/text/text-spacing-01-b-expected.png:
+        * platform/efl/svg/text/text-spacing-01-b-expected.txt: Added.
+
+2014-01-08  Sam Weinig  <sam@webkit.org>
+
+        [JS] Should be able to create a promise by calling the Promise constructor as a function
+        https://bugs.webkit.org/show_bug.cgi?id=126561
+
+        Reviewed by Geoffrey Garen.
+
+        * js/dom/Promise-types-expected.txt:
+        * js/dom/Promise-types.html:
+        Add test for using calling a Promise constructor as a function.
+
+2014-01-08  Youenn Fablet  <youennf@gmail.com>
+
+        Correctly set XHR loadend event attributes (loaded and total).
+        https://bugs.webkit.org/show_bug.cgi?id=120828
+
+        Reviewed by Alexey Proskuryakov.
+
+        Tests for abort, load, loadstart and loadend ProgressEvent events for XMLHttpRequest and XMLHttpRequestUpload
+
+        * fast/xmlhttprequest/xmlhttprequest-get-expected.txt: Changed to correct event values
+        * http/tests/xmlhttprequest/loadstart-event-init-expected.txt: Added.
+        * http/tests/xmlhttprequest/loadstart-event-init.html: Added.
+        * http/tests/xmlhttprequest/onabort-progressevent-attributes-expected.txt: Added.
+        * http/tests/xmlhttprequest/onabort-progressevent-attributes.html: Added.
+        * http/tests/xmlhttprequest/onload-progressevent-attributes-expected.txt: Added.
+        * http/tests/xmlhttprequest/onload-progressevent-attributes.html: Added.
+        * http/tests/xmlhttprequest/upload-onabort-progressevent-attributes-expected.txt: Added.
+        * http/tests/xmlhttprequest/upload-onabort-progressevent-attributes.html: Added.
+        * http/tests/xmlhttprequest/upload-onload-progressevent-attributes-expected.txt: Added.
+        * http/tests/xmlhttprequest/upload-onload-progressevent-attributes.html: Added.
+
+2014-01-07  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        a fractional value of the css letter-spacing property is not rendered as expected
+        https://bugs.webkit.org/show_bug.cgi?id=20606
+
+        Reviewed by Simon Fraser.
+
+        Manually verified that these tests are correct after enabling fractional letter-spacing and word spacing
+
+        * platform/mac/css1/text_properties/letter_spacing-expected.png:
+        * platform/mac/css1/text_properties/letter_spacing-expected.txt:
+        * platform/mac/css1/text_properties/word_spacing-expected.png:
+        * platform/mac/css1/text_properties/word_spacing-expected.txt:
+        * platform/mac/fast/text/basic/013-expected.png:
+        * platform/mac/fast/text/basic/013-expected.txt:
+        * platform/mac/fast/text/text-letter-spacing-expected.txt:
+        * platform/mac/svg/W3C-SVG-1.1/text-spacing-01-b-expected.png:
+        * platform/mac/svg/W3C-SVG-1.1/text-spacing-01-b-expected.txt:
+        * platform/mac/svg/batik/text/textLayout-expected.txt:
+        * platform/mac/svg/custom/text-letter-spacing-expected.png:
+        * platform/mac/svg/custom/text-letter-spacing-expected.txt:
+        * platform/mac/svg/text/text-spacing-01-b-expected.png:
+        * platform/mac/svg/text/text-spacing-01-b-expected.txt:
+
+2014-01-08  Alexey Proskuryakov  <ap@apple.com>
+
+        Flaky Test: http/tests/xmlhttprequest/xmlhttprequest-50ms-download-dispatch.html
+        https://bugs.webkit.org/show_bug.cgi?id=52016
+
+        * platform/mac/TestExpectations: Mark it as such.
+
+2014-01-08  ChangSeok Oh  <changseok.oh@collabora.com>
+
+        Unreviewed GTK gardening.
+
+        setFileInputFiles.html was removed after r161380. string-replacement-outofmemory.html,
+        toString-and-valueOf-override.html and exceptions-thrown-in-callbacks.html
+        were moved into other directory.
+
+        * platform/gtk-wk2/TestExpectations:
+        * platform/gtk/TestExpectations:
+
+2014-01-08  Alexey Proskuryakov  <ap@apple.com>
+
+        REGRESSION: webgl/1.0.2/conformance/textures/tex-image-and-sub-image-2d-with-video-rgb565.html is very flaky
+        https://bugs.webkit.org/show_bug.cgi?id=126624
+
+        * platform/mac/TestExpectations: Mark it as such.
+
+2014-01-08  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+        Add a flaky expectation for perf/accessibility-title-ui-element.html and a failure expectation
+        for http/tests/media/video-auth.html.
+
+        * platform/gtk/TestExpectations:
+
+2014-01-07  Antti Koivisto  <antti@apple.com>
+
+        REGRESSION (r161195): Acid2 regression tests frequently fail
+        https://bugs.webkit.org/show_bug.cgi?id=126432
+
+        Reviewed by Anders Carlsson.
+
+        * TestExpectations: acid2 is no longer flaky.
+        * fast/overflow/overflow-height-float-not-removed-crash3-expected.txt: whitespace change.
+
+2014-01-07  Eric Carlson  <eric.carlson@apple.com>
+
+        Teach MediaSessionManager to manage interruptions
+        https://bugs.webkit.org/show_bug.cgi?id=126530
+
+        Reviewed by Sam Weinig.
+
+        * media/video-interruption-active-when-element-created-expected.txt: Added.
+        * media/video-interruption-active-when-element-created.html: Added.
+        * media/video-interruption-with-resume-allowing-play-expected.txt: Added.
+        * media/video-interruption-with-resume-allowing-play.html: Added.
+        * media/video-interruption-with-resume-not-allowing-play-expected.txt: Added.
+        * media/video-interruption-with-resume-not-allowing-play.html: Added.
+
+2014-01-07  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove leftover 'device metrics' code
+        https://bugs.webkit.org/show_bug.cgi?id=126607
+
+        Reviewed by Joseph Pecoraro.
+
+        * inspector/styles/override-screen-size-expected.txt: Removed.
+        * inspector/styles/override-screen-size.html: Removed.
+
+2014-01-07  Brent Fulgham  <bfulgham@apple.com>
+
+        Unreviewed test fix: Correct whitespace around ]
+
+        * platform/mac/TestExpectations: "Debug]" should be "Debug ]"
+
+2014-01-07  Victor Costan  <costan@gmail.com>
+
+        createElementNS handles element name 'xmlns' correctly.
+        https://bugs.webkit.org/show_bug.cgi?id=126553
+
+        Reviewed by Alexey Proskuryakov.
+
+        * fast/dom/createElementNS-namespace-errors-expected.txt: Added.
+        * fast/dom/createElementNS-namespace-errors.html: Added. Covers all the corner cases in the DOM4 spec.
+        * fast/dom/script-tests/setAttributeNS-prefix-and-null-namespace.js: Removed.
+        * fast/dom/setAttributeNS-expected.txt: Updated to match cleaned up test.
+        * fast/dom/setAttributeNS-namespace-errors-expected.txt: Added.
+        * fast/dom/setAttributeNS-namespace-errors.html: Added. Covers all the corner cases in the DOM4 spec.
+        * fast/dom/setAttributeNS-prefix-and-null-namespace-expected.txt: Removed.
+        * fast/dom/setAttributeNS-prefix-and-null-namespace.html: Removed. Subsumed by setAttributeNS-namespace-errors.
+        * fast/dom/setAttributeNS.html: Cleaned up.
+
+2014-01-06  Jer Noble  <jer.noble@apple.com>
+
+        HTML5 video tag Does Not Load in Apache htaccess/htpasswd Protected Directory
+        https://bugs.webkit.org/show_bug.cgi?id=40382
+
+        Reviewed by Eric Carlson.
+
+        * http/tests/media/resources/video-auth.php: Added.
+        * http/tests/media/video-auth-expected.txt: Added.
+        * http/tests/media/video-auth.html: Added.
+        * platform/mac/TestExpectations:
+
+2014-01-07  Brent Fulgham  <bfulgham@apple.com>
+
+        Unreviewed test expectation update.
+
+        * platform/mac/TestExpectations: Mark webgl/1.0.2/conformance/rendering/gl-scissor-test.html as flaky on
+        Mavericks Debug.
+
+2014-01-07  Gabor Rapcsanyi  <rgabor@webkit.org>
+
+        pushFinallyContext saves wrong m_labelScopes size
+        https://bugs.webkit.org/show_bug.cgi?id=124529
+
+        Remove free label scopes before saving finally context.
+
+        Reviewed by Geoffrey Garen.
+
+        * js/script-tests/try-return-finally-break.js: Added.
+        (foo):
+        * js/try-return-finally-break-expected.txt: Added.
+        * js/try-return-finally-break.html: Added.
+
+2014-01-07  Bear Travis  <betravis@adobe.com>
+
+        [CSS Shapes] Change default value from 'auto' to 'none'
+        https://bugs.webkit.org/show_bug.cgi?id=126544
+
+        Reviewed by Sam Weinig.
+
+        Change the default value to 'none', and replace 'none' with 'auto' in the
+        list of invalid values.
+
+        * fast/shapes/css-shapes-disabled-expected.txt:
+        * fast/shapes/css-shapes-disabled.html:
+        * fast/shapes/parsing/parsing-shape-inside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-inside.html:
+        * fast/shapes/parsing/parsing-shape-lengths-expected.txt:
+        * fast/shapes/parsing/parsing-shape-lengths.html:
+        * fast/shapes/parsing/parsing-shape-margin-expected.txt:
+        * fast/shapes/parsing/parsing-shape-outside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-outside.html:
+        * fast/shapes/parsing/parsing-shape-padding-expected.txt:
+        * fast/shapes/parsing/parsing-test-utils.js:
+
+2014-01-07  Hans Muller  <hmuller@adobe.com>
+
+        [CSS Shapes] shape-outside layout incorrect when line spans rounded box rounded corners
+        https://bugs.webkit.org/show_bug.cgi?id=126528
+
+        Reviewed by Andreas Kling.
+
+        Verify that a line that spans a shape-outside box's top and bottom rounded corners begins
+        at the box's right edge.
+
+        * fast/shapes/shape-outside-floats/shape-outside-line-spans-box-corners-expected.html: Added.
+        * fast/shapes/shape-outside-floats/shape-outside-line-spans-box-corners.html: Added.
+
+2014-01-07  Frédéric Wang  <fred.wang@free.fr>
+
+        Add Support for the semantics element.
+        https://bugs.webkit.org/show_bug.cgi?id=100626
+
+        Reviewed by Chris Fleizach.
+
+        * TestExpectations:
+        * mathml/presentation/semantics-2-expected.html: Added.
+        * mathml/presentation/semantics-2.html: Added.
+        * mathml/presentation/semantics-3-expected.html: Added.
+        * mathml/presentation/semantics-3.html: Added.
+        * mathml/presentation/semantics-4-expected.html: Added.
+        * mathml/presentation/semantics-4.html: Added.
+
+2014-01-07  Manuel Rego Casasnovas  <rego@igalia.com>
+
+        [GTK] fast/repaint/repaint-regions-overflow.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=124835
+
+        Unreviewed gardening.
+
+        Added new baseline for failing test.
+
+        * platform/gtk/TestExpectations: Unskipped faling test.
+        * platform/gtk/fast/regions/repaint/repaint-regions-overflow-expected.txt: Added.
+
+2014-01-07  Krzysztof Czech  <k.czech@samsung.com>
+
+        [ATK] Expose aria-checked mixed state as ATK_STATE_INDETERMINATE
+        https://bugs.webkit.org/show_bug.cgi?id=125855
+
+        Reviewed by Mario Sanchez Prada.
+
+        * accessibility/aria-checked-mixed-value-expected.txt: Added.
+        * accessibility/aria-checked-mixed-value.html: Added.
+        * platform/mac/TestExpectations: Skipped it, missing implementation.
+        * platform/win/TestExpectations: Skipped it, missing implementation.
+
+2014-01-06  Ryosuke Niwa  <rniwa@webkit.org>
+
+        REGRESSION(r157851): trailing space inside an editable region could be erroneously collapsed
+        https://bugs.webkit.org/show_bug.cgi?id=126549
+
+        Reviewed by Sam Weinig.
+
+        Added a regression test and reverted the erroneous rebaseline in r157851.
+
+        * editing/inserting/inserting-trailing-space-and-letter-expected.html: Added.
+        * editing/inserting/inserting-trailing-space-and-letter.html: Added.
+        * platform/mac/editing/selection/after-line-wrap-expected.txt:
+
+2014-01-06  Brent Fulgham  <bfulgham@apple.com>
+
+        [WebGL] Unreviewed build fix for Mountain Lion drivers.
+
+        * platform/mac-mountainlion/TestExpectations: Removed. Moved test to the mac/TestExpectations file.
+        * platform/mac/TestExpectations: Add failure entry for MountainLion test.
+
+2014-01-06  Brent Fulgham  <bfulgham@apple.com>
+
+        [WebGL] Unreviewed build fix for Mountain Lion drivers.
+
+        Add new TestExpectations file for Mountain Lion.
+
+        * platform/mac-mountainlion/TestExpectations: Added.
+
+2014-01-06  Zoltan Horvath  <zoltan@webkit.org>
+
+        [CSS Regions][CSS Shapes] ASSERTION FAILED: m_segmentRanges.size() < m_segments.size()
+        https://bugs.webkit.org/show_bug.cgi?id=125770
+
+        Reviewed by Bem Jones-Bey.
+
+        * fast/regions/shape-inside/shape-inside-on-multiple-regions-bottom-adjustment-expected.html: Added.
+        * fast/regions/shape-inside/shape-inside-on-multiple-regions-bottom-adjustment.html: Added.
+
+2014-01-06  Brent Fulgham  <bfulgham@apple.com>
+
+        Unreviewed test correction.
+
+        * webgl/1.0.2/resources/webgl_test_files/conformance/renderbuffers/framebuffer-object-attachment.html: Remove commented-out
+        line from debugging code.
+        * webgl/1.0.2/resources/webgl_test_files/conformance/resources/webgl-test-utils.js:
+        (WebGLTestUtils): Return to normal behavior of exiting immediately on test failure.
+
+2014-01-06  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Get rid of DOM.setFileInputFiles from Protocol
+        https://bugs.webkit.org/show_bug.cgi?id=126312
+
+        Reviewed by Joseph Pecoraro.
+
+        * inspector-protocol/dom/setFileInputFiles-expected.txt: Removed.
+        * inspector-protocol/dom/setFileInputFiles.html: Removed.
+
+2014-01-06  Brent Fulgham  <bfulgham@apple.com>
+
+        Unreviewed test update after r161375.
+
+        * platform/mac/TestExpectations: Activate several tests that are now known to pass.
+
+2014-01-06  Alexey Proskuryakov  <ap@apple.com>
+
+        REGRESSION (r161195): Acid2 regression tests frequently fail
+        https://bugs.webkit.org/show_bug.cgi?id=126432
+
+        * TestExpectations: Marking them as flaky.
+
+2014-01-05  Sam Weinig  <sam@webkit.org>
+
+        [JS] Implement Promise.all()
+        https://bugs.webkit.org/show_bug.cgi?id=126510
+
+        Reviewed by Gavin Barraclough.
+
+        Enabled and fix the existing Promise.all() test case.
+        - Promise.all() and Promise.all({}) should reject by my reading of the spec.
+        Also removes the Promise.all() shim used by the crypto tests.
+
+        * crypto/subtle/resources/common.js:
+        * js/dom/Promise-static-all-expected.txt:
+        * js/dom/Promise-static-all.html:
+
+2014-01-06  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+
+        * platform/gtk/TestExpectations:
+        Mark accessibility/menu-list-sends-change-notification.html as flaky.
+
 2014-01-06  Zan Dobersek  <zdobersek@igalia.com>
 
         Unreviewed GTK gardening.

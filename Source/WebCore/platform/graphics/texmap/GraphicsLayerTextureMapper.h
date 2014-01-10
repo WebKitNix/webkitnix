@@ -43,7 +43,7 @@ public:
     // reimps from GraphicsLayer.h
     virtual void setNeedsDisplay();
     virtual void setContentsNeedsDisplay();
-    virtual void setNeedsDisplayInRect(const FloatRect&);
+    virtual void setNeedsDisplayInRect(const FloatRect&, ShouldClipToLayer = ClipToLayer);
     virtual bool setChildren(const Vector<GraphicsLayer*>&);
     virtual void addChild(GraphicsLayer*);
     virtual void addChildAtIndex(GraphicsLayer*, int index);
@@ -167,7 +167,6 @@ private:
 
     int m_changeMask;
     bool m_needsDisplay;
-    bool m_hasOwnBackingStore;
     bool m_fixedToViewport;
     Color m_solidColor;
 

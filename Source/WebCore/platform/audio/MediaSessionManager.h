@@ -26,64 +26,37 @@
 #ifndef MediaSessionManager_h
 #define MediaSessionManager_h
 
-#include <wtf/PassOwnPtr.h>
+#include "MediaSession.h"
+#include "Settings.h"
 #include <wtf/Vector.h>
 
 namespace WebCore {
 
-class MediaSessionManagerToken;
+class HTMLMediaElement;
+class MediaSession;
 
 class MediaSessionManager {
 public:
     static MediaSessionManager& sharedManager();
 
-    enum MediaType {
-        None,
-        Video,
-        Audio,
-        WebAudio,
-    };
+    bool has(MediaSession::MediaType) const;
+    int count(MediaSession::MediaType) const;
 
-    bool has(MediaType) const;
-    int count(MediaType) const;
+    void beginInterruption();
+    void endInterruption(MediaSession::EndInterruptionFlags);
 
 protected:
-    friend class MediaSessionManagerToken;
-    void addToken(MediaSessionManagerToken&);
-    void removeToken(MediaSessionManagerToken&);
+    friend class MediaSession;
+    void addSession(MediaSession&);
+    void removeSession(MediaSession&);
 
 private:
     MediaSessionManager();
 
     void updateSessionState();
 
-    Vector<MediaSessionManagerToken*> m_tokens;
-};
-
-class MediaSessionManagerClient {
-    WTF_MAKE_NONCOPYABLE(MediaSessionManagerClient);
-public:
-    MediaSessionManagerClient() { }
-
-    virtual MediaSessionManager::MediaType mediaType() const = 0;
-
-protected:
-    virtual ~MediaSessionManagerClient() { }
-};
-
-class MediaSessionManagerToken {
-public:
-    static std::unique_ptr<MediaSessionManagerToken> create(MediaSessionManagerClient&);
-
-    MediaSessionManagerToken(MediaSessionManagerClient&);
-    ~MediaSessionManagerToken();
-
-    MediaSessionManager::MediaType mediaType() const { return m_type; }
-
-private:
-
-    MediaSessionManagerClient& m_client;
-    MediaSessionManager::MediaType m_type;
+    Vector<MediaSession*> m_sessions;
+    int m_interruptions;
 };
 
 }

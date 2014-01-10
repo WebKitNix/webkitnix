@@ -64,6 +64,7 @@ private:
     virtual void didUninstallPageOverlay(PageOverlay*) OVERRIDE;
     virtual void setPageOverlayNeedsDisplay(PageOverlay*, const WebCore::IntRect&) OVERRIDE;
     virtual void setPageOverlayOpacity(PageOverlay*, float) OVERRIDE;
+    virtual bool supportsAsyncScrolling() OVERRIDE { return true; }
 
     virtual void setLayerTreeStateIsFrozen(bool) OVERRIDE;
 
@@ -71,7 +72,7 @@ private:
     virtual bool forceRepaintAsync(uint64_t) OVERRIDE { return false; }
 
     virtual void setExposedRect(const WebCore::FloatRect&) OVERRIDE;
-    virtual void setClipsToExposedRect(bool) OVERRIDE;
+    virtual WebCore::FloatRect exposedRect() const OVERRIDE { return m_scrolledExposedRect; }
 
     // WebCore::GraphicsLayerClient
     virtual void notifyAnimationStarted(const WebCore::GraphicsLayer*, double time) OVERRIDE { }
@@ -84,7 +85,6 @@ private:
     virtual bool allowCompositingLayerVisualDegradation() const OVERRIDE { return false; }
 #endif
 
-    void updateMainFrameClipsToExposedRect();
     void updateScrolledExposedRect();
 
     void layerFlushTimerFired(WebCore::Timer<RemoteLayerTreeDrawingArea>*);
@@ -101,7 +101,6 @@ private:
 
     WebCore::FloatRect m_exposedRect;
     WebCore::FloatRect m_scrolledExposedRect;
-    bool m_clipsToExposedRect;
 
     WebCore::Timer<RemoteLayerTreeDrawingArea> m_layerFlushTimer;
     bool m_isFlushingSuspended;

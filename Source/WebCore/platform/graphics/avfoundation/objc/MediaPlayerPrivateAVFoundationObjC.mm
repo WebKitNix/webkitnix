@@ -29,8 +29,9 @@
 
 #import "MediaPlayerPrivateAVFoundationObjC.h"
 
-#import "AudioTrackPrivateAVFObjC.h"
 #import "AVTrackPrivateAVFObjCImpl.h"
+#import "AudioTrackPrivateAVFObjC.h"
+#import "AuthenticationChallenge.h"
 #import "BlockExceptions.h"
 #import "ExceptionCodePlaceholder.h"
 #import "FloatConversion.h"
@@ -61,8 +62,12 @@
 #import <wtf/text/CString.h>
 
 #import <AVFoundation/AVFoundation.h>
-#import <CoreMedia/CoreMedia.h>
+#if PLATFORM(IOS)
+#import <CoreImage/CoreImage.h>
+#else
 #import <QuartzCore/CoreImage.h>
+#endif
+#import <CoreMedia/CoreMedia.h>
 
 #if USE(VIDEOTOOLBOX)
 #import <CoreVideo/CoreVideo.h>
@@ -175,7 +180,6 @@ enum MediaPlayerAVFoundationObservationContext {
 -(void)disconnect;
 -(void)playableKnown;
 -(void)metadataLoaded;
--(void)seekCompleted:(BOOL)finished;
 -(void)didEnd:(NSNotification *)notification;
 -(void)observeValueForKeyPath:keyPath ofObject:(id)object change:(NSDictionary *)change context:(MediaPlayerAVFoundationObservationContext)context;
 #if HAVE(AVFOUNDATION_MEDIA_SELECTION_GROUP)
@@ -675,12 +679,20 @@ void MediaPlayerPrivateAVFoundationObjC::seekToTime(double time, double negative
     // setCurrentTime generates several event callbacks, update afterwards.
     setDelayCallbacks(true);
 
-    WebCoreAVFMovieObserver *observer = m_objcObserver.get();
     CMTime cmTime = CMTimeMakeWithSeconds(time, 600);
     CMTime cmBefore = CMTimeMakeWithSeconds(negativeTolerance, 600);
     CMTime cmAfter = CMTimeMakeWithSeconds(positiveTolerance, 600);
+
+    __block auto weakThis = createWeakPtr();
+
     [m_avPlayerItem.get() seekToTime:cmTime toleranceBefore:cmBefore toleranceAfter:cmAfter completionHandler:^(BOOL finished) {
-        [observer seekCompleted:finished];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            auto _this = weakThis.get();
+            if (!_this)
+                return;
+
+            _this->seekCompleted(finished);
+        });
     }];
 
     setDelayCallbacks(false);
@@ -778,7 +790,7 @@ double MediaPlayerPrivateAVFoundationObjC::platformMaxTimeSeekable() const
 
 float MediaPlayerPrivateAVFoundationObjC::platformMaxTimeLoaded() const
 {
-#if PLATFORM(MAC) && __MAC_OS_X_VERSION_MIN_REQUIRED <= 1080
+#if !PLATFORM(IOS) && __MAC_OS_X_VERSION_MIN_REQUIRED <= 1080
     // AVFoundation on Mountain Lion will occasionally not send a KVO notification
     // when loadedTimeRanges changes when there is no video output. In that case
     // update the cached value explicitly.
@@ -1017,6 +1029,13 @@ bool MediaPlayerPrivateAVFoundationObjC::shouldWaitForLoadingOfResource(AVAssetR
     return true;
 }
 
+bool MediaPlayerPrivateAVFoundationObjC::shouldWaitForResponseToAuthenticationChallenge(NSURLAuthenticationChallenge* nsChallenge)
+{
+    AuthenticationChallenge challenge(nsChallenge);
+
+    return player()->shouldWaitForResponseToAuthenticationChallenge(challenge);
+}
+
 void MediaPlayerPrivateAVFoundationObjC::didCancelLoadingRequest(AVAssetResourceLoadingRequest* avRequest)
 {
     String scheme = [[[avRequest request] URL] scheme];
@@ -1223,6 +1242,14 @@ void MediaPlayerPrivateAVFoundationObjC::sizeChanged()
     // Cache the natural size (setNaturalSize will notify the player if it has changed).
     setNaturalSize(IntSize(naturalSize));
 }
+
+#if PLATFORM(IOS)
+// FIXME: Implement for iOS in WebKit System Interface.
+static inline NSURL *wkAVAssetResolvedURL(AVAsset*)
+{
+    return nil;
+}
+#endif
 
 bool MediaPlayerPrivateAVFoundationObjC::hasSingleSecurityOrigin() const 
 {
@@ -1908,14 +1935,6 @@ NSArray* itemKVOProperties()
     m_callback->scheduleMainThreadNotification(MediaPlayerPrivateAVFoundation::Notification::AssetPlayabilityKnown);
 }
 
-- (void)seekCompleted:(BOOL)finished
-{
-    if (!m_callback)
-        return;
-    
-    m_callback->scheduleMainThreadNotification(MediaPlayerPrivateAVFoundation::Notification::SeekCompleted, static_cast<bool>(finished));
-}
-
 - (void)didEnd:(NSNotification *)unusedNotification
 {
     UNUSED_PARAM(unusedNotification);
@@ -2044,6 +2063,25 @@ NSArray* itemKVOProperties()
 
         if (!m_callback->shouldWaitForLoadingOfResource(loadingRequest))
             [loadingRequest finishLoadingWithError:nil];
+    });
+
+    return YES;
+}
+
+- (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader shouldWaitForResponseToAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
+{
+    UNUSED_PARAM(resourceLoader);
+    if (!m_callback)
+        return NO;
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (!m_callback) {
+            [[challenge sender] cancelAuthenticationChallenge:challenge];
+            return;
+        }
+
+        if (!m_callback->shouldWaitForResponseToAuthenticationChallenge(challenge))
+            [[challenge sender] cancelAuthenticationChallenge:challenge];
     });
 
     return YES;

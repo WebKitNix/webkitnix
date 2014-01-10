@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Apple Inc. All rights reserved.
+ * Copyright (C) 2009, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -54,6 +54,12 @@
 #endif
 
 #if PLATFORM(MAC)
+#if PLATFORM(IOS)
+#include <OpenGLES/ES2/gl.h>
+#ifdef __OBJC__
+#import <OpenGLES/EAGL.h>
+#endif // __OBJC__
+#endif // PLATFORM(IOS)
 #include <wtf/RetainPtr.h>
 OBJC_CLASS CALayer;
 OBJC_CLASS WebGLLayer;
@@ -61,7 +67,13 @@ OBJC_CLASS WebGLLayer;
 typedef unsigned int GLuint;
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(IOS)
+#ifdef __OBJC__
+typedef EAGLContext* PlatformGraphicsContext3D;
+#else
+typedef void* PlatformGraphicsContext3D;
+#endif // __OBJC__
+#elif PLATFORM(MAC)
 typedef struct _CGLContextObject *CGLContextObj;
 
 typedef CGLContextObj PlatformGraphicsContext3D;
@@ -676,7 +688,9 @@ public:
     void generateMipmap(GC3Denum target);
 
     bool getActiveAttrib(Platform3DObject program, GC3Duint index, ActiveInfo&);
+    bool getActiveAttribImpl(Platform3DObject program, GC3Duint index, ActiveInfo&);
     bool getActiveUniform(Platform3DObject program, GC3Duint index, ActiveInfo&);
+    bool getActiveUniformImpl(Platform3DObject program, GC3Duint index, ActiveInfo&);
     void getAttachedShaders(Platform3DObject program, GC3Dsizei maxCount, GC3Dsizei* count, Platform3DObject* shaders);
     GC3Dint getAttribLocation(Platform3DObject, const String& name);
     void getBooleanv(GC3Denum pname, GC3Dboolean* value);
@@ -687,6 +701,7 @@ public:
     void getFramebufferAttachmentParameteriv(GC3Denum target, GC3Denum attachment, GC3Denum pname, GC3Dint* value);
     void getIntegerv(GC3Denum pname, GC3Dint* value);
     void getProgramiv(Platform3DObject program, GC3Denum pname, GC3Dint* value);
+    void getNonBuiltInActiveSymbolCount(Platform3DObject program, GC3Denum pname, GC3Dint* value);
     String getProgramInfoLog(Platform3DObject);
     void getRenderbufferParameteriv(GC3Denum target, GC3Denum pname, GC3Dint* value);
     void getShaderiv(Platform3DObject, GC3Denum pname, GC3Dint* value);
@@ -790,6 +805,10 @@ public:
     void paintRenderingResultsToCanvas(ImageBuffer*, DrawingBuffer*);
     PassRefPtr<ImageData> paintRenderingResultsToImageData(DrawingBuffer*);
     bool paintCompositedResultsToCanvas(ImageBuffer*);
+
+#if PLATFORM(IOS)
+    void endPaint();
+#endif
 
 #if PLATFORM(BLACKBERRY)
     bool paintsIntoCanvasBuffer() const;
@@ -933,6 +952,10 @@ private:
     void readPixelsAndConvertToBGRAIfNecessary(int x, int y, int width, int height, unsigned char* pixels);
 #endif
 
+#if PLATFORM(IOS)
+    bool setRenderbufferStorageFromDrawable(GC3Dsizei width, GC3Dsizei height);
+#endif
+
 #if PLATFORM(BLACKBERRY)
     void logFrameBufferStatus(int line);
     void readPixelsIMG(GC3Dint x, GC3Dint y, GC3Dsizei width, GC3Dsizei height, GC3Denum format, GC3Denum type, void* data);
@@ -947,7 +970,10 @@ private:
     int m_currentWidth, m_currentHeight;
     bool isResourceSafe();
 
-#if PLATFORM(MAC)
+#if PLATFORM(IOS)
+    PlatformGraphicsContext3D m_contextObj;
+    RetainPtr<PlatformLayer> m_webGLLayer;
+#elif PLATFORM(MAC)
     CGLContextObj m_contextObj;
     RetainPtr<WebGLLayer> m_webGLLayer;
 #elif PLATFORM(WIN) && USE(CA)
@@ -1020,6 +1046,25 @@ private:
 
     typedef HashMap<Platform3DObject, ShaderSourceEntry> ShaderSourceMap;
     ShaderSourceMap m_shaderSourceMap;
+
+    struct ActiveShaderSymbolCounts {
+        Vector<GC3Dint> filteredToActualAttributeIndexMap;
+        Vector<GC3Dint> filteredToActualUniformIndexMap;
+
+        ActiveShaderSymbolCounts()
+        {
+        }
+
+        GC3Dint countForType(GC3Denum activeType)
+        {
+            ASSERT(activeType == ACTIVE_ATTRIBUTES || activeType == ACTIVE_UNIFORMS);
+            if (activeType == ACTIVE_ATTRIBUTES)
+                return filteredToActualAttributeIndexMap.size();
+
+            return filteredToActualUniformIndexMap.size();
+        }
+    };
+    std::unique_ptr<ActiveShaderSymbolCounts> m_shaderSymbolCount;
 
     String mappedSymbolName(Platform3DObject program, ANGLEShaderSymbolType, const String& name);
     String originalSymbolName(Platform3DObject program, ANGLEShaderSymbolType, const String& name);

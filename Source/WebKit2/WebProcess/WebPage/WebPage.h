@@ -45,7 +45,6 @@
 #include "Plugin.h"
 #include "SandboxExtension.h"
 #include "ShareableBitmap.h"
-#include "ViewState.h"
 #include "WebUndoStep.h"
 #include <WebCore/DictationAlternative.h>
 #include <WebCore/DragData.h>
@@ -58,6 +57,7 @@
 #include <WebCore/ScrollTypes.h>
 #include <WebCore/TextChecking.h>
 #include <WebCore/UserActivity.h>
+#include <WebCore/ViewState.h>
 #include <WebCore/WebCoreKeyboardUIMode.h>
 #include <wtf/HashMap.h>
 #include <wtf/OwnPtr.h>
@@ -183,6 +183,9 @@ public:
     
     InjectedBundleBackForwardList* backForwardList();
     DrawingArea* drawingArea() const { return m_drawingArea.get(); }
+#if ENABLE(ASYNC_SCROLLING)
+    WebCore::ScrollingCoordinator* scrollingCoordinator() const;
+#endif
 
     WebPageGroupProxy* pageGroup() const { return m_pageGroup.get(); }
 
@@ -347,18 +350,12 @@ public:
     void addPluginView(PluginView*);
     void removePluginView(PluginView*);
 
-    bool isVisible() const { return m_viewState & ViewState::IsVisible; }
+    bool isVisible() const { return m_viewState & WebCore::ViewState::IsVisible; }
+
+    LayerHostingMode layerHostingMode() const { return m_layerHostingMode; }
+    void setLayerHostingMode(unsigned);
 
 #if PLATFORM(MAC)
-    LayerHostingMode layerHostingMode() const
-    {
-#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
-        return m_viewState & ViewState::IsLayerWindowServerHosted ? LayerHostingModeInWindowServer : LayerHostingModeDefault;
-#else
-        return LayerHostingModeDefault;
-#endif
-    }
-
     void updatePluginsActiveAndFocusedState();
     const WebCore::FloatRect& windowFrameInScreenCoordinates() const { return m_windowFrameInScreenCoordinates; }
     const WebCore::FloatRect& windowFrameInUnflippedScreenCoordinates() const { return m_windowFrameInUnflippedScreenCoordinates; }
@@ -417,6 +414,8 @@ public:
     void elementDidBlur(WebCore::Node*);
     void requestAutocorrectionData(const String& textForAutocorrection, uint64_t callbackID);
     void applyAutocorrection(const String& correction, const String& originalText, uint64_t callbackID);
+    void requestAutocorrectionContext(uint64_t callbackID);
+    void getAutocorrectionContext(String& beforeText, String& markedText, String& selectedText, String& afterText, uint64_t& location, uint64_t& length);
     void insertText(const String& text, uint64_t replacementRangeStart, uint64_t replacementRangeEnd);
     void setComposition(const String& text, Vector<WebCore::CompositionUnderline> underlines, uint64_t selectionStart, uint64_t selectionEnd);
     void confirmComposition();
@@ -735,9 +734,8 @@ private:
     void setViewIsVisible(bool);
     void setInitialFocus(bool forward, bool isKeyboardEventValid, const WebKeyboardEvent&);
     void setWindowResizerSize(const WebCore::IntSize&);
-    void setIsInWindow(bool);
-    void setIsVisuallyIdle(bool);
-    void setViewState(ViewState::Flags, bool wantsDidUpdateViewState);
+    void updateIsInWindow(bool isInitialState = false);
+    void setViewState(WebCore::ViewState::Flags, bool wantsDidUpdateViewState);
     void validateCommand(const String&, uint64_t);
     void executeEditCommand(const String&);
 
@@ -812,7 +810,6 @@ private:
     void drawPagesToPDFFromPDFDocument(CGContextRef, PDFDocument *, const PrintInfo&, uint32_t first, uint32_t count);
 #endif
 
-    void viewExposedRectChanged(const WebCore::FloatRect& exposedRect, bool clipsToExposedRect);
     void setMainFrameIsScrollable(bool);
 
     void unapplyEditCommand(uint64_t commandID);
@@ -921,6 +918,9 @@ private:
     String m_primaryPlugInMimeType;
     RunLoop::Timer<WebPage> m_determinePrimarySnapshottedPlugInTimer;
 #endif
+
+    // The layer hosting mode.
+    LayerHostingMode m_layerHostingMode;
 
 #if PLATFORM(MAC)
     bool m_pdfPluginEnabled;
@@ -1054,7 +1054,7 @@ private:
 
     bool m_useAsyncScrolling;
 
-    ViewState::Flags m_viewState;
+    WebCore::ViewState::Flags m_viewState;
 
 #if PLATFORM(NIX)
     WebCore::FloatRect m_screenRect;

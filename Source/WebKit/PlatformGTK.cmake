@@ -18,6 +18,7 @@ list(APPEND WebKit_INCLUDE_DIRECTORIES
     ${WEBCORE_DIR}/ForwardingHeaders
     ${WEBCORE_DIR}/accessibility/atk
     ${WEBCORE_DIR}/platform/cairo
+    ${WEBCORE_DIR}/platform/geoclue
     ${WEBCORE_DIR}/platform/graphics/cairo
     ${WEBCORE_DIR}/platform/graphics/gtk
     ${WEBCORE_DIR}/platform/graphics/opentype
@@ -29,6 +30,7 @@ list(APPEND WebKit_INCLUDE_DIRECTORIES
     ${WEBKIT_DIR}/gtk/webkit
     ${WEBKIT_DIR}/gtk/WebCoreSupport
     ${ENCHANT_INCLUDE_DIRS}
+    ${GEOCLUE_INCLUDE_DIRS}
     ${GTK3_INCLUDE_DIRS}
     ${LIBSOUP_INCLUDE_DIRS}
 )

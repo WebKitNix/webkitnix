@@ -3,15 +3,6 @@ add_subdirectory(${WEBCORE_DIR}/platform/gtk/po)
 # This allows exposing a 'gir' target which builds all GObject introspection files.
 add_custom_target(gir ALL DEPENDS ${GObjectIntrospectionTargets})
 
-if (ENABLE_API_TESTS)
-    if (ENABLE_WEBKIT)
-        add_subdirectory(${WEBKIT_DIR}/gtk/tests)
-    endif ()
-    if (ENABLE_WEBKIT2)
-        add_subdirectory(${WEBKIT2_DIR}/UIProcess/API/gtk/tests)
-    endif ()
-endif ()
-
 set(DocumentationDependencies
     "${CMAKE_SOURCE_DIR}/Source/WebKit/gtk/docs/webkitenvironment.xml"
 )
@@ -39,7 +30,7 @@ if (ENABLE_WEBKIT2)
 endif ()
 
 add_custom_command(
-    OUTPUT docs-build.stamp
+    OUTPUT "${CMAKE_BINARY_DIR}/docs-build.stamp"
     DEPENDS ${DocumentationDependencies}
     COMMAND CC="${CMAKE_C_COMPILER}" ${CMAKE_SOURCE_DIR}/Tools/gtk/generate-gtkdoc
     COMMAND touch docs-build.stamp
@@ -47,7 +38,7 @@ add_custom_command(
 )
 
 add_custom_target(fake-docs-target ALL
-    DEPENDS docs-build.stamp
+    DEPENDS "${CMAKE_BINARY_DIR}/docs-build.stamp"
 )
 
 if (ENABLE_WEBKIT)

@@ -28,9 +28,9 @@
 
 #include "DrawingAreaInfo.h"
 #include "LayerTreeContext.h"
-#include "ViewState.h"
-#include <WebCore/FloatPoint.h>
+#include <WebCore/FloatRect.h>
 #include <WebCore/IntRect.h>
+#include <WebCore/ViewState.h>
 #include <wtf/Forward.h>
 #include <wtf/Noncopyable.h>
 
@@ -86,11 +86,13 @@ public:
     virtual void updatePreferences(const WebPreferencesStore&) { }
     virtual void mainFrameContentSizeChanged(const WebCore::IntSize&) { }
 
-    virtual void setExposedRect(const WebCore::FloatRect&) { }
-    virtual void setClipsToExposedRect(bool) { }
+#if PLATFORM(MAC)
+    virtual void setExposedRect(const WebCore::FloatRect&) = 0;
+    virtual WebCore::FloatRect exposedRect() const = 0;
+#endif
     virtual void mainFrameScrollabilityChanged(bool) { }
 
-    virtual bool supportsThreadedScrolling() { return false; }
+    virtual bool supportsAsyncScrolling() { return false; }
 
     virtual void didChangeScrollOffsetForAnyFrame() { }
 
@@ -108,7 +110,8 @@ public:
 
     virtual void dispatchAfterEnsuringUpdatedScrollPosition(const Function<void ()>&);
 
-    virtual void viewStateDidChange(ViewState::Flags) { }
+    virtual void viewStateDidChange(WebCore::ViewState::Flags) { }
+    virtual void setLayerHostingMode(LayerHostingMode) { }
 
 protected:
     DrawingArea(DrawingAreaType, WebPage*);

@@ -46,6 +46,7 @@ VPATH = \
     $(WebKit2)/WebProcess/OriginData \
     $(WebKit2)/WebProcess/Plugins \
     $(WebKit2)/WebProcess/ResourceCache \
+    $(WebKit2)/WebProcess/Scrolling \
     $(WebKit2)/WebProcess/Storage \
     $(WebKit2)/WebProcess/WebCoreSupport \
     $(WebKit2)/WebProcess/WebPage \
@@ -87,6 +88,7 @@ MESSAGE_RECEIVERS = \
     PluginProxy \
     RemoteLayerTreeDrawingAreaProxy \
     RemoteObjectRegistry \
+    RemoteScrollingCoordinator \
     SecItemShim \
     SecItemShimProxy \
     StorageAreaMap \

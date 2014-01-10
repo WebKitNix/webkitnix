@@ -68,6 +68,7 @@ class QTMovieVisualContext;
 namespace WebCore {
 
 class AudioSourceProvider;
+class AuthenticationChallenge;
 class Document;
 #if ENABLE(MEDIA_SOURCE)
 class HTMLMediaSource;
@@ -223,6 +224,11 @@ public:
     virtual bool mediaPlayerKeyNeeded(MediaPlayer*, Uint8Array*) { return false; }
 #endif
     
+#if ENABLE(IOS_AIRPLAY)
+    virtual void mediaPlayerCurrentPlaybackTargetIsWirelessChanged(MediaPlayer*) { };
+    virtual void mediaPlayerPlaybackTargetAvailabilityChanged(MediaPlayer*) { };
+#endif
+
     virtual String mediaPlayerReferrer() const { return String(); }
     virtual String mediaPlayerUserAgent() const { return String(); }
     virtual CORSMode mediaPlayerCORSMode() const { return Unspecified; }
@@ -252,6 +258,8 @@ public:
 
     virtual void textTrackRepresentationBoundsChanged(const IntRect&) { }
 #endif
+
+    virtual bool mediaPlayerShouldWaitForResponseToAuthenticationChallenge(const AuthenticationChallenge&) { return false; }
 };
 
 class MediaPlayerSupportsTypeClient {
@@ -430,6 +438,21 @@ public:
     void exitFullscreen();
 #endif
 
+#if ENABLE(IOS_AIRPLAY)
+    bool isCurrentPlaybackTargetWireless() const;
+    void showPlaybackTargetPicker();
+
+    bool hasWirelessPlaybackTargets() const;
+
+    bool wirelessVideoPlaybackDisabled() const;
+    void setWirelessVideoPlaybackDisabled(bool);
+
+    void currentPlaybackTargetIsWirelessChanged();
+    void playbackTargetAvailabilityChanged();
+
+    void setHasPlaybackTargetAvailabilityListeners(bool);
+#endif
+
 #if USE(NATIVE_FULLSCREEN_VIDEO)
     bool canEnterFullscreen() const;
 #endif
@@ -483,6 +506,11 @@ public:
 
     String engineDescription() const;
 
+#if PLATFORM(IOS)
+    void attributeChanged(const String& name, const String& value);
+    bool readyForPlayback() const;
+#endif
+
     CachedResourceLoader* cachedResourceLoader();
 
 #if ENABLE(VIDEO_TRACK)
@@ -520,6 +548,8 @@ public:
     unsigned long corruptedVideoFrames();
     double totalFrameDelay();
 #endif
+
+    bool shouldWaitForResponseToAuthenticationChallenge(const AuthenticationChallenge&);
 
 private:
     MediaPlayer(MediaPlayerClient*);

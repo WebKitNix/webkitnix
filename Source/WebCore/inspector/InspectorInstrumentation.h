@@ -38,6 +38,7 @@
 #include "FormData.h"
 #include "Frame.h"
 #include "HitTestResult.h"
+#include "InspectorInstrumentationCookie.h"
 #include "Page.h"
 #include "ScriptExecutionContext.h"
 #include "ScriptState.h"
@@ -61,8 +62,6 @@ class Document;
 class Element;
 class DocumentLoader;
 class DocumentStyleSheetCollection;
-class DeviceOrientationData;
-class GeolocationPosition;
 class GraphicsContext;
 class HTTPHeaderMap;
 class InspectorCSSAgent;
@@ -93,26 +92,6 @@ class WorkerGlobalScopeProxy;
 class XMLHttpRequest;
 
 #define FAST_RETURN_IF_NO_FRONTENDS(value) if (LIKELY(!hasFrontends())) return value;
-
-class InspectorInstrumentationCookie {
-#if ENABLE(INSPECTOR)
-public:
-    InspectorInstrumentationCookie();
-    InspectorInstrumentationCookie(InstrumentingAgents*, int);
-    InspectorInstrumentationCookie(const InspectorInstrumentationCookie&);
-    InspectorInstrumentationCookie& operator=(const InspectorInstrumentationCookie&);
-    ~InspectorInstrumentationCookie();
-
-private:
-    friend class InspectorInstrumentation;
-    InstrumentingAgents* instrumentingAgents() const { return m_instrumentingAgents.get(); }
-    bool isValid() const { return !!m_instrumentingAgents; }
-    bool hasMatchingTimelineAgentId(int id) const { return m_timelineAgentId == id; }
-
-    RefPtr<InstrumentingAgents> m_instrumentingAgents;
-    int m_timelineAgentId;
-#endif
-};
 
 class InspectorInstrumentation {
 public:
@@ -185,12 +164,7 @@ public:
     static InspectorInstrumentationCookie willProcessRule(Document*, StyleRule*, StyleResolver&);
     static void didProcessRule(const InspectorInstrumentationCookie&);
 
-    static void applyUserAgentOverride(Frame*, String*);
-    static void applyScreenWidthOverride(Frame*, long*);
-    static void applyScreenHeightOverride(Frame*, long*);
     static void applyEmulatedMedia(Frame*, String*);
-    static bool shouldApplyScreenWidthOverride(Frame*);
-    static bool shouldApplyScreenHeightOverride(Frame*);
     static void willSendRequest(Frame*, unsigned long identifier, DocumentLoader*, ResourceRequest&, const ResourceResponse& redirectResponse);
     static void continueAfterPingLoader(Frame*, unsigned long identifier, DocumentLoader*, ResourceRequest&, const ResourceResponse&);
     static void markResourceAsCached(Page*, unsigned long identifier);
@@ -221,8 +195,8 @@ public:
     static void didCommitLoad(Frame*, DocumentLoader*);
     static void frameDocumentUpdated(Frame*);
     static void loaderDetachedFromFrame(Frame*, DocumentLoader*);
-    static void frameStartedLoading(Frame*);
-    static void frameStoppedLoading(Frame*);
+    static void frameStartedLoading(Frame&);
+    static void frameStoppedLoading(Frame&);
     static void frameScheduledNavigation(Frame*, double delay);
     static void frameClearedScheduledNavigation(Frame*);
     static InspectorInstrumentationCookie willRunJavaScriptDialog(Page*, const String& message);
@@ -302,14 +276,8 @@ public:
     static bool timelineAgentEnabled(ScriptExecutionContext*) { return false; }
 #endif
 
-#if ENABLE(GEOLOCATION)
-    static GeolocationPosition* overrideGeolocationPosition(Page*, GeolocationPosition*);
-#endif
-
     static void registerInstrumentingAgents(InstrumentingAgents*);
     static void unregisterInstrumentingAgents(InstrumentingAgents*);
-
-    static DeviceOrientationData* overrideDeviceOrientation(Page*, DeviceOrientationData*);
 
 #if USE(ACCELERATED_COMPOSITING)
     static void layerTreeDidChange(Page*);
@@ -386,12 +354,7 @@ private:
     static InspectorInstrumentationCookie willProcessRuleImpl(InstrumentingAgents*, StyleRule*, StyleResolver&);
     static void didProcessRuleImpl(const InspectorInstrumentationCookie&);
 
-    static void applyUserAgentOverrideImpl(InstrumentingAgents*, String*);
-    static void applyScreenWidthOverrideImpl(InstrumentingAgents*, long*);
-    static void applyScreenHeightOverrideImpl(InstrumentingAgents*, long*);
     static void applyEmulatedMediaImpl(InstrumentingAgents*, String*);
-    static bool shouldApplyScreenWidthOverrideImpl(InstrumentingAgents*);
-    static bool shouldApplyScreenHeightOverrideImpl(InstrumentingAgents*);
     static void willSendRequestImpl(InstrumentingAgents*, unsigned long identifier, DocumentLoader*, ResourceRequest&, const ResourceResponse& redirectResponse);
     static void continueAfterPingLoaderImpl(InstrumentingAgents*, unsigned long identifier, DocumentLoader*, ResourceRequest&, const ResourceResponse&);
     static void markResourceAsCachedImpl(InstrumentingAgents*, unsigned long identifier);
@@ -492,12 +455,6 @@ private:
     static void pauseOnNativeEventIfNeeded(InstrumentingAgents*, bool isDOMEvent, const String& eventName, bool synchronous);
     static void cancelPauseOnNativeEvent(InstrumentingAgents*);
     static InspectorTimelineAgent* retrieveTimelineAgent(const InspectorInstrumentationCookie&);
-
-#if ENABLE(GEOLOCATION)
-    static GeolocationPosition* overrideGeolocationPositionImpl(InstrumentingAgents*, GeolocationPosition*);
-#endif
-
-    static DeviceOrientationData* overrideDeviceOrientationImpl(InstrumentingAgents*, DeviceOrientationData*);
 
 #if USE(ACCELERATED_COMPOSITING)
     static void layerTreeDidChangeImpl(InstrumentingAgents*);
@@ -1269,54 +1226,6 @@ inline void InspectorInstrumentation::didProcessRule(const InspectorInstrumentat
 #endif
 }
 
-inline void InspectorInstrumentation::applyUserAgentOverride(Frame* frame, String* userAgent)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
-        applyUserAgentOverrideImpl(instrumentingAgents, userAgent);
-#else
-    UNUSED_PARAM(frame);
-    UNUSED_PARAM(userAgent);
-#endif
-}
-
-inline void InspectorInstrumentation::applyScreenWidthOverride(Frame* frame, long* width)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
-        applyScreenWidthOverrideImpl(instrumentingAgents, width);
-#else
-    UNUSED_PARAM(frame);
-    UNUSED_PARAM(width);
-#endif
-}
-
-inline void InspectorInstrumentation::applyScreenHeightOverride(Frame* frame, long* height)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
-        applyScreenHeightOverrideImpl(instrumentingAgents, height);
-#else
-    UNUSED_PARAM(frame);
-    UNUSED_PARAM(height);
-#endif
-}
-
-inline bool InspectorInstrumentation::shouldApplyScreenWidthOverride(Frame* frame)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(false);
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
-        return shouldApplyScreenWidthOverrideImpl(instrumentingAgents);
-#else
-    UNUSED_PARAM(frame);
-#endif
-    return false;
-}
-
 inline void InspectorInstrumentation::applyEmulatedMedia(Frame* frame, String* media)
 {
 #if ENABLE(INSPECTOR)
@@ -1327,18 +1236,6 @@ inline void InspectorInstrumentation::applyEmulatedMedia(Frame* frame, String* m
     UNUSED_PARAM(frame);
     UNUSED_PARAM(media);
 #endif
-}
-
-inline bool InspectorInstrumentation::shouldApplyScreenHeightOverride(Frame* frame)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(false);
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
-        return shouldApplyScreenHeightOverrideImpl(instrumentingAgents);
-#else
-    UNUSED_PARAM(frame);
-#endif
-    return false;
 }
 
 inline void InspectorInstrumentation::willSendRequest(Frame* frame, unsigned long identifier, DocumentLoader* loader, ResourceRequest& request, const ResourceResponse& redirectResponse)
@@ -1709,21 +1606,21 @@ inline void InspectorInstrumentation::loaderDetachedFromFrame(Frame* frame, Docu
 #endif
 }
 
-inline void InspectorInstrumentation::frameStartedLoading(Frame* frame)
+inline void InspectorInstrumentation::frameStartedLoading(Frame& frame)
 {
 #if ENABLE(INSPECTOR)
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
-        frameStartedLoadingImpl(instrumentingAgents, frame);
+    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(&frame))
+        frameStartedLoadingImpl(instrumentingAgents, &frame);
 #else
     UNUSED_PARAM(frame);
 #endif
 }
 
-inline void InspectorInstrumentation::frameStoppedLoading(Frame* frame)
+inline void InspectorInstrumentation::frameStoppedLoading(Frame& frame)
 {
 #if ENABLE(INSPECTOR)
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
-        frameStoppedLoadingImpl(instrumentingAgents, frame);
+    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(&frame))
+        frameStoppedLoadingImpl(instrumentingAgents, &frame);
 #else
     UNUSED_PARAM(frame);
 #endif
@@ -2009,32 +1906,6 @@ inline void InspectorInstrumentation::didFireAnimationFrame(const InspectorInstr
 #else
     UNUSED_PARAM(cookie);
 #endif
-}
-
-#if ENABLE(GEOLOCATION)
-inline GeolocationPosition* InspectorInstrumentation::overrideGeolocationPosition(Page* page, GeolocationPosition* position)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(position);
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForPage(page))
-        return overrideGeolocationPositionImpl(instrumentingAgents, position);
-#else
-    UNUSED_PARAM(page);
-#endif
-    return position;
-}
-#endif
-
-inline DeviceOrientationData* InspectorInstrumentation::overrideDeviceOrientation(Page* page, DeviceOrientationData* deviceOrientation)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(deviceOrientation);
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForPage(page))
-        return overrideDeviceOrientationImpl(instrumentingAgents, deviceOrientation);
-#else
-    UNUSED_PARAM(page);
-#endif
-    return deviceOrientation;
 }
 
 #if USE(ACCELERATED_COMPOSITING)

@@ -47,6 +47,11 @@
 
 namespace WebCore {
 
+PassRefPtr<ScrollingCoordinator> ScrollingCoordinator::create(Page* page)
+{
+    return adoptRef(new ScrollingCoordinatorMac(page));
+}
+
 ScrollingCoordinatorMac::ScrollingCoordinatorMac(Page* page)
     : AsyncScrollingCoordinator(page)
     , m_scrollingStateTreeCommitterTimer(this, &ScrollingCoordinatorMac::scrollingStateTreeCommitterTimerFired)
@@ -151,7 +156,6 @@ PassOwnPtr<ScrollingTreeNode> ScrollingCoordinatorMac::createScrollingTreeNode(S
     }
     return nullptr;
 }
-
 
 } // namespace WebCore
 

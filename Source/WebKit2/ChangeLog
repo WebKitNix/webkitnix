@@ -1,3 +1,953 @@
+2014-01-10  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Implement NetworkResourceLoader::receivedCancellation
+        https://bugs.webkit.org/show_bug.cgi?id=126129
+
+        Reviewed Alexey Proskuryakov.
+
+        Implement ResourceHandleClient::receivedCancellation() in the
+        network process to cancel the load when cancellation is received
+        from the authentication manager like the web process does.
+
+        * NetworkProcess/NetworkResourceLoader.cpp:
+        (WebKit::NetworkResourceLoader::receivedCancellation): Cancel the load.
+        * NetworkProcess/NetworkResourceLoader.h:
+
+2014-01-09  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        [EFL][WK2] Add APIs for setting and getting the default text encoding name
+        https://bugs.webkit.org/show_bug.cgi?id=126736
+
+        Reviewed by Gyuyoung Kim.
+
+        Add APIs to set and get the default text encoding name.
+
+        * UIProcess/API/efl/ewk_settings.cpp:
+        (ewk_settings_default_text_encoding_name_get):
+        (ewk_settings_default_text_encoding_name_set):
+        * UIProcess/API/efl/ewk_settings.h:
+        * UIProcess/API/efl/tests/test_ewk2_settings.cpp:
+        (TEST_F):
+
+2014-01-09  Simon Fraser  <simon.fraser@apple.com>
+
+        Enable async scrolling for iOS
+        https://bugs.webkit.org/show_bug.cgi?id=126730
+
+        Reviewed by Tim Horton.
+        
+        Turn on ENABLE_ASYNC_SCROLLING for iOS.
+        
+        On iOS, create ScrollingTreeScrollingNodeIOS nodes.
+
+        * UIProcess/Scrolling/RemoteScrollingTree.cpp:
+        (WebKit::RemoteScrollingTree::createNode):
+        * UIProcess/Scrolling/RemoteScrollingTree.h:
+
+2014-01-06  Gavin Barraclough  <barraclough@apple.com>
+
+        Change Page, FocusController to use ViewState
+        https://bugs.webkit.org/show_bug.cgi?id=126533
+
+        Reviewed by Tim Horton.
+
+        These classes currently maintain a set of separate fields to represent the view state;
+        combine these into a single field, and allow WebPage to send the combined update rather
+        than individual changes.
+
+        Maintain existing interface for WebKit1 clients.
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+            - Combined separate calls to Page::setViewState.
+        (WebKit::WebPage::updateIsInWindow):
+            - Simplied from setIsInWindow.
+        (WebKit::WebPage::setViewState):
+            - Combined separate calls to Page::setViewState.
+        * WebProcess/WebPage/WebPage.h:
+            - Declare updateIsInWindow.
+
+2014-01-09  Tim Horton  <timothy_horton@apple.com>
+
+        Upstream iOS changes after r161530
+        https://bugs.webkit.org/show_bug.cgi?id=126728
+
+        Reviewed by Dean Jackson.
+
+        * UIProcess/API/ios/WKContentView.mm:
+        (-[WKContentView setViewportSize:]):
+        (-[WKContentView didFinishScrollTo:]):
+        (-[WKContentView didScrollTo:]):
+        Adopt the new approach.
+
+2014-01-09  Brian Burg  <bburg@apple.com>
+
+        REGRESSION (r160152): Selection drag snapshot doesn't appear or has the wrong content on Retina
+        https://bugs.webkit.org/show_bug.cgi?id=125375
+
+        Reviewed by Darin Adler.
+
+        Remove scaling from WebDragClient because it is now selectively
+        performed by WebCore according to the drag image source.
+
+        * WebProcess/WebCoreSupport/mac/WebDragClientMac.mm:
+        (WebKit::WebDragClient::startDrag): Don't scale the provided drag image.
+
+2014-01-09  Tim Horton  <timothy_horton@apple.com>
+
+        WebKit2 View Gestures: Support plugins that take over the page scale gesture
+        https://bugs.webkit.org/show_bug.cgi?id=126399
+        <rdar://problem/15738928>
+
+        Reviewed by Sam Weinig.
+
+        Teach ViewGestureController how to handle WebFrame::handlesPageScaleGesture=true,
+        which is used so that PDFPlugin can deal with magnification itself.
+
+        * UIProcess/mac/ViewGestureController.cpp:
+        (WebKit::ViewGestureController::ViewGestureController):
+        (WebKit::ViewGestureController::didCollectGeometryForMagnificationGesture):
+        (WebKit::ViewGestureController::handleMagnificationGesture):
+        (WebKit::ViewGestureController::endMagnificationGesture):
+        (WebKit::ViewGestureController::didCollectGeometryForSmartMagnificationGesture):
+        If the WebFrame is going to handle the page scale gesture itself (which currently
+        simply means that it is a main-frame PDFPlugin), send the magnification information
+        straight through to it. Also, don't provide smart-zoom in this case, since there
+        is currently no way to collect geometry information from the plugin.
+
+        * UIProcess/mac/ViewGestureController.h:
+        * UIProcess/mac/ViewGestureController.messages.in:
+        * WebProcess/WebPage/ViewGestureGeometryCollector.cpp:
+        (WebKit::ViewGestureGeometryCollector::collectGeometryForMagnificationGesture):
+        (WebKit::ViewGestureGeometryCollector::collectGeometryForSmartMagnificationGesture):
+        Retrieve WebFrame::handlesPageScaleGesture and return it to the UI process.
+
+2014-01-09  Dan Bernstein  <mitz@apple.com>
+
+        [Cocoa] Promote WKBackForwardList{,Item}.h to public
+        https://bugs.webkit.org/show_bug.cgi?id=126707
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/Cocoa/WKBackForwardList.h: Stopped including the C API header.
+        * UIProcess/API/Cocoa/WKBackForwardListItem.h: Ditto.
+        * WebKit2.xcodeproj/project.pbxproj: Made the headers public.
+
+2014-01-09  Zan Dobersek  <zdobersek@igalia.com>
+
+        Revert back to using the -n option when producing symbolic links to the GTK-specific
+        API directories under Source/WebKit2/. Removing the option in r161497 resulted in
+        recursive links being created under those directories since the links were dereferenced.
+
+        To actually ensure that the link is created anew, remove it so it is reconstructed.
+
+        Rubber-stamped by Carlos Garcia Campos.
+
+        * GNUmakefile.am:
+
+2014-01-09  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Crash when starting a download before the network process has been launched
+        https://bugs.webkit.org/show_bug.cgi?id=126258
+
+        Reviewed by Anders Carlsson.
+
+        We need to ensure there's a network process running before
+        starting a new download like we do when using the web process.
+
+        * UIProcess/WebContext.cpp:
+        (WebKit::WebContext::download): Use ChildProcessProxy::send()
+        instead of using the connection to make sure messages are queued
+        if the process is still launching.
+        (WebKit::WebContext::createDownloadProxy): Call
+        ensureNetworkProcess() before creating the download proxy.
+
+2014-01-09  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [SOUP] Partial file left on disk after a download fails or is cancelled in WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=126686
+
+        Reviewed by Martin Robinson.
+
+        We are currently writing the downloads directly into the
+        destination, and when a download fails or is cancelled after the
+        destination has been decided, the partial file is left on the
+        disk. Deleting the final file is not safe because there might be a
+        race condition, so we can use an intermediate file like other
+        browsers do, a file in the same directory than the target
+        destination but with .wkdownload suffix, that is removed when the
+        download fails or is cancelled. If the download finishes
+        successfully the intermediate file is renamed to the final
+        destination.
+
+        * Shared/Downloads/soup/DownloadSoup.cpp:
+        (WebKit::DownloadClient::deleteIntermediateFileInNeeded): Delete
+        the intermdiate file if it's been created already.
+        (WebKit::DownloadClient::downloadFailed): Call deleteIntermediateFileInNeeded.
+        (WebKit::DownloadClient::didReceiveResponse): Do not create a
+        SoupMessage for the given ResourceResponse that is not used, cache
+        the ResourceResponse instead. Create the intermediate file and use
+        it instead of the final destination.
+        (WebKit::DownloadClient::didReceiveData): Use the cached
+        ResourceResponse directly.
+        (WebKit::DownloadClient::didFinishLoading): Rename the
+        intermediate file to the final destination and write the metadata
+        in the final target destination.
+        (WebKit::DownloadClient::cancel): Handle the download cancellation
+        here, removing the intermediate file is needed and cancelling the
+        ResourceHandle and the download.
+        (WebKit::DownloadClient::handleResponseLater):
+        (WebKit::Download::cancel): Let the client handle the cancellation.
+
+2014-01-08  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        WebKit2 EFL build fix after r161530
+        https://bugs.webkit.org/show_bug.cgi?id=126678
+
+        Reviewed by Tim Horton.
+
+        Add PLATFORM(MAC) guards around setExposedRect() and exposedRect()
+        in DrawingArea and WebFrameLoaderClient.
+
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::transitionToCommittedForNewPage):
+        * WebProcess/WebPage/DrawingArea.h:
+
+2014-01-08  Martin Hock  <mhock@apple.com>
+
+        Stub for Session API
+        https://bugs.webkit.org/show_bug.cgi?id=126626
+
+        Reviewed by Sam Weinig.
+
+        * Shared/API/c/WKBase.h:
+        * Shared/API/c/WKSharedAPICast.h:
+        * Shared/APIObject.h:
+        * UIProcess/API/C/WKSessionRef.cpp: Added.
+        (WKSessionGetTypeID):
+        (WKSessionGetEphemeral):
+        * UIProcess/API/C/WKSessionRef.h: Added.
+        * UIProcess/API/Cocoa/WKSession.h: Added.
+        * UIProcess/API/Cocoa/WKSession.mm: Added.
+        (-[WKSession dealloc]):
+        (-[WKSession ephemeral]):
+        (-[WKSession API::]):
+        * UIProcess/API/Cocoa/WKSessionInternal.h: Added.
+        (WebKit::wrapper):
+        * UIProcess/APISession.cpp: Added.
+        (API::Session::Session):
+        (API::Session::create):
+        (API::Session::isEphemeral):
+        (API::Session::~Session):
+        * UIProcess/APISession.h: Added.
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2014-01-08  Claudio Saavedra  <csaavedra@igalia.com>
+
+        [GTK] Add xdg.origin.url extended attribute to downloads
+        https://bugs.webkit.org/show_bug.cgi?id=126638
+
+        Reviewed by Carlos Garcia Campos.
+
+        This is proposed by fdo in
+        http://www.freedesktop.org/wiki/CommonExtendedAttributes/
+
+        * Shared/Downloads/soup/DownloadSoup.cpp:
+        (WebKit::DownloadClient::didReceiveResponse):
+
+2014-01-08  Simon Fraser  <simon.fraser@apple.com>
+
+        Make WK2 build when ENABLE(ASYNC_SCROLLING) is not defined
+        https://bugs.webkit.org/show_bug.cgi?id=126675
+
+        Reviewed by Tim Horton.
+        
+        We need a stub RemoteScrollingCoordinatorTransaction outside
+        the #ifdef so that RemoteLayerTreeDrawingAreaProxy messages
+        work.
+
+        * Shared/Scrolling/RemoteScrollingCoordinatorTransaction.cpp:
+        (WebKit::RemoteScrollingCoordinatorTransaction::encode):
+        (WebKit::RemoteScrollingCoordinatorTransaction::decode):
+        * Shared/Scrolling/RemoteScrollingCoordinatorTransaction.h:
+        * UIProcess/mac/RemoteLayerTreeDrawingAreaProxy.mm:
+        (WebKit::RemoteLayerTreeDrawingAreaProxy::commitLayerTree):
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.mm:
+        (WebKit::RemoteLayerTreeDrawingArea::flushLayers):
+
+2014-01-08  Tim Horton  <timothy_horton@apple.com>
+
+        TileController can fail to receive exposedRect from the drawing area if set at the wrong time
+        https://bugs.webkit.org/show_bug.cgi?id=126536
+
+        Reviewed by Simon Fraser.
+
+        * Configurations/WebKit2.xcconfig:
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView _updateViewExposedRect]):
+        * UIProcess/DrawingAreaProxy.cpp:
+        (WebKit::DrawingAreaProxy::DrawingAreaProxy):
+        (WebKit::DrawingAreaProxy::setExposedRect):
+        (WebKit::DrawingAreaProxy::exposedRectChangedTimerFired):
+        * UIProcess/DrawingAreaProxy.h:
+        (WebKit::DrawingAreaProxy::exposedRect):
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::close):
+        * UIProcess/WebPageProxy.h:
+        Move exposedRect stuff from WebPageProxy to DrawingAreaProxy.
+
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::transitionToCommittedForNewPage):
+        Push the exposedRect down into WebCore.
+
+        * WebProcess/WebPage/DrawingArea.h:
+        * WebProcess/WebPage/DrawingArea.messages.in:
+        * WebProcess/WebPage/WebPage.cpp:
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/WebPage.messages.in:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.h:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.mm:
+        (WebKit::RemoteLayerTreeDrawingArea::RemoteLayerTreeDrawingArea):
+        (WebKit::RemoteLayerTreeDrawingArea::updateScrolledExposedRect):
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::TiledCoreAnimationDrawingArea):
+        (WebKit::TiledCoreAnimationDrawingArea::flushLayers):
+        (WebKit::TiledCoreAnimationDrawingArea::updateScrolledExposedRect):
+        (WebKit::TiledCoreAnimationDrawingArea::setRootCompositingLayer):
+        (WebKit::TiledCoreAnimationDrawingArea::createPageOverlayLayer):
+        (WebKit::TiledCoreAnimationDrawingArea::didCommitChangesForLayer):
+        Get rid of "clipsToExposedRect", we just use infinite-ness of the rect
+        to indicate that now.
+        Don't scroll an infinite rect; it won't work.
+
+2014-01-08  Simon Fraser  <simon.fraser@apple.com>
+
+        Add ENABLE(ASYNC_SCROLLING) guards around WK2 scrolling files
+        https://bugs.webkit.org/show_bug.cgi?id=126672
+
+        Reviewed by Tim Horton.
+        
+        Protected WK2 scrolling files with ENABLE(ASYNC_SCROLLING) guards.
+
+        * Shared/Scrolling/RemoteScrollingCoordinatorTransaction.cpp:
+        * Shared/Scrolling/RemoteScrollingCoordinatorTransaction.h:
+        * UIProcess/Scrolling/RemoteScrollingCoordinatorProxy.cpp:
+        * UIProcess/Scrolling/RemoteScrollingCoordinatorProxy.h:
+        * UIProcess/Scrolling/RemoteScrollingTree.cpp:
+        * UIProcess/Scrolling/RemoteScrollingTree.h:
+        * WebProcess/Scrolling/RemoteScrollingCoordinator.h:
+        * WebProcess/Scrolling/RemoteScrollingCoordinator.messages.in:
+        * WebProcess/Scrolling/RemoteScrollingCoordinator.mm:
+
+2014-01-08  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [EFL][WK2] Add API to execute js script
+        https://bugs.webkit.org/show_bug.cgi?id=101904
+
+        Reviewed by Gyuyoung Kim.
+
+        Add ewk_view_script_execute() which provides a way to execute user
+        script.
+
+        * UIProcess/API/efl/ewk_context.cpp:
+        Added JS Global Contexta which is required to deserialize to the script
+        value from the callback.
+        (EwkContext::EwkContext):
+        (EwkContext::~EwkContext):
+        (EwkContext::jsGlobalContext):
+        * UIProcess/API/efl/ewk_context_private.h:
+        * UIProcess/API/efl/ewk_view.cpp:
+        (Ewk_View_Script_Execute_Callback_Context::Ewk_View_Script_Execute_Callback_Context):
+        (runJavaScriptCallback):
+        (ewk_view_script_execute):
+        * UIProcess/API/efl/ewk_view.h:
+        * UIProcess/API/efl/tests/test_ewk2_view.cpp:
+        Added unit test for ewk_view_script_execute.
+        (scriptExecuteCallback):
+        (TEST_F):
+
+2014-01-08  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        [EFL] Move efl API test binaries to TestWebKitAPI/EWebKit|EWebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=126615
+
+        Reviewed by Martin Robinson.
+
+        Now EFL API test binaries created in *bin* directory with other executables.
+        It would be good to move them to their folder. This patch moves them to
+        *TestWebKitAPI/EWebKit|EWebKit2* directories.
+
+        * PlatformEfl.cmake:
+
+2014-01-08  Anders Carlsson  <andersca@apple.com>
+
+        Add WTF::StringView and use it for grammar checking
+        https://bugs.webkit.org/show_bug.cgi?id=126644
+
+        Reviewed by Antti Koivisto.
+
+        Use a StringView and remove a FIXME.
+
+        * WebProcess/WebCoreSupport/WebEditorClient.cpp:
+        (WebKit::WebEditorClient::checkTextOfParagraph):
+        * WebProcess/WebCoreSupport/WebEditorClient.h:
+
+2014-01-08  Zan Dobersek  <zdobersek@igalia.com>
+
+        [Automake] Scripts for generated build targets do not necessarily produce their output
+        https://bugs.webkit.org/show_bug.cgi?id=126378
+
+        Reviewed by Carlos Garcia Campos.
+
+        * GNUmakefile.am: Don't pass the -n option to the ln command that links the build's include
+        directories to actual source directories. This doesn't replace the original symbolic link,
+        which can lead to the actual link being older than its dependencies and subsequent constant
+        relinking at every build.
+
+2014-01-07  Eric Carlson  <eric.carlson@apple.com>
+
+        Teach MediaSessionManager to manage interruptions
+        https://bugs.webkit.org/show_bug.cgi?id=126530
+
+        Reviewed by Sam Weinig.
+
+        * CMakeLists.txt: Add ${WEBCORE_DIR}/platform/animation to WebCore include directories.
+
+2014-01-07  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        [EFL][WK2] Fix failing ewk_view_page_contents_get() API test
+        https://bugs.webkit.org/show_bug.cgi?id=126609
+
+        Reviewed by Gyuyoung Kim.
+
+        Compare the amount of bytes in the expected result file with
+        the size of callback data from the API since the 'Date' field
+        and the boundaries will be different on each case.
+        Refered the test case of GTK port.
+
+        * UIProcess/API/efl/tests/resources/resultMHTML.mht: Added.
+        * UIProcess/API/efl/tests/test_ewk2_view.cpp:
+        (EWK2ViewTest::PageContentsAsMHTMLCallback):
+
+2014-01-07  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove leftover 'device metrics' code
+        https://bugs.webkit.org/show_bug.cgi?id=126607
+
+        Reviewed by Joseph Pecoraro.
+
+        * mac/WebKit2.order: Update after removing InspectorClient::overrideDeviceMetrics().
+
+2014-01-07  Simon Fraser  <simon.fraser@apple.com>
+
+        Fix the build. The WebKit2 project copied all of WebKit2/Scripts/webkit2 into WebKit2.framework/PrivateHeaders,
+        but that's bad because there are test result files in there now. Fix by having the project copy specific
+        .py files into rivateHeaders/webkit2
+
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2014-01-07  Simon Fraser  <simon.fraser@apple.com>
+
+        Make it possible for MessageReceivers to pass messages to their superclass, and use it for RemoteLayerTreeDrawingAreaProxy
+        https://bugs.webkit.org/show_bug.cgi?id=126558
+
+        Reviewed by Anders Carlsson.
+        
+        In a message.in file it's now possible to say:
+        
+        messages -> Subclass : Superclass { ... } and the generated code will
+        call Superclass::didReceiveMessage().
+        
+        Use this to have RemoteLayerTreeDrawingAreaProxy pass messages up to
+        DrawingAreaProxy.
+
+        * Scripts/webkit2/messages.py:
+        (generate_message_handler):
+        * Scripts/webkit2/model.py:
+        (MessageReceiver.__init__):
+        * Scripts/webkit2/parser.py:
+        (parse):
+        * UIProcess/DrawingAreaProxy.h:
+        * UIProcess/mac/RemoteLayerTreeDrawingAreaProxy.messages.in:
+
+2014-01-07  Simon Fraser  <simon.fraser@apple.com>
+
+        Add message-generation test for non-legacy message receiver
+        https://bugs.webkit.org/show_bug.cgi?id=126603
+
+        Reviewed by Anders Carlsson.
+        
+        Add expected output files for a non-legacy message receiver, and add
+        testing for same.
+
+        * Scripts/webkit2/LegacyMessageReceiver-expected.cpp: Copied from Source/WebKit2/Scripts/webkit2/MessageReceiver-expected.cpp.
+        * Scripts/webkit2/LegacyMessages-expected.h: Added.
+        * Scripts/webkit2/MessageReceiver-expected.cpp:
+        (WebKit::WebPage::didReceiveMessage):
+        (WebKit::WebPage::didReceiveSyncMessage):
+        * Scripts/webkit2/messages_unittest.py:
+        (MessagesTest.setUp):
+        (ParsingTest.test_receiver):
+        (HeaderTest.test_header):
+        (ReceiverImplementationTest.test_receiver_implementation):
+        * Scripts/webkit2/test-legacy-messages.in: Copied from Source/WebKit2/Scripts/webkit2/test-messages.in.
+        * Scripts/webkit2/test-messages.in:
+
+2014-01-07  Simon Fraser  <simon.fraser@apple.com>
+
+        Move expected results out of messages_unittest.py into separate files
+        https://bugs.webkit.org/show_bug.cgi?id=126602
+
+        Reviewed by Anders Carlsson.
+        
+        Uninline the test input and output from messages_unittest.py to make
+        it easier to add more tests.
+
+        * Scripts/webkit2/MessageReceiver-expected.cpp: Added.
+        (WebKit::WebPage::didReceiveWebPageMessage):
+        (WebKit::WebPage::didReceiveSyncWebPageMessage):
+        * Scripts/webkit2/Messages-expected.h: Added.
+        * Scripts/webkit2/messages_unittest.py:
+        (ParsingTest.test_receiver):
+        * Scripts/webkit2/test-messages.in: Added.
+
+2014-01-07  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r161447.
+        http://trac.webkit.org/changeset/161447
+        https://bugs.webkit.org/show_bug.cgi?id=126592
+
+        needs some more work (Requested by thorton on #webkit).
+
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView _updateViewExposedRect]):
+        * UIProcess/DrawingAreaProxy.cpp:
+        (WebKit::DrawingAreaProxy::DrawingAreaProxy):
+        * UIProcess/DrawingAreaProxy.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::close):
+        (WebKit::WebPageProxy::viewExposedRectChanged):
+        (WebKit::WebPageProxy::exposedRectChangedTimerFired):
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::viewExposedRect):
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::transitionToCommittedForNewPage):
+        * WebProcess/WebPage/DrawingArea.h:
+        (WebKit::DrawingArea::setExposedRect):
+        (WebKit::DrawingArea::setClipsToExposedRect):
+        * WebProcess/WebPage/DrawingArea.messages.in:
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::viewExposedRectChanged):
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/WebPage.messages.in:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.h:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.mm:
+        (WebKit::RemoteLayerTreeDrawingArea::RemoteLayerTreeDrawingArea):
+        (WebKit::RemoteLayerTreeDrawingArea::setClipsToExposedRect):
+        (WebKit::RemoteLayerTreeDrawingArea::updateScrolledExposedRect):
+        (WebKit::RemoteLayerTreeDrawingArea::updateMainFrameClipsToExposedRect):
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::TiledCoreAnimationDrawingArea):
+        (WebKit::TiledCoreAnimationDrawingArea::flushLayers):
+        (WebKit::TiledCoreAnimationDrawingArea::setClipsToExposedRect):
+        (WebKit::TiledCoreAnimationDrawingArea::updateScrolledExposedRect):
+        (WebKit::TiledCoreAnimationDrawingArea::updateMainFrameClipsToExposedRect):
+        (WebKit::TiledCoreAnimationDrawingArea::setRootCompositingLayer):
+        (WebKit::TiledCoreAnimationDrawingArea::createPageOverlayLayer):
+        (WebKit::TiledCoreAnimationDrawingArea::didCommitChangesForLayer):
+
+2014-01-07  Tim Horton  <timothy_horton@apple.com>
+
+        TileController can fail to receive exposedRect from the drawing area if set at the wrong time
+        https://bugs.webkit.org/show_bug.cgi?id=126536
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView _updateViewExposedRect]):
+        * UIProcess/DrawingAreaProxy.cpp:
+        (WebKit::DrawingAreaProxy::DrawingAreaProxy):
+        (WebKit::DrawingAreaProxy::setExposedRect):
+        (WebKit::DrawingAreaProxy::exposedRectChangedTimerFired):
+        * UIProcess/DrawingAreaProxy.h:
+        (WebKit::DrawingAreaProxy::exposedRect):
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::close):
+        * UIProcess/WebPageProxy.h:
+        Move exposedRect stuff from WebPageProxy to DrawingAreaProxy.
+
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::transitionToCommittedForNewPage):
+        Push the exposedRect down into WebCore.
+
+        * WebProcess/WebPage/DrawingArea.h:
+        * WebProcess/WebPage/DrawingArea.messages.in:
+        * WebProcess/WebPage/WebPage.cpp:
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/WebPage.messages.in:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.h:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.mm:
+        (WebKit::RemoteLayerTreeDrawingArea::RemoteLayerTreeDrawingArea):
+        (WebKit::RemoteLayerTreeDrawingArea::updateScrolledExposedRect):
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::TiledCoreAnimationDrawingArea):
+        (WebKit::TiledCoreAnimationDrawingArea::flushLayers):
+        (WebKit::TiledCoreAnimationDrawingArea::updateScrolledExposedRect):
+        (WebKit::TiledCoreAnimationDrawingArea::setRootCompositingLayer):
+        (WebKit::TiledCoreAnimationDrawingArea::createPageOverlayLayer):
+        (WebKit::TiledCoreAnimationDrawingArea::didCommitChangesForLayer):
+        Get rid of "clipsToExposedRect", we just use infinite-ness of the rect
+        to indicate that now.
+        Don't scroll an infinite rect; it won't work.
+
+2014-01-07  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Crash when trying to register a custom scheme before network process has been launched
+        https://bugs.webkit.org/show_bug.cgi?id=126385
+
+        Reviewed by Anders Carlsson.
+
+        WebContext::registerSchemeForCustomProtocol() uses
+        sendToNetworkingProcess() to send the message to the appropriate
+        networking process. In the case of using web process,
+        sendToNetworkingProcess() first checks if there's already a web
+        process, doing nothing otherwise, but when using the network
+        process it assumes there's already a network process. In both
+        cases it's safe to do nothing, because the schemes will be passed
+        as creation parameters to the process when launched.
+
+        * UIProcess/WebContext.h:
+        (WebKit::WebContext::sendToNetworkingProcess):
+
+2014-01-07  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        WebKit2 EFL build fix after r161387
+        https://bugs.webkit.org/show_bug.cgi?id=126566
+
+        Reviewed by Andreas Kling.
+
+        Add missing ASYNC_SCROLLING macro.
+
+        * UIProcess/WebPageProxy.h:
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp:
+        * WebProcess/WebCoreSupport/WebChromeClient.h:
+        * WebProcess/WebPage/WebPage.cpp:
+        * WebProcess/WebPage/WebPage.h:
+
+2014-01-06  Simon Fraser  <simon.fraser@apple.com>
+
+        Hook up the RemoteScrollingCoordinator
+        https://bugs.webkit.org/show_bug.cgi?id=126547
+
+        Reviewed by Tim Horton.
+        
+        Hook up the RemoteScrollingCoordinator in WebKit2.
+        
+        When the RemoteLayerTreeDrawingArea is in use, WebPageProxy creates
+        a RemoteScrollingCoordinator, and hands it mouseWheel events. It then
+        scrolls via a RemoteScrollingTree constructed from state tree commits from the
+        WebProcess.
+        
+        Scrolling tree commits happen via a transaction received by RemoteLayerTreeDrawingAreaProxy,
+        atomically with layer tree transactions.
+
+        * Shared/Scrolling/RemoteScrollingCoordinatorTransaction.cpp:
+        (WebKit::RemoteScrollingCoordinatorTransaction::encode): Fix encoding for some
+        cases seen in WebKitTestRunner where a page has no ScrollingCoordinator.
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::initializeWebPage): Create the RemoteScrollingCoordinatorProxy
+        when using a remote layer tree drawing area.
+        (WebKit::WebPageProxy::handleWheelEvent): Pass to the scrolling coordinator.
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::scrollingCoordinatorProxy):
+        * UIProcess/mac/RemoteLayerTreeDrawingAreaProxy.h: Include the RemoteScrollingCoordinatorTransaction.
+        * UIProcess/mac/RemoteLayerTreeDrawingAreaProxy.messages.in:
+        * UIProcess/mac/RemoteLayerTreeDrawingAreaProxy.mm:
+        (WebKit::RemoteLayerTreeDrawingAreaProxy::commitLayerTree):
+        * UIProcess/mac/RemoteLayerTreeHost.mm:
+        (WebKit::RemoteLayerTreeHost::getLayer): It's valid to get a 0 layerID (e.g. when
+        a layer disappears) so handle this case.
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp:
+        (WebKit::WebChromeClient::createScrollingCoordinator): Override to create the
+        RemoteScrollingCoordinator in the WebProcess.
+        * WebProcess/WebCoreSupport/WebChromeClient.h:
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::scrollingCoordinator): Not inline to avoid polluting the
+        header with #includes.
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.h: Say that we want a ScrollingCoordinator.
+        * WebProcess/WebPage/mac/RemoteLayerTreeDrawingArea.mm:
+        (WebKit::RemoteLayerTreeDrawingArea::flushLayers): Add the scrollingTransaction to the
+        message.
+
+2014-01-06  Jaehun Lim  <ljaehun.lim@samsung.com>
+
+        Use hasEnabledVerticalScrollbar instead of hasEnabledHorizontalScrollbar.
+        https://bugs.webkit.org/show_bug.cgi?id=126546
+
+        Reviewed by Simon Fraser.
+
+        hasEnabledHorizontalScrollbar is used twice.
+
+        * Shared/WebCoreArgumentCoders.cpp:
+        (IPC::ArgumentCoder<WebCore::ScrollableAreaParameters>::encode):
+
+2014-01-06  Simon Fraser  <simon.fraser@apple.com>
+
+        Another build fix.
+        
+        Need to look in the WebProcess/Scrolling directory for .messages.in files.
+
+        * DerivedSources.make:
+
+2014-01-06  Simon Fraser  <simon.fraser@apple.com>
+
+        Fix the build.
+        
+        Need to add RemoteScrollingCoordinator to MESSAGE_RECEIVERS so that
+        RemoteScrollingCoordinatorMessages.h gets generated.
+
+        * DerivedSources.make:
+
+2014-01-06  Simon Fraser  <simon.fraser@apple.com>
+
+        Rename DrawingArea::supportsThreadedScrolling() to supportsAsyncScrolling()
+        https://bugs.webkit.org/show_bug.cgi?id=126529
+
+        Reviewed by Tim Horton.
+        
+        Change function name from using "threaded" to "async" terminology.
+
+        * WebProcess/WebPage/DrawingArea.h:
+        (WebKit::DrawingArea::supportsAsyncScrolling):
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+
+2014-01-06  Simon Fraser  <simon.fraser@apple.com>
+
+        Add new files for UI-side scrolling
+        https://bugs.webkit.org/show_bug.cgi?id=126532
+
+        Reviewed by Anders Carlson.
+        
+        Add RemoteScrollingCoordinator, RemoteScrollingCoordinatorProxy,
+        RemoteScrollingCoordinatorTransaction, RemoteScrollingTree. 
+        
+        These allow the scrolling tree to be used in the UI process.
+        RemoteScrollingCoordinator builds a ScrollingStateTree, which is
+        encoded by RemoteScrollingCoordinatorTransaction. Decoding the
+        transaction recreates that ScrollingStateTree in the UI process,
+        and RemoteScrollingCoordinatorProxy "commits" that to update
+        the RemoteScrollingTree.
+        
+        New classes are not hooked up to anything yet.
+
+        * Shared/Scrolling/RemoteScrollingCoordinatorTransaction.cpp: Added.
+        (ArgumentCoder<ScrollingStateNode>::encode):
+        (ArgumentCoder<ScrollingStateNode>::decode):
+        (ArgumentCoder<ScrollingStateScrollingNode>::encode):
+        (ArgumentCoder<ScrollingStateScrollingNode>::decode):
+        (ArgumentCoder<ScrollingStateFixedNode>::encode):
+        (ArgumentCoder<ScrollingStateFixedNode>::decode):
+        (ArgumentCoder<ScrollingStateStickyNode>::encode):
+        (ArgumentCoder<ScrollingStateStickyNode>::decode):
+        (WebKit::encodeNodeAndDescendants):
+        (WebKit::RemoteScrollingCoordinatorTransaction::encode):
+        (WebKit::RemoteScrollingCoordinatorTransaction::decode):
+        * Shared/Scrolling/RemoteScrollingCoordinatorTransaction.h: Added.
+        (WebKit::RemoteScrollingCoordinatorTransaction::setStateTreeToEncode):
+        (WebKit::RemoteScrollingCoordinatorTransaction::scrollingStateTree):
+        * UIProcess/Scrolling/RemoteScrollingCoordinatorProxy.cpp: Added.
+        (WebKit::RemoteScrollingCoordinatorProxy::RemoteScrollingCoordinatorProxy):
+        (WebKit::RemoteScrollingCoordinatorProxy::~RemoteScrollingCoordinatorProxy):
+        (WebKit::RemoteScrollingCoordinatorProxy::layerTreeHost):
+        (WebKit::RemoteScrollingCoordinatorProxy::updateScrollingTree):
+        (WebKit::RemoteScrollingCoordinatorProxy::connectStateNodeLayers):
+        (WebKit::RemoteScrollingCoordinatorProxy::handleWheelEvent):
+        (WebKit::RemoteScrollingCoordinatorProxy::scrollPositionChanged):
+        * UIProcess/Scrolling/RemoteScrollingCoordinatorProxy.h: Added.
+        * UIProcess/Scrolling/RemoteScrollingTree.cpp: Added.
+        (WebKit::RemoteScrollingTree::create):
+        (WebKit::RemoteScrollingTree::RemoteScrollingTree):
+        (WebKit::RemoteScrollingTree::~RemoteScrollingTree):
+        (WebKit::RemoteScrollingTree::tryToHandleWheelEvent):
+        (WebKit::RemoteScrollingTree::handleWheelEventPhase):
+        (WebKit::RemoteScrollingTree::updateMainFrameScrollPosition):
+        (WebKit::RemoteScrollingTree::createNode):
+        * UIProcess/Scrolling/RemoteScrollingTree.h: Added.
+        (WebKit::RemoteScrollingTree::scrollingCoordinatorProxy):
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/Scrolling/RemoteScrollingCoordinator.h: Added.
+        (WebKit::RemoteScrollingCoordinator::create):
+        * WebProcess/Scrolling/RemoteScrollingCoordinator.messages.in: Added.
+        * WebProcess/Scrolling/RemoteScrollingCoordinator.mm: Added.
+        (WebKit::RemoteScrollingCoordinator::RemoteScrollingCoordinator):
+        (WebKit::RemoteScrollingCoordinator::~RemoteScrollingCoordinator):
+        (WebKit::RemoteScrollingCoordinator::scheduleTreeStateCommit):
+        (WebKit::RemoteScrollingCoordinator::createScrollingTreeNode):
+        (WebKit::RemoteScrollingCoordinator::isRubberBandInProgress):
+        (WebKit::RemoteScrollingCoordinator::setScrollPinningBehavior):
+        (WebKit::RemoteScrollingCoordinator::buildTransaction):
+        (WebKit::RemoteScrollingCoordinator::scrollPositionChangedForNode):
+
+2014-01-06  Martin Robinson  <mrobinson@igalia.com>
+
+        Small build fix for the GTK+ CMake port
+
+        * PlatformGTK.cmake: Include a missing GeoClue include directory.
+
+2014-01-06  Simon Fraser  <simon.fraser@apple.com>
+
+        Rename DrawingArea::supportsThreadedScrolling() to supportsAsyncScrolling()
+        https://bugs.webkit.org/show_bug.cgi?id=126529
+
+        Reviewed by Tim Horton.
+        
+        Change function name from using "threaded" to "async" terminology.
+
+        * WebProcess/WebPage/DrawingArea.h:
+        (WebKit::DrawingArea::supportsAsyncScrolling):
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+
+2014-01-04  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Move all GTK/GObject unit tests to Tools/TestWebKitAPI
+        https://bugs.webkit.org/show_bug.cgi?id=126342
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * UIProcess/API/gtk/tests/CMakeLists.txt: Removed.
+        * UIProcess/API/gtk/tests/GNUmakefile.am: Removed.
+
+2014-01-06  Enrica Casucci  <enrica@apple.com>
+
+        Add support to retrieve the autocorrection context.
+        https://bugs.webkit.org/show_bug.cgi?id=126479
+
+        Reviewed by Sam Weinig.
+        
+        We are adding the support to retrieve the input context for autocorrection
+        and input methods on iOS. The implementation is provided both via synchronous
+        and asynchronous calls to the WebProcess.
+
+        * Platform/IPC/HandleMessage.h: Added template with zero input parameters and six reply parameters.
+        * UIProcess/API/ios/WKInteractionView.mm:
+        (autocorrectionData):
+        (-[WKInteractionView requestAutocorrectionRectsForString:withCompletionHandler:]):
+        (autocorrectionResult):
+        (-[WKInteractionView applyAutocorrection:toString:withCompletionHandler:]):
+        (autocorrectionContext):
+        (-[WKInteractionView requestAutocorrectionContextWithCompletionHandler:]):
+        (-[WKInteractionView hasMarkedText]):
+        (-[WKInteractionView _startAssistingNode]):
+        (+[WKAutocorrectionContext autocorrectionContextWithData:markedText:selectedText:afterText:selectedRangeInMarkedText:]):
+        (-[WKAutocorrectionContext dealloc]):
+        * UIProcess/AutoCorrectionCallback.h:
+        (WebKit::AutocorrectionContextCallback::create):
+        (WebKit::AutocorrectionContextCallback::~AutocorrectionContextCallback):
+        (WebKit::AutocorrectionContextCallback::performCallbackWithReturnValue):
+        (WebKit::AutocorrectionContextCallback::invalidate):
+        (WebKit::AutocorrectionContextCallback::AutocorrectionContextCallback):
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::resetState):
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebPageProxy.messages.in:
+        * UIProcess/ios/WebPageProxyIOS.mm:
+        (WebKit::WebPageProxy::autocorrectionContextCallback):
+        (WebKit::WebPageProxy::requestAutocorrectionContext):
+        (WebKit::WebPageProxy::getAutocorrectionContext):
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/WebPage.messages.in:
+        * WebProcess/WebPage/ios/WebPageIOS.mm:
+        (WebKit::computeAutocorrectionContext):
+        (WebKit::WebPage::requestAutocorrectionContext):
+        (WebKit::WebPage::getAutocorrectionContext):
+
+2014-01-06  Gavin Barraclough  <barraclough@apple.com>
+
+        Move ViewState to WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=126488
+
+        Reviewed by Anders Carlson.
+
+        This change also partial reverts handling of LayerHostingMode, making this
+        a separate message again. With hindsight the new way of doing this wasn't
+        in all ways simpler, and it won't make sense to move this to WebCore.
+
+        * Shared/ViewState.h: Removed.
+            - Moved to WebCore.
+        * Shared/WebPageCreationParameters.cpp:
+        (WebKit::WebPageCreationParameters::encode):
+        (WebKit::WebPageCreationParameters::decode):
+        * Shared/WebPageCreationParameters.h:
+            - Added layerHostingMode.
+        * UIProcess/API/mac/PageClientImpl.h:
+        * UIProcess/API/mac/PageClientImpl.mm:
+        (WebKit::PageClientImpl::PageClientImpl):
+        (WebKit::PageClientImpl::viewLayerHostingMode):
+        * UIProcess/PageClient.h:
+        (WebKit::PageClient::viewLayerHostingMode):
+            - Revert isLayerWindowServerHosted -> viewLayerHostingMode.
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+            - Added back m_layerHostingMode.
+        (WebKit::WebPageProxy::updateViewState):
+            - Removed IsLayerWindowServerHosted from ViewState.
+        (WebKit::WebPageProxy::viewStateDidChange):
+            - Added SetLayerHostingMode message.
+        (WebKit::WebPageProxy::initializeCreationParameters):
+            - Pass layerHostingMode.
+        * UIProcess/WebPageProxy.h:
+        (WebKit::WebPageProxy::isInWindow):
+        (WebKit::WebPageProxy::isViewVisible):
+            - ViewState moved to WebCore.
+        * WebKit2.xcodeproj/project.pbxproj:
+            - Removed ViewState.
+        * WebProcess/Plugins/PluginView.cpp:
+        (WebKit::PluginView::setLayerHostingMode):
+        (WebKit::PluginView::platformViewStateDidChange):
+            - Separated setLayerHostingMode from platformViewStateDidChange.
+        * WebProcess/Plugins/PluginView.h:
+        * WebProcess/WebPage/DrawingArea.h:
+        (WebKit::DrawingArea::viewStateDidChange):
+        (WebKit::DrawingArea::setLayerHostingMode):
+            - Added virtual function, overridden in TiledCoreAnimationDrawingArea.
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        (WebKit::WebPage::setLayerHostingMode):
+            - Separated setLayerHostingMode from platformViewStateDidChange.
+        * WebProcess/WebPage/WebPage.h:
+        (WebKit::WebPage::isVisible):
+        (WebKit::WebPage::layerHostingMode):
+            - ViewState moved to WebCore.
+        * WebProcess/WebPage/WebPage.messages.in:
+            - Added SetLayerHostingMode message.
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.h:
+        * WebProcess/WebPage/mac/TiledCoreAnimationDrawingArea.mm:
+        (WebKit::TiledCoreAnimationDrawingArea::viewStateDidChange):
+            - viewStateDidChange no longer calls setLayerHostingMode (this is called by WebPage).
+
+2014-01-06  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] [CMake] Parallel builds still fail when building WebKit2 GObject API unit tests
+        https://bugs.webkit.org/show_bug.cgi?id=126465
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * UIProcess/API/gtk/tests/CMakeLists.txt: Explicitly link the libWebKit2APITestCore static object against
+        WebKit2, which seems to be necessary on my new system. Also create an explicit dependency between the
+        injected bundle tests and WebKit2, because they need to use the generated headers.
+
 2014-01-06  László Langó  <lango@inf.u-szeged.hu>
 
         Use unsigned consistently, and check for invalid casts when calling into SharedBuffer from other code.

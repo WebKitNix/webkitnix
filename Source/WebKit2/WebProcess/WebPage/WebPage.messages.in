@@ -23,6 +23,7 @@
 messages -> WebPage LegacyReceiver {
     SetInitialFocus(bool forward, bool isKeyboardEventValid, WebKit::WebKeyboardEvent event)
     SetViewState(unsigned viewState, bool wantsDidUpdateViewState)
+    SetLayerHostingMode(unsigned layerHostingMode)
 
     SetDrawsBackground(bool drawsBackground)
     SetDrawsTransparentBackground(bool drawsTransparentBackground)
@@ -47,6 +48,8 @@ messages -> WebPage LegacyReceiver {
     ExtendSelection(uint32_t granularity)
     RequestAutocorrectionData(String textForAutocorrection, uint64_t callbackID)
     ApplyAutocorrection(String correction, String originalText, uint64_t callbackID)
+    RequestAutocorrectionContext(uint64_t callbackID)
+    GetAutocorrectionContext() -> (String beforeContext, String markedText, String selectedText, String afterContext, uint64_t location, uint64_t length) 
     InsertText(String text, uint64_t replacementRangeStart, uint64_t replacementRangeEnd)
     SetComposition(String text, Vector<WebCore::CompositionUnderline> underlines, uint64_t selectionStart, uint64_t selectionEnd)
     ConfirmComposition()
@@ -265,7 +268,6 @@ messages -> WebPage LegacyReceiver {
     SendComplexTextInputToPlugin(uint64_t pluginComplexTextInputIdentifier, String textInput)
 
     WindowAndViewFramesChanged(WebCore::FloatRect windowFrameInScreenCoordinates, WebCore::FloatRect windowFrameInUnflippedScreenCoordinates, WebCore::FloatRect viewFrameInWindowCoordinates, WebCore::FloatPoint accessibilityViewCoordinates)
-    ViewExposedRectChanged(WebCore::FloatRect exposedRect, bool clipsToExposedRect)
     SetMainFrameIsScrollable(bool isScrollable)
     RegisterUIProcessAccessibilityTokens(IPC::DataReference elemenToken, IPC::DataReference windowToken)
     GetStringSelectionForPasteboard() -> (String stringValue)

@@ -245,6 +245,7 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     , m_numberOfPrimarySnapshotDetectionAttempts(0)
     , m_determinePrimarySnapshottedPlugInTimer(RunLoop::main(), this, &WebPage::determinePrimarySnapshottedPlugInTimerFired)
 #endif
+    , m_layerHostingMode(parameters.layerHostingMode)
 #if PLATFORM(MAC)
     , m_pdfPluginEnabled(false)
     , m_hasCachedWindowFrame(false)
@@ -320,7 +321,7 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
 
 #if ENABLE(ASYNC_SCROLLING)
     m_useAsyncScrolling = parameters.store.getBoolValueForKey(WebPreferencesKey::threadedScrollingEnabledKey());
-    if (!m_drawingArea->supportsThreadedScrolling())
+    if (!m_drawingArea->supportsAsyncScrolling())
         m_useAsyncScrolling = false;
     m_page->settings().setScrollingCoordinatorEnabled(m_useAsyncScrolling);
 #endif
@@ -377,17 +378,8 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
 
     setMemoryCacheMessagesEnabled(parameters.areMemoryCacheClientCallsEnabled);
 
-    setActive(parameters.viewState & ViewState::WindowIsActive);
-    setFocused(parameters.viewState & ViewState::IsFocused);
-
-    // Page defaults to in-window, but setIsInWindow depends on it being a valid indicator of actually having been put into a window.
-    bool isInWindow = parameters.viewState & ViewState::IsInWindow;
-    if (!isInWindow)
-        m_page->setIsInWindow(false);
-    else
-        WebProcess::shared().pageDidEnterWindow(m_pageID);
-
-    setIsInWindow(isInWindow);
+    m_page->setViewState(m_viewState, true);
+    updateIsInWindow(true);
 
     setMinimumLayoutSize(parameters.minimumLayoutSize);
     setAutoSizingShouldExpandToViewHeight(parameters.autoSizingShouldExpandToViewHeight);
@@ -431,9 +423,6 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     if (m_useAsyncScrolling)
         WebProcess::shared().eventDispatcher().addScrollingTreeForPage(this);
 #endif
-
-    m_page->setIsVisible(m_viewState & ViewState::IsVisible, true);
-    setIsVisuallyIdle(m_viewState & ViewState::IsVisuallyIdle);
 }
 
 WebPage::~WebPage()
@@ -1982,18 +1971,6 @@ void WebPage::centerSelectionInVisibleArea()
     m_findController.showFindIndicatorInSelection();
 }
 
-void WebPage::setActive(bool isActive)
-{
-    m_page->focusController().setActive(isActive);
-}
-
-void WebPage::setViewIsVisible(bool isVisible)
-{
-    corePage()->focusController().setContentIsVisible(isVisible);
-
-    m_page->setIsVisible(m_viewState & ViewState::IsVisible, false);
-}
-
 void WebPage::setDrawsBackground(bool drawsBackground)
 {
     if (m_drawsBackground == drawsBackground)
@@ -2047,11 +2024,6 @@ void WebPage::viewWillEndLiveResize()
     Frame& frame = m_page->focusController().focusedOrMainFrame();
     if (FrameView* view = frame.view())
         view->willEndLiveResize();
-}
-
-void WebPage::setFocused(bool isFocused)
-{
-    m_page->focusController().setFocused(isFocused);
 }
 
 void WebPage::setInitialFocus(bool forward, bool isKeyboardEventValid, const WebKeyboardEvent& event)
@@ -2108,15 +2080,16 @@ inline bool WebPage::canHandleUserEvents() const
     return true;
 }
 
-void WebPage::setIsInWindow(bool isInWindow)
+void WebPage::updateIsInWindow(bool isInitialState)
 {
-    bool pageWasInWindow = m_page->isInWindow();
-    
+    bool isInWindow = m_viewState & WebCore::ViewState::IsInWindow;
+
     if (!isInWindow) {
         m_setCanStartMediaTimer.stop();
         m_page->setCanStartMedia(false);
         
-        if (pageWasInWindow)
+        // The WebProcess does not yet know about this page; no need to tell it we're leaving the window.
+        if (!isInitialState)
             WebProcess::shared().pageWillLeaveWindow(m_pageID);
     } else {
         // Defer the call to Page::setCanStartMedia() since it ends up sending a synchronous message to the UI process
@@ -2125,11 +2098,8 @@ void WebPage::setIsInWindow(bool isInWindow)
         if (m_mayStartMediaWhenInWindow)
             m_setCanStartMediaTimer.startOneShot(0);
 
-        if (!pageWasInWindow)
-            WebProcess::shared().pageDidEnterWindow(m_pageID);
+        WebProcess::shared().pageDidEnterWindow(m_pageID);
     }
-
-    m_page->setIsInWindow(isInWindow);
 
     if (isInWindow)
         layoutIfNeeded();
@@ -2141,27 +2111,25 @@ void WebPage::setViewState(ViewState::Flags viewState, bool wantsDidUpdateViewSt
     m_viewState = viewState;
 
     m_drawingArea->viewStateDidChange(changed);
-
-    // We want to make sure to update the active state while hidden, so if the view is hidden then update the active state
-    // early (in case it becomes visible), and if the view was visible then update active state later (in case it hides).
-    if (changed & ViewState::IsFocused)
-        setFocused(viewState & ViewState::IsFocused);
-    if (changed & ViewState::WindowIsActive && !(m_viewState & ViewState::IsVisible))
-        setActive(viewState & ViewState::WindowIsActive);
-    if (changed & ViewState::IsVisible)
-        setViewIsVisible(viewState & ViewState::IsVisible);
-    if (changed & ViewState::WindowIsActive && m_viewState & ViewState::IsVisible)
-        setActive(viewState & ViewState::WindowIsActive);
-    if (changed & ViewState::IsInWindow)
-        setIsInWindow(viewState & ViewState::IsInWindow);
-    if (changed & ViewState::IsVisuallyIdle)
-        setIsVisuallyIdle(viewState & ViewState::IsVisuallyIdle);
-
+    m_page->setViewState(viewState);
     for (auto* pluginView : m_pluginViews)
         pluginView->viewStateDidChange(changed);
 
+    if (changed & ViewState::IsInWindow)
+        updateIsInWindow();
+
     if (wantsDidUpdateViewState)
         m_sendDidUpdateViewStateTimer.startOneShot(0);
+}
+
+void WebPage::setLayerHostingMode(unsigned layerHostingMode)
+{
+    m_layerHostingMode = static_cast<LayerHostingMode>(layerHostingMode);
+
+    m_drawingArea->setLayerHostingMode(m_layerHostingMode);
+
+    for (auto* pluginView : m_pluginViews)
+        pluginView->setLayerHostingMode(m_layerHostingMode);
 }
 
 void WebPage::didReceivePolicyDecision(uint64_t frameID, uint64_t listenerID, uint32_t policyAction, uint64_t downloadID)
@@ -3136,12 +3104,6 @@ void WebPage::windowAndViewFramesChanged(const FloatRect& windowFrameInScreenCoo
 }
 #endif
 
-void WebPage::viewExposedRectChanged(const FloatRect& exposedRect, bool clipsToExposedRect)
-{
-    m_drawingArea->setExposedRect(exposedRect);
-    m_drawingArea->setClipsToExposedRect(clipsToExposedRect);
-}
-
 void WebPage::setMainFrameIsScrollable(bool isScrollable)
 {
     m_mainFrameIsScrollable = isScrollable;
@@ -3211,6 +3173,13 @@ InjectedBundleBackForwardList* WebPage::backForwardList()
         m_backForwardList = InjectedBundleBackForwardList::create(this);
     return m_backForwardList.get();
 }
+
+#if ENABLE(ASYNC_SCROLLING)
+ScrollingCoordinator* WebPage::scrollingCoordinator() const
+{
+    return m_page->scrollingCoordinator();
+}
+#endif
 
 WebPage::SandboxExtensionTracker::~SandboxExtensionTracker()
 {
@@ -3752,11 +3721,6 @@ void WebPage::setVisibilityStatePrerender()
 {
     if (m_page)
         m_page->setIsPrerender();
-}
-
-void WebPage::setIsVisuallyIdle(bool isVisuallyIdle)
-{
-    m_page->setIsVisuallyIdle(isVisuallyIdle);
 }
 
 void WebPage::setScrollingPerformanceLoggingEnabled(bool enabled)

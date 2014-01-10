@@ -105,8 +105,12 @@ public:
     virtual bool filtersCanBeComposited(const FilterOperations&);
 #endif
 
+#if ENABLE(CSS_COMPOSITING)
+    virtual void setBlendMode(BlendMode) OVERRIDE;
+#endif
+
     virtual void setNeedsDisplay();
-    virtual void setNeedsDisplayInRect(const FloatRect&);
+    virtual void setNeedsDisplayInRect(const FloatRect&, ShouldClipToLayer = ClipToLayer);
     virtual void setContentsNeedsDisplay();
     
     virtual void setContentsRect(const IntRect&);
@@ -121,6 +125,9 @@ public:
 
     virtual void setContentsToImage(Image*);
     virtual void setContentsToMedia(PlatformLayer*);
+#if PLATFORM(IOS)
+    virtual PlatformLayer* contentsLayerForMedia() const OVERRIDE;
+#endif
     virtual void setContentsToCanvas(PlatformLayer*);
     virtual void setContentsToSolidColor(const Color&);
 
@@ -137,6 +144,9 @@ public:
     virtual void layerDidDisplay(PlatformLayer*);
 
     virtual void setMaintainsPixelAlignment(bool);
+#if PLATFORM(IOS)
+    virtual FloatSize pixelAlignmentOffset() const OVERRIDE { return m_pixelAlignmentOffset; }
+#endif
     virtual void deviceOrPageScaleFactorChanged();
 
     struct CommitState {
@@ -196,7 +206,11 @@ private:
 #if ENABLE(CSS_FILTERS)
     void updateFilters();
 #endif
-    
+
+#if ENABLE(CSS_COMPOSITING)
+    void updateBlendMode();
+#endif
+
     virtual PassRefPtr<PlatformCALayer> createPlatformCALayer(PlatformCALayer::LayerType, PlatformCALayerClient* owner);
     virtual PassRefPtr<PlatformCALayer> createPlatformCALayer(PlatformLayer*, PlatformCALayerClient* owner);
 
@@ -255,6 +269,10 @@ private:
     
     void setupContentsLayer(PlatformCALayer*);
     PlatformCALayer* contentsLayer() const { return m_contentsLayer.get(); }
+
+#if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
+    bool mediaLayerMustBeUpdatedOnMainThread() const;
+#endif
 
     virtual void setReplicatedByLayer(GraphicsLayer*);
 
@@ -430,7 +448,8 @@ private:
         TilingAreaChanged = 1 << 28,
         TilesAdded = 1 < 29,
         DebugIndicatorsChanged = 1 << 30,
-        CustomAppearanceChanged = 1 << 31
+        CustomAppearanceChanged = 1 << 31,
+        BlendModeChanged        = 1 << 32
     };
     typedef unsigned LayerChangeFlags;
     enum ScheduleFlushOrNot { ScheduleFlush, DontScheduleFlush };

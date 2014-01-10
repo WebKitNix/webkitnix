@@ -4280,7 +4280,7 @@ void RenderLayer::collectFragments(LayerFragments& fragments, const RenderLayer*
     ClipRect backgroundRectInFlowThread;
     ClipRect foregroundRectInFlowThread;
     ClipRect outlineRectInFlowThread;
-    calculateRects(paginationClipRectsContext, PaintInfo::infiniteRect(), layerBoundsInFlowThread, backgroundRectInFlowThread, foregroundRectInFlowThread,
+    calculateRects(paginationClipRectsContext, LayoutRect::infiniteRect(), layerBoundsInFlowThread, backgroundRectInFlowThread, foregroundRectInFlowThread,
         outlineRectInFlowThread, &offsetWithinPaginatedLayer);
     
     // Take our bounding box within the flow thread and clip it.
@@ -5346,7 +5346,7 @@ void RenderLayer::calculateClipRects(const ClipRectsContext& clipRectsContext, C
 {
     if (!parent()) {
         // The root layer's clip rect is always infinite.
-        clipRects.reset(PaintInfo::infiniteRect());
+        clipRects.reset(LayoutRect::infiniteRect());
         return;
     }
     
@@ -5372,7 +5372,7 @@ void RenderLayer::calculateClipRects(const ClipRectsContext& clipRectsContext, C
             parentLayer->calculateClipRects(parentContext, clipRects);
         }
     } else
-        clipRects.reset(PaintInfo::infiniteRect());
+        clipRects.reset(LayoutRect::infiniteRect());
 
     // A fixed object is essentially the root of its containing block hierarchy, so when
     // we encounter such an object, we reset our clip rects to the fixedClipRect.
@@ -5465,7 +5465,7 @@ ClipRect RenderLayer::backgroundClipRect(const ClipRectsContext& clipRectsContex
     RenderView& view = renderer().view();
 
     // Note: infinite clipRects should not be scrolled here, otherwise they will accidentally no longer be considered infinite.
-    if (parentRects.fixed() && &clipRectsContext.rootLayer->renderer() == &view && backgroundClipRect != PaintInfo::infiniteRect())
+    if (parentRects.fixed() && &clipRectsContext.rootLayer->renderer() == &view && backgroundClipRect != LayoutRect::infiniteRect())
         backgroundClipRect.move(view.frameView().scrollOffsetForFixedPosition());
 
     return backgroundClipRect;
@@ -5499,16 +5499,20 @@ void RenderLayer::calculateRects(const ClipRectsContext& clipRectsContext, const
     outlineRect = backgroundRect;
 
     RenderFlowThread* flowThread = clipRectsContext.region ? clipRectsContext.region->flowThread() : 0;
-    if (isSelfPaintingLayer() && flowThread && !renderer().isInFlowRenderFlowThread() && renderBox()) {
-        // FIXME: Handle the case where the renderer is not a RenderBox.
-        LayoutRect layerBoundsWithVisualOverflow = clipRectsContext.region->visualOverflowRectForBox(renderBox());
+    if (isSelfPaintingLayer() && flowThread && !renderer().isInFlowRenderFlowThread()) {
+        const RenderBoxModelObject& boxModelObject = toRenderBoxModelObject(renderer());
+        LayoutRect layerBoundsWithVisualOverflow = clipRectsContext.region->visualOverflowRectForBox(&boxModelObject);
 
         // Layers are in physical coordinates so the origin must be moved to the physical top-left of the flowthread.
-        if (flowThread->style().isFlippedBlocksWritingMode()) {
+        if (&boxModelObject == flowThread && flowThread->style().isFlippedBlocksWritingMode()) {
             if (flowThread->style().isHorizontalWritingMode())
                 layerBoundsWithVisualOverflow.moveBy(LayoutPoint(0, flowThread->height()));
             else
                 layerBoundsWithVisualOverflow.moveBy(LayoutPoint(flowThread->width(), 0));
+        } else {
+            RenderBlock* rendererContainingBlock = boxModelObject.enclosingBox()->isRenderBlock() ? toRenderBlock(boxModelObject.enclosingBox()) : 0;
+            if (rendererContainingBlock)
+                rendererContainingBlock->flipForWritingMode(layerBoundsWithVisualOverflow);
         }
 
         layerBoundsWithVisualOverflow.moveBy(offset);
@@ -5596,10 +5600,10 @@ LayoutRect RenderLayer::localClipRect() const
     LayoutRect layerBounds;
     ClipRect backgroundRect, foregroundRect, outlineRect;
     ClipRectsContext clipRectsContext(clippingRootLayer, 0, PaintingClipRects);
-    calculateRects(clipRectsContext, PaintInfo::infiniteRect(), layerBounds, backgroundRect, foregroundRect, outlineRect);
+    calculateRects(clipRectsContext, LayoutRect::infiniteRect(), layerBounds, backgroundRect, foregroundRect, outlineRect);
 
     LayoutRect clipRect = backgroundRect.rect();
-    if (clipRect == PaintInfo::infiniteRect())
+    if (clipRect == LayoutRect::infiniteRect())
         return clipRect;
 
     LayoutPoint clippingRootOffset;
@@ -5660,9 +5664,9 @@ bool RenderLayer::intersectsDamageRect(const LayoutRect& layerBounds, const Layo
     // cause the paint rejection algorithm to prevent them from painting when using different width regions.
     // e.g. an absolutely positioned box with bottom:0px and right:0px would have it's frameRect.x relative
     // to the flow thread, not the last region (in which it will end up because of bottom:0px)
-    if (region && renderer().isBox() && renderer().flowThreadContainingBlock()) {
+    if (region && renderer().flowThreadContainingBlock()) {
         LayoutRect b = layerBounds;
-        b.moveBy(region->visualOverflowRectForBox(toRenderBox(&renderer())).location());
+        b.moveBy(region->visualOverflowRectForBox(toRenderBoxModelObject(&renderer())).location());
         b.inflate(renderer().view().maximalOutlineSize());
         if (b.intersects(damageRect))
             return true;
@@ -5792,7 +5796,7 @@ LayoutRect RenderLayer::calculateLayerBounds(const RenderLayer* ancestorLayer, c
 
     if (flags & UseLocalClipRectIfPossible) {
         LayoutRect localClipRect = this->localClipRect();
-        if (localClipRect != PaintInfo::infiniteRect()) {
+        if (localClipRect != LayoutRect::infiniteRect()) {
             if ((flags & IncludeSelfTransform) && paintsWithTransform(PaintBehaviorNormal))
                 localClipRect = transform()->mapRect(localClipRect);
 
@@ -6275,7 +6279,7 @@ void RenderLayer::repaintIncludingDescendants()
 
 #if USE(ACCELERATED_COMPOSITING)
 
-void RenderLayer::setBackingNeedsRepaint()
+void RenderLayer::setBackingNeedsRepaint(GraphicsLayer::ShouldClipToLayer shouldClip)
 {
     ASSERT(isComposited());
     if (backing()->paintsIntoWindow()) {
@@ -6283,7 +6287,7 @@ void RenderLayer::setBackingNeedsRepaint()
         // repaint to the native view system.
         renderer().view().repaintViewRectangle(absoluteBoundingBox());
     } else
-        backing()->setContentsNeedDisplay();
+        backing()->setContentsNeedDisplay(shouldClip);
 }
 
 void RenderLayer::setBackingNeedsRepaintInRect(const LayoutRect& r)
@@ -6955,12 +6959,12 @@ void RenderLayer::paintFlowThreadIfRegion(GraphicsContext* context, const LayerP
     }
 
     // Optimize clipping for the single fragment case.
-    if (!regionClipRect.isEmpty() && regionClipRect != PaintInfo::infiniteRect())
+    if (!regionClipRect.isEmpty() && regionClipRect != LayoutRect::infiniteRect())
         clipToRect(paintingInfo.rootLayer, context, paintingInfo.paintDirtyRect, regionClipRect);
 
     flowThreadLayer->paintNamedFlowThreadInsideRegion(context, region, paintingInfo.paintDirtyRect, paintOffset, paintingInfo.paintBehavior, paintFlags);
 
-    if (!regionClipRect.isEmpty() && regionClipRect != PaintInfo::infiniteRect())
+    if (!regionClipRect.isEmpty() && regionClipRect != LayoutRect::infiniteRect())
         restoreClip(context, paintingInfo.paintDirtyRect, regionClipRect);
 }
 

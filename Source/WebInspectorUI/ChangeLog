@@ -1,3 +1,71 @@
+2014-01-09  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove unused overriding protocols.
+        https://bugs.webkit.org/show_bug.cgi?id=126630
+
+        Reviewed by Timothy Hatcher.
+
+        Update InspectorWebBackendCommands.js after removing unused overriding protocols.
+
+        * UserInterface/InspectorWebBackendCommands.js:
+        * UserInterface/Legacy/6.0/InspectorWebBackendCommands.js:
+        * UserInterface/Legacy/7.0/InspectorWebBackendCommands.js:
+        * Versions/Inspector-iOS-6.0.json:
+        * Versions/Inspector-iOS-7.0.json:
+
+2014-01-07  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Typo "clipboarPrefixString"
+        https://bugs.webkit.org/show_bug.cgi?id=126595
+
+        Reviewed by Sam Weinig.
+
+        * UserInterface/ConsoleCommandResult.js:
+        (WebInspector.ConsoleCommandResult.prototype.toMessageElement):
+        (WebInspector.ConsoleCommandResult.prototype.get clipboardPrefixString):
+        * UserInterface/ConsoleMessageImpl.js:
+        (WebInspector.ConsoleMessageImpl.prototype.get clipboardPrefixString):
+        (WebInspector.ConsoleMessageImpl.prototype.toClipboardString):
+
+2014-01-06  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove canOverrideDeviceMetrics and setDeviceMetricsOverride from protocol
+        https://bugs.webkit.org/show_bug.cgi?id=126149
+
+        Reviewed by Joseph Pecoraro.
+
+        * UserInterface/InspectorWebBackendCommands.js: Remove unused codes.
+        * UserInterface/Legacy/6.0/InspectorWebBackendCommands.js: Ditto.
+        * UserInterface/Legacy/7.0/InspectorWebBackendCommands.js: Ditto.
+        * Versions/Inspector-iOS-6.0.json: Ditto.
+        * Versions/Inspector-iOS-7.0.json: Ditto.
+
+2014-01-06  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Remove support for FileSystem in Frontend.
+        https://bugs.webkit.org/show_bug.cgi?id=126369
+
+        Reviewed by Joseph Pecoraro.
+
+        Update InspectorWebBackendCommands after removing 'FileSystem' domain.
+
+        * UserInterface/InspectorWebBackendCommands.js:
+        * UserInterface/Legacy/6.0/InspectorWebBackendCommands.js:
+        * UserInterface/Legacy/7.0/InspectorWebBackendCommands.js:
+        * Versions/Inspector-iOS-6.0.json:
+        * Versions/Inspector-iOS-7.0.json:
+
+2014-01-06  Seokju Kwon  <seokju@webkit.org>
+
+        Web Inspector: Get rid of DOM.setFileInputFiles from Protocol
+        https://bugs.webkit.org/show_bug.cgi?id=126312
+
+        Reviewed by Joseph Pecoraro.
+
+        Update InspectorWebBackendCommands.js after removing DOM.setFileInputFiles.
+
+        * UserInterface/InspectorWebBackendCommands.js:
+
 2013-12-22  Martin Robinson  <mrobinson@igalia.com>
 
         [GTK][CMake] Integrate GResource for inspector files (and others?)

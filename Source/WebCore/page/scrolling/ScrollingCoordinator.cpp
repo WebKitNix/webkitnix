@@ -45,10 +45,6 @@
 #include "RenderLayerCompositor.h"
 #endif
 
-#if ENABLE(ASYNC_SCROLLING)
-#include "ScrollingCoordinatorMac.h"
-#endif
-
 #if USE(COORDINATED_GRAPHICS)
 #include "ScrollingCoordinatorCoordinatedGraphics.h"
 #endif
@@ -59,12 +55,9 @@
 
 namespace WebCore {
 
+#if !PLATFORM(MAC)
 PassRefPtr<ScrollingCoordinator> ScrollingCoordinator::create(Page* page)
 {
-#if USE(ACCELERATED_COMPOSITING) && ENABLE(ASYNC_SCROLLING)
-    return adoptRef(new ScrollingCoordinatorMac(page));
-#endif
-
 #if USE(COORDINATED_GRAPHICS)
     return adoptRef(new ScrollingCoordinatorCoordinatedGraphics(page));
 #endif
@@ -75,6 +68,7 @@ PassRefPtr<ScrollingCoordinator> ScrollingCoordinator::create(Page* page)
 
     return adoptRef(new ScrollingCoordinator(page));
 }
+#endif
 
 ScrollingCoordinator::ScrollingCoordinator(Page* page)
     : m_page(page)
@@ -272,6 +266,12 @@ void ScrollingCoordinator::frameViewRootLayerDidChange(FrameView* frameView)
     frameViewLayoutUpdated(frameView);
     recomputeWheelEventHandlerCountForFrameView(frameView);
     updateSynchronousScrollingReasons();
+}
+
+void ScrollingCoordinator::scheduleUpdateScrollPositionForNode(ScrollingNodeID, const IntPoint& scrollPosition, bool programmaticScroll, SetOrSyncScrollingLayerPosition scrollingLayerPositionAction)
+{
+    // FIXME: need to handle non-main nodes.
+    scheduleUpdateMainFrameScrollPosition(scrollPosition, programmaticScroll, scrollingLayerPositionAction);
 }
 
 void ScrollingCoordinator::scheduleUpdateMainFrameScrollPosition(const IntPoint& scrollPosition, bool programmaticScroll, SetOrSyncScrollingLayerPosition scrollingLayerPositionAction)

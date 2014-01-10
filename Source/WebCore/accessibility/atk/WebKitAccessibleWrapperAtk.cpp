@@ -634,10 +634,6 @@ static AtkRole atkRole(AccessibilityObject* coreObject)
     case ColorWellRole:
         return ATK_ROLE_COLOR_CHOOSER;
     case ListRole:
-#if ATK_CHECK_VERSION(2, 11, 4)
-        if (coreObject->isList() && toAccessibilityList(coreObject)->isDescriptionList())
-            return ATK_ROLE_DESCRIPTION_LIST;
-#endif
         return ATK_ROLE_LIST;
     case ScrollBarRole:
         return ATK_ROLE_SCROLL_BAR;
@@ -828,6 +824,11 @@ static void setAtkStateSetFromCoreObject(AccessibilityObject* coreObject, AtkSta
 
     if (coreObject->isIndeterminate())
         atk_state_set_add_state(stateSet, ATK_STATE_INDETERMINATE);
+
+    if (coreObject->isCheckboxOrRadio() || coreObject->isMenuItem()) {
+        if (coreObject->checkboxOrRadioValue() == ButtonStateMixed)
+            atk_state_set_add_state(stateSet, ATK_STATE_INDETERMINATE);
+    }
 
     if (coreObject->invalidStatus() != "false")
         atk_state_set_add_state(stateSet, ATK_STATE_INVALID_ENTRY);

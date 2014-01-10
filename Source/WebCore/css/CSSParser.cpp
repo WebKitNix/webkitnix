@@ -5868,7 +5868,7 @@ PassRefPtr<CSSValue> CSSParser::parseShapeProperty(CSSPropertyID propId)
     RefPtr<CSSPrimitiveValue> keywordValue;
     RefPtr<CSSBasicShape> shapeValue;
 
-    if (valueId == CSSValueAuto
+    if (valueId == CSSValueNone
         || (valueId == CSSValueOutsideShape && propId == CSSPropertyWebkitShapeInside)) {
         keywordValue = parseValidPrimitive(valueId, value);
         m_valueList->next();
@@ -5903,7 +5903,7 @@ PassRefPtr<CSSValue> CSSParser::parseShapeProperty(CSSPropertyID propId)
     }
 
     if (shapeValue && keywordValue)
-        shapeValue->setBox(keywordValue.release());
+        shapeValue->setLayoutBox(keywordValue.release());
 
     return shapeValue ? cssValuePool().createValue(shapeValue.release()) : keywordValue.release();
 }

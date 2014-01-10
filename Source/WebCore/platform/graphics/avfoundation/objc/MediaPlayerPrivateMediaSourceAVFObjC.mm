@@ -137,10 +137,9 @@ MediaPlayerPrivateMediaSourceAVFObjC::MediaPlayerPrivateMediaSourceAVFObjC(Media
     // addPeriodicTimeObserverForInterval: throws an exception if you pass a non-numeric CMTime, so just use
     // an arbitrarily large time value of once an hour:
     m_timeJumpedObserver = [m_synchronizer addPeriodicTimeObserverForInterval:toCMTime(MediaTime::createWithDouble(3600)) queue:dispatch_get_main_queue() usingBlock:^(CMTime){
-        if (m_seeking) {
+        if (m_seeking)
             m_seeking = false;
-            m_player->timeChanged();
-        }
+        m_player->timeChanged();
     }];
 }
 
@@ -303,8 +302,7 @@ void MediaPlayerPrivateMediaSourceAVFObjC::setMuted(bool muted)
 
 IntSize MediaPlayerPrivateMediaSourceAVFObjC::naturalSize() const
 {
-    // FIXME(125156): Report the intrinsic size of the enabled video track.
-    return IntSize();
+    return m_mediaSourcePrivate->naturalSize();
 }
 
 bool MediaPlayerPrivateMediaSourceAVFObjC::hasVideo() const
@@ -518,6 +516,11 @@ void MediaPlayerPrivateMediaSourceAVFObjC::durationChanged()
 void MediaPlayerPrivateMediaSourceAVFObjC::effectiveRateChanged()
 {
     m_player->rateChanged();
+}
+
+void MediaPlayerPrivateMediaSourceAVFObjC::sizeChanged()
+{
+    m_player->sizeChanged();
 }
 
 void MediaPlayerPrivateMediaSourceAVFObjC::setReadyState(MediaPlayer::ReadyState readyState)
