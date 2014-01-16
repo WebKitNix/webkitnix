@@ -63,7 +63,7 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
 
 #ifdef WTF_USE_SOUP
     SoupSession* session = WebCore::ResourceHandle::defaultSession();
-    g_object_set(G_OBJECT(session), "ssl-use-system-ca-file", true, NULL);
+    g_object_set(G_OBJECT(session), SOUP_SESSION_SSL_USE_SYSTEM_CA_FILE, true, SOUP_SESSION_SSL_STRICT, false, NULL);
 
     const char* httpProxy = getenv("http_proxy");
     if (httpProxy) {
