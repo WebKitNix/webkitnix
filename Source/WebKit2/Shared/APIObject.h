@@ -29,6 +29,7 @@
 #include <functional>
 #include <wtf/RefCounted.h>
 #include <wtf/RefPtr.h>
+#include <wtf/ThreadSafeRefCounted.h>
 
 #if PLATFORM(MAC)
 #include "WKFoundation.h"
@@ -157,6 +158,7 @@ public:
         View,
 #if USE(SOUP)
         SoupRequestManager,
+        SoupCustomProtocolRequestManager,
 #endif
 #if PLATFORM(EFL) || PLATFORM(NIX)
         PopupMenuItem,
@@ -219,7 +221,7 @@ protected:
     {
     }
 
-    virtual Type type() const OVERRIDE { return APIType; }
+    virtual Type type() const override { return APIType; }
 
 #if DELEGATE_REF_COUNTING_TO_COCOA
     void* operator new(size_t size) { return newObject(size, APIType); }

@@ -118,7 +118,7 @@ namespace WebCore {
             , m_currentMacChallenge(nil)
 #endif
             , m_scheduledFailureType(ResourceHandle::NoFailure)
-            , m_failureTimer(loader, &ResourceHandle::fireFailure)
+            , m_failureTimer(loader, &ResourceHandle::failureTimerFired)
         {
             const URL& url = m_firstRequest.url();
             m_user = url.user();
@@ -217,13 +217,6 @@ namespace WebCore {
         NSURLAuthenticationChallenge *m_currentMacChallenge;
 #endif
         AuthenticationChallenge m_currentWebChallenge;
-#if PLATFORM(BLACKBERRY)
-        // We need to store the credentials for host and proxy separately for the platform
-        // networking layer. One of these will always be equal to m_currentWebChallenge.
-        AuthenticationChallenge m_hostWebChallenge;
-        AuthenticationChallenge m_proxyWebChallenge;
-#endif
-
         ResourceHandle::FailureType m_scheduledFailureType;
         Timer<ResourceHandle> m_failureTimer;
     };

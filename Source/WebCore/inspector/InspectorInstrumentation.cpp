@@ -44,7 +44,6 @@
 #include "DocumentLoader.h"
 #include "Event.h"
 #include "EventDispatcher.h"
-#include "InspectorAgent.h"
 #include "InspectorApplicationCacheAgent.h"
 #include "InspectorCSSAgent.h"
 #include "InspectorCanvasAgent.h"
@@ -92,14 +91,14 @@ static const char* const clearTimerEventName = "clearTimer";
 static const char* const timerFiredEventName = "timerFired";
 
 namespace {
-static HashSet<InstrumentingAgents*>* instrumentingAgentsSet = 0;
+static HashSet<InstrumentingAgents*>* instrumentingAgentsSet = nullptr;
 }
 
 int InspectorInstrumentation::s_frontendCounter = 0;
 
 static Frame* frameForScriptExecutionContext(ScriptExecutionContext* context)
 {
-    Frame* frame = 0;
+    Frame* frame = nullptr;
     if (context->isDocument())
         frame = toDocument(context)->frame();
     return frame;
@@ -392,7 +391,7 @@ InspectorInstrumentationCookie InspectorInstrumentation::willDispatchEventOnWind
     int timelineAgentId = 0;
     InspectorTimelineAgent* timelineAgent = instrumentingAgents->inspectorTimelineAgent();
     if (timelineAgent && window->hasEventListeners(event.type())) {
-        timelineAgent->willDispatchEvent(event, window ? window->frame() : 0);
+        timelineAgent->willDispatchEvent(event, window ? window->frame() : nullptr);
         timelineAgentId = timelineAgent->id();
     }
     return InspectorInstrumentationCookie(instrumentingAgents, timelineAgentId);
@@ -551,42 +550,6 @@ void InspectorInstrumentation::didScheduleStyleRecalculationImpl(InstrumentingAg
         resourceAgent->didScheduleStyleRecalculation(document);
 }
 
-InspectorInstrumentationCookie InspectorInstrumentation::willMatchRuleImpl(InstrumentingAgents* instrumentingAgents, StyleRule* rule, InspectorCSSOMWrappers& inspectorCSSOMWrappers, DocumentStyleSheetCollection& sheetCollection)
-{
-    InspectorCSSAgent* cssAgent = instrumentingAgents->inspectorCSSAgent();
-    if (cssAgent) {
-        cssAgent->willMatchRule(rule, inspectorCSSOMWrappers, sheetCollection);
-        return InspectorInstrumentationCookie(instrumentingAgents, 1);
-    }
-
-    return InspectorInstrumentationCookie();
-}
-
-void InspectorInstrumentation::didMatchRuleImpl(const InspectorInstrumentationCookie& cookie, bool matched)
-{
-    InspectorCSSAgent* cssAgent = cookie.instrumentingAgents()->inspectorCSSAgent();
-    if (cssAgent)
-        cssAgent->didMatchRule(matched);
-}
-
-InspectorInstrumentationCookie InspectorInstrumentation::willProcessRuleImpl(InstrumentingAgents* instrumentingAgents, StyleRule* rule, StyleResolver& styleResolver)
-{
-    InspectorCSSAgent* cssAgent = instrumentingAgents->inspectorCSSAgent();
-    if (cssAgent) {
-        cssAgent->willProcessRule(rule, styleResolver);
-        return InspectorInstrumentationCookie(instrumentingAgents, 1);
-    }
-
-    return InspectorInstrumentationCookie();
-}
-
-void InspectorInstrumentation::didProcessRuleImpl(const InspectorInstrumentationCookie& cookie)
-{
-    InspectorCSSAgent* cssAgent = cookie.instrumentingAgents()->inspectorCSSAgent();
-    if (cssAgent)
-        cssAgent->didProcessRule();
-}
-
 void InspectorInstrumentation::applyEmulatedMediaImpl(InstrumentingAgents* instrumentingAgents, String* media)
 {
     if (InspectorPageAgent* pageAgent = instrumentingAgents->inspectorPageAgent())
@@ -663,7 +626,7 @@ void InspectorInstrumentation::didReceiveResourceResponseImpl(const InspectorIns
 void InspectorInstrumentation::didReceiveResourceResponseButCanceledImpl(Frame* frame, DocumentLoader* loader, unsigned long identifier, const ResourceResponse& r)
 {
     InspectorInstrumentationCookie cookie = InspectorInstrumentation::willReceiveResourceResponse(frame, identifier, r);
-    InspectorInstrumentation::didReceiveResourceResponse(cookie, identifier, loader, r, 0);
+    InspectorInstrumentation::didReceiveResourceResponse(cookie, identifier, loader, r, nullptr);
 }
 
 void InspectorInstrumentation::continueAfterXFrameOptionsDeniedImpl(Frame* frame, DocumentLoader* loader, unsigned long identifier, const ResourceResponse& r)
@@ -687,21 +650,11 @@ void InspectorInstrumentation::didReceiveDataImpl(InstrumentingAgents* instrumen
         resourceAgent->didReceiveData(identifier, data, dataLength, encodedDataLength);
 }
 
-void InspectorInstrumentation::didFinishLoadingImpl(InstrumentingAgents* instrumentingAgents, unsigned long identifier, DocumentLoader* loader, double monotonicFinishTime)
+void InspectorInstrumentation::didFinishLoadingImpl(InstrumentingAgents* instrumentingAgents, unsigned long identifier, DocumentLoader* loader, double finishTime)
 {
-    InspectorTimelineAgent* timelineAgent = instrumentingAgents->inspectorTimelineAgent();
-    InspectorResourceAgent* resourceAgent = instrumentingAgents->inspectorResourceAgent();
-    if (!timelineAgent && !resourceAgent)
-        return;
-
-    double finishTime = 0.0;
-    // FIXME: Expose all of the timing details to inspector and have it calculate finishTime.
-    if (monotonicFinishTime)
-        finishTime = loader->timing()->monotonicTimeToPseudoWallTime(monotonicFinishTime);
-
-    if (timelineAgent)
+    if (InspectorTimelineAgent* timelineAgent = instrumentingAgents->inspectorTimelineAgent())
         timelineAgent->didFinishLoadingResource(identifier, false, finishTime, loader->frame());
-    if (resourceAgent)
+    if (InspectorResourceAgent* resourceAgent = instrumentingAgents->inspectorResourceAgent())
         resourceAgent->didFinishLoading(identifier, loader, finishTime);
 }
 
@@ -866,27 +819,27 @@ void InspectorInstrumentation::loaderDetachedFromFrameImpl(InstrumentingAgents* 
         inspectorPageAgent->loaderDetachedFromFrame(loader);
 }
 
-void InspectorInstrumentation::frameStartedLoadingImpl(InstrumentingAgents* instrumentingAgents, Frame* frame)
+void InspectorInstrumentation::frameStartedLoadingImpl(InstrumentingAgents& instrumentingAgents, Frame& frame)
 {
-    if (InspectorPageAgent* inspectorPageAgent = instrumentingAgents->inspectorPageAgent())
+    if (InspectorPageAgent* inspectorPageAgent = instrumentingAgents.inspectorPageAgent())
         inspectorPageAgent->frameStartedLoading(frame);
 }
 
-void InspectorInstrumentation::frameStoppedLoadingImpl(InstrumentingAgents* instrumentingAgents, Frame* frame)
+void InspectorInstrumentation::frameStoppedLoadingImpl(InstrumentingAgents& instrumentingAgents, Frame& frame)
 {
-    if (InspectorPageAgent* inspectorPageAgent = instrumentingAgents->inspectorPageAgent())
+    if (InspectorPageAgent* inspectorPageAgent = instrumentingAgents.inspectorPageAgent())
         inspectorPageAgent->frameStoppedLoading(frame);
 }
 
-void InspectorInstrumentation::frameScheduledNavigationImpl(InstrumentingAgents* instrumentingAgents, Frame* frame, double delay)
+void InspectorInstrumentation::frameScheduledNavigationImpl(InstrumentingAgents& instrumentingAgents, Frame& frame, double delay)
 {
-    if (InspectorPageAgent* inspectorPageAgent = instrumentingAgents->inspectorPageAgent())
+    if (InspectorPageAgent* inspectorPageAgent = instrumentingAgents.inspectorPageAgent())
         inspectorPageAgent->frameScheduledNavigation(frame, delay);
 }
 
-void InspectorInstrumentation::frameClearedScheduledNavigationImpl(InstrumentingAgents* instrumentingAgents, Frame* frame)
+void InspectorInstrumentation::frameClearedScheduledNavigationImpl(InstrumentingAgents& instrumentingAgents, Frame& frame)
 {
-    if (InspectorPageAgent* inspectorPageAgent = instrumentingAgents->inspectorPageAgent())
+    if (InspectorPageAgent* inspectorPageAgent = instrumentingAgents.inspectorPageAgent())
         inspectorPageAgent->frameClearedScheduledNavigation(frame);
 }
 
@@ -1140,7 +1093,7 @@ bool InspectorInstrumentation::canvasAgentEnabled(ScriptExecutionContext* script
 bool InspectorInstrumentation::consoleAgentEnabled(ScriptExecutionContext* scriptExecutionContext)
 {
     InstrumentingAgents* instrumentingAgents = instrumentingAgentsForContext(scriptExecutionContext);
-    InspectorConsoleAgent* consoleAgent = instrumentingAgents ? instrumentingAgents->inspectorConsoleAgent() : 0;
+    InspectorConsoleAgent* consoleAgent = instrumentingAgents ? instrumentingAgents->inspectorConsoleAgent() : nullptr;
     return consoleAgent && consoleAgent->enabled();
 }
 
@@ -1214,24 +1167,24 @@ void InspectorInstrumentation::unregisterInstrumentingAgents(InstrumentingAgents
     instrumentingAgentsSet->remove(instrumentingAgents);
     if (instrumentingAgentsSet->isEmpty()) {
         delete instrumentingAgentsSet;
-        instrumentingAgentsSet = 0;
+        instrumentingAgentsSet = nullptr;
     }
 }
 
 InspectorTimelineAgent* InspectorInstrumentation::retrieveTimelineAgent(const InspectorInstrumentationCookie& cookie)
 {
     if (!cookie.instrumentingAgents())
-        return 0;
+        return nullptr;
     InspectorTimelineAgent* timelineAgent = cookie.instrumentingAgents()->inspectorTimelineAgent();
     if (timelineAgent && cookie.hasMatchingTimelineAgentId(timelineAgent->id()))
         return timelineAgent;
-    return 0;
+    return nullptr;
 }
 
 InstrumentingAgents* InspectorInstrumentation::instrumentingAgentsForPage(Page* page)
 {
     if (!page)
-        return 0;
+        return nullptr;
     return instrumentationForPage(page);
 }
 
@@ -1243,7 +1196,7 @@ InstrumentingAgents* InspectorInstrumentation::instrumentingAgentsForRenderer(Re
 InstrumentingAgents* InspectorInstrumentation::instrumentingAgentsForWorkerGlobalScope(WorkerGlobalScope* workerGlobalScope)
 {
     if (!workerGlobalScope)
-        return 0;
+        return nullptr;
     return instrumentationForWorkerGlobalScope(workerGlobalScope);
 }
 
@@ -1251,7 +1204,7 @@ InstrumentingAgents* InspectorInstrumentation::instrumentingAgentsForNonDocument
 {
     if (context->isWorkerGlobalScope())
         return instrumentationForWorkerGlobalScope(static_cast<WorkerGlobalScope*>(context));
-    return 0;
+    return nullptr;
 }
 
 #if USE(ACCELERATED_COMPOSITING)

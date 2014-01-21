@@ -7,11 +7,11 @@ postProcessInDirectory()
     local unifdefOptions sedExpression
 
     if [[ ${PLATFORM_NAME} == iphoneos ]]; then
-        unifdefOptions="-DTARGET_OS_EMBEDDED=1 -DTARGET_OS_IPHONE=1 -DTARGET_IPHONE_SIMULATOR=0";
+        unifdefOptions="-DTARGET_OS_EMBEDDED=1 -DTARGET_OS_IPHONE=1 -DTARGET_IPHONE_SIMULATOR=0 -DENABLE_IOS_TOUCH_EVENTS=1 -DENABLE_IOS_GESTURE_EVENTS=1";
     elif [[ ${PLATFORM_NAME} == iphonesimulator ]]; then
-        unifdefOptions="-DTARGET_OS_EMBEDDED=0 -DTARGET_OS_IPHONE=1 -DTARGET_IPHONE_SIMULATOR=1";
+        unifdefOptions="-DTARGET_OS_EMBEDDED=0 -DTARGET_OS_IPHONE=1 -DTARGET_IPHONE_SIMULATOR=1 -DENABLE_IOS_TOUCH_EVENTS=1 -DENABLE_IOS_GESTURE_EVENTS=1";
     else
-        unifdefOptions="-DTARGET_OS_EMBEDDED=0 -DTARGET_OS_IPHONE=0 -DTARGET_IPHONE_SIMULATOR=0";
+        unifdefOptions="-DTARGET_OS_EMBEDDED=0 -DTARGET_OS_IPHONE=0 -DTARGET_IPHONE_SIMULATOR=0 -DENABLE_IOS_TOUCH_EVENTS=0 -DENABLE_IOS_GESTURE_EVENTS=0";
     fi
 
     if [[ ${PLATFORM_NAME} == iphone* ]]; then
@@ -39,7 +39,7 @@ postProcessInDirectory()
         fi
 
         sed -E -e "${sedExpression}" < ${header} > ${header}.sed
-        if cmp ${header} ${header}.sed; then
+        if cmp -s ${header} ${header}.sed; then
             rm ${header}.sed
         else
             mv ${header}.sed ${header}

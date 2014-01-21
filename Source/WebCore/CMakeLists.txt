@@ -77,6 +77,7 @@ set(WebCore_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/network"
     "${WEBCORE_DIR}/platform/sql"
     "${WEBCORE_DIR}/platform/text"
+    "${WEBCORE_DIR}/platform/text/icu"
     "${WEBCORE_DIR}/plugins"
     "${WEBCORE_DIR}/rendering"
     "${WEBCORE_DIR}/rendering/line"
@@ -508,6 +509,7 @@ set(WebCore_IDL_FILES
     html/canvas/OESTextureFloat.idl
     html/canvas/OESTextureFloatLinear.idl
     html/canvas/OESTextureHalfFloat.idl
+    html/canvas/OESTextureHalfFloatLinear.idl
     html/canvas/OESVertexArrayObject.idl
     html/canvas/WebGLActiveInfo.idl
     html/canvas/WebGLBuffer.idl
@@ -1116,7 +1118,6 @@ set(WebCore_SOURCES
     css/WebKitCSSMatrix.cpp
     css/WebKitCSSMixFunctionValue.cpp
     css/WebKitCSSRegionRule.cpp
-    css/WebKitCSSSVGDocumentValue.cpp
     css/WebKitCSSShaderValue.cpp
     css/WebKitCSSTransformValue.cpp
     css/WebKitCSSViewportRule.cpp
@@ -1413,6 +1414,7 @@ set(WebCore_SOURCES
     html/HTMLMapElement.cpp
     html/HTMLMarqueeElement.cpp
     html/HTMLMediaElement.cpp
+    html/HTMLMediaSession.cpp
     html/HTMLMediaSource.cpp
     html/HTMLMenuElement.cpp
     html/HTMLMetaElement.cpp
@@ -1505,6 +1507,7 @@ set(WebCore_SOURCES
     html/canvas/OESTextureFloat.cpp
     html/canvas/OESTextureFloatLinear.cpp
     html/canvas/OESTextureHalfFloat.cpp
+    html/canvas/OESTextureHalfFloatLinear.cpp
     html/canvas/OESVertexArrayObject.cpp
     html/canvas/WebGLBuffer.cpp
     html/canvas/WebGLCompressedTextureATC.cpp
@@ -1534,29 +1537,23 @@ set(WebCore_SOURCES
 
     html/forms/FileIconLoader.cpp
 
-    html/parser/BackgroundHTMLInputStream.cpp
-    html/parser/BackgroundHTMLParser.cpp
     html/parser/CSSPreloadScanner.cpp
-    html/parser/CompactHTMLToken.cpp
     html/parser/HTMLConstructionSite.cpp
     html/parser/HTMLDocumentParser.cpp
     html/parser/HTMLElementStack.cpp
     html/parser/HTMLEntityParser.cpp
     html/parser/HTMLEntitySearch.cpp
     html/parser/HTMLFormattingElementList.cpp
-    html/parser/HTMLIdentifier.cpp
     html/parser/HTMLMetaCharsetParser.cpp
     html/parser/HTMLParserIdioms.cpp
     html/parser/HTMLParserOptions.cpp
     html/parser/HTMLParserScheduler.cpp
-    html/parser/HTMLParserThread.cpp
     html/parser/HTMLPreloadScanner.cpp
     html/parser/HTMLResourcePreloader.cpp
     html/parser/HTMLScriptRunner.cpp
     html/parser/HTMLSourceTracker.cpp
     html/parser/HTMLTokenizer.cpp
     html/parser/HTMLTreeBuilder.cpp
-    html/parser/HTMLTreeBuilderSimulator.cpp
     html/parser/HTMLViewSourceParser.cpp
     html/parser/TextDocumentParser.cpp
     html/parser/TextViewSourceParser.cpp
@@ -1583,7 +1580,6 @@ set(WebCore_SOURCES
     inspector/DOMPatchSupport.cpp
     inspector/IdentifiersFactory.cpp
     inspector/InjectedScriptCanvasModule.cpp
-    inspector/InspectorAgent.cpp
     inspector/InspectorApplicationCacheAgent.cpp
     inspector/InspectorCSSAgent.cpp
     inspector/InspectorCanvasAgent.cpp
@@ -1777,7 +1773,7 @@ set(WebCore_SOURCES
     page/SpeechInputResult.cpp
     page/SpeechInputResultList.cpp
     page/SuspendableTimer.cpp
-    page/TouchAdjustment.cpp
+    page/UserContentController.cpp
     page/UserContentURLPattern.cpp
     page/WindowFeatures.cpp
     page/WindowFocusAllowedIndicator.cpp
@@ -2675,6 +2671,7 @@ if (ENABLE_WEBGL)
         html/canvas/OESTextureFloat.cpp
         html/canvas/OESTextureFloatLinear.cpp
         html/canvas/OESTextureHalfFloat.cpp
+        html/canvas/OESTextureHalfFloatLinear.cpp
         html/canvas/OESVertexArrayObject.cpp
         html/canvas/WebGLBuffer.cpp
         html/canvas/WebGLCompressedTextureATC.cpp
@@ -2710,6 +2707,7 @@ if (ENABLE_WEBGL)
         html/canvas/OESTextureFloat.idl
         html/canvas/OESTextureFloatLinear.idl
         html/canvas/OESTextureHalfFloat.idl
+        html/canvas/OESTextureHalfFloatLinear.idl
         html/canvas/OESVertexArrayObject.idl
         html/canvas/WebGLActiveInfo.idl
         html/canvas/WebGLBuffer.idl
@@ -2799,7 +2797,9 @@ endif ()
 
 if (WTF_USE_ICU_UNICODE)
     list(APPEND WebCore_SOURCES
-        platform/text/TextBreakIteratorICU.cpp
+        platform/text/icu/UTextProvider.cpp
+        platform/text/icu/UTextProviderLatin1.cpp
+        platform/text/icu/UTextProviderUTF16.cpp
         platform/text/TextCodecICU.cpp
         platform/text/TextEncodingDetectorICU.cpp
     )
@@ -2977,6 +2977,7 @@ if (WTF_USE_3D_GRAPHICS)
     list(APPEND WebCore_SOURCES
         platform/graphics/ANGLEWebKitBridge.cpp
         platform/graphics/GraphicsContext3D.cpp
+        platform/graphics/FormatConverter.cpp
 
         platform/graphics/gpu/DrawingBuffer.cpp
     )

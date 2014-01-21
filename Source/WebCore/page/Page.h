@@ -93,6 +93,7 @@ class PluginData;
 class PluginViewBase;
 class PointerLockController;
 class ProgressTracker;
+class ProgressTrackerClient;
 class Range;
 class RenderObject;
 class RenderTheme;
@@ -101,6 +102,7 @@ class ScrollableArea;
 class ScrollingCoordinator;
 class Settings;
 class StorageNamespace;
+class UserContentController;
 class ValidationMessageClient;
 
 typedef uint64_t LinkHash;
@@ -134,6 +136,7 @@ public:
         DragClient* dragClient;
         InspectorClient* inspectorClient;
         PlugInClient* plugInClient;
+        ProgressTrackerClient* progressTrackerClient;
         RefPtr<BackForwardClient> backForwardClient;
         ValidationMessageClient* validationMessageClient;
         FrameLoaderClient* loaderClientForMainFrame;
@@ -201,7 +204,7 @@ public:
     ContextMenuController& contextMenuController() const { return *m_contextMenuController; }
 #endif
 #if ENABLE(INSPECTOR)
-    InspectorController* inspectorController() const { return m_inspectorController.get(); }
+    InspectorController& inspectorController() const { return *m_inspectorController; }
 #endif
 #if ENABLE(POINTER_LOCK)
     PointerLockController* pointerLockController() const { return m_pointerLockController.get(); }
@@ -417,6 +420,9 @@ public:
     void setLastSpatialNavigationCandidateCount(unsigned count) { m_lastSpatialNavigationCandidatesCount = count; }
     unsigned lastSpatialNavigationCandidateCount() const { return m_lastSpatialNavigationCandidatesCount; }
 
+    void setUserContentController(UserContentController*);
+    UserContentController* userContentController() { return m_userContentController.get(); }
+
 private:
     void initGroup();
 
@@ -459,7 +465,7 @@ private:
     const std::unique_ptr<ContextMenuController> m_contextMenuController;
 #endif
 #if ENABLE(INSPECTOR)
-    OwnPtr<InspectorController> m_inspectorController;
+    const std::unique_ptr<InspectorController> m_inspectorController;
 #endif
 #if ENABLE(POINTER_LOCK)
     OwnPtr<PointerLockController> m_pointerLockController;
@@ -558,6 +564,8 @@ private:
 
     unsigned m_lastSpatialNavigationCandidatesCount;
     unsigned m_framesHandlingBeforeUnloadEvent;
+
+    RefPtr<UserContentController> m_userContentController;
 };
 
 inline PageGroup& Page::group()

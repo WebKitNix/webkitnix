@@ -57,7 +57,7 @@ public:
             WKBundlePostMessage(InjectedBundleController::shared().bundle(), Util::toWK("DummyAudioDeviceId#0").get(), 0);
     }
 
-    ~MockAudioOutputDevice() OVERRIDE
+    ~MockAudioOutputDevice() override
     {
         g_source_remove(m_loopId);
     }
@@ -126,17 +126,17 @@ public:
         return shouldContinue;
     }
 
-    virtual void start() OVERRIDE
+    virtual void start() override
     {
         m_loopId = g_idle_add(MockAudioOutputDevice::audioProcessLoop, this);
     }
 
-    virtual void stop() OVERRIDE
+    virtual void stop() override
     {
         g_source_remove(m_loopId);
     }
 
-    virtual double sampleRate() OVERRIDE
+    virtual double sampleRate() override
     {
         return m_sampleRate;
     }
@@ -189,7 +189,7 @@ static void testMediaStreamAttributes(Nix::MediaStreamSource *source)
 
 class MockMediaStreamCenter : public Nix::MediaStreamCenter {
 public:
-    virtual const char* validateRequestConstraints(Nix::MediaConstraints& audioConstraints, Nix::MediaConstraints& videoConstraints) OVERRIDE
+    virtual const char* validateRequestConstraints(Nix::MediaConstraints& audioConstraints, Nix::MediaConstraints& videoConstraints) override
     {
         std::vector<Nix::MediaConstraint> optional;
         audioConstraints.getOptionalConstraints(optional);
@@ -204,7 +204,7 @@ public:
         return retVal;
     }
 
-    virtual Nix::MediaStream createMediaStream(Nix::MediaConstraints& audioConstraints, Nix::MediaConstraints& videoConstraints) OVERRIDE
+    virtual Nix::MediaStream createMediaStream(Nix::MediaConstraints& audioConstraints, Nix::MediaConstraints& videoConstraints) override
     {
         std::vector<Nix::MediaStreamSource*> audioSources;
         std::vector<Nix::MediaStreamSource*> videoSources;
@@ -236,22 +236,22 @@ public:
 
 class TestMediaStreamAudioPlatform : public Nix::Platform {
 public:
-    virtual float audioHardwareSampleRate() OVERRIDE
+    virtual float audioHardwareSampleRate() override
     {
         return 44100;
     }
 
-    virtual size_t audioHardwareBufferSize() OVERRIDE
+    virtual size_t audioHardwareBufferSize() override
     {
         return 1024;
     }
 
-    virtual unsigned audioHardwareOutputChannels() OVERRIDE
+    virtual unsigned audioHardwareOutputChannels() override
     {
         return 2;
     }
 
-    virtual Nix::AudioDevice* createAudioDevice(const char* inputDeviceId, size_t bufferSize, unsigned numberOfInputChannels, unsigned numberOfChannels, double sampleRate, Nix::AudioDevice::RenderCallback* renderCallback) OVERRIDE
+    virtual Nix::AudioDevice* createAudioDevice(const char* inputDeviceId, size_t bufferSize, unsigned numberOfInputChannels, unsigned numberOfChannels, double sampleRate, Nix::AudioDevice::RenderCallback* renderCallback) override
     {
         return new MockAudioOutputDevice(inputDeviceId, bufferSize, numberOfInputChannels, numberOfChannels, sampleRate, renderCallback);
     }
@@ -261,11 +261,11 @@ public:
         return new Util::FFTFrameTest(fftsize);
     }
 
-    virtual Nix::MediaStreamCenter* createMediaStreamCenter() OVERRIDE
+    virtual Nix::MediaStreamCenter* createMediaStreamCenter() override
     {
         return new MockMediaStreamCenter();
     }
-    virtual Nix::MultiChannelPCMData* decodeAudioResource(const void* audioFileData, size_t dataSize, double sampleRate) OVERRIDE
+    virtual Nix::MultiChannelPCMData* decodeAudioResource(const void* audioFileData, size_t dataSize, double sampleRate) override
     {
         return Util::decodeAudioResource(audioFileData, dataSize, sampleRate);
     }

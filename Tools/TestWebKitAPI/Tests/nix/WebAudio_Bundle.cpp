@@ -89,9 +89,9 @@ public:
             delete[] audioDataVector[i];
         return shouldContinue;
     }
-    virtual void start() OVERRIDE { g_idle_add(MockAudioOutputDevice::audioProcessLoop, this); }
-    virtual void stop() OVERRIDE { }
-    virtual double sampleRate() OVERRIDE { return m_sampleRate; }
+    virtual void start() override { g_idle_add(MockAudioOutputDevice::audioProcessLoop, this); }
+    virtual void stop() override { }
+    virtual double sampleRate() override { return m_sampleRate; }
 
     size_t m_bufferSize;
     double m_sampleRate;
@@ -100,17 +100,17 @@ public:
 
 class TestWebAudioPlatform : public Nix::Platform {
 public:
-    virtual float audioHardwareSampleRate() OVERRIDE { return 44100; }
-    virtual size_t audioHardwareBufferSize() OVERRIDE { return 1024; }
-    virtual unsigned audioHardwareOutputChannels() OVERRIDE { return 2; }
+    virtual float audioHardwareSampleRate() override { return 44100; }
+    virtual size_t audioHardwareBufferSize() override { return 1024; }
+    virtual unsigned audioHardwareOutputChannels() override { return 2; }
     virtual Nix::FFTFrame* createFFTFrame(unsigned fftsize) {
         return new Util::FFTFrameTest(fftsize);
     }
-    virtual Nix::AudioDevice* createAudioDevice(const char*, size_t bufferSize, unsigned numberOfInputChannels, unsigned numberOfChannels, double sampleRate, Nix::AudioDevice::RenderCallback* renderCallback) OVERRIDE
+    virtual Nix::AudioDevice* createAudioDevice(const char*, size_t bufferSize, unsigned numberOfInputChannels, unsigned numberOfChannels, double sampleRate, Nix::AudioDevice::RenderCallback* renderCallback) override
     {
         return new MockAudioOutputDevice(bufferSize, numberOfInputChannels, numberOfChannels, sampleRate, renderCallback);
     }
-    virtual Nix::MultiChannelPCMData* decodeAudioResource(const void* audioFileData, size_t dataSize, double sampleRate) OVERRIDE
+    virtual Nix::MultiChannelPCMData* decodeAudioResource(const void* audioFileData, size_t dataSize, double sampleRate) override
     {
         return Util::decodeAudioResource(audioFileData, dataSize, sampleRate);
     }

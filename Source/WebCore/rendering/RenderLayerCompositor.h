@@ -244,11 +244,11 @@ public:
 
     String layerTreeAsText(LayerTreeFlags);
 
-    virtual float deviceScaleFactor() const OVERRIDE;
-    virtual float contentsScaleMultiplierForNewTiles(const GraphicsLayer*) const OVERRIDE;
-    virtual float pageScaleFactor() const OVERRIDE;
-    virtual void didCommitChangesForLayer(const GraphicsLayer*) const OVERRIDE;
-    virtual void notifyFlushBeforeDisplayRefresh(const GraphicsLayer*) OVERRIDE;
+    virtual float deviceScaleFactor() const override;
+    virtual float contentsScaleMultiplierForNewTiles(const GraphicsLayer*) const override;
+    virtual float pageScaleFactor() const override;
+    virtual void didCommitChangesForLayer(const GraphicsLayer*) const override;
+    virtual void notifyFlushBeforeDisplayRefresh(const GraphicsLayer*) override;
 
     void layerTiledBackingUsageChanged(const GraphicsLayer*, bool /*usingTiledBacking*/);
     
@@ -307,15 +307,15 @@ private:
     class OverlapMap;
 
     // GraphicsLayerClient implementation
-    virtual void notifyAnimationStarted(const GraphicsLayer*, double) OVERRIDE { }
-    virtual void notifyFlushRequired(const GraphicsLayer*) OVERRIDE;
-    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const IntRect&) OVERRIDE;
+    virtual void notifyAnimationStarted(const GraphicsLayer*, double) override { }
+    virtual void notifyFlushRequired(const GraphicsLayer*) override;
+    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const IntRect&) override;
 
-    virtual bool isTrackingRepaints() const OVERRIDE;
+    virtual bool isTrackingRepaints() const override;
     
     // GraphicsLayerUpdaterClient implementation
-    virtual void flushLayers(GraphicsLayerUpdater*) OVERRIDE;
-    virtual void customPositionForVisibleRectComputation(const GraphicsLayer*, FloatPoint&) const OVERRIDE;
+    virtual void flushLayers(GraphicsLayerUpdater*) override;
+    virtual void customPositionForVisibleRectComputation(const GraphicsLayer*, FloatPoint&) const override;
     
     // Whether the given RL needs a compositing layer.
     bool needsToBeComposited(const RenderLayer&, RenderLayer::ViewportConstrainedNotCompositedReason* = 0) const;
@@ -335,19 +335,23 @@ private:
     void addToOverlapMap(OverlapMap&, RenderLayer&, IntRect& layerBounds, bool& boundsComputed);
     void addToOverlapMapRecursive(OverlapMap&, RenderLayer&, RenderLayer* ancestorLayer = nullptr);
 
-    void updateCompositingLayersTimerFired(Timer<RenderLayerCompositor>*);
+    void updateCompositingLayersTimerFired(Timer<RenderLayerCompositor>&);
 
     // Returns true if any layer's compositing changed
     void computeCompositingRequirements(RenderLayer* ancestorLayer, RenderLayer&, OverlapMap*, struct CompositingState&, bool& layersChanged, bool& descendantHas3DTransform);
 
     void computeRegionCompositingRequirements(RenderNamedFlowFragment*, OverlapMap*, CompositingState&, bool& layersChanged, bool& anyDescendantHas3DTransform);
-    
+
+    void computeCompositingRequirementsForNamedFlowFixed(RenderLayer&, OverlapMap*, CompositingState&, bool& layersChanged, bool& anyDescendantHas3DTransform);
+
     // Recurses down the tree, parenting descendant compositing layers and collecting an array of child layers for the current compositing layer.
     void rebuildCompositingLayerTree(RenderLayer&, Vector<GraphicsLayer*>& childGraphicsLayersOfEnclosingLayer, int depth);
 
     // Recurses down the RenderFlowThread tree, parenting descendant compositing layers and collecting an array of child 
     // layers for the current compositing layer corresponding to the anonymous region (that belongs to the region's parent).
     void rebuildRegionCompositingLayerTree(RenderNamedFlowFragment*, Vector<GraphicsLayer*>& childList, int depth);
+
+    void rebuildCompositingLayerTreeForNamedFlowFixed(RenderLayer&, Vector<GraphicsLayer*>& childList, int depth);
 
     // Recurses down the tree, updating layer geometry only.
     void updateLayerTreeGeometry(RenderLayer&, int depth);
@@ -402,7 +406,6 @@ private:
 
     ChromeClient* chromeClient() const;
 
-    void startInitialLayerFlushTimerIfNeeded();
 #endif
 
     void addViewportConstrainedLayer(RenderLayer&);
@@ -426,10 +429,11 @@ private:
 
     void scheduleLayerFlushNow();
     bool isThrottlingLayerFlushes() const;
+    void startInitialLayerFlushTimerIfNeeded();
     void startLayerFlushTimerIfNeeded();
-    void layerFlushTimerFired(Timer<RenderLayerCompositor>*);
+    void layerFlushTimerFired(Timer<RenderLayerCompositor>&);
 
-    void paintRelatedMilestonesTimerFired(Timer<RenderLayerCompositor>*);
+    void paintRelatedMilestonesTimerFired(Timer<RenderLayerCompositor>&);
 
 #if !LOG_DISABLED
     const char* logReasonsForCompositing(const RenderLayer&);

@@ -26,6 +26,8 @@
 // All public DOM class interfaces, properties and methods need to be in this file.
 // Anything not in the file will be generated into the appropriate private header file.
 
+#include <wtf/Platform.h>
+
 #ifndef OBJC_CODE_GENERATION
 #error Do not include this header, instead include the appropriate DOM header.
 #endif
@@ -951,7 +953,11 @@
 @property (readonly, strong) DOMCSSPrimitiveValue *green;
 @property (readonly, strong) DOMCSSPrimitiveValue *blue;
 @property (readonly, strong) DOMCSSPrimitiveValue *alpha;
+#if !PLATFORM(IOS)
 @property (readonly, copy) NSColor *color WEBKIT_AVAILABLE_MAC(10_5);
+#else
+- (CGColorRef)color;
+#endif
 @end
 
 @interface DOMCSSRule : DOMObject 10_4
@@ -1243,3 +1249,7 @@
 @protocol DOMXPathNSResolver <NSObject> 10_5
 - (NSString *)lookupNamespaceURI:(NSString *)prefix;
 @end
+
+#if PLATFORM(IOS)
+#include <WebKitAdditions/PublicDOMInterfacesIOS.h>
+#endif

@@ -31,6 +31,7 @@ set(WebKit2_INCLUDE_DIRECTORIES
     "${WEBKIT2_DIR}/UIProcess/InspectorServer"
     "${WEBKIT2_DIR}/UIProcess/Launcher"
     "${WEBKIT2_DIR}/UIProcess/Network"
+    "${WEBKIT2_DIR}/UIProcess/Network/CustomProtocols"
     "${WEBKIT2_DIR}/UIProcess/Notifications"
     "${WEBKIT2_DIR}/UIProcess/Plugins"
     "${WEBKIT2_DIR}/UIProcess/Storage"
@@ -203,6 +204,7 @@ set(WebKit2_SOURCES
     Shared/PrintInfo.cpp
     Shared/SecurityOriginData.cpp
     Shared/SessionState.cpp
+    Shared/SessionTracker.cpp
     Shared/ShareableBitmap.cpp
     Shared/ShareableResource.cpp
     Shared/StatisticsData.cpp
@@ -292,6 +294,7 @@ set(WebKit2_SOURCES
     Shared/Plugins/Netscape/PluginInformation.cpp
 
     UIProcess/APINavigationData.cpp
+    UIProcess/APISession.cpp
     UIProcess/BackingStore.cpp
     UIProcess/DrawingAreaProxy.cpp
     UIProcess/FindIndicator.cpp
@@ -547,6 +550,7 @@ set(WebKit2_SOURCES
     WebProcess/WebCoreSupport/WebPlatformStrategies.cpp
     WebProcess/WebCoreSupport/WebPlugInClient.cpp
     WebProcess/WebCoreSupport/WebPopupMenu.cpp
+    WebProcess/WebCoreSupport/WebProgressTrackerClient.cpp
     WebProcess/WebCoreSupport/WebSearchPopupMenu.cpp
     WebProcess/WebCoreSupport/WebVibrationClient.cpp
 
@@ -587,6 +591,8 @@ set(WebKit2_MESSAGES_IN_FILES
     Shared/Authentication/AuthenticationManager.messages.in
 
     Shared/Plugins/NPObjectMessageReceiver.messages.in
+
+    Shared/Network/CustomProtocols/CustomProtocolManager.messages.in
 
     UIProcess/DrawingAreaProxy.messages.in
     UIProcess/WebApplicationCacheManagerProxy.messages.in
@@ -676,6 +682,7 @@ set(WebKit2_LIBRARIES
 
 # librt is needed for shm_open on Linux.
 find_library(LIBRT_LIBRARIES NAMES rt)
+mark_as_advanced(LIBRT_LIBRARIES)
 if (LIBRT_LIBRARIES)
     list(APPEND WebKit2_LIBRARIES ${LIBRT_LIBRARIES})
 endif ()

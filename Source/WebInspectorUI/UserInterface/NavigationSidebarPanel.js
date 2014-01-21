@@ -54,7 +54,7 @@ WebInspector.NavigationSidebarPanel = function(identifier, displayName, image, k
     this._contentTreeOutline = this.createContentTreeOutline(true);
 
     this._filterBar = new WebInspector.FilterBar();
-    this._filterBar.addEventListener(WebInspector.FilterBar.Event.TextFilterDidChange, this._updateFilter, this);
+    this._filterBar.addEventListener(WebInspector.FilterBar.Event.TextFilterDidChange, this._textFilterDidChange, this);
     this.element.appendChild(this._filterBar.element);
 
     this._bottomOverflowShadowElement = document.createElement("div");
@@ -94,7 +94,6 @@ WebInspector.NavigationSidebarPanel.StyleClassName = "navigation";
 WebInspector.NavigationSidebarPanel.OverflowShadowElementStyleClassName = "overflow-shadow";
 WebInspector.NavigationSidebarPanel.TopOverflowShadowElementStyleClassName = "top";
 WebInspector.NavigationSidebarPanel.ContentElementStyleClassName = "content";
-WebInspector.NavigationSidebarPanel.ContentElementHiddenStyleClassName = "hidden";
 WebInspector.NavigationSidebarPanel.ContentTreeOutlineElementHiddenStyleClassName = "hidden";
 WebInspector.NavigationSidebarPanel.ContentTreeOutlineElementStyleClassName = "navigation-sidebar-panel-content-tree-outline";
 WebInspector.NavigationSidebarPanel.HideDisclosureButtonsStyleClassName = "hide-disclosure-buttons";
@@ -153,7 +152,12 @@ WebInspector.NavigationSidebarPanel.prototype = {
         return this._filterBar;
     },
 
-    createContentTreeOutline: function(dontHideByDefault)
+    get restoringState()
+    {
+        return this._restoringState;
+    },
+
+    createContentTreeOutline: function(dontHideByDefault, suppressFiltering)
     {
         var contentTreeOutlineElement = document.createElement("ol");
         contentTreeOutlineElement.className = WebInspector.NavigationSidebarPanel.ContentTreeOutlineElementStyleClassName;
@@ -162,11 +166,14 @@ WebInspector.NavigationSidebarPanel.prototype = {
         this._contentElement.appendChild(contentTreeOutlineElement);
 
         var contentTreeOutline = new TreeOutline(contentTreeOutlineElement);
-        contentTreeOutline.onadd = this._treeElementAddedOrChanged.bind(this);
-        contentTreeOutline.onchange = this._treeElementAddedOrChanged.bind(this);
-        contentTreeOutline.onexpand = this._treeElementExpandedOrCollapsed.bind(this);
-        contentTreeOutline.oncollapse = this._treeElementExpandedOrCollapsed.bind(this);
         contentTreeOutline.allowsRepeatSelection = true;
+
+        if (!suppressFiltering) {
+            contentTreeOutline.onadd = this._treeElementAddedOrChanged.bind(this);
+            contentTreeOutline.onchange = this._treeElementAddedOrChanged.bind(this);
+            contentTreeOutline.onexpand = this._treeElementExpandedOrCollapsed.bind(this);
+            contentTreeOutline.oncollapse = this._treeElementExpandedOrCollapsed.bind(this);
+        }
 
         if (dontHideByDefault)
             this._visibleContentTreeOutlines.add(contentTreeOutline);
@@ -177,6 +184,11 @@ WebInspector.NavigationSidebarPanel.prototype = {
     treeElementForRepresentedObject: function(representedObject)
     {
         return this._contentTreeOutline.getCachedTreeElement(representedObject);
+    },
+
+    showDefaultContentView: function()
+    {
+        // Implemneted by subclasses if needed to show a content view when no existing tree element is selected.
     },
 
     showContentViewForCurrentSelection: function()
@@ -217,6 +229,7 @@ WebInspector.NavigationSidebarPanel.prototype = {
     restoreStateFromCookie: function(cookie, relaxedMatchDelay)
     {
         this._pendingViewStateCookie = cookie;
+        this._restoringState = true;
 
         // Check if any existing tree elements in any outline match the cookie.
         this._checkOutlinesForPendingViewStateCookie();
@@ -224,10 +237,15 @@ WebInspector.NavigationSidebarPanel.prototype = {
         if (this._finalAttemptToRestoreViewStateTimeout)
             clearTimeout(this._finalAttemptToRestoreViewStateTimeout);
 
-        var finalAttemptToRestoreViewStateFromCookie = function() {
+        function finalAttemptToRestoreViewStateFromCookie()
+        {
             delete this._finalAttemptToRestoreViewStateTimeout;
+
             this._checkOutlinesForPendingViewStateCookie(true);
-        };
+
+            delete this._pendingViewStateCookie;
+            delete this._restoringState;
+        }
 
         // If the specific tree element wasn't found, we may need to wait for the resources
         // to be registered. We try one last time (match type only) after an arbitrary amount of timeout.
@@ -238,7 +256,6 @@ WebInspector.NavigationSidebarPanel.prototype = {
     {
         console.assert(message);
 
-        this._contentElement.classList.add(WebInspector.NavigationSidebarPanel.ContentElementHiddenStyleClassName);
         this._emptyContentPlaceholderMessageElement.textContent = message;
         this.element.appendChild(this._emptyContentPlaceholderElement);
 
@@ -249,7 +266,6 @@ WebInspector.NavigationSidebarPanel.prototype = {
 
     hideEmptyContentPlaceholder: function()
     {
-        this._contentElement.classList.remove(WebInspector.NavigationSidebarPanel.ContentElementHiddenStyleClassName);
         if (this._emptyContentPlaceholderElement.parentNode)
             this._emptyContentPlaceholderElement.parentNode.removeChild(this._emptyContentPlaceholderElement);
 
@@ -271,9 +287,31 @@ WebInspector.NavigationSidebarPanel.prototype = {
         }
     },
 
-    applyFiltersToTreeElement: function(treeElement)
+    updateCustomContentOverflow: function()
     {
-        if (!this._filterBar.hasActiveFilters()) {
+        // Implemented by subclasses if needed.
+    },
+
+    updateFilter: function(dontExpandOnMatch)
+    {
+        this._updateFilter(dontExpandOnMatch);
+    },
+
+    hasCustomFilters: function()
+    {
+        // Implemented by subclasses if needed.
+        return false;
+    },
+
+    matchTreeElementAgainstCustomFilters: function(treeElement)
+    {
+        // Implemented by subclasses if needed.
+        return true;
+    },
+
+    applyFiltersToTreeElement: function(treeElement, dontExpandOnMatch)
+    {
+        if (!this._filterBar.hasActiveFilters() && !this.hasCustomFilters()) {
             // No filters, so make everything visible.
             treeElement.hidden = false;
 
@@ -286,26 +324,23 @@ WebInspector.NavigationSidebarPanel.prototype = {
             return;
         }
 
-        // Get the filterable data from the tree element.
-        var filterableData = treeElement.filterableData;
-        if (!filterableData)
-            return;
+        var filterableData = treeElement.filterableData || {};
 
         var self = this;
-        function matchTextFilter(input)
+        function matchTextFilter(inputs)
         {
-            if (!self._textFilterRegex)
+            if (!inputs || !self._textFilterRegex)
                 return true;
 
             // Convert to a single item array if needed.
-            if (!(input instanceof Array))
-                input = [input];
+            if (!(inputs instanceof Array))
+                inputs = [inputs];
 
             // Loop over all the inputs and try to match them.
-            for (var i = 0; i < input.length; ++i) {
-                if (!input[i])
+            for (var input of inputs) {
+                if (!input)
                     continue;
-                if (self._textFilterRegex.test(input[i]))
+                if (self._textFilterRegex.test(input))
                     return true;
             }
 
@@ -323,7 +358,7 @@ WebInspector.NavigationSidebarPanel.prototype = {
             while (currentAncestor && !currentAncestor.root) {
                 currentAncestor.hidden = false;
 
-                if (!currentAncestor.expanded) {
+                if (!currentAncestor.expanded && !dontExpandOnMatch) {
                     currentAncestor.__wasExpandedDuringFiltering = true;
                     currentAncestor.expand();
                 }
@@ -332,7 +367,7 @@ WebInspector.NavigationSidebarPanel.prototype = {
             }
         }
 
-        if (matchTextFilter(filterableData.text)) {
+        if (matchTextFilter(filterableData.text) && this.matchTreeElementAgainstCustomFilters(treeElement)) {
             // Make this element visible since it matches.
             makeVisible();
             return;
@@ -374,6 +409,8 @@ WebInspector.NavigationSidebarPanel.prototype = {
 
     _updateContentOverflowShadowVisibility: function()
     {
+        this.updateCustomContentOverflow();
+
         var scrollHeight = this._contentElement.scrollHeight;
         var offsetHeight = this._contentElement.offsetHeight;
 
@@ -426,7 +463,12 @@ WebInspector.NavigationSidebarPanel.prototype = {
         this._emptyFilterResults = true;
     },
 
-    _updateFilter: function()
+    _textFilterDidChange: function()
+    {
+        this._updateFilter();
+    },
+
+    _updateFilter: function(dontExpandOnMatch)
     {
         var filters = this._filterBar.filters;
         this._textFilterRegex = simpleGlobStringToRegExp(filters.text, "i");
@@ -435,7 +477,7 @@ WebInspector.NavigationSidebarPanel.prototype = {
         // Update the whole tree.
         var currentTreeElement = this._contentTreeOutline.children[0];
         while (currentTreeElement && !currentTreeElement.root) {
-            this.applyFiltersToTreeElement(currentTreeElement);
+            this.applyFiltersToTreeElement(currentTreeElement, dontExpandOnMatch);
             currentTreeElement = currentTreeElement.traverseNextTreeElement(false, null, false);
         }
 
@@ -551,7 +593,9 @@ WebInspector.NavigationSidebarPanel.prototype = {
     _isTreeElementWithoutRepresentedObject: function(treeElement)
     {
         return treeElement instanceof WebInspector.FolderTreeElement
-            || treeElement instanceof WebInspector.DatabaseHostTreeElement;
+            || treeElement instanceof WebInspector.DatabaseHostTreeElement
+            || typeof treeElement.representedObject === "string"
+            || treeElement.representedObject instanceof String;
     },
 
     _checkOutlinesForPendingViewStateCookie: function(matchTypeOnly)
@@ -615,10 +659,20 @@ WebInspector.NavigationSidebarPanel.prototype = {
         }, this);
 
         if (matchedElement) {
-            matchedElement.revealAndSelect();
+            matchedElement.revealAndSelect(true, false);
+
             delete this._pendingViewStateCookie;
-            if (this._finalAttemptToRestoreViewStateTimeout)
+
+            // Delay clearing the restoringState flag until the next runloop so listeners
+            // checking for it in this runloop still know state was being restored.
+            setTimeout(function() {
+                delete this._restoringState;
+            }.bind(this));
+
+            if (this._finalAttemptToRestoreViewStateTimeout) {
                 clearTimeout(this._finalAttemptToRestoreViewStateTimeout);
+                delete this._finalAttemptToRestoreViewStateTimeout;
+            }
         }
     }
 };

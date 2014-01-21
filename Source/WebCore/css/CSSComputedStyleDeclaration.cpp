@@ -965,7 +965,7 @@ PassRef<CSSValue> ComputedStyleExtractor::valueForFilter(const RenderObject* ren
         case FilterOperation::REFERENCE: {
             ReferenceFilterOperation* referenceOperation = static_cast<ReferenceFilterOperation*>(filterOperation);
             filterValue = WebKitCSSFilterValue::create(WebKitCSSFilterValue::ReferenceFilterOperation);
-            filterValue->append(cssValuePool().createValue(referenceOperation->url(), CSSPrimitiveValue::CSS_STRING));
+            filterValue->append(cssValuePool().createValue(referenceOperation->url(), CSSPrimitiveValue::CSS_URI));
             break;
         }
         case FilterOperation::GRAYSCALE: {
@@ -1462,6 +1462,25 @@ static PassRef<CSSValue> renderTextDecorationSkipFlagsToCSSValue(TextDecorationS
     return cssValuePool().createExplicitInitialValue();
 }
 #endif // CSS3_TEXT_DECORATION
+
+static PassRef<CSSValue> renderEmphasisPositionFlagsToCSSValue(TextEmphasisPosition textEmphasisPosition)
+{
+    ASSERT(!((textEmphasisPosition & TextEmphasisPositionOver) && (textEmphasisPosition & TextEmphasisPositionUnder)));
+    ASSERT(!((textEmphasisPosition & TextEmphasisPositionLeft) && (textEmphasisPosition & TextEmphasisPositionRight)));
+    RefPtr<CSSValueList> list = CSSValueList::createSpaceSeparated();
+    if (textEmphasisPosition & TextEmphasisPositionOver)
+        list->append(cssValuePool().createIdentifierValue(CSSValueOver));
+    if (textEmphasisPosition & TextEmphasisPositionUnder)
+        list->append(cssValuePool().createIdentifierValue(CSSValueUnder));
+    if (textEmphasisPosition & TextEmphasisPositionLeft)
+        list->append(cssValuePool().createIdentifierValue(CSSValueLeft));
+    if (textEmphasisPosition & TextEmphasisPositionRight)
+        list->append(cssValuePool().createIdentifierValue(CSSValueRight));
+
+    if (!list->length())
+        return cssValuePool().createIdentifierValue(CSSValueNone);
+    return list.releaseNonNull();
+}
 
 static PassRef<CSSValue> fillRepeatToCSSValue(EFillRepeat xRepeat, EFillRepeat yRepeat)
 {
@@ -2399,7 +2418,7 @@ PassRefPtr<CSSValue> ComputedStyleExtractor::propertyValue(CSSPropertyID propert
         case CSSPropertyWebkitTextEmphasisColor:
             return currentColorOrValidColor(style.get(), style->textEmphasisColor());
         case CSSPropertyWebkitTextEmphasisPosition:
-            return cssValuePool().createValue(style->textEmphasisPosition());
+            return renderEmphasisPositionFlagsToCSSValue(style->textEmphasisPosition());
         case CSSPropertyWebkitTextEmphasisStyle:
             switch (style->textEmphasisMark()) {
             case TextEmphasisMarkNone:
@@ -2512,7 +2531,7 @@ PassRefPtr<CSSValue> ComputedStyleExtractor::propertyValue(CSSPropertyID propert
         case CSSPropertyWordBreak:
             return cssValuePool().createValue(style->wordBreak());
         case CSSPropertyWordSpacing:
-            return zoomAdjustedPixelValue(style->wordSpacing(), style.get());
+            return zoomAdjustedPixelValue(style->font().wordSpacing(), style.get());
         case CSSPropertyWordWrap:
             return cssValuePool().createValue(style->overflowWrap());
         case CSSPropertyWebkitLineBreak:
@@ -2885,11 +2904,11 @@ PassRefPtr<CSSValue> ComputedStyleExtractor::propertyValue(CSSPropertyID propert
                 ShapeClipPathOperation& shapeOperation = toShapeClipPathOperation(*operation);
                 list->append(valueForBasicShape(style.get(), shapeOperation.basicShape()));
                 if (shapeOperation.referenceBox() != BoxMissing)
-                    list->append(valueForBox(shapeOperation.referenceBox()));
+                    list->append(cssValuePool().createValue(shapeOperation.referenceBox()));
             }
             if (operation->type() == ClipPathOperation::Box) {
                 BoxClipPathOperation& boxOperation = toBoxClipPathOperation(*operation);
-                list->append(valueForBox(boxOperation.referenceBox()));
+                list->append(cssValuePool().createValue(boxOperation.referenceBox()));
             }
             return list.release();
         }
@@ -2922,7 +2941,7 @@ PassRefPtr<CSSValue> ComputedStyleExtractor::propertyValue(CSSPropertyID propert
             if (!style->shapeInside())
                 return cssValuePool().createIdentifierValue(CSSValueNone);
             if (style->shapeInside()->type() == ShapeValue::Box)
-                return valueForBox(style->shapeInside()->layoutBox());
+                return cssValuePool().createValue(style->shapeInside()->layoutBox());
             if (style->shapeInside()->type() == ShapeValue::Outside)
                 return cssValuePool().createIdentifierValue(CSSValueOutsideShape);
             if (style->shapeInside()->type() == ShapeValue::Image) {
@@ -2936,7 +2955,7 @@ PassRefPtr<CSSValue> ComputedStyleExtractor::propertyValue(CSSPropertyID propert
             if (!style->shapeOutside())
                 return cssValuePool().createIdentifierValue(CSSValueNone);
             if (style->shapeOutside()->type() == ShapeValue::Box)
-                return valueForBox(style->shapeOutside()->layoutBox());
+                return cssValuePool().createValue(style->shapeOutside()->layoutBox());
             if (style->shapeOutside()->type() == ShapeValue::Image) {
                 if (style->shapeOutside()->image())
                     return style->shapeOutside()->image()->cssValue();

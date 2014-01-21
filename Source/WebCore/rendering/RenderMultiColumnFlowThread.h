@@ -31,18 +31,19 @@
 
 namespace WebCore {
 
-class RenderMultiColumnFlowThread FINAL : public RenderFlowThread {
+class RenderMultiColumnFlowThread final : public RenderFlowThread {
 public:
     RenderMultiColumnFlowThread(Document&, PassRef<RenderStyle>);
     ~RenderMultiColumnFlowThread();
 
 private:
-    virtual const char* renderName() const OVERRIDE;
-    virtual void computeLogicalHeight(LayoutUnit logicalHeight, LayoutUnit logicalTop, LogicalExtentComputedValues&) const OVERRIDE;
-    virtual void autoGenerateRegionsToBlockOffset(LayoutUnit) OVERRIDE;
-    virtual LayoutUnit initialLogicalWidth() const OVERRIDE;
-    virtual void setPageBreak(const RenderBlock*, LayoutUnit offset, LayoutUnit spaceShortage) OVERRIDE;
-    virtual void updateMinimumPageHeight(const RenderBlock*, LayoutUnit offset, LayoutUnit minHeight) OVERRIDE;
+    virtual const char* renderName() const override;
+    virtual void computeLogicalHeight(LayoutUnit logicalHeight, LayoutUnit logicalTop, LogicalExtentComputedValues&) const override;
+    virtual void autoGenerateRegionsToBlockOffset(LayoutUnit) override;
+    virtual LayoutUnit initialLogicalWidth() const override;
+    virtual void setPageBreak(const RenderBlock*, LayoutUnit offset, LayoutUnit spaceShortage) override;
+    virtual void updateMinimumPageHeight(const RenderBlock*, LayoutUnit offset, LayoutUnit minHeight) override;
+    virtual bool addForcedRegionBreak(const RenderBlock*, LayoutUnit, RenderBox* breakChild, bool isBefore, LayoutUnit* offsetBreakAdjustment = 0) override;
 };
 
 } // namespace WebCore

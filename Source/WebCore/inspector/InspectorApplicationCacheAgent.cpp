@@ -33,7 +33,6 @@
 #include "DocumentLoader.h"
 #include "Frame.h"
 #include "FrameLoader.h"
-#include "InspectorAgent.h"
 #include "InspectorPageAgent.h"
 #include "InspectorWebFrontendDispatchers.h"
 #include "InstrumentingAgents.h"
@@ -63,7 +62,7 @@ void InspectorApplicationCacheAgent::willDestroyFrontendAndBackend()
     m_frontendDispatcher = nullptr;
     m_backendDispatcher.clear();
 
-    m_instrumentingAgents->setInspectorApplicationCacheAgent(0);
+    m_instrumentingAgents->setInspectorApplicationCacheAgent(nullptr);
 }
 
 void InspectorApplicationCacheAgent::enable(ErrorString*)
@@ -121,7 +120,7 @@ DocumentLoader* InspectorApplicationCacheAgent::assertFrameWithDocumentLoader(Er
 {
     Frame* frame = m_pageAgent->assertFrame(errorString, frameId);
     if (!frame)
-        return 0;
+        return nullptr;
 
     return InspectorPageAgent::assertDocumentLoader(errorString, frame);
 }
@@ -166,10 +165,8 @@ PassRefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::ApplicationCach
 {
     RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::ApplicationCache::ApplicationCacheResource>> resources = Inspector::TypeBuilder::Array<Inspector::TypeBuilder::ApplicationCache::ApplicationCacheResource>::create();
 
-    ApplicationCacheHost::ResourceInfoList::const_iterator end = applicationCacheResources.end();
-    ApplicationCacheHost::ResourceInfoList::const_iterator it = applicationCacheResources.begin();
-    for (int i = 0; it != end; ++it, i++)
-        resources->addItem(buildObjectForApplicationCacheResource(*it));
+    for (const auto& resourceInfo : applicationCacheResources)
+        resources->addItem(buildObjectForApplicationCacheResource(resourceInfo));
 
     return resources;
 }

@@ -37,7 +37,7 @@ namespace WebCore {
 
 class FixedPositionViewportConstraints;
 
-class ScrollingStateFixedNode FINAL : public ScrollingStateNode {
+class ScrollingStateFixedNode final : public ScrollingStateNode {
 public:
     static PassOwnPtr<ScrollingStateFixedNode> create(ScrollingStateTree&, ScrollingNodeID);
 
@@ -56,9 +56,9 @@ private:
     ScrollingStateFixedNode(ScrollingStateTree&, ScrollingNodeID);
     ScrollingStateFixedNode(const ScrollingStateFixedNode&, ScrollingStateTree&);
 
-    virtual void syncLayerPositionForViewportRect(const LayoutRect& viewportRect) OVERRIDE;
+    virtual void syncLayerPositionForViewportRect(const LayoutRect& viewportRect) override;
 
-    virtual void dumpProperties(TextStream&, int indent) const OVERRIDE;
+    virtual void dumpProperties(TextStream&, int indent) const override;
 
     FixedPositionViewportConstraints m_constraints;
 };

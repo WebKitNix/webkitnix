@@ -33,7 +33,7 @@ namespace WebCore {
 
 class RenderMultiColumnFlowThread;
 
-class RenderMultiColumnBlock FINAL : public RenderBlockFlow {
+class RenderMultiColumnBlock final : public RenderBlockFlow {
 public:
     RenderMultiColumnBlock(Element&, PassRef<RenderStyle>);
     Element& element() const { return toElement(nodeForNonAnonymous()); }
@@ -51,15 +51,15 @@ private:
     virtual bool isRenderMultiColumnBlock() const { return true; }
     virtual const char* renderName() const;
 
-    virtual RenderObject* layoutSpecialExcludedChild(bool relayoutChildren) OVERRIDE;
+    virtual RenderObject* layoutSpecialExcludedChild(bool relayoutChildren) override;
 
-    virtual void styleDidChange(StyleDifference, const RenderStyle*) OVERRIDE;
+    virtual void styleDidChange(StyleDifference, const RenderStyle*) override;
     
-    virtual bool updateLogicalWidthAndColumnWidth() OVERRIDE;
-    virtual void checkForPaginationLogicalHeightChange(LayoutUnit& pageLogicalHeight, bool& pageLogicalHeightChanged, bool& hasSpecifiedPageLogicalHeight) OVERRIDE;
-    virtual bool relayoutForPagination(bool hasSpecifiedPageLogicalHeight, LayoutUnit pageLogicalHeight, LayoutStateMaintainer&) OVERRIDE;
+    virtual bool updateLogicalWidthAndColumnWidth() override;
+    virtual void checkForPaginationLogicalHeightChange(LayoutUnit& pageLogicalHeight, bool& pageLogicalHeightChanged, bool& hasSpecifiedPageLogicalHeight) override;
+    virtual bool relayoutForPagination(bool hasSpecifiedPageLogicalHeight, LayoutUnit pageLogicalHeight, LayoutStateMaintainer&) override;
 
-    virtual void addChild(RenderObject* newChild, RenderObject* beforeChild = 0) OVERRIDE;
+    virtual void addChild(RenderObject* newChild, RenderObject* beforeChild = 0) override;
 
     void computeColumnCountAndWidth();
 
@@ -71,6 +71,7 @@ private:
                               // These values will be cached (eventually) for multi-column blocks.
     LayoutUnit m_columnHeightAvailable; // Total height available to columns, or 0 if auto.
     bool m_inBalancingPass; // Set when relayouting for column balancing.
+    bool m_needsRebalancing;
 };
 
 RENDER_OBJECT_TYPE_CASTS(RenderMultiColumnBlock, isRenderMultiColumnBlock())

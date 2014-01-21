@@ -31,7 +31,7 @@
 
 namespace WebCore {
 
-class HTMLTableSectionElement FINAL : public HTMLTablePartElement {
+class HTMLTableSectionElement final : public HTMLTablePartElement {
 public:
     static PassRefPtr<HTMLTableSectionElement> create(const QualifiedName&, Document&);
 
@@ -57,7 +57,7 @@ public:
 private:
     HTMLTableSectionElement(const QualifiedName& tagName, Document&);
 
-    virtual const StyleProperties* additionalPresentationAttributeStyle() OVERRIDE;
+    virtual const StyleProperties* additionalPresentationAttributeStyle() override;
 };
 
 inline bool isHTMLTableSectionElement(const Node& node)

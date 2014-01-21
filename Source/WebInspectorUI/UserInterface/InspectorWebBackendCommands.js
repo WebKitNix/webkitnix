@@ -45,8 +45,6 @@ InspectorBackend.registerCommand("CSS.setRuleSelector", [{"name": "ruleId", "typ
 InspectorBackend.registerCommand("CSS.addRule", [{"name": "contextNodeId", "type": "number", "optional": false}, {"name": "selector", "type": "string", "optional": false}], ["rule"]);
 InspectorBackend.registerCommand("CSS.getSupportedCSSProperties", [], ["cssProperties"]);
 InspectorBackend.registerCommand("CSS.forcePseudoState", [{"name": "nodeId", "type": "number", "optional": false}, {"name": "forcedPseudoClasses", "type": "object", "optional": false}], []);
-InspectorBackend.registerCommand("CSS.startSelectorProfiler", [], []);
-InspectorBackend.registerCommand("CSS.stopSelectorProfiler", [], ["profile"]);
 InspectorBackend.registerCommand("CSS.getNamedFlowCollection", [{"name": "documentNodeId", "type": "number", "optional": false}], ["namedFlows"]);
 
 // Canvas.
@@ -250,7 +248,7 @@ InspectorBackend.registerCommand("Page.enable", [], []);
 InspectorBackend.registerCommand("Page.disable", [], []);
 InspectorBackend.registerCommand("Page.addScriptToEvaluateOnLoad", [{"name": "scriptSource", "type": "string", "optional": false}], ["identifier"]);
 InspectorBackend.registerCommand("Page.removeScriptToEvaluateOnLoad", [{"name": "identifier", "type": "string", "optional": false}], []);
-InspectorBackend.registerCommand("Page.reload", [{"name": "ignoreCache", "type": "boolean", "optional": true}, {"name": "scriptToEvaluateOnLoad", "type": "string", "optional": true}, {"name": "scriptPreprocessor", "type": "string", "optional": true}], []);
+InspectorBackend.registerCommand("Page.reload", [{"name": "ignoreCache", "type": "boolean", "optional": true}, {"name": "scriptToEvaluateOnLoad", "type": "string", "optional": true}], []);
 InspectorBackend.registerCommand("Page.navigate", [{"name": "url", "type": "string", "optional": false}], []);
 InspectorBackend.registerCommand("Page.getCookies", [], ["cookies"]);
 InspectorBackend.registerCommand("Page.deleteCookie", [{"name": "cookieName", "type": "string", "optional": false}, {"name": "url", "type": "string", "optional": false}], []);
@@ -286,7 +284,6 @@ InspectorBackend.registerEvent("Profiler.finishHeapSnapshot", ["uid"]);
 InspectorBackend.registerEvent("Profiler.setRecordingProfile", ["isProfiling"]);
 InspectorBackend.registerEvent("Profiler.resetProfiles", []);
 InspectorBackend.registerEvent("Profiler.reportHeapSnapshotProgress", ["done", "total"]);
-InspectorBackend.registerCommand("Profiler.causesRecompilation", [], ["result"]);
 InspectorBackend.registerCommand("Profiler.isSampling", [], ["result"]);
 InspectorBackend.registerCommand("Profiler.hasHeapProfiler", [], ["result"]);
 InspectorBackend.registerCommand("Profiler.enable", [], []);

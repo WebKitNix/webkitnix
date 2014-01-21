@@ -91,7 +91,7 @@ CGColorSpaceRef sRGBColorSpaceRef()
 {
 #if PLATFORM(IOS)
     return deviceRGBColorSpaceRef();
-#endif // PLATFORM(IOS)
+#else
     static CGColorSpaceRef sRGBSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 #if PLATFORM(WIN)
     // Out-of-date CG installations will not honor kCGColorSpaceSRGB. This logic avoids
@@ -99,8 +99,9 @@ CGColorSpaceRef sRGBColorSpaceRef()
     // is sRGB, this all works out nicely.
     if (!sRGBSpace)
         sRGBSpace = deviceRGBColorSpaceRef();
-#endif
+#endif // PLATFORM(WIN)
     return sRGBSpace;
+#endif // PLATFORM(IOS)
 }
 
 #if PLATFORM(IOS)
@@ -168,11 +169,7 @@ void GraphicsContext::restorePlatformState()
     m_data->m_userToDeviceTransformKnownToBeIdentity = false;
 }
 
-#if PLATFORM(IOS)
 void GraphicsContext::drawNativeImage(PassNativeImagePtr imagePtr, const FloatSize& imageSize, ColorSpace styleColorSpace, const FloatRect& destRect, const FloatRect& srcRect, float scale, CompositeOperator op, BlendMode blendMode, ImageOrientation orientation)
-#else
-void GraphicsContext::drawNativeImage(PassNativeImagePtr imagePtr, const FloatSize& imageSize, ColorSpace styleColorSpace, const FloatRect& destRect, const FloatRect& srcRect, CompositeOperator op, BlendMode blendMode, ImageOrientation orientation)
-#endif
 {
     RetainPtr<CGImageRef> image(imagePtr);
 
@@ -180,6 +177,8 @@ void GraphicsContext::drawNativeImage(PassNativeImagePtr imagePtr, const FloatSi
 #if PLATFORM(IOS)
     // Unapply the scaling since we are getting this from a scaled bitmap.
     currHeight /= scale;
+#else
+    UNUSED_PARAM(scale);
 #endif
 
     if (currHeight <= srcRect.y())
@@ -1456,10 +1455,11 @@ void GraphicsContext::drawLineForText(const FloatPoint& point, float width, bool
     if (restoreAntialiasMode)
         CGContextSetShouldAntialias(platformContext(), shouldAntialiasLine);
 
-    if (fillColor() != strokeColor())
+    bool fillColorIsNotEqualToStrokeColor = fillColor() != strokeColor();
+    if (fillColorIsNotEqualToStrokeColor)
         setCGFillColor(platformContext(), strokeColor(), strokeColorSpace());
     CGContextFillRect(platformContext(), bounds);
-    if (fillColor() != strokeColor())
+    if (fillColorIsNotEqualToStrokeColor)
         setCGFillColor(platformContext(), fillColor(), fillColorSpace());
     CGContextSetShouldAntialias(platformContext(), savedShouldAntialias);
 
@@ -1477,6 +1477,63 @@ void GraphicsContext::drawLineForText(const FloatPoint& point, float width, bool
     if (m_state.shouldUseContextColors)
         setCGFillColor(context, color, strokeColorSpace());
     CGContextFillRect(context, rect);
+
+    CGContextRestoreGState(context);
+#endif
+}
+
+void GraphicsContext::drawLinesForText(const FloatPoint& point, const DashArray& widths, bool printing)
+{
+    if (paintingDisabled())
+        return;
+
+    if (widths.size() <= 0)
+        return;
+
+#if !PLATFORM(IOS)
+    bool shouldAntialiasLine;
+    FloatRect bounds = computeLineBoundsAndAntialiasingModeForText(*this, point, widths.last(), printing, shouldAntialiasLine);
+    
+    Vector<CGRect, 4> dashBounds;
+    ASSERT(!(widths.size() % 2));
+    dashBounds.reserveInitialCapacity(dashBounds.size() / 2);
+    for (size_t i = 0; i < widths.size(); i += 2)
+        dashBounds.append(CGRectMake(bounds.x() + widths[i], bounds.y(), widths[i+1] - widths[i], bounds.height()));
+
+    bool savedShouldAntialias = shouldAntialias();
+    bool restoreAntialiasMode = savedShouldAntialias != shouldAntialiasLine;
+
+    if (restoreAntialiasMode)
+        CGContextSetShouldAntialias(platformContext(), shouldAntialiasLine);
+
+    bool fillColorIsNotEqualToStrokeColor = fillColor() != strokeColor();
+    if (fillColorIsNotEqualToStrokeColor)
+        setCGFillColor(platformContext(), strokeColor(), strokeColorSpace());
+    CGContextFillRects(platformContext(), dashBounds.data(), dashBounds.size());
+    if (fillColorIsNotEqualToStrokeColor)
+        setCGFillColor(platformContext(), fillColor(), fillColorSpace());
+    CGContextSetShouldAntialias(platformContext(), savedShouldAntialias);
+
+    if (restoreAntialiasMode)
+        CGContextSetShouldAntialias(platformContext(), true);
+#else
+    CGContextRef context = platformContext();
+    CGContextSaveGState(context);
+
+    Color color(strokeColor());
+    
+    bool shouldAntialiasLine;
+    FloatRect rect = computeLineBoundsAndAntialiasingModeForText(*this, point, widths.last(), printing, shouldAntialiasLine, color);
+    
+    Vector<CGRect, 4> dashBounds;
+    ASSERT(!(widths.size() % 2));
+    dashBounds.reserveInitialCapacity(dashBounds.size() / 2);
+    for (size_t i = 0; i < widths.size(); i += 2)
+        dashBounds.append(CGRectMake(rect.x() + widths[i], rect.y(), widths[i+1] - widths[i], rect.height()));
+
+    if (m_state.shouldUseContextColors)
+        setCGFillColor(context, color, strokeColorSpace());
+    CGContextFillRects(context, dashBounds.data(), dashBounds.size());
 
     CGContextRestoreGState(context);
 #endif

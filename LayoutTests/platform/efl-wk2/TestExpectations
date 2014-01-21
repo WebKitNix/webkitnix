@@ -59,13 +59,11 @@ webkit.org/b/102651 [ Debug ] networkinformation/basic-operation.html [ Crash ]
 
 # WebGL test cases crashing in WebCore::GraphicsContext3D::readPixels().
 webkit.org/b/109417 webgl/conformance/textures/texture-attachment-formats.html [ Crash Failure ]
-webkit.org/b/109941 webgl/conformance/textures/origin-clean-conformance.html [ Crash ]
 webkit.org/b/109945 webgl/conformance/glsl/misc/shader-uniform-packing-restrictions.html [ Crash ]
 webkit.org/b/109945 webgl/conformance/uniforms/gl-uniform-arrays.html [ Crash Failure ]
 webkit.org/b/109945 webgl/conformance/uniforms/uniform-default-values.html [ Crash ]
 
 # Known WebGL conformance test failures, fails on Intel and AMD hardware
-webgl/1.0.1/conformance/textures/origin-clean-conformance.html [ Crash ]
 webgl/1.0.2/conformance/glsl/misc/shader-uniform-packing-restrictions.html [ Crash ]
 webgl/1.0.2/conformance/uniforms/uniform-default-values.html [ Crash ]
 
@@ -138,6 +136,9 @@ webkit.org/b/108257 compositing/overflow/composited-scrolling-creates-a-stacking
 webkit.org/b/108355 js/caller-property.html [ Crash Pass ]
 webkit.org/b/108355 storage/websql/close-during-stress-test.html [ Crash Pass ]
 webkit.org/b/108355 storage/websql/sql-error-codes.html [ Crash Pass ]
+
+webkit.org/b/127109 media/video-object-fit-change.html [ ImageOnlyFailure Pass ]
+webkit.org/b/127109 media/video-object-fit.html [ ImageOnlyFailure Pass ]
 
 #////////////////////////////////////////////////////////////////////////////////////////
 # PASSING TESTS WITH INCORRECT EXPECTATIONS
@@ -395,3 +396,20 @@ webkit.org/b/125634 compositing/repaint/invalidations-on-composited-layers.html 
 webkit.org/b/125635 compositing/repaint/positioned-movement.html [ Failure ]
 
 webkit.org/b/125636 compositing/video/video-object-fit.html [ Failure ]
+
+# Tests failing since introduced in r162117
+webkit.org/b/127118 compositing/regions/abs-in-named-flow-from-fixed-in-named-flow.html [ Failure ]
+webkit.org/b/127118 compositing/regions/fixed-in-named-flow-clip-descendant.html [ Failure ]
+webkit.org/b/127118 compositing/regions/fixed-in-named-flow-from-abs-in-named-flow.html [ Failure ]
+webkit.org/b/127118 compositing/regions/fixed-in-named-flow-from-outflow.html [ Failure ]
+webkit.org/b/127118 compositing/regions/fixed-in-named-flow-lost-transformed-parent.html [ Failure ]
+webkit.org/b/127118 compositing/regions/fixed-in-named-flow.html [ Failure ]
+
+webkit.org/b/127277 fast/canvas/webgl/glsl-conformance.html [ Failure ]
+
+webkit.org/b/127279 fast/canvas/webgl/webgl-compressed-texture-size-limit.html [ Failure ]
+
+webkit.org/b/127286 webgl/conformance/typedarrays/data-view-test.html [ Failure ]
+
+webkit.org/b/109941 webgl/conformance/textures/origin-clean-conformance.html [ Failure ]
+webkit.org/b/109941 webgl/1.0.1/conformance/textures/origin-clean-conformance.html [ Failure ]

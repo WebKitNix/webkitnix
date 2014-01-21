@@ -290,13 +290,6 @@ bool threadSafeMatch(const QualifiedName& a, const QualifiedName& b)
     return threadSafeEqual(a.localName().impl(), b.localName().impl());
 }
 
-#if ENABLE(THREADED_HTML_PARSER)
-bool threadSafeMatch(const HTMLIdentifier& localName, const QualifiedName& qName)
-{
-    return threadSafeEqual(localName.asStringImpl(), qName.localName().impl());
-}
-#endif
-
 struct ImageWithScale {
     unsigned imageURLStart;
     unsigned imageURLLength;
@@ -388,7 +381,7 @@ static void parseImagesWithScaleFromSrcsetAttribute(const String& srcsetAttribut
                 }
                 bool validScaleFactor = false;
                 size_t scaleFactorLengthWithoutUnit = imageScaleEnd - imageScaleStart - 1;
-                imageScaleFactor = charactersToFloat(srcsetAttribute.characters() + imageScaleStart, scaleFactorLengthWithoutUnit, &validScaleFactor);
+                imageScaleFactor = charactersToFloat(srcsetAttribute.deprecatedCharacters() + imageScaleStart, scaleFactorLengthWithoutUnit, &validScaleFactor);
 
                 if (!validScaleFactor) {
                     imageCandidateStart = separator + 1;

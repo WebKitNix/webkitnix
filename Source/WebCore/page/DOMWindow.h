@@ -32,6 +32,7 @@
 #include "FrameDestructionObserver.h"
 #include "URL.h"
 #include "Supplementable.h"
+#include <functional>
 
 namespace WebCore {
 
@@ -85,7 +86,7 @@ namespace WebCore {
     enum SetLocationLocking { LockHistoryBasedOnGestureState, LockHistoryAndBackForwardList };
 
     // FIXME: DOMWindow shouldn't subclass FrameDestructionObserver and instead should get to Frame via its Document.
-    class DOMWindow FINAL
+    class DOMWindow final
         : public RefCounted<DOMWindow>
         , public EventTargetWithInlineData
         , public ContextDestructionObserver
@@ -104,10 +105,10 @@ namespace WebCore {
         // the network load. See also SecurityContext::isSecureTransitionTo.
         void didSecureTransitionTo(Document*);
 
-        virtual EventTargetInterface eventTargetInterface() const OVERRIDE { return DOMWindowEventTargetInterfaceType; }
-        virtual ScriptExecutionContext* scriptExecutionContext() const OVERRIDE { return ContextDestructionObserver::scriptExecutionContext(); }
+        virtual EventTargetInterface eventTargetInterface() const override { return DOMWindowEventTargetInterfaceType; }
+        virtual ScriptExecutionContext* scriptExecutionContext() const override { return ContextDestructionObserver::scriptExecutionContext(); }
 
-        virtual DOMWindow* toDOMWindow() OVERRIDE;
+        virtual DOMWindow* toDOMWindow() override;
 
         void registerProperty(DOMWindowProperty*);
         void unregisterProperty(DOMWindowProperty*);
@@ -161,9 +162,7 @@ namespace WebCore {
         PassRefPtr<DOMWindow> open(const String& urlString, const AtomicString& frameName, const String& windowFeaturesString,
             DOMWindow& activeWindow, DOMWindow& firstWindow);
 
-        typedef void (*PrepareDialogFunction)(DOMWindow*, void* context);
-        void showModalDialog(const String& urlString, const String& dialogFeaturesString,
-            DOMWindow& activeWindow, DOMWindow& firstWindow, PrepareDialogFunction, void* functionContext);
+        void showModalDialog(const String& urlString, const String& dialogFeaturesString, DOMWindow& activeWindow, DOMWindow& firstWindow, std::function<void (DOMWindow&)> prepareDialogFunction);
 
         void alert(const String& message);
         bool confirm(const String& message);
@@ -271,9 +270,9 @@ namespace WebCore {
 
         // Events
         // EventTarget API
-        virtual bool addEventListener(const AtomicString& eventType, PassRefPtr<EventListener>, bool useCapture) OVERRIDE;
-        virtual bool removeEventListener(const AtomicString& eventType, EventListener*, bool useCapture) OVERRIDE;
-        virtual void removeAllEventListeners() OVERRIDE;
+        virtual bool addEventListener(const AtomicString& eventType, PassRefPtr<EventListener>, bool useCapture) override;
+        virtual bool removeEventListener(const AtomicString& eventType, EventListener*, bool useCapture) override;
+        virtual void removeAllEventListeners() override;
 
         using EventTarget::dispatchEvent;
         bool dispatchEvent(PassRefPtr<Event> prpEvent, PassRefPtr<EventTarget> prpTarget);
@@ -437,15 +436,13 @@ namespace WebCore {
         Page* page();
         bool allowedToChangeWindowGeometry() const;
 
-        virtual void frameDestroyed() OVERRIDE;
-        virtual void willDetachPage() OVERRIDE;
+        virtual void frameDestroyed() override;
+        virtual void willDetachPage() override;
 
-        virtual void refEventTarget() OVERRIDE { ref(); }
-        virtual void derefEventTarget() OVERRIDE { deref(); }
+        virtual void refEventTarget() override { ref(); }
+        virtual void derefEventTarget() override { deref(); }
 
-        static PassRefPtr<Frame> createWindow(const String& urlString, const AtomicString& frameName, const WindowFeatures&,
-            DOMWindow& activeWindow, Frame* firstFrame, Frame* openerFrame,
-            PrepareDialogFunction = 0, void* functionContext = 0);
+        static PassRefPtr<Frame> createWindow(const String& urlString, const AtomicString& frameName, const WindowFeatures&, DOMWindow& activeWindow, Frame* firstFrame, Frame* openerFrame, std::function<void (DOMWindow&)> prepareDialogFunction = nullptr);
         bool isInsecureScriptAccess(DOMWindow& activeWindow, const String& urlString);
 
         void resetDOMWindowProperties();

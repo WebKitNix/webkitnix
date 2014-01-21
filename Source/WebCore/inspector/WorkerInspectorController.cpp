@@ -55,7 +55,6 @@
 #include "WorkerRuntimeAgent.h"
 #include "WorkerThread.h"
 #include <inspector/InspectorBackendDispatcher.h>
-#include <wtf/PassOwnPtr.h>
 
 using namespace Inspector;
 
@@ -66,40 +65,41 @@ namespace {
 class PageInspectorProxy : public InspectorFrontendChannel {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    explicit PageInspectorProxy(WorkerGlobalScope* workerGlobalScope) : m_workerGlobalScope(workerGlobalScope) { }
+    explicit PageInspectorProxy(WorkerGlobalScope& workerGlobalScope)
+        : m_workerGlobalScope(workerGlobalScope) { }
     virtual ~PageInspectorProxy() { }
 private:
-    virtual bool sendMessageToFrontend(const String& message)
+    virtual bool sendMessageToFrontend(const String& message) override
     {
-        m_workerGlobalScope->thread()->workerReportingProxy().postMessageToPageInspector(message);
+        m_workerGlobalScope.thread()->workerReportingProxy().postMessageToPageInspector(message);
         return true;
     }
-    WorkerGlobalScope* m_workerGlobalScope;
+    WorkerGlobalScope& m_workerGlobalScope;
 };
 
 }
 
-WorkerInspectorController::WorkerInspectorController(WorkerGlobalScope* workerGlobalScope)
+WorkerInspectorController::WorkerInspectorController(WorkerGlobalScope& workerGlobalScope)
     : m_workerGlobalScope(workerGlobalScope)
     , m_instrumentingAgents(InstrumentingAgents::create(*this))
     , m_injectedScriptManager(std::make_unique<PageInjectedScriptManager>(*this, PageInjectedScriptHost::create()))
-    , m_runtimeAgent(0)
+    , m_runtimeAgent(nullptr)
 {
-    OwnPtr<InspectorRuntimeAgent> runtimeAgent = WorkerRuntimeAgent::create(m_instrumentingAgents.get(), m_injectedScriptManager.get(), workerGlobalScope);
+    auto runtimeAgent = std::make_unique<WorkerRuntimeAgent>(m_instrumentingAgents.get(), m_injectedScriptManager.get(), &workerGlobalScope);
     m_runtimeAgent = runtimeAgent.get();
-    m_agents.append(runtimeAgent.release());
+    m_agents.append(std::move(runtimeAgent));
 
-    OwnPtr<InspectorConsoleAgent> consoleAgent = WorkerConsoleAgent::create(m_instrumentingAgents.get(), m_injectedScriptManager.get());
+    auto consoleAgent = std::make_unique<WorkerConsoleAgent>(m_instrumentingAgents.get(), m_injectedScriptManager.get());
 #if ENABLE(JAVASCRIPT_DEBUGGER)
-    OwnPtr<InspectorDebuggerAgent> debuggerAgent = WorkerDebuggerAgent::create(m_instrumentingAgents.get(), workerGlobalScope, m_injectedScriptManager.get());
+    auto debuggerAgent = std::make_unique<WorkerDebuggerAgent>(m_instrumentingAgents.get(), &workerGlobalScope, m_injectedScriptManager.get());
     m_runtimeAgent->setScriptDebugServer(&debuggerAgent->scriptDebugServer());
-    m_agents.append(debuggerAgent.release());
+    m_agents.append(std::move(debuggerAgent));
 
-    m_agents.append(InspectorProfilerAgent::create(m_instrumentingAgents.get(), consoleAgent.get(), workerGlobalScope, m_injectedScriptManager.get()));
-    m_agents.append(InspectorHeapProfilerAgent::create(m_instrumentingAgents.get(), m_injectedScriptManager.get()));
+    m_agents.append(InspectorProfilerAgent::create(m_instrumentingAgents.get(), consoleAgent.get(), &workerGlobalScope, m_injectedScriptManager.get()));
+    m_agents.append(std::make_unique<InspectorHeapProfilerAgent>(m_instrumentingAgents.get(), m_injectedScriptManager.get()));
 #endif
-    m_agents.append(InspectorTimelineAgent::create(m_instrumentingAgents.get(), 0, 0, InspectorTimelineAgent::WorkerInspector, 0));
-    m_agents.append(consoleAgent.release());
+    m_agents.append(std::make_unique<InspectorTimelineAgent>(m_instrumentingAgents.get(), nullptr, nullptr, InspectorTimelineAgent::WorkerInspector, nullptr));
+    m_agents.append(std::move(consoleAgent));
 
     if (CommandLineAPIHost* commandLineAPIHost = m_injectedScriptManager->commandLineAPIHost()) {
         commandLineAPIHost->init(nullptr
@@ -122,7 +122,7 @@ WorkerInspectorController::~WorkerInspectorController()
 void WorkerInspectorController::connectFrontend()
 {
     ASSERT(!m_frontendChannel);
-    m_frontendChannel = adoptPtr(new PageInspectorProxy(m_workerGlobalScope));
+    m_frontendChannel = std::make_unique<PageInspectorProxy>(m_workerGlobalScope);
     m_backendDispatcher = InspectorBackendDispatcher::create(m_frontendChannel.get());
     m_agents.didCreateFrontendAndBackend(m_frontendChannel.get(), m_backendDispatcher.get());
 }
@@ -134,7 +134,7 @@ void WorkerInspectorController::disconnectFrontend()
     m_agents.willDestroyFrontendAndBackend();
     m_backendDispatcher->clearFrontend();
     m_backendDispatcher.clear();
-    m_frontendChannel.clear();
+    m_frontendChannel = nullptr;
 }
 
 void WorkerInspectorController::dispatchMessageFromFrontend(const String& message)

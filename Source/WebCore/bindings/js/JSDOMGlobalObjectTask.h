@@ -33,7 +33,7 @@ namespace WebCore {
 
 class JSGlobalObjectCallback;
 
-class JSGlobalObjectTask FINAL : public ScriptExecutionContext::Task {
+class JSGlobalObjectTask final : public ScriptExecutionContext::Task {
 public:
     static PassOwnPtr<JSGlobalObjectTask> create(JSDOMGlobalObject* globalObject, PassRefPtr<JSC::Microtask> task)
     {
@@ -45,7 +45,7 @@ public:
 private:
     JSGlobalObjectTask(JSDOMGlobalObject*, PassRefPtr<JSC::Microtask>);
 
-    virtual void performTask(ScriptExecutionContext*) OVERRIDE;
+    virtual void performTask(ScriptExecutionContext*) override;
 
     RefPtr<JSGlobalObjectCallback> m_callback;
 };

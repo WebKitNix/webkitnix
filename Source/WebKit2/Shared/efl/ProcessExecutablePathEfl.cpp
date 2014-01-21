@@ -29,22 +29,25 @@
 #include "FileSystem.h"
 #include <glib.h>
 #include <libgen.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
+#include <wtf/NeverDestroyed.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/text/CString.h>
 
 namespace WebKit {
 
+// We initially look for the process in WEBKIT_EXEC_PATH, then proceed to try the working
+// directory of the running process, and finally we try LIBEXECDIR (usually /usr/local/bin).
 static String findProcessPath(const char* processName)
 {
-    static const char* execDirectory = g_getenv("WEBKIT_EXEC_PATH");
+    String executablePath;
+    static const char* execDirectory = getenv("WEBKIT_EXEC_PATH");
     if (execDirectory) {
-        String processPath = WebCore::pathByAppendingComponent(WebCore::filenameToString(execDirectory), processName);
-        if (WebCore::fileExists(processPath))
-            return processPath;
+        executablePath = WebCore::pathByAppendingComponent(String::fromUTF8(execDirectory), processName);
+        if (WebCore::fileExists(executablePath))
+            return executablePath;
     }
+
 #if OS(UNIX)
     char readLinkBuffer[PATH_MAX] = {0};
 
@@ -55,28 +58,26 @@ static String findProcessPath(const char* processName)
 #endif
     if (result > 0) {
         char* executablePathPtr = dirname(readLinkBuffer);
-        String executablePath = WebCore::pathByAppendingComponent(String(executablePathPtr), processName);
-
-        // Checks whether process exist on the current path.
-        struct stat fileStat;
-        if (!stat(executablePath.utf8().data(), &fileStat))
+        executablePath = WebCore::pathByAppendingComponent(String::fromUTF8(executablePathPtr), processName);
+        if (WebCore::fileExists(executablePath))
             return executablePath;
     }
 #endif
-
-    return WebCore::pathByAppendingComponent(String(LIBEXECDIR), processName);
+    executablePath = WebCore::pathByAppendingComponent(String(LIBEXECDIR), processName);
+    ASSERT(WebCore::fileExists(executablePath));
+    return executablePath;
 }
 
 String executablePathOfWebProcess()
 {
-    DEFINE_STATIC_LOCAL(const String, webKitWebProcessName, (findProcessPath(WEBPROCESSNAME)));
+    static NeverDestroyed<const String> webKitWebProcessName(findProcessPath(WEBPROCESSNAME));
 
     return webKitWebProcessName;
 }
 
 String executablePathOfPluginProcess()
 {
-    DEFINE_STATIC_LOCAL(const String, webKitPluginProcessName, (findProcessPath(PLUGINPROCESSNAME)));
+    static NeverDestroyed<const String> webKitPluginProcessName(findProcessPath(PLUGINPROCESSNAME));
 
     return webKitPluginProcessName;
 }
@@ -84,7 +85,7 @@ String executablePathOfPluginProcess()
 #if ENABLE(NETWORK_PROCESS)
 String executablePathOfNetworkProcess()
 {
-    DEFINE_STATIC_LOCAL(const String, webKitNetworkProcessName, (findProcessPath(NETWORKPROCESSNAME)));
+    static NeverDestroyed<const String> webKitNetworkProcessName(findProcessPath(NETWORKPROCESSNAME));
 
     return webKitNetworkProcessName;
 }

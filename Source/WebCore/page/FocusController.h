@@ -82,7 +82,6 @@ public:
     void setFocused(bool);
     bool isFocused() const { return m_viewState & ViewState::IsFocused; }
 
-    void setContentIsVisible(bool);
     bool contentIsVisible() const { return m_viewState & ViewState::IsVisible; }
 
     // These methods are used in WebCore/bindings/objc/DOM.mm.
@@ -92,7 +91,7 @@ public:
 private:
     void setActiveInternal(bool);
     void setFocusedInternal(bool);
-    void setContentIsVisibleInternal(bool);
+    void setIsVisibleInternal(bool);
 
     bool advanceFocusDirectionally(FocusDirection, KeyboardEvent*);
     bool advanceFocusInDocumentOrder(FocusDirection, KeyboardEvent*, bool initialFocus);

@@ -28,6 +28,7 @@
 
 VPATH = \
     $(WebCore) \
+    $(WebCore)/Modules/airplay \
     $(WebCore)/Modules/encryptedmedia \
     $(WebCore)/Modules/geolocation \
     $(WebCore)/Modules/indexeddb \
@@ -67,6 +68,7 @@ VPATH = \
 #
 
 BINDING_IDLS = \
+    $(WebCore)/Modules/airplay/WebKitPlaybackTargetAvailabilityEvent.idl \
     $(WebCore)/Modules/encryptedmedia/MediaKeyMessageEvent.idl \
     $(WebCore)/Modules/encryptedmedia/MediaKeyNeededEvent.idl \
     $(WebCore)/Modules/encryptedmedia/MediaKeySession.idl \
@@ -304,9 +306,6 @@ BINDING_IDLS = \
     $(WebCore)/dom/StringCallback.idl \
     $(WebCore)/dom/Text.idl \
     $(WebCore)/dom/TextEvent.idl \
-    $(WebCore)/dom/Touch.idl \
-    $(WebCore)/dom/TouchEvent.idl \
-    $(WebCore)/dom/TouchList.idl \
     $(WebCore)/dom/TransitionEvent.idl \
     $(WebCore)/dom/TreeWalker.idl \
     $(WebCore)/dom/UIEvent.idl \
@@ -422,6 +421,7 @@ BINDING_IDLS = \
     $(WebCore)/html/canvas/OESTextureFloat.idl \
     $(WebCore)/html/canvas/OESTextureFloatLinear.idl \
     $(WebCore)/html/canvas/OESTextureHalfFloat.idl \
+    $(WebCore)/html/canvas/OESTextureHalfFloatLinear.idl \
     $(WebCore)/html/canvas/OESVertexArrayObject.idl \
     $(WebCore)/html/canvas/WebGLActiveInfo.idl \
     $(WebCore)/html/canvas/WebGLBuffer.idl \
@@ -661,6 +661,58 @@ BINDING_IDLS = \
     InternalSettingsGenerated.idl
 #
 
+ifeq ($(OS),MACOS)
+
+FRAMEWORK_FLAGS = $(shell echo $(BUILT_PRODUCTS_DIR) $(FRAMEWORK_SEARCH_PATHS) | perl -e 'print "-F " . join(" -F ", split(" ", <>));')
+HEADER_FLAGS = $(shell echo $(BUILT_PRODUCTS_DIR) $(HEADER_SEARCH_PATHS) | perl -e 'print "-I" . join(" -I", split(" ", <>));')
+TEXT_PREPROCESSOR_FLAGS=-E -P -x c -traditional
+
+ifneq ($(SDKROOT),)
+	SDK_FLAGS=-isysroot $(SDKROOT)
+endif
+
+ifeq ($(shell $(CC) -isysroot $(SDKROOT) -std=gnu++11 -x c++ -E -P -dM -F $(BUILT_PRODUCTS_DIR) $(FRAMEWORK_FLAGS) $(HEADER_FLAGS) -include "wtf/Platform.h" /dev/null | grep ' WTF_PLATFORM_IOS ' | cut -d' ' -f3), 1)
+    WTF_PLATFORM_IOS = 1
+else
+    WTF_PLATFORM_IOS = 0
+endif
+
+ifeq ($(shell $(CC) -std=gnu++11 -x c++ -E -P -dM $(SDK_FLAGS) $(FRAMEWORK_FLAGS) $(HEADER_FLAGS) -include "wtf/Platform.h" /dev/null | grep ENABLE_ORIENTATION_EVENTS | cut -d' ' -f3), 1)
+    ENABLE_ORIENTATION_EVENTS = 1
+endif
+
+ifeq ($(PLATFORM_FEATURE_DEFINES),)
+PLATFORM_FEATURE_DEFINES = Configurations/FeatureDefines.xcconfig
+endif
+
+ifeq ($(WTF_PLATFORM_IOS), 1)
+
+ADDITIONAL_BINDING_IDLS = \
+    GestureEvent.idl \
+    Touch.idl \
+    TouchEvent.idl \
+    TouchList.idl
+
+BINDING_IDLS += $(ADDITIONAL_BINDING_IDLS)
+
+all : $(ADDITIONAL_BINDING_IDLS:%.idl=JS%.h)
+
+vpath %.idl $(BUILT_PRODUCTS_DIR)/usr/local/include $(SDKROOT)/usr/local/include
+
+$(ADDITIONAL_BINDING_IDLS) : % : WebKitAdditions/%
+	cp $< .
+
+endif
+
+endif # MACOS
+
+ifneq ($(WTF_PLATFORM_IOS), 1)
+BINDING_IDLS += \
+    $(WebCore)/dom/Touch.idl \
+    $(WebCore)/dom/TouchEvent.idl \
+    $(WebCore)/dom/TouchList.idl
+endif
+
 .PHONY : all
 
 DOM_CLASSES=$(basename $(notdir $(BINDING_IDLS)))
@@ -709,26 +761,6 @@ all : \
 
 ADDITIONAL_IDL_DEFINES :=
 
-ifeq ($(OS),MACOS)
-
-FRAMEWORK_FLAGS = $(shell echo $(BUILT_PRODUCTS_DIR) $(FRAMEWORK_SEARCH_PATHS) | perl -e 'print "-F " . join(" -F ", split(" ", <>));')
-HEADER_FLAGS = $(shell echo $(BUILT_PRODUCTS_DIR) $(HEADER_SEARCH_PATHS) | perl -e 'print "-I" . join(" -I", split(" ", <>));')
-TEXT_PREPROCESSOR_FLAGS=-E -P -x c -traditional
-
-ifneq ($(SDKROOT),)
-	SDK_FLAGS=-isysroot $(SDKROOT)
-endif
-
-ifeq ($(shell $(CC) -std=gnu++11 -x c++ -E -P -dM $(SDK_FLAGS) $(FRAMEWORK_FLAGS) $(HEADER_FLAGS) -include "wtf/Platform.h" /dev/null | grep ENABLE_ORIENTATION_EVENTS | cut -d' ' -f3), 1)
-    ENABLE_ORIENTATION_EVENTS = 1
-endif
-
-ifeq ($(PLATFORM_FEATURE_DEFINES),)
-PLATFORM_FEATURE_DEFINES = Configurations/FeatureDefines.xcconfig
-endif
-
-endif # MACOS
-
 ifndef ENABLE_ORIENTATION_EVENTS
     ENABLE_ORIENTATION_EVENTS = 0
 endif
@@ -757,11 +789,11 @@ ifeq ($(findstring ENABLE_SVG,$(FEATURE_DEFINES)), ENABLE_SVG)
     WEBCORE_CSS_VALUE_KEYWORDS := $(WEBCORE_CSS_VALUE_KEYWORDS) $(WebCore)/css/SVGCSSValueKeywords.in
 endif
 
-CSSPropertyNames.h : $(WEBCORE_CSS_PROPERTY_NAMES) css/makeprop.pl $(PLATFORM_FEATURE_DEFINES)
+CSSPropertyNames.h : $(WEBCORE_CSS_PROPERTY_NAMES) css/makeprop.pl bindings/scripts/preprocessor.pm $(PLATFORM_FEATURE_DEFINES)
 	cat $(WEBCORE_CSS_PROPERTY_NAMES) > CSSPropertyNames.in
 	perl -I$(WebCore)/bindings/scripts "$(WebCore)/css/makeprop.pl" --defines "$(FEATURE_DEFINES)"
 
-CSSValueKeywords.h : $(WEBCORE_CSS_VALUE_KEYWORDS) css/makevalues.pl $(PLATFORM_FEATURE_DEFINES)
+CSSValueKeywords.h : $(WEBCORE_CSS_VALUE_KEYWORDS) css/makevalues.pl bindings/scripts/preprocessor.pm $(PLATFORM_FEATURE_DEFINES)
 	cat $(WEBCORE_CSS_VALUE_KEYWORDS) > CSSValueKeywords.in
 	perl -I$(WebCore)/bindings/scripts "$(WebCore)/css/makevalues.pl" --defines "$(FEATURE_DEFINES)"
 
@@ -1149,21 +1181,61 @@ all : CharsetData.cpp
 
 # character set name table
 
-CharsetData.cpp : platform/text/mac/make-charset-table.pl platform/text/mac/character-sets.txt platform/text/mac/mac-encodings.txt
+ifeq ($(WTF_PLATFORM_IOS),1)
+ENCODINGS_FILENAME := ios-encodings.txt
+else
+ENCODINGS_FILENAME := mac-encodings.txt
+endif # WTF_PLATFORM_IOS
+
+CharsetData.cpp : platform/text/mac/make-charset-table.pl platform/text/mac/character-sets.txt platform/text/mac/$(ENCODINGS_FILENAME)
 	perl $^ kTextEncoding > $@
 
 # --------
 
 ifneq ($(ACTION),installhdrs)
 
+ifeq ($(WTF_PLATFORM_IOS),1)
+
+ifeq ($(findstring armv7,$(ARCHS)), armv7)
+    WEBCORE_EXPORT_FILES := $(WEBCORE_EXPORT_FILES) WebCore.LP64.armv7.exp
+endif
+ifeq ($(findstring armv7k,$(ARCHS)), armv7k)
+    WEBCORE_EXPORT_FILES := $(WEBCORE_EXPORT_FILES) WebCore.LP64.armv7k.exp
+endif
+ifeq ($(findstring armv7s,$(ARCHS)), armv7s)
+    WEBCORE_EXPORT_FILES := $(WEBCORE_EXPORT_FILES) WebCore.LP64.armv7s.exp
+endif
+ifeq ($(findstring arm64,$(ARCHS)), arm64)
+    WEBCORE_EXPORT_FILES := $(WEBCORE_EXPORT_FILES) WebCore.LP64.arm64.exp
+endif
+ifeq ($(findstring i386,$(ARCHS)), i386)
+    WEBCORE_EXPORT_FILES := $(WEBCORE_EXPORT_FILES) WebCore.LP64.i386.exp
+endif
+ifeq ($(findstring x86_64,$(ARCHS)), x86_64)
+    WEBCORE_EXPORT_FILES := $(WEBCORE_EXPORT_FILES) WebCore.LP64.x86_64.exp
+endif
+
+all : $(WEBCORE_EXPORT_FILES)
+
+WebCore.%.exp : generate-export-file WebCore.exp.in
+	$^ $@
+
+# Switch NSRect, NSSize and NSPoint with their CG counterparts for the 64-bit exports file.
+WebCore.LP64.%.exp : WebCore.%.exp
+	cat $^ | sed -e s/7_NSRect/6CGRect/ -e s/7_NSSize/6CGSize/ -e s/8_NSPoint/7CGPoint/ > $@
+
+else
+
 all : WebCore.exp WebCore.LP64.exp
 
 WebCore.exp : $(BUILT_PRODUCTS_DIR)/WebCoreExportFileGenerator
-	$^ > $@
+	$^ | grep -v '^# ' | sed -e 's/^#//' > $@
 
 # Switch NSRect, NSSize and NSPoint with their CG counterparts for the 64-bit exports file.
 WebCore.LP64.exp : WebCore.exp
 	cat $^ | sed -e s/7_NSRect/6CGRect/ -e s/7_NSSize/6CGSize/ -e s/8_NSPoint/7CGPoint/ > $@
+
+endif # WTF_PLATFORM_IOS
 
 endif # installhdrs
 

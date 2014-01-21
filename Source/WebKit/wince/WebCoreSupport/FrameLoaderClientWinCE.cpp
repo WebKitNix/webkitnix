@@ -203,16 +203,6 @@ void FrameLoaderClientWinCE::dispatchDidClearWindowObjectInWorld(DOMWrapperWorld
     notImplemented();
 }
 
-void FrameLoaderClientWinCE::documentElementAvailable()
-{
-    notImplemented();
-}
-
-void FrameLoaderClientWinCE::didPerformFirstNavigation() const
-{
-    notImplemented();
-}
-
 void FrameLoaderClientWinCE::registerForIconNotification(bool)
 {
     notImplemented();

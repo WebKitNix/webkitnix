@@ -60,7 +60,7 @@ public:
     virtual void canvasDestroyed(HTMLCanvasElement&) = 0;
 };
 
-class HTMLCanvasElement FINAL : public HTMLElement {
+class HTMLCanvasElement final : public HTMLElement {
 public:
     static PassRefPtr<HTMLCanvasElement> create(Document&);
     static PassRefPtr<HTMLCanvasElement> create(const QualifiedName&, Document&);
@@ -149,13 +149,13 @@ public:
 private:
     HTMLCanvasElement(const QualifiedName&, Document&);
 
-    virtual void parseAttribute(const QualifiedName&, const AtomicString&) OVERRIDE;
-    virtual RenderPtr<RenderElement> createElementRenderer(PassRef<RenderStyle>) OVERRIDE;
-    virtual void willAttachRenderers() OVERRIDE;
-    virtual bool areAuthorShadowsAllowed() const OVERRIDE;
+    virtual void parseAttribute(const QualifiedName&, const AtomicString&) override;
+    virtual RenderPtr<RenderElement> createElementRenderer(PassRef<RenderStyle>) override;
+    virtual void willAttachRenderers() override;
+    virtual bool areAuthorShadowsAllowed() const override;
 
-    virtual bool canContainRangeEndPoint() const OVERRIDE;
-    virtual bool canStartSelection() const OVERRIDE;
+    virtual bool canContainRangeEndPoint() const override;
+    virtual bool canStartSelection() const override;
 
     void reset();
 

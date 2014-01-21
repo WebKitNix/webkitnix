@@ -37,7 +37,7 @@
 
 namespace JSC {
 
-class ExecutePromiseReactionMicrotask FINAL : public Microtask {
+class ExecutePromiseReactionMicrotask final : public Microtask {
 public:
     ExecutePromiseReactionMicrotask(VM& vm, JSPromiseReaction* reaction, JSValue argument)
     {
@@ -50,7 +50,7 @@ public:
     }
 
 private:
-    virtual void run(ExecState*) OVERRIDE;
+    virtual void run(ExecState*) override;
 
     Strong<JSPromiseReaction> m_reaction;
     Strong<Unknown> m_argument;

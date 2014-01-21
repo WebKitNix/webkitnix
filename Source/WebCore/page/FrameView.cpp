@@ -832,7 +832,7 @@ GraphicsLayer* FrameView::layerForScrollCorner() const
     return renderView->compositor().layerForScrollCorner();
 }
 
-TiledBacking* FrameView::tiledBacking()
+TiledBacking* FrameView::tiledBacking() const
 {
     RenderView* renderView = this->renderView();
     if (!renderView)
@@ -2404,7 +2404,7 @@ double FrameView::adjustedDeferredRepaintDelay() const
     return std::max<double>(0, m_deferredRepaintDelay - timeSinceLastPaint);
 }
     
-void FrameView::deferredRepaintTimerFired(Timer<FrameView>*)
+void FrameView::deferredRepaintTimerFired(Timer<FrameView>&)
 {
     doDeferredRepaints();
 }
@@ -2433,7 +2433,7 @@ void FrameView::adjustTiledBackingCoverage()
 #endif
 }
 
-void FrameView::layoutTimerFired(Timer<FrameView>*)
+void FrameView::layoutTimerFired(Timer<FrameView>&)
 {
 #ifdef INSTRUMENT_LAYOUT_SCHEDULING
     if (!frame().document()->ownerElement())
@@ -2644,6 +2644,54 @@ void FrameView::updateBackgroundRecursively(const Color& backgroundColor, bool t
         }
     }
 }
+
+bool FrameView::hasExtendedBackground() const
+{
+#if USE(ACCELERATED_COMPOSITING)
+    if (!frame().settings().backgroundShouldExtendBeyondPage())
+        return false;
+
+    TiledBacking* tiledBacking = this->tiledBacking();
+    if (!tiledBacking)
+        return false;
+
+    return tiledBacking->hasMargins();
+#else
+    return false;
+#endif
+}
+
+IntRect FrameView::extendedBackgroundRect() const
+{
+#if USE(ACCELERATED_COMPOSITING)
+    TiledBacking* tiledBacking = this->tiledBacking();
+    if (!tiledBacking)
+        return IntRect();
+
+    return tiledBacking->bounds();
+#else
+    RenderView* renderView = this->renderView();
+    if (!renderView)
+        return IntRect();
+
+    return renderView->unscaledDocumentRect();
+#endif
+}
+
+#if USE(ACCELERATED_COMPOSITING)
+void FrameView::setBackgroundExtendsBeyondPage(bool extendBackground)
+{
+    RenderView* renderView = this->renderView();
+    if (!renderView)
+        return;
+
+    RenderLayerBacking* backing = renderView->layer()->backing();
+    if (!backing)
+        return;
+
+    backing->setTiledBackingHasMargins(extendBackground);
+}
+#endif
 
 bool FrameView::shouldUpdateWhileOffscreen() const
 {
@@ -2890,7 +2938,7 @@ void FrameView::sendResizeEventIfNeeded()
 #if ENABLE(INSPECTOR)
     Page* page = frame().page();
     if (InspectorInstrumentation::hasFrontends() && isMainFrame) {
-        if (InspectorClient* inspectorClient = page ? page->inspectorController()->inspectorClient() : 0)
+        if (InspectorClient* inspectorClient = page ? page->inspectorController().inspectorClient() : nullptr)
             inspectorClient->didResizeMainFrame(&frame());
     }
 #endif
@@ -2908,7 +2956,7 @@ void FrameView::willEndLiveResize()
     adjustTiledBackingCoverage();
 }
 
-void FrameView::postLayoutTimerFired(Timer<FrameView>*)
+void FrameView::postLayoutTimerFired(Timer<FrameView>&)
 {
     performPostLayoutTasks();
 }

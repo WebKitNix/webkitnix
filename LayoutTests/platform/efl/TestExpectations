@@ -492,11 +492,14 @@ webkit.org/b/100519 fast/images/paletted-png-with-color-profile.html [ Skip ]
 # The following test fail because blending is not yet implemented
 webkit.org/b/105542 fast/canvas/canvas-blend-image.html [ Skip ]
 webkit.org/b/105542 fast/canvas/canvas-blend-solid.html [ Skip ]
+webkit.org/b/126887 css3/compositing/background-blend-mode-crossfade-image.html [ Skip ]
 webkit.org/b/99200 css3/compositing/blend-mode-layers.html [ Skip ]
 webkit.org/b/99200 css3/compositing/blend-mode-overflow.html [ Skip ]
 webkit.org/b/99200 css3/compositing/blend-mode-reflection.html [ Skip ]
 webkit.org/b/99200 css3/compositing/blend-mode-simple.html [ Skip ]
 webkit.org/b/99200 css3/compositing/blend-mode-should-not-have-compositing-layer.html [ Skip ]
+webkit.org/b/118894 css3/compositing/background-blend-mode-data-uri-svg-image.html [ Skip ]
+webkit.org/b/126888 css3/compositing/background-blend-mode-tiled-layers.html [ Skip ]
 
 # No concept of secure text input
 editing/secure-input [ Failure ]
@@ -686,8 +689,6 @@ webkit.org/b/106415 fast/workers/worker-lifecycle.html [ Pass Failure ]
 webkit.org/b/124929 http/tests/w3c/webperf/approved/navigation-timing/html/test_timing_attributes_order.html [ Failure Pass ]
 
 webkit.org/b/124931 media/track/audio/audio-track-mkv-vorbis-enabled.html [ Failure Pass ]
-
-webkit.org/b/124932 media/video-size.html [ Failure Pass ]
 
 webkit.org/b/124933 svg/animations/getCurrentTime-pause-unpause.html [ Failure Pass ]
 
@@ -992,7 +993,6 @@ Bug(EFL) fast/replaced/pdf-as-image.html
 
 # Started failing after sub-pixel layout was enabled.
 Bug(EFL) fast/regions/overflow-last-region-vert-lr.html [ ImageOnlyFailure Pass ]
-Bug(EFL) fast/spatial-navigation/snav-unit-overflow-and-scroll-in-direction.html [ Failure ]
 
 # Missing showModalDialog implementation
 webkit.org/b/84589 fast/events/show-modal-dialog-onblur-onfocus.html [ Failure ]
@@ -1795,3 +1795,18 @@ webkit.org/b/125573 compositing/backgrounds/fixed-background-on-descendant.html 
 webkit.org/b/125573 compositing/backgrounds/fixed-backgrounds.html [ ImageOnlyFailure ]
 
 webkit.org/b/125578 compositing/images/positioned-image-content-rect.html [ ImageOnlyFailure ]
+
+# Added in r161626, failing due insigificant pixel differences
+webkit.org/b/127054 fast/regions/overflow-in-variable-width-regions-inline-bt.html [ ImageOnlyFailure ]
+webkit.org/b/127054 fast/regions/overflow-in-variable-width-regions-inline-continuation.html [ ImageOnlyFailure ]
+webkit.org/b/127054 fast/regions/overflow-in-variable-width-regions-inline-lr.html [ ImageOnlyFailure ]
+webkit.org/b/127054 fast/regions/overflow-in-variable-width-regions-inline-rl.html [ ImageOnlyFailure ]
+webkit.org/b/127054 fast/regions/overflow-in-variable-width-regions-inline.html [ ImageOnlyFailure ]
+
+webkit.org/b/127106 media/video-canvas-drawing-output.html [ Failure ]
+
+webkit.org/b/127107 media/volume-bar-empty-when-muted.html [ Failure ]
+
+webkit.org/b/127108 media/media-document-audio-controls-visible.html [ Failure ]
+
+webkit.org/b/127282 fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-tall-underlines.html [ ImageOnlyFailure ]

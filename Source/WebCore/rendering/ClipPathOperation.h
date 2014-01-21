@@ -76,7 +76,7 @@ public:
     const String& fragment() const { return m_fragment; }
 
 private:
-    virtual bool operator==(const ClipPathOperation& o) const OVERRIDE
+    virtual bool operator==(const ClipPathOperation& o) const override
     {
         if (!isSameType(o))
             return false;
@@ -107,8 +107,6 @@ public:
     const Path pathForReferenceRect(const FloatRect& boundingRect) const
     {
         ASSERT(m_shape);
-        // FIXME: Make clipping path from basic-shapes relative to <box> value.
-        // https://bugs.webkit.org/show_bug.cgi?id=126206
         Path path;
         m_shape->path(path, boundingRect);
         return path;
@@ -118,7 +116,7 @@ public:
     LayoutBox referenceBox() const { return m_referenceBox; }
 
 private:
-    virtual bool operator==(const ClipPathOperation& o) const OVERRIDE
+    virtual bool operator==(const ClipPathOperation& o) const override
     {
         if (!isSameType(o))
             return false;
@@ -154,7 +152,7 @@ public:
     LayoutBox referenceBox() const { return m_referenceBox; }
 
 private:
-    virtual bool operator==(const ClipPathOperation& o) const OVERRIDE
+    virtual bool operator==(const ClipPathOperation& o) const override
     {
         if (!isSameType(o))
             return false;

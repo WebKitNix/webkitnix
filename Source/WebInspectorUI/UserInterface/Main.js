@@ -78,6 +78,10 @@ WebInspector.loaded = function()
     WebInspector.CSSCompletions.requestCSSNameCompletions();
     this._generateDisclosureTriangleImages();
 
+    // Listen for the ProvisionalLoadStarted event before registering for events so our code gets called before any managers or sidebars.
+    // This lets us save a state cookie before any managers or sidebars do any resets that would affect state (namely TimelineManager).
+    WebInspector.Frame.addEventListener(WebInspector.Frame.Event.ProvisionalLoadStarted, this._provisionalLoadStarted, this);
+
     // Create the singleton managers next, before the user interface elements, so the user interface can register
     // as event listeners on these managers.
     this.branchManager = new WebInspector.BranchManager;
@@ -106,7 +110,6 @@ WebInspector.loaded = function()
     this.frameResourceManager.addEventListener(WebInspector.FrameResourceManager.Event.MainFrameDidChange, this._mainFrameDidChange, this);
 
     WebInspector.Frame.addEventListener(WebInspector.Frame.Event.MainResourceDidChange, this._mainResourceDidChange, this);
-    WebInspector.Frame.addEventListener(WebInspector.Frame.Event.ProvisionalLoadCommitted, this._provisionalLoadCommitted, this);
 
     document.addEventListener("DOMContentLoaded", this.contentLoaded.bind(this));
 
@@ -217,15 +220,15 @@ WebInspector.contentLoaded = function()
     this.toolbar.addToolbarItem(this.undockButtonNavigationItem, WebInspector.Toolbar.Section.Control);
 
     this.resourceSidebarPanel = new WebInspector.ResourceSidebarPanel;
-    this.instrumentSidebarPanel = new WebInspector.InstrumentSidebarPanel;
+    this.timelineSidebarPanel = new WebInspector.TimelineSidebarPanel;
     this.debuggerSidebarPanel = new WebInspector.DebuggerSidebarPanel;
 
     this.navigationSidebar.addSidebarPanel(this.resourceSidebarPanel);
-    this.navigationSidebar.addSidebarPanel(this.instrumentSidebarPanel);
+    this.navigationSidebar.addSidebarPanel(this.timelineSidebarPanel);
     this.navigationSidebar.addSidebarPanel(this.debuggerSidebarPanel);
 
     this.toolbar.addToolbarItem(this.resourceSidebarPanel.toolbarItem, WebInspector.Toolbar.Section.Left);
-    this.toolbar.addToolbarItem(this.instrumentSidebarPanel.toolbarItem, WebInspector.Toolbar.Section.Left);
+    this.toolbar.addToolbarItem(this.timelineSidebarPanel.toolbarItem, WebInspector.Toolbar.Section.Left);
     this.toolbar.addToolbarItem(this.debuggerSidebarPanel.toolbarItem, WebInspector.Toolbar.Section.Left);
 
     // The toolbar button for the console.
@@ -319,12 +322,12 @@ WebInspector.sidebarPanelForRepresentedObject = function(representedObject)
         representedObject instanceof WebInspector.ApplicationCacheFrame)
         return this.resourceSidebarPanel;
 
+    if (representedObject instanceof WebInspector.TimelineRecording)
+        return this.timelineSidebarPanel;
+
     // The console does not have a sidebar.
     if (representedObject instanceof WebInspector.LogObject)
         return null;
-
-    if (representedObject instanceof WebInspector.TimelinesObject || representedObject instanceof WebInspector.ProfileObject)
-        return this.instrumentSidebarPanel;
 
     console.error("Unknown representedObject: ", representedObject);
     return null;
@@ -460,7 +463,7 @@ WebInspector.openURL = function(url, frame, alwaysOpenExternally, lineNumber)
         console.assert(profileTitle[0] === '/');
         profileTitle = profileTitle.substring(1);
 
-        this.instrumentSidebarPanel.showProfile(profileType, profileTitle);
+        this.timelineSidebarPanel.showProfile(profileType, profileTitle);
         return;
     }
 
@@ -721,7 +724,7 @@ WebInspector._mainResourceDidChange = function(event)
     this.updateWindowTitle();
 }
 
-WebInspector._provisionalLoadCommitted = function(event)
+WebInspector._provisionalLoadStarted = function(event)
 {
     if (!event.target.isMainFrame())
         return;
@@ -858,6 +861,9 @@ WebInspector._revealAndSelectRepresentedObjectInNavigationSidebar = function(rep
         treeElement.revealAndSelect(true, false, true, true);
     else if (selectedSidebarPanel.contentTreeOutline.selectedTreeElement)
         selectedSidebarPanel.contentTreeOutline.selectedTreeElement.deselect(true);
+
+    if (!selectedSidebarPanel.contentTreeOutline.selectedTreeElement)
+        selectedSidebarPanel.showDefaultContentView();
 }
 
 WebInspector._updateNavigationSidebarForCurrentContentView = function()

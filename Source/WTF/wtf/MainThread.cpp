@@ -41,19 +41,15 @@ namespace WTF {
 struct FunctionWithContext {
     MainThreadFunction* function;
     void* context;
-    ThreadCondition* syncFlag;
 
-    FunctionWithContext(MainThreadFunction* function = 0, void* context = 0, ThreadCondition* syncFlag = 0)
+    FunctionWithContext(MainThreadFunction* function = nullptr, void* context = nullptr)
         : function(function)
         , context(context)
-        , syncFlag(syncFlag)
-    { 
+    {
     }
     bool operator == (const FunctionWithContext& o)
     {
-        return function == o.function
-            && context == o.context
-            && syncFlag == o.syncFlag;
+        return function == o.function && context == o.context;
     }
 };
 
@@ -165,10 +161,6 @@ void dispatchFunctionsFromMainThread()
         }
 
         invocation.function(invocation.context);
-        if (invocation.syncFlag) {
-            MutexLocker locker(mainThreadFunctionQueueMutex());
-            invocation.syncFlag->signal();
-        }
 
         // If we are running accumulated functions for too long so UI may become unresponsive, we need to
         // yield so the user input can be processed. Otherwise user may not be able to even close the window.
@@ -192,24 +184,6 @@ void callOnMainThread(MainThreadFunction* function, void* context)
     }
     if (needToSchedule)
         scheduleDispatchFunctionsOnMainThread();
-}
-
-void callOnMainThreadAndWait(MainThreadFunction* function, void* context)
-{
-    ASSERT(function);
-
-    if (isMainThread()) {
-        function(context);
-        return;
-    }
-
-    ThreadCondition syncFlag;
-    Mutex& functionQueueMutex = mainThreadFunctionQueueMutex();
-    MutexLocker locker(functionQueueMutex);
-    functionQueue().append(FunctionWithContext(function, context, &syncFlag));
-    if (functionQueue().size() == 1)
-        scheduleDispatchFunctionsOnMainThread();
-    syncFlag.wait(functionQueueMutex);
 }
 
 void cancelCallOnMainThread(MainThreadFunction* function, void* context)
@@ -239,11 +213,6 @@ static void callFunctionObject(void* context)
 void callOnMainThread(std::function<void ()> function)
 {
     callOnMainThread(callFunctionObject, std::make_unique<std::function<void ()>>(std::move(function)).release());
-}
-
-void callOnMainThread(const Function<void ()>& function)
-{
-    callOnMainThread(std::function<void ()>(function));
 }
 
 void setMainThreadCallbacksPaused(bool paused)

@@ -51,8 +51,8 @@ public:
         return adoptRef(new ConsumerWrapper(consumer));
     }
 
-    virtual void setFormat(size_t numberOfChannels, float sampleRate) OVERRIDE;
-    virtual void consumeAudio(WebCore::AudioBus*, size_t numberOfFrames) OVERRIDE;
+    virtual void setFormat(size_t numberOfChannels, float sampleRate) override;
+    virtual void consumeAudio(WebCore::AudioBus*, size_t numberOfFrames) override;
 
     Nix::AudioDestinationConsumer* consumer() { return m_consumer; }
 

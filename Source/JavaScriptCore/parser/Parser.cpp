@@ -518,7 +518,7 @@ template <class TreeBuilder> TreeDeconstructionPattern Parser<LexerType>::create
             }
         }
     }
-    return context.createBindingLocation(m_token.m_location, name, m_token.m_endPosition, m_token.m_startPosition, m_token.m_endPosition);
+    return context.createBindingLocation(m_token.m_location, name, m_token.m_startPosition, m_token.m_endPosition);
 }
 
 template <typename LexerType>
@@ -660,6 +660,7 @@ template <class TreeBuilder> TreeConstDeclList Parser<LexerType>::parseConstDecl
         if (hasInitializer) {
             next(TreeBuilder::DontBuildStrings); // consume '='
             initializer = parseAssignmentExpression(context);
+            failIfFalse(!!initializer, "Unable to parse initializer");
         }
         tail = context.appendConstDecl(location, tail, name, initializer);
         if (!constDecls)

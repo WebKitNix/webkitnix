@@ -87,9 +87,9 @@ class PlatformKeyboardEvent;
 class PlatformTouchEvent;
 class PlatformTouchPoint;
 class PlatformWheelEvent;
+class RenderBox;
 class RenderElement;
 class RenderLayer;
-class RenderObject;
 class RenderWidget;
 class SVGElementInstance;
 class Scrollbar;
@@ -139,7 +139,7 @@ public:
 #endif
 
     void stopAutoscrollTimer(bool rendererIsBeingDestroyed = false);
-    RenderElement* autoscrollRenderer() const;
+    RenderBox* autoscrollRenderer() const;
     void updateAutoscrollRenderer();
     bool autoscrollInProgress() const;
     bool mouseDownWasInSubframe() const { return m_mouseDownWasInSubframe; }
@@ -217,12 +217,6 @@ public:
 
 #if PLATFORM(IOS)
     void defaultTouchEventHandler(Node*, TouchEvent*);
-#endif
-
-#if ENABLE(TOUCH_ADJUSTMENT)
-    bool bestClickableNodeForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntPoint& targetPoint, Node*& targetNode);
-    bool bestContextMenuNodeForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntPoint& targetPoint, Node*& targetNode);
-    bool bestZoomableAreaForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntRect& targetArea, Node*& targetNode);
 #endif
 
 #if ENABLE(CONTEXT_MENUS)
@@ -331,9 +325,9 @@ private:
 
     OptionalCursor selectCursor(const HitTestResult&, bool shiftKey);
 
-    void hoverTimerFired(Timer<EventHandler>*);
+    void hoverTimerFired(Timer<EventHandler>&);
 #if ENABLE(CURSOR_SUPPORT)
-    void cursorUpdateTimerFired(Timer<EventHandler>*);
+    void cursorUpdateTimerFired(Timer<EventHandler>&);
 #endif
 
     bool logicalScrollOverflow(ScrollLogicalDirection, ScrollGranularity, Node* startingNode = 0);
@@ -352,7 +346,7 @@ private:
     static bool isKeyboardOptionTab(KeyboardEvent*);
     static bool eventInvertsTabsToLinksClientCallResult(KeyboardEvent*);
 
-    void fakeMouseMoveEventTimerFired(Timer<EventHandler>*);
+    void fakeMouseMoveEventTimerFired(Timer<EventHandler>&);
     void cancelFakeMouseMoveEvent();
 
     bool isInsideScrollbar(const IntPoint&) const;
@@ -445,7 +439,7 @@ private:
 #if ENABLE(CURSOR_VISIBILITY)
     void startAutoHideCursorTimer();
     void cancelAutoHideCursorTimer();
-    void autoHideCursorTimerFired(Timer<EventHandler>*);
+    void autoHideCursorTimerFired(Timer<EventHandler>&);
 #endif
 
     Frame& m_frame;

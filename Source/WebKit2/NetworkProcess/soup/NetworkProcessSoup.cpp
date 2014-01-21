@@ -28,13 +28,14 @@
 #if ENABLE(NETWORK_PROCESS)
 #include "NetworkProcess.h"
 
-#include "CertificateInfo.h"
 #include "NetworkProcessCreationParameters.h"
 #include "ResourceCachesToClear.h"
 #include "WebCookieManager.h"
+#include <WebCore/CertificateInfo.h>
 #include <WebCore/FileSystem.h>
 #include <WebCore/NotImplemented.h>
 #include <WebCore/ResourceHandle.h>
+#include <WebCore/SoupNetworkSession.h>
 #include <libsoup/soup.h>
 #include <wtf/gobject/GOwnPtr.h>
 #include <wtf/gobject/GRefPtr.h>
@@ -74,11 +75,16 @@ static uint64_t getMemorySize()
 #endif
 }
 
+void NetworkProcess::userPreferredLanguagesChanged(const Vector<String>& languages)
+{
+    SoupNetworkSession::defaultSession().setAcceptLanguages(languages);
+}
+
 void NetworkProcess::platformInitializeNetworkProcess(const NetworkProcessCreationParameters& parameters)
 {
     ASSERT(!parameters.diskCacheDirectory.isEmpty());
     GRefPtr<SoupCache> soupCache = adoptGRef(soup_cache_new(parameters.diskCacheDirectory.utf8().data(), SOUP_CACHE_SINGLE_USER));
-    soup_session_add_feature(WebCore::ResourceHandle::defaultSession(), SOUP_SESSION_FEATURE(soupCache.get()));
+    SoupNetworkSession::defaultSession().setCache(soupCache.get());
     soup_cache_load(soupCache.get());
 
     if (!parameters.cookiePersistentStoragePath.isEmpty()) {
@@ -86,6 +92,9 @@ void NetworkProcess::platformInitializeNetworkProcess(const NetworkProcessCreati
             parameters.cookiePersistentStorageType);
     }
     supplement<WebCookieManager>()->setHTTPCookieAcceptPolicy(parameters.cookieAcceptPolicy);
+
+    if (!parameters.languages.isEmpty())
+        userPreferredLanguagesChanged(parameters.languages);
 
     setIgnoreTLSErrors(parameters.ignoreTLSErrors);
 }
@@ -101,8 +110,7 @@ void NetworkProcess::platformSetCacheModel(CacheModel cacheModel)
     unsigned long urlCacheMemoryCapacity = 0;
     unsigned long urlCacheDiskCapacity = 0;
 
-    SoupSession* session = ResourceHandle::defaultSession();
-    SoupCache* cache = SOUP_CACHE(soup_session_get_feature(session, SOUP_TYPE_CACHE));
+    SoupCache* cache = SoupNetworkSession::defaultSession().cache();
     uint64_t diskFreeSize = getCacheDiskFreeSize(cache) / 1024 / 1024;
 
     uint64_t memSize = getMemorySize();
@@ -121,7 +129,7 @@ void NetworkProcess::setIgnoreTLSErrors(bool ignoreTLSErrors)
 
 void NetworkProcess::allowSpecificHTTPSCertificateForHost(const CertificateInfo& certificateInfo, const String& host)
 {
-    WebCore::ResourceHandle::setClientCertificate(host, certificateInfo.certificate());
+    ResourceHandle::setClientCertificate(host, certificateInfo.certificate());
 }
 
 void NetworkProcess::clearCacheForAllOrigins(uint32_t cachesToClear)
@@ -129,8 +137,7 @@ void NetworkProcess::clearCacheForAllOrigins(uint32_t cachesToClear)
     if (cachesToClear == InMemoryResourceCachesOnly)
         return;
 
-    SoupSession* session = ResourceHandle::defaultSession();
-    soup_cache_clear(SOUP_CACHE(soup_session_get_feature(session, SOUP_TYPE_CACHE)));
+    soup_cache_clear(SoupNetworkSession::defaultSession().cache());
 }
 
 void NetworkProcess::platformTerminate()

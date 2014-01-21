@@ -289,9 +289,10 @@ RenderObject* RenderObject::lastLeafChild() const
 // Inspired by Node::traverseNextNode.
 RenderObject* RenderObject::traverseNext(const RenderObject* stayWithin) const
 {
-    if (firstChild()) {
-        ASSERT(!stayWithin || firstChild()->isDescendantOf(stayWithin));
-        return firstChild();
+    RenderObject* child = firstChildSlow();
+    if (child) {
+        ASSERT(!stayWithin || child->isDescendantOf(stayWithin));
+        return child;
     }
     if (this == stayWithin)
         return 0;
@@ -315,7 +316,7 @@ RenderObject* RenderObject::traverseNext(const RenderObject* stayWithin, HeightT
     BlockContentHeightType overflowType;
 
     // Check for suitable children.
-    for (RenderObject* child = firstChild(); child; child = child->nextSibling()) {
+    for (RenderObject* child = firstChildSlow(); child; child = child->nextSibling()) {
         overflowType = inclusionFunction(child);
         if (overflowType != FixedHeight) {
             currentDepth++;
@@ -359,7 +360,7 @@ RenderObject* RenderObject::traverseNext(const RenderObject* stayWithin, HeightT
 
 RenderObject* RenderObject::traverseNext(const RenderObject* stayWithin, TraverseNextInclusionFunction inclusionFunction) const
 {
-    for (RenderObject* child = firstChild(); child; child = child->nextSibling()) {
+    for (RenderObject* child = firstChildSlow(); child; child = child->nextSibling()) {
         if (inclusionFunction(child)) {
             ASSERT(!stayWithin || child->isDescendantOf(stayWithin));
             return child;
@@ -398,18 +399,16 @@ RenderObject* RenderObject::traverseNext(const RenderObject* stayWithin, Travers
 
 static RenderObject::BlockContentHeightType includeNonFixedHeight(const RenderObject* render)
 {
-    RenderStyle* style = render->style();
-    if (style) {
-        if (style->height().type() == Fixed) {
-            if (render->isRenderBlock()) {
-                const RenderBlock* block = toRenderBlock(render);
-                // For fixed height styles, if the overflow size of the element spills out of the specified
-                // height, assume we can apply text auto-sizing.
-                if (style->overflowY() == OVISIBLE && style->height().value() < block->layoutOverflowRect().maxY())
-                    return RenderObject::OverflowHeight;
-            }
-            return RenderObject::FixedHeight;
+    const RenderStyle& style = render->style();
+    if (style.height().type() == Fixed) {
+        if (render->isRenderBlock()) {
+            const RenderBlock* block = toRenderBlock(render);
+            // For fixed height styles, if the overflow size of the element spills out of the specified
+            // height, assume we can apply text auto-sizing.
+            if (style.overflowY() == OVISIBLE && style.height().value() < block->layoutOverflowRect().maxY())
+                return RenderObject::OverflowHeight;
         }
+        return RenderObject::FixedHeight;
     }
     return RenderObject::FlexibleHeight;
 }
@@ -436,8 +435,8 @@ void RenderObject::adjustComputedFontSizesOnBlocks(float size, float visibleWidt
             depthStack.append(newFixedDepth);
 
         int stackSize = depthStack.size();
-        if (descendent->isRenderBlock() && !descendent->isListItem() && (!stackSize || currentDepth - depthStack[stackSize - 1] > TextAutoSizingFixedHeightDepth))
-            static_cast<RenderBlock*>(descendent)->adjustComputedFontSizes(size, visibleWidth);
+        if (descendent->isRenderBlockFlow() && !descendent->isListItem() && (!stackSize || currentDepth - depthStack[stackSize - 1] > TextAutoSizingFixedHeightDepth))
+            toRenderBlockFlow(descendent)->adjustComputedFontSizes(size, visibleWidth);
         newFixedDepth = 0;
     }
 
@@ -464,8 +463,8 @@ void RenderObject::resetTextAutosizing()
             depthStack.append(newFixedDepth);
 
         int stackSize = depthStack.size();
-        if (descendent->isRenderBlock() && !descendent->isListItem() && (!stackSize || currentDepth - depthStack[stackSize - 1] > TextAutoSizingFixedHeightDepth))
-            toRenderBlock(descendent)->resetComputedFontSize();
+        if (descendent->isRenderBlockFlow() && !descendent->isListItem() && (!stackSize || currentDepth - depthStack[stackSize - 1] > TextAutoSizingFixedHeightDepth))
+            toRenderBlockFlow(descendent)->resetComputedFontSize();
         newFixedDepth = 0;
     }
 }
@@ -1237,7 +1236,7 @@ RenderLayerModelObject* RenderObject::containerForRepaint() const
     return repaintContainer;
 }
 
-void RenderObject::repaintUsingContainer(const RenderLayerModelObject* repaintContainer, const IntRect& r, bool immediate) const
+void RenderObject::repaintUsingContainer(const RenderLayerModelObject* repaintContainer, const IntRect& r, bool immediate, bool shouldClipToLayer) const
 {
     if (!repaintContainer) {
         view().repaintViewRectangle(r, immediate);
@@ -1269,7 +1268,7 @@ void RenderObject::repaintUsingContainer(const RenderLayerModelObject* repaintCo
     
     if (v.usesCompositing()) {
         ASSERT(repaintContainer->hasLayer() && repaintContainer->layer()->isComposited());
-        repaintContainer->layer()->setBackingNeedsRepaintInRect(r);
+        repaintContainer->layer()->setBackingNeedsRepaintInRect(r, shouldClipToLayer ? GraphicsLayer::ClipToLayer : GraphicsLayer::DoNotClipToLayer);
     }
 #else
     if (repaintContainer->isRenderView())
@@ -1291,7 +1290,7 @@ void RenderObject::repaint(bool immediate) const
     repaintUsingContainer(repaintContainer ? repaintContainer : view, pixelSnappedIntRect(clippedOverflowRectForRepaint(repaintContainer)), immediate);
 }
 
-void RenderObject::repaintRectangle(const LayoutRect& r, bool immediate) const
+void RenderObject::repaintRectangle(const LayoutRect& r, bool immediate, bool shouldClipToLayer) const
 {
     // Don't repaint if we're unrooted (note that view() still returns the view when unrooted)
     RenderView* view;
@@ -1309,7 +1308,7 @@ void RenderObject::repaintRectangle(const LayoutRect& r, bool immediate) const
 
     RenderLayerModelObject* repaintContainer = containerForRepaint();
     computeRectForRepaint(repaintContainer, dirtyRect);
-    repaintUsingContainer(repaintContainer ? repaintContainer : view, pixelSnappedIntRect(dirtyRect), immediate);
+    repaintUsingContainer(repaintContainer ? repaintContainer : view, pixelSnappedIntRect(dirtyRect), immediate, shouldClipToLayer);
 }
 
 IntRect RenderObject::pixelSnappedAbsoluteClippedOverflowRect() const
@@ -1725,7 +1724,7 @@ bool RenderObject::isRooted(RenderView** view) const
 
 RespectImageOrientationEnum RenderObject::shouldRespectImageOrientation() const
 {
-#if USE(CG) || USE(CAIRO) || PLATFORM(BLACKBERRY)
+#if USE(CG) || USE(CAIRO)
     // This can only be enabled for ports which honor the orientation flag in their drawing code.
     if (document().isImageDocument())
         return RespectImageOrientation;
@@ -1831,14 +1830,6 @@ inline void RenderObject::clearLayoutRootIfNeeded() const
 
 void RenderObject::willBeDestroyed()
 {
-    // If this renderer is being autoscrolled, stop the autoscroll timer
-    
-    // FIXME: RenderObject::destroy should not get called with a renderer whose document
-    // has a null frame, so we assert this. However, we don't want release builds to crash which is why we
-    // check that the frame is not null.
-    if (frame().eventHandler().autoscrollRenderer() == this)
-        frame().eventHandler().stopAutoscrollTimer(true);
-
     // For accessibility management, notify the parent of the imminent change to its child set.
     // We do it now, before remove(), while the parent pointer is still available.
     if (AXObjectCache* cache = document().existingAXObjectCache())

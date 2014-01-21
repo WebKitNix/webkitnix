@@ -43,10 +43,6 @@
 typedef struct objc_object* id;
 #endif
 
-#if PLATFORM(BLACKBERRY)
-#include "HistoryItemViewState.h"
-#endif
-
 namespace WebCore {
 
 class CachedPage;
@@ -102,7 +98,7 @@ public:
     const String& urlString() const;
     const String& title() const;
     
-    bool isInPageCache() const { return m_cachedPage; }
+    bool isInPageCache() const { return m_cachedPage.get(); }
     bool hasCachedPageExpired() const;
     
     double lastVisitedTime() const;
@@ -199,10 +195,6 @@ public:
     void setTransientProperty(const String&, id);
 #endif
 
-#if PLATFORM(BLACKBERRY)
-    HistoryItemViewState& viewState() { return m_viewState; }
-#endif
-
 #ifndef NDEBUG
     int showTree() const;
     int showTreeWithIndent(unsigned indentLevel) const;
@@ -295,7 +287,7 @@ private:
     // PageCache controls these fields.
     HistoryItem* m_next;
     HistoryItem* m_prev;
-    OwnPtr<CachedPage> m_cachedPage;
+    std::unique_ptr<CachedPage> m_cachedPage;
 
 #if PLATFORM(IOS)
     float m_scale;
@@ -309,10 +301,6 @@ private:
 #if PLATFORM(MAC)
     RetainPtr<id> m_viewState;
     OwnPtr<HashMap<String, RetainPtr<id>>> m_transientProperties;
-#endif
-
-#if PLATFORM(BLACKBERRY)
-    HistoryItemViewState m_viewState;
 #endif
 }; //class HistoryItem
 

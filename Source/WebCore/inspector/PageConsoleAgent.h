@@ -38,26 +38,20 @@
 
 namespace WebCore {
 
-class InspectorAgent;
 class InspectorDOMAgent;
 
 class PageConsoleAgent : public InspectorConsoleAgent {
     WTF_MAKE_NONCOPYABLE(PageConsoleAgent);
 public:
-    static PassOwnPtr<PageConsoleAgent> create(InstrumentingAgents* instrumentingAgents, InspectorAgent* agent, PageInjectedScriptManager* injectedScriptManager, InspectorDOMAgent* domAgent)
-    {
-        return adoptPtr(new PageConsoleAgent(instrumentingAgents, agent, injectedScriptManager, domAgent));
-    }
+    PageConsoleAgent(InstrumentingAgents*, PageInjectedScriptManager*, InspectorDOMAgent*);
     virtual ~PageConsoleAgent();
 
-    virtual bool isWorkerAgent() OVERRIDE { return false; }
+    virtual bool isWorkerAgent() override { return false; }
 
 private:
-    PageConsoleAgent(InstrumentingAgents*, InspectorAgent*, PageInjectedScriptManager*, InspectorDOMAgent*);
-    virtual void clearMessages(ErrorString*);
-    virtual void addInspectedNode(ErrorString*, int nodeId);
+    virtual void clearMessages(ErrorString*) override;
+    virtual void addInspectedNode(ErrorString*, int nodeId) override;
 
-    InspectorAgent* m_inspectorAgent;
     InspectorDOMAgent* m_inspectorDOMAgent;
 };
 

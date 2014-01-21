@@ -26,6 +26,7 @@
 #import "config.h"
 #import "WKContentViewInternal.h"
 
+#import "InteractionInformationAtPosition.h"
 #import "PageClientImplIOS.h"
 #import "RemoteLayerTreeDrawingAreaProxy.h"
 #import "WebKit2Initialize.h"
@@ -51,6 +52,8 @@ using namespace WebKit;
 
     RetainPtr<UIView> _rootContentView;
     RetainPtr<WKInteractionView> _interactionView;
+
+    WebCore::FloatPoint _currentExposedRectPosition;
 }
 
 - (id)initWithCoder:(NSCoder *)coder
@@ -135,26 +138,36 @@ using namespace WebKit;
     _page->drawingArea()->setSize(IntSize(size), IntSize(), IntSize());
 }
 
+- (void)_updateViewExposedRect
+{
+    FloatPoint exposedRectPosition = _currentExposedRectPosition;
+    exposedRectPosition.scale(_page->pageScaleFactor(), _page->pageScaleFactor());
+    _page->drawingArea()->setExposedRect(FloatRect(exposedRectPosition, _page->drawingArea()->size()));
+}
+
 - (void)setViewportSize:(CGSize)size
 {
     _page->setFixedLayoutSize(IntSize(size));
-    _page->drawingArea()->setExposedRect(FloatRect(_page->drawingArea()->exposedRect().location(), FloatSize(size)));
+    [self _updateViewExposedRect];
 }
 
 - (void)didFinishScrollTo:(CGPoint)contentOffset
 {
+    _currentExposedRectPosition = contentOffset;
     _page->didFinishScrolling(contentOffset);
-    _page->drawingArea()->setExposedRect(FloatRect(FloatPoint(contentOffset), _page->fixedLayoutSize()));
+    [self _updateViewExposedRect];
 }
 
 - (void)didScrollTo:(CGPoint)contentOffset
 {
-    _page->drawingArea()->setExposedRect(FloatRect(FloatPoint(contentOffset), _page->fixedLayoutSize()));
+    _currentExposedRectPosition = contentOffset;
+    [self _updateViewExposedRect];
 }
 
 - (void)didZoomToScale:(CGFloat)scale
 {
     _page->didFinishZooming(scale);
+    [self _updateViewExposedRect];
 }
 
 #pragma mark Internal
@@ -275,6 +288,11 @@ using namespace WebKit;
 - (BOOL)_interpretKeyEvent:(WebIOSEvent *)theEvent isCharEvent:(BOOL)isCharEvent
 {
     return [_interactionView _interpretKeyEvent:theEvent isCharEvent:isCharEvent];
+}
+
+- (void)_positionInformationDidChange:(const InteractionInformationAtPosition&)info
+{
+    [_interactionView _positionInformationDidChange:info];
 }
 
 - (void)_decidePolicyForGeolocationRequestFromOrigin:(WebSecurityOrigin&)origin frame:(WebFrameProxy&)frame request:(GeolocationPermissionRequestProxy&)permissionRequest

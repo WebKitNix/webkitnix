@@ -101,9 +101,40 @@ Buildbot.prototype = {
         return this.layoutTestResultsDirectoryURLForIteration(iteration) + "/full_results.json";
     },
 
-    layoutTestCrashLogForIteration: function(iteration, testPath)
+    layoutTestCrashLogURLForIteration: function(iteration, testPath)
     {
-        var crashLogPath = testPath.replace(/^(.*)\.(?:.*)$/, "$1-crash-log.txt");
-        return this.layoutTestResultsDirectoryURLForIteration(iteration) + "/" + crashLogPath;
-    }
+        var path = testPath.replace(/^(.*)\.(?:.*)$/, "$1-crash-log.txt");
+        return this.layoutTestResultsDirectoryURLForIteration(iteration) + "/" + path;
+    },
+
+    layoutTestStderrURLForIteration: function(iteration, testPath)
+    {
+        var path = testPath.replace(/^(.*)\.(?:.*)$/, "$1-stderr.txt");
+        return this.layoutTestResultsDirectoryURLForIteration(iteration) + "/" + path;
+    },
+
+    layoutTestDiffURLForIteration: function(iteration, testPath)
+    {
+        var path = testPath.replace(/^(.*)\.(?:.*)$/, "$1-diff.txt");
+        return this.layoutTestResultsDirectoryURLForIteration(iteration) + "/" + path;
+    },
+
+    layoutTestPrettyDiffURLForIteration: function(iteration, testPath)
+    {
+        // pretty-patch may not be available, caller should check JSON results for has_pretty_patch attribute.
+        var path = testPath.replace(/^(.*)\.(?:.*)$/, "$1-pretty-diff.html");
+        return this.layoutTestResultsDirectoryURLForIteration(iteration) + "/" + path;
+    },
+
+    layoutTestImagesURLForIteration: function(iteration, testPath)
+    {
+        var path = testPath.replace(/^(.*)\.(?:.*)$/, "$1-diffs.html");
+        return this.layoutTestResultsDirectoryURLForIteration(iteration) + "/" + path;
+    },
+
+    layoutTestImageDiffURLForIteration: function(iteration, testPath)
+    {
+        var path = testPath.replace(/^(.*)\.(?:.*)$/, "$1-diff.png");
+        return this.layoutTestResultsDirectoryURLForIteration(iteration) + "/" + path;
+    },
 };

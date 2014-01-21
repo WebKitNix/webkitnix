@@ -118,7 +118,7 @@ AudioSessionPrivate::AudioSessionPrivate(AudioSession* session)
 }
 
 AudioSession::AudioSession()
-    : m_private(adoptPtr(new AudioSessionPrivate(this)))
+    : m_private(std::make_unique<AudioSessionPrivate>(this))
 {
 }
 

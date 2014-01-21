@@ -74,6 +74,8 @@ public:
     void rollbackTransaction(const IDBTransactionIdentifier&, std::function<void(bool)> successCallback);
 
     void changeDatabaseVersion(const IDBTransactionIdentifier&, uint64_t newVersion, std::function<void(bool)> successCallback);
+    void createObjectStore(const IDBTransactionIdentifier&, const WebCore::IDBObjectStoreMetadata&, std::function<void(bool)> successCallback);
+    void deleteObjectStore(const IDBTransactionIdentifier&, int64_t objectStoreID, std::function<void(bool)> successCallback);
 
 private:
     UniqueIDBDatabase(const UniqueIDBDatabaseIdentifier&);
@@ -113,6 +115,8 @@ private:
     void rollbackBackingStoreTransaction(const IDBTransactionIdentifier&);
 
     void changeDatabaseVersionInBackingStore(uint64_t requestID, const IDBTransactionIdentifier&, uint64_t newVersion);
+    void createObjectStoreInBackingStore(uint64_t requestID, const IDBTransactionIdentifier&, const WebCore::IDBObjectStoreMetadata&);
+    void deleteObjectStoreInBackingStore(uint64_t requestID, const IDBTransactionIdentifier&, int64_t objectStoreID);
 
     void shutdownBackingStore();
 
@@ -121,7 +125,10 @@ private:
     void didOpenBackingStoreAndReadMetadata(const WebCore::IDBDatabaseMetadata&, bool success);
     void didCompleteTransactionOperation(const IDBTransactionIdentifier&, bool success);
     void didChangeDatabaseVersion(uint64_t requestID, bool success);
+    void didCreateObjectStore(uint64_t requestID, bool success);
+    void didDeleteObjectStore(uint64_t requestID, bool success);
     void didShutdownBackingStore();
+    void didCompleteBoolRequest(uint64_t requestID, bool success);
 
     bool m_acceptingNewRequests;
 

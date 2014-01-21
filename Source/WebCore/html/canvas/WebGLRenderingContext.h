@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Apple Inc. All rights reserved.
+ * Copyright (C) 2009, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -52,6 +52,7 @@ class OESStandardDerivatives;
 class OESTextureFloat;
 class OESTextureFloatLinear;
 class OESTextureHalfFloat;
+class OESTextureHalfFloatLinear;
 class OESVertexArrayObject;
 class OESElementIndexUint;
 class WebGLActiveInfo;
@@ -85,8 +86,8 @@ public:
     static OwnPtr<WebGLRenderingContext> create(HTMLCanvasElement*, WebGLContextAttributes*);
     virtual ~WebGLRenderingContext();
 
-    virtual bool is3d() const { return true; }
-    virtual bool isAccelerated() const { return true; }
+    virtual bool is3d() const override { return true; }
+    virtual bool isAccelerated() const override { return true; }
 
     int drawingBufferWidth() const;
     int drawingBufferHeight() const;
@@ -186,7 +187,7 @@ public:
 
     void hint(GC3Denum target, GC3Denum mode);
     GC3Dboolean isBuffer(WebGLBuffer*);
-    bool isContextLost();
+    bool isContextLost() const;
     GC3Dboolean isEnabled(GC3Denum cap);
     GC3Dboolean isFramebuffer(WebGLFramebuffer*);
     GC3Dboolean isProgram(WebGLProgram*);
@@ -308,13 +309,13 @@ public:
     GraphicsContext3D* graphicsContext3D() const { return m_context.get(); }
     WebGLContextGroup* contextGroup() const { return m_contextGroup.get(); }
 #if USE(ACCELERATED_COMPOSITING)
-    virtual PlatformLayer* platformLayer() const;
+    virtual PlatformLayer* platformLayer() const override;
 #endif
 
     void reshape(int width, int height);
 
     void markLayerComposited();
-    virtual void paintRenderingResultsToCanvas();
+    virtual void paintRenderingResultsToCanvas() override;
     virtual PassRefPtr<ImageData> paintRenderingResultsToImageData();
 
     void removeSharedObject(WebGLSharedObject*);
@@ -339,8 +340,8 @@ private:
     void setupFlags();
 
     // ActiveDOMObject
-    virtual bool hasPendingActivity() const OVERRIDE;
-    virtual void stop() OVERRIDE;
+    virtual bool hasPendingActivity() const override;
+    virtual void stop() override;
 
     void addSharedObject(WebGLSharedObject*);
     void addContextObject(WebGLContextObject*);
@@ -528,6 +529,7 @@ private:
     OwnPtr<OESTextureFloat> m_oesTextureFloat;
     OwnPtr<OESTextureFloatLinear> m_oesTextureFloatLinear;
     OwnPtr<OESTextureHalfFloat> m_oesTextureHalfFloat;
+    OwnPtr<OESTextureHalfFloatLinear> m_oesTextureHalfFloatLinear;
     OwnPtr<OESStandardDerivatives> m_oesStandardDerivatives;
     OwnPtr<OESVertexArrayObject> m_oesVertexArrayObject;
     OwnPtr<OESElementIndexUint> m_oesElementIndexUint;
@@ -662,7 +664,7 @@ private:
 
     // Helper function to validate compressed texture dimensions are valid for
     // the given format.
-    bool validateCompressedTexDimensions(const char* functionName, GC3Dint level, GC3Dsizei width, GC3Dsizei height, GC3Denum format);
+    bool validateCompressedTexDimensions(const char* functionName, GC3Denum target, GC3Dint level, GC3Dsizei width, GC3Dsizei height, GC3Denum format);
 
     // Helper function to validate compressed texture dimensions are valid for
     // the given format.

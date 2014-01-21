@@ -25,21 +25,19 @@
 #include "Version.xcconfig"
 
 EXCLUDED_SOURCE_FILE_NAMES = $(EXCLUDED_SOURCE_FILE_NAMES_$(PLATFORM_NAME));
-EXCLUDED_SOURCE_FILE_NAMES_iphoneos = *.nib *.pdf *.tiff WebDashboardRegion.h WebDynamicScrollBarsView.h WebIconDatabase.h WebIconDatabasePrivate.h WebJavaScriptTextInputPanel.h WebKeyGenerator.h WebNSEventExtras.h WebNSPasteboardExtras.h WebNSWindowExtras.h WebPanelAuthenticationHandler.h WebPluginsPrivate.h;
+EXCLUDED_SOURCE_FILE_NAMES_iphoneos = *.nib *.pdf *.tiff CarbonUtils.m CarbonWindowAdapter.mm CarbonWindowContentView.m CarbonWindowFrame.m HIViewAdapter.m HIWebView.mm MailQuirksUserScript.js OutlookQuirksUserScript.js PopupMenuMac.mm SearchPopupMenuMac.mm WebClipView.* WebDashboardRegion.* WebDynamicScrollBarsView.* WebIconDatabase.* WebIconDatabasePrivate.* WebInspectorClient.mm WebJavaScriptTextInputPanel.* WebKeyGenerator.* WebNetscapeContainerCheckContextInfo.* WebNetscapeContainerCheckPrivate.* WebNSEventExtras.* WebNSPasteboardExtras.* WebNSWindowExtras.* WebPanelAuthenticationHandler.* WebPluginsPrivate.* WebRenderNode.mm WebStringTruncator.* WebTextCompletionController.*;
 EXCLUDED_SOURCE_FILE_NAMES_iphonesimulator = $(EXCLUDED_SOURCE_FILE_NAMES_iphoneos);
-EXCLUDED_SOURCE_FILE_NAMES_macosx = MemoryMeasure.h WebCaretChangeListener.h WebFixedPositionContent.h WebFrameIOS.h WebFrameIPhone.h WebGeolocationCoreLocationProvider.h WebGeolocationPrivate.h WebGeolocationProviderIOS.h WebMIMETypeRegistry.h WebNSStringDrawing.h WebNSStringExtrasIOS.h WebNSStringExtrasIPhone.h WebPDFViewIOS.h WebPDFViewIPhone.h WebPDFViewPlaceholder.h WebSelectionRect.h WebUIKitDelegate.h WebUIKitSupport.h WebVisiblePosition.h;
+EXCLUDED_SOURCE_FILE_NAMES_macosx = *IOS.mm MemoryMeasure.h WebCaretChangeListener.h WebFixedPositionContent.h WebFrameIOS.h WebFrameIPhone.h WebGeolocationCoreLocationProvider.h WebGeolocationPrivate.h WebGeolocationProviderIOS.h WebMIMETypeRegistry.h WebNSStringDrawing.h WebNSStringExtrasIOS.h WebNSStringExtrasIPhone.h WebPDFViewIOS.h WebPDFViewIPhone.h WebPDFViewPlaceholder.h WebSelectionRect.h WebUIKitDelegate.h WebUIKitSupport.h WebVisiblePosition.h;
 
 EXPORTED_SYMBOLS_FILE = $(EXPORTED_SYMBOLS_FILE_$(CURRENT_ARCH));
-EXPORTED_SYMBOLS_FILE_ = mac/WebKit.exp;
-EXPORTED_SYMBOLS_FILE_armv6 = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
+EXPORTED_SYMBOLS_FILE_ = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
 EXPORTED_SYMBOLS_FILE_armv7 = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
-EXPORTED_SYMBOLS_FILE_armv7f = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
+EXPORTED_SYMBOLS_FILE_armv7k = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
 EXPORTED_SYMBOLS_FILE_armv7s = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
 EXPORTED_SYMBOLS_FILE_arm64 = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
 EXPORTED_SYMBOLS_FILE_i386 = $(EXPORTED_SYMBOLS_FILE_i386_$(PLATFORM_NAME));
 EXPORTED_SYMBOLS_FILE_i386_iphonesimulator = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
-EXPORTED_SYMBOLS_FILE_i386_macosx = mac/WebKit.exp;
-EXPORTED_SYMBOLS_FILE_ppc = mac/WebKit.exp;
+EXPORTED_SYMBOLS_FILE_i386_macosx = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
 EXPORTED_SYMBOLS_FILE_x86_64 = $(EXPORTED_SYMBOLS_FILE_x86_64_$(PLATFORM_NAME));
 EXPORTED_SYMBOLS_FILE_x86_64_iphonesimulator = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.generated.exp;
 EXPORTED_SYMBOLS_FILE_x86_64_macosx = $(BUILT_PRODUCTS_DIR)/DerivedSources/WebKit/WebKit.LP64.exp;
@@ -80,7 +78,7 @@ UMBRELLA_FRAMEWORKS_DIR = $(PRODUCTION_FRAMEWORKS_DIR)/WebKit.framework/Versions
 
 OTHER_LDFLAGS_BASE = -licucore -framework JavaScriptCore -framework QuartzCore -framework WebCore;
 OTHER_LDFLAGS = $(inherited) $(OTHER_LDFLAGS_BASE) $(OTHER_LDFLAGS_$(PLATFORM_NAME));
-OTHER_LDFLAGS_iphoneos = -lobjc -framework CFNetwork -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework GraphicsServices -framework ImageIO -lMobileGestalt;
+OTHER_LDFLAGS_iphoneos = -lobjc -framework CFNetwork -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework GraphicsServices -framework ImageIO -lMobileGestalt -framework Security;
 OTHER_LDFLAGS_iphonesimulator = $(OTHER_LDFLAGS_iphoneos);
 OTHER_LDFLAGS_macosx = -sub_umbrella WebCore -framework Carbon -framework Cocoa -framework DiskArbitration -framework IOKit -framework OpenGL -framework Security;
 

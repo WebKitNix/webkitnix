@@ -44,6 +44,10 @@
 #include "ShapeInsideInfo.h"
 #endif
 
+#if ENABLE(IOS_TEXT_AUTOSIZING)
+#include "HTMLElement.h"
+#endif
+
 namespace WebCore {
 
 bool RenderBlock::s_canPropagateFloatIntoSibling = false;
@@ -91,12 +95,20 @@ RenderBlockFlow::MarginInfo::MarginInfo(RenderBlockFlow& block, LayoutUnit befor
 
 RenderBlockFlow::RenderBlockFlow(Element& element, PassRef<RenderStyle> style)
     : RenderBlock(element, std::move(style), RenderBlockFlowFlag)
+#if ENABLE(IOS_TEXT_AUTOSIZING)
+    , m_widthForTextAutosizing(-1)
+    , m_lineCountForTextAutosizing(NOT_SET)
+#endif
 {
     setChildrenInline(true);
 }
 
 RenderBlockFlow::RenderBlockFlow(Document& document, PassRef<RenderStyle> style)
     : RenderBlock(document, std::move(style), RenderBlockFlowFlag)
+#if ENABLE(IOS_TEXT_AUTOSIZING)
+    , m_widthForTextAutosizing(-1)
+    , m_lineCountForTextAutosizing(NOT_SET)
+#endif
 {
     setChildrenInline(true);
 }
@@ -1336,15 +1348,21 @@ static bool inNormalFlow(RenderBox& child)
 LayoutUnit RenderBlockFlow::applyBeforeBreak(RenderBox& child, LayoutUnit logicalOffset)
 {
     // FIXME: Add page break checking here when we support printing.
-    bool checkColumnBreaks = view().layoutState()->isPaginatingColumns();
-    bool checkPageBreaks = !checkColumnBreaks && view().layoutState()->m_pageLogicalHeight; // FIXME: Once columns can print we have to check this.
     RenderFlowThread* flowThread = flowThreadContainingBlock();
+    bool isInsideMulticolFlowThread = flowThread && !flowThread->isRenderNamedFlowThread();
+    bool checkColumnBreaks = isInsideMulticolFlowThread || view().layoutState()->isPaginatingColumns();
+    bool checkPageBreaks = !checkColumnBreaks && view().layoutState()->m_pageLogicalHeight; // FIXME: Once columns can print we have to check this.
     bool checkRegionBreaks = flowThread && flowThread->isRenderNamedFlowThread();
-    bool checkBeforeAlways = (checkColumnBreaks && child.style().columnBreakBefore() == PBALWAYS) || (checkPageBreaks && child.style().pageBreakBefore() == PBALWAYS)
+    bool checkBeforeAlways = (checkColumnBreaks && child.style().columnBreakBefore() == PBALWAYS)
+        || (checkPageBreaks && child.style().pageBreakBefore() == PBALWAYS)
         || (checkRegionBreaks && child.style().regionBreakBefore() == PBALWAYS);
     if (checkBeforeAlways && inNormalFlow(child) && hasNextPage(logicalOffset, IncludePageBoundary)) {
-        if (checkColumnBreaks)
-            view().layoutState()->addForcedColumnBreak(&child, logicalOffset);
+        if (checkColumnBreaks) {
+            if (isInsideMulticolFlowThread)
+                checkRegionBreaks = true;
+            else
+                view().layoutState()->addForcedColumnBreak(&child, logicalOffset);
+        }
         if (checkRegionBreaks) {
             LayoutUnit offsetBreakAdjustment = 0;
             if (flowThread->addForcedRegionBreak(this, offsetFromLogicalTopOfFirstPage() + logicalOffset, &child, true, &offsetBreakAdjustment))
@@ -1358,11 +1376,13 @@ LayoutUnit RenderBlockFlow::applyBeforeBreak(RenderBox& child, LayoutUnit logica
 LayoutUnit RenderBlockFlow::applyAfterBreak(RenderBox& child, LayoutUnit logicalOffset, MarginInfo& marginInfo)
 {
     // FIXME: Add page break checking here when we support printing.
-    bool checkColumnBreaks = view().layoutState()->isPaginatingColumns();
-    bool checkPageBreaks = !checkColumnBreaks && view().layoutState()->m_pageLogicalHeight; // FIXME: Once columns can print we have to check this.
     RenderFlowThread* flowThread = flowThreadContainingBlock();
+    bool isInsideMulticolFlowThread = flowThread && !flowThread->isRenderNamedFlowThread();
+    bool checkColumnBreaks = isInsideMulticolFlowThread || view().layoutState()->isPaginatingColumns();
+    bool checkPageBreaks = !checkColumnBreaks && view().layoutState()->m_pageLogicalHeight; // FIXME: Once columns can print we have to check this.
     bool checkRegionBreaks = flowThread && flowThread->isRenderNamedFlowThread();
-    bool checkAfterAlways = (checkColumnBreaks && child.style().columnBreakAfter() == PBALWAYS) || (checkPageBreaks && child.style().pageBreakAfter() == PBALWAYS)
+    bool checkAfterAlways = (checkColumnBreaks && child.style().columnBreakAfter() == PBALWAYS)
+        || (checkPageBreaks && child.style().pageBreakAfter() == PBALWAYS)
         || (checkRegionBreaks && child.style().regionBreakAfter() == PBALWAYS);
     if (checkAfterAlways && inNormalFlow(child) && hasNextPage(logicalOffset, IncludePageBoundary)) {
         LayoutUnit marginOffset = marginInfo.canCollapseWithMarginBefore() ? LayoutUnit() : marginInfo.margin();
@@ -1370,8 +1390,12 @@ LayoutUnit RenderBlockFlow::applyAfterBreak(RenderBox& child, LayoutUnit logical
         // So our margin doesn't participate in the next collapsing steps.
         marginInfo.clearMargin();
 
-        if (checkColumnBreaks)
-            view().layoutState()->addForcedColumnBreak(&child, logicalOffset);
+        if (checkColumnBreaks) {
+            if (isInsideMulticolFlowThread)
+                checkRegionBreaks = true;
+            else
+                view().layoutState()->addForcedColumnBreak(&child, logicalOffset);
+        }
         if (checkRegionBreaks) {
             LayoutUnit offsetBreakAdjustment = 0;
             if (flowThread->addForcedRegionBreak(this, offsetFromLogicalTopOfFirstPage() + logicalOffset + marginOffset, &child, false, &offsetBreakAdjustment))
@@ -1545,8 +1569,13 @@ void RenderBlockFlow::adjustLinePositionForPagination(RootInlineBox* lineBox, La
             lineBox->setPaginationStrut(remainingLogicalHeight);
             lineBox->setIsFirstAfterPageBreak(true);
         }
-    } else if (remainingLogicalHeight == pageLogicalHeight && lineBox != firstRootBox())
-        lineBox->setIsFirstAfterPageBreak(true);
+    } else if (remainingLogicalHeight == pageLogicalHeight) {
+        // We're at the very top of a page or column.
+        if (lineBox != firstRootBox())
+            lineBox->setIsFirstAfterPageBreak(true);
+        if (lineBox != firstRootBox() || offsetFromLogicalTopOfFirstPage())
+            setPageBreak(logicalOffset, lineHeight);
+    }
 }
 
 void RenderBlockFlow::setBreakAtLineToAvoidWidow(int lineToBreak)
@@ -3259,6 +3288,122 @@ void RenderBlockFlow::materializeRareBlockFlowData()
     ASSERT(!hasRareBlockFlowData());
     m_rareBlockFlowData = std::make_unique<RenderBlockFlow::RenderBlockFlowRareData>(*this);
 }
+
+#if ENABLE(IOS_TEXT_AUTOSIZING)
+inline static bool isVisibleRenderText(RenderObject* renderer)
+{
+    if (!renderer->isText())
+        return false;
+    RenderText* renderText = toRenderText(renderer);
+    return !renderText->linesBoundingBox().isEmpty() && !renderText->text()->containsOnlyWhitespace();
+}
+
+inline static bool resizeTextPermitted(RenderObject* render)
+{
+    // We disallow resizing for text input fields and textarea to address <rdar://problem/5792987> and <rdar://problem/8021123>
+    auto renderer = render->parent();
+    while (renderer) {
+        // Get the first non-shadow HTMLElement and see if it's an input.
+        if (renderer->element() && renderer->element()->isHTMLElement() && !renderer->element()->isInShadowTree()) {
+            const HTMLElement& element = toHTMLElement(*renderer->element());
+            return !isHTMLInputElement(element) && !isHTMLTextAreaElement(element);
+        }
+        renderer = renderer->parent();
+    }
+    return true;
+}
+
+int RenderBlockFlow::immediateLineCount()
+{
+    // Copied and modified from RenderBlock::lineCount.
+    // Only descend into list items.
+    int count = 0;
+    if (style().visibility() == VISIBLE) {
+        if (childrenInline()) {
+            for (RootInlineBox* box = firstRootBox(); box; box = box->nextRootBox())
+                count++;
+        } else {
+            for (RenderObject* obj = firstChild(); obj; obj = obj->nextSibling()) {
+                if (obj->isListItem())
+                    count += toRenderBlockFlow(obj)->lineCount();
+            }
+        }
+    }
+    return count;
+}
+
+static bool isNonBlocksOrNonFixedHeightListItems(const RenderObject* render)
+{
+    if (!render->isRenderBlock())
+        return true;
+    if (render->isListItem())
+        return render->style().height().type() != Fixed;
+    return false;
+}
+
+//  For now, we auto size single lines of text the same as multiple lines.
+//  We've been experimenting with low values for single lines of text.
+static inline float oneLineTextMultiplier(float specifiedSize)
+{
+    return std::max((1.0f / log10f(specifiedSize) * 1.7f), 1.0f);
+}
+
+static inline float textMultiplier(float specifiedSize)
+{
+    return std::max((1.0f / log10f(specifiedSize) * 1.95f), 1.0f);
+}
+
+void RenderBlockFlow::adjustComputedFontSizes(float size, float visibleWidth)
+{
+    // Don't do any work if the block is smaller than the visible area.
+    if (visibleWidth >= width())
+        return;
+    
+    unsigned lineCount;
+    if (m_lineCountForTextAutosizing == NOT_SET) {
+        int count = immediateLineCount();
+        if (!count)
+            lineCount = NO_LINE;
+        else if (count == 1)
+            lineCount = ONE_LINE;
+        else
+            lineCount = MULTI_LINE;
+    } else
+        lineCount = m_lineCountForTextAutosizing;
+    
+    ASSERT(lineCount != NOT_SET);
+    if (lineCount == NO_LINE)
+        return;
+    
+    float actualWidth = m_widthForTextAutosizing != -1 ? static_cast<float>(m_widthForTextAutosizing) : static_cast<float>(width());
+    float scale = visibleWidth / actualWidth;
+    float minFontSize = roundf(size / scale);
+    
+    for (RenderObject* descendent = traverseNext(this, isNonBlocksOrNonFixedHeightListItems); descendent; descendent = descendent->traverseNext(this, isNonBlocksOrNonFixedHeightListItems)) {
+        if (isVisibleRenderText(descendent) && resizeTextPermitted(descendent)) {
+            RenderText* text = toRenderText(descendent);
+            RenderStyle& oldStyle = text->style();
+            FontDescription fontDescription = oldStyle.fontDescription();
+            float specifiedSize = fontDescription.specifiedSize();
+            float scaledSize = roundf(specifiedSize * scale);
+            if (scaledSize > 0 && scaledSize < minFontSize) {
+                // Record the width of the block and the line count the first time we resize text and use it from then on for text resizing.
+                // This makes text resizing consistent even if the block's width or line count changes (which can be caused by text resizing itself 5159915).
+                if (m_lineCountForTextAutosizing == NOT_SET)
+                    m_lineCountForTextAutosizing = lineCount;
+                if (m_widthForTextAutosizing == -1)
+                    m_widthForTextAutosizing = actualWidth;
+                
+                float candidateNewSize = 0;
+                float lineTextMultiplier = lineCount == ONE_LINE ? oneLineTextMultiplier(specifiedSize) : textMultiplier(specifiedSize);
+                candidateNewSize = roundf(std::min(minFontSize, specifiedSize * lineTextMultiplier));
+                if (candidateNewSize > specifiedSize && candidateNewSize != fontDescription.computedSize() && text->textNode() && oldStyle.textSizeAdjust().isAuto())
+                    document().addAutoSizingNode(text->textNode(), candidateNewSize);
+            }
+        }
+    }
+}
+#endif // ENABLE(IOS_TEXT_AUTOSIZING)
 
 }
 // namespace WebCore

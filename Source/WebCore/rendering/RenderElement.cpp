@@ -131,12 +131,10 @@ RenderPtr<RenderElement> RenderElement::createFor(Element& element, PassRef<Rend
     // Otherwise acts as if we didn't support this feature.
     const ContentData* contentData = style.get().contentData();
     if (contentData && !contentData->next() && contentData->isImage() && !element.isPseudoElement()) {
-        auto image = createRenderer<RenderImage>(element, std::move(style));
-        if (const StyleImage* styleImage = static_cast<const ImageContentData*>(contentData)->image()) {
-            image->setImageResource(RenderImageResourceStyleImage::create(const_cast<StyleImage&>(*styleImage)));
+        auto styleImage = const_cast<StyleImage*>(static_cast<const ImageContentData*>(contentData)->image());
+        auto image = createRenderer<RenderImage>(element, std::move(style), styleImage);
+        if (styleImage)
             image->setIsGeneratedContent();
-        } else
-            image->setImageResource(RenderImageResource::create());
         return std::move(image);
     }
 
@@ -593,7 +591,7 @@ void RenderElement::insertChildInternal(RenderObject* newChild, RenderObject* be
         setChildNeedsLayout(); // We may supply the static position for an absolute positioned child.
 
     if (AXObjectCache* cache = document().axObjectCache())
-        cache->childrenChanged(this);
+        cache->childrenChanged(this, newChild);
 }
 
 void RenderElement::removeChildInternal(RenderObject& oldChild, NotifyChildrenType notifyChildren)
@@ -842,7 +840,7 @@ void RenderElement::styleWillChange(StyleDifference diff, const RenderStyle& new
 #endif
         if (visibilityChanged) {
             if (AXObjectCache* cache = document().existingAXObjectCache())
-                cache->childrenChanged(parent());
+                cache->childrenChanged(parent(), this);
         }
 
         // Keep layer hierarchy visibility bits up to date if visibility changes.

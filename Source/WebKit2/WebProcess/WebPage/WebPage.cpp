@@ -85,6 +85,7 @@
 #include "WebPreferencesStore.h"
 #include "WebProcess.h"
 #include "WebProcessProxyMessages.h"
+#include "WebProgressTrackerClient.h"
 #include <JavaScriptCore/APICast.h>
 #include <WebCore/ArchiveResource.h>
 #include <WebCore/Chrome.h>
@@ -313,6 +314,7 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
 #endif
     pageClients.plugInClient = new WebPlugInClient(this);
     pageClients.loaderClientForMainFrame = new WebFrameLoaderClient;
+    pageClients.progressTrackerClient = new WebProgressTrackerClient(*this);
 
     m_page = adoptPtr(new Page(pageClients));
 
@@ -423,6 +425,14 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
     if (m_useAsyncScrolling)
         WebProcess::shared().eventDispatcher().addScrollingTreeForPage(this);
 #endif
+}
+
+void WebPage::reinitializeWebPage(const WebPageCreationParameters& parameters)
+{
+    if (m_viewState != parameters.viewState)
+        setViewStateInternal(parameters.viewState, true);
+    if (m_layerHostingMode != parameters.layerHostingMode)
+        setLayerHostingMode(parameters.layerHostingMode);
 }
 
 WebPage::~WebPage()
@@ -599,6 +609,18 @@ PassRefPtr<Plugin> WebPage::createPlugin(WebFrame* frame, HTMLPlugInElement* plu
 #if PLATFORM(NIX)
 uint64_t getInputMethodHint(HTMLInputElement*);
 #endif
+
+#if ENABLE(WEBGL)
+WebCore::WebGLLoadPolicy WebPage::webGLPolicyForURL(WebFrame* frame, const String& url)
+{
+    uint32_t policyResult = 0;
+
+    if (sendSync(Messages::WebPageProxy::WebGLPolicyForURL(url), Messages::WebPageProxy::WebGLPolicyForURL::Reply(policyResult)))
+        return static_cast<WebGLLoadPolicy>(policyResult);
+
+    return WebGLAllow;
+}
+#endif // ENABLE(WEBGL)
 
 EditorState WebPage::editorState() const
 {
@@ -1012,15 +1034,6 @@ void WebPage::loadWebArchiveData(const IPC::DataReference& webArchiveData, IPC::
 {
     RefPtr<SharedBuffer> sharedBuffer = SharedBuffer::create(reinterpret_cast<const char*>(webArchiveData.data()), webArchiveData.size() * sizeof(uint8_t));
     loadDataImpl(sharedBuffer, ASCIILiteral("application/x-webarchive"), ASCIILiteral("utf-16"), blankURL(), URL(), decoder);
-}
-
-void WebPage::linkClicked(const String& url, const WebMouseEvent& event)
-{
-    RefPtr<Event> coreEvent;
-    if (event.type() != WebEvent::NoType)
-        coreEvent = MouseEvent::create(eventNames().clickEvent, m_page->mainFrame().document()->defaultView(), platform(event), 0, 0);
-
-    m_page->mainFrame().loader().loadFrameRequest(FrameLoadRequest(&m_page->mainFrame(), ResourceRequest(url)), false, false, coreEvent.get(), 0, MaybeSendReferrer);
 }
 
 void WebPage::stopLoadingFrame(uint64_t frameID)
@@ -2107,19 +2120,24 @@ void WebPage::updateIsInWindow(bool isInitialState)
 
 void WebPage::setViewState(ViewState::Flags viewState, bool wantsDidUpdateViewState)
 {
+    setViewStateInternal(viewState, false);
+
+    if (wantsDidUpdateViewState)
+        m_sendDidUpdateViewStateTimer.startOneShot(0);
+}
+
+void WebPage::setViewStateInternal(ViewState::Flags viewState, bool isInitialState)
+{
     ViewState::Flags changed = m_viewState ^ viewState;
     m_viewState = viewState;
 
     m_drawingArea->viewStateDidChange(changed);
-    m_page->setViewState(viewState);
+    m_page->setViewState(viewState, isInitialState);
     for (auto* pluginView : m_pluginViews)
         pluginView->viewStateDidChange(changed);
 
     if (changed & ViewState::IsInWindow)
         updateIsInWindow();
-
-    if (wantsDidUpdateViewState)
-        m_sendDidUpdateViewStateTimer.startOneShot(0);
 }
 
 void WebPage::setLayerHostingMode(unsigned layerHostingMode)

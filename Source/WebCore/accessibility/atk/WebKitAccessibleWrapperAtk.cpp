@@ -236,6 +236,15 @@ static void setAtkRelationSetFromCoreObject(AccessibilityObject* coreObject, Atk
         if (control)
             atk_relation_set_add_relation_by_type(relationSet, ATK_RELATION_LABEL_FOR, control->wrapper());
     }
+
+    // Check whether object supports aria-flowto
+    if (coreObject->supportsARIAFlowTo()) {
+        removeAtkRelationByType(relationSet, ATK_RELATION_FLOWS_TO);
+        AccessibilityObject::AccessibilityChildrenVector ariaFlowToElements;
+        coreObject->ariaFlowToElements(ariaFlowToElements);
+        for (const auto& accessibilityObject : ariaFlowToElements)
+            atk_relation_set_add_relation_by_type(relationSet, ATK_RELATION_FLOWS_TO, accessibilityObject->wrapper());
+    }
 }
 
 static gpointer webkitAccessibleParentClass = 0;
@@ -320,16 +329,14 @@ static AtkObject* webkitAccessibleGetParent(AtkObject* object)
 
 static gint getNChildrenForTable(AccessibilityObject* coreObject)
 {
-    AccessibilityObject::AccessibilityChildrenVector tableChildren = coreObject->children();
-    size_t tableChildrenCount = tableChildren.size();
+    const AccessibilityObject::AccessibilityChildrenVector& tableChildren = coreObject->children();
     size_t cellsCount = 0;
 
     // Look for the actual index of the cell inside the table.
-    for (unsigned i = 0; i < tableChildrenCount; ++i) {
-        if (tableChildren[i]->isTableRow()) {
-            AccessibilityObject::AccessibilityChildrenVector rowChildren = tableChildren[i]->children();
-            cellsCount += rowChildren.size();
-        } else
+    for (const auto& tableChild : tableChildren) {
+        if (tableChild->isTableRow())
+            cellsCount += tableChild->children().size();
+        else
             cellsCount++;
     }
 
@@ -353,21 +360,20 @@ static gint webkitAccessibleGetNChildren(AtkObject* object)
 
 static AccessibilityObject* getChildForTable(AccessibilityObject* coreObject, gint index)
 {
-    AccessibilityObject::AccessibilityChildrenVector tableChildren = coreObject->children();
-    size_t tableChildrenCount = tableChildren.size();
+    const AccessibilityObject::AccessibilityChildrenVector& tableChildren = coreObject->children();
     size_t cellsCount = 0;
 
     // Look for the actual index of the cell inside the table.
     size_t current = static_cast<size_t>(index);
-    for (unsigned i = 0; i < tableChildrenCount; ++i) {
-        if (tableChildren[i]->isTableRow()) {
-            AccessibilityObject::AccessibilityChildrenVector rowChildren = tableChildren[i]->children();
+    for (const auto& tableChild : tableChildren) {
+        if (tableChild->isTableRow()) {
+            const AccessibilityObject::AccessibilityChildrenVector& rowChildren = tableChild->children();
             size_t rowChildrenCount = rowChildren.size();
             if (current < cellsCount + rowChildrenCount)
                 return rowChildren.at(current - cellsCount).get();
             cellsCount += rowChildrenCount;
         } else if (cellsCount == current)
-            return tableChildren[i].get();
+            return tableChild.get();
         else
             cellsCount++;
     }
@@ -392,7 +398,7 @@ static AtkObject* webkitAccessibleRefChild(AtkObject* object, gint index)
     if (coreObject->isAccessibilityTable())
         coreChild = getChildForTable(coreObject, index);
     else {
-        AccessibilityObject::AccessibilityChildrenVector children = coreObject->children();
+        const AccessibilityObject::AccessibilityChildrenVector& children = coreObject->children();
         if (static_cast<unsigned>(index) >= children.size())
             return 0;
         coreChild = children.at(index).get();
@@ -418,19 +424,18 @@ static gint getIndexInParentForCellInRow(AccessibilityObject* coreObject)
     if (!grandParent)
         return -1;
 
-    AccessibilityObject::AccessibilityChildrenVector rows = grandParent->children();
-    size_t rowsCount = rows.size();
+    const AccessibilityObject::AccessibilityChildrenVector& rows = grandParent->children();
     size_t previousCellsCount = 0;
 
     // Look for the actual index of the cell inside the table.
-    for (unsigned i = 0; i < rowsCount; ++i) {
-        if (!rows[i]->isTableRow())
+    for (const auto& row : rows) {
+        if (!row->isTableRow())
             continue;
 
-        AccessibilityObject::AccessibilityChildrenVector cells = rows[i]->children();
+        const AccessibilityObject::AccessibilityChildrenVector& cells = row->children();
         size_t cellsCount = cells.size();
 
-        if (rows[i] == parent) {
+        if (row == parent) {
             for (unsigned j = 0; j < cellsCount; ++j) {
                 if (cells[j] == coreObject)
                     return previousCellsCount + j;
@@ -1133,7 +1138,7 @@ static guint16 getInterfaceMaskFromObject(AccessibilityObject* coreObject)
             // Add the TEXT interface for list items whose
             // first accessible child has a text renderer
             if (role == ListItemRole) {
-                AccessibilityObject::AccessibilityChildrenVector children = coreObject->children();
+                const AccessibilityObject::AccessibilityChildrenVector& children = coreObject->children();
                 if (children.size()) {
                     AccessibilityObject* axRenderChild = children.at(0).get();
                     interfaceMask |= getInterfaceMaskFromObject(axRenderChild);

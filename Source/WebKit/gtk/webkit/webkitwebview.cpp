@@ -82,6 +82,7 @@
 #include "PlatformKeyboardEvent.h"
 #include "PlatformWheelEvent.h"
 #include "ProgressTracker.h"
+#include "ProgressTrackerClientGtk.h"
 #include "RenderView.h"
 #include "ResourceHandle.h"
 #include "RuntimeEnabledFeatures.h"
@@ -3810,6 +3811,7 @@ static void webkit_web_view_init(WebKitWebView* webView)
 #endif
     pageClients.inspectorClient = new WebKit::InspectorClient(webView);
     pageClients.loaderClientForMainFrame = new WebKit::FrameLoaderClient;
+    pageClients.progressTrackerClient = new WebKit::ProgressTrackerClient(webView);
 
     priv->corePage = new Page(pageClients);
 

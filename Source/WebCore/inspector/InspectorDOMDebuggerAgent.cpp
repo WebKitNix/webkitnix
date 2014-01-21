@@ -64,11 +64,6 @@ using namespace Inspector;
 
 namespace WebCore {
 
-PassOwnPtr<InspectorDOMDebuggerAgent> InspectorDOMDebuggerAgent::create(InstrumentingAgents* instrumentingAgents, InspectorDOMAgent* domAgent, InspectorDebuggerAgent* debuggerAgent)
-{
-    return adoptPtr(new InspectorDOMDebuggerAgent(instrumentingAgents, domAgent, debuggerAgent));
-}
-
 InspectorDOMDebuggerAgent::InspectorDOMDebuggerAgent(InstrumentingAgents* instrumentingAgents, InspectorDOMAgent* domAgent, InspectorDebuggerAgent* debuggerAgent)
     : InspectorAgentBase(ASCIILiteral("DOMDebugger"), instrumentingAgents)
     , m_domAgent(domAgent)
@@ -108,7 +103,7 @@ void InspectorDOMDebuggerAgent::didPause()
 
 void InspectorDOMDebuggerAgent::disable()
 {
-    m_instrumentingAgents->setInspectorDOMDebuggerAgent(0);
+    m_instrumentingAgents->setInspectorDOMDebuggerAgent(nullptr);
     clear();
 }
 
@@ -126,8 +121,8 @@ void InspectorDOMDebuggerAgent::willDestroyFrontendAndBackend()
 
 void InspectorDOMDebuggerAgent::discardAgent()
 {
-    m_debuggerAgent->setListener(0);
-    m_debuggerAgent = 0;
+    m_debuggerAgent->setListener(nullptr);
+    m_debuggerAgent = nullptr;
 }
 
 void InspectorDOMDebuggerAgent::discardBindings()

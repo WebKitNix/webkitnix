@@ -150,7 +150,6 @@ using namespace SVGNames;
 #endif
 
 static const char defaultAcceptHeader[] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-static double storedTimeOfLastCompletedLoad;
 
 #if PLATFORM(IOS)
 const int memoryLevelThresholdToPrunePageCache = 20;
@@ -247,7 +246,6 @@ FrameLoader::FrameLoader(Frame& frame, FrameLoaderClient& client)
     , m_shouldCallCheckCompleted(false)
     , m_shouldCallCheckLoadComplete(false)
     , m_opener(nullptr)
-    , m_didPerformFirstNavigation(false)
     , m_loadingFromCachedPage(false)
     , m_suppressOpenerInNewFrame(false)
     , m_currentNavigationHasShownBeforeUnloadConfirmPanel(false)
@@ -852,7 +850,7 @@ void FrameLoader::checkCompleted()
         m_frame.view()->handleLoadCompleted();
 }
 
-void FrameLoader::checkTimerFired(Timer<FrameLoader>*)
+void FrameLoader::checkTimerFired(Timer<FrameLoader>&)
 {
     Ref<Frame> protect(m_frame);
 
@@ -1749,11 +1747,6 @@ void FrameLoader::setProvisionalDocumentLoader(DocumentLoader* loader)
     m_provisionalDocumentLoader = loader;
 }
 
-double FrameLoader::timeOfLastCompletedLoad()
-{
-    return storedTimeOfLastCompletedLoad;
-}
-
 void FrameLoader::setState(FrameState newState)
 {    
     m_state = newState;
@@ -1762,7 +1755,6 @@ void FrameLoader::setState(FrameState newState)
         provisionalLoadStarted();
     else if (newState == FrameStateComplete) {
         frameLoadCompleted();
-        storedTimeOfLastCompletedLoad = monotonicallyIncreasingTime();
         if (m_documentLoader)
             m_documentLoader->stopRecordingResponses();
     }
@@ -1780,7 +1772,7 @@ void FrameLoader::commitProvisionalLoad()
     RefPtr<DocumentLoader> pdl = m_provisionalDocumentLoader;
     Ref<Frame> protect(m_frame);
 
-    OwnPtr<CachedPage> cachedPage;
+    std::unique_ptr<CachedPage> cachedPage;
     if (m_loadingFromCachedPage)
         cachedPage = pageCache()->take(history().provisionalItem());
 
@@ -2964,7 +2956,7 @@ void FrameLoader::continueLoadAfterNavigationPolicy(const ResourceRequest&, Pass
 #if ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
     if (Page* page = m_frame.page()) {
         if (m_frame.isMainFrame())
-            page->inspectorController()->resume();
+            page->inspectorController().resume();
     }
 #endif
 
@@ -3150,18 +3142,6 @@ bool FrameLoader::shouldTreatURLAsSrcdocDocument(const URL& url) const
     if (!ownerElement->hasTagName(iframeTag))
         return false;
     return ownerElement->fastHasAttribute(srcdocAttr);
-}
-
-void FrameLoader::checkDidPerformFirstNavigation()
-{
-    Page* page = m_frame.page();
-    if (!page)
-        return;
-
-    if (!m_didPerformFirstNavigation && page->backForward().currentItem() && !page->backForward().backItem() && !page->backForward().forwardItem()) {
-        m_didPerformFirstNavigation = true;
-        m_client.didPerformFirstNavigation();
-    }
 }
 
 Frame* FrameLoader::findFrameForNavigation(const AtomicString& name, Document* activeDocument)
@@ -3351,12 +3331,6 @@ String FrameLoader::referrer() const
     return m_documentLoader ? m_documentLoader->request().httpReferrer() : "";
 }
 
-void FrameLoader::dispatchDocumentElementAvailable()
-{
-    m_frame.injectUserScripts(InjectAtDocumentStart);
-    m_client.documentElementAvailable();
-}
-
 void FrameLoader::dispatchDidClearWindowObjectsInAllWorlds()
 {
     if (!m_frame.script().canExecuteScripts(NotAboutToExecuteScript))
@@ -3377,7 +3351,7 @@ void FrameLoader::dispatchDidClearWindowObjectInWorld(DOMWrapperWorld& world)
 
 #if ENABLE(INSPECTOR)
     if (Page* page = m_frame.page())
-        page->inspectorController()->didClearWindowObjectInWorld(&m_frame, world);
+        page->inspectorController().didClearWindowObjectInWorld(&m_frame, world);
 #endif
 
     InspectorInstrumentation::didClearWindowObjectInWorld(&m_frame, world);
@@ -3527,11 +3501,6 @@ PassRefPtr<Frame> createWindow(Frame* openerFrame, Frame* lookupFrame, const Fra
     if (!referrer.isEmpty())
         requestWithReferrer.resourceRequest().setHTTPReferrer(referrer);
     FrameLoader::addHTTPOriginIfNeeded(requestWithReferrer.resourceRequest(), openerFrame->loader().outgoingOrigin());
-
-    if (!openerFrame->settings().supportsMultipleWindows()) {
-        created = false;
-        return openerFrame;
-    }
 
     Page* oldPage = openerFrame->page();
     if (!oldPage)

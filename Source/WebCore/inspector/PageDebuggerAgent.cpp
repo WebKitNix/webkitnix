@@ -48,11 +48,6 @@ using namespace Inspector;
 
 namespace WebCore {
 
-PassOwnPtr<PageDebuggerAgent> PageDebuggerAgent::create(InstrumentingAgents* instrumentingAgents, InspectorPageAgent* pageAgent, InjectedScriptManager* injectedScriptManager, InspectorOverlay* overlay)
-{
-    return adoptPtr(new PageDebuggerAgent(instrumentingAgents, pageAgent, injectedScriptManager, overlay));
-}
-
 PageDebuggerAgent::PageDebuggerAgent(InstrumentingAgents* instrumentingAgents, InspectorPageAgent* pageAgent, InjectedScriptManager* injectedScriptManager, InspectorOverlay* overlay)
     : InspectorDebuggerAgent(instrumentingAgents, injectedScriptManager)
     , m_pageAgent(pageAgent)
@@ -73,7 +68,7 @@ void PageDebuggerAgent::enable()
 void PageDebuggerAgent::disable()
 {
     InspectorDebuggerAgent::disable();
-    m_instrumentingAgents->setPageDebuggerAgent(0);
+    m_instrumentingAgents->setPageDebuggerAgent(nullptr);
 }
 
 void PageDebuggerAgent::startListeningScriptDebugServer()
@@ -120,8 +115,7 @@ void PageDebuggerAgent::setOverlayMessage(ErrorString*, const String* message)
 
 void PageDebuggerAgent::didClearMainFrameWindowObject()
 {
-    reset();
-    scriptDebugServer().setScriptPreprocessor(m_pageAgent->scriptPreprocessor());
+    didClearGlobalObject();
 }
 
 } // namespace WebCore

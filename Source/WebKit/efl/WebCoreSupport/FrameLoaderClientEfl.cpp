@@ -243,22 +243,6 @@ void FrameLoaderClientEfl::assignIdentifierToInitialRequest(unsigned long identi
     evas_object_smart_callback_call(m_view, "resource,request,new", &request);
 }
 
-void FrameLoaderClientEfl::postProgressStartedNotification()
-{
-    ewk_frame_load_started(m_frame);
-    postProgressEstimateChangedNotification();
-}
-
-void FrameLoaderClientEfl::postProgressEstimateChangedNotification()
-{
-    ewk_frame_load_progress_changed(m_frame);
-}
-
-void FrameLoaderClientEfl::postProgressFinishedNotification()
-{
-    notImplemented();
-}
-
 void FrameLoaderClientEfl::frameLoaderDestroyed()
 {
     if (m_frame)
@@ -472,16 +456,6 @@ void FrameLoaderClientEfl::dispatchDidClearWindowObjectInWorld(DOMWrapperWorld& 
 #if ENABLE(NETSCAPE_PLUGIN_API)
     ewk_view_js_window_object_clear(m_view, m_frame);
 #endif
-}
-
-void FrameLoaderClientEfl::documentElementAvailable()
-{
-    return;
-}
-
-void FrameLoaderClientEfl::didPerformFirstNavigation() const
-{
-    ewk_frame_did_perform_first_navigation(m_frame);
 }
 
 void FrameLoaderClientEfl::registerForIconNotification(bool)

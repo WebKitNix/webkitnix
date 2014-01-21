@@ -52,7 +52,7 @@ PassRefPtr<SVGSwitchElement> SVGSwitchElement::create(const QualifiedName& tagNa
 bool SVGSwitchElement::childShouldCreateRenderer(const Node& child) const
 {
     // We create a renderer for the first valid SVG element child.
-    // FIXME: The renderer must be updated after dynamic change of the requiredFeatures, requiredExtensions and systemLanguage attributes (http://wkb.ug/74749).
+    // FIXME: The renderer must be updated after dynamic change of the requiredFeatures, requiredExtensions and systemLanguage attributes (https://bugs.webkit.org/show_bug.cgi?id=74749).
     for (auto& element : childrenOfType<SVGElement>(*this)) {
         if (!element.isValid())
             continue;

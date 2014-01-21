@@ -589,9 +589,8 @@ unsigned short URL::port() const
     if (m_hostEnd == m_portEnd || m_hostEnd == m_portEnd - 1)
         return 0;
 
-    const UChar* stringData = m_string.characters();
     bool ok = false;
-    unsigned number = charactersToUIntStrict(stringData + m_hostEnd + 1, m_portEnd - m_hostEnd - 1, &ok);
+    unsigned number = charactersToUIntStrict(m_string.deprecatedCharacters() + m_hostEnd + 1, m_portEnd - m_hostEnd - 1, &ok);
     if (!ok || number > maximumValidPortNumber)
         return invalidPortNumber;
     return number;
@@ -1128,17 +1127,6 @@ void URL::parse(const char* url, const String* originalString)
         && isLetterMatchIgnoringCase(url[2], 'l')
         && isLetterMatchIgnoringCase(url[3], 'e');
 
-#if PLATFORM(BLACKBERRY)
-    // Parse local: urls the same as file: urls.
-    if (!isFile)
-        isFile = schemeEnd == 5
-            && isLetterMatchIgnoringCase(url[0], 'l')
-            && isLetterMatchIgnoringCase(url[1], 'o')
-            && isLetterMatchIgnoringCase(url[2], 'c')
-            && isLetterMatchIgnoringCase(url[3], 'a')
-            && isLetterMatchIgnoringCase(url[4], 'l');
-#endif
-
     m_protocolIsInHTTPFamily = isLetterMatchIgnoringCase(url[0], 'h')
         && isLetterMatchIgnoringCase(url[1], 't')
         && isLetterMatchIgnoringCase(url[2], 't')
@@ -1643,27 +1631,27 @@ static void encodeHostnames(const String& str, UCharBuffer& output)
 
     if (protocolIs(str, "mailto")) {
         Vector<std::pair<int, int>> hostnameRanges;
-        findHostnamesInMailToURL(str.characters(), str.length(), hostnameRanges);
+        findHostnamesInMailToURL(str.deprecatedCharacters(), str.length(), hostnameRanges);
         int n = hostnameRanges.size();
         int p = 0;
         for (int i = 0; i < n; ++i) {
             const std::pair<int, int>& r = hostnameRanges[i];
-            output.append(&str.characters()[p], r.first - p);
-            appendEncodedHostname(output, &str.characters()[r.first], r.second - r.first);
+            output.append(&str.deprecatedCharacters()[p], r.first - p);
+            appendEncodedHostname(output, &str.deprecatedCharacters()[r.first], r.second - r.first);
             p = r.second;
         }
         // This will copy either everything after the last hostname, or the
         // whole thing if there is no hostname.
-        output.append(&str.characters()[p], str.length() - p);
+        output.append(&str.deprecatedCharacters()[p], str.length() - p);
     } else {
         int hostStart, hostEnd;
-        if (findHostnameInHierarchicalURL(str.characters(), str.length(), hostStart, hostEnd)) {
-            output.append(str.characters(), hostStart); // Before hostname.
-            appendEncodedHostname(output, &str.characters()[hostStart], hostEnd - hostStart);
-            output.append(&str.characters()[hostEnd], str.length() - hostEnd); // After hostname.
+        if (findHostnameInHierarchicalURL(str.deprecatedCharacters(), str.length(), hostStart, hostEnd)) {
+            output.append(str.deprecatedCharacters(), hostStart); // Before hostname.
+            appendEncodedHostname(output, &str.deprecatedCharacters()[hostStart], hostEnd - hostStart);
+            output.append(&str.deprecatedCharacters()[hostEnd], str.length() - hostEnd); // After hostname.
         } else {
             // No hostname to encode, return the input.
-            output.append(str.characters(), str.length());
+            output.append(str.deprecatedCharacters(), str.length());
         }
     }
 }
@@ -1914,11 +1902,6 @@ bool portAllowed(const URL& url)
     // Allow any port number in a file URL, since the port number is ignored.
     if (url.protocolIs("file"))
         return true;
-
-#if PLATFORM(BLACKBERRY)
-    if (url.protocolIs("local"))
-        return true;
-#endif
 
     return false;
 }

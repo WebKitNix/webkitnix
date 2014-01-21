@@ -92,6 +92,7 @@
 #include "InspectorInstrumentation.h"
 #include "JSLazyEventListener.h"
 #include "Language.h"
+#include "LoaderStrategy.h"
 #include "Logging.h"
 #include "MainFrame.h"
 #include "MediaCanStartListener.h"
@@ -107,6 +108,7 @@
 #include "PageGroup.h"
 #include "PageTransitionEvent.h"
 #include "PlatformLocale.h"
+#include "PlatformStrategies.h"
 #include "PlugInsResources.h"
 #include "PluginDocument.h"
 #include "PointerLockController.h"
@@ -114,6 +116,7 @@
 #include "ProcessingInstruction.h"
 #include "RenderView.h"
 #include "RenderWidget.h"
+#include "ResourceLoadScheduler.h"
 #include "ResourceLoader.h"
 #include "RuntimeEnabledFeatures.h"
 #include "SchemeRegistry.h"
@@ -481,7 +484,7 @@ Document::Document(Frame* frame, const URL& url, unsigned documentClasses, unsig
     , m_deviceMotionClient(DeviceMotionClientIOS::create())
     , m_deviceMotionController(DeviceMotionController::create(m_deviceMotionClient.get()))
     , m_deviceOrientationClient(DeviceOrientationClientIOS::create())
-    , m_deviceOrientationController(DeviceOrientationController::create(frame ? frame->page() : nullptr, m_deviceOrientationClient.get()))
+    , m_deviceOrientationController(DeviceOrientationController::create(m_deviceOrientationClient.get()))
 #endif
     , m_isTelephoneNumberParsingAllowed(true)
 #endif
@@ -1251,7 +1254,7 @@ void Document::setVisualUpdatesAllowed(bool visualUpdatesAllowed)
         frame->loader().forcePageTransitionIfNeeded();
 }
 
-void Document::visualUpdatesSuppressionTimerFired(Timer<Document>*)
+void Document::visualUpdatesSuppressionTimerFired(Timer<Document>&)
 {
     ASSERT(!m_visualUpdatesAllowed);
 
@@ -1347,7 +1350,6 @@ void Document::setContent(const String& content)
     // not implemented for the XML parser as it's normally synonymous with
     // document.write(). append() will end up yielding, but close() will
     // pump the tokenizer syncrhonously and finish the parse.
-    m_parser->pinToMainThread();
     m_parser->append(content.impl());
     close();
 }
@@ -1698,7 +1700,7 @@ bool Document::hasPendingForcedStyleRecalc() const
     return m_styleRecalcTimer.isActive() && m_pendingStyleRecalcShouldForce;
 }
 
-void Document::styleRecalcTimerFired(Timer<Document>*)
+void Document::styleRecalcTimerFired(Timer<Document>&)
 {
     updateStyleIfNeeded();
 }
@@ -1865,6 +1867,9 @@ void Document::updateLayoutIgnorePendingStylesheets()
 PassRef<RenderStyle> Document::styleForElementIgnoringPendingStylesheets(Element* element)
 {
     ASSERT_ARG(element, &element->document() == this);
+
+    // On iOS request delegates called during styleForElement may result in re-entering WebKit and killing the style resolver.
+    ResourceLoadScheduler::Suspender suspender(*platformStrategies()->loaderStrategy()->resourceLoadScheduler());
 
     TemporaryChange<bool> change(m_ignorePendingStylesheets, true);
     return ensureStyleResolver().styleForElement(element, element->parentNode() ? element->parentNode()->computedStyle() : nullptr);
@@ -3178,7 +3183,7 @@ void Document::evaluateMediaQueryList()
         m_mediaQueryMatcher->styleResolverChanged();
 }
 
-void Document::optimizedStyleSheetUpdateTimerFired(Timer<Document>*)
+void Document::optimizedStyleSheetUpdateTimerFired(Timer<Document>&)
 {
     styleResolverChanged(RecalcStyleIfNeeded);
 }
@@ -3965,7 +3970,7 @@ bool Document::parseQualifiedName(const String& qualifiedName, String& prefix, S
     bool sawColon = false;
     int colonPos = 0;
 
-    const UChar* s = qualifiedName.characters();
+    const UChar* s = qualifiedName.deprecatedCharacters();
     for (unsigned i = 0; i < length;) {
         UChar32 c;
         U16_NEXT(s, i, length, c)
@@ -4462,7 +4467,7 @@ void Document::finishedParsing()
     m_cachedResourceLoader->clearPreloads();
 }
 
-void Document::sharedObjectPoolClearTimerFired(Timer<Document>*)
+void Document::sharedObjectPoolClearTimerFired(Timer<Document>&)
 {
     m_sharedObjectPool.clear();
 }
@@ -4472,7 +4477,7 @@ void Document::didAccessStyleResolver()
     m_styleResolverThrowawayTimer.restart();
 }
 
-void Document::styleResolverThrowawayTimerFired(DeferrableOneShotTimer<Document>*)
+void Document::styleResolverThrowawayTimerFired(DeferrableOneShotTimer<Document>&)
 {
     ASSERT(!m_inStyleRecalc);
     clearStyleResolver();
@@ -4736,7 +4741,7 @@ void Document::resetHiddenFocusElementSoon()
         m_resetHiddenFocusElementTimer.startOneShot(0);
 }
 
-void Document::updateFocusAppearanceTimerFired(Timer<Document>*)
+void Document::updateFocusAppearanceTimerFired(Timer<Document>&)
 {
     Element* element = focusedElement();
     if (!element)
@@ -4747,7 +4752,7 @@ void Document::updateFocusAppearanceTimerFired(Timer<Document>*)
         element->updateFocusAppearance(m_updateFocusAppearanceRestoresSelection);
 }
 
-void Document::resetHiddenFocusElementTimer(Timer<Document>*)
+void Document::resetHiddenFocusElementTimer(Timer<Document>&)
 {
     if (view() && view()->needsLayout())
         return;
@@ -4789,7 +4794,7 @@ HTMLCanvasElement* Document::getCSSCanvasElement(const String& name)
 #if ENABLE(IOS_TEXT_AUTOSIZING)
 void Document::addAutoSizingNode(Node* node, float candidateSize)
 {
-    TextAutoSizingKey key(node->renderer()->style(), &document());
+    TextAutoSizingKey key(&node->renderer()->style(), &document());
     TextAutoSizingMap::AddResult result = m_textAutoSizedNodes.add(key, nullptr);
     if (result.isNewEntry)
         result.iterator->value = TextAutoSizingValue::create();
@@ -4917,7 +4922,7 @@ void Document::postTask(PassOwnPtr<Task> task)
     callOnMainThread(didReceiveTask, new PerformTaskContext(m_weakFactory.createWeakPtr(), task));
 }
 
-void Document::pendingTasksTimerFired(Timer<Document>*)
+void Document::pendingTasksTimerFired(Timer<Document>&)
 {
     while (!m_pendingTasks.isEmpty()) {
         OwnPtr<Task> task = m_pendingTasks[0].release();
@@ -5435,7 +5440,7 @@ void Document::fullScreenRendererDestroyed()
     m_fullScreenRenderer = nullptr;
 }
 
-void Document::fullScreenChangeDelayTimerFired(Timer<Document>*)
+void Document::fullScreenChangeDelayTimerFired(Timer<Document>&)
 {
     // Since we dispatch events in this function, it's possible that the
     // document will be detached and GC'd. We protect it here to make sure we
@@ -5573,7 +5578,7 @@ void Document::decrementLoadEventDelayCount()
         m_loadEventDelayTimer.startOneShot(0);
 }
 
-void Document::loadEventDelayTimerFired(Timer<Document>*)
+void Document::loadEventDelayTimerFired(Timer<Document>&)
 {
     if (frame())
         frame()->loader().checkCompleted();
@@ -5848,12 +5853,10 @@ void Document::decrementActiveParserCount()
     --m_activeParserCount;
     if (!frame())
         return;
-    // FIXME: This should always be enabled, but it seems to cause
-    // http/tests/security/feed-urls-from-remote.html to timeout on Mac WK1
-    // see http://webkit.org/b/110554 and http://webkit.org/b/110401
-#if ENABLE(THREADED_HTML_PARSER)
-    loader()->checkLoadComplete();
-#endif
+
+    // FIXME: We should call loader()->checkLoadComplete() as well here,
+    // but it seems to cause http/tests/security/feed-urls-from-remote.html
+    // to timeout on Mac WK1; see http://webkit.org/b/110554 and http://webkit.org/b/110401.
     frame()->loader().checkLoadComplete();
 }
 
@@ -6081,9 +6084,10 @@ void Document::didAssociateFormControl(Element* element)
         m_didAssociateFormControlsTimer.startOneShot(0);
 }
 
-void Document::didAssociateFormControlsTimerFired(Timer<Document>* timer)
+void Document::didAssociateFormControlsTimerFired(Timer<Document>& timer)
 {
-    ASSERT_UNUSED(timer, timer == &m_didAssociateFormControlsTimer);
+    ASSERT_UNUSED(timer, &timer == &m_didAssociateFormControlsTimer);
+
     if (!frame() || !frame()->page())
         return;
 

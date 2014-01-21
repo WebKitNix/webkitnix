@@ -392,6 +392,8 @@ inline HTTPCookieAcceptPolicy toHTTPCookieAcceptPolicy(WKHTTPCookieAcceptPolicy 
         return HTTPCookieAcceptPolicyNever;
     case kWKHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain:
         return HTTPCookieAcceptPolicyOnlyFromMainDocumentDomain;
+    case kWKHTTPCookieAcceptPolicyExclusivelyFromMainDocumentDomain:
+        return HTTPCookieAcceptPolicyExclusivelyFromMainDocumentDomain;
     }
 
     ASSERT_NOT_REACHED();
@@ -407,6 +409,8 @@ inline WKHTTPCookieAcceptPolicy toAPI(HTTPCookieAcceptPolicy policy)
         return kWKHTTPCookieAcceptPolicyNever;
     case HTTPCookieAcceptPolicyOnlyFromMainDocumentDomain:
         return kWKHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain;
+    case HTTPCookieAcceptPolicyExclusivelyFromMainDocumentDomain:
+        return kWKHTTPCookieAcceptPolicyExclusivelyFromMainDocumentDomain;
     }
 
     ASSERT_NOT_REACHED();
@@ -471,6 +475,21 @@ inline PluginModuleLoadPolicy toPluginModuleLoadPolicy(WKPluginLoadPolicy plugin
     
     ASSERT_NOT_REACHED();
     return PluginModuleBlocked;
+}
+
+inline WebCore::WebGLLoadPolicy toWebGLLoadPolicy(WKWebGLLoadPolicy webGLLoadPolicy)
+{
+    switch (webGLLoadPolicy) {
+    case kWKWebGLLoadPolicyInactive:
+        return WebCore::WebGLAsk;
+    case kWKWebGLLoadPolicyLoadNormally:
+        return WebCore::WebGLAllow;
+    case kWKWebGLLoadPolicyBlocked:
+        return WebCore::WebGLBlock;
+    }
+    
+    ASSERT_NOT_REACHED();
+    return WebCore::WebGLAllow;
 }
 
 inline ProxyingRefPtr<WebGrammarDetail> toAPI(const WebCore::GrammarDetail& grammarDetail)

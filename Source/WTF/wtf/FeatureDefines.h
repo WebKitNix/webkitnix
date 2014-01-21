@@ -807,10 +807,6 @@
 #define ENABLE_TEXT_SELECTION 1
 #endif
 
-#if !defined(ENABLE_THREADED_HTML_PARSER)
-#define ENABLE_THREADED_HTML_PARSER 0
-#endif
-
 #if !defined(ENABLE_ASYNC_SCROLLING)
 #define ENABLE_ASYNC_SCROLLING 0
 #endif
@@ -839,10 +835,6 @@
 #define ENABLE_VIEWPORT 0
 #endif
 
-#if !defined(ENABLE_VIEWSOURCE_ATTRIBUTE)
-#define ENABLE_VIEWSOURCE_ATTRIBUTE 1
-#endif
-
 #if !defined(ENABLE_VIEW_MODE_CSS_MEDIA)
 #define ENABLE_VIEW_MODE_CSS_MEDIA 1
 #endif
@@ -861,6 +853,10 @@
 
 #if !defined(ENABLE_WEB_AUDIO)
 #define ENABLE_WEB_AUDIO 0
+#endif
+
+#if !defined(ENABLE_WEB_REPLAY)
+#define ENABLE_WEB_REPLAY 0
 #endif
 
 #if !defined(ENABLE_WEB_SOCKETS)

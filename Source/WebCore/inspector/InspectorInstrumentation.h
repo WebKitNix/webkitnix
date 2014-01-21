@@ -159,10 +159,6 @@ public:
     static InspectorInstrumentationCookie willRecalculateStyle(Document*);
     static void didRecalculateStyle(const InspectorInstrumentationCookie&);
     static void didScheduleStyleRecalculation(Document*);
-    static InspectorInstrumentationCookie willMatchRule(Document*, StyleRule*, InspectorCSSOMWrappers&, DocumentStyleSheetCollection&);
-    static void didMatchRule(const InspectorInstrumentationCookie&, bool matched);
-    static InspectorInstrumentationCookie willProcessRule(Document*, StyleRule*, StyleResolver&);
-    static void didProcessRule(const InspectorInstrumentationCookie&);
 
     static void applyEmulatedMedia(Frame*, String*);
     static void willSendRequest(Frame*, unsigned long identifier, DocumentLoader*, ResourceRequest&, const ResourceResponse& redirectResponse);
@@ -197,8 +193,8 @@ public:
     static void loaderDetachedFromFrame(Frame*, DocumentLoader*);
     static void frameStartedLoading(Frame&);
     static void frameStoppedLoading(Frame&);
-    static void frameScheduledNavigation(Frame*, double delay);
-    static void frameClearedScheduledNavigation(Frame*);
+    static void frameScheduledNavigation(Frame&, double delay);
+    static void frameClearedScheduledNavigation(Frame&);
     static InspectorInstrumentationCookie willRunJavaScriptDialog(Page*, const String& message);
     static void didRunJavaScriptDialog(const InspectorInstrumentationCookie&);
     static void willDestroyCachedResource(CachedResource*);
@@ -209,11 +205,11 @@ public:
     // FIXME: Remove once we no longer generate stacks outside of Inspector.
     static void addMessageToConsole(Page*, MessageSource, MessageType, MessageLevel, const String& message, PassRefPtr<ScriptCallStack>, unsigned long requestIdentifier = 0);
     static void addMessageToConsole(Page*, MessageSource, MessageType, MessageLevel, const String& message, JSC::ExecState*, PassRefPtr<ScriptArguments>, unsigned long requestIdentifier = 0);
-    static void addMessageToConsole(Page*, MessageSource, MessageType, MessageLevel, const String& message, const String& scriptID, unsigned lineNumber, unsigned columnNumber, JSC::ExecState* = 0, unsigned long requestIdentifier = 0);
+    static void addMessageToConsole(Page*, MessageSource, MessageType, MessageLevel, const String& message, const String& scriptID, unsigned lineNumber, unsigned columnNumber, JSC::ExecState* = nullptr, unsigned long requestIdentifier = 0);
 
     // FIXME: Convert to ScriptArguments to match non-worker context.
     static void addMessageToConsole(WorkerGlobalScope*, MessageSource, MessageType, MessageLevel, const String& message, PassRefPtr<ScriptCallStack>, unsigned long requestIdentifier = 0);
-    static void addMessageToConsole(WorkerGlobalScope*, MessageSource, MessageType, MessageLevel, const String& message, const String& scriptID, unsigned lineNumber, unsigned columnNumber, JSC::ExecState* = 0, unsigned long requestIdentifier = 0);
+    static void addMessageToConsole(WorkerGlobalScope*, MessageSource, MessageType, MessageLevel, const String& message, const String& scriptID, unsigned lineNumber, unsigned columnNumber, JSC::ExecState* = nullptr, unsigned long requestIdentifier = 0);
 
     static void consoleCount(Page*, JSC::ExecState*, PassRefPtr<ScriptArguments>);
     static void startConsoleTiming(Frame*, const String& title);
@@ -349,10 +345,6 @@ private:
     static InspectorInstrumentationCookie willRecalculateStyleImpl(InstrumentingAgents*, Frame*);
     static void didRecalculateStyleImpl(const InspectorInstrumentationCookie&);
     static void didScheduleStyleRecalculationImpl(InstrumentingAgents*, Document*);
-    static InspectorInstrumentationCookie willMatchRuleImpl(InstrumentingAgents*, StyleRule*, InspectorCSSOMWrappers&, DocumentStyleSheetCollection&);
-    static void didMatchRuleImpl(const InspectorInstrumentationCookie&, bool matched);
-    static InspectorInstrumentationCookie willProcessRuleImpl(InstrumentingAgents*, StyleRule*, StyleResolver&);
-    static void didProcessRuleImpl(const InspectorInstrumentationCookie&);
 
     static void applyEmulatedMediaImpl(InstrumentingAgents*, String*);
     static void willSendRequestImpl(InstrumentingAgents*, unsigned long identifier, DocumentLoader*, ResourceRequest&, const ResourceResponse& redirectResponse);
@@ -386,10 +378,10 @@ private:
     static void didCommitLoadImpl(InstrumentingAgents*, Page*, DocumentLoader*);
     static void frameDocumentUpdatedImpl(InstrumentingAgents*, Frame*);
     static void loaderDetachedFromFrameImpl(InstrumentingAgents*, DocumentLoader*);
-    static void frameStartedLoadingImpl(InstrumentingAgents*, Frame*);
-    static void frameStoppedLoadingImpl(InstrumentingAgents*, Frame*);
-    static void frameScheduledNavigationImpl(InstrumentingAgents*, Frame*, double delay);
-    static void frameClearedScheduledNavigationImpl(InstrumentingAgents*, Frame*);
+    static void frameStartedLoadingImpl(InstrumentingAgents&, Frame&);
+    static void frameStoppedLoadingImpl(InstrumentingAgents&, Frame&);
+    static void frameScheduledNavigationImpl(InstrumentingAgents&, Frame&, double delay);
+    static void frameClearedScheduledNavigationImpl(InstrumentingAgents&, Frame&);
     static InspectorInstrumentationCookie willRunJavaScriptDialogImpl(InstrumentingAgents*, const String& message);
     static void didRunJavaScriptDialogImpl(const InspectorInstrumentationCookie&);
     static void willDestroyCachedResourceImpl(CachedResource*);
@@ -1172,60 +1164,6 @@ inline void InspectorInstrumentation::didScheduleStyleRecalculation(Document* do
 #endif
 }
 
-inline InspectorInstrumentationCookie InspectorInstrumentation::willMatchRule(Document* document, StyleRule* rule, InspectorCSSOMWrappers& inspectorCSSOMWrappers, DocumentStyleSheetCollection& styleSheetCollection)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(InspectorInstrumentationCookie());
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForDocument(document))
-        return willMatchRuleImpl(instrumentingAgents, rule, inspectorCSSOMWrappers, styleSheetCollection);
-#else
-    UNUSED_PARAM(document);
-    UNUSED_PARAM(rule);
-    UNUSED_PARAM(inspectorCSSOMWrappers);
-    UNUSED_PARAM(styleSheetCollection);
-#endif
-    return InspectorInstrumentationCookie();
-}
-
-inline void InspectorInstrumentation::didMatchRule(const InspectorInstrumentationCookie& cookie, bool matched)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (cookie.isValid())
-        didMatchRuleImpl(cookie, matched);
-#else
-    UNUSED_PARAM(cookie);
-    UNUSED_PARAM(matched);
-#endif
-}
-
-inline InspectorInstrumentationCookie InspectorInstrumentation::willProcessRule(Document* document, StyleRule* rule, StyleResolver& styleResolver)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(InspectorInstrumentationCookie());
-    if (!rule)
-        return InspectorInstrumentationCookie();
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForDocument(document))
-        return willProcessRuleImpl(instrumentingAgents, rule, styleResolver);
-#else
-    UNUSED_PARAM(document);
-    UNUSED_PARAM(rule);
-    UNUSED_PARAM(styleResolver);
-#endif
-    return InspectorInstrumentationCookie();
-}
-
-inline void InspectorInstrumentation::didProcessRule(const InspectorInstrumentationCookie& cookie)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (cookie.isValid())
-        didProcessRuleImpl(cookie);
-#else
-    UNUSED_PARAM(cookie);
-#endif
-}
-
 inline void InspectorInstrumentation::applyEmulatedMedia(Frame* frame, String* media)
 {
 #if ENABLE(INSPECTOR)
@@ -1610,7 +1548,7 @@ inline void InspectorInstrumentation::frameStartedLoading(Frame& frame)
 {
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(&frame))
-        frameStartedLoadingImpl(instrumentingAgents, &frame);
+        frameStartedLoadingImpl(*instrumentingAgents, frame);
 #else
     UNUSED_PARAM(frame);
 #endif
@@ -1620,28 +1558,28 @@ inline void InspectorInstrumentation::frameStoppedLoading(Frame& frame)
 {
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(&frame))
-        frameStoppedLoadingImpl(instrumentingAgents, &frame);
+        frameStoppedLoadingImpl(*instrumentingAgents, frame);
 #else
     UNUSED_PARAM(frame);
 #endif
 }
 
-inline void InspectorInstrumentation::frameScheduledNavigation(Frame* frame, double delay)
+inline void InspectorInstrumentation::frameScheduledNavigation(Frame& frame, double delay)
 {
 #if ENABLE(INSPECTOR)
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
-        frameScheduledNavigationImpl(instrumentingAgents, frame, delay);
+    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(&frame))
+        frameScheduledNavigationImpl(*instrumentingAgents, frame, delay);
 #else
     UNUSED_PARAM(frame);
     UNUSED_PARAM(delay);
 #endif
 }
 
-inline void InspectorInstrumentation::frameClearedScheduledNavigation(Frame* frame)
+inline void InspectorInstrumentation::frameClearedScheduledNavigation(Frame& frame)
 {
 #if ENABLE(INSPECTOR)
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
-        frameClearedScheduledNavigationImpl(instrumentingAgents, frame);
+    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(&frame))
+        frameClearedScheduledNavigationImpl(*instrumentingAgents, frame);
 #else
     UNUSED_PARAM(frame);
 #endif
@@ -1946,7 +1884,7 @@ inline void InspectorInstrumentation::pseudoElementDestroyed(Page* page, PseudoE
 inline InstrumentingAgents* InspectorInstrumentation::instrumentingAgentsForContext(ScriptExecutionContext* context)
 {
     if (!context)
-        return 0;
+        return nullptr;
     if (context->isDocument())
         return instrumentingAgentsForPage(toDocument(context)->page());
     return instrumentingAgentsForNonDocumentContext(context);
@@ -1956,7 +1894,7 @@ inline InstrumentingAgents* InspectorInstrumentation::instrumentingAgentsForFram
 {
     if (frame)
         return instrumentingAgentsForPage(frame->page());
-    return 0;
+    return nullptr;
 }
 
 inline InstrumentingAgents* InspectorInstrumentation::instrumentingAgentsForDocument(Document* document)
@@ -1969,7 +1907,7 @@ inline InstrumentingAgents* InspectorInstrumentation::instrumentingAgentsForDocu
 #endif
         return instrumentingAgentsForPage(page);
     }
-    return 0;
+    return nullptr;
 }
 #endif
 

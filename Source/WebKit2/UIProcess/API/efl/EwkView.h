@@ -206,6 +206,8 @@ public:
 
     void didFindZoomableArea(const WKPoint&, const WKRect&);
 
+    static const char smartClassName[];
+
 private:
     EwkView(WKViewRef, Evas_Object*);
     ~EwkView();
@@ -239,10 +241,13 @@ private:
     static Eina_Bool handleEwkViewKeyUp(Ewk_View_Smart_Data* smartData, const Evas_Event_Key_Up* upEvent);
 
 #if ENABLE(TOUCH_EVENTS)
-    void feedTouchEvents(Ewk_Touch_Event_Type type);
-    static void handleTouchDown(void* data, Evas*, Evas_Object*, void* eventInfo);
-    static void handleTouchUp(void* data, Evas*, Evas_Object*, void* eventInfo);
-    static void handleTouchMove(void* data, Evas*, Evas_Object*, void* eventInfo);
+    void feedTouchEvents(Ewk_Touch_Event_Type type, double timestamp);
+    static void handleMouseDownForTouch(void* data, Evas*, Evas_Object*, void* eventInfo);
+    static void handleMouseUpForTouch(void* data, Evas*, Evas_Object*, void* eventInfo);
+    static void handleMouseMoveForTouch(void* data, Evas*, Evas_Object*, void* eventInfo);
+    static void handleMultiDownForTouch(void* data, Evas*, Evas_Object*, void* eventInfo);
+    static void handleMultiUpForTouch(void* data, Evas*, Evas_Object*, void* eventInfo);
+    static void handleMultiMoveForTouch(void* data, Evas*, Evas_Object*, void* eventInfo);
 #endif
     static void handleFaviconChanged(const char* pageURL, void* eventInfo);
 
@@ -299,8 +304,32 @@ private:
     static Evas_Smart_Class parentSmartClass;
 };
 
-EwkView* toEwkView(const Evas_Object*);
+inline bool isEwkViewEvasObject(const Evas_Object* evasObject)
+{
+    ASSERT(evasObject);
 
-bool isEwkViewEvasObject(const Evas_Object*);
+    const Evas_Smart* evasSmart = evas_object_smart_smart_get(evasObject);
+    if (EINA_UNLIKELY(!evasSmart)) {
+        const char* evasObjectType = evas_object_type_get(evasObject);
+        EINA_LOG_CRIT("%p (%s) is not a smart object!", evasObject, evasObjectType ? evasObjectType : "(null)");
+        return false;
+    }
+
+    const Evas_Smart_Class* smartClass = evas_smart_class_get(evasSmart);
+    if (EINA_UNLIKELY(!smartClass)) {
+        const char* evasObjectType = evas_object_type_get(evasObject);
+        EINA_LOG_CRIT("%p (%s) is not a smart class object!", evasObject, evasObjectType ? evasObjectType : "(null)");
+        return false;
+    }
+
+    if (EINA_UNLIKELY(smartClass->data != EwkView::smartClassName)) {
+        const char* evasObjectType = evas_object_type_get(evasObject);
+        EINA_LOG_CRIT("%p (%s) is not of an ewk_view (need %p, got %p)!", evasObject, evasObjectType ? evasObjectType : "(null)",
+            EwkView::smartClassName, smartClass->data);
+        return false;
+    }
+
+    return true;
+}
 
 #endif // EwkView_h

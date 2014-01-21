@@ -44,11 +44,11 @@ class Element;
 
 class RenderLayer::FilterInfo
 #if ENABLE(CSS_SHADERS) && ENABLE(SVG)
-    FINAL : public CustomFilterProgramClient, public CachedSVGDocumentClient
+    final : public CustomFilterProgramClient, public CachedSVGDocumentClient
 #elif ENABLE(CSS_SHADERS)
-    FINAL : public CustomFilterProgramClient
+    final : public CustomFilterProgramClient
 #elif ENABLE(SVG)
-    FINAL : public CachedSVGDocumentClient
+    final : public CachedSVGDocumentClient
 #endif
 {
 public:
@@ -80,11 +80,11 @@ private:
     friend void WTF::deleteOwnedPtr<FilterInfo>(FilterInfo*);
 
 #if ENABLE(CSS_SHADERS)
-    virtual void notifyCustomFilterProgramLoaded(CustomFilterProgram*) OVERRIDE;
+    virtual void notifyCustomFilterProgramLoaded(CustomFilterProgram*) override;
 #endif
 
 #if ENABLE(SVG)
-    virtual void notifyFinished(CachedResource*) OVERRIDE;
+    virtual void notifyFinished(CachedResource*) override;
 #endif
 
     static HashMap<const RenderLayer*, OwnPtr<FilterInfo>>& map();

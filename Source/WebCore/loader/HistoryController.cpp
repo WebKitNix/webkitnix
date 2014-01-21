@@ -231,7 +231,7 @@ void HistoryController::invalidateCurrentItemCachedPage()
     if (!pageCache()->get(currentItem()))
         return;
 
-    OwnPtr<CachedPage> cachedPage = pageCache()->take(currentItem());
+    std::unique_ptr<CachedPage> cachedPage = pageCache()->take(currentItem());
 
     // FIXME: This is a grotesque hack to fix <rdar://problem/4059059> Crash in RenderFlow::detach
     // Somehow the PageState object is not properly updated, and is holding onto a stale document.
@@ -798,8 +798,6 @@ void HistoryController::updateBackForwardListClippedAtTarget(bool doClip)
         return;
 
     FrameLoader& frameLoader = m_frame.mainFrame().loader();
-
-    frameLoader.checkDidPerformFirstNavigation();
 
     RefPtr<HistoryItem> topItem = frameLoader.history().createItemTree(m_frame, doClip);
     LOG(BackForward, "WebCoreBackForward - Adding backforward item %p for frame %s", topItem.get(), m_frame.loader().documentLoader()->url().string().ascii().data());

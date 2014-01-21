@@ -42,27 +42,23 @@ class WorkerGlobalScope;
 
 class WorkerRuntimeAgent : public InspectorRuntimeAgent {
 public:
-    static PassOwnPtr<WorkerRuntimeAgent> create(InstrumentingAgents* instrumentingAgents, Inspector::InjectedScriptManager* injectedScriptManager, WorkerGlobalScope* context)
-    {
-        return adoptPtr(new WorkerRuntimeAgent(instrumentingAgents, injectedScriptManager, context));
-    }
+    WorkerRuntimeAgent(InstrumentingAgents*, Inspector::InjectedScriptManager*, WorkerGlobalScope*);
     virtual ~WorkerRuntimeAgent();
 
-    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) OVERRIDE;
-    virtual void willDestroyFrontendAndBackend() OVERRIDE;
+    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
+    virtual void willDestroyFrontendAndBackend() override;
 
     // Protocol commands.
-    virtual void run(ErrorString*);
+    virtual void run(ErrorString*) override;
 
 #if ENABLE(JAVASCRIPT_DEBUGGER)
     void pauseWorkerGlobalScope(WorkerGlobalScope*);
 #endif // ENABLE(JAVASCRIPT_DEBUGGER)
 
 private:
-    WorkerRuntimeAgent(InstrumentingAgents*, Inspector::InjectedScriptManager*, WorkerGlobalScope*);
-    virtual Inspector::InjectedScript injectedScriptForEval(ErrorString*, const int* executionContextId);
-    virtual void muteConsole();
-    virtual void unmuteConsole();
+    virtual Inspector::InjectedScript injectedScriptForEval(ErrorString*, const int* executionContextId) override;
+    virtual void muteConsole() override;
+    virtual void unmuteConsole() override;
     WorkerGlobalScope* m_workerGlobalScope;
     RefPtr<Inspector::InspectorRuntimeBackendDispatcher> m_backendDispatcher;
     bool m_paused;

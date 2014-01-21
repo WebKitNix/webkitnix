@@ -45,11 +45,6 @@ namespace WebCore {
 
 static const char* const UserInitiatedProfileNameHeap = "org.webkit.profiles.user-initiated";
 
-PassOwnPtr<InspectorHeapProfilerAgent> InspectorHeapProfilerAgent::create(InstrumentingAgents* instrumentingAgents, PageInjectedScriptManager* injectedScriptManager)
-{
-    return adoptPtr(new InspectorHeapProfilerAgent(instrumentingAgents, injectedScriptManager));
-}
-
 InspectorHeapProfilerAgent::InspectorHeapProfilerAgent(InstrumentingAgents* instrumentingAgents, PageInjectedScriptManager* injectedScriptManager)
     : InspectorAgentBase(ASCIILiteral("HeapProfiler"), instrumentingAgents)
     , m_injectedScriptManager(injectedScriptManager)
@@ -61,7 +56,7 @@ InspectorHeapProfilerAgent::InspectorHeapProfilerAgent(InstrumentingAgents* inst
 
 InspectorHeapProfilerAgent::~InspectorHeapProfilerAgent()
 {
-    m_instrumentingAgents->setInspectorHeapProfilerAgent(0);
+    m_instrumentingAgents->setInspectorHeapProfilerAgent(nullptr);
 }
 
 void InspectorHeapProfilerAgent::resetState()
@@ -133,8 +128,8 @@ void InspectorHeapProfilerAgent::getHeapSnapshot(ErrorString* errorString, int r
     public:
         OutputStream(InspectorHeapProfilerFrontendDispatcher* frontend, unsigned uid)
             : m_frontendDispatcher(frontend), m_uid(uid) { }
-        void Write(const String& chunk) { m_frontendDispatcher->addHeapSnapshotChunk(m_uid, chunk); }
-        void Close() { m_frontendDispatcher->finishHeapSnapshot(m_uid); }
+        void Write(const String& chunk) override { m_frontendDispatcher->addHeapSnapshotChunk(m_uid, chunk); }
+        void Close() override { m_frontendDispatcher->finishHeapSnapshot(m_uid); }
     private:
         InspectorHeapProfilerFrontendDispatcher* m_frontendDispatcher;
         int m_uid;
@@ -166,16 +161,16 @@ void InspectorHeapProfilerAgent::takeHeapSnapshot(ErrorString*, const bool* repo
     public:
         explicit HeapSnapshotProgress(InspectorHeapProfilerFrontendDispatcher* frontend)
             : m_frontendDispatcher(frontend) { }
-        void Start(int totalWork)
+        void Start(int totalWork) override
         {
             m_totalWork = totalWork;
         }
-        void Worked(int workDone)
+        void Worked(int workDone) override
         {
             if (m_frontendDispatcher)
                 m_frontendDispatcher->reportHeapSnapshotProgress(workDone, m_totalWork);
         }
-        void Done() { }
+        void Done() override { }
         bool isCanceled() { return false; }
     private:
         InspectorHeapProfilerFrontendDispatcher* m_frontendDispatcher;

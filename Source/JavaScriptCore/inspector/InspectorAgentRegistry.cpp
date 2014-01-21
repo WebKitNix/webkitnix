@@ -29,11 +29,17 @@
 
 #if ENABLE(INSPECTOR)
 
+#include "InspectorAgentBase.h"
+
 namespace Inspector {
 
-void InspectorAgentRegistry::append(PassOwnPtr<InspectorAgentBase> agent)
+InspectorAgentRegistry::InspectorAgentRegistry()
 {
-    m_agents.append(agent);
+}
+
+void InspectorAgentRegistry::append(std::unique_ptr<InspectorAgentBase> agent)
+{
+    m_agents.append(std::move(agent));
 }
 
 void InspectorAgentRegistry::didCreateFrontendAndBackend(InspectorFrontendChannel* frontendChannel, InspectorBackendDispatcher* backendDispatcher)

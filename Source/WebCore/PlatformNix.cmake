@@ -23,8 +23,6 @@ list(APPEND WebCore_SOURCES
 
     html/shadow/MediaControlsNix.cpp
 
-    page/TouchAdjustment.cpp
-
     page/nix/EventHandlerNix.cpp
     page/nix/DragControllerNix.cpp
 

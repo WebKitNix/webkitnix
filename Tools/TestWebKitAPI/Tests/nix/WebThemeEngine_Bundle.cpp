@@ -53,47 +53,47 @@ static void fillRect(Canvas *canvas, const Rect& rect, const Color& color)
 }
 
 class TestThemeEngine : public ThemeEngine {
-    Color activeSelectionBackgroundColor() const OVERRIDE { return Color::black; }
-    Color activeSelectionForegroundColor() const OVERRIDE { return Color::black; }
-    Color inactiveSelectionBackgroundColor() const OVERRIDE { return Color::black; }
-    Color inactiveSelectionForegroundColor() const OVERRIDE { return Color::black; }
+    Color activeSelectionBackgroundColor() const override { return Color::black; }
+    Color activeSelectionForegroundColor() const override { return Color::black; }
+    Color inactiveSelectionBackgroundColor() const override { return Color::black; }
+    Color inactiveSelectionForegroundColor() const override { return Color::black; }
 
     // List box selection colors
-    Color activeListBoxSelectionBackgroundColor() const OVERRIDE { return Color::black; }
-    Color activeListBoxSelectionForegroundColor() const OVERRIDE { return Color::black; }
-    Color inactiveListBoxSelectionBackgroundColor() const OVERRIDE { return Color::black; }
-    Color inactiveListBoxSelectionForegroundColor() const OVERRIDE { return Color::black; }
+    Color activeListBoxSelectionBackgroundColor() const override { return Color::black; }
+    Color activeListBoxSelectionForegroundColor() const override { return Color::black; }
+    Color inactiveListBoxSelectionBackgroundColor() const override { return Color::black; }
+    Color inactiveListBoxSelectionForegroundColor() const override { return Color::black; }
 
-    Color activeTextSearchHighlightColor() const OVERRIDE { return Color::black; }
-    Color inactiveTextSearchHighlightColor() const OVERRIDE { return Color::black; }
+    Color activeTextSearchHighlightColor() const override { return Color::black; }
+    Color inactiveTextSearchHighlightColor() const override { return Color::black; }
 
-    Color focusRingColor() const OVERRIDE { return Color::black; }
+    Color focusRingColor() const override { return Color::black; }
 
-    Color tapHighlightColor() const OVERRIDE { return Color::black; }
+    Color tapHighlightColor() const override { return Color::black; }
 
-    void paintButton(Canvas* canvas, State, const Rect& rect, const ButtonExtraParams&) const OVERRIDE
+    void paintButton(Canvas* canvas, State, const Rect& rect, const ButtonExtraParams&) const override
     {
         fillRect(canvas, rect, Color::red);
     }
 
-    void paintTextField(Canvas*, State, const Rect&) const OVERRIDE
+    void paintTextField(Canvas*, State, const Rect&) const override
     {
     }
 
-    Size getCheckboxSize() const OVERRIDE
+    Size getCheckboxSize() const override
     {
         return Size();
     }
-    void paintCheckbox(Canvas*, State, const Rect&, const ButtonExtraParams&) const OVERRIDE { }
-    Size getRadioSize() const OVERRIDE
+    void paintCheckbox(Canvas*, State, const Rect&, const ButtonExtraParams&) const override { }
+    Size getRadioSize() const override
     {
         return Size();
     }
-    void paintRadio(Canvas*, State, const Rect&, const ButtonExtraParams&) const OVERRIDE { }
-    void paintTextArea(Canvas*, State, const Rect&) const OVERRIDE { }
-    void getMenuListPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const OVERRIDE { }
-    void paintMenuList(Canvas*, State, const Rect&) const OVERRIDE { }
-    void paintProgressBar(Canvas* canvas, State, const Rect& rect, const ProgressBarExtraParams& params) const OVERRIDE
+    void paintRadio(Canvas*, State, const Rect&, const ButtonExtraParams&) const override { }
+    void paintTextArea(Canvas*, State, const Rect&) const override { }
+    void getMenuListPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const override { }
+    void paintMenuList(Canvas*, State, const Rect&) const override { }
+    void paintProgressBar(Canvas* canvas, State, const Rect& rect, const ProgressBarExtraParams& params) const override
     {
         Color red = 0xFFFF0000;
         fillRect(canvas, rect, red);
@@ -103,30 +103,30 @@ class TestThemeEngine : public ThemeEngine {
         progressRect.width *= params.position;
         fillRect(canvas, progressRect, green);
     }
-    double getAnimationRepeatIntervalForProgressBar() const OVERRIDE
+    double getAnimationRepeatIntervalForProgressBar() const override
     {
         return 0;
     }
-    double getAnimationDurationForProgressBar() const OVERRIDE
+    double getAnimationDurationForProgressBar() const override
     {
         return 0;
     }
-    void getInnerSpinButtonPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const OVERRIDE { }
-    void paintInnerSpinButton(Canvas*, State, const Rect&, const InnerSpinButtonExtraParams&) const OVERRIDE { }
-    void paintMeter(Canvas*, State, const Rect&, const MeterExtraParams&) const OVERRIDE { }
-    void paintSliderTrack(Canvas*, State, const Rect&) const OVERRIDE { }
-    void paintSliderThumb(Canvas*, State, const Rect&) const OVERRIDE { }
-    virtual void paintMediaPlayButton(Canvas*, MediaPlayerState, const Rect&) const OVERRIDE { }
-    virtual void paintMediaMuteButton(Canvas*, MediaPlayerState, const Rect&) const OVERRIDE { }
-    virtual void paintMediaSeekBackButton(Canvas*, const Rect&) const OVERRIDE { }
-    virtual void paintMediaSeekForwardButton(Canvas*, const Rect&) const OVERRIDE { }
-    virtual void paintMediaRewindButton(Canvas*, const Rect&) const OVERRIDE { }
+    void getInnerSpinButtonPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const override { }
+    void paintInnerSpinButton(Canvas*, State, const Rect&, const InnerSpinButtonExtraParams&) const override { }
+    void paintMeter(Canvas*, State, const Rect&, const MeterExtraParams&) const override { }
+    void paintSliderTrack(Canvas*, State, const Rect&) const override { }
+    void paintSliderThumb(Canvas*, State, const Rect&) const override { }
+    virtual void paintMediaPlayButton(Canvas*, MediaPlayerState, const Rect&) const override { }
+    virtual void paintMediaMuteButton(Canvas*, MediaPlayerState, const Rect&) const override { }
+    virtual void paintMediaSeekBackButton(Canvas*, const Rect&) const override { }
+    virtual void paintMediaSeekForwardButton(Canvas*, const Rect&) const override { }
+    virtual void paintMediaRewindButton(Canvas*, const Rect&) const override { }
 
 };
 
 class TestThemeEnginePlatform : public Platform {
 public:
-    ThemeEngine* themeEngine() OVERRIDE
+    ThemeEngine* themeEngine() override
     {
         static TestThemeEngine testTheme;
         return &testTheme;
@@ -142,7 +142,7 @@ public:
         Platform::initialize(&platform);
     }
 
-    void didReceiveMessage(WKBundleRef bundle, WKStringRef messageName, WKTypeRef messageBody) OVERRIDE
+    void didReceiveMessage(WKBundleRef bundle, WKStringRef messageName, WKTypeRef messageBody) override
     {
         if (!WKStringIsEqualToUTF8CString(messageName, "Crash"))
             return;

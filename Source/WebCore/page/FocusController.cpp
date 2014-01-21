@@ -203,7 +203,7 @@ Frame& FocusController::focusedOrMainFrame() const
 
 void FocusController::setFocused(bool focused)
 {
-    setViewState(focused ? m_viewState | ViewState::IsFocused : m_viewState & ~ViewState::IsFocused);
+    m_page.setViewState(focused ? m_viewState | ViewState::IsFocused : m_viewState & ~ViewState::IsFocused);
 }
 
 void FocusController::setFocusedInternal(bool focused)
@@ -643,12 +643,12 @@ void FocusController::setViewState(ViewState::Flags viewState)
     if (changed & ViewState::WindowIsActive)
         setActiveInternal(viewState & ViewState::WindowIsActive);
     if (changed & ViewState::IsVisible)
-        setContentIsVisibleInternal(viewState & ViewState::IsVisible);
+        setIsVisibleInternal(viewState & ViewState::IsVisible);
 }
 
 void FocusController::setActive(bool active)
 {
-    setViewState(active ? m_viewState | ViewState::WindowIsActive : m_viewState & ~ViewState::WindowIsActive);
+    m_page.setViewState(active ? m_viewState | ViewState::WindowIsActive : m_viewState & ~ViewState::WindowIsActive);
 }
 
 void FocusController::setActiveInternal(bool active)
@@ -674,12 +674,7 @@ static void contentAreaDidShowOrHide(ScrollableArea* scrollableArea, bool didSho
         scrollableArea->contentAreaDidHide();
 }
 
-void FocusController::setContentIsVisible(bool contentIsVisible)
-{
-    setViewState(contentIsVisible ? m_viewState | ViewState::IsVisible : m_viewState & ~ViewState::IsVisible);
-}
-
-void FocusController::setContentIsVisibleInternal(bool contentIsVisible)
+void FocusController::setIsVisibleInternal(bool contentIsVisible)
 {
     FrameView* view = m_page.mainFrame().view();
     if (!view)

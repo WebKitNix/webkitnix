@@ -43,6 +43,7 @@
 #include <wtf/text/WTFString.h>
 
 namespace Inspector {
+class InspectorAgent;
 class InspectorObject;
 class InspectorFrontendChannel;
 class InspectorBackendDispatcher;
@@ -53,7 +54,6 @@ namespace WebCore {
 class DOMWrapperWorld;
 class Frame;
 class GraphicsContext;
-class InspectorAgent;
 class InspectorApplicationCacheAgent;
 class InspectorClient;
 class InspectorDOMAgent;
@@ -73,22 +73,22 @@ class Node;
 
 struct Highlight;
 
-class InspectorController FINAL : public Inspector::InspectorEnvironment {
+class InspectorController final : public Inspector::InspectorEnvironment {
     WTF_MAKE_NONCOPYABLE(InspectorController);
     WTF_MAKE_FAST_ALLOCATED;
 public:
+    InspectorController(Page&, InspectorClient*);
     virtual ~InspectorController();
 
-    static PassOwnPtr<InspectorController> create(Page*, InspectorClient*);
     void inspectedPageDestroyed();
 
     bool enabled() const;
-    Page* inspectedPage() const;
+    Page& inspectedPage() const;
 
     void show();
     void close();
 
-    void setInspectorFrontendClient(PassOwnPtr<InspectorFrontendClient>);
+    void setInspectorFrontendClient(std::unique_ptr<InspectorFrontendClient>);
     bool hasInspectorFrontendClient() const;
     void didClearWindowObjectInWorld(Frame*, DOMWrapperWorld&);
 
@@ -136,23 +136,21 @@ public:
     void willComposite();
     void didComposite();
 
-    virtual bool developerExtrasEnabled() const OVERRIDE;
-    virtual bool canAccessInspectedScriptState(JSC::ExecState*) const OVERRIDE;
-    virtual Inspector::InspectorFunctionCallHandler functionCallHandler() const OVERRIDE;
-    virtual Inspector::InspectorEvaluateHandler evaluateHandler() const OVERRIDE;
-    virtual void willCallInjectedScriptFunction(JSC::ExecState*, const String& scriptName, int scriptLine) OVERRIDE;
-    virtual void didCallInjectedScriptFunction() OVERRIDE;
+    virtual bool developerExtrasEnabled() const override;
+    virtual bool canAccessInspectedScriptState(JSC::ExecState*) const override;
+    virtual Inspector::InspectorFunctionCallHandler functionCallHandler() const override;
+    virtual Inspector::InspectorEvaluateHandler evaluateHandler() const override;
+    virtual void willCallInjectedScriptFunction(JSC::ExecState*, const String& scriptName, int scriptLine) override;
+    virtual void didCallInjectedScriptFunction() override;
 
 private:
-    InspectorController(Page*, InspectorClient*);
-
     friend InstrumentingAgents* instrumentationForPage(Page*);
 
     RefPtr<InstrumentingAgents> m_instrumentingAgents;
     std::unique_ptr<PageInjectedScriptManager> m_injectedScriptManager;
-    OwnPtr<InspectorOverlay> m_overlay;
+    std::unique_ptr<InspectorOverlay> m_overlay;
 
-    InspectorAgent* m_inspectorAgent;
+    Inspector::InspectorAgent* m_inspectorAgent;
     InspectorDOMAgent* m_domAgent;
     InspectorResourceAgent* m_resourceAgent;
     InspectorPageAgent* m_pageAgent;
@@ -164,9 +162,9 @@ private:
 #endif
 
     RefPtr<Inspector::InspectorBackendDispatcher> m_inspectorBackendDispatcher;
-    OwnPtr<InspectorFrontendClient> m_inspectorFrontendClient;
+    std::unique_ptr<InspectorFrontendClient> m_inspectorFrontendClient;
     Inspector::InspectorFrontendChannel* m_inspectorFrontendChannel;
-    Page* m_page;
+    Page& m_page;
     InspectorClient* m_inspectorClient;
     Inspector::InspectorAgentRegistry m_agents;
     Vector<InspectorInstrumentationCookie, 2> m_injectedScriptInstrumentationCookies;

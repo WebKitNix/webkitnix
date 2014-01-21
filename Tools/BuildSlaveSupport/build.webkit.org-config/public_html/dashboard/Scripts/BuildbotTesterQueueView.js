@@ -151,6 +151,24 @@ BuildbotTesterQueueView.prototype = {
             return content;
         }
 
+        function addFailureInfoLink(rowElement, className, text, url)
+        {
+            var linkElement = document.createElement("a");
+            linkElement.className = className;
+            linkElement.textContent = text;
+            linkElement.href = url;
+            linkElement.target = "_blank";
+            rowElement.appendChild(linkElement);
+        }
+
+        function addFailureInfoText(rowElement, className, text)
+        {
+            var spanElement = document.createElement("span");
+            spanElement.className = className;
+            spanElement.textContent = text;
+            rowElement.appendChild(spanElement);
+        }
+
         var sortedRegressions = iteration.layoutTestResults.regressions.slice().sort(function(a, b) { return (a.path === b.path) ? 0 : (a.path > b.path) ? 1 : -1; });
 
         for (var i = 0, end = sortedRegressions.length; i != end; ++i) {
@@ -163,30 +181,29 @@ BuildbotTesterQueueView.prototype = {
             testPathElement.textContent = test.path;
             rowElement.appendChild(testPathElement);
 
-            if (test.crash) {
-                var failureKindElement = document.createElement("a");
-                failureKindElement.className = "failure-kind-indicator"
-                failureKindElement.textContent = "crash";
-                failureKindElement.href = iteration.queue.buildbot.layoutTestCrashLogForIteration(iteration, test.path);
-                failureKindElement.target = "_blank";
-                rowElement.appendChild(failureKindElement);
+            if (test.crash)
+                addFailureInfoLink(rowElement, "failure-kind-indicator", "crash", iteration.queue.buildbot.layoutTestCrashLogURLForIteration(iteration, test.path));
+
+            if (test.timeout)
+                addFailureInfoText(rowElement, "failure-kind-indicator", "timeout");
+
+            if (test.has_diff) {
+                addFailureInfoLink(rowElement, "additional-link", "diff", iteration.queue.buildbot.layoutTestDiffURLForIteration(iteration, test.path));
+
+                if (iteration.hasPrettyPatch)
+                    addFailureInfoLink(rowElement, "additional-link", "pretty\xa0diff", iteration.queue.buildbot.layoutTestPrettyDiffURLForIteration(iteration, test.path));
             }
 
-            if (test.timeout) {
-                var failureKindElement = document.createElement("span");
-                failureKindElement.className = "failure-kind-indicator"
-                failureKindElement.textContent = "timeout";
-                rowElement.appendChild(failureKindElement);
+            if (test.has_image_diff) {
+                addFailureInfoLink(rowElement, "additional-link", "images", iteration.queue.buildbot.layoutTestImagesURLForIteration(iteration, test.path));
+                addFailureInfoLink(rowElement, "additional-link", "image\xa0diff", iteration.queue.buildbot.layoutTestImageDiffURLForIteration(iteration, test.path));
             }
 
-            if (hasTestHistory) {
-                var testHistoryLink = document.createElement("a");
-                testHistoryLink.className = "test-history-link";
-                testHistoryLink.textContent = "history";
-                testHistoryLink.href = testHistory.historyPageURLForTest(test.path);
-                testHistoryLink.target = "_blank";
-                rowElement.appendChild(testHistoryLink);
-            }
+            if (test.has_stderr)
+                addFailureInfoLink(rowElement, "additional-link", "stderr", iteration.queue.buildbot.layoutTestStderrURLForIteration(iteration, test.path));
+
+            if (hasTestHistory)
+                addFailureInfoLink(rowElement, "test-history-link", "history", testHistory.historyPageURLForTest(test.path));
 
             content.appendChild(rowElement);
         }

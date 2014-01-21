@@ -82,6 +82,7 @@
 #include "StyleResolver.h"
 #include "SubframeLoader.h"
 #include "TextResourceDecoder.h"
+#include "UserContentController.h"
 #include "VisitedLinkState.h"
 #include "VoidCallback.h"
 #include "Widget.h"
@@ -136,13 +137,13 @@ Page::Page(PageClients& pageClients)
     , m_contextMenuController(std::make_unique<ContextMenuController>(*this, *pageClients.contextMenuClient))
 #endif
 #if ENABLE(INSPECTOR)
-    , m_inspectorController(InspectorController::create(this, pageClients.inspectorClient))
+    , m_inspectorController(std::make_unique<InspectorController>(*this, pageClients.inspectorClient))
 #endif
 #if ENABLE(POINTER_LOCK)
     , m_pointerLockController(PointerLockController::create(this))
 #endif
     , m_settings(Settings::create(this))
-    , m_progress(std::make_unique<ProgressTracker>())
+    , m_progress(std::make_unique<ProgressTracker>(*pageClients.progressTrackerClient))
     , m_backForwardController(std::make_unique<BackForwardController>(*this, pageClients.backForwardClient))
     , m_mainFrame(MainFrame::create(*this, *pageClients.loaderClientForMainFrame))
     , m_theme(RenderTheme::themeForPage(this))
@@ -241,6 +242,9 @@ Page::~Page()
 #ifndef NDEBUG
     pageCounter.decrement();
 #endif
+
+    if (m_userContentController)
+        m_userContentController->removePage(*this);
 }
 
 uint64_t Page::renderTreeSize() const
@@ -1600,18 +1604,30 @@ bool Page::isAnyFrameHandlingBeforeUnloadEvent()
     return m_framesHandlingBeforeUnloadEvent;
 }
 
+void Page::setUserContentController(UserContentController* userContentController)
+{
+    if (m_userContentController)
+        m_userContentController->removePage(*this);
+
+    m_userContentController = userContentController;
+
+    if (m_userContentController)
+        m_userContentController->addPage(*this);
+}
+
 Page::PageClients::PageClients()
-    : alternativeTextClient(0)
-    , chromeClient(0)
+    : alternativeTextClient(nullptr)
+    , chromeClient(nullptr)
 #if ENABLE(CONTEXT_MENUS)
-    , contextMenuClient(0)
+    , contextMenuClient(nullptr)
 #endif
-    , editorClient(0)
-    , dragClient(0)
-    , inspectorClient(0)
-    , plugInClient(0)
-    , validationMessageClient(0)
-    , loaderClientForMainFrame(0)
+    , editorClient(nullptr)
+    , dragClient(nullptr)
+    , inspectorClient(nullptr)
+    , plugInClient(nullptr)
+    , progressTrackerClient(nullptr)
+    , validationMessageClient(nullptr)
+    , loaderClientForMainFrame(nullptr)
 {
 }
 

@@ -99,9 +99,6 @@
 
 #if ENABLE(CSS_FILTERS)
 #include "WebKitCSSFilterValue.h"
-#if ENABLE(SVG)
-#include "WebKitCSSSVGDocumentValue.h"
-#endif
 #endif
 
 #if ENABLE(CSS_SHADERS)
@@ -986,10 +983,6 @@ static inline bool isValidKeywordPropertyAndValue(CSSPropertyID propertyId, int 
         if (valueID == CSSValueNone || valueID == CSSValueHorizontal)
             return true;
         break;
-    case CSSPropertyWebkitTextEmphasisPosition:
-        if (valueID == CSSValueOver || valueID == CSSValueUnder)
-            return true;
-        break;
 #if ENABLE(CSS3_TEXT)
     case CSSPropertyWebkitTextJustify:
         // auto | none | inter-word | inter-ideograph | inter-cluster | distribute | kashida
@@ -1159,7 +1152,6 @@ static inline bool isKeywordPropertyID(CSSPropertyID propertyId)
     case CSSPropertyWebkitTextAlignLast:
 #endif // CSS3_TEXT
     case CSSPropertyWebkitTextCombine:
-    case CSSPropertyWebkitTextEmphasisPosition:
 #if ENABLE(CSS3_TEXT)
     case CSSPropertyWebkitTextJustify:
 #endif // CSS3_TEXT
@@ -1803,7 +1795,7 @@ bool CSSParser::parseValue(CSSPropertyID propId, bool important)
     
     CSSValueID id = value->id;
 
-    int num = inShorthand() ? 1 : m_valueList->size();
+    unsigned num = inShorthand() ? 1 : m_valueList->size();
 
     if (id == CSSValueInherit) {
         if (num != 1)
@@ -2142,11 +2134,17 @@ bool CSSParser::parseValue(CSSPropertyID propId, bool important)
         break;
 
     case CSSPropertyLetterSpacing:       // normal | <length> | inherit
-    case CSSPropertyWordSpacing:         // normal | <length> | inherit
         if (id == CSSValueNormal)
             validPrimitive = true;
         else
             validPrimitive = validUnit(value, FLength);
+        break;
+
+    case CSSPropertyWordSpacing:         // normal | <length> | <percentage> | inherit
+        if (id == CSSValueNormal)
+            validPrimitive = true;
+        else
+            validPrimitive = validUnit(value, FLength | FPercent);
         break;
 
     case CSSPropertyTextIndent:
@@ -2918,6 +2916,9 @@ bool CSSParser::parseValue(CSSPropertyID propId, bool important)
     case CSSPropertyWebkitTextEmphasisStyle:
         return parseTextEmphasisStyle(important);
 
+    case CSSPropertyWebkitTextEmphasisPosition:
+        return parseTextEmphasisPosition(important);
+
     case CSSPropertyWebkitTextOrientation:
         // FIXME: For now just support sideways, sideways-right, upright and vertical-right.
         if (id == CSSValueSideways || id == CSSValueSidewaysRight || id == CSSValueVerticalRight || id == CSSValueUpright)
@@ -3065,7 +3066,6 @@ bool CSSParser::parseValue(CSSPropertyID propId, bool important)
     case CSSPropertyWebkitTextAlignLast:
 #endif // CSS3_TEXT
     case CSSPropertyWebkitTextCombine:
-    case CSSPropertyWebkitTextEmphasisPosition:
 #if ENABLE(CSS3_TEXT)
     case CSSPropertyWebkitTextJustify:
 #endif // CSS3_TEXT
@@ -3496,7 +3496,7 @@ bool CSSParser::parse4Values(CSSPropertyID propId, const CSSPropertyID *properti
      * right, bottom, and left, respectively.
      */
 
-    int num = inShorthand() ? 1 : m_valueList->size();
+    unsigned num = inShorthand() ? 1 : m_valueList->size();
 
     ShorthandScope scope(this, propId);
 
@@ -5866,7 +5866,7 @@ PassRefPtr<CSSValue> CSSParser::parseShapeProperty(CSSPropertyID propId)
     CSSParserValue* value = m_valueList->current();
     CSSValueID valueId = value->id;
     RefPtr<CSSPrimitiveValue> keywordValue;
-    RefPtr<CSSBasicShape> shapeValue;
+    RefPtr<CSSPrimitiveValue> shapeValue;
 
     if (valueId == CSSValueNone
         || (valueId == CSSValueOutsideShape && propId == CSSPropertyWebkitShapeInside)) {
@@ -5875,8 +5875,8 @@ PassRefPtr<CSSValue> CSSParser::parseShapeProperty(CSSPropertyID propId)
         return keywordValue.release();
     }
 
-    if (value->unit == CSSPrimitiveValue::CSS_URI) {
-        RefPtr<CSSImageValue> imageValue = CSSImageValue::create(completeURL(value->string));
+    RefPtr<CSSValue> imageValue;
+    if (valueId != CSSValueNone && parseFillImage(m_valueList.get(), imageValue)) {
         m_valueList->next();
         return imageValue.release();
     }
@@ -5902,10 +5902,12 @@ PassRefPtr<CSSValue> CSSParser::parseShapeProperty(CSSPropertyID propId)
             return nullptr;
     }
 
-    if (shapeValue && keywordValue)
-        shapeValue->setLayoutBox(keywordValue.release());
+    ASSERT(!shapeValue || shapeValue->isShape());
 
-    return shapeValue ? cssValuePool().createValue(shapeValue.release()) : keywordValue.release();
+    if (shapeValue && keywordValue)
+        shapeValue->getShapeValue()->setLayoutBox(keywordValue.release());
+
+    return shapeValue ? shapeValue.release() : keywordValue.release();
 }
 #endif
 
@@ -5934,10 +5936,10 @@ PassRefPtr<CSSValue> CSSParser::parseClipPath()
         valueId = value->id;
         if (value->unit == CSSParserValue::Function && !shapeFound) {
             // parseBasicShape already asks for the next value list item.
-            RefPtr<CSSBasicShape> shapeValue = parseBasicShape();
+            RefPtr<CSSPrimitiveValue> shapeValue = parseBasicShape();
             if (!shapeValue)
                 return nullptr;
-            list->append(cssValuePool().createValue(shapeValue.release()));
+            list->append(shapeValue.release());
             shapeFound = true;
         } else if ((isBoxValue(valueId) || valueId == CSSValueBoundingBox) && !boxFound) {
             list->append(parseValidPrimitive(valueId, value));
@@ -5966,7 +5968,7 @@ static bool isDeprecatedBasicShape(CSSParserValueList* args)
     return false;
 }
 
-PassRefPtr<CSSBasicShape> CSSParser::parseBasicShape()
+PassRefPtr<CSSPrimitiveValue> CSSParser::parseBasicShape()
 {
     CSSParserValue* value = m_valueList->current();
     ASSERT(value->unit == CSSParserValue::Function);
@@ -5999,7 +6001,7 @@ PassRefPtr<CSSBasicShape> CSSParser::parseBasicShape()
         return nullptr;
 
     m_valueList->next();
-    return shape.release();
+    return cssValuePool().createValue(shape.release());
 }
 
 // [ 'font-style' || 'font-variant' || 'font-weight' ]? 'font-size' [ / 'line-height' ]? 'font-family'
@@ -8420,14 +8422,15 @@ bool CSSParser::parseRadialGradient(CSSParserValueList* valueList, RefPtr<CSSVal
             return false;
 
         parseFillPosition(args, centerX, centerY);
-        ASSERT(centerX->isPrimitiveValue());
-        ASSERT(centerY->isPrimitiveValue());
         if (!(centerX && centerY))
             return false;
 
         a = args->current();
         if (!a)
             return false;
+
+        ASSERT(centerX->isPrimitiveValue());
+        ASSERT(centerY->isPrimitiveValue());
         result->setFirstX(toCSSPrimitiveValue(centerX.get()));
         result->setFirstY(toCSSPrimitiveValue(centerY.get()));
         // Right now, CSS radial gradients have the same start and end centers.
@@ -9818,7 +9821,7 @@ bool CSSParser::parseFilter(CSSParserValueList* valueList, RefPtr<CSSValue>& res
         if (value->unit == CSSPrimitiveValue::CSS_URI) {
 #if ENABLE(SVG)
             RefPtr<WebKitCSSFilterValue> referenceFilterValue = WebKitCSSFilterValue::create(WebKitCSSFilterValue::ReferenceFilterOperation);
-            referenceFilterValue->append(WebKitCSSSVGDocumentValue::create(value->string));
+            referenceFilterValue->append(CSSPrimitiveValue::create(value->string, CSSPrimitiveValue::CSS_URI));
             list->append(referenceFilterValue.release());
 #endif
         } else {
@@ -9888,15 +9891,6 @@ bool CSSParser::cssGridLayoutEnabled() const
 }
 
 #if ENABLE(CSS_REGIONS)
-bool CSSParser::parseFlowThread(const String& flowName)
-{
-    setupParser("@-webkit-decls{-webkit-flow-into:", flowName, "}");
-    cssyyparse(this);
-
-    m_rule = 0;
-
-    return ((m_parsedProperties.size() == 1) && (m_parsedProperties.first().id() == CSSPropertyWebkitFlowInto));
-}
 
 // none | <ident>
 bool CSSParser::parseFlowThread(CSSPropertyID propId, bool important)
@@ -10190,6 +10184,52 @@ bool CSSParser::parseTextEmphasisStyle(bool important)
     }
 
     return false;
+}
+
+bool CSSParser::parseTextEmphasisPosition(bool important)
+{
+    bool foundOverOrUnder = false;
+    CSSValueID overUnderValueID = CSSValueOver;
+    bool foundLeftOrRight = false;
+    CSSValueID leftRightValueID = CSSValueRight;
+    for (CSSParserValue* value = m_valueList->current(); value; value = m_valueList->next()) {
+        switch (value->id) {
+        case CSSValueOver:
+            if (foundOverOrUnder)
+                return false;
+            foundOverOrUnder = true;
+            overUnderValueID = CSSValueOver;
+            break;
+        case CSSValueUnder:
+            if (foundOverOrUnder)
+                return false;
+            foundOverOrUnder = true;
+            overUnderValueID = CSSValueUnder;
+            break;
+        case CSSValueLeft:
+            if (foundLeftOrRight)
+                return false;
+            foundLeftOrRight = true;
+            leftRightValueID = CSSValueLeft;
+            break;
+        case CSSValueRight:
+            if (foundLeftOrRight)
+                return false;
+            foundLeftOrRight = true;
+            leftRightValueID = CSSValueRight;
+            break;
+        default:
+            return false;
+        }
+    }
+    if (!foundOverOrUnder)
+        return false;
+    RefPtr<CSSValueList> list = CSSValueList::createSpaceSeparated();
+    list->append(cssValuePool().createIdentifierValue(overUnderValueID));
+    if (foundLeftOrRight)
+        list->append(cssValuePool().createIdentifierValue(leftRightValueID));
+    addProperty(CSSPropertyWebkitTextEmphasisPosition, list, important);
+    return true;
 }
 
 PassRefPtr<CSSValue> CSSParser::parseTextIndent()

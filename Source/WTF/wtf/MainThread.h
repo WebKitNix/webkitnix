@@ -42,14 +42,9 @@ typedef void MainThreadFunction(void*);
 WTF_EXPORT_PRIVATE void initializeMainThread();
 
 WTF_EXPORT_PRIVATE void callOnMainThread(MainThreadFunction*, void* context);
-WTF_EXPORT_PRIVATE void callOnMainThreadAndWait(MainThreadFunction*, void* context);
 WTF_EXPORT_PRIVATE void cancelCallOnMainThread(MainThreadFunction*, void* context);
 
 WTF_EXPORT_PRIVATE void callOnMainThread(std::function<void ()>);
-
-// FIXME: This symbol is used by Safari and should be removed once Safari is no longer using it.
-template<typename> class Function;
-WTF_EXPORT_PRIVATE void callOnMainThread(const Function<void ()>&);
 
 WTF_EXPORT_PRIVATE void setMainThreadCallbacksPaused(bool paused);
 
@@ -98,7 +93,6 @@ void initializeMainThreadToProcessMainThreadPlatform();
 } // namespace WTF
 
 using WTF::callOnMainThread;
-using WTF::callOnMainThreadAndWait;
 using WTF::cancelCallOnMainThread;
 using WTF::setMainThreadCallbacksPaused;
 using WTF::isMainThread;

@@ -28,6 +28,7 @@
 
 #include "MediaSession.h"
 #include "Settings.h"
+#include <map>
 #include <wtf/Vector.h>
 
 namespace WebCore {
@@ -38,6 +39,7 @@ class MediaSession;
 class MediaSessionManager {
 public:
     static MediaSessionManager& sharedManager();
+    virtual ~MediaSessionManager() { }
 
     bool has(MediaSession::MediaType) const;
     int count(MediaSession::MediaType) const;
@@ -45,15 +47,34 @@ public:
     void beginInterruption();
     void endInterruption(MediaSession::EndInterruptionFlags);
 
+    enum SessionRestrictionFlags {
+        NoRestrictions = 0,
+        ConcurrentPlaybackNotPermitted = 1 << 0,
+        InlineVideoPlaybackRestricted = 1 << 1,
+        MetadataPreloadingNotPermitted = 1 << 2,
+        AutoPreloadingNotPermitted = 1 << 3,
+    };
+    typedef unsigned SessionRestrictions;
+    
+    void addRestriction(MediaSession::MediaType, SessionRestrictions);
+    void removeRestriction(MediaSession::MediaType, SessionRestrictions);
+    SessionRestrictions restrictions(MediaSession::MediaType);
+    virtual void resetRestrictions();
+
+    void sessionWillBeginPlayback(const MediaSession&) const;
+    bool sessionRestrictsInlineVideoPlayback(const MediaSession&) const;
+
 protected:
     friend class MediaSession;
+    explicit MediaSessionManager();
+
     void addSession(MediaSession&);
     void removeSession(MediaSession&);
 
 private:
-    MediaSessionManager();
-
     void updateSessionState();
+
+    SessionRestrictions m_restrictions[MediaSession::WebAudio + 1];
 
     Vector<MediaSession*> m_sessions;
     int m_interruptions;

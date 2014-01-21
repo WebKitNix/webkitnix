@@ -41,6 +41,7 @@
 #import "WebNSURLExtras.h"
 #import "WebSystemInterface.h"
 #import <WebCore/ApplicationCacheStorage.h>
+#import <WebCore/AudioSession.h>
 #import <WebCore/NetworkStorageSession.h>
 #import <WebCore/ResourceHandle.h>
 #import <runtime/InitializeThreading.h>
@@ -48,9 +49,14 @@
 #import <wtf/RetainPtr.h>
 #import <wtf/RunLoop.h>
 
+enum {
+    NSHTTPCookieAcceptPolicyExclusivelyFromMainDocumentDomain = 3
+};
+
 using namespace WebCore;
 
 #if PLATFORM(IOS)
+#import <AudioToolbox/AudioSession.h>
 #import <WebCore/GraphicsContext.h>
 #import <WebCore/ImageSource.h>
 #import <WebCore/WebCoreThreadMessage.h>
@@ -67,6 +73,8 @@ enum { WebPreferencesVersion = 1 };
 
 static WebPreferences *_standardPreferences;
 static NSMutableDictionary *webPreferencesInstances;
+
+static unsigned webPreferencesInstanceCountWithPrivateBrowsingEnabled;
 
 static bool contains(const char* const array[], int count, const char* item)
 {
@@ -168,7 +176,8 @@ struct WebPreferencesPrivate
 {
 public:
     WebPreferencesPrivate()
-    : autosaves(NO)
+    : inPrivateBrowsing(NO)
+    , autosaves(NO)
     , automaticallyDetectsCacheModel(NO)
     , numWebViews(0)
 #if PLATFORM(IOS)
@@ -185,6 +194,7 @@ public:
 #endif
 
     RetainPtr<NSMutableDictionary> values;
+    BOOL inPrivateBrowsing;
     RetainPtr<NSString> identifier;
     BOOL autosaves;
     BOOL automaticallyDetectsCacheModel;
@@ -262,6 +272,8 @@ public:
 
     [[self class] _setInstance:self forIdentifier:_private->identifier.get()];
 
+    [self _updatePrivateBrowsingStateTo:[self privateBrowsingEnabled]];
+
 #if PLATFORM(IOS)
     if (sendChangeNotification) {
         [self _postPreferencesChangedNotification];
@@ -318,6 +330,7 @@ public:
         self = [instance retain];
     } else {
         [[self class] _setInstance:self forIdentifier:_private->identifier.get()];
+        [self _updatePrivateBrowsingStateTo:[self privateBrowsingEnabled]];
     }
 
     return self;
@@ -358,6 +371,7 @@ public:
         [_standardPreferences setAutosaves:YES];
     }
 #else
+    // FIXME: This check is necessary to avoid recursion (see <rdar://problem/9564337>), but it also makes _standardPreferences construction not thread safe.
     if (_standardPreferences)
         return _standardPreferences;
 
@@ -517,6 +531,7 @@ public:
         [NSNumber numberWithBool:NO],   WebKitMediaPlaybackAllowsInlinePreferenceKey,
         [NSNumber numberWithBool:YES],  WebKitMediaPlaybackAllowsAirPlayPreferenceKey,
         [NSNumber numberWithUnsignedInt:AudioSession::None],  WebKitAudioSessionCategoryOverride,
+        [NSNumber numberWithBool:NO],   WebKitAVKitEnabled,
         [NSNumber numberWithLongLong:WebCore::ApplicationCacheStorage::noQuota()], WebKitApplicationCacheTotalQuota,
 
         // Per-Origin Quota on iOS is 25MB. When the quota is reached for a particular origin
@@ -598,6 +613,8 @@ public:
 
 - (void)dealloc
 {
+    [self _updatePrivateBrowsingStateTo:NO];
+
     delete _private;
     [super dealloc];
 }
@@ -1070,14 +1087,38 @@ public:
 }
 #endif
 
-- (void)setPrivateBrowsingEnabled:(BOOL)flag
+- (void)setPrivateBrowsingEnabled:(BOOL)enabled
 {
-    [self _setBoolValue:flag forKey:WebKitPrivateBrowsingEnabledPreferenceKey];
+    [self _updatePrivateBrowsingStateTo:enabled];
+    [self _setBoolValue:enabled forKey:WebKitPrivateBrowsingEnabledPreferenceKey];
 }
 
 - (BOOL)privateBrowsingEnabled
 {
-    return [self _boolValueForKey:WebKitPrivateBrowsingEnabledPreferenceKey];
+    // Changes to private browsing defaults do not have effect on existing WebPreferences, and must be done through -setPrivateBrowsingEnabled.
+    // This is needed to accurately track private browsing sessions in the process.
+    return _private->inPrivateBrowsing;
+}
+
+- (void)_updatePrivateBrowsingStateTo:(BOOL)enabled
+{
+    if (!_private) {
+        ASSERT(!enabled);
+        return;
+    }
+
+    if (enabled == _private->inPrivateBrowsing)
+        return;
+    if (enabled > _private->inPrivateBrowsing) {
+        WebFrameNetworkingContext::ensurePrivateBrowsingSession();
+        ++webPreferencesInstanceCountWithPrivateBrowsingEnabled;
+    } else {
+        ASSERT(webPreferencesInstanceCountWithPrivateBrowsingEnabled);
+        --webPreferencesInstanceCountWithPrivateBrowsingEnabled;
+        if (!webPreferencesInstanceCountWithPrivateBrowsingEnabled)
+            WebFrameNetworkingContext::destroyPrivateBrowsingSession();
+    }
+    _private->inPrivateBrowsing = enabled;
 }
 
 - (void)setUsesPageCache:(BOOL)usesPageCache
@@ -2178,6 +2219,16 @@ static NSString *classIBCreatorID = nil;
     [self _setUnsignedIntValue:override forKey:WebKitAudioSessionCategoryOverride];
 }
 
+- (BOOL)avKitEnabled
+{
+    return [self _boolValueForKey:WebKitAVKitEnabled];
+}
+
+- (void)setAVKitEnabled:(bool)flag
+{
+    [self _setBoolValue:flag forKey:WebKitAVKitEnabled];
+}
+
 - (BOOL)networkDataUsageTrackingEnabled
 {
     return [self _boolValueForKey:WebKitNetworkDataUsageTrackingEnabledPreferenceKey];
@@ -2268,22 +2319,31 @@ static NSString *classIBCreatorID = nil;
             _private->values = adoptNS([[NSMutableDictionary alloc] init]);
     });
 
+    [self _updatePrivateBrowsingStateTo:[self privateBrowsingEnabled]];
+
     // Tell any live WebViews to refresh their preferences
     [self _postPreferencesChangedNotification];
 }
 
 - (void)_synchronizeWebStoragePolicyWithCookiePolicy
 {
+    // FIXME: This should be done in clients, WebKit shouldn't be making such policy decisions.
+
     NSHTTPCookieAcceptPolicy cookieAcceptPolicy = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookieAcceptPolicy];
     WebStorageBlockingPolicy storageBlockingPolicy;
-    switch (cookieAcceptPolicy) {
+    switch (static_cast<unsigned>(cookieAcceptPolicy)) {
     case NSHTTPCookieAcceptPolicyAlways:
         storageBlockingPolicy = WebAllowAllStorage;
         break;
     case NSHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain:
+    case NSHTTPCookieAcceptPolicyExclusivelyFromMainDocumentDomain:
         storageBlockingPolicy = WebBlockThirdPartyStorage;
         break;
     case NSHTTPCookieAcceptPolicyNever:
+        storageBlockingPolicy = WebBlockAllStorage;
+        break;
+    default:
+        ASSERT_NOT_REACHED();
         storageBlockingPolicy = WebBlockAllStorage;
         break;
     }    
@@ -2429,6 +2489,7 @@ static bool needsScreenFontsEnabledQuirk()
 {
 #if PLATFORM(IOS)
     // We don't want to write the setting out, so we just reset the default instead of storing the new setting.
+    // FIXME: This code removes any defaults previously registered by client process, which is not appropriate for this method to do.
     NSDictionary *dict = [NSDictionary dictionaryWithObject:[NSNumber numberWithInt:storageBlockingPolicy] forKey:WebKitStorageBlockingPolicyKey];
     [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
 #else

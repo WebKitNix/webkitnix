@@ -89,7 +89,7 @@ void InspectorLayerTreeAgent::enable(ErrorString*)
 
 void InspectorLayerTreeAgent::disable(ErrorString*)
 {
-    m_instrumentingAgents->setInspectorLayerTreeAgent(0);
+    m_instrumentingAgents->setInspectorLayerTreeAgent(nullptr);
 }
 
 void InspectorLayerTreeAgent::layerTreeDidChange()
@@ -307,6 +307,9 @@ void InspectorLayerTreeAgent::reasonsForCompositingLayer(ErrorString* errorStrin
 
     if (reasonsBitmask & CompositingReasonRoot)
         compositingReasons->setRoot(true);
+
+    if (reasonsBitmask & CompositingReasonBlending)
+        compositingReasons->setBlending(true);
 }
 
 String InspectorLayerTreeAgent::bind(const RenderLayer* layer)
