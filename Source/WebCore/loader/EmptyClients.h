@@ -195,6 +195,10 @@ public:
     virtual void AXFinishFrameLoad() override { }
 #endif
 
+#if PLATFORM(NIX)
+    virtual FloatRect screenRect() const override { return FloatRect(); }
+#endif
+
 #if PLATFORM(IOS)
 #if ENABLE(TOUCH_EVENTS)
     virtual void didPreventDefaultForEvent() override { }

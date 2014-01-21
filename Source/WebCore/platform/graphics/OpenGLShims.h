@@ -20,8 +20,12 @@
 #ifndef OpenGLShims_h
 #define OpenGLShims_h
 
+#if PLATFORM(NIX) && USE(OPENGL_ES_2)
+#include <GLES2/gl2.h>
+#else
 #include <GL/gl.h>
 #include <GL/glext.h>
+#endif
 
 #if defined(GL_ES_VERSION_2_0)
 // Some openGL ES systems miss this typedef.

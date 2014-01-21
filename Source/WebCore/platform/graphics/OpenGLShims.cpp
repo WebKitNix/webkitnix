@@ -26,6 +26,10 @@
 #include <dlfcn.h>
 #endif
 
+#if PLATFORM(NIX) && USE(EGL)
+#include <EGL/egl.h>
+#endif
+
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
@@ -41,6 +45,11 @@ OpenGLFunctionTable* openGLFunctionTable()
 static void* getProcAddress(const char* procName)
 {
     return GetProcAddress(GetModuleHandleA("libGLESv2"), procName);
+}
+#elif PLATFORM(NIX) && USE(EGL)
+static void* getProcAddress(const char* procName)
+{
+    return reinterpret_cast<void*>(eglGetProcAddress(procName));
 }
 #else
 typedef void* (*glGetProcAddressType) (const char* procName);
@@ -99,8 +108,18 @@ static void* lookupOpenGLFunctionAddress(const char* functionName, bool* success
     return target;
 }
 
+#if PLATFORM(NIX) && USE(OPENGL_ES_2)
+
+// With Angle only EGL/GLES2 extensions are available through eglGetProcAddress, not the regular standardized functions.
+#define ASSIGN_FUNCTION_TABLE_ENTRY(FunctionName, success) \
+    openGLFunctionTable()->FunctionName = reinterpret_cast<FunctionName##Type>(::FunctionName)
+
+#else
+
 #define ASSIGN_FUNCTION_TABLE_ENTRY(FunctionName, success) \
     openGLFunctionTable()->FunctionName = reinterpret_cast<FunctionName##Type>(lookupOpenGLFunctionAddress(#FunctionName, &success))
+
+#endif
 
 #define ASSIGN_FUNCTION_TABLE_ENTRY_EXT(FunctionName) \
     openGLFunctionTable()->FunctionName = reinterpret_cast<FunctionName##Type>(lookupOpenGLFunctionAddress(#FunctionName))
