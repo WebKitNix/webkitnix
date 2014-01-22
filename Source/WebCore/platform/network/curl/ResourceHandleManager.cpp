@@ -815,8 +815,9 @@ void ResourceHandleManager::dispatchSynchronousJob(ResourceHandle* job)
     // curl_easy_perform blocks until the transfert is finished.
     CURLcode ret =  curl_easy_perform(handle->m_handle);
 
-    if (ret != 0) {
+    if (ret != CURLE_OK) {
         ResourceError error(String(handle->m_url), ret, String(handle->m_url), String(curl_easy_strerror(ret)));
+        error.setSSLErrors(handle->m_sslErrors);
         handle->client()->didFail(job, error);
     }
 
@@ -933,6 +934,7 @@ void ResourceHandleManager::initializeHandle(ResourceHandle* job)
     curl_easy_setopt(d->m_handle, CURLOPT_DNS_CACHE_TIMEOUT, 60 * 5); // 5 minutes
     curl_easy_setopt(d->m_handle, CURLOPT_PROTOCOLS, allowedProtocols);
     curl_easy_setopt(d->m_handle, CURLOPT_REDIR_PROTOCOLS, allowedProtocols);
+    setSSLClientCertificate(job);
 
     if (ignoreSSLErrors)
         curl_easy_setopt(d->m_handle, CURLOPT_SSL_VERIFYPEER, false);

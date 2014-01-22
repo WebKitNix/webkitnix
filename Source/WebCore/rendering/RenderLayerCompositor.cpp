@@ -1288,7 +1288,7 @@ void RenderLayerCompositor::computeRegionCompositingRequirements(RenderNamedFlow
     }
 
     if (overlapMap)
-        overlapMap->geometryMap().popMappingsToAncestor(region->layerOwner());
+        overlapMap->geometryMap().popMappingsToAncestor(&region->layerOwner());
 }
 
 void RenderLayerCompositor::setCompositingParent(RenderLayer& childLayer, RenderLayer* parentLayer)
@@ -1496,18 +1496,9 @@ bool RenderLayerCompositor::hasCoordinatedScrolling() const
     return scrollingCoordinator && scrollingCoordinator->coordinatesScrollingForFrameView(&m_renderView.frameView());
 }
 
-void RenderLayerCompositor::frameViewDidScroll()
+void RenderLayerCompositor::updateScrollLayerPosition()
 {
-    if (!m_scrollLayer)
-        return;
-
-    // If there's a scrolling coordinator that manages scrolling for this frame view,
-    // it will also manage updating the scroll layer position.
-    if (hasCoordinatedScrolling()) {
-        // We have to schedule a flush in order for the main TiledBacking to update its tile coverage.
-        scheduleLayerFlushNow();
-        return;
-    }
+    ASSERT(m_scrollLayer);
 
     FrameView& frameView = m_renderView.frameView();
     IntPoint scrollPosition = frameView.scrollPosition();
@@ -1522,6 +1513,22 @@ void RenderLayerCompositor::frameViewDidScroll()
 
     if (GraphicsLayer* fixedBackgroundLayer = fixedRootBackgroundLayer())
         fixedBackgroundLayer->setPosition(IntPoint(frameView.scrollOffsetForFixedPosition()));
+}
+
+void RenderLayerCompositor::frameViewDidScroll()
+{
+    if (!m_scrollLayer)
+        return;
+
+    // If there's a scrolling coordinator that manages scrolling for this frame view,
+    // it will also manage updating the scroll layer position.
+    if (hasCoordinatedScrolling()) {
+        // We have to schedule a flush in order for the main TiledBacking to update its tile coverage.
+        scheduleLayerFlushNow();
+        return;
+    }
+
+    updateScrollLayerPosition();
 }
 
 void RenderLayerCompositor::frameViewDidAddOrRemoveScrollbars()
@@ -2557,11 +2564,7 @@ bool RenderLayerCompositor::requiresCompositingForPosition(RenderLayerModelObjec
     }
 
     // Fixed position elements that are invisible in the current view don't get their own layer.
-#if PLATFORM(IOS)
-    LayoutRect viewBounds = m_renderView.frameView().customFixedPositionLayoutRect();
-#else
     LayoutRect viewBounds = m_renderView.frameView().viewportConstrainedVisibleContentRect();
-#endif
     LayoutRect layerBounds = layer.calculateLayerBounds(&layer, 0, RenderLayer::UseLocalClipRectIfPossible | RenderLayer::IncludeLayerFilterOutsets | RenderLayer::UseFragmentBoxes
         | RenderLayer::ExcludeHiddenDescendants | RenderLayer::DontConstrainForMask | RenderLayer::IncludeCompositedDescendants);
     // Map to m_renderView to ignore page scale.
@@ -3139,8 +3142,14 @@ void RenderLayerCompositor::ensureRootLayer()
             m_clipLayer->addChild(m_scrollLayer.get());
             m_scrollLayer->addChild(m_rootContentLayer.get());
 
-            frameViewDidChangeSize();
-            frameViewDidScroll();
+            m_clipLayer->setSize(m_renderView.frameView().unscaledVisibleContentSize());
+
+            updateOverflowControlsLayers();
+
+            if (hasCoordinatedScrolling())
+                scheduleLayerFlush(true);
+            else
+                updateScrollLayerPosition();
         }
     } else {
         if (m_overflowControlsHostLayer) {
@@ -3385,16 +3394,10 @@ FixedPositionViewportConstraints RenderLayerCompositor::computeFixedViewportCons
 {
     ASSERT(layer.isComposited());
 
-#if PLATFORM(IOS)
-    LayoutRect viewportRect = m_renderView.frameView().customFixedPositionLayoutRect();
-#else
+    GraphicsLayer* graphicsLayer = layer.backing()->graphicsLayer();
     LayoutRect viewportRect = m_renderView.frameView().viewportConstrainedVisibleContentRect();
-#endif
 
     FixedPositionViewportConstraints constraints;
-
-    GraphicsLayer* graphicsLayer = layer.backing()->graphicsLayer();
-
     constraints.setLayerPositionAtLastLayout(graphicsLayer->position());
     constraints.setViewportRectAtLastLayout(viewportRect);
 
@@ -3431,12 +3434,7 @@ StickyPositionViewportConstraints RenderLayerCompositor::computeStickyViewportCo
     ASSERT(!layer.enclosingOverflowClipLayer(ExcludeSelf));
 #endif
 
-#if PLATFORM(IOS)
-    LayoutRect viewportRect = m_renderView.frameView().customFixedPositionLayoutRect();
-#else
     LayoutRect viewportRect = m_renderView.frameView().viewportConstrainedVisibleContentRect();
-#endif
-
     RenderBoxModelObject& renderer = toRenderBoxModelObject(layer.renderer());
 
     StickyPositionViewportConstraints constraints;

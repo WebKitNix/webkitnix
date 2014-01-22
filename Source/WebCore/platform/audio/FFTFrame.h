@@ -183,7 +183,7 @@ private:
 #endif // USE(WEBAUDIO_IPP)
 
 #if PLATFORM(NIX)
-    OwnPtr<Nix::FFTFrame> m_fftFrame;
+    std::unique_ptr<Nix::FFTFrame> m_fftFrame;
 #endif // PLATFORM(NIX)
 
 #if USE(WEBAUDIO_OPENMAX_DL_FFT)

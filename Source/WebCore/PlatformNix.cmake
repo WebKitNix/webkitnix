@@ -313,6 +313,7 @@ else ()
         platform/network/soup/ResourceRequestSoup.cpp
         platform/network/soup/ResourceResponseSoup.cpp
         platform/network/soup/SocketStreamHandleSoup.cpp
+        platform/network/soup/SoupNetworkSession.cpp
         platform/network/soup/SoupURIUtils.cpp
         platform/network/soup/SynchronousLoaderClientSoup.cpp
 

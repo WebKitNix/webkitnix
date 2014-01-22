@@ -60,9 +60,4 @@ JSRetainPtr<JSStringRef> TestRunner::pathToLocalResource(JSStringRef url)
     return url;
 }
 
-JSRetainPtr<JSStringRef> TestRunner::platformName()
-{
-    return JSRetainPtr<JSStringRef>(Adopt, JSStringCreateWithUTF8CString("nix"));
-}
-
 } // namespace WTR

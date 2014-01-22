@@ -1,3 +1,358 @@
+2014-01-22  Anders Carlsson  <andersca@apple.com>
+
+        Fix 32-bit build.
+
+        * UIProcess/API/Cocoa/WKWebViewConfiguration.mm:
+
+2014-01-22  Tim Horton  <timothy_horton@apple.com>
+
+        [wk2] Scroll pinning state is wrong until the first scroll event
+        https://bugs.webkit.org/show_bug.cgi?id=127437
+
+        Reviewed by Simon Fraser.
+
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::didChangeScrollOffset):
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::updateMainFrameScrollOffsetPinning):
+        (WebKit::WebPage::didCommitLoad):
+        * WebProcess/WebPage/WebPage.h:
+        Rename WebPage::didChangeScrollOffsetForMainFrame to
+        updateMainFrameScrollOffsetPinning, which better describes what it
+        actually does. Call it when a load is committed, so that we have valid
+        pinning state before the first scroll event comes in.
+
+2014-01-22  Anders Carlsson  <andersca@apple.com>
+
+        Add WKWebViewConfiguration class
+        https://bugs.webkit.org/show_bug.cgi?id=127436
+        <rdar://problem/15882923>
+
+        Reviewed by Tim Horton.
+
+        * UIProcess/API/Cocoa/WKWebViewConfiguration.h: Added.
+        * UIProcess/API/Cocoa/WKWebViewConfiguration.mm: Added.
+        (-[WKWebViewConfiguration copyWithZone:]):
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2014-01-22  Alice Barraclough  <alice.liu@apple.com>
+
+        [WK2] add cocoa API for private browsing setting
+        https://bugs.webkit.org/show_bug.cgi?id=127391
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/API/Cocoa/WKBrowsingContextGroup.h:
+        * UIProcess/API/Cocoa/WKBrowsingContextGroup.mm:
+        (-[WKBrowsingContextGroup privateBrowsingEnabled]):
+        (-[WKBrowsingContextGroup setPrivateBrowsingEnabled:]):
+        Adding some API for the private Browsing setting. Reaches through
+        to the WKPageGroup's preferences.
+
+2014-01-22  Anders Carlsson  <andersca@apple.com>
+
+        Add WKProcessClass class
+        https://bugs.webkit.org/show_bug.cgi?id=127433
+        <rdar://problem/15882582>
+
+        Reviewed by Dan Bernstein.
+
+        Add a stubbed out WKProcessClass class.
+
+        * Shared/API/Cocoa/WKFoundation.h:
+        * UIProcess/API/Cocoa/WKProcessClass.h: Added.
+        * UIProcess/API/Cocoa/WKProcessClass.mm: Added.
+        (-[WKProcessClass initWithConfiguration:]):
+        (-[WKProcessClass configuration]):
+        * UIProcess/API/Cocoa/WKProcessClassConfiguration.mm:
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2014-01-22  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        [EFL][GTK] Get EFL and GTK compiling with ACCESSIBILITY disabled
+        https://bugs.webkit.org/show_bug.cgi?id=127119
+
+        Reviewed by Mario Sanchez Prada.
+
+        Guarding ACCESSIBILITY code with HAVE(ACCESSIBILITY).
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        * WebProcess/WebPage/WebPage.h:
+        * WebProcess/WebPage/gtk/WebPageGtk.cpp:
+        (WebKit::WebPage::platformInitialize):
+
+2014-01-22  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK][CMake] Add support for building the NetworkProcess
+        https://bugs.webkit.org/show_bug.cgi?id=127195
+
+        Reviewed by Daniel Bates.
+
+        * CMakeLists.txt: Add shared network process build instructions.
+        * PlatformEfl.cmake: Move build instructions to the platform-independent file.
+        * PlatformGTK.cmake: Add some files to the source lists.
+
+2014-01-22  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        REGRESSION(r162441): [GTK] ResourceLoader is broken when there aren't user extensions
+        https://bugs.webkit.org/show_bug.cgi?id=127422
+
+        Reviewed by Anders Carlsson.
+
+        * WebProcess/gtk/WebGtkExtensionManager.cpp:
+        (WebKit::WebGtkExtensionManager::initialize): Always create the
+        WebKitWebExtension object since it's used internally to implement
+        the ResourceLoader client.
+
+2014-01-22  Jer Noble  <jer.noble@apple.com>
+
+        [Mac][WK2] Unable to play video protected by session cookies
+        https://bugs.webkit.org/show_bug.cgi?id=127207
+
+        Reviewed by Sam Weinig.
+
+        Recent changes in our underlying media frameworks caused our shimmed methods
+        in CookieStorageShim to stop being called. Insert an objective-c shim in addition
+        to our original shim to intercept pulling cookies out of cookie storage.
+
+        * Shared/mac/CookieStorageShim.mm: Renamed from Source/WebKit2/Shared/mac/CookieStorageShim.cpp.
+        (WebKit::CookieStorageShim::initialize): Insert the shim.
+        (-[WKNSURLSessionLocal _copyCookiesForRequestUsingAllAppropriateStorageSemantics:]):
+            Pass through to webKitCookieStorageCopyRequestHeaderFieldsForURL().
+        * WebKit2.xcodeproj/project.pbxproj: Rename CookieStorageShim.cpp -> .mm.
+
+2014-01-22  Yongjun Zhang  <yongjun_zhang@apple.com>
+
+        https://bugs.webkit.org/show_bug.cgi?id=127380
+        Add more methods to WKWebProcessPlugInNodeHandle.
+
+        Reviewed by Sam Weinig.
+
+        Add a static method that creates a WKWebProcessPlugInNodeHandle from a JSValue* and a JSContext*.  Also
+        add a method to return the iframe's content frame from a WKWebProcessPlugInNodeHandle.
+ 
+        * WebProcess/InjectedBundle/API/Cocoa/WKWebProcessPlugInNodeHandle.h:
+        * WebProcess/InjectedBundle/API/Cocoa/WKWebProcessPlugInNodeHandle.mm:
+        (+[WKWebProcessPlugInNodeHandle nodeHandleWithJSValue:inContext:]):
+        (-[WKWebProcessPlugInNodeHandle htmlIFrameElementContentFrame]):
+
+2014-01-22  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Unreviewed. Fix GTK+ build with CUSTOM_PROTOCOL enabled after r162449.
+
+        * UIProcess/Network/CustomProtocols/soup/WebSoupCustomProtocolRequestManager.h:
+        Use override instead of OVERRIDE.
+
+2014-01-22  Koop Mast <kwm@FreeBSD.org>
+
+        Build fixes for FreeBSD.
+        https://bugs.webkit.org/show_bug.cgi?id=126779
+
+        Reviewed by Csaba Osztrogonác.
+
+        * UIProcess/Plugins/unix/PluginProcessProxyUnix.cpp:
+        (WebKit::PluginProcessProxy::scanPlugin):
+
+2014-01-22  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        [EFL][WK2] Use std::function in the rest of EFL's WorkQueue implementation
+        https://bugs.webkit.org/show_bug.cgi?id=127397
+
+        Reviewed by Anders Carlsson.
+
+        Move to using std::function and move semantics in WorkQueue::registerSocketEventHandler
+        and DispatchQueue::setSocketEventHandler.
+
+        * Platform/IPC/unix/ConnectionUnix.cpp:
+        (IPC::Connection::open):
+        * Platform/WorkQueue.h:
+        * Platform/efl/DispatchQueueEfl.cpp:
+        (DispatchQueue::setSocketEventHandler):
+        * Platform/efl/DispatchQueueEfl.h:
+        * Platform/efl/WorkQueueEfl.cpp:
+        (WorkQueue::registerSocketEventHandler):
+
+2014-01-21  Tim Horton  <timothy_horton@apple.com>
+
+        [wk2] De-.get()ify receivers of Objective-C messages
+        https://bugs.webkit.org/show_bug.cgi?id=127398
+
+        Reviewed by Sam Weinig.
+
+        RetainPtr does the right thing when you use it as the
+        receiver of an Obj-C message, so we don't need .get().
+
+        Long and useless file list elided.
+
+2014-01-21  Brady Eidson  <beidson@apple.com>
+
+        The IDB backing store put() method shouldn't call IDB callbacks directly
+        https://bugs.webkit.org/show_bug.cgi?id=127399
+
+        Reviewed by Beth Dakin.
+
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.cpp:
+        (WebKit::WebIDBServerConnection::put):
+        * WebProcess/Databases/IndexedDB/WebIDBServerConnection.h:
+
+2014-01-21  Anders Carlsson  <andersca@apple.com>
+
+        Fix 32-bit build.
+
+        * UIProcess/API/Cocoa/WKProcessClassConfiguration.mm:
+
+2014-01-21  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        [EFL][WK2] Use nanoseconds in TimerWorkItem class consistently
+        https://bugs.webkit.org/show_bug.cgi?id=127263
+
+        Reviewed by Gyuyoung Kim.
+
+        After r162276 and r162300, TimerWorkItem is getting nanoseconds as parameter.
+        So it would be better to use nanoseconds in TimerWorkItem for consistency.
+
+        * Platform/efl/DispatchQueueEfl.cpp:
+        (DispatchQueue::performTimerWork):
+        (DispatchQueue::insertTimerWorkItem):
+        (DispatchQueue::getNextTimeOut):
+        * Platform/efl/DispatchQueueWorkItemEfl.h:
+        (TimerWorkItem::create):
+        (TimerWorkItem::expirationTimeNanoSeconds):
+        (TimerWorkItem::hasExpired):
+        (TimerWorkItem::TimerWorkItem):
+
+2014-01-21  Tim Horton  <timothy_horton@apple.com>
+
+        Don't copy ViewGestureGeometryCollector.messages.in into the WebProcess bundle.
+
+        Reviewed by Simon Fraser.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2014-01-21  Anders Carlsson  <andersca@apple.com>
+
+        Add a WKProcessClassConfiguration class
+        https://bugs.webkit.org/show_bug.cgi?id=127378
+        <rdar://problem/15875413>
+
+        Reviewed by Dan Bernstein.
+
+        * UIProcess/API/Cocoa/WKProcessClassConfiguration.h: Added.
+        * UIProcess/API/Cocoa/WKProcessClassConfiguration.mm: Added.
+        (-[WKProcessClassConfiguration copyWithZone:]):
+        * UIProcess/API/Cocoa/WKProcessClassConfigurationPrivate.h: Added.
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2014-01-21  Tim Horton  <timothy_horton@apple.com>
+
+        Make ViewGestureController Obj-C++
+        https://bugs.webkit.org/show_bug.cgi?id=127385
+
+        Reviewed by Dean Jackson.
+
+        * UIProcess/mac/ViewGestureController.mm: Renamed from Source/WebKit2/UIProcess/mac/ViewGestureController.cpp.
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2014-01-21  Anders Carlsson  <andersca@apple.com>
+
+        Make all the WebKit2 headers private and move Cocoa UIProcess API headers to a Deprecated group
+        https://bugs.webkit.org/show_bug.cgi?id=127374
+
+        Reviewed by Dan Bernstein.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+
+2014-01-21  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r162452.
+        http://trac.webkit.org/changeset/162452
+        https://bugs.webkit.org/show_bug.cgi?id=127366
+
+        broke a few tests on all Mac WebKit1 bots (Requested by
+        thorton on #webkit).
+
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::WebPage):
+        (WebKit::WebPage::setActive):
+        (WebKit::WebPage::setViewIsVisible):
+        (WebKit::WebPage::setFocused):
+        (WebKit::WebPage::setIsInWindow):
+        (WebKit::WebPage::setViewStateInternal):
+        (WebKit::WebPage::setIsVisuallyIdle):
+        * WebProcess/WebPage/WebPage.h:
+
+2014-01-21  Martin Hock  <mhock@apple.com>
+
+        Trivial Session API cleanup.
+        https://bugs.webkit.org/show_bug.cgi?id=127356
+
+        Reviewed by Alexey Proskuryakov.
+
+        * UIProcess/API/C/WKSessionRef.cpp:
+        (WKSessionIsEphemeral):
+        * UIProcess/API/C/WKSessionRef.h:
+
+2014-01-16  Simon Fraser  <simon.fraser@apple.com>
+
+        Log an error for a common cause of WebProcess early launch crashing in misconfigured development builds
+        https://bugs.webkit.org/show_bug.cgi?id=127121
+
+        Reviewed by Anders Carlsson.
+        
+        A common cause of early WebProcess crashes during development is a null return
+        from CFBundleGetValueForInfoDictionaryKey(), so log and return an error in
+        this case rather than passing a null C string to dlsym().
+
+        * Shared/EntryPointUtilities/mac/LegacyProcess/ChildProcessMain.mm:
+        (WebKit::BootstrapMain):
+
+2014-01-21  Tim Horton  <timothy_horton@apple.com>
+
+        Sort headers after the rename that happened in r162454.
+
+        * UIProcess/mac/RemoteLayerTreeHost.mm:
+        * WebProcess/WebPage/mac/PlatformCALayerRemoteCustom.mm:
+
+2014-01-21  Tim Horton  <timothy_horton@apple.com>
+
+        Address late review naming comments after r162453.
+
+        * UIProcess/API/mac/WKView.mm:
+        And, fix the build by adding an include I accidentally missed.
+
+        * UIProcess/mac/RemoteLayerTreeHost.mm:
+        * WebProcess/WebPage/mac/PlatformCALayerRemoteCustom.mm:
+
+2014-01-21  Tim Horton  <timothy_horton@apple.com>
+
+        Keep CALayer implicit animation disabling code in a single place
+        https://bugs.webkit.org/show_bug.cgi?id=127355
+
+        Reviewed by Simon Fraser.
+
+        * Shared/mac/RemoteLayerTreePropertyApplier.h:
+        * Shared/mac/RemoteLayerTreePropertyApplier.mm:
+        Remove disableActionsForLayer.
+
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView _rootLayer]):
+        Disable actions on the root layer. It doesn't need them, and currently
+        isn't affected by implicit animations, but future patches which animate
+        the root layer will benefit from this.
+
+        * UIProcess/mac/RemoteLayerTreeHost.mm:
+        (WebKit::RemoteLayerTreeHost::createLayer):
+        Use web_disableAllActions instead of disableActionsForLayer.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/WebPage/mac/PlatformCALayerRemoteCustom.mm: Renamed from Source/WebKit2/WebProcess/WebPage/mac/PlatformCALayerRemoteCustom.cpp.
+        (PlatformCALayerRemoteCustom::PlatformCALayerRemoteCustom):
+        (PlatformCALayerRemoteCustom::~PlatformCALayerRemoteCustom):
+        (PlatformCALayerRemoteCustom::hostingContextID):
+        Use web_disableAllActions instead of disableActionsForLayer.
+        This requires making this file Obj-C++ but that's OK since it's Mac/iOS only.
+
 2014-01-21  Gavin Barraclough  <barraclough@apple.com>
 
         Change Page, FocusController to use ViewState

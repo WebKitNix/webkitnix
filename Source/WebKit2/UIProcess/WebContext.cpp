@@ -96,9 +96,9 @@
 #include "WebSoupCustomProtocolRequestManager.h"
 #else
 #include "WebSoupRequestManagerProxy.h"
+#endif
 #elif USE(CURL)
 #include "WebCurlRequestManagerProxy.h"
-#endif
 #endif
 
 #ifndef NDEBUG
@@ -183,9 +183,9 @@ WebContext::WebContext(const String& injectedBundlePath)
     addSupplement<WebSoupCustomProtocolRequestManager>();
 #else
     addSupplement<WebSoupRequestManagerProxy>();
+#endif
 #elif USE(CURL)
     addSupplement<WebCurlRequestManagerProxy>();
-#endif
 #endif
 #if ENABLE(BATTERY_STATUS)
     addSupplement<WebBatteryManagerProxy>();

@@ -43,14 +43,14 @@ FFTFrame::FFTFrame(unsigned fftSize)
     : m_FFTSize(fftSize)
     , m_log2FFTSize(static_cast<unsigned>(log2(fftSize)))
 {
-    m_fftFrame = adoptPtr(Nix::Platform::current()->createFFTFrame(fftSize));
+    m_fftFrame = std::unique_ptr<Nix::FFTFrame>(Nix::Platform::current()->createFFTFrame(fftSize));
 }
 
 FFTFrame::FFTFrame(const FFTFrame& frame)
     : m_FFTSize(frame.m_FFTSize)
     , m_log2FFTSize(frame.m_log2FFTSize)
 {
-    m_fftFrame = adoptPtr(frame.m_fftFrame->copy());
+    m_fftFrame = std::unique_ptr<Nix::FFTFrame>(frame.m_fftFrame->copy());
 }
 
 FFTFrame::~FFTFrame()

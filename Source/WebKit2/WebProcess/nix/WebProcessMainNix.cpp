@@ -35,7 +35,7 @@
 #include "WKBase.h"
 #include "WebKit2Initialize.h"
 #include <WebCore/CoordinatedGraphicsLayer.h>
-#include <WebCore/ResourceHandle.h>
+#include <WebCore/SoupNetworkSession.h>
 #include <WebKit2/WebProcess.h>
 #include <unistd.h>
 #include <wtf/RunLoop.h>
@@ -62,7 +62,7 @@ WK_EXPORT int WebProcessMainNix(int argc, char* argv[])
     InitializeWebKit2();
 
 #ifdef WTF_USE_SOUP
-    SoupSession* session = WebCore::ResourceHandle::defaultSession();
+    SoupSession* session = SoupNetworkSession::defaultSession().soupSession();
     g_object_set(G_OBJECT(session), SOUP_SESSION_SSL_USE_SYSTEM_CA_FILE, true, SOUP_SESSION_SSL_STRICT, false, NULL);
 
     const char* httpProxy = getenv("http_proxy");

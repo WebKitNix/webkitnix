@@ -44,7 +44,7 @@ namespace WebCore {
 
 PassRefPtr<AudioBus> decodeAudioFileData(const char* data, size_t size, double sampleRate)
 {
-    OwnPtr<Nix::MultiChannelPCMData> pcmData = adoptPtr(Nix::Platform::current()->decodeAudioResource(data, size, sampleRate));
+    std::unique_ptr<Nix::MultiChannelPCMData> pcmData = std::unique_ptr<Nix::MultiChannelPCMData>(Nix::Platform::current()->decodeAudioResource(data, size, sampleRate));
     if (pcmData)
         return adoptRef(static_cast<AudioBus*>(pcmData->getInternalData()));
     return nullptr;

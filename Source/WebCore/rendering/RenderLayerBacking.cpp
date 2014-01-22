@@ -489,9 +489,13 @@ void RenderLayerBacking::updateCompositedBounds()
         RenderLayer* rootLayer = view.layer();
 
         LayoutRect clippingBounds;
-        if (renderer().style().position() == FixedPosition && renderer().container() == &view)
+        if (renderer().style().position() == FixedPosition && renderer().container() == &view) {
+#if PLATFORM(IOS)
+            clippingBounds = view.frameView().visibleContentRect();
+#else
             clippingBounds = view.frameView().viewportConstrainedVisibleContentRect();
-        else
+#endif
+        } else
             clippingBounds = view.unscaledDocumentRect();
 
         if (&m_owningLayer != rootLayer)
@@ -997,14 +1001,14 @@ void RenderLayerBacking::adjustAncestorCompositingBoundsForFlowThread(IntRect& a
             IntPoint flowDelta;
             m_owningLayer.convertToPixelSnappedLayerCoords(flowThreadLayer, flowDelta);
             parentRegion->adjustRegionBoundsFromFlowThreadPortionRect(flowDelta, ancestorCompositingBounds);
-            RenderBoxModelObject* layerOwner = toRenderBoxModelObject(parentRegion->layerOwner());
-            if (layerOwner->hasLayer() && layerOwner->layer()->backing()) {
+            RenderBoxModelObject& layerOwner = toRenderBoxModelObject(parentRegion->layerOwner());
+            if (layerOwner.layer()->backing()) {
                 // Make sure that the region propagates its borders, paddings, outlines or box-shadows to layers inside it.
                 // Note that the composited bounds of the RenderRegion are already calculated
                 // because RenderLayerCompositor::rebuildCompositingLayerTree will only
                 // iterate on the content of the region after the region itself is computed.
-                ancestorCompositingBounds.moveBy(roundedIntPoint(layerOwner->layer()->backing()->compositedBounds().location()));
-                ancestorCompositingBounds.move(-layerOwner->borderAndPaddingStart(), -layerOwner->borderAndPaddingBefore());
+                ancestorCompositingBounds.moveBy(roundedIntPoint(layerOwner.layer()->backing()->compositedBounds().location()));
+                ancestorCompositingBounds.move(-layerOwner.borderAndPaddingStart(), -layerOwner.borderAndPaddingBefore());
             }
         }
     }

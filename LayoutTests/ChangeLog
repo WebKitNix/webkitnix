@@ -1,3 +1,177 @@
+2014-01-22  Alexey Proskuryakov  <ap@apple.com>
+
+        REGRESSION: fast/js/dfg-* typed array tests frequently time out on debug bots
+        https://bugs.webkit.org/show_bug.cgi?id=126166
+
+        Rubber-stamped by Filip Pizlo.
+
+        * TestExpectations: Skipped these tests in debug builds.
+
+2014-01-22  Michał Pakuła vel Rutka  <m.pakula@samsung.com>
+
+        Unreviewed EFL gardening
+
+        Add some http/tests/websocket/tests/hybi tests to skipped list as they crash
+        generating thousands lines of error messages.
+
+        * platform/efl/TestExpectations:
+
+2014-01-22  Mihai Tica  <mitica@adobe.com>
+
+        [CSS Background Blending] -webkit-background-blend-mode fails for certain SVG files
+        https://bugs.webkit.org/show_bug.cgi?id=127350
+
+        Reviewed by Dirk Schulze.
+
+        * css3/compositing/background-blend-mode-svg-expected.html: Added.
+        * css3/compositing/background-blend-mode-svg.html: Added.
+
+2014-01-22  Antti Koivisto  <antti@apple.com>
+
+        Update overlay scrollbars in single pass
+        https://bugs.webkit.org/show_bug.cgi?id=127289
+
+        * platform/mac/accessibility/iframe-aria-hidden.html: 
+        
+            Try to keep this non-flaky by forcing layout. Real fix would probably be in the
+            accessibility test framework.
+
+2014-01-22  ChangSeok Oh  <changseok.oh@collabora.com>
+
+        Unreviewed GTK gardening
+
+        Remove test expectations for passed tests.
+        fast/parser/document-write-basic.html is marked crash but passed.
+        fast/forms/select-live-pseudo-selectors.html is marked crash but passed.
+
+        * platform/gtk-wk2/TestExpectations:
+
+2014-01-22  Alexey Proskuryakov  <ap@apple.com>
+
+        inspector-protocol/page/deny-X-FrameOption.html is very flaky
+        https://bugs.webkit.org/show_bug.cgi?id=127414
+
+        * inspector-protocol/page/deny-X-FrameOption.html: Speculative fix, don't manipulate
+        a frame before onload, even if it's empty.
+
+2014-01-22  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Incorrect layout of a region pseudo children
+        https://bugs.webkit.org/show_bug.cgi?id=126146
+
+        Reviewed by David Hyatt.
+
+        * fast/regions/collapse-anonymous-region-expected.html: Added.
+        * fast/regions/collapse-anonymous-region.html: Added.
+
+2014-01-21  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Remove unused "acceleratedCompositingForScrollableFramesEnabled" setting
+        https://bugs.webkit.org/show_bug.cgi?id=127402
+
+        Reviewed by Anders Carlsson.
+
+        * compositing/iframes/iframe-composited-scrolling.html:
+        Removed acceleratedCompositingForScrollableFramesEnabled changes because
+        it is dead code in WebCore side.
+
+2014-01-21  Zalan Bujtas  <zalan@apple.com>
+
+        Subpixel Layout: Off-by-one pixel text when multiple regions with different widths are present.
+        https://bugs.webkit.org/show_bug.cgi?id=127212
+
+        Reviewed by Simon Fraser.
+
+        Subpixel values accumulate differently when computing the text position inside a 300px wide div
+        vs. multiple 'flow into' regions with 300px, 400px widths. They are both correct. Blink
+        also addressed it by adjusting the test content.
+
+        * fast/regions/overflow-moving-below-floats-in-variable-width-regions.html:
+        * platform/mac/TestExpectations:
+
+2014-01-21  László Langó  <llango.u-szeged@partner.samsung.com>
+
+        Assertion failure in Range::nodeWillBeRemoved
+        https://bugs.webkit.org/show_bug.cgi?id=121694
+
+        Reviewed by Ryosuke Niwa.
+
+        * fast/dom/Range/remove-twice-crash-expected.txt: Added.
+        * fast/dom/Range/remove-twice-crash.html: Added.
+
+2014-01-21  Alexey Proskuryakov  <ap@apple.com>
+
+        AX: Mac: Expose the visible text of a password field to AX
+        https://bugs.webkit.org/show_bug.cgi?id=127353
+
+        Test landed with this fix was filing everywhere, trying to fix it.
+
+        * accessibility/password-field-value.html: Fix paths in the test, and clean it up a little.
+
+2014-01-21  Bear Travis  <betravis@adobe.com>
+
+        [CSS Shapes] Preserve box-shape order when serializing shape values
+        https://bugs.webkit.org/show_bug.cgi?id=127200
+
+        Reviewed by Dirk Schulze.
+
+        Modify the expectations for box shape pairs, preserving the order of
+        the arguments in non-computed values. Computed values are still a
+        shape followed by a box.
+
+        * fast/shapes/parsing/parsing-shape-inside-expected.txt:
+        * fast/shapes/parsing/parsing-shape-outside-expected.txt:
+        * fast/shapes/parsing/parsing-test-utils.js:
+
+2014-01-21  Alexey Proskuryakov  <ap@apple.com>
+
+        platform/mac/accessibility/iframe-aria-hidden.html is flaky
+        https://bugs.webkit.org/show_bug.cgi?id=127323
+
+        Reviewed by Chris Fleizach.
+
+        This test got de-flaked on bots by rolling out r162354. But there was still
+        a potential race in it, which this change fixes.
+
+        * platform/mac-wk2/TestExpectations: Removed expectation.
+
+        * platform/mac/accessibility/iframe-aria-hidden.html: Run the test in onload, as
+        frames load asynchronously.
+
+2014-01-21  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: Mac: Expose the visible text of a password field to AX
+        https://bugs.webkit.org/show_bug.cgi?id=127353
+
+        Reviewed by Brent Fulgham.
+
+        * accessibility/password-field-value-expected.txt: Added.
+        * accessibility/password-field-value.html: Added.
+
+2014-01-21  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        ASSERT(time.isFinite()) in SVGSMILElement::createInstanceTimesFromSyncbase
+        <https://webkit.org/b/108184>
+
+        Reviewed by Philip Rogers.
+
+        Test checks whether valid self-dependency is accidentally broken.
+
+        * svg/animations/smil-syncbase-self-dependency-expected.txt: Added.
+        * svg/animations/smil-syncbase-self-dependency.svg: Added.
+
+2014-01-20  Myles C. Maxfield  <mmaxfield@apple.com>
+
+        Test that text-decoration-skip: ink inherits as expected
+        https://bugs.webkit.org/show_bug.cgi?id=127329
+
+        Reviewed by Dean Jackson.
+
+        Adding a test for text-decoration-skip: ink inheriting
+
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-inherit-expected.html: Added.
+        * fast/css3-text/css3-text-decoration/text-decoration-skip/text-decoration-skip-ink-inherit.html: Added.
+
 2014-01-21  Eric Carlson  <eric.carlson@apple.com>
 
         Add &lrm; &rlm; and &nbsp; to WebVTT parser

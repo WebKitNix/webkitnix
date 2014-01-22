@@ -1,3 +1,554 @@
+2014-01-22  peavo@outlook.com  <peavo@outlook.com>
+
+        Crashes in setTextForIterator
+        https://bugs.webkit.org/show_bug.cgi?id=127424
+
+        Reviewed by Brent Fulgham.
+
+        * platform/text/icu/UTextProviderLatin1.cpp:
+        (WebCore::uTextLatin1Clone): Provide correct buffer size in utext_setup function call.
+        (WebCore::uTextLatin1Access): Give correct buffer size to memset call.
+        (WebCore::openLatin1UTextProvider): Ditto.
+
+2014-01-22  Jer Noble  <jer.noble@apple.com>
+
+        [Mac] MediaPlayerPrivateMediaSourceAVFObjC::load ASSERTs on lots of tests
+        https://bugs.webkit.org/show_bug.cgi?id=127430
+
+        Reviewed by Eric Carlson.
+
+        When other registered media engines cannot load a URL, the engine selection
+        will eventually pick MediaPlayerPrivateMediaSourceAVFObjC and ask it to load
+        the URL. Instead of ASSERTing here, simply reject the URL by setting the
+        network state to FormatError.
+
+        * platform/graphics/avfoundation/objc/MediaPlayerPrivateMediaSourceAVFObjC.mm:
+        (WebCore::MediaPlayerPrivateMediaSourceAVFObjC::load):
+
+2014-01-22  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        [EFL][GTK] Get EFL and GTK compiling with ACCESSIBILITY disabled
+        https://bugs.webkit.org/show_bug.cgi?id=127119
+
+        Reviewed by Mario Sanchez Prada.
+
+        At build time, the compiler was not able to determine which Timer's constructor to call in AXObjectCache when
+        ACCESSIBILITY is not enabled, fixing that.
+        Also guarding some members in AccessibilityObject that are only being used by EFL and GTK with ACCESSIBILITY.
+
+        * accessibility/AXObjectCache.h:
+        (WebCore::AXObjectCache::AXObjectCache):
+        * accessibility/AccessibilityObject.h:
+
+2014-01-22  Peter Molnar  <pmolnar.u-szeged@partner.samsung.com>
+
+        Refactor calculation of hasRx and hasRy values in SVGPathData
+        https://bugs.webkit.org/show_bug.cgi?id=127423
+
+        Reviewed by Darin Adler.
+
+        This is a follow-up on https://bugs.webkit.org/show_bug.cgi?id=127337
+
+        * rendering/svg/SVGPathData.cpp:
+        (WebCore::updatePathFromRectElement):
+
+2014-01-21  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Web Inspector: Remove recompileAllJSFunctions timer in ScriptDebugServer
+        https://bugs.webkit.org/show_bug.cgi?id=127409
+
+        Reviewed by Timothy Hatcher.
+
+        * bindings/js/ScriptDebugServer.h:
+        * bindings/js/ScriptDebugServer.cpp:
+        (WebCore::ScriptDebugServer::ScriptDebugServer):
+        Remove m_recompileTimer and the recompile soon function.
+        We can just recompile immediately in all existing cases.
+
+        * bindings/js/PageScriptDebugServer.h:
+        * bindings/js/PageScriptDebugServer.cpp:
+        (WebCore::PageScriptDebugServer::addListener):
+        (WebCore::PageScriptDebugServer::removeListener):
+        (WebCore::PageScriptDebugServer::recompileAllJSFunctions):
+        (WebCore::PageScriptDebugServer::didAddFirstListener):
+        (WebCore::PageScriptDebugServer::didRemoveLastListener):
+        Add a "didAddFirstListener" to match "didRemoveLastListener".
+        Only recompile functions when we attach the debugger and when
+        we detach the last listener.
+
+        * bindings/js/WorkerScriptDebugServer.cpp:
+        (WebCore::WorkerScriptDebugServer::addListener):
+        (WebCore::WorkerScriptDebugServer::removeListener):
+        (WebCore::WorkerScriptDebugServer::recompileAllJSFunctions):
+        Same thing. Also rearrange the functions to read better.
+
+        * inspector/InspectorProfilerAgent.cpp:
+        Use the direct recompile function instead of the removed "soon" version.
+
+2014-01-22  Robert Sipka  <sipka@inf.u-szeged.hu>
+
+        [curl] Improve detecting and handling of SSL client certificate
+        https://bugs.webkit.org/show_bug.cgi?id=125006
+
+        Reviewed by Brent Fulgham.
+
+        Add client certificate handling.
+
+        * platform/network/ResourceHandle.h:
+        * platform/network/curl/ResourceError.h:
+        (WebCore::ResourceError::hasSSLConnectError):
+        * platform/network/curl/ResourceHandleCurl.cpp:
+        (WebCore::ResourceHandle::setClientCertificateInfo):
+        * platform/network/curl/ResourceHandleManager.cpp:
+        (WebCore::ResourceHandleManager::initializeHandle):
+        * platform/network/curl/SSLHandle.cpp:
+        (WebCore::addAllowedClientCertificate):
+        (WebCore::setSSLClientCertificate):
+        * platform/network/curl/SSLHandle.h:
+
+2014-01-22  Mihai Maerean  <mmaerean@adobe.com>
+
+        [CSS Regions] layerOwner in RenderNamedFlowFragment cannot return null
+        https://bugs.webkit.org/show_bug.cgi?id=127343
+
+        Reviewed by Sam Weinig.
+
+        RenderNamedFlowFragment::layerOwner cannot return null because regions create stacking
+        contexts which create layers.
+
+        No new tests, no functional change.
+
+        * rendering/RenderFlowThread.cpp:
+        (WebCore::RenderFlowThread::hasCompositingRegionDescendant):
+        * rendering/RenderLayer.cpp:
+        (WebCore::RenderLayer::calculateClipRects):
+        * rendering/RenderLayerBacking.cpp:
+        (WebCore::RenderLayerBacking::adjustAncestorCompositingBoundsForFlowThread):
+        * rendering/RenderLayerCompositor.cpp:
+        (WebCore::RenderLayerCompositor::computeRegionCompositingRequirements):
+        * rendering/RenderNamedFlowFragment.h:
+
+2014-01-22  Antti Koivisto  <antti@apple.com>
+
+        Avoid unthrottled layer flushes triggered by RenderLayerCompositor::ensureRootLayer
+        https://bugs.webkit.org/show_bug.cgi?id=127426
+
+        Reviewed by Anders Carlsson.
+        
+        * rendering/RenderLayerCompositor.cpp:
+        (WebCore::RenderLayerCompositor::updateScrollLayerPosition):
+        (WebCore::RenderLayerCompositor::frameViewDidScroll):
+
+            Factor scroll layer position update to a function.
+
+        (WebCore::RenderLayerCompositor::ensureRootLayer):
+        
+            Stop calling frameViewDidChangeSize/frameViewDidScroll. Instead call the relevent functions
+            directly. This avoid unthrottled layer flush that is done when the view actually scrolls.
+
+        * rendering/RenderLayerCompositor.h:
+
+2014-01-22  Mihai Tica  <mitica@adobe.com>
+
+        [CSS Background Blending] -webkit-background-blend-mode fails for certain SVG files
+        https://bugs.webkit.org/show_bug.cgi?id=127350
+
+        Reviewed by Dirk Schulze.
+
+        The graphics context of the SVG inherits the blend mode set
+        on the background layer. Fix consists in drawing the SVG
+        in a transparency layer.
+
+        Test: css3/compositing/background-blend-mode-svg.html
+
+        * svg/graphics/SVGImage.cpp:
+        (WebCore::SVGImage::draw): Begin a transparency layer if a blend mode is set.
+
+2014-01-22  Antti Koivisto  <antti@apple.com>
+
+        Update overlay scrollbars in single pass
+        https://bugs.webkit.org/show_bug.cgi?id=127289
+
+        Reviewed by Anders Carlsson.
+
+        * platform/ScrollView.cpp:
+        (WebCore::ScrollView::updateScrollbars):
+        
+            Multi-pass scrollbar resolution is only needed for traditional scrollbars. Overlay scrollbars don't affect layout.
+
+2014-01-22  Mihnea Ovidenie  <mihnea@adobe.com>
+
+        [CSSRegions] Incorrect layout of a region pseudo children
+        https://bugs.webkit.org/show_bug.cgi?id=126146
+
+        Reviewed by David Hyatt.
+
+        Test: fast/regions/collapse-anonymous-region.html
+
+        A region behaviour, styled using -webkit-flow-from, is modeled using an anonymous
+        block created to fragment the named flow content inside the region. We have to prevent
+        the behaviour of anonymous children collapsing for this block to make sure that the
+        region element children are still laid out properly when the region element becomes an ordinary
+        element.
+
+        * rendering/RenderBlockFlow.h:
+
+2014-01-21  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Remove unused "acceleratedCompositingForScrollableFramesEnabled" setting
+        https://bugs.webkit.org/show_bug.cgi?id=127402
+
+        Reviewed by Anders Carlsson.
+
+        compositing/iframes/iframe-composited-scrolling.html is updated because
+        there are no usages in WebCore.
+
+        * page/Settings.in:
+
+2014-01-21  Alex Christensen  <achristensen@webkit.org>
+
+        Compile fix for using libsoup on Windows.
+        https://bugs.webkit.org/show_bug.cgi?id=127377
+
+        Reviewed by Daniel Bates.
+
+        * platform/network/soup/ProxyResolverSoup.cpp:
+        (soupProxyResolverWkSetProperty):
+        (soupProxyResolverWkGetProperty):
+        (soupProxyResolverWkGetProxyURISync):
+        Replaced uint with unsigned.
+
+2014-01-21  Daniel Bates  <dabates@apple.com>
+
+        Break up single assertion into two assertions in HTMLMediaElement::returnPlatformLayer()
+
+        Following up after <http://trac.webkit.org/changeset/162473>, we should break up
+        the assertion into two assertions as suggested by Darin Adler. Separating the single
+        assertion into two assertions makes it straightforward to determine the conjunct that
+        failed among other benefits.
+
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::parseAttribute):
+
+2014-01-21  Brady Eidson  <beidson@apple.com>
+
+        The IDB backing store put() method shouldn't call IDB callbacks directly
+        https://bugs.webkit.org/show_bug.cgi?id=127399
+
+        Reviewed by Beth Dakin.
+
+        Refactor the put() callback to take a resulting key or an error.
+        * Modules/indexeddb/IDBServerConnection.h:
+
+        * Modules/indexeddb/IDBTransactionBackendOperations.cpp:
+        (WebCore::PutOperation::perform): Call to the backing store, then perform the
+          appropriate IDB callback whether a key or an error was returned.
+        * Modules/indexeddb/IDBTransactionBackendOperations.h:
+
+        * Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.cpp:
+        (WebCore::IDBServerConnectionLevelDB::put): Don’t call IDB callbacks directly.
+          Instead, pass the resulting key/error back to the PutOperation.
+        * Modules/indexeddb/leveldb/IDBServerConnectionLevelDB.h:
+
+2014-01-21  Jae Hyun Park  <jae.park@company100.net>
+
+        Use nullptr in HTMLCanvasElement
+        https://bugs.webkit.org/show_bug.cgi?id=127388
+
+        Reviewed by Gyuyoung Kim.
+
+        * html/HTMLCanvasElement.cpp:
+        (WebCore::HTMLCanvasElement::getContext):
+        (WebCore::HTMLCanvasElement::drawingContext):
+        (WebCore::HTMLCanvasElement::existingDrawingContext):
+
+2014-01-21  László Langó  <llango.u-szeged@partner.samsung.com>
+
+        Assertion failure in Range::nodeWillBeRemoved
+        https://bugs.webkit.org/show_bug.cgi?id=121694
+
+        Reviewed by Ryosuke Niwa.
+
+        Based on Blink a change: https://chromium.googlesource.com/chromium/blink/+/407c1d7b2c45974aa614b3f847ffe9e8fce205fa
+
+        This patch fix an assertion failure. Range::nodeWillBeRemoved() might
+        be called with removed node in ContainerNode, when DOMNodeRemovedFromDocument
+        event handler calls removeChild(), for node being removed.
+
+        Test: fast/dom/Range/remove-twice-crash.html
+
+        * dom/ContainerNode.cpp:
+        (WebCore::ContainerNode::willRemoveChild):
+        * dom/ContainerNode.h:
+
+2014-01-21  Tim Horton  <timothy_horton@apple.com>
+
+        REGRESSION (r161580): Some PDFs render outside their <img>
+        https://bugs.webkit.org/show_bug.cgi?id=127381
+        <rdar://problem/15872168>
+
+        Reviewed by Simon Fraser.
+
+        * platform/graphics/cg/PDFDocumentImage.cpp:
+        (WebCore::transformContextForPainting):
+        Only try to make the scale uniform if it isn't already, and use the minimum
+        of the two original scales when doing so, so that it is absolutely certain
+        to fit inside space allocated for the image during layout.
+
+2014-01-21  Simon Fraser  <simon.fraser@apple.com>
+
+        Remove #if PLATFORM(IOS) in various places around customFixedPositionLayoutRect() code
+        https://bugs.webkit.org/show_bug.cgi?id=127373
+
+        Reviewed by Beth Dakin.
+
+        Instead of PLATFORM(IOS) #idefs at every call site for viewportConstrainedVisibleContentRect(),
+        move the #ifdef inside viewportConstrainedVisibleContentRect().
+        
+        The one call site that needs special handling is RenderLayerBacking::updateCompositedBounds(),
+        which needs to avoid clipping fixed layers to the custom fixed position rect, but instead to
+        visibleContentRect() (which is really the document bounds on iOS). This ensures that the
+        fixed layers aren't clipped when zooming out.
+
+        * page/FrameView.cpp:
+        (WebCore::FrameView::viewportConstrainedVisibleContentRect):
+        * rendering/RenderBoxModelObject.cpp:
+        (WebCore::RenderBoxModelObject::stickyPositionOffset):
+        * rendering/RenderLayerBacking.cpp:
+        (WebCore::RenderLayerBacking::updateCompositedBounds):
+        * rendering/RenderLayerCompositor.cpp:
+        (WebCore::RenderLayerCompositor::requiresCompositingForPosition):
+        (WebCore::RenderLayerCompositor::computeFixedViewportConstraints):
+        (WebCore::RenderLayerCompositor::computeStickyViewportConstraints):
+
+2014-01-21  Andy Estes  <aestes@apple.com>
+
+        [iOS] Allow all clients to link against WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=127372
+        
+        Reviewed by Dan Bernstein.
+
+        * Configurations/WebCore.xcconfig:
+
+2014-01-21  Bear Travis  <betravis@adobe.com>
+
+        [CSS Shapes] Preserve box-shape order when serializing shape values
+        https://bugs.webkit.org/show_bug.cgi?id=127200
+
+        Reviewed by Dirk Schulze.
+
+        Convert the parsed shape-box pair to a CSSValueList rather than directly
+        adding the box value to BasicShape. The CSSValueList preserves the
+        shape-box ordering, and cleans up a little bit of the code shared between
+        clip and shape values.
+
+        Modifying existing parsing tests.
+
+        * css/CSSComputedStyleDeclaration.cpp:
+        (WebCore::shapePropertyValue): Factor out code common to generating shape
+        values.
+        (WebCore::ComputedStyleExtractor::propertyValue): Generate a CSSValueList when
+        you have both a shape and a box.
+        * css/CSSParser.cpp:
+        (WebCore::CSSParser::parseBasicShapeAndOrBox): Factor out code common to clip
+        paths and shape properties that parses the [basic-shape || box] syntax from
+        the CSS Shapes spec.
+        (WebCore::CSSParser::parseShapeProperty): Parse shape-box pairs as a CSSValueList.
+        * css/DeprecatedStyleBuilder.cpp:
+        (WebCore::ApplyPropertyShape::applyValue): Use the CSSValueList for shape-box pairs.
+        * css/CSSValueList.h:
+        (WebCore::CSSValueList::itemWithoutBoundsCheck): Add a const version.
+        * page/animation/CSSPropertyAnimation.cpp:
+        (WebCore::blendFunc): Specify a box when blending.
+        * rendering/style/ShapeValue.h:
+        (WebCore::ShapeValue::createShapeValue): Add a box parameter.
+        (WebCore::ShapeValue::ShapeValue): Ditto.
+
+2014-01-21  Daniel Bates  <dabates@apple.com>
+
+        Fix the iOS Simulator release build
+
+        Substitute ASSERT_UNUSED() for ASSERT() to resolve a compiler warning
+        that the argument platformLayer is unused. The argument platformLayer
+        is only used in the asserted condition, which isn't compiled in a
+        release build; => the argument is unused in a release build.
+
+        * html/HTMLMediaElement.cpp:
+        (WebCore::HTMLMediaElement::parseAttribute):
+
+2014-01-21  Zoltan Horvath  <zoltan@webkit.org>
+
+        Since MidpointState is a class, it should behave like a class
+        https://bugs.webkit.org/show_bug.cgi?id=127154
+
+        Reviewed by David Hyatt.
+
+        I modified MidpointState to behave like a class, updated the call sites also.
+
+        No new tests, no behavior change.
+
+        * platform/text/BidiResolver.h:
+        (WebCore::MidpointState::reset):
+        (WebCore::MidpointState::startIgnoringSpaces):
+        (WebCore::MidpointState::stopIgnoringSpaces):
+        (WebCore::MidpointState::midpoints):
+        (WebCore::MidpointState::numMidpoints):
+        (WebCore::MidpointState::currentMidpoint):
+        (WebCore::MidpointState::incrementCurrentMidpoint):
+        (WebCore::MidpointState::decreaseNumMidpoints):
+        (WebCore::MidpointState::betweenMidpoints):
+        (WebCore::MidpointState::setBetweenMidpoints):
+        (WebCore::MidpointState::addMidpoint): Renamed from deprecatedAddMidpoint, since now
+        its private, we no longer need to discourage callers from using it.
+        * rendering/InlineIterator.h:
+        (WebCore::IsolateTracker::addFakeRunIfNecessary):
+        * rendering/RenderBlockLineLayout.cpp:
+        (WebCore::RenderBlockFlow::appendRunsForObject):
+        (WebCore::constructBidiRunsForLine):
+        * rendering/line/BreakingContextInlineHeaders.h:
+        (WebCore::checkMidpoints):
+        * rendering/line/TrailingObjects.cpp:
+        (WebCore::TrailingObjects::updateMidpointsForTrailingBoxes):
+
+2014-01-21  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r162452.
+        http://trac.webkit.org/changeset/162452
+        https://bugs.webkit.org/show_bug.cgi?id=127366
+
+        broke a few tests on all Mac WebKit1 bots (Requested by
+        thorton on #webkit).
+
+        * WebCore.exp.in:
+        * page/FocusController.cpp:
+        (WebCore::FocusController::FocusController):
+        (WebCore::FocusController::setFocused):
+        (WebCore::FocusController::setActive):
+        (WebCore::FocusController::setContentIsVisible):
+        * page/FocusController.h:
+        (WebCore::FocusController::isActive):
+        (WebCore::FocusController::isFocused):
+        * page/Page.cpp:
+        (WebCore::Page::Page):
+        (WebCore::Page::setIsInWindow):
+        (WebCore::Page::setIsVisuallyIdle):
+        (WebCore::Page::setIsVisible):
+        (WebCore::Page::visibilityState):
+        (WebCore::Page::hiddenPageCSSAnimationSuspensionStateChanged):
+        * page/Page.h:
+        (WebCore::Page::isVisible):
+        (WebCore::Page::isInWindow):
+
+2014-01-21  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: Mac: Expose the visible text of a password field to AX
+        https://bugs.webkit.org/show_bug.cgi?id=127353
+
+        Reviewed by Brent Fulgham.
+
+        The Mac platform should now expose the rendered value of password fields through AX.
+
+        Test: accessibility/password-field-value.html
+
+        * accessibility/AccessibilityRenderObject.cpp:
+        (WebCore::AccessibilityRenderObject::textLength):
+        (WebCore::AccessibilityRenderObject::passwordFieldValue):
+
+2014-01-21  Robert Sipka  <sipka@inf.u-szeged.hu>
+
+        Support SSL error handling in case of synchronous job.
+        https://bugs.webkit.org/show_bug.cgi?id=125301
+
+        Reviewed by Brent Fulgham.
+
+        Set ssl error informations for the users.
+
+        * platform/network/curl/ResourceHandleManager.cpp:
+        (WebCore::ResourceHandleManager::dispatchSynchronousJob):
+
+2014-01-21  Simon Fraser  <simon.fraser@apple.com>
+
+        Export systemTotalMemory() and systemMemoryLevel() for MobileSafari
+        https://bugs.webkit.org/show_bug.cgi?id=127360
+
+        Reviewed by Andy Estes.
+        
+        MobileSafari inappropriately calls these WebCore functions directly,
+        so export them.
+
+        * WebCore.exp.in:
+
+2014-01-21  Simon Fraser  <simon.fraser@apple.com>
+
+        Clean up PLATFORM(IOS) code related to the custom fixed position layout rect
+        https://bugs.webkit.org/show_bug.cgi?id=127362
+
+        Reviewed by Dave Hyatt.
+
+        Various platforms customize the rect used to layout position:fixed elements,
+        and each modified RenderBox::availableLogicalHeight/WidthUsing() in different
+        ways.
+        
+        Clean this up by adding RenderView::clientLogicalWidth/HeightForFixedPosition(),
+        and moving the platform hacks into it.
+
+        * rendering/RenderBox.cpp:
+        (WebCore::RenderBox::availableLogicalHeightUsing):
+        (WebCore::RenderBox::containingBlockLogicalWidthForPositioned):
+        (WebCore::RenderBox::containingBlockLogicalHeightForPositioned):
+        * rendering/RenderView.cpp:
+        (WebCore::RenderView::clientLogicalWidthForFixedPosition):
+        (WebCore::RenderView::clientLogicalHeightForFixedPosition):
+        * rendering/RenderView.h:
+
+2014-01-21  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        ASSERT(time.isFinite()) in SVGSMILElement::createInstanceTimesFromSyncbase
+        <https://webkit.org/b/108184>
+
+        Reviewed by Philip Rogers.
+
+        In the case a SMILElement timing had a syncbase dependency on an indefinite value
+        the assert were raised. The assert has been removed and a check has been added
+        instead that prevents the addition of indefinite times to the time list.
+
+        Test: svg/animations/smil-syncbase-self-dependency.svg
+
+        * svg/animation/SVGSMILElement.cpp:
+        (WebCore::SVGSMILElement::createInstanceTimesFromSyncbase):
+          ASSERT removed.
+
+2014-01-21  Tim Horton  <timothy_horton@apple.com>
+
+        Address late review naming comments after r162453.
+
+        * WebCore.xcodeproj/project.pbxproj:
+        * platform/graphics/ca/mac/PlatformCALayerMac.mm:
+        * platform/graphics/mac/CALayerWebAdditions.h: Removed.
+        * platform/graphics/mac/CALayerWebAdditions.mm: Removed.
+        * platform/graphics/mac/WebCoreCALayerExtras.h: Added.
+        * platform/graphics/mac/WebCoreCALayerExtras.mm: Added.
+        (-[CALayer web_disableAllActions]):
+
+2014-01-21  Tim Horton  <timothy_horton@apple.com>
+
+        Keep CALayer implicit animation disabling code in a single place
+        https://bugs.webkit.org/show_bug.cgi?id=127355
+
+        Reviewed by Simon Fraser.
+
+        * WebCore.xcodeproj/project.pbxproj:
+        Add CALayerWebAdditions.{h,mm}.
+
+        * platform/graphics/ca/mac/PlatformCALayerMac.mm:
+        (PlatformCALayerMac::commonInit):
+        Remove nullActionsDictionary() and use [CALayer(WebAdditions) web_disableAllActions] instead.
+
+        * platform/graphics/mac/CALayerWebAdditions.h: Added.
+        * platform/graphics/mac/CALayerWebAdditions.mm: Added.
+        (-[CALayer web_disableAllActions]):
+        Added. Disable all implicit actions on the layer.
+
 2014-01-21  Gavin Barraclough  <barraclough@apple.com>
 
         Change Page, FocusController to use ViewState

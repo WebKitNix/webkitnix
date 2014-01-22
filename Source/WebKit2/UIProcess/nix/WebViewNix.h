@@ -59,35 +59,35 @@ public:
     void viewportInteractionStart();
     void viewportInteractionStop();
 
-    virtual void setContentScaleFactor(float) OVERRIDE;
-    virtual float contentScaleFactor() const OVERRIDE;
+    virtual void setContentScaleFactor(float) override;
+    virtual float contentScaleFactor() const override;
 
     float scaleToFitContents();
     void adjustScaleToFitContents();
     void setScreenRect(const WebCore::FloatRect&);
 protected:
     // WebKit::WebView
-    virtual void didChangeContentPosition(const WebCore::FloatPoint&) OVERRIDE;
+    virtual void didChangeContentPosition(const WebCore::FloatPoint&) override;
 
     // PageClient.
-    virtual void didFindZoomableArea(const WebCore::IntPoint& target, const WebCore::IntRect& area) OVERRIDE;
-    virtual void didCommitLoadForMainFrame() OVERRIDE;
-    virtual void pageScaleFactorDidChange() OVERRIDE;
+    virtual void didFindZoomableArea(const WebCore::IntPoint& target, const WebCore::IntRect& area) override;
+    virtual void didCommitLoadForMainFrame() override;
+    virtual void pageScaleFactorDidChange() override;
 
 #if ENABLE(TOUCH_EVENTS)
-    virtual void doneWithTouchEvent(const NativeWebTouchEvent&, bool wasEventHandled) OVERRIDE;
+    virtual void doneWithTouchEvent(const NativeWebTouchEvent&, bool wasEventHandled) override;
 #endif
-    virtual void updateTextInputState() OVERRIDE;
-    virtual void didRelaunchProcess() OVERRIDE;
-    virtual void pageTransitionViewportReady() OVERRIDE;
-    virtual PassRefPtr<WebContextMenuProxy> createContextMenuProxy(WebPageProxy*) OVERRIDE { return m_activeContextMenu; }
-    virtual PassRefPtr<WebPopupMenuProxy> createPopupMenuProxy(WebPageProxy*) OVERRIDE;
+    virtual void updateTextInputState() override;
+    virtual void didRelaunchProcess() override;
+    virtual void pageTransitionViewportReady() override;
+    virtual PassRefPtr<WebContextMenuProxy> createContextMenuProxy(WebPageProxy*) override { return m_activeContextMenu; }
+    virtual PassRefPtr<WebPopupMenuProxy> createPopupMenuProxy(WebPageProxy*) override;
 
     float deviceScaleFactor() { return m_page->deviceScaleFactor(); }
 private:
     WebViewNix(WebContext* context, WebPageGroup* pageGroup);
 
-    void setCursor(const WebCore::Cursor&) OVERRIDE;
+    void setCursor(const WebCore::Cursor&) override;
 
     WebViewClientNix m_viewClientNix;
     WebCore::IntPoint m_lastCursorPosition;

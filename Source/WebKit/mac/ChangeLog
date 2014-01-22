@@ -1,3 +1,30 @@
+2014-01-22  Dan Bernstein  <mitz@apple.com>
+
+        Build fix for iOS clients of WebUIDelegatePrivate.h.
+
+        * WebView/WebUIDelegatePrivate.h: Ensure that ENABLE_DASHBOARD_SUPPORT is defined on iOS.
+
+2014-01-21  Dan Bernstein  <mitz@apple.com>
+
+        Added a method declaration that was missed in r161185.
+
+        Reviewed by Sam Weinig.
+
+        * WebView/WebViewPrivate.h: Declared -removeVisitedLink:.
+
+2014-01-21  Commit Queue  <commit-queue@webkit.org>
+
+        Unreviewed, rolling out r162452.
+        http://trac.webkit.org/changeset/162452
+        https://bugs.webkit.org/show_bug.cgi?id=127366
+
+        broke a few tests on all Mac WebKit1 bots (Requested by
+        thorton on #webkit).
+
+        * WebView/WebView.mm:
+        (-[WebView _windowWillOrderOnScreen:]):
+        (-[WebView _windowWillOrderOffScreen:]):
+
 2014-01-21  Gavin Barraclough  <barraclough@apple.com>
 
         Change Page, FocusController to use ViewState

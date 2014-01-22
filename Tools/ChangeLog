@@ -1,3 +1,152 @@
+2014-01-15  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK][CMake] build-webkit should try harder to avoid re-running cmake
+        https://bugs.webkit.org/show_bug.cgi?id=127073
+
+        Reviewed by Daniel Bates.
+
+        * Scripts/build-webkit: Unify all the ports that call buildCMakeProjectOrExit with
+        the new isCMakeBuild conditional. This allows us to share more code between ports.
+        Pass the build arguments to the removeCMakeCache function.
+        * Scripts/webkitdirs.pm:
+        (runAutogenForAutotoolsProjectIfNecessary): Renamed mustReRunAutogen to cachedArgumentFileOutOfDate
+        because it's now shared with the CMake build.
+        (cachedArgumentFileOutOfDate): Renamed.
+        (cmakeCachePath): Added this helper which gets the CMakeCache.txt path.
+        (shouldRemoveCMakeCache): Tries to preserve current behavior for all ports, 
+        except GTK+ which examines the OptionsGTK.cmake and OptionsCommon.cmake file
+        as well as checking if build-webkit has been run with different arguments.
+        (removeCMakeCache): Call shouldRemoveCMakeCache now.
+        (generateBuildSystemFromCMakeProject): Exit early if CMakeCache.txt exists for GTK+.
+        (isCMakeBuild): Added.
+
+2014-01-22  Thiago de Barros Lacerda  <thiago.lacerda@openbossa.org>
+
+        [EFL][GTK] Get EFL and GTK compiling with ACCESSIBILITY disabled
+        https://bugs.webkit.org/show_bug.cgi?id=127119
+
+        Reviewed by Mario Sanchez Prada.
+
+        Guarding ACCESSIBILITY code in DumpRenderTree and WebKitTestRunner with HAVE(ACCESSIBILITY).
+
+        * DumpRenderTree/efl/DumpRenderTreeChrome.cpp:
+        * DumpRenderTree/gtk/AccessibilityControllerGtk.cpp:
+        * DumpRenderTree/gtk/DumpRenderTree.cpp:
+        (resetDefaultsToConsistentValues):
+        (webViewWindowObjectCleared):
+        (main):
+        * WebKitTestRunner/InjectedBundle/AccessibilityController.cpp:
+        (WTR::AccessibilityController::platformName):
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.cpp:
+        (WTR::AccessibilityUIElement::isIndeterminate):
+
+2014-01-22  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+
+        [GTK] Add GUniquePtr
+        https://bugs.webkit.org/show_bug.cgi?id=127170
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Add unit tests for GUniquePtr.
+
+        * TestWebKitAPI/GNUmakefile.am: Add new file to compilation.
+        * TestWebKitAPI/Tests/WTF/gobject/GUniquePtr.cpp: Added.
+        (log):
+        (takeLogStr):
+        (TestWebKitAPI::TEST):
+
+2014-01-22  Jinwoo Song  <jinwoo7.song@samsung.com>
+
+        Remove Nix files from Tools
+        https://bugs.webkit.org/show_bug.cgi?id=127418
+
+        Reviewed by Csaba Osztrogonác.
+
+        * Scripts/build-webkit:
+        * Scripts/update-webkit-libs-jhbuild:
+        * Scripts/webkitdirs.pm:
+        (determineArchitecture):
+        (argumentsForConfiguration):
+        (jscProductDir):
+        (builtDylibPathForName):
+        (isAppleWebKit):
+        (launcherPath):
+        (launcherName):
+        (checkRequiredSystemConfig):
+        (copyInspectorFrontendFiles):
+        (jhbuildWrapperPrefixIfNeeded):
+        (buildCMakeProjectOrExit):
+        (cmakeBasedPortName):
+        * Scripts/webkitpy/common/config/ports.py:
+        (DeprecatedPort.port):
+        (EflWK2Port.build_webkit_command):
+        * Scripts/webkitpy/port/factory.py:
+        (platform_options):
+        (PortFactory):
+        * Scripts/webkitpy/port/nix.py: Removed.
+        * Scripts/webkitpy/port/nix_unittest.py: Removed.
+
+2014-01-21  Benjamin Poulain  <benjamin@webkit.org>
+
+        Add Ian and Ricky to the contributor list
+
+        * Scripts/webkitpy/common/config/contributors.json:
+        I am too old to remember all those email addresses :)
+
+2014-01-21  David Farler  <dfarler@apple.com>
+
+        Upstream package-root for iOS
+
+        Reviewed by Daniel bates.
+
+        * Scripts/package-root: Added.
+        (usage):
+        * Scripts/webkitdirs.pm:
+        (XcodeSDKPath): Added function.
+
+2014-01-21  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Tools/Makefile shouldn't build modules DumpRenderTree, gtest, or TestWebKitAPI
+        https://bugs.webkit.org/show_bug.cgi?id=127368
+
+        Reviewed by Tim Horton.
+
+        Similar to the build-webkit change in <https://bugs.webkit.org/show_bug.cgi?id=127364>,
+        we don't want to build DumpRenderTree, gtest, or TestWebKitAPI when running make in
+        Tools.
+
+        * Makefile:
+
+2014-01-21  Daniel Bates  <dabates@apple.com>
+
+        [iOS] Don't build DumpRenderTree, gtest, or TestWebKitAPI
+        https://bugs.webkit.org/show_bug.cgi?id=127364
+
+        Reviewed by Simon Fraser.
+
+        For now, don't build DumpRenderTree and TestWebKitAPI for iOS as these
+        projects fail to build because we need to upstream the relevant iOS changes.
+        Also, don't build gtest, which is a dependency of TestWebKitAPI since we
+        aren't building TestWebKitAPI.
+
+        * Scripts/build-webkit:
+
+2014-01-21  Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
+
+        Unreviewed, remove myself from some watchlist entries.
+
+        * Scripts/webkitpy/common/config/watchlist:
+
+2014-01-21  Zalan Bujtas  <zalan@apple.com>
+
+        Use 64 as the default value for the subpixel denominator.
+
+        Reviewed by Simon Fraser.
+
+        * lldb/lldb_webkit.py:
+        (WebCoreLayoutUnitProvider.to_string):
+
 2014-01-21  ChangSeok Oh  <changseok.oh@collabora.com>
 
         [GTK] Fix a c++11 compliance issue for fontconfig

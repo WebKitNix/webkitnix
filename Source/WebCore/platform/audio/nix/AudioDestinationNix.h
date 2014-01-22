@@ -65,12 +65,12 @@ private:
     RefPtr<AudioBus> m_renderBus;
     float m_sampleRate;
     bool m_isPlaying;
-    OwnPtr<Nix::AudioDevice> m_audioDevice;
+    std::unique_ptr<Nix::AudioDevice> m_audioDevice;
     size_t m_callbackBufferSize;
     String m_inputDeviceId;
 
-    OwnPtr<AudioFIFO> m_inputFifo;
-    OwnPtr<AudioPullFIFO> m_fifo;
+    std::unique_ptr<AudioFIFO> m_inputFifo;
+    std::unique_ptr<AudioPullFIFO> m_fifo;
 };
 
 } // namespace WebCore

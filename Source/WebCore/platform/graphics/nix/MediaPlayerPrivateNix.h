@@ -37,40 +37,40 @@ class MediaPlayerPrivateNix : public MediaPlayerPrivateInterface {
 public:
     static void registerMediaEngine(MediaEngineRegistrar);
 
-    virtual void load(const WTF::String&) OVERRIDE;
-    virtual void cancelLoad() OVERRIDE;
-    virtual void prepareToPlay() OVERRIDE;
-    virtual void play() OVERRIDE;
-    virtual void pause() OVERRIDE;
-    virtual bool paused() const OVERRIDE;
+    virtual void load(const WTF::String&) override;
+    virtual void cancelLoad() override;
+    virtual void prepareToPlay() override;
+    virtual void play() override;
+    virtual void pause() override;
+    virtual bool paused() const override;
 
-    virtual float duration() const OVERRIDE;
+    virtual float duration() const override;
     void durationChanged() const { m_player->durationChanged(); }
-    virtual float currentTime() const OVERRIDE;
+    virtual float currentTime() const override;
     void currentTimeChanged() const { m_player->timeChanged(); }
 
-    virtual IntSize naturalSize() const OVERRIDE;
-    virtual bool hasVideo() const OVERRIDE;
-    virtual bool hasAudio() const OVERRIDE;
-    virtual void setVisible(bool) OVERRIDE;
+    virtual IntSize naturalSize() const override;
+    virtual bool hasVideo() const override;
+    virtual bool hasAudio() const override;
+    virtual void setVisible(bool) override;
 
-    virtual bool seeking() const OVERRIDE;
-    virtual void seek(float) OVERRIDE;
-    virtual float maxTimeSeekable() const OVERRIDE;
+    virtual bool seeking() const override;
+    virtual void seek(float) override;
+    virtual float maxTimeSeekable() const override;
 
-    virtual void setRate(float) OVERRIDE;
-    virtual void setVolume(float) OVERRIDE;
+    virtual void setRate(float) override;
+    virtual void setVolume(float) override;
 
-    virtual MediaPlayer::NetworkState networkState() const OVERRIDE;
+    virtual MediaPlayer::NetworkState networkState() const override;
     void setNetworkState(MediaPlayer::NetworkState);
-    virtual MediaPlayer::ReadyState readyState() const OVERRIDE;
+    virtual MediaPlayer::ReadyState readyState() const override;
     void setReadyState(MediaPlayer::ReadyState);
-    virtual MediaPlayer::MovieLoadType movieLoadType() const OVERRIDE;
+    virtual MediaPlayer::MovieLoadType movieLoadType() const override;
 
-    virtual PassRefPtr<WebCore::TimeRanges> buffered() const OVERRIDE;
-    virtual bool didLoadingProgress() const OVERRIDE;
-    virtual void setSize(const WebCore::IntSize&) OVERRIDE;
-    virtual void paint(WebCore::GraphicsContext*, const WebCore::IntRect&) OVERRIDE;
+    virtual PassRefPtr<WebCore::TimeRanges> buffered() const override;
+    virtual bool didLoadingProgress() const override;
+    virtual void setSize(const WebCore::IntSize&) override;
+    virtual void paint(WebCore::GraphicsContext*, const WebCore::IntRect&) override;
 
 private:
     MediaPlayerPrivateNix(MediaPlayer*);

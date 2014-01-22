@@ -250,7 +250,7 @@ private:
     virtual void makeFirstResponder() override;
 #endif
 #if PLATFORM(NIX)
-    virtual WebCore::FloatRect screenRect() const OVERRIDE;
+    virtual WebCore::FloatRect screenRect() const override;
 #endif
 
     virtual void enableSuddenTermination() override;
