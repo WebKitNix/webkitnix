@@ -96,6 +96,7 @@ my $isWinCE;
 my $isWinCairo;
 my $isWin64;
 my $isEfl;
+my $isNix;
 my $isInspectorFrontend;
 my $isWK2;
 my $shouldTargetWebProcess;
@@ -310,7 +311,7 @@ sub determineArchitecture
                 $architecture = 'armv7';
             }
         }
-    } elsif (isEfl() || isGtkCMake()) {
+    } elsif (isEfl() || isNix() || isGtkCMake()) {
         my $host_processor = "";
         $host_processor = `cmake --system-information | grep CMAKE_SYSTEM_PROCESSOR`;
         if ($host_processor =~ m/^CMAKE_SYSTEM_PROCESSOR \"([^"]+)\"/) {
@@ -320,13 +321,13 @@ sub determineArchitecture
         }
     }
 
-    if (!$architecture && (isGtk() || isAppleMacWebKit() || isEfl())) {
+    if (!$architecture && (isGtk() || isAppleMacWebKit() || isEfl() || isNix())) {
         # Fall back to output of `arch', if it is present.
         $architecture = `arch`;
         chomp $architecture;
     }
 
-    if (!$architecture && (isGtk() || isAppleMacWebKit() || isEfl())) {
+    if (!$architecture && (isGtk() || isAppleMacWebKit() || isEfl() || isNix())) {
         # Fall back to output of `uname -m', if it is present.
         $architecture = `uname -m`;
         chomp $architecture;
@@ -376,6 +377,7 @@ sub argumentsForConfiguration()
     push(@args, '--gtk') if isGtkAutotools();
     push(@args, '--gtkcmake') if isGtkCMake();
     push(@args, '--efl') if isEfl();
+    push(@args, '--nix') if isNix();
     push(@args, '--wincairo') if isWinCairo();
     push(@args, '--wince') if isWinCE();
     push(@args, '--inspector-frontend') if isInspectorFrontend();
@@ -539,7 +541,7 @@ sub productDir
 sub jscProductDir
 {
     my $productDir = productDir();
-    $productDir .= "/bin" if (isEfl() || isGtkCMake());
+    $productDir .= "/bin" if (isEfl() || isNix() || isGtkCMake());
     $productDir .= "/Programs" if isGtkAutotools();
 
     return $productDir;
@@ -802,6 +804,9 @@ sub builtDylibPathForName
         }
         return "$configurationProductDir/lib/libewebkit.so";
     }
+    if (isNix()) {
+        return "$configurationProductDir/lib/libWebKitNix.so";
+    }
     if (isWinCE()) {
         return "$configurationProductDir/$libraryName";
     }
@@ -934,6 +939,18 @@ sub isGtkCMake()
 {
     determineIsGtkCMake();
     return $isGtkCMake;
+}
+
+sub determineIsNix()
+{
+    return if defined($isNix);
+    $isNix = checkForArgumentAndRemoveFromARGV("--nix");
+}
+
+sub isNix()
+{
+    determineIsNix();
+    return $isNix;
 }
 
 sub isGtkAutotools()
@@ -1091,7 +1108,7 @@ sub isCrossCompilation()
 
 sub isAppleWebKit()
 {
-    return !(isGtk() or isEfl() or isWinCE());
+    return !(isGtk() or isEfl() or isWinCE() or isNix());
 }
 
 sub isAppleMacWebKit()
@@ -1282,7 +1299,7 @@ sub relativeScriptsDir()
 sub launcherPath()
 {
     my $relativeScriptsPath = relativeScriptsDir();
-    if (isGtk() || isEfl() || isWinCE()) {
+    if (isGtk() || isEfl() || isWinCE() || isNix()) {
         return "$relativeScriptsPath/run-launcher";
     } elsif (isAppleWebKit()) {
         return "$relativeScriptsPath/run-safari";
@@ -1299,6 +1316,8 @@ sub launcherName()
         return "EWebLauncher/MiniBrowser";
     } elsif (isWinCE()) {
         return "WinCELauncher";
+    } elsif (isNix()) {
+        return "MiniBrowser";
     }
 }
 
@@ -1321,7 +1340,7 @@ sub checkRequiredSystemConfig
             print "most likely fail. The latest Xcode is available from the App Store.\n";
             print "*************************************************************\n";
         }
-    } elsif (isGtk() or isEfl() or isWindows()) {
+    } elsif (isGtk() or isEfl() or isWindows() or isNix()) {
         my @cmds = qw(bison gperf flex);
         my @missing = ();
         my $oldPath = $ENV{PATH};
@@ -1548,7 +1567,7 @@ sub copyInspectorFrontendFiles
         }
     } elsif (isAppleWinWebKit() || isWinCairo()) {
         $inspectorResourcesDirPath = $productDir . "/WebKit.resources/inspector";
-    } elsif (isGtk()) {
+    } elsif (isGtk() || isNix()) {
         my $prefix = $ENV{"WebKitInstallationPrefix"};
         $inspectorResourcesDirPath = (defined($prefix) ? $prefix : "/usr/share") . "/webkit-1.0/webinspector";
     } elsif (isEfl()) {
@@ -1860,6 +1879,8 @@ sub jhbuildWrapperPrefixIfNeeded()
             push(@prefix, "--efl");
         } elsif (isGtk()) {
             push(@prefix, "--gtk");
+        } elsif (isNix()) {
+            push(@prefix, "--nix");
         }
         push(@prefix, "run");
 
@@ -2008,6 +2029,10 @@ sub buildCMakeProjectOrExit($$$$@)
         system("perl", "$sourceDir/Tools/Scripts/update-webkitefl-libs") == 0 or die $!;
     }
 
+    if (isNix() && checkForArgumentAndRemoveFromARGV("--update-nix")) {
+        system("perl", "$sourceDir/Tools/Scripts/update-webkitnix-libs") == 0 or die $!;
+    }
+
     $returnCode = exitStatus(generateBuildSystemFromCMakeProject($port, $prefixPath, @cmakeArgs));
     exit($returnCode) if $returnCode;
 
@@ -2026,6 +2051,7 @@ sub cmakeBasedPortName()
 {
     return "Efl" if isEfl();
     return "WinCE" if isWinCE();
+    return "Nix" if isNix();
     return "GTK" if isGtkCMake();
     return "";
 }
