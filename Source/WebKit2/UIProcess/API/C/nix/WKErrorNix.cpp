@@ -85,6 +85,15 @@ void WKErrorGetTLSErrors(WKErrorRef error, unsigned* tlsErrors)
 #if USE(SOUP)
     *tlsErrors = soupTlsErrorsToNixErrors(resourceError.tlsErrors());
 #elif USE(CURL)
-    *tlsErrors = curlSSLErrorToNixError(resourceError.sslErrors());
+    *tlsErrors = resourceError.hasSSLConnectError() ? 0 : curlSSLErrorToNixError(resourceError.sslErrors());
 #endif
+}
+
+bool WKIsSSLClientCertificateError(WKErrorRef error)
+{
+#if USE(CURL)
+    const WebCore::ResourceError& resourceError = WebKit::toImpl(error)->platformError();
+    return resourceError.hasSSLConnectError();
+#endif
+    return false;
 }

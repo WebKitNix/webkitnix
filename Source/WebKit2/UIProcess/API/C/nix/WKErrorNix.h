@@ -51,6 +51,7 @@ enum {
 typedef unsigned NIXTLSErrors;
 
 WK_EXPORT void WKErrorGetTLSErrors(WKErrorRef error, NIXTLSErrors* tlsErrors);
+WK_EXPORT bool WKIsSSLClientCertificateError(WKErrorRef error);
 
 #ifdef __cplusplus
 }

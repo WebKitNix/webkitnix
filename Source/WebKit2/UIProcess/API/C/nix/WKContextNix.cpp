@@ -48,3 +48,11 @@ void WKContextSetHostAllowsAnyHTTPSCertificate(WKContextRef context, WKStringRef
 #endif
     toImpl(requestManager)->setHostAllowsAnyHTTPSCertificate(toWTFString(host));
 }
+
+void WKContextSetClientCertificateInfo(WKContextRef context, WKStringRef host, WKStringRef certificate, WKStringRef key)
+{
+#if USE(CURL)
+    WKCurlRequestManagerRef requestManager = WKContextGetCurlRequestManager(context);
+    toImpl(requestManager)->setClientCertificateInfo(toWTFString(host), toWTFString(certificate), toWTFString(key));
+#endif
+}

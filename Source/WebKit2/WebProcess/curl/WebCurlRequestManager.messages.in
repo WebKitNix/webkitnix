@@ -24,4 +24,5 @@
 #
 messages -> WebCurlRequestManager {
     SetHostAllowsAnyHTTPSCertificate(String host);
+    SetClientCertificateInfo(String host, String cert, String key);
 }

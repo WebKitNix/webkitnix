@@ -36,6 +36,7 @@ public:
     virtual ~WebCurlRequestManagerProxy();
 
     void setHostAllowsAnyHTTPSCertificate(const String&);
+    void setClientCertificateInfo(const String&, const String&, const String&);
 
 private:
     explicit WebCurlRequestManagerProxy(WebContext*);

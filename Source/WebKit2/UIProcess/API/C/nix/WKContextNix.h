@@ -33,6 +33,7 @@ extern "C" {
 #endif
 
 WK_EXPORT void WKContextSetHostAllowsAnyHTTPSCertificate(WKContextRef context, WKStringRef host);
+WK_EXPORT void WKContextSetClientCertificateInfo(WKContextRef context, WKStringRef host, WKStringRef certificate, WKStringRef key);
 
 #ifdef __cplusplus
 }

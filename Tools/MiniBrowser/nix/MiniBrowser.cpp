@@ -894,13 +894,33 @@ void MiniBrowser::didFinishDocumentLoadForFrame(WKPageRef page, WKFrameRef, WKTy
     mb->updateActiveUrlText();
 }
 
+bool MiniBrowser::handleClientCertificateError(WKErrorRef error)
+{
+    if (WKIsSSLClientCertificateError(error)) {
+        string certPath, key;
+        std::cout << "SSL connect error. Possible missing client certificate.\n";
+        std::cout << "Give a client certificate file with the path or skip (n):\n";
+        getline(cin, certPath);
+        if (certPath == "n")
+            return false;
+        std::cout << "Give the password:\n";
+        getline(cin, key);
+        WKRetainPtr<WKURLRef> url = adoptWK(WKErrorCopyFailingURL(error));
+        WKRetainPtr<WKStringRef> hostname = adoptWK(WKURLCopyHostName(url.get()));
+        WKContextSetClientCertificateInfo(m_context.get(), hostname.get(), WKStringCreateWithUTF8CString(certPath.c_str()), WKStringCreateWithUTF8CString(key.c_str()));
+        loadPage(m_activeUrlText.c_str());
+        return true;
+    }
+    return false;
+}
+
 bool MiniBrowser::handleTLSError(WKErrorRef error)
 {
     unsigned tlsErrors = 0;
     WKErrorGetTLSErrors(error, &tlsErrors);
 
     if (!tlsErrors)
-        return false;
+        return handleClientCertificateError(error);
 
     std::string errorDescription("The site's security certificate is not trusted!\n\n");
     if (tlsErrors & NIXTlsErrorUnkownCA)

@@ -41,6 +41,7 @@ private:
     void didReceiveMessage(IPC::Connection*, IPC::MessageDecoder&) OVERRIDE;
 
     void setHostAllowsAnyHTTPSCertificate(const String&);
+    void setClientCertificateInfo(const String&, const String&, const String&);
 
     WebProcess* m_process;
 };

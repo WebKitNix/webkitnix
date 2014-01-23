@@ -47,4 +47,9 @@ void WebCurlRequestManager::setHostAllowsAnyHTTPSCertificate(const String& host)
     WebCore::ResourceHandle::setHostAllowsAnyHTTPSCertificate(host);
 }
 
+void WebCurlRequestManager::setClientCertificateInfo(const String& host, const String& cert, const String& key)
+{
+    WebCore::ResourceHandle::setClientCertificateInfo(host, cert, key);
+}
+
 } // namespace WebKit

@@ -62,4 +62,11 @@ void WebCurlRequestManagerProxy::setHostAllowsAnyHTTPSCertificate(const String& 
     context()->sendToAllProcesses(Messages::WebCurlRequestManager::SetHostAllowsAnyHTTPSCertificate(host));
 }
 
+void WebCurlRequestManagerProxy::setClientCertificateInfo(const String& host, const String& cert, const String& key)
+{
+    if (!context())
+        return;
+    context()->sendToAllProcesses(Messages::WebCurlRequestManager::SetClientCertificateInfo(host, cert, key));
+}
+
 } // namespace WebKit
