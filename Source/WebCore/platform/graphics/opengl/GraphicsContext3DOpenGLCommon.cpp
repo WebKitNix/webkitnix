@@ -47,6 +47,7 @@
 #include "IntSize.h"
 #include "Logging.h"
 #include "NotImplemented.h"
+#include "RegularExpression.h"
 #include "TemporaryOpenGLSetting.h"
 #include <cstring>
 #include <runtime/ArrayBuffer.h>
@@ -70,10 +71,6 @@
 #elif PLATFORM(GTK) || PLATFORM(EFL) || PLATFORM(WIN) || PLATFORM(NIX)
 #include "OpenGLShims.h"
 #endif
-#endif
-
-#if PLATFORM(BLACKBERRY)
-#include <BlackBerryPlatformLog.h>
 #endif
 
 namespace WebCore {
@@ -164,7 +161,7 @@ void GraphicsContext3D::paintRenderingResultsToCanvas(ImageBuffer* imageBuffer, 
         }
     }
 
-#if PLATFORM(BLACKBERRY) || USE(CG)
+#if USE(CG)
     paintToCanvas(pixels.get(), m_currentWidth, m_currentHeight,
                   imageBuffer->internalSize().width(), imageBuffer->internalSize().height(), imageBuffer->context());
 #else
@@ -203,7 +200,6 @@ PassRefPtr<ImageData> GraphicsContext3D::paintRenderingResultsToImageData(Drawin
     return imageData.release();
 }
 
-#if !PLATFORM(BLACKBERRY)
 void GraphicsContext3D::prepareTexture()
 {
     if (m_layerComposited)
@@ -212,7 +208,7 @@ void GraphicsContext3D::prepareTexture()
     makeContextCurrent();
 
     TemporaryOpenGLSetting scopedScissor(GL_SCISSOR_TEST, GL_FALSE);
-    TemporaryOpenGLSetting scopedDither(GL_SCISSOR_TEST, GL_FALSE);
+    TemporaryOpenGLSetting scopedDither(GL_DITHER, GL_FALSE);
     
     if (m_attrs.antialias)
         resolveMultisamplingIfNecessary();
@@ -228,7 +224,6 @@ void GraphicsContext3D::prepareTexture()
     ::glFinish();
     m_layerComposited = true;
 }
-#endif
 
 void GraphicsContext3D::readRenderingResults(unsigned char *pixels, int pixelsSize)
 {
@@ -274,6 +269,8 @@ void GraphicsContext3D::reshape(int width, int height)
     if (width == m_currentWidth && height == m_currentHeight)
         return;
 
+    markContextChanged();
+
 #if (PLATFORM(EFL) || PLATFORM(NIX)) && USE(GRAPHICS_SURFACE)
     ::glFlush(); // Make sure all GL calls have been committed before resizing.
     createGraphicsSurfaces(IntSize(width, height));
@@ -285,13 +282,16 @@ void GraphicsContext3D::reshape(int width, int height)
     makeContextCurrent();
     validateAttributes();
 
+    TemporaryOpenGLSetting scopedScissor(GL_SCISSOR_TEST, GL_FALSE);
+    TemporaryOpenGLSetting scopedDither(GL_DITHER, GL_FALSE);
+    
     bool mustRestoreFBO = reshapeFBOs(IntSize(width, height));
 
     // Initialize renderbuffers to 0.
     GLfloat clearColor[] = {0, 0, 0, 0}, clearDepth = 0;
     GLint clearStencil = 0;
     GLboolean colorMask[] = {GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE}, depthMask = GL_TRUE;
-    GLuint stencilMask = 0xffffffff;
+    GLuint stencilMask = 0xffffffff, stencilMaskBack = 0xffffffff;
     GLbitfield clearMask = GL_COLOR_BUFFER_BIT;
     ::glGetFloatv(GL_COLOR_CLEAR_VALUE, clearColor);
     ::glClearColor(0, 0, 0, 0);
@@ -308,12 +308,11 @@ void GraphicsContext3D::reshape(int width, int height)
         ::glGetIntegerv(GL_STENCIL_CLEAR_VALUE, &clearStencil);
         ::glClearStencil(0);
         ::glGetIntegerv(GL_STENCIL_WRITEMASK, reinterpret_cast<GLint*>(&stencilMask));
+        ::glGetIntegerv(GL_STENCIL_BACK_WRITEMASK, reinterpret_cast<GLint*>(&stencilMaskBack));
         ::glStencilMaskSeparate(GL_FRONT, 0xffffffff);
+        ::glStencilMaskSeparate(GL_BACK, 0xffffffff);
         clearMask |= GL_STENCIL_BUFFER_BIT;
     }
-
-    TemporaryOpenGLSetting scopedScissor(GL_SCISSOR_TEST, GL_FALSE);
-    TemporaryOpenGLSetting scopedDither(GL_SCISSOR_TEST, GL_FALSE);
 
     ::glClear(clearMask);
 
@@ -326,6 +325,7 @@ void GraphicsContext3D::reshape(int width, int height)
     if (m_attrs.stencil) {
         ::glClearStencil(clearStencil);
         ::glStencilMaskSeparate(GL_FRONT, stencilMask);
+        ::glStencilMaskSeparate(GL_BACK, stencilMaskBack);
     }
 
     if (mustRestoreFBO)
@@ -399,11 +399,7 @@ void GraphicsContext3D::bindFramebuffer(GC3Denum target, Platform3DObject buffer
     if (buffer)
         fbo = buffer;
     else
-#if PLATFORM(BLACKBERRY)
-        fbo = m_fbo;
-#else
         fbo = (m_attrs.antialias ? m_multisampleFBO : m_fbo);
-#endif
     if (fbo != m_state.boundFBO) {
         ::glBindFramebufferEXT(target, fbo);
         m_state.boundFBO = fbo;
@@ -556,15 +552,13 @@ void GraphicsContext3D::compileShader(Platform3DObject shader)
         auto info = std::make_unique<GLchar[]>(length);
         ::glGetShaderInfoLog(shader, length, &size, info.get());
 
-        entry.log = info.get();
+        Platform3DObject shaders[2] = { shader, 0 };
+        entry.log = getUnmangledInfoLog(shaders, 1, String(info.get()));
     }
 
     if (GLCompileSuccess != GL_TRUE) {
         entry.isValid = false;
         LOG(WebGL, "Error: shader translator produced a shader that OpenGL would not compile.");
-#if PLATFORM(BLACKBERRY) && !defined(NDEBUG)
-        BBLOG(BlackBerry::Platform::LogLevelWarn, "The shader validated, but didn't compile.\n");
-#endif
     }
 
     m_shaderSymbolCount = nullptr;
@@ -573,33 +567,25 @@ void GraphicsContext3D::compileShader(Platform3DObject shader)
 void GraphicsContext3D::copyTexImage2D(GC3Denum target, GC3Dint level, GC3Denum internalformat, GC3Dint x, GC3Dint y, GC3Dsizei width, GC3Dsizei height, GC3Dint border)
 {
     makeContextCurrent();
-#if !PLATFORM(BLACKBERRY)
     if (m_attrs.antialias && m_state.boundFBO == m_multisampleFBO) {
         resolveMultisamplingIfNecessary(IntRect(x, y, width, height));
         ::glBindFramebufferEXT(GraphicsContext3D::FRAMEBUFFER, m_fbo);
     }
-#endif
     ::glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
-#if !PLATFORM(BLACKBERRY)
     if (m_attrs.antialias && m_state.boundFBO == m_multisampleFBO)
         ::glBindFramebufferEXT(GraphicsContext3D::FRAMEBUFFER, m_multisampleFBO);
-#endif
 }
 
 void GraphicsContext3D::copyTexSubImage2D(GC3Denum target, GC3Dint level, GC3Dint xoffset, GC3Dint yoffset, GC3Dint x, GC3Dint y, GC3Dsizei width, GC3Dsizei height)
 {
     makeContextCurrent();
-#if !PLATFORM(BLACKBERRY)
     if (m_attrs.antialias && m_state.boundFBO == m_multisampleFBO) {
         resolveMultisamplingIfNecessary(IntRect(x, y, width, height));
         ::glBindFramebufferEXT(GraphicsContext3D::FRAMEBUFFER, m_fbo);
     }
-#endif
     ::glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
-#if !PLATFORM(BLACKBERRY)
     if (m_attrs.antialias && m_state.boundFBO == m_multisampleFBO)
         ::glBindFramebufferEXT(GraphicsContext3D::FRAMEBUFFER, m_multisampleFBO);
-#endif
 }
 
 void GraphicsContext3D::cullFace(GC3Denum mode)
@@ -822,6 +808,24 @@ String GraphicsContext3D::originalSymbolName(Platform3DObject program, ANGLEShad
         for (const auto& symbolEntry : symbolMap) {
             if (symbolEntry.value.mappedName == name)
                 return symbolEntry.key;
+        }
+    }
+    return name;
+}
+
+String GraphicsContext3D::mappedSymbolName(Platform3DObject shaders[2], size_t count, const String& name)
+{
+    for (size_t symbolType = 0; symbolType <= static_cast<size_t>(SHADER_SYMBOL_TYPE_VARYING); ++symbolType) {
+        for (size_t i = 0; i < count; ++i) {
+            ShaderSourceMap::iterator result = m_shaderSourceMap.find(shaders[i]);
+            if (result == m_shaderSourceMap.end())
+                continue;
+            
+            const ShaderSymbolMap& symbolMap = result->value.symbolMap(static_cast<enum ANGLEShaderSymbolType>(symbolType));
+            for (const auto& symbolEntry : symbolMap) {
+                if (symbolEntry.value.mappedName == name)
+                    return symbolEntry.key;
+            }
         }
     }
     return name;
@@ -1299,6 +1303,36 @@ void GraphicsContext3D::getNonBuiltInActiveSymbolCount(Platform3DObject program,
     *value = m_shaderSymbolCount->countForType(pname);
 }
 
+String GraphicsContext3D::getUnmangledInfoLog(Platform3DObject shaders[2], GC3Dsizei count, const String& log)
+{
+    LOG(WebGL, "Was: %s", log.utf8().data());
+
+    RegularExpression regExp("webgl_[0123456789abcdefABCDEF]+", TextCaseSensitive);
+
+    String processedLog;
+    
+    int startFrom = 0;
+    int matchedLength = 0;
+    do {
+        int start = regExp.match(log, startFrom, &matchedLength);
+        if (start == -1)
+            break;
+
+        processedLog.append(log.substring(startFrom, start - startFrom));
+        startFrom = start + matchedLength;
+
+        const String& mangledSymbol = log.substring(start, matchedLength);
+        const String& mappedSymbol = mappedSymbolName(shaders, count, mangledSymbol);
+        LOG(WebGL, "Demangling: %s to %s", mangledSymbol.utf8().data(), mappedSymbol.utf8().data());
+        processedLog.append(mappedSymbol);
+    } while (startFrom < static_cast<int>(log.length()));
+
+    processedLog.append(log.substring(startFrom, log.length() - startFrom));
+
+    LOG(WebGL, "-->: %s", processedLog.utf8().data());
+    return processedLog;
+}
+
 String GraphicsContext3D::getProgramInfoLog(Platform3DObject program)
 {
     ASSERT(program);
@@ -1313,7 +1347,11 @@ String GraphicsContext3D::getProgramInfoLog(Platform3DObject program)
     auto info = std::make_unique<GLchar[]>(length);
     ::glGetProgramInfoLog(program, length, &size, info.get());
 
-    return String(info.get());
+    GC3Dsizei count;
+    Platform3DObject shaders[2];
+    getAttachedShaders(program, 2, &count, shaders);
+
+    return getUnmangledInfoLog(shaders, count, String(info.get()));
 }
 
 void GraphicsContext3D::getRenderbufferParameteriv(GC3Denum target, GC3Denum pname, GC3Dint* value)
@@ -1380,7 +1418,8 @@ String GraphicsContext3D::getShaderInfoLog(Platform3DObject shader)
     auto info = std::make_unique<GLchar[]>(length);
     ::glGetShaderInfoLog(shader, length, &size, info.get());
 
-    return String(info.get());
+    Platform3DObject shaders[2] = { shader, 0 };
+    return getUnmangledInfoLog(shaders, 1, String(info.get()));
 }
 
 String GraphicsContext3D::getShaderSource(Platform3DObject shader)
@@ -1457,7 +1496,7 @@ void GraphicsContext3D::texSubImage2D(GC3Denum target, GC3Dint level, GC3Dint xo
 {
     makeContextCurrent();
 
-#if !USE(OPENGL_ES_2)
+#if !PLATFORM(IOS) && !USE(OPENGL_ES_2)
     if (type == HALF_FLOAT_OES)
         type = GL_HALF_FLOAT_ARB;
 #endif

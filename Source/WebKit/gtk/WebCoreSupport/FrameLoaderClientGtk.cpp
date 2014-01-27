@@ -58,7 +58,6 @@
 #include "Page.h"
 #include "PluginDatabase.h"
 #include "PluginView.h"
-#include "ProgressTracker.h"
 #include "RenderView.h"
 #include "RenderWidget.h"
 #include "ResourceHandle.h"
@@ -282,35 +281,6 @@ void FrameLoaderClient::assignIdentifierToInitialRequest(unsigned long identifie
     }
 
     webkit_web_view_add_resource(getViewFromFrame(m_frame), identifierString.get(), webResource);
-}
-
-void FrameLoaderClient::postProgressStartedNotification()
-{
-    WebKitWebView* webView = getViewFromFrame(m_frame);
-    g_signal_emit_by_name(webView, "load-started", m_frame);
-
-    g_object_notify(G_OBJECT(webView), "progress");
-}
-
-void FrameLoaderClient::postProgressEstimateChangedNotification()
-{
-    WebKitWebView* webView = getViewFromFrame(m_frame);
-    Page* corePage = core(webView);
-
-    g_signal_emit_by_name(webView, "load-progress-changed", lround(corePage->progress().estimatedProgress()*100));
-
-    g_object_notify(G_OBJECT(webView), "progress");
-}
-
-void FrameLoaderClient::postProgressFinishedNotification()
-{
-    WebKitWebView* webView = getViewFromFrame(m_frame);
-    WebKitWebViewPrivate* privateData = webView->priv;
-
-    // We can get a stopLoad() from dispose when the object is being
-    // destroyed, don't emit the signal in that case.
-    if (!privateData->disposing)
-        g_signal_emit_by_name(webView, "load-finished", m_frame);
 }
 
 void FrameLoaderClient::frameLoaderDestroyed()
@@ -600,18 +570,6 @@ void FrameLoaderClient::dispatchDidClearWindowObjectInWorld(DOMWrapperWorld& wor
 
     // TODO: Re-attach debug clients if present.
     // The Win port has an example of how we might do this.
-}
-
-void FrameLoaderClient::documentElementAvailable()
-{
-}
-
-void FrameLoaderClient::didPerformFirstNavigation() const
-{
-    WebKitCacheModel cacheModel = webkit_get_cache_model();
-    // If user agents do not determine the cache model, we use WEBKIT_CACHE_MODEL_WEB_BROWSER by default.
-    if (cacheModel == WEBKIT_CACHE_MODEL_DEFAULT)
-        webkit_set_cache_model(WEBKIT_CACHE_MODEL_WEB_BROWSER);
 }
 
 void FrameLoaderClient::registerForIconNotification(bool shouldRegister)

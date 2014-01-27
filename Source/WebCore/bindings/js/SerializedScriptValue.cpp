@@ -425,6 +425,12 @@ template <typename T> static bool writeLittleEndian(Vector<uint8_t>& buffer, con
     return true;
 }
 
+template <> bool writeLittleEndian<uint8_t>(Vector<uint8_t>& buffer, const uint8_t* values, uint32_t length)
+{
+    buffer.append(values, length);
+    return true;
+}
+
 class CloneSerializer : CloneBase {
 public:
     static SerializationReturnCode serialize(ExecState* exec, JSValue value,
@@ -444,7 +450,7 @@ public:
         }
         writeLittleEndian<uint8_t>(out, StringTag);
         writeLittleEndian(out, s.length());
-        return writeLittleEndian(out, s.impl()->characters(), s.length());
+        return writeLittleEndian(out, s.impl()->deprecatedCharacters(), s.length());
     }
 
     static void serializeUndefined(Vector<uint8_t>& out)
@@ -948,7 +954,7 @@ private:
         }
 
         writeLittleEndian<uint32_t>(m_buffer, str.length());
-        if (!writeLittleEndian<uint16_t>(m_buffer, reinterpret_cast<const uint16_t*>(str.characters()), str.length()))
+        if (!writeLittleEndian<uint16_t>(m_buffer, reinterpret_cast<const uint16_t*>(str.deprecatedCharacters()), str.length()))
             fail();
     }
 

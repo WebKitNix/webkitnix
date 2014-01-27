@@ -28,7 +28,6 @@
  */
 
 #include "config.h"
-
 #include "RenderFlowThread.h"
 
 #include "FlowThreadController.h"
@@ -252,10 +251,9 @@ void RenderFlowThread::layout()
 #if USE(ACCELERATED_COMPOSITING)
 bool RenderFlowThread::hasCompositingRegionDescendant() const
 {
-    for (auto iter = m_regionList.begin(), end = m_regionList.end(); iter != end; ++iter)
-        if (RenderLayerModelObject* layerOwner = toRenderNamedFlowFragment(*iter)->layerOwner())
-            if (layerOwner->hasLayer() && layerOwner->layer()->hasCompositingDescendant())
-                return true;
+    for (auto& region : m_regionList)
+        if (toRenderNamedFlowFragment(region)->layerOwner().layer()->hasCompositingDescendant())
+            return true;
 
     return false;
 }
@@ -271,6 +269,9 @@ const RenderLayerList* RenderFlowThread::getLayerListForRegion(RenderNamedFlowFr
 
 RenderNamedFlowFragment* RenderFlowThread::regionForCompositedLayer(RenderLayer& childLayer)
 {
+    if (childLayer.renderer().fixedPositionedWithNamedFlowContainingBlock())
+        return 0;
+
     if (childLayer.renderBox()) {
         RenderRegion* startRegion = 0;
         RenderRegion* endRegion = 0;

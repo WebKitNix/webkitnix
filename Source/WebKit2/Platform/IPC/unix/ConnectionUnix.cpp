@@ -388,9 +388,20 @@ bool Connection::open()
 
     m_isConnected = true;
 #if PLATFORM(GTK) || PLATFORM(NIX)
-    m_connectionQueue->registerSocketEventHandler(m_socketDescriptor, WTF::bind(&Connection::readyReadHandler, this), WTF::bind(&Connection::connectionDidClose, this));
+    RefPtr<Connection> protector(this);
+    m_connectionQueue->registerSocketEventHandler(m_socketDescriptor,
+        [=] {
+            protector->readyReadHandler();
+        },
+        [=] {
+            protector->connectionDidClose();
+        });
 #elif PLATFORM(EFL)
-    m_connectionQueue->registerSocketEventHandler(m_socketDescriptor, WTF::bind(&Connection::readyReadHandler, this));
+    RefPtr<Connection> protector(this);
+    m_connectionQueue->registerSocketEventHandler(m_socketDescriptor,
+        [protector] {
+            protector->readyReadHandler();
+        });
 #endif
 
     // Schedule a call to readyReadHandler. Data may have arrived before installation of the signal

@@ -366,6 +366,34 @@ LayoutUnit RenderView::pageOrViewLogicalHeight() const
     return viewLogicalHeight();
 }
 
+LayoutUnit RenderView::clientLogicalWidthForFixedPosition() const
+{
+    // FIXME: If the FrameView's fixedVisibleContentRect() is not empty, perhaps it should be consulted here too?
+    if (frameView().fixedElementsLayoutRelativeToFrame())
+        return (isHorizontalWritingMode() ? frameView().visibleWidth() : frameView().visibleHeight()) / frameView().frame().frameScaleFactor();
+
+#if PLATFORM(IOS)
+    if (frameView().useCustomFixedPositionLayoutRect())
+        return isHorizontalWritingMode() ? frameView().customFixedPositionLayoutRect().width() : frameView().customFixedPositionLayoutRect().height();
+#endif
+
+    return clientLogicalWidth();
+}
+
+LayoutUnit RenderView::clientLogicalHeightForFixedPosition() const
+{
+    // FIXME: If the FrameView's fixedVisibleContentRect() is not empty, perhaps it should be consulted here too?
+    if (frameView().fixedElementsLayoutRelativeToFrame())
+        return (isHorizontalWritingMode() ? frameView().visibleHeight() : frameView().visibleWidth()) / frameView().frame().frameScaleFactor();
+
+#if PLATFORM(IOS)
+    if (frameView().useCustomFixedPositionLayoutRect())
+        return isHorizontalWritingMode() ? frameView().customFixedPositionLayoutRect().height() : frameView().customFixedPositionLayoutRect().width();
+#endif
+
+    return clientLogicalHeight();
+}
+
 #if PLATFORM(IOS)
 static inline LayoutSize fixedPositionOffset(const FrameView& frameView)
 {
@@ -1009,7 +1037,7 @@ bool RenderView::rootBackgroundIsEntirelyFixed() const
 LayoutRect RenderView::backgroundRect(RenderBox* backgroundRenderer) const
 {
     if (!hasColumns())
-        return unscaledDocumentRect();
+        return frameView().hasExtendedBackground() ? frameView().extendedBackgroundRect() : unscaledDocumentRect();
 
     ColumnInfo* columnInfo = this->columnInfo();
     LayoutRect backgroundRect(0, 0, columnInfo->desiredColumnWidth(), columnInfo->columnHeight() * columnInfo->columnCount());

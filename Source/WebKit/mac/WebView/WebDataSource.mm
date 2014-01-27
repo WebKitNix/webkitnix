@@ -36,6 +36,7 @@
 #import "WebFrameInternal.h"
 #import "WebFrameLoadDelegate.h"
 #import "WebFrameLoaderClient.h"
+#import "WebFrameViewInternal.h"
 #import "WebHTMLRepresentation.h"
 #import "WebKitErrorsPrivate.h"
 #import "WebKitLogging.h"
@@ -68,6 +69,10 @@
 
 #if PLATFORM(IOS)
 #import "WebPDFViewIOS.h"
+#endif
+
+#if USE(QUICK_LOOK)
+#import <WebCore/QuickLook.h>
 #endif
 
 using namespace WebCore;

@@ -32,7 +32,6 @@
 #include "Element.h"
 #include "ElementIterator.h"
 #include "ElementRareData.h"
-#include "ElementTraversal.h"
 #include "FlowThreadController.h"
 #include "InsertionPoint.h"
 #include "NodeRenderStyle.h"
@@ -769,17 +768,15 @@ static EVisibility elementImplicitVisibility(const Element* element)
     if (!renderer)
         return VISIBLE;
 
-    RenderStyle* style = renderer->style();
-    if (!style)
-        return VISIBLE;
+    RenderStyle& style = renderer->style();
 
-    Length width(style->width());
-    Length height(style->height());
+    Length width(style.width());
+    Length height(style.height());
     if ((width.isFixed() && width.value() <= 0) || (height.isFixed() && height.value() <= 0))
         return HIDDEN;
 
-    Length top(style->top());
-    Length left(style->left());
+    Length top(style.top());
+    Length left(style.left());
     if (left.isFixed() && width.isFixed() && -left.value() >= width.value())
         return HIDDEN;
 

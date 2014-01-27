@@ -77,7 +77,7 @@
 
 #if ENABLE(TOUCH_EVENTS)
 #if PLATFORM(IOS)
-#include <WebCore/PlatformTouchEventIOS.h>
+#include <WebKitAdditions/PlatformTouchEventIOS.h>
 #else
 #include <WebCore/PlatformTouchEvent.h>
 #endif
@@ -155,6 +155,7 @@ class WebPopupMenu;
 class WebWheelEvent;
 struct AttributedString;
 struct EditorState;
+struct InteractionInformationAtPosition;
 struct PrintInfo;
 struct WebPageCreationParameters;
 struct WebPreferencesStore;
@@ -169,6 +170,8 @@ class WebPage : public API::ObjectImpl<API::Object::Type::BundlePage>, public IP
 public:
     static PassRefPtr<WebPage> create(uint64_t pageID, const WebPageCreationParameters&);
     virtual ~WebPage();
+
+    void reinitializeWebPage(const WebPageCreationParameters&);
 
     void close();
 
@@ -242,8 +245,8 @@ public:
     WebOpenPanelResultListener* activeOpenPanelResultListener() const { return m_activeOpenPanelResultListener.get(); }
     void setActiveOpenPanelResultListener(PassRefPtr<WebOpenPanelResultListener>);
 
-    void didReceiveMessage(IPC::Connection*, IPC::MessageDecoder&) OVERRIDE;
-    void didReceiveSyncMessage(IPC::Connection*, IPC::MessageDecoder&, std::unique_ptr<IPC::MessageEncoder>&) OVERRIDE;
+    void didReceiveMessage(IPC::Connection*, IPC::MessageDecoder&) override;
+    void didReceiveSyncMessage(IPC::Connection*, IPC::MessageDecoder&, std::unique_ptr<IPC::MessageEncoder>&) override;
 
     // -- InjectedBundle methods
 #if ENABLE(CONTEXT_MENUS)
@@ -287,6 +290,10 @@ public:
     PassRefPtr<Plugin> createPlugin(WebFrame*, WebCore::HTMLPlugInElement*, const Plugin::Parameters&, String& newMIMEType);
 #endif
 
+#if ENABLE(WEBGL)
+    WebCore::WebGLLoadPolicy webGLPolicyForURL(WebFrame*, const String&);
+#endif // ENABLE(WEBGL)
+    
     EditorState editorState() const;
 
     String renderTreeExternalRepresentation() const;
@@ -419,6 +426,8 @@ public:
     void insertText(const String& text, uint64_t replacementRangeStart, uint64_t replacementRangeEnd);
     void setComposition(const String& text, Vector<WebCore::CompositionUnderline> underlines, uint64_t selectionStart, uint64_t selectionEnd);
     void confirmComposition();
+    void getPositionInformation(const WebCore::IntPoint&, InteractionInformationAtPosition&);
+    void requestPositionInformation(const WebCore::IntPoint&);
 #endif
 
     NotificationPermissionRequestManager* notificationPermissionRequestManager();
@@ -572,7 +581,7 @@ public:
     void setMediaVolume(float);
     void setMayStartMediaWhenInWindow(bool);
 
-    void didChangeScrollOffsetForMainFrame();
+    void updateMainFrameScrollOffsetPinning();
 
     void mainFrameDidLayout();
 
@@ -690,8 +699,8 @@ private:
     WebPage(uint64_t pageID, const WebPageCreationParameters&);
 
     // IPC::MessageSender
-    virtual IPC::Connection* messageSenderConnection() OVERRIDE;
-    virtual uint64_t messageSenderDestinationID() OVERRIDE;
+    virtual IPC::Connection* messageSenderConnection() override;
+    virtual uint64_t messageSenderDestinationID() override;
 
     void platformInitialize();
 
@@ -723,7 +732,6 @@ private:
     void loadAlternateHTMLString(const String& htmlString, const String& baseURL, const String& unreachableURL, IPC::MessageDecoder&);
     void loadPlainTextString(const String&, IPC::MessageDecoder&);
     void loadWebArchiveData(const IPC::DataReference&, IPC::MessageDecoder&);
-    void linkClicked(const String& url, const WebMouseEvent&);
     void reload(bool reloadFromOrigin, const SandboxExtension::Handle&);
     void goForward(uint64_t);
     void goBack(uint64_t);
@@ -734,8 +742,10 @@ private:
     void setViewIsVisible(bool);
     void setInitialFocus(bool forward, bool isKeyboardEventValid, const WebKeyboardEvent&);
     void setWindowResizerSize(const WebCore::IntSize&);
-    void updateIsInWindow(bool isInitialState = false);
+    void setIsInWindow(bool);
+    void setIsVisuallyIdle(bool);
     void setViewState(WebCore::ViewState::Flags, bool wantsDidUpdateViewState);
+    void setViewStateInternal(WebCore::ViewState::Flags, bool isInitialState);
     void validateCommand(const String&, uint64_t);
     void executeEditCommand(const String&);
 
@@ -947,11 +957,11 @@ private:
 
 #elif HAVE(ACCESSIBILITY) && (PLATFORM(GTK) || PLATFORM(EFL))
     GRefPtr<WebPageAccessibilityObject> m_accessibilityObject;
+#endif
 
-#if USE(TEXTURE_MAPPER_GL)
+#if PLATFORM(GTK) && USE(TEXTURE_MAPPER_GL)
     // Our view's window in the UI process.
     uint64_t m_nativeWindowHandle;
-#endif
 #endif
 
 #if !PLATFORM(IOS)

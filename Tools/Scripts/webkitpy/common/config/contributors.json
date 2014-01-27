@@ -2211,7 +2211,8 @@
       },
       "Siddharth Mathur" : {
          "emails" : [
-            "siddharth.mathur@nokia.com"
+            "s.mathur@ieee.org",
+            "smathur@blackbuck.mobi"
          ],
          "nicks" : [
             "simathur"
@@ -2854,6 +2855,14 @@
             "hta"
          ]
       },
+      "Ian Henderson" : {
+         "emails" : [
+            "ianh@apple.com"
+         ],
+         "nicks" : [
+            "ianh"
+         ]
+      },
       "Ian Hickson" : {
          "emails" : [
             "ian@hixie.ch"
@@ -3019,6 +3028,14 @@
          ],
          "nicks" : [
             "rhudea"
+         ]
+      },
+      "Ricky Mondello" : {
+         "emails" : [
+            "rmondello@apple.com"
+         ],
+         "nicks" : [
+            "rmondello"
          ]
       },
       "Tab Atkins" : {

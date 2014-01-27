@@ -126,7 +126,7 @@ bool CompositingCoordinator::flushPendingLayerChanges()
 void CompositingCoordinator::syncDisplayState()
 {
 #if ENABLE(INSPECTOR)
-    m_page->inspectorController()->didBeginFrame();
+    m_page->inspectorController().didBeginFrame();
 #endif
 
 #if ENABLE(REQUEST_ANIMATION_FRAME) && !USE(REQUEST_ANIMATION_FRAME_TIMER) && !USE(REQUEST_ANIMATION_FRAME_DISPLAY_MONITOR)
@@ -235,6 +235,10 @@ void CompositingCoordinator::removeImageBacking(CoordinatedImageBackingID imageI
     m_imageBackings.remove(imageID);
 
     m_state.imagesToRemove.append(imageID);
+
+    size_t imageIDPosition = m_state.imagesToClear.find(imageID);
+    if (imageIDPosition != notFound)
+        m_state.imagesToClear.remove(imageIDPosition);
 }
 
 void CompositingCoordinator::flushPendingImageBackingChanges()

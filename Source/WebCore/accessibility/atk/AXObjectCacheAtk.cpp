@@ -103,7 +103,7 @@ static AccessibilityObject* getListObject(AccessibilityObject* object)
     // For menu lists we need to return the first accessible child,
     // with role MenuListPopupRole, since that's the one holding the list
     // of items with role MenuListOptionRole.
-    AccessibilityObject::AccessibilityChildrenVector children = object->children();
+    const AccessibilityObject::AccessibilityChildrenVector& children = object->children();
     if (!children.size())
         return 0;
 
@@ -147,7 +147,7 @@ static void notifyChildrenSelectionChange(AccessibilityObject* object)
         return;
     }
 
-    AccessibilityObject::AccessibilityChildrenVector items = listObject->children();
+    const AccessibilityObject::AccessibilityChildrenVector& items = listObject->children();
     if (changedItemIndex < 0 || changedItemIndex >= static_cast<int>(items.size()))
         return;
     AccessibilityObject* item = items.at(changedItemIndex).get();
@@ -191,16 +191,6 @@ void AXObjectCache::postPlatformNotification(AccessibilityObject* coreObject, AX
         if (!coreObject->isCheckboxOrRadio())
             return;
         atk_object_notify_state_change(axObject, ATK_STATE_CHECKED, coreObject->isChecked());
-        break;
-
-    case AXChildrenChanged:
-        // We need to make sure that the children AtkObjects are created at this moment,
-        // so the children-changed::add signal gets properly emitted in attachWrapper().
-        {
-            int numOfChildren = atk_object_get_n_accessible_children(axObject);
-            for (int i = 0; i < numOfChildren; ++i)
-                GRefPtr<AtkObject> child(atk_object_ref_accessible_child(axObject, i));
-        }
         break;
 
     case AXSelectedChildrenChanged:
@@ -312,7 +302,7 @@ void AXObjectCache::frameLoadingEventPlatformNotification(AccessibilityObject* o
     }
 }
 
-void AXObjectCache::handleFocusedUIElementChanged(Node* oldFocusedNode, Node* newFocusedNode)
+void AXObjectCache::platformHandleFocusedUIElementChanged(Node* oldFocusedNode, Node* newFocusedNode)
 {
     RefPtr<AccessibilityObject> oldObject = getOrCreate(oldFocusedNode);
     if (oldObject) {

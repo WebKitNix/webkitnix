@@ -432,11 +432,7 @@ LayoutSize RenderBoxModelObject::stickyPositionOffset() const
         FloatPoint scrollOffset = FloatPoint() + enclosingClippingLayer->scrollOffset();
         constrainingRect.setLocation(scrollOffset);
     } else {
-#if PLATFORM(IOS)
-        LayoutRect viewportRect = view().frameView().customFixedPositionLayoutRect();
-#else
         LayoutRect viewportRect = view().frameView().viewportConstrainedVisibleContentRect();
-#endif
         float scale = view().frameView().frame().frameScaleFactor();
         viewportRect.scale(1 / scale);
         constrainingRect = viewportRect;
@@ -484,7 +480,7 @@ int RenderBoxModelObject::pixelSnappedOffsetHeight() const
     return snapSizeToPixel(offsetHeight(), offsetTop());
 }
 
-LayoutUnit RenderBoxModelObject::computedCSSPadding(Length padding) const
+LayoutUnit RenderBoxModelObject::computedCSSPadding(const Length& padding) const
 {
     LayoutUnit w = 0;
     if (padding.isPercent())
@@ -1106,8 +1102,11 @@ void RenderBoxModelObject::calculateBackgroundImageGeometry(const RenderLayerMod
         // the background positioning area.
         if (isRoot()) {
             positioningAreaSize = pixelSnappedIntSize(toRenderBox(this)->size() - LayoutSize(left + right, top + bottom), toRenderBox(this)->location());
-            left += marginLeft();
-            top += marginTop();
+            if (view().frameView().hasExtendedBackground()) {
+                IntRect extendedBackgroundRect = view().frameView().extendedBackgroundRect();
+                left += (marginLeft() - extendedBackgroundRect.x());
+                top += (marginTop() - extendedBackgroundRect.y());
+            }
         } else
             positioningAreaSize = pixelSnappedIntSize(paintRect.size() - LayoutSize(left + right, top + bottom), paintRect.location());
     } else {

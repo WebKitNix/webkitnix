@@ -92,10 +92,6 @@
 #include <wtf/StdLibExtras.h>
 #include <wtf/TemporaryChange.h>
 
-#if ENABLE(TOUCH_ADJUSTMENT)
-#include "TouchAdjustment.h"
-#endif
-
 #if ENABLE(SVG)
 #include "SVGDocument.h"
 #include "SVGElementInstance.h"
@@ -1023,7 +1019,7 @@ void EventHandler::startPanScrolling(RenderElement* renderer)
 
 #endif // ENABLE(PAN_SCROLLING)
 
-RenderElement* EventHandler::autoscrollRenderer() const
+RenderBox* EventHandler::autoscrollRenderer() const
 {
     return m_autoscrollController->autoscrollRenderer();
 }
@@ -1266,7 +1262,7 @@ bool EventHandler::useHandCursor(Node* node, bool isOverLink, bool shiftKey)
     return ((isOverLink || isSubmitImage(node)) && (!editable || editableLinkEnabled));
 }
 
-void EventHandler::cursorUpdateTimerFired(Timer<EventHandler>*)
+void EventHandler::cursorUpdateTimerFired(Timer<EventHandler>&)
 {
     ASSERT(m_frame.document());
     updateCursor();
@@ -1510,9 +1506,9 @@ void EventHandler::cancelAutoHideCursorTimer()
         m_autoHideCursorTimer.stop();
 }
 
-void EventHandler::autoHideCursorTimerFired(Timer<EventHandler>* timer)
+void EventHandler::autoHideCursorTimerFired(Timer<EventHandler>& timer)
 {
-    ASSERT_UNUSED(timer, timer == &m_autoHideCursorTimer);
+    ASSERT_UNUSED(timer, &timer == &m_autoHideCursorTimer);
     m_currentMouseCursor = noneCursor();
     FrameView* view = m_frame.view();
     if (view && view->isActive())
@@ -2629,17 +2625,7 @@ void EventHandler::defaultWheelEventHandler(Node* startNode, WheelEvent* wheelEv
 void EventHandler::handleSingleTap(double timestamp, const PlatformTouchPoint& point)
 {
     IntPoint targetPoint;
-#if ENABLE(TOUCH_ADJUSTMENT)
-    bool positionAdjusted = false;
-    if (m_frame.settings().touchAdjustmentEnabled()) {
-        Node* targetNode = 0;
-        positionAdjusted = bestClickableNodeForTouchPoint(point.pos(), IntSize(point.radiusX(), point.radiusY()), targetPoint, targetNode);
-    }
-    if (!positionAdjusted)
-        targetPoint = point.pos();
-#else
     targetPoint = point.pos();
-#endif
 
     PlatformMouseEvent fakeMouseMove(targetPoint, point.screenPos(), NoButton, PlatformEvent::MouseMoved, /* clickCount */ 0,
     false /* shift */, false /* ctrl */, false /* alt */, false /* meta */, timestamp);
@@ -2652,43 +2638,6 @@ void EventHandler::handleSingleTap(double timestamp, const PlatformTouchPoint& p
     PlatformMouseEvent fakeMouseUp(targetPoint, point.screenPos(), LeftButton, PlatformEvent::MouseReleased, 1 /* tapCount */,
     false /* shift */, false /* ctrl */, false /* alt */, false /* meta */, timestamp);
     handleMouseReleaseEvent(fakeMouseUp);
-}
-#endif
-
-#if ENABLE(TOUCH_ADJUSTMENT)
-bool EventHandler::bestClickableNodeForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntPoint& targetPoint, Node*& targetNode)
-{
-    IntPoint hitTestPoint = m_frame.view()->windowToContents(touchCenter);
-    HitTestResult result = hitTestResultAtPoint(hitTestPoint, HitTestRequest::ReadOnly | HitTestRequest::Active, touchRadius);
-
-    IntRect touchRect(touchCenter - touchRadius, touchRadius + touchRadius);
-
-    // FIXME: Should be able to handle targetNode being a shadow DOM node to avoid performing uncessary hit tests
-    // in the case where further processing on the node is required. Returning the shadow ancestor prevents a
-    // regression in touchadjustment/html-label.html. Some refinement is required to testing/internals to
-    // handle targetNode being a shadow DOM node. 
-    bool success = findBestClickableCandidate(targetNode, targetPoint, touchCenter, touchRect, result.rectBasedTestResult());
-    if (success && targetNode)
-        targetNode = targetNode->deprecatedShadowAncestorNode();
-    return success;
-}
-
-bool EventHandler::bestContextMenuNodeForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntPoint& targetPoint, Node*& targetNode)
-{
-    IntPoint hitTestPoint = m_frame.view()->windowToContents(touchCenter);
-    HitTestResult result = hitTestResultAtPoint(hitTestPoint, HitTestRequest::ReadOnly | HitTestRequest::Active, touchRadius);
-
-    IntRect touchRect(touchCenter - touchRadius, touchRadius + touchRadius);
-    return findBestContextMenuCandidate(targetNode, targetPoint, touchCenter, touchRect, result.rectBasedTestResult());
-}
-
-bool EventHandler::bestZoomableAreaForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntRect& targetArea, Node*& targetNode)
-{
-    IntPoint hitTestPoint = m_frame.view()->windowToContents(touchCenter);
-    HitTestResult result = hitTestResultAtPoint(hitTestPoint, HitTestRequest::ReadOnly | HitTestRequest::Active | HitTestRequest::DisallowShadowContent, touchRadius);
-
-    IntRect touchRect(touchCenter - touchRadius, touchRadius + touchRadius);
-    return findBestZoomableArea(targetNode, targetArea, touchCenter, touchRect, result.rectBasedTestResult());
 }
 #endif
 
@@ -2854,9 +2803,9 @@ void EventHandler::cancelFakeMouseMoveEvent()
     m_fakeMouseMoveEventTimer.stop();
 }
 
-void EventHandler::fakeMouseMoveEventTimerFired(Timer<EventHandler>* timer)
+void EventHandler::fakeMouseMoveEventTimerFired(Timer<EventHandler>& timer)
 {
-    ASSERT_UNUSED(timer, timer == &m_fakeMouseMoveEventTimer);
+    ASSERT_UNUSED(timer, &timer == &m_fakeMouseMoveEventTimer);
     ASSERT(!m_mousePressed);
 
     if (!m_frame.settings().deviceSupportsMouse())
@@ -2889,7 +2838,7 @@ void EventHandler::resizeLayerDestroyed()
     m_resizeLayer = 0;
 }
 
-void EventHandler::hoverTimerFired(Timer<EventHandler>*)
+void EventHandler::hoverTimerFired(Timer<EventHandler>&)
 {
     m_hoverTimer.stop();
 

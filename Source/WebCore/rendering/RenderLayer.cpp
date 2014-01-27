@@ -3914,18 +3914,46 @@ bool RenderLayer::setupClipPath(GraphicsContext* context, const LayerPaintingInf
         return false;
 
     RenderStyle& style = renderer().style();
-
     ASSERT(style.clipPath());
     if (style.clipPath()->type() == ClipPathOperation::Shape) {
-        ShapeClipPathOperation* clipPath = static_cast<ShapeClipPathOperation*>(style.clipPath());
+        ShapeClipPathOperation& clippingPath = toShapeClipPathOperation(*(style.clipPath()));
 
         if (!rootRelativeBoundsComputed) {
             rootRelativeBounds = calculateLayerBounds(paintingInfo.rootLayer, &offsetFromRoot, 0);
             rootRelativeBoundsComputed = true;
         }
 
+        LayoutRect referenceBox;
+        if (renderer().isBox()) {
+            RenderBox& box = toRenderBox(renderer());
+            switch (clippingPath.referenceBox()) {
+            case ContentBox:
+                referenceBox = box.contentBoxRect();
+                referenceBox.moveBy(rootRelativeBounds.location());
+                break;
+            case PaddingBox:
+                referenceBox = box.paddingBoxRect();
+                referenceBox.moveBy(rootRelativeBounds.location());
+                break;
+            case BorderBox:
+                referenceBox = box.borderBoxRect();
+                referenceBox.moveBy(rootRelativeBounds.location());
+                break;
+            case MarginBox:
+                // FIXME: Support margin-box. Use bounding client rect for now.
+            case BoundingBox:
+            case BoxMissing:
+                // FIXME: If no reference box was specified the spec demands to use
+                // the border-box. However, the current prefixed version of clip-path uses
+                // bounding-box. Keep bounding-box for now.
+                referenceBox = rootRelativeBounds;
+            }
+        } else
+            // FIXME: Support different reference boxes for inline content.
+            referenceBox = rootRelativeBounds;
+
         context->save();
-        context->clipPath(clipPath->pathForReferenceRect(rootRelativeBounds), clipPath->windRule());
+        context->clipPath(clippingPath.pathForReferenceRect(referenceBox), clippingPath.windRule());
         return true;
     }
 
@@ -4029,12 +4057,12 @@ void RenderLayer::paintFixedLayersInNamedFlows(GraphicsContext* context, const L
     if (!renderer().view().hasRenderNamedFlowThreads())
         return;
 
+    // Ensure the flow threads hierarchy is up-to-date before using it.
+    renderer().view().flowThreadController().updateNamedFlowsLayerListsIfNeeded();
+
     // Collect the fixed layers in a list to be painted
     Vector<RenderLayer*> fixedLayers;
     renderer().view().flowThreadController().collectFixedPositionedLayers(fixedLayers);
-
-    // Sort the fixed layers list
-    std::stable_sort(fixedLayers.begin(), fixedLayers.end(), compareZIndex);
 
     // Paint the layers
     for (size_t i = 0; i < fixedLayers.size(); ++i) {
@@ -4782,9 +4810,6 @@ RenderLayer* RenderLayer::hitTestFixedLayersInNamedFlows(RenderLayer* /*rootLaye
 
     Vector<RenderLayer*> fixedLayers;
     renderer().view().flowThreadController().collectFixedPositionedLayers(fixedLayers);
-
-    // Sort the fixed layers list
-    std::stable_sort(fixedLayers.begin(), fixedLayers.end(), compareZIndex);
 
     // Hit test the layers
     RenderLayer* resultLayer = 0;
@@ -6290,7 +6315,7 @@ void RenderLayer::setBackingNeedsRepaint(GraphicsLayer::ShouldClipToLayer should
         backing()->setContentsNeedDisplay(shouldClip);
 }
 
-void RenderLayer::setBackingNeedsRepaintInRect(const LayoutRect& r)
+void RenderLayer::setBackingNeedsRepaintInRect(const LayoutRect& r, GraphicsLayer::ShouldClipToLayer shouldClip)
 {
     // https://bugs.webkit.org/show_bug.cgi?id=61159 describes an unreproducible crash here,
     // so assert but check that the layer is composited.
@@ -6305,7 +6330,7 @@ void RenderLayer::setBackingNeedsRepaintInRect(const LayoutRect& r)
 
         renderer().view().repaintViewRectangle(absRect);
     } else
-        backing()->setContentsNeedDisplayInRect(pixelSnappedIntRect(r));
+        backing()->setContentsNeedDisplayInRect(pixelSnappedIntRect(r), shouldClip);
 }
 
 // Since we're only painting non-composited layers, we know that they all share the same repaintContainer.
@@ -6912,7 +6937,7 @@ void RenderLayer::filterNeedsRepaint()
 
 void RenderLayer::paintNamedFlowThreadInsideRegion(GraphicsContext* context, RenderNamedFlowFragment* region, LayoutRect paintDirtyRect, LayoutPoint paintOffset, PaintBehavior paintBehavior, PaintLayerFlags paintFlags)
 {
-    LayoutRect regionContentBox = toRenderBox(region->layerOwner())->contentBoxRect();
+    LayoutRect regionContentBox = toRenderBox(region->layerOwner()).contentBoxRect();
     LayoutSize moveOffset = region->flowThreadPortionLocation() - (paintOffset + regionContentBox.location());
     IntPoint adjustedPaintOffset = roundedIntPoint(-moveOffset);
     paintDirtyRect.move(moveOffset);
@@ -6933,36 +6958,42 @@ void RenderLayer::paintFlowThreadIfRegion(GraphicsContext* context, const LayerP
         return;
     
     RenderBlockFlow* renderNamedFlowFragmentContainer = toRenderBlockFlow(&renderer());
-    RenderNamedFlowFragment* region = renderNamedFlowFragmentContainer->renderNamedFlowFragment();
-    if (!region->isValid())
+    RenderNamedFlowFragment* flowFragment = renderNamedFlowFragmentContainer->renderNamedFlowFragment();
+    if (!flowFragment->isValid())
         return;
     
     ClipRect regionClipRect;
-    if (paintingInfo.rootLayer != this && parent()) {
-        ClipRectsContext clipRectsContext(paintingInfo.rootLayer, region,
-            (paintFlags & PaintLayerTemporaryClipRects) ? TemporaryClipRects : PaintingClipRects,
-            IgnoreOverlayScrollbarSize, (isPaintingOverflowContents) ? IgnoreOverflowClip : RespectOverflowClip);
-        regionClipRect = backgroundClipRect(clipRectsContext);
-    } else
-        regionClipRect = dirtyRect;
-
-    RenderNamedFlowThread* flowThread = region->namedFlowThread();
-    LayoutRect regionContentBox = renderNamedFlowFragmentContainer->contentBoxRect();
-    
+    RenderNamedFlowThread* flowThread = flowFragment->namedFlowThread();
     RenderLayer* flowThreadLayer = flowThread->layer();
-    bool isLastRegionWithRegionFragmentBreak = (region->isLastRegion() && region->style().regionFragment() == BreakRegionFragment);
-    if (region->hasOverflowClip() || isLastRegionWithRegionFragmentBreak) {
-        LayoutPoint regionOffsetFromRoot;
-        convertToLayerCoords(flowThreadLayer, regionOffsetFromRoot);
-        regionClipRect = regionContentBox;
-        regionClipRect.moveBy(regionOffsetFromRoot);
+    bool isLastRegionWithRegionFragmentBreak = (flowFragment->isLastRegion() && flowFragment->style().regionFragment() == BreakRegionFragment);
+    if (flowFragment->hasOverflowClip() || isLastRegionWithRegionFragmentBreak) {
+        regionClipRect = renderNamedFlowFragmentContainer->paddingBoxRect();
+
+        // When the layer of the flow fragment's container is composited, the flow fragment container receives a
+        // GraphicsLayer of its own so the clipping coordinates (caused by overflow:hidden) must be relative to the
+        // GraphicsLayer coordinates in which the fragment gets painted. So what is computed so far is enough.
+        // If the layer of the flowFragment is not composited, then we change the coordinates to be relative to the flow
+        // thread's layer.
+        if (!isComposited()) {
+            LayoutPoint regionOffsetFromRoot;
+            convertToLayerCoords(flowThreadLayer, regionOffsetFromRoot);
+            regionClipRect.moveBy(regionOffsetFromRoot);
+        }
+    } else {
+        if (paintingInfo.rootLayer != this && parent()) {
+            ClipRectsContext clipRectsContext(paintingInfo.rootLayer, flowFragment,
+                (paintFlags & PaintLayerTemporaryClipRects) ? TemporaryClipRects : PaintingClipRects,
+                IgnoreOverlayScrollbarSize, (isPaintingOverflowContents) ? IgnoreOverflowClip : RespectOverflowClip);
+            regionClipRect = backgroundClipRect(clipRectsContext);
+        } else
+            regionClipRect = dirtyRect;
     }
 
     // Optimize clipping for the single fragment case.
     if (!regionClipRect.isEmpty() && regionClipRect != LayoutRect::infiniteRect())
         clipToRect(paintingInfo.rootLayer, context, paintingInfo.paintDirtyRect, regionClipRect);
 
-    flowThreadLayer->paintNamedFlowThreadInsideRegion(context, region, paintingInfo.paintDirtyRect, paintOffset, paintingInfo.paintBehavior, paintFlags);
+    flowThreadLayer->paintNamedFlowThreadInsideRegion(context, flowFragment, paintingInfo.paintDirtyRect, paintOffset, paintingInfo.paintBehavior, paintFlags);
 
     if (!regionClipRect.isEmpty() && regionClipRect != LayoutRect::infiniteRect())
         restoreClip(context, paintingInfo.paintDirtyRect, regionClipRect);
@@ -6981,6 +7012,14 @@ RenderLayer* RenderLayer::hitTestFlowThreadIfRegion(RenderLayer* rootLayer, cons
         return 0;
 
     RenderFlowThread* flowThread = region->flowThread();
+
+    // If the hit location is inside a clipped out area, don't forward the hit test to the flow thread.
+    if (rootLayer != this && parent()) {
+        ClipRectsContext clipRectsContext(rootLayer, hitTestLocation.region(), TemporaryClipRects);
+        ClipRect clipRect = backgroundClipRect(clipRectsContext);
+        if (!clipRect.intersects(hitTestLocation))
+            return 0;
+    }
 
     LayoutPoint regionOffsetFromRoot;
     convertToLayerCoords(rootLayer, regionOffsetFromRoot);

@@ -27,6 +27,7 @@
 #define IntRect_h
 
 #include "IntPoint.h"
+#include "LayoutUnit.h"
 #include <wtf/Vector.h>
 
 #if USE(CG)
@@ -55,12 +56,6 @@ typedef struct _GdkRectangle GdkRectangle;
 #endif
 #elif PLATFORM(EFL)
 typedef struct _Eina_Rectangle Eina_Rectangle;
-#elif PLATFORM(BLACKBERRY)
-namespace BlackBerry {
-namespace Platform {
-class IntRect;
-}
-}
 #endif
 
 #if USE(CAIRO)
@@ -204,11 +199,6 @@ public:
 #endif
 #endif // !PLATFORM(IOS)
 
-#if PLATFORM(BLACKBERRY)
-    IntRect(const BlackBerry::Platform::IntRect&);
-    operator BlackBerry::Platform::IntRect() const;
-#endif
-
     void dump(PrintStream& out) const;
 
     static IntRect infiniteRect();
@@ -247,7 +237,7 @@ inline bool operator!=(const IntRect& a, const IntRect& b)
 
 inline IntRect IntRect::infiniteRect()
 {
-    static IntRect infiniteRect(-std::numeric_limits<int>::max() / 2, -std::numeric_limits<int>::max() / 2, std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+    static IntRect infiniteRect(-LayoutUnit::max() / 2, -LayoutUnit::max() / 2, LayoutUnit::max(), LayoutUnit::max());
     return infiniteRect;
 }
 

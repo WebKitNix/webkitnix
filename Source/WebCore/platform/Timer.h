@@ -26,6 +26,7 @@
 #ifndef Timer_h
 #define Timer_h
 
+#include <functional>
 #include <wtf/Noncopyable.h>
 #include <wtf/Threading.h>
 #include <wtf/Vector.h>
@@ -110,16 +111,26 @@ private:
 
 template <typename TimerFiredClass> class Timer : public TimerBase {
 public:
-    typedef void (TimerFiredClass::*TimerFiredFunction)(Timer*);
+    typedef void (TimerFiredClass::*TimerFiredFunction)(Timer&);
+    typedef void (TimerFiredClass::*DeprecatedTimerFiredFunction)(Timer*);
 
-    Timer(TimerFiredClass* o, TimerFiredFunction f)
-        : m_object(o), m_function(f) { }
+    Timer(TimerFiredClass* object , TimerFiredFunction function)
+        : m_function(std::bind(function, object, std::ref(*this)))
+    {
+    }
+
+    Timer(TimerFiredClass* object, DeprecatedTimerFiredFunction function)
+        : m_function(std::bind(function, object, this))
+    {
+    }
 
 private:
-    virtual void fired() OVERRIDE { (m_object->*m_function)(this); }
+    virtual void fired() override
+    {
+        m_function();
+    }
 
-    TimerFiredClass* m_object;
-    TimerFiredFunction m_function;
+    std::function<void ()> m_function;
 };
 
 inline bool TimerBase::isActive() const
@@ -141,11 +152,11 @@ inline bool TimerBase::isActive() const
 
 template <typename TimerFiredClass> class DeferrableOneShotTimer : protected TimerBase {
 public:
-    typedef void (TimerFiredClass::*TimerFiredFunction)(DeferrableOneShotTimer*);
+    typedef void (TimerFiredClass::*TimerFiredFunction)(DeferrableOneShotTimer&);
 
-    DeferrableOneShotTimer(TimerFiredClass* o, TimerFiredFunction f, double delay)
-        : m_object(o)
-        , m_function(f)
+    DeferrableOneShotTimer(TimerFiredClass* object, TimerFiredFunction function, double delay)
+        : m_object(object)
+        , m_function(function)
         , m_delay(delay)
         , m_shouldRestartWhenTimerFires(false)
     {
@@ -173,7 +184,7 @@ public:
     using TimerBase::isActive;
 
 private:
-    virtual void fired() OVERRIDE
+    virtual void fired() override
     {
         if (m_shouldRestartWhenTimerFires) {
             m_shouldRestartWhenTimerFires = false;
@@ -181,7 +192,7 @@ private:
             return;
         }
 
-        (m_object->*m_function)(this);
+        (m_object->*m_function)(*this);
     }
 
     TimerFiredClass* m_object;

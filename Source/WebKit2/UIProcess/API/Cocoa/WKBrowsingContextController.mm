@@ -49,6 +49,7 @@
 #import "WKNSURLProtectionSpace.h"
 #import "WKProcessGroupInternal.h"
 #import "WKRemoteObjectRegistryInternal.h"
+#import "WKRenderingProgressEventsInternal.h"
 #import "WKRetainPtr.h"
 #import "WKURLRequestNS.h"
 #import "WKURLResponseNS.h"
@@ -68,52 +69,52 @@ public:
     }
 
 private:
-    virtual void willChangeIsLoading() OVERRIDE
+    virtual void willChangeIsLoading() override
     {
         [m_controller willChangeValueForKey:@"loading"];
     }
 
-    virtual void didChangeIsLoading() OVERRIDE
+    virtual void didChangeIsLoading() override
     {
         [m_controller didChangeValueForKey:@"loading"];
     }
 
-    virtual void willChangeTitle() OVERRIDE
+    virtual void willChangeTitle() override
     {
         [m_controller willChangeValueForKey:@"title"];
     }
 
-    virtual void didChangeTitle() OVERRIDE
+    virtual void didChangeTitle() override
     {
         [m_controller didChangeValueForKey:@"title"];
     }
 
-    virtual void willChangeActiveURL() OVERRIDE
+    virtual void willChangeActiveURL() override
     {
         [m_controller willChangeValueForKey:@"activeURL"];
     }
 
-    virtual void didChangeActiveURL() OVERRIDE
+    virtual void didChangeActiveURL() override
     {
         [m_controller didChangeValueForKey:@"activeURL"];
     }
 
-    virtual void willChangeHasOnlySecureContent() OVERRIDE
+    virtual void willChangeHasOnlySecureContent() override
     {
         [m_controller willChangeValueForKey:@"hasOnlySecureContent"];
     }
 
-    virtual void didChangeHasOnlySecureContent() OVERRIDE
+    virtual void didChangeHasOnlySecureContent() override
     {
         [m_controller didChangeValueForKey:@"hasOnlySecureContent"];
     }
 
-    virtual void willChangeEstimatedProgress() OVERRIDE
+    virtual void willChangeEstimatedProgress() override
     {
         [m_controller willChangeValueForKey:@"estimatedProgress"];
     }
 
-    virtual void didChangeEstimatedProgress() OVERRIDE
+    virtual void didChangeEstimatedProgress() override
     {
         [m_controller didChangeValueForKey:@"estimatedProgress"];
     }
@@ -595,19 +596,6 @@ static void processDidCrash(WKPageRef page, const void* clientInfo)
         [(id <WKBrowsingContextLoadDelegatePrivate>)loadDelegate browsingContextControllerWebProcessDidCrash:browsingContext];
 }
 
-static inline WKRenderingProgressEvents renderingProgressEvents(WKLayoutMilestones milestones)
-{
-    WKRenderingProgressEvents events = 0;
-
-    if (milestones & kWKDidFirstLayout)
-        events |= WKRenderingProgressEventFirstLayout;
-
-    if (milestones & kWKDidHitRelevantRepaintedObjectsAreaThreshold)
-        events |= WKRenderingProgressEventFirstPaintWithSignificantArea;
-
-    return events;
-}
-
 static void didLayout(WKPageRef page, WKLayoutMilestones milestones, WKTypeRef userData, const void* clientInfo)
 {
     WKBrowsingContextController *browsingContext = (WKBrowsingContextController *)clientInfo;
@@ -619,10 +607,10 @@ static void didLayout(WKPageRef page, WKLayoutMilestones milestones, WKTypeRef u
 
 static void setUpPageLoaderClient(WKBrowsingContextController *browsingContext, WebPageProxy& page)
 {
-    WKPageLoaderClientV3 loaderClient;
+    WKPageLoaderClientV4 loaderClient;
     memset(&loaderClient, 0, sizeof(loaderClient));
 
-    loaderClient.base.version = 3;
+    loaderClient.base.version = 4;
     loaderClient.base.clientInfo = browsingContext;
     loaderClient.didStartProvisionalLoadForFrame = didStartProvisionalLoadForFrame;
     loaderClient.didReceiveServerRedirectForProvisionalLoadForFrame = didReceiveServerRedirectForProvisionalLoadForFrame;

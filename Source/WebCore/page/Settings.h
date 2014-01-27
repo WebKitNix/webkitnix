@@ -235,6 +235,9 @@ public:
     void setTiledBackingStoreEnabled(bool);
     bool tiledBackingStoreEnabled() const { return m_tiledBackingStoreEnabled; }
 
+    void setBackgroundShouldExtendBeyondPage(bool);
+    bool backgroundShouldExtendBeyondPage() const { return m_backgroundShouldExtendBeyondPage; }
+
 #if USE(AVFOUNDATION)
     static void setAVFoundationEnabled(bool flag);
     static bool isAVFoundationEnabled() { return gAVFoundationEnabled; }
@@ -304,6 +307,9 @@ public:
 
     static void setNetworkInterfaceName(const String&);
     static const String& networkInterfaceName();
+
+    static void setAVKitEnabled(bool flag) { gAVKitEnabled = flag; }
+    static bool avKitEnabled() { return gAVKitEnabled; }
 #endif
 
 private:
@@ -357,6 +363,7 @@ private:
 #endif
     bool m_showTiledScrollingIndicator : 1;
     bool m_tiledBackingStoreEnabled : 1;
+    bool m_backgroundShouldExtendBeyondPage : 1;
     bool m_dnsPrefetchingEnabled : 1;
 
 #if ENABLE(TOUCH_EVENTS)
@@ -401,6 +408,7 @@ private:
     static bool gShouldRespectPriorityInCSSAttributeSetters;
 #if PLATFORM(IOS)
     static bool gNetworkDataUsageTrackingEnabled;
+    static bool gAVKitEnabled;
 #endif
 
     static double gHiddenPageDOMTimerAlignmentInterval;

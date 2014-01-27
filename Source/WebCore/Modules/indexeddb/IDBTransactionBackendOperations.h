@@ -42,7 +42,7 @@ public:
     {
         return adoptRef(new CreateObjectStoreOperation(transaction, objectStoreMetadata));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     const IDBObjectStoreMetadata& objectStoreMetadata() const { return m_objectStoreMetadata; }
 
@@ -63,8 +63,9 @@ public:
     {
         return adoptRef(new DeleteObjectStoreOperation(transaction, objectStoreMetadata));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
+    IDBTransactionBackend* transaction() const { return m_transaction.get(); }
     const IDBObjectStoreMetadata& objectStoreMetadata() const { return m_objectStoreMetadata; }
 
 private:
@@ -84,7 +85,7 @@ public:
     {
         return adoptRef(new VersionChangeOperation(transaction, version, callbacks, databaseCallbacks));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     IDBTransactionBackend* transaction() const { return m_transaction.get(); }
     int64_t version() const { return m_version; }
@@ -112,7 +113,7 @@ public:
     {
         return adoptRef(new CreateObjectStoreAbortOperation(transaction, objectStoreId));
     }
-    virtual void perform() OVERRIDE FINAL;
+    virtual void perform() override final;
 private:
     CreateObjectStoreAbortOperation(IDBTransactionBackend* transaction, int64_t objectStoreId)
         : m_transaction(transaction)
@@ -130,7 +131,7 @@ public:
     {
         return adoptRef(new DeleteObjectStoreAbortOperation(transaction, objectStore));
     }
-    virtual void perform() OVERRIDE FINAL;
+    virtual void perform() override final;
 private:
     DeleteObjectStoreAbortOperation(IDBTransactionBackend* transaction, const IDBObjectStoreMetadata& objectStoreMetadata)
         : m_transaction(transaction)
@@ -148,7 +149,7 @@ public:
     {
         return adoptRef(new VersionChangeAbortOperation(transaction, previousVersion, previousIntVersion));
     }
-    virtual void perform() OVERRIDE FINAL;
+    virtual void perform() override final;
 private:
     VersionChangeAbortOperation(IDBTransactionBackend* transaction, const String& previousVersion, int64_t previousIntVersion)
         : m_transaction(transaction)
@@ -168,7 +169,7 @@ public:
     {
         return adoptRef(new CreateIndexOperation(transaction, objectStoreId, indexMetadata));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     int64_t objectStoreID() const { return m_objectStoreID; }
     const IDBIndexMetadata& idbIndexMetadata() const { return m_indexMetadata; }
@@ -192,7 +193,7 @@ public:
     {
         return adoptRef(new CreateIndexAbortOperation(transaction, objectStoreId, indexId));
     }
-    virtual void perform() OVERRIDE FINAL;
+    virtual void perform() override final;
 private:
     CreateIndexAbortOperation(IDBTransactionBackend* transaction, int64_t objectStoreId, int64_t indexId)
         : m_transaction(transaction)
@@ -212,7 +213,7 @@ public:
     {
         return adoptRef(new DeleteIndexOperation(transaction, objectStoreId, indexMetadata));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     int64_t objectStoreID() const { return m_objectStoreID; }
     const IDBIndexMetadata& idbIndexMetadata() const { return m_indexMetadata; }
@@ -236,7 +237,7 @@ public:
     {
         return adoptRef(new DeleteIndexAbortOperation(transaction, objectStoreId, indexMetadata));
     }
-    virtual void perform() OVERRIDE FINAL;
+    virtual void perform() override final;
 private:
     DeleteIndexAbortOperation(IDBTransactionBackend* transaction, int64_t objectStoreId, const IDBIndexMetadata& indexMetadata)
         : m_transaction(transaction)
@@ -256,7 +257,7 @@ public:
     {
         return adoptRef(new GetOperation(transaction, metadata, objectStoreId, indexId, keyRange, cursorType, callbacks));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     int64_t objectStoreID() const { return m_objectStoreID; }
     int64_t indexID() const { return m_indexID; }
@@ -297,14 +298,13 @@ public:
     {
         return adoptRef(new PutOperation(transaction, objectStore, value, key, putMode, callbacks, indexIds, indexKeys));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     IDBDatabaseBackend::PutMode putMode() const { return m_putMode; }
     const IDBObjectStoreMetadata& objectStore() const { return m_objectStore; }
     IDBKey* key() const { return m_key.get(); }
     const Vector<int64_t>& indexIDs() const { return m_indexIDs; }
     const Vector<IndexKeys>& indexKeys() const { return m_indexKeys; }
-    IDBCallbacks* callbacks() const { return m_callbacks.get(); }
     SharedBuffer* value() const { return m_value.get(); }
 
 private:
@@ -336,7 +336,7 @@ public:
     {
         return adoptRef(new SetIndexesReadyOperation(transaction, indexCount));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 private:
     SetIndexesReadyOperation(IDBTransactionBackend* transaction, size_t indexCount)
         : m_transaction(transaction)
@@ -354,7 +354,7 @@ public:
     {
         return adoptRef(new OpenCursorOperation(transaction, objectStoreId, indexId, keyRange, direction, cursorType, taskType, callbacks));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     int64_t objectStoreID() const { return m_objectStoreID; }
     int64_t indexID() const { return m_indexID; }
@@ -394,7 +394,7 @@ public:
     {
         return adoptRef(new CountOperation(transaction, objectStoreId, indexId, keyRange, callbacks));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     int64_t objectStoreID() const { return m_objectStoreID; }
     int64_t indexID() const { return m_indexID; }
@@ -423,7 +423,7 @@ public:
     {
         return adoptRef(new DeleteRangeOperation(transaction, objectStoreId, keyRange, callbacks));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     int64_t objectStoreID() const { return m_objectStoreID; }
     IDBCallbacks* callbacks() const { return m_callbacks.get(); }
@@ -450,7 +450,7 @@ public:
     {
         return adoptRef(new ClearObjectStoreOperation(transaction, objectStoreId, callbacks));
     }
-    virtual void perform(std::function<void()> successCallback) OVERRIDE FINAL;
+    virtual void perform(std::function<void()> successCallback) override final;
 
     int64_t objectStoreID() const { return m_objectStoreID; }
     IDBCallbacks* callbacks() const { return m_callbacks.get(); }

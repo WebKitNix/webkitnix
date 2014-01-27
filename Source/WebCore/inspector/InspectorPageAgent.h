@@ -70,6 +70,8 @@ typedef String ErrorString;
 class InspectorPageAgent : public InspectorAgentBase, public Inspector::InspectorPageBackendDispatcherHandler {
     WTF_MAKE_NONCOPYABLE(InspectorPageAgent);
 public:
+    InspectorPageAgent(InstrumentingAgents*, Page*, InspectorClient*, InspectorOverlay*);
+
     enum ResourceType {
         DocumentResource,
         StylesheetResource,
@@ -80,8 +82,6 @@ public:
         WebSocketResource,
         OtherResource
     };
-
-    static PassOwnPtr<InspectorPageAgent> create(InstrumentingAgents*, Page*, InspectorClient*, InspectorOverlay*);
 
     static bool cachedResourceContent(CachedResource*, String* result, bool* base64Encoded);
     static bool sharedBufferContent(PassRefPtr<SharedBuffer>, const String& textEncodingName, bool withBase64Encode, String* result);
@@ -95,36 +95,36 @@ public:
     static Inspector::TypeBuilder::Page::ResourceType::Enum cachedResourceTypeJson(const CachedResource&);
 
     // Page API for InspectorFrontend
-    virtual void enable(ErrorString*);
-    virtual void disable(ErrorString*);
-    virtual void addScriptToEvaluateOnLoad(ErrorString*, const String& source, String* result);
-    virtual void removeScriptToEvaluateOnLoad(ErrorString*, const String& identifier);
-    virtual void reload(ErrorString*, const bool* optionalIgnoreCache, const String* optionalScriptToEvaluateOnLoad, const String* optionalScriptPreprocessor);
-    virtual void navigate(ErrorString*, const String& url);
-    virtual void getCookies(ErrorString*, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Page::Cookie>>& cookies);
-    virtual void deleteCookie(ErrorString*, const String& cookieName, const String& url);
-    virtual void getResourceTree(ErrorString*, RefPtr<Inspector::TypeBuilder::Page::FrameResourceTree>&);
-    virtual void getResourceContent(ErrorString*, const String& frameId, const String& url, String* content, bool* base64Encoded);
-    virtual void searchInResource(ErrorString*, const String& frameId, const String& url, const String& query, const bool* optionalCaseSensitive, const bool* optionalIsRegex, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::GenericTypes::SearchMatch>>&);
-    virtual void searchInResources(ErrorString*, const String&, const bool* caseSensitive, const bool* isRegex, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Page::SearchResult>>&);
-    virtual void setDocumentContent(ErrorString*, const String& frameId, const String& html);
-    virtual void setShowPaintRects(ErrorString*, bool show);
-    virtual void canShowDebugBorders(ErrorString*, bool*);
-    virtual void setShowDebugBorders(ErrorString*, bool show);
-    virtual void canShowFPSCounter(ErrorString*, bool*);
-    virtual void setShowFPSCounter(ErrorString*, bool show);
-    virtual void canContinuouslyPaint(ErrorString*, bool*);
-    virtual void setContinuousPaintingEnabled(ErrorString*, bool enabled);
-    virtual void getScriptExecutionStatus(ErrorString*, Inspector::InspectorPageBackendDispatcherHandler::Result::Enum*);
-    virtual void setScriptExecutionDisabled(ErrorString*, bool);
-    virtual void setTouchEmulationEnabled(ErrorString*, bool);
-    virtual void setEmulatedMedia(ErrorString*, const String&);
-    virtual void getCompositingBordersVisible(ErrorString*, bool* out_param);
-    virtual void setCompositingBordersVisible(ErrorString*, bool);
-    virtual void snapshotNode(ErrorString*, int nodeId, String* outDataURL);
-    virtual void snapshotRect(ErrorString*, int x, int y, int width, int height, const String& coordinateSystem, String* outDataURL);
-    virtual void handleJavaScriptDialog(ErrorString*, bool accept, const String* promptText);
-    virtual void archive(ErrorString*, String* data);
+    virtual void enable(ErrorString*) override;
+    virtual void disable(ErrorString*) override;
+    virtual void addScriptToEvaluateOnLoad(ErrorString*, const String& source, String* result) override;
+    virtual void removeScriptToEvaluateOnLoad(ErrorString*, const String& identifier) override;
+    virtual void reload(ErrorString*, const bool* optionalIgnoreCache, const String* optionalScriptToEvaluateOnLoad) override;
+    virtual void navigate(ErrorString*, const String& url) override;
+    virtual void getCookies(ErrorString*, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Page::Cookie>>& cookies) override;
+    virtual void deleteCookie(ErrorString*, const String& cookieName, const String& url) override;
+    virtual void getResourceTree(ErrorString*, RefPtr<Inspector::TypeBuilder::Page::FrameResourceTree>&) override;
+    virtual void getResourceContent(ErrorString*, const String& frameId, const String& url, String* content, bool* base64Encoded) override;
+    virtual void searchInResource(ErrorString*, const String& frameId, const String& url, const String& query, const bool* optionalCaseSensitive, const bool* optionalIsRegex, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::GenericTypes::SearchMatch>>&) override;
+    virtual void searchInResources(ErrorString*, const String&, const bool* caseSensitive, const bool* isRegex, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Page::SearchResult>>&) override;
+    virtual void setDocumentContent(ErrorString*, const String& frameId, const String& html) override;
+    virtual void setShowPaintRects(ErrorString*, bool show) override;
+    virtual void canShowDebugBorders(ErrorString*, bool*) override;
+    virtual void setShowDebugBorders(ErrorString*, bool show) override;
+    virtual void canShowFPSCounter(ErrorString*, bool*) override;
+    virtual void setShowFPSCounter(ErrorString*, bool show) override;
+    virtual void canContinuouslyPaint(ErrorString*, bool*) override;
+    virtual void setContinuousPaintingEnabled(ErrorString*, bool enabled) override;
+    virtual void getScriptExecutionStatus(ErrorString*, Inspector::InspectorPageBackendDispatcherHandler::Result::Enum*) override;
+    virtual void setScriptExecutionDisabled(ErrorString*, bool) override;
+    virtual void setTouchEmulationEnabled(ErrorString*, bool) override;
+    virtual void setEmulatedMedia(ErrorString*, const String&) override;
+    virtual void getCompositingBordersVisible(ErrorString*, bool* out_param) override;
+    virtual void setCompositingBordersVisible(ErrorString*, bool) override;
+    virtual void snapshotNode(ErrorString*, int nodeId, String* outDataURL) override;
+    virtual void snapshotRect(ErrorString*, int x, int y, int width, int height, const String& coordinateSystem, String* outDataURL) override;
+    virtual void handleJavaScriptDialog(ErrorString*, bool accept, const String* promptText) override;
+    virtual void archive(ErrorString*, String* data) override;
 
     // InspectorInstrumentation API
     void didClearWindowObjectInWorld(Frame*, DOMWrapperWorld&);
@@ -133,10 +133,10 @@ public:
     void frameNavigated(DocumentLoader*);
     void frameDetached(Frame*);
     void loaderDetachedFromFrame(DocumentLoader*);
-    void frameStartedLoading(Frame*);
-    void frameStoppedLoading(Frame*);
-    void frameScheduledNavigation(Frame*, double delay);
-    void frameClearedScheduledNavigation(Frame*);
+    void frameStartedLoading(Frame&);
+    void frameStoppedLoading(Frame&);
+    void frameScheduledNavigation(Frame&, double delay);
+    void frameClearedScheduledNavigation(Frame&);
     void willRunJavaScriptDialog(const String& message);
     void didRunJavaScriptDialog();
     void applyEmulatedMedia(String*);
@@ -147,8 +147,8 @@ public:
     void scriptsEnabled(bool isEnabled);
 
     // Inspector Controller API
-    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) OVERRIDE;
-    virtual void willDestroyFrontendAndBackend() OVERRIDE;
+    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
+    virtual void willDestroyFrontendAndBackend() override;
 
     // Cross-agents API
     Page* page() { return m_page; }
@@ -160,11 +160,9 @@ public:
     String loaderId(DocumentLoader*);
     Frame* findFrameWithSecurityOrigin(const String& originRawString);
     Frame* assertFrame(ErrorString*, const String& frameId);
-    String scriptPreprocessor() { return m_scriptPreprocessor; }
     static DocumentLoader* assertDocumentLoader(ErrorString*, Frame*);
 
 private:
-    InspectorPageAgent(InstrumentingAgents*, Page*, InspectorClient*, InspectorOverlay*);
 #if ENABLE(TOUCH_EVENTS)
     void updateTouchEventEmulationInPage(bool);
 #endif
@@ -182,8 +180,6 @@ private:
     long m_lastScriptIdentifier;
     String m_pendingScriptToEvaluateOnLoadOnce;
     String m_scriptToEvaluateOnLoadOnce;
-    String m_pendingScriptPreprocessor;
-    String m_scriptPreprocessor;
     HashMap<Frame*, String> m_frameToIdentifier;
     HashMap<String, Frame*> m_identifierToFrame;
     HashMap<DocumentLoader*, String> m_loaderToIdentifier;

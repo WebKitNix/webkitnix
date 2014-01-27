@@ -1017,55 +1017,6 @@ void WebFrameLoaderClient::setMainDocumentError(DocumentLoader* loader, const Re
     [dataSource(loader) _setMainDocumentError:error];
 }
 
-#if !PLATFORM(IOS)
-void WebFrameLoaderClient::willChangeEstimatedProgress()
-{
-    [getWebView(m_webFrame.get()) _willChangeValueForKey:_WebEstimatedProgressKey];
-}
-
-void WebFrameLoaderClient::didChangeEstimatedProgress()
-{
-    [getWebView(m_webFrame.get()) _didChangeValueForKey:_WebEstimatedProgressKey];
-}
-#endif
-
-void WebFrameLoaderClient::postProgressStartedNotification()
-{
-#if !PLATFORM(IOS)
-    [[NSNotificationCenter defaultCenter] postNotificationName:WebViewProgressStartedNotification object:getWebView(m_webFrame.get())];
-#else
-    WebThreadPostNotification(WebViewProgressStartedNotification, getWebView(m_webFrame.get()), nil);
-#endif
-}
-
-void WebFrameLoaderClient::postProgressEstimateChangedNotification()
-{
-#if !PLATFORM(IOS)
-    [[NSNotificationCenter defaultCenter] postNotificationName:WebViewProgressEstimateChangedNotification object:getWebView(m_webFrame.get())];
-#else
-    WebView *webView = getWebView(m_webFrame.get());
-    NSNumber *progress = [NSNumber numberWithFloat:[webView estimatedProgress]];
-    CGColorRef bodyBackgroundColor = [[webView mainFrame] _bodyBackgroundColor];
-
-    // Use a CFDictionary so we can add the CGColorRef without compile errors. And then thanks to
-    // toll-free bridging we can pass the CFDictionary as an NSDictionary to postNotification.
-    CFMutableDictionaryRef userInfo = CFDictionaryCreateMutable(kCFAllocatorDefault, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-    CFDictionaryAddValue(userInfo, WebViewProgressEstimatedProgressKey, progress);
-    if (bodyBackgroundColor)
-        CFDictionaryAddValue(userInfo, WebViewProgressBackgroundColorKey, bodyBackgroundColor);
-
-    WebThreadPostNotification(WebViewProgressEstimateChangedNotification, webView, (NSDictionary *) userInfo);
-    CFRelease(userInfo);
-#endif
-}
-
-#if !PLATFORM(IOS)
-void WebFrameLoaderClient::postProgressFinishedNotification()
-{
-    [[NSNotificationCenter defaultCenter] postNotificationName:WebViewProgressFinishedNotification object:getWebView(m_webFrame.get())];
-}
-#endif
-
 void WebFrameLoaderClient::setMainFrameDocumentReady(bool ready)
 {
     [getWebView(m_webFrame.get()) setMainFrameDocumentReady:ready];
@@ -1459,8 +1410,7 @@ void WebFrameLoaderClient::setTitle(const StringWithDirection& title, const URL&
 
 void WebFrameLoaderClient::savePlatformDataToCachedFrame(CachedFrame* cachedFrame)
 {
-    OwnPtr<WebCachedFramePlatformData> webPlatformData = adoptPtr(new WebCachedFramePlatformData([m_webFrame->_private->webFrameView documentView]));
-    cachedFrame->setCachedFramePlatformData(webPlatformData.release());
+    cachedFrame->setCachedFramePlatformData(std::make_unique<WebCachedFramePlatformData>(m_webFrame->_private->webFrameView.documentView));
 
 #if PLATFORM(IOS)
     // At this point we know this frame is going to be cached. Stop all plugins.
@@ -1471,7 +1421,7 @@ void WebFrameLoaderClient::savePlatformDataToCachedFrame(CachedFrame* cachedFram
 
 void WebFrameLoaderClient::transitionToCommittedFromCachedFrame(CachedFrame* cachedFrame)
 {
-    WebCachedFramePlatformData* platformData = reinterpret_cast<WebCachedFramePlatformData*>(cachedFrame->cachedFramePlatformData());
+    WebCachedFramePlatformData* platformData = static_cast<WebCachedFramePlatformData*>(cachedFrame->cachedFramePlatformData());
     NSView <WebDocumentView> *cachedView = platformData->webDocumentView();
     ASSERT(cachedView != nil);
     ASSERT(cachedFrame->documentLoader());
@@ -1499,7 +1449,6 @@ void WebFrameLoaderClient::didRestoreFrameHierarchyForCachedFrame()
 
 void WebFrameLoaderClient::transitionToCommittedForNewPage()
 {
-    WebView *webView = getWebView(m_webFrame.get());
     WebDataSource *dataSource = [m_webFrame.get() _dataSource];
 
 #if PLATFORM(IOS)
@@ -1525,6 +1474,7 @@ void WebFrameLoaderClient::transitionToCommittedForNewPage()
         [[m_webFrame->_private->webFrameView _scrollView] setScrollBarsSuppressed:NO repaintOnUnsuppress:NO];
     
     // clean up webkit plugin instances before WebHTMLView gets freed.
+    WebView *webView = getWebView(m_webFrame.get());
     [webView removePluginInstanceViewsFor:(m_webFrame.get())];
     
     NSView <WebDocumentView> *documentView = [m_webFrame->_private->webFrameView _makeDocumentViewForDataSource:dataSource];
@@ -2332,12 +2282,22 @@ PassRefPtr<Widget> WebFrameLoaderClient::createMediaPlayerProxyPlugin(const IntS
         errorCode = WebKitErrorCannotLoadPlugIn;
 
     if (errorCode) {
+#if PLATFORM(IOS)
+        WebResourceDelegateImplementationCache* implementations = WebViewGetResourceLoadDelegateImplementations(getWebView(m_webFrame.get()));
+        if (implementations->plugInFailedWithErrorFunc) {
+            NSError *error = [[NSError alloc] _initWithPluginErrorCode:errorCode contentURL:URL pluginPageURL:nil pluginName:[pluginPackage pluginInfo].name MIMEType:mimeType];
+            CallResourceLoadDelegate(implementations->plugInFailedWithErrorFunc, [m_webFrame.get() webView],
+                                     @selector(webView:plugInFailedWithError:dataSource:), error, [m_webFrame.get() _dataSource]);
+            [error release];
+        }
+#else
         NSError *error = [[NSError alloc] _initWithPluginErrorCode:errorCode
             contentURL:URL pluginPageURL:nil pluginName:[pluginPackage pluginInfo].name MIMEType:mimeType];
         WebNullPluginView *nullView = [[[WebNullPluginView alloc] initWithFrame:NSMakeRect(0, 0, size.width(), size.height())
             error:error DOMElement:kit(element)] autorelease];
         view = nullView;
         [error release];
+#endif
     }
     
     ASSERT(view);
@@ -2370,9 +2330,6 @@ String WebFrameLoaderClient::overrideMediaType() const
     if (overrideType)
         return overrideType;
     return String();
-}
-
-void WebFrameLoaderClient::documentElementAvailable() {
 }
 
 void WebFrameLoaderClient::dispatchDidClearWindowObjectInWorld(DOMWrapperWorld& world)
@@ -2418,13 +2375,6 @@ void WebFrameLoaderClient::registerForIconNotification(bool listen)
 #if ENABLE(ICONDATABASE)
     [[m_webFrame.get() webView] _registerForIconNotification:listen];
 #endif
-}
-
-void WebFrameLoaderClient::didPerformFirstNavigation() const
-{
-    WebPreferences *preferences = [[m_webFrame.get() webView] preferences];
-    if ([preferences automaticallyDetectsCacheModel] && [preferences cacheModel] < WebCacheModelDocumentBrowser)
-        [preferences setCacheModel:WebCacheModelDocumentBrowser];
 }
 
 PassRefPtr<FrameNetworkingContext> WebFrameLoaderClient::createNetworkingContext()

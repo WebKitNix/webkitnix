@@ -34,8 +34,10 @@
 #import <CoreGraphics/CGColor.h>
 #endif
 
-#if !TARGET_OS_IPHONE
 #if !defined(ENABLE_DASHBOARD_SUPPORT)
+#if TARGET_OS_IPHONE
+#define ENABLE_DASHBOARD_SUPPORT 0
+#else
 #define ENABLE_DASHBOARD_SUPPORT 1
 #endif
 #endif
@@ -285,7 +287,9 @@ typedef enum {
 
 // Add visited links
 - (void)addVisitedLinks:(NSArray *)visitedLinks;
-
+#if TARGET_OS_IPHONE
+- (void)removeVisitedLink:(NSURL *)url;
+#endif
 @end
 
 @interface WebView (WebPrivate)
@@ -416,7 +420,6 @@ Could be worth adding to the API.
 
 + (NSString *)_standardUserAgentWithApplicationName:(NSString *)applicationName;
 #if TARGET_OS_IPHONE
-+ (NSString *)_standardUserAgentWithApplicationName:(NSString *)applicationName osMarketingVersion:(NSString *)osMarketingVersion;
 - (void)_setBrowserUserAgentProductVersion:(NSString *)productVersion buildVersion:(NSString *)buildVersion bundleVersion:(NSString *)bundleVersion;
 - (void)_setUIWebViewUserAgentWithBuildVersion:(NSString *)buildVersion;
 #endif
@@ -578,6 +581,8 @@ Could be worth adding to the API.
 
 - (void)_viewGeometryDidChange;
 - (void)_overflowScrollPositionChangedTo:(CGPoint)offset forNode:(DOMNode *)node isUserScroll:(BOOL)userScroll;
+
+- (NSArray *)_touchEventRegions;
 #endif
 
 #if !TARGET_OS_IPHONE

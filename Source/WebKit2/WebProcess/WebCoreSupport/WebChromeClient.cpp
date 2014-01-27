@@ -73,6 +73,10 @@
 #include "RemoteScrollingCoordinator.h"
 #endif
 
+#if PLATFORM(GTK)
+#include "PrinterListGtk.h"
+#endif
+
 using namespace WebCore;
 using namespace HTMLNames;
 
@@ -603,6 +607,16 @@ void WebChromeClient::print(Frame* frame)
     WebFrame* webFrame = webFrameLoaderClient ? webFrameLoaderClient->webFrame() : 0;
     ASSERT(webFrame);
 
+#if PLATFORM(GTK) && defined(HAVE_GTK_UNIX_PRINTING)
+    // When printing synchronously in GTK+ we need to make sure that we have a list of Printers before starting the print operation.
+    // Getting the list of printers is done synchronously by GTK+, but using a nested main loop that might process IPC messages
+    // comming from the UI process like EndPrinting. When the EndPriting message is received while the printer list is being populated,
+    // the print operation is finished unexpectely and the web process crashes, see https://bugs.webkit.org/show_bug.cgi?id=126979.
+    // The PrinterListGtk class gets the list of printers in the constructor so we just need to ensure there's an instance alive
+    // during the synchronous print operation.
+    RefPtr<PrinterListGtk> printerList = PrinterListGtk::shared();
+#endif
+
     m_page->sendSync(Messages::WebPageProxy::PrintFrame(webFrame->frameID()), Messages::WebPageProxy::PrintFrame::Reply());
 }
 
@@ -709,9 +723,7 @@ void WebChromeClient::loadIconForFiles(const Vector<String>& filenames, FileIcon
 #if !PLATFORM(IOS)
 void WebChromeClient::setCursor(const WebCore::Cursor& cursor)
 {
-#if USE(LAZY_NATIVE_CURSOR)
     m_page->send(Messages::WebPageProxy::SetCursor(cursor));
-#endif
 }
 
 void WebChromeClient::setCursorHiddenUntilMouseMoves(bool hiddenUntilMouseMoves)

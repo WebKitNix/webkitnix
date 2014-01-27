@@ -70,37 +70,31 @@ public:
 
     virtual ~InspectorDebuggerAgent();
 
-    virtual void causesRecompilation(ErrorString*, bool*);
-    virtual void canSetScriptSource(ErrorString*, bool*);
-    virtual void supportsSeparateScriptCompilationAndExecution(ErrorString*, bool*);
-
-    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) OVERRIDE;
-    virtual void willDestroyFrontendAndBackend() OVERRIDE;
+    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
+    virtual void willDestroyFrontendAndBackend() override;
 
     bool isPaused();
-    bool runningNestedMessageLoop();
     void addMessageToConsole(MessageSource, MessageType);
 
     // Part of the protocol.
-    virtual void enable(ErrorString*);
-    virtual void disable(ErrorString*);
-    virtual void setBreakpointsActive(ErrorString*, bool active);
+    virtual void enable(ErrorString*) override;
+    virtual void disable(ErrorString*) override;
+    virtual void setBreakpointsActive(ErrorString*, bool active) override;
 
-    virtual void setBreakpointByUrl(ErrorString*, int lineNumber, const String* optionalURL, const String* optionalURLRegex, const int* optionalColumnNumber, const RefPtr<Inspector::InspectorObject>* options, Inspector::TypeBuilder::Debugger::BreakpointId*, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Debugger::Location>>& locations);
-    virtual void setBreakpoint(ErrorString*, const RefPtr<Inspector::InspectorObject>& location, const RefPtr<Inspector::InspectorObject>* options, Inspector::TypeBuilder::Debugger::BreakpointId*, RefPtr<Inspector::TypeBuilder::Debugger::Location>& actualLocation);
-    virtual void removeBreakpoint(ErrorString*, const String& breakpointIdentifier);
-    virtual void continueToLocation(ErrorString*, const RefPtr<Inspector::InspectorObject>& location);
+    virtual void setBreakpointByUrl(ErrorString*, int lineNumber, const String* optionalURL, const String* optionalURLRegex, const int* optionalColumnNumber, const RefPtr<Inspector::InspectorObject>* options, Inspector::TypeBuilder::Debugger::BreakpointId*, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Debugger::Location>>& locations, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Debugger::BreakpointActionIdentifier>>& breakpointActionIdentifiers) override;
+    virtual void setBreakpoint(ErrorString*, const RefPtr<Inspector::InspectorObject>& location, const RefPtr<Inspector::InspectorObject>* options, Inspector::TypeBuilder::Debugger::BreakpointId*, RefPtr<Inspector::TypeBuilder::Debugger::Location>& actualLocation, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Debugger::BreakpointActionIdentifier>>& breakpointActionIdentifiers) override;
+    virtual void removeBreakpoint(ErrorString*, const String& breakpointIdentifier) override;
+    virtual void continueToLocation(ErrorString*, const RefPtr<Inspector::InspectorObject>& location) override;
 
-    virtual void searchInContent(ErrorString*, const String& scriptID, const String& query, const bool* optionalCaseSensitive, const bool* optionalIsRegex, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::GenericTypes::SearchMatch>>&);
-    virtual void setScriptSource(ErrorString*, const String& scriptID, const String& newContent, const bool* preview, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Debugger::CallFrame>>& newCallFrames, RefPtr<Inspector::InspectorObject>& result);
-    virtual void getScriptSource(ErrorString*, const String& scriptID, String* scriptSource);
-    virtual void getFunctionDetails(ErrorString*, const String& functionId, RefPtr<Inspector::TypeBuilder::Debugger::FunctionDetails>&);
-    virtual void pause(ErrorString*);
-    virtual void resume(ErrorString*);
-    virtual void stepOver(ErrorString*);
-    virtual void stepInto(ErrorString*);
-    virtual void stepOut(ErrorString*);
-    virtual void setPauseOnExceptions(ErrorString*, const String& pauseState);
+    virtual void searchInContent(ErrorString*, const String& scriptID, const String& query, const bool* optionalCaseSensitive, const bool* optionalIsRegex, RefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::GenericTypes::SearchMatch>>&) override;
+    virtual void getScriptSource(ErrorString*, const String& scriptID, String* scriptSource) override;
+    virtual void getFunctionDetails(ErrorString*, const String& functionId, RefPtr<Inspector::TypeBuilder::Debugger::FunctionDetails>&) override;
+    virtual void pause(ErrorString*) override;
+    virtual void resume(ErrorString*) override;
+    virtual void stepOver(ErrorString*) override;
+    virtual void stepInto(ErrorString*) override;
+    virtual void stepOut(ErrorString*) override;
+    virtual void setPauseOnExceptions(ErrorString*, const String& pauseState) override;
     virtual void evaluateOnCallFrame(ErrorString*,
                              const String& callFrameId,
                              const String& expression,
@@ -110,10 +104,8 @@ public:
                              const bool* returnByValue,
                              const bool* generatePreview,
                              RefPtr<Inspector::TypeBuilder::Runtime::RemoteObject>& result,
-                             Inspector::TypeBuilder::OptOutput<bool>* wasThrown);
-    void compileScript(ErrorString*, const String& expression, const String& sourceURL, Inspector::TypeBuilder::OptOutput<Inspector::TypeBuilder::Debugger::ScriptId>*, Inspector::TypeBuilder::OptOutput<String>* syntaxErrorMessage);
-    void runScript(ErrorString*, const Inspector::TypeBuilder::Debugger::ScriptId&, const int* executionContextId, const String* objectGroup, const bool* doNotPauseOnExceptionsAndMuteConsole, RefPtr<Inspector::TypeBuilder::Runtime::RemoteObject>& result, Inspector::TypeBuilder::OptOutput<bool>* wasThrown);
-    virtual void setOverlayMessage(ErrorString*, const String*);
+                             Inspector::TypeBuilder::OptOutput<bool>* wasThrown) override;
+    virtual void setOverlayMessage(ErrorString*, const String*) override;
 
     void schedulePauseOnNextStatement(Inspector::InspectorDebuggerFrontendDispatcher::Reason::Enum breakReason, PassRefPtr<Inspector::InspectorObject> data);
     void cancelPauseOnNextStatement();
@@ -144,20 +136,23 @@ protected:
 
     virtual void enable();
     virtual void disable();
-    virtual void didPause(JSC::ExecState*, const Deprecated::ScriptValue& callFrames, const Deprecated::ScriptValue& exception);
-    virtual void didContinue();
-    void reset();
+    virtual void didPause(JSC::ExecState*, const Deprecated::ScriptValue& callFrames, const Deprecated::ScriptValue& exception) override;
+    virtual void didContinue() override;
+    void didClearGlobalObject();
 
 private:
     PassRefPtr<Inspector::TypeBuilder::Array<Inspector::TypeBuilder::Debugger::CallFrame>> currentCallFrames();
 
-    virtual void didParseSource(JSC::SourceID, const Script&) OVERRIDE FINAL;
-    virtual void failedToParseSource(const String& url, const String& data, int firstLine, int errorLine, const String& errorMessage) OVERRIDE FINAL;
+    virtual void didParseSource(JSC::SourceID, const Script&) override final;
+    virtual void failedToParseSource(const String& url, const String& data, int firstLine, int errorLine, const String& errorMessage) override final;
+    virtual void didSampleProbe(JSC::ExecState*, int probeIdentifier, int hitCount, const Deprecated::ScriptValue& sample) override final;
 
     PassRefPtr<Inspector::TypeBuilder::Debugger::Location> resolveBreakpoint(const String& breakpointIdentifier, JSC::SourceID, const ScriptBreakpoint&);
-    void clear();
     bool assertPaused(ErrorString*);
+    void clearResolvedBreakpointState();
     void clearBreakDetails();
+
+    bool breakpointActionsFromProtocol(ErrorString*, RefPtr<Inspector::InspectorArray>& actions, Vector<ScriptBreakpointAction>* result);
 
     String sourceMapURLForScript(const Script&);
 
@@ -179,6 +174,8 @@ private:
     bool m_enabled;
     bool m_javaScriptPauseScheduled;
     Listener* m_listener;
+    int m_nextProbeSampleId;
+    int m_nextBreakpointActionIdentifier;
 };
 
 } // namespace WebCore

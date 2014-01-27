@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2009, 2010, 2011, 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2008, 2009, 2010, 2011, 2012, 2013, 2014 Apple Inc. All rights reserved.
  * Copyright (C) 2008 Cameron Zwarich <cwzwarich@uwaterloo.ca>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,6 @@
 #include "JumpTable.h"
 #include "LLIntCallLinkInfo.h"
 #include "LazyOperandValueProfile.h"
-#include "LineInfo.h"
 #include "ProfilerCompilation.h"
 #include "RegExpObject.h"
 #include "StructureStubInfo.h"
@@ -401,11 +400,11 @@ public:
     String nameForRegister(VirtualRegister);
 
 #if ENABLE(JIT)
-    void setNumberOfByValInfos(size_t size) { m_byValInfos.grow(size); }
+    void setNumberOfByValInfos(size_t size) { m_byValInfos.resizeToFit(size); }
     size_t numberOfByValInfos() const { return m_byValInfos.size(); }
     ByValInfo& byValInfo(size_t index) { return m_byValInfos[index]; }
 
-    void setNumberOfCallLinkInfos(size_t size) { m_callLinkInfos.grow(size); }
+    void setNumberOfCallLinkInfos(size_t size) { m_callLinkInfos.resizeToFit(size); }
     size_t numberOfCallLinkInfos() const { return m_callLinkInfos.size(); }
     CallLinkInfo& callLinkInfo(int index) { return m_callLinkInfos[index]; }
 #endif
@@ -545,21 +544,6 @@ public:
     // Exception handling support
 
     size_t numberOfExceptionHandlers() const { return m_rareData ? m_rareData->m_exceptionHandlers.size() : 0; }
-    void allocateHandlers(const Vector<UnlinkedHandlerInfo>& unlinkedHandlers)
-    {
-        size_t count = unlinkedHandlers.size();
-        if (!count)
-            return;
-        createRareDataIfNecessary();
-        m_rareData->m_exceptionHandlers.resize(count);
-        for (size_t i = 0; i < count; ++i) {
-            m_rareData->m_exceptionHandlers[i].start = unlinkedHandlers[i].start;
-            m_rareData->m_exceptionHandlers[i].end = unlinkedHandlers[i].end;
-            m_rareData->m_exceptionHandlers[i].target = unlinkedHandlers[i].target;
-            m_rareData->m_exceptionHandlers[i].scopeDepth = unlinkedHandlers[i].scopeDepth;
-        }
-
-    }
     HandlerInfo& exceptionHandler(int index) { RELEASE_ASSERT(m_rareData); return m_rareData->m_exceptionHandlers[index]; }
 
     bool hasExpressionInfo() { return m_unlinkedCode->hasExpressionInfo(); }
@@ -735,9 +719,6 @@ public:
         LateShrink
     };
     void shrinkToFit(ShrinkMode);
-
-    void copyPostParseDataFrom(CodeBlock* alternative);
-    void copyPostParseDataFromAlternative();
 
     // Functions for controlling when JITting kicks in, in a mixed mode
     // execution world.
@@ -923,8 +904,8 @@ public:
     NO_RETURN_DUE_TO_CRASH void endValidationDidFail();
 
 protected:
-    virtual void visitWeakReferences(SlotVisitor&) OVERRIDE;
-    virtual void finalizeUnconditionally() OVERRIDE;
+    virtual void visitWeakReferences(SlotVisitor&) override;
+    virtual void finalizeUnconditionally() override;
 
 #if ENABLE(DFG_JIT)
     void tallyFrequentExitSites();
@@ -1071,7 +1052,6 @@ private:
     Vector<ObjectAllocationProfile> m_objectAllocationProfiles;
 
     // Constant Pool
-    Vector<Identifier> m_additionalIdentifiers;
     COMPILE_ASSERT(sizeof(Register) == sizeof(WriteBarrier<Unknown>), Register_must_be_same_size_as_WriteBarrier_Unknown);
     // TODO: This could just be a pointer to m_unlinkedCodeBlock's data, but the DFG mutates
     // it, so we're stuck with it for now.
@@ -1146,8 +1126,8 @@ public:
 
 #if ENABLE(JIT)
 protected:
-    virtual CodeBlock* replacement() OVERRIDE;
-    virtual DFG::CapabilityLevel capabilityLevelInternal() OVERRIDE;
+    virtual CodeBlock* replacement() override;
+    virtual DFG::CapabilityLevel capabilityLevelInternal() override;
 #endif
 };
 
@@ -1168,8 +1148,8 @@ public:
     
 #if ENABLE(JIT)
 protected:
-    virtual CodeBlock* replacement() OVERRIDE;
-    virtual DFG::CapabilityLevel capabilityLevelInternal() OVERRIDE;
+    virtual CodeBlock* replacement() override;
+    virtual DFG::CapabilityLevel capabilityLevelInternal() override;
 #endif
     
 private:
@@ -1190,8 +1170,8 @@ public:
     
 #if ENABLE(JIT)
 protected:
-    virtual CodeBlock* replacement() OVERRIDE;
-    virtual DFG::CapabilityLevel capabilityLevelInternal() OVERRIDE;
+    virtual CodeBlock* replacement() override;
+    virtual DFG::CapabilityLevel capabilityLevelInternal() override;
 #endif
 };
 

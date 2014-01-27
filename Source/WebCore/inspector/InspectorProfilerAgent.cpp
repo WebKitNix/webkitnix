@@ -71,17 +71,17 @@ public:
     virtual ~PageProfilerAgent() { }
 
 private:
-    virtual void recompileScript()
+    virtual void recompileScript() override
     {
-        PageScriptDebugServer::shared().recompileAllJSFunctionsSoon();
+        PageScriptDebugServer::shared().recompileAllJSFunctions();
     }
 
-    virtual void startProfiling(const String& title)
+    virtual void startProfiling(const String& title) override
     {
         ScriptProfiler::startForPage(m_inspectedPage, title);
     }
 
-    virtual PassRefPtr<ScriptProfile> stopProfiling(const String& title)
+    virtual PassRefPtr<ScriptProfile> stopProfiling(const String& title) override
     {
         return ScriptProfiler::stopForPage(m_inspectedPage, title);
     }
@@ -89,9 +89,9 @@ private:
     Page* m_inspectedPage;
 };
 
-PassOwnPtr<InspectorProfilerAgent> InspectorProfilerAgent::create(InstrumentingAgents* instrumentingAgents, InspectorConsoleAgent* consoleAgent, Page* inspectedPage, PageInjectedScriptManager* injectedScriptManager)
+std::unique_ptr<InspectorProfilerAgent> InspectorProfilerAgent::create(InstrumentingAgents* instrumentingAgents, InspectorConsoleAgent* consoleAgent, Page* inspectedPage, PageInjectedScriptManager* injectedScriptManager)
 {
-    return adoptPtr(new PageProfilerAgent(instrumentingAgents, consoleAgent, inspectedPage, injectedScriptManager));
+    return std::make_unique<PageProfilerAgent>(instrumentingAgents, consoleAgent, inspectedPage, injectedScriptManager);
 }
 
 class WorkerProfilerAgent : public InspectorProfilerAgent {
@@ -101,14 +101,14 @@ public:
     virtual ~WorkerProfilerAgent() { }
 
 private:
-    virtual void recompileScript() { }
+    virtual void recompileScript() override { }
 
-    virtual void startProfiling(const String& title)
+    virtual void startProfiling(const String& title) override
     {
         ScriptProfiler::startForWorkerGlobalScope(m_workerGlobalScope, title);
     }
 
-    virtual PassRefPtr<ScriptProfile> stopProfiling(const String& title)
+    virtual PassRefPtr<ScriptProfile> stopProfiling(const String& title) override
     {
         return ScriptProfiler::stopForWorkerGlobalScope(m_workerGlobalScope, title);
     }
@@ -116,9 +116,9 @@ private:
     WorkerGlobalScope* m_workerGlobalScope;
 };
 
-PassOwnPtr<InspectorProfilerAgent> InspectorProfilerAgent::create(InstrumentingAgents* instrumentingAgents, InspectorConsoleAgent* consoleAgent, WorkerGlobalScope* workerGlobalScope, PageInjectedScriptManager* injectedScriptManager)
+std::unique_ptr<InspectorProfilerAgent> InspectorProfilerAgent::create(InstrumentingAgents* instrumentingAgents, InspectorConsoleAgent* consoleAgent, WorkerGlobalScope* workerGlobalScope, PageInjectedScriptManager* injectedScriptManager)
 {
-    return adoptPtr(new WorkerProfilerAgent(instrumentingAgents, consoleAgent, workerGlobalScope, injectedScriptManager));
+    return std::make_unique<WorkerProfilerAgent>(instrumentingAgents, consoleAgent, workerGlobalScope, injectedScriptManager);
 }
 
 InspectorProfilerAgent::InspectorProfilerAgent(InstrumentingAgents* instrumentingAgents, InspectorConsoleAgent* consoleAgent, PageInjectedScriptManager* injectedScriptManager)
@@ -138,7 +138,7 @@ InspectorProfilerAgent::InspectorProfilerAgent(InstrumentingAgents* instrumentin
 
 InspectorProfilerAgent::~InspectorProfilerAgent()
 {
-    m_instrumentingAgents->setInspectorProfilerAgent(0);
+    m_instrumentingAgents->setInspectorProfilerAgent(nullptr);
 }
 
 void InspectorProfilerAgent::addProfile(PassRefPtr<ScriptProfile> prpProfile, unsigned lineNumber, unsigned columnNumber, const String& sourceURL)
@@ -188,11 +188,6 @@ PassRefPtr<Inspector::TypeBuilder::Profiler::ProfileHeader> InspectorProfilerAge
         .setTitle(snapshot.title());
     header->setMaxJSObjectId(snapshot.maxSnapshotJSObjectId());
     return header.release();
-}
-
-void InspectorProfilerAgent::causesRecompilation(ErrorString*, bool* result)
-{
-    *result = ScriptProfiler::causesRecompilation();
 }
 
 void InspectorProfilerAgent::isSampling(ErrorString*, bool* result)
@@ -262,8 +257,8 @@ class OutputStream : public ScriptHeapSnapshot::OutputStream {
 public:
     OutputStream(InspectorProfilerFrontendDispatcher* frontend, unsigned uid)
         : m_frontendDispatcher(frontend), m_uid(uid) { }
-    void Write(const String& chunk) { m_frontendDispatcher->addHeapSnapshotChunk(m_uid, chunk); }
-    void Close() { m_frontendDispatcher->finishHeapSnapshot(m_uid); }
+    void Write(const String& chunk) override { m_frontendDispatcher->addHeapSnapshotChunk(m_uid, chunk); }
+    void Close() override { m_frontendDispatcher->finishHeapSnapshot(m_uid); }
 private:
     InspectorProfilerFrontendDispatcher* m_frontendDispatcher;
     int m_uid;
@@ -354,7 +349,7 @@ void InspectorProfilerAgent::start(ErrorString*)
         return;
     if (!enabled()) {
         enable(true);
-        PageScriptDebugServer::shared().recompileAllJSFunctions(0);
+        PageScriptDebugServer::shared().recompileAllJSFunctions();
     }
     m_recordingCPUProfile = true;
     String title = getCurrentUserInitiatedProfileName(true);
@@ -381,16 +376,16 @@ class HeapSnapshotProgress: public ScriptProfiler::HeapSnapshotProgress {
 public:
     explicit HeapSnapshotProgress(InspectorProfilerFrontendDispatcher* frontend)
         : m_frontendDispatcher(frontend) { }
-    void Start(int totalWork)
+    void Start(int totalWork) override
     {
         m_totalWork = totalWork;
     }
-    void Worked(int workDone)
+    void Worked(int workDone) override
     {
         if (m_frontendDispatcher)
             m_frontendDispatcher->reportHeapSnapshotProgress(workDone, m_totalWork);
     }
-    void Done() { }
+    void Done() override { }
     bool isCanceled() { return false; }
 private:
     InspectorProfilerFrontendDispatcher* m_frontendDispatcher;

@@ -27,12 +27,13 @@
 #include "DOMImplementation.h"
 #include "HTMLNames.h"
 #include "Language.h"
-#if ENABLE(MATHML)
-#include "MathMLNames.h"
-#endif
 #include "SVGElement.h"
 #include "SVGNames.h"
 #include "SVGStringList.h"
+
+#if ENABLE(MATHML)
+#include "MathMLNames.h"
+#endif
 
 namespace WebCore {
 
@@ -111,24 +112,18 @@ bool SVGTests::hasExtension(const String& extension) const
 
 bool SVGTests::isValid() const
 {
-    unsigned featuresSize = m_requiredFeatures.value.size();
-    for (unsigned i = 0; i < featuresSize; ++i) {
-        String value = m_requiredFeatures.value.at(i);
-        if (value.isEmpty() || !DOMImplementation::hasFeature(value, String()))
+    for (auto& feature : m_requiredFeatures.value) {
+        if (feature.isEmpty() || !DOMImplementation::hasFeature(feature, String()))
             return false;
     }
 
-    unsigned systemLanguageSize = m_systemLanguage.value.size();
-    for (unsigned i = 0; i < systemLanguageSize; ++i) {
-        String value = m_systemLanguage.value.at(i);
-        if (value != defaultLanguage().substring(0, 2))
+    for (auto& language : m_systemLanguage.value) {
+        if (language != defaultLanguage().substring(0, 2))
             return false;
     }
 
-    unsigned extensionsSize = m_requiredExtensions.value.size();
-    for (unsigned i = 0; i < extensionsSize; ++i) {
-        String value = m_requiredExtensions.value.at(i);
-        if (!hasExtension(value))
+    for (auto& extension : m_requiredExtensions.value) {
+        if (!hasExtension(extension))
             return false;
     }
 

@@ -46,9 +46,9 @@ const unsigned renderBufferSize = 128;
 // Size of the FIFO
 const size_t fifoSize = 8192;
 
-PassOwnPtr<AudioDestination> AudioDestination::create(AudioIOCallback& callback, const String& inputDeviceId, unsigned numberOfInputChannels, unsigned numberOfOutputChannels, float sampleRate)
+std::unique_ptr<AudioDestination> AudioDestination::create(AudioIOCallback& callback, const String& inputDeviceId, unsigned numberOfInputChannels, unsigned numberOfOutputChannels, float sampleRate)
 {
-    return adoptPtr(new AudioDestinationNix(callback, inputDeviceId, numberOfInputChannels, numberOfOutputChannels, sampleRate));
+    return std::make_unique<AudioDestinationNix>(callback, inputDeviceId, numberOfInputChannels, numberOfOutputChannels, sampleRate);
 }
 
 AudioDestinationNix::AudioDestinationNix(AudioIOCallback& callback, const String& inputDeviceId, unsigned numberOfInputChannels, unsigned numberOfOutputChannels, float sampleRate)
@@ -68,7 +68,7 @@ AudioDestinationNix::AudioDestinationNix(AudioIOCallback& callback, const String
     if (m_callbackBufferSize + renderBufferSize > fifoSize)
         return;
 
-    m_audioDevice = adoptPtr(Nix::Platform::current()->createAudioDevice(m_inputDeviceId.utf8().data(), m_callbackBufferSize, numberOfInputChannels, numberOfOutputChannels, sampleRate, this));
+    m_audioDevice = std::unique_ptr<Nix::AudioDevice>(Nix::Platform::current()->createAudioDevice(m_inputDeviceId.utf8().data(), m_callbackBufferSize, numberOfInputChannels, numberOfOutputChannels, sampleRate, this));
 
     ASSERT(m_audioDevice);
 
@@ -77,10 +77,10 @@ AudioDestinationNix::AudioDestinationNix(AudioIOCallback& callback, const String
     // contains enough data, the data will be provided directly.
     // Otherwise, the FIFO will call the provider enough times to
     // satisfy the request for data.
-    m_fifo = adoptPtr(new AudioPullFIFO(*this, numberOfOutputChannels, fifoSize, renderBufferSize));
+    m_fifo = std::make_unique<AudioPullFIFO>(*this, numberOfOutputChannels, fifoSize, renderBufferSize);
 
     // Input buffering.
-    m_inputFifo = adoptPtr(new AudioFIFO(numberOfInputChannels, fifoSize));
+    m_inputFifo = std::make_unique<AudioFIFO>(numberOfInputChannels, fifoSize);
 
     // If the callback size does not match the render size, then we need to buffer some
     // extra silence for the input. Otherwise, we can over-consume the input FIFO.

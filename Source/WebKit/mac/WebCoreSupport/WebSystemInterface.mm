@@ -77,7 +77,7 @@ void InitWebCoreSystemInterface(void)
     INIT(GetFontInLanguageForRange);
     INIT(GetGlyphTransformedAdvances);
 #endif
-    INIT(GetHTTPPipeliningPriority);
+    INIT(GetHTTPRequestPriority);
     INIT(GetMIMETypeForExtension);
     INIT(GetNSURLResponseLastModifiedDate);
 #if !PLATFORM(IOS)
@@ -105,9 +105,10 @@ void InitWebCoreSystemInterface(void)
 #if !PLATFORM(IOS)
     INIT(SetDragImage);
 #endif
-    INIT(SetHTTPPipeliningMaximumPriority);
-    INIT(SetHTTPPipeliningPriority);
-    INIT(SetHTTPPipeliningMinimumFastLanePriority);
+    INIT(SetHTTPRequestMaximumPriority);
+    INIT(SetHTTPRequestPriority);
+    INIT(SetHTTPRequestMinimumFastLanePriority);
+    INIT(HTTPRequestEnablePipelining);
     INIT(SetNSURLConnectionDefersCallbacks);
     INIT(SetNSURLRequestShouldContentSniff);
     INIT(SetPatternPhaseInUserSpace);
@@ -233,6 +234,14 @@ void InitWebCoreSystemInterface(void)
     INIT(CGPathAddRoundedRect);
 
     INIT(CFURLRequestAllowAllPostCaching);
+
+#if PLATFORM(IOS)
+    INIT(GetUserAgent);
+    INIT(GetDeviceName);
+    INIT(GetOSNameForUserAgent);
+    INIT(GetPlatformNameForNavigator);
+    INIT(GetVendorNameForNavigator);
+#endif
 
 #if !PLATFORM(IOS) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
     INIT(NSElasticDeltaForTimeDelta);

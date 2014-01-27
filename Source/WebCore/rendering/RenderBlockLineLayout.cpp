@@ -83,18 +83,18 @@ void RenderBlockFlow::appendRunsForObject(BidiRunList<BidiRun>& runs, int start,
         return;
 
     LineMidpointState& lineMidpointState = resolver.midpointState();
-    bool haveNextMidpoint = (lineMidpointState.currentMidpoint < lineMidpointState.numMidpoints);
+    bool haveNextMidpoint = (lineMidpointState.currentMidpoint() < lineMidpointState.numMidpoints());
     InlineIterator nextMidpoint;
     if (haveNextMidpoint)
-        nextMidpoint = lineMidpointState.midpoints[lineMidpointState.currentMidpoint];
-    if (lineMidpointState.betweenMidpoints) {
+        nextMidpoint = lineMidpointState.midpoints()[lineMidpointState.currentMidpoint()];
+    if (lineMidpointState.betweenMidpoints()) {
         if (!(haveNextMidpoint && nextMidpoint.renderer() == obj))
             return;
         // This is a new start point. Stop ignoring objects and
         // adjust our start.
-        lineMidpointState.betweenMidpoints = false;
+        lineMidpointState.setBetweenMidpoints(false);
         start = nextMidpoint.offset();
-        lineMidpointState.currentMidpoint++;
+        lineMidpointState.incrementCurrentMidpoint();
         if (start < end)
             return appendRunsForObject(runs, start, end, obj, resolver);
     } else {
@@ -106,8 +106,8 @@ void RenderBlockFlow::appendRunsForObject(BidiRunList<BidiRun>& runs, int start,
         // An end midpoint has been encountered within our object.  We
         // need to go ahead and append a run with our endpoint.
         if (static_cast<int>(nextMidpoint.offset() + 1) <= end) {
-            lineMidpointState.betweenMidpoints = true;
-            lineMidpointState.currentMidpoint++;
+            lineMidpointState.setBetweenMidpoints(true);
+            lineMidpointState.incrementCurrentMidpoint();
             if (nextMidpoint.offset() != UINT_MAX) { // UINT_MAX means stop at the object and don't include any of it.
                 if (static_cast<int>(nextMidpoint.offset() + 1) > start)
                     runs.addRun(createRun(start, nextMidpoint.offset() + 1, obj, resolver));
@@ -355,10 +355,36 @@ RootInlineBox* RenderBlockFlow::constructLine(BidiRunList<BidiRun>& bidiRuns, co
 ETextAlign RenderBlockFlow::textAlignmentForLine(bool endsWithSoftBreak) const
 {
     ETextAlign alignment = style().textAlign();
-    if (!endsWithSoftBreak && alignment == JUSTIFY)
-        alignment = TASTART;
+    if (endsWithSoftBreak)
+        return alignment;
 
+#if !ENABLE(CSS3_TEXT)
+    return (alignment == JUSTIFY) ? TASTART : alignment;
+#else
+    if (alignment != JUSTIFY)
+        return alignment;
+
+    TextAlignLast alignmentLast = style().textAlignLast();
+    switch (alignmentLast) {
+    case TextAlignLastStart:
+        return TASTART;
+    case TextAlignLastEnd:
+        return TAEND;
+    case TextAlignLastLeft:
+        return LEFT;
+    case TextAlignLastRight:
+        return RIGHT;
+    case TextAlignLastCenter:
+        return CENTER;
+    case TextAlignLastJustify:
+        return JUSTIFY;
+    case TextAlignLastAuto:
+        if (style().textJustify() == TextJustifyDistribute)
+            return JUSTIFY;
+        return TASTART;
+    }
     return alignment;
+#endif
 }
 
 static void updateLogicalWidthForLeftAlignedBlock(bool isLeftToRightDirection, BidiRun* trailingSpaceRun, float& logicalLeft, float& totalLogicalWidth, float availableLogicalWidth)
@@ -479,7 +505,7 @@ static inline void setLogicalWidthForTextRun(RootInlineBox* lineBox, BidiRun* ru
                     &wordMeasurement.fallbackFonts, &overflow);
                 UChar c = renderer->characterAt(wordMeasurement.startOffset);
                 if (i > 0 && wordLength == 1 && (c == ' ' || c == '\t'))
-                    measuredWidth += renderer->style().wordSpacing();
+                    measuredWidth += renderer->style().font().wordSpacing();
             } else
                 measuredWidth += wordMeasurement.width;
             if (!wordMeasurement.fallbackFonts.isEmpty()) {
@@ -938,7 +964,7 @@ static inline void constructBidiRunsForLine(const RenderBlockFlow* block, Inline
             segmentMarker->m_startsSegment = true;
             bidiRuns.addRun(segmentMarker);
             // Do not collapse midpoints between segments
-            topResolver.midpointState().betweenMidpoints = false;
+            topResolver.midpointState().setBetweenMidpoints(false);
         }
         if (segmentStart == segmentEnd)
             continue;
@@ -2157,7 +2183,11 @@ LayoutUnit RenderBlockFlow::startAlignedOffsetForLine(LayoutUnit position, bool 
 void RenderBlockFlow::updateRegionForLine(RootInlineBox* lineBox) const
 {
     ASSERT(lineBox);
-    lineBox->setContainingRegion(regionAtBlockOffset(lineBox->lineTopWithLeading()));
+
+    if (auto containingRegion = regionAtBlockOffset(lineBox->lineTopWithLeading()))
+        lineBox->setContainingRegion(*containingRegion);
+    else
+        lineBox->clearContainingRegion();
 
     RootInlineBox* prevLineBox = lineBox->prevRootBox();
     if (!prevLineBox)

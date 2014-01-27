@@ -38,15 +38,15 @@ public:
     // Called from port-specific parent create function to create custom controls.
     static PassRefPtr<MediaControlsNix> createControls(Document&);
 
-    virtual void setMediaController(MediaControllerInterface*) OVERRIDE;
+    virtual void setMediaController(MediaControllerInterface*) override;
 
-    virtual void reset() OVERRIDE;
+    virtual void reset() override;
 
-    virtual void playbackStarted() OVERRIDE;
+    virtual void playbackStarted() override;
 
-    void changedMute() OVERRIDE;
+    void changedMute() override;
 
-    virtual void updateCurrentTimeDisplay() OVERRIDE;
+    virtual void updateCurrentTimeDisplay() override;
 
 protected:
     explicit MediaControlsNix(Document&);

@@ -40,13 +40,13 @@ class SVGDocument;
 class SVGFontElement;
 struct FontCustomPlatformData;
 
-class CachedFont FINAL : public CachedResource {
+class CachedFont final : public CachedResource {
 public:
     CachedFont(const ResourceRequest&);
     virtual ~CachedFont();
 
     void beginLoadIfNeeded(CachedResourceLoader* dl);
-    virtual bool stillNeedsLoad() const OVERRIDE { return !m_loadInitiated; }
+    virtual bool stillNeedsLoad() const override { return !m_loadInitiated; }
 
     bool ensureCustomFontData();
     FontPlatformData platformDataFromCustomData(float size, bool bold, bool italic, FontOrientation = Horizontal, FontWidthVariant = RegularWidth, FontRenderingMode = NormalRenderingMode);
@@ -57,15 +57,15 @@ public:
 #endif
 
 private:
-    virtual void checkNotify() OVERRIDE;
-    virtual bool mayTryReplaceEncodedData() const OVERRIDE;
+    virtual void checkNotify() override;
+    virtual bool mayTryReplaceEncodedData() const override;
 
-    virtual void load(CachedResourceLoader*, const ResourceLoaderOptions&) OVERRIDE;
+    virtual void load(CachedResourceLoader*, const ResourceLoaderOptions&) override;
 
-    virtual void didAddClient(CachedResourceClient*) OVERRIDE;
-    virtual void finishLoading(ResourceBuffer*) OVERRIDE;
+    virtual void didAddClient(CachedResourceClient*) override;
+    virtual void finishLoading(ResourceBuffer*) override;
 
-    virtual void allClientsRemoved() OVERRIDE;
+    virtual void allClientsRemoved() override;
 
     std::unique_ptr<FontCustomPlatformData> m_fontData;
     bool m_loadInitiated;

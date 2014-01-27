@@ -33,6 +33,9 @@ messages -> WebPageProxy {
 #if ENABLE(NETSCAPE_PLUGIN_API)
     UnavailablePluginButtonClicked(uint32_t pluginUnavailabilityReason, String mimeType, String pluginURLString, String pluginspageAttributeURLString, String frameURLString, String pageURLString)
 #endif // ENABLE(NETSCAPE_PLUGIN_API)
+#if ENABLE(WEBGL)
+    WebGLPolicyForURL(String url) -> (uint32_t loadPolicy)
+#endif // ENABLE(WEBGL)
     DidChangeViewportProperties(WebCore::ViewportAttributes attributes)
     DidReceiveEvent(uint32_t type, bool handled)
     StopResponsivenessTimer()
@@ -153,6 +156,7 @@ messages -> WebPageProxy {
     AutocorrectionDataCallback(Vector<WebCore::FloatRect> textRects, String fontName, double fontSize, uint64_t traits, uint64_t callbackID)
     AutocorrectionContextCallback(String beforeText, String markedText, String selectedText, String afterText, uint64_t location, uint64_t length, uint64_t callbackID)
     InterpretKeyEvent(WebKit::EditorState state, bool isCharEvent) -> (bool handled)
+    DidReceivePositionInformation(WebKit::InteractionInformationAtPosition information)
 #endif
 #if PLATFORM(GTK)
     PrintFinishedCallback(WebCore::ResourceError error, uint64_t callbackID)
@@ -317,8 +321,10 @@ messages -> WebPageProxy {
     LoadRecentSearches(String name) -> (Vector<String> result)
 
 #if USE(SOUP)
+#if !ENABLE(CUSTOM_PROTOCOLS)
     # Soup custom URI request messages
     DidReceiveURIRequest(String uriString, uint64_t requestID);
+#endif
 #endif
 
     SavePDFToFileInDownloadsFolder(String suggestedFilename, String originatingURLString, IPC::DataReference data)

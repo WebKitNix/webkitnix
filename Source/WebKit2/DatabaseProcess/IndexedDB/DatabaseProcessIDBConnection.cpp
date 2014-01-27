@@ -155,6 +155,28 @@ void DatabaseProcessIDBConnection::changeDatabaseVersion(uint64_t requestID, int
     });
 }
 
+void DatabaseProcessIDBConnection::createObjectStore(uint64_t requestID, int64_t transactionID, WebCore::IDBObjectStoreMetadata metadata)
+{
+    ASSERT(m_uniqueIDBDatabase);
+
+    LOG(IDB, "DatabaseProcess createObjectStore request ID %llu, object store name '%s'", requestID, metadata.name.utf8().data());
+    RefPtr<DatabaseProcessIDBConnection> connection(this);
+    m_uniqueIDBDatabase->createObjectStore(IDBTransactionIdentifier(*this, transactionID), metadata, [connection, requestID](bool success) {
+        connection->send(Messages::WebIDBServerConnection::DidCreateObjectStore(requestID, success));
+    });
+}
+
+void DatabaseProcessIDBConnection::deleteObjectStore(uint64_t requestID, int64_t transactionID, int64_t objectStoreID)
+{
+    ASSERT(m_uniqueIDBDatabase);
+
+    LOG(IDB, "DatabaseProcess deleteObjectStore request ID %llu, object store id %lli", requestID, objectStoreID);
+    RefPtr<DatabaseProcessIDBConnection> connection(this);
+    m_uniqueIDBDatabase->deleteObjectStore(IDBTransactionIdentifier(*this, transactionID), objectStoreID, [connection, requestID](bool success) {
+        connection->send(Messages::WebIDBServerConnection::DidDeleteObjectStore(requestID, success));
+    });
+}
+
 IPC::Connection* DatabaseProcessIDBConnection::messageSenderConnection()
 {
     return m_connection->connection();

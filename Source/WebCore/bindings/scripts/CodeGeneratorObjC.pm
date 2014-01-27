@@ -48,10 +48,45 @@ my %privateHeaderForwardDeclarationsForProtocols = ();
 
 my @internalHeaderContent = ();
 
+my @implConditionalIncludes = ();
 my @implContentHeader = ();
 my @implContent = ();
 my %implIncludes = ();
 my @depsContent = ();
+
+my $beginAppleCopyrightForHeaderFiles = <<END;
+// ------- Begin Apple Copyright -------
+/*
+ * Copyright (C) 2008, Apple Inc. All rights reserved.
+ *
+ * Permission is granted by Apple to use this file to the extent
+ * necessary to relink with LGPL WebKit files.
+ *
+ * No license or rights are granted by Apple expressly or by
+ * implication, estoppel, or otherwise, to Apple patents and
+ * trademarks. For the sake of clarity, no license or rights are
+ * granted by Apple expressly or by implication, estoppel, or otherwise,
+ * under any Apple patents, copyrights and trademarks to underlying
+ * implementations of any application programming interfaces (APIs)
+ * or to any functionality that is invoked by calling any API.
+ */
+
+END
+my $beginAppleCopyrightForSourceFiles = <<END;
+// ------- Begin Apple Copyright -------
+/*
+ * Copyright (C) 2008, Apple Inc. All rights reserved.
+ *
+ * No license or rights are granted by Apple expressly or by implication,
+ * estoppel, or otherwise, to Apple copyrights, patents, trademarks, trade
+ * secrets or other rights.
+ */
+
+END
+my $endAppleCopyright   = <<END;
+// ------- End Apple Copyright   -------
+
+END
 
 # Hashes
 my %protocolTypeHash = ("XPathNSResolver" => 1, "EventListener" => 1, "EventTarget" => 1, "NodeFilter" => 1,
@@ -76,6 +111,7 @@ my %baseTypeHash = ("Object" => 1, "Node" => 1, "NodeList" => 1, "NamedNodeMap" 
                     "SVGStringList" => 1, "SVGTransform" => 1, "SVGTransformList" => 1, "SVGUnitTypes" => 1);
 
 # Constants
+my $buildingForIPhone = defined $ENV{PLATFORM_NAME} && ($ENV{PLATFORM_NAME} eq "iphoneos" or $ENV{PLATFORM_NAME} eq "iphonesimulator");
 my $nullableInit = "bool isNull = false;";
 my $exceptionInit = "WebCore::ExceptionCode ec = 0;";
 my $jsContextSetter = "WebCore::JSMainThreadNullState state;";
@@ -214,6 +250,11 @@ sub ReadPublicInterfaces
     my $actualSuperClass;
     %publicInterfaces = ();
 
+    my @args = qw(-E -P -x objective-c);
+
+    push(@args, "-I" . $ENV{BUILT_PRODUCTS_DIR} . "/usr/local/include") if $ENV{BUILT_PRODUCTS_DIR};
+    push(@args, "-isysroot", $ENV{SDKROOT}) if $ENV{SDKROOT};
+
     my $fileName = "WebCore/bindings/objc/PublicDOMInterfaces.h";
     my $gccLocation = "";
     if ($ENV{CC}) {
@@ -225,7 +266,8 @@ sub ReadPublicInterfaces
     } else {
         $gccLocation = "/usr/bin/gcc";
     }
-    open FILE, "-|", $gccLocation, "-E", "-P", "-x", "objective-c",
+
+    open FILE, "-|", $gccLocation, @args,
         (map { "-D$_" } split(/ +/, $defines)), "-DOBJC_CODE_GENERATION", $fileName or die "Could not open $fileName";
     my @documentContent = <FILE>;
     close FILE;
@@ -353,6 +395,7 @@ sub GetClassName
 
     # special cases
     return "NSString" if $codeGenerator->IsStringType($name) or $name eq "SerializedScriptValue";
+    return "CGColorRef" if $name eq "Color" and $buildingForIPhone;
     return "NS$name" if IsNativeObjCType($name);
     return "BOOL" if $name eq "boolean";
     return "unsigned char" if $name eq "octet";
@@ -483,6 +526,14 @@ sub IsNativeObjCType
     return 0;
 }
 
+sub IsCoreFoundationType
+{
+    my $type = shift;
+
+    return 1 if $type =~ /^(CF|CG)[A-Za-z]+Ref$/;
+    return 0;
+}
+
 sub SkipFunction
 {
     my $function = shift;
@@ -518,7 +569,6 @@ sub SkipAttribute
     return 0;
 }
 
-
 sub GetObjCType
 {
     my $type = shift;
@@ -527,6 +577,7 @@ sub GetObjCType
     return "id <$name>" if IsProtocolType($type);
     return $name if $codeGenerator->IsPrimitiveType($type) or $type eq "DOMTimeStamp";
     return "unsigned short" if $type eq "CompareHow";
+    return $name if IsCoreFoundationType($name);
     return "$name *";
 }
 
@@ -612,7 +663,11 @@ sub AddIncludesForType
 
     if (IsNativeObjCType($type)) {
         if ($type eq "Color") {
-            $implIncludes{"ColorMac.h"} = 1;
+            if ($buildingForIPhone) {
+                $implIncludes{"ColorSpace.h"} = 1;
+            } else {
+                $implIncludes{"ColorMac.h"} = 1;
+            }
         }
         return;
     }
@@ -752,7 +807,11 @@ sub GenerateHeader
     my $numFunctions = @{$interface->functions};
 
     # - Add default header template
-    @headerContentHeader = split("\r", $headerLicenseTemplate);
+    if ($interface->extendedAttributes->{"AppleCopyright"}) {
+        @headerContentHeader = split("\r", $beginAppleCopyrightForHeaderFiles);
+    } else {
+        @headerContentHeader = split("\r", $headerLicenseTemplate);
+    }
     push(@headerContentHeader, "\n");
 
     # - INCLUDES -
@@ -848,6 +907,11 @@ sub GenerateHeader
 
             my $publicInterfaceKey = $property . ";";
 
+            # FIXME: This only works for the getter, but not the setter.  Need to refactor this code.
+            if ($buildingForTigerOrEarlier && !$buildingForIPhone || IsCoreFoundationType($attributeType)) {
+                $publicInterfaceKey = "- (" . $attributeType . ")" . $attributeName . ";";
+            }
+
             my $availabilityMacro = "";
             if (defined $publicInterfaces{$publicInterfaceKey} and length $publicInterfaces{$publicInterfaceKey}) {
                 $availabilityMacro = $publicInterfaces{$publicInterfaceKey};
@@ -875,9 +939,34 @@ sub GenerateHeader
                 $fatalError = 1;
             }
 
-            $property .= $declarationSuffix;
-            push(@headerAttributes, $property) if $public;
-            push(@privateHeaderAttributes, $property) unless $public;
+            if (!IsCoreFoundationType($attributeType)) {
+                $property .= $declarationSuffix;
+                push(@headerAttributes, $property) if $public;
+                push(@privateHeaderAttributes, $property) unless $public;
+            } else {
+                my $attributeConditionalString = $codeGenerator->GenerateConditionalString($attribute->signature);
+                if ($attributeConditionalString) {
+                    push(@headerAttributes, "#if ${attributeConditionalString}\n") if $public;
+                    push(@privateHeaderAttributes, "#if ${attributeConditionalString}\n") unless $public;
+                }
+ 
+                # - GETTER
+                my $getter = "- (" . $attributeType . ")" . $attributeName . $declarationSuffix;
+                push(@headerAttributes, $getter) if $public;
+                push(@privateHeaderAttributes, $getter) unless $public;
+ 
+                # - SETTER
+                if (!$attribute->isReadOnly) {
+                    my $setter = "- (void)$setterName(" . $attributeType . ")new" . ucfirst($attributeName) . $declarationSuffix;
+                    push(@headerAttributes, $setter) if $public;
+                    push(@privateHeaderAttributes, $setter) unless $public;
+                }
+ 
+                if ($attributeConditionalString) {
+                    push(@headerAttributes, "#endif\n") if $public;
+                    push(@privateHeaderAttributes, "#endif\n") unless $public;
+                }
+            }
         }
 
         push(@headerContent, @headerAttributes) if @headerAttributes > 0;
@@ -889,6 +978,7 @@ sub GenerateHeader
 
     # - Add functions.
     if ($numFunctions > 0) {
+        my %inAppleCopyright = (public => 0, private => 0);
         foreach my $function (@{$interface->functions}) {
             next if SkipFunction($function);
             next if ($function->signature->name eq "set" and $interface->extendedAttributes->{"TypedArray"});
@@ -896,6 +986,7 @@ sub GenerateHeader
 
             my $returnType = GetObjCType($function->signature->type);
             my $needsDeprecatedVersion = (@{$function->parameters} > 1 and $function->signature->extendedAttributes->{"ObjCLegacyUnnamedParameters"});
+            my $needsAppleCopyright = $function->signature->extendedAttributes->{"AppleCopyright"};
             my $numberOfParameters = @{$function->parameters};
             my %typesToForwardDeclare = ($function->signature->type => 1);
 
@@ -950,6 +1041,18 @@ sub GenerateHeader
                 AddForwardDeclarationsForType($type, $public) unless $public and $needsDeprecatedVersion;
             }
 
+            if ($needsAppleCopyright) {
+                if (!$inAppleCopyright{$public ? "public" : "private"}) {
+                    push(@headerFunctions, $beginAppleCopyrightForHeaderFiles) if $public;
+                    push(@privateHeaderFunctions, $beginAppleCopyrightForHeaderFiles) unless $public;
+                    $inAppleCopyright{$public ? "public" : "private"} = 1;
+                }
+            } elsif ($inAppleCopyright{$public ? "public" : "private"}) {
+                push(@headerFunctions, $endAppleCopyright) if $public;
+                push(@privateHeaderFunctions, $endAppleCopyright) unless $public;
+                $inAppleCopyright{$public ? "public" : "private"} = 0;
+            }
+
             my $functionConditionalString = $codeGenerator->GenerateConditionalString($function->signature);
             if ($functionConditionalString) {
                 push(@headerFunctions, "#if ${functionConditionalString}\n") if $public;
@@ -991,6 +1094,9 @@ sub GenerateHeader
             }
         }
 
+        push(@headerFunctions, $endAppleCopyright) if $inAppleCopyright{"public"};
+        push(@privateHeaderFunctions, $endAppleCopyright) if $inAppleCopyright{"private"};
+
         if (@headerFunctions > 0) {
             push(@headerContent, "\n") if @headerAttributes > 0;
             push(@headerContent, @headerFunctions);
@@ -1011,11 +1117,19 @@ sub GenerateHeader
         push(@headerContent, "\@end\n");
     }
 
+    if ($interface->extendedAttributes->{"AppleCopyright"}) {
+        push(@headerContent, split("\r", $endAppleCopyright));
+    }
+
     my %alwaysGenerateForNoSVGBuild = map { $_ => 1 } qw(DOMHTMLEmbedElement DOMHTMLObjectElement);
 
     if (@privateHeaderAttributes > 0 or @privateHeaderFunctions > 0 or exists $alwaysGenerateForNoSVGBuild{$className}) {
         # - Private category @interface
-        @privateHeaderContentHeader = split("\r", $headerLicenseTemplate);
+        if ($interface->extendedAttributes->{"AppleCopyright"}) {
+            @privateHeaderContentHeader = split("\r", $beginAppleCopyrightForHeaderFiles);
+        } else {
+            @privateHeaderContentHeader = split("\r", $headerLicenseTemplate);
+        }
         push(@privateHeaderContentHeader, "\n");
 
         my $classHeaderName = GetClassHeaderName($className);
@@ -1027,6 +1141,10 @@ sub GenerateHeader
         push(@privateHeaderContent, "\n") if @privateHeaderAttributes > 0 and @privateHeaderFunctions > 0;
         push(@privateHeaderContent, @privateHeaderFunctions) if @privateHeaderFunctions > 0;
         push(@privateHeaderContent, "\@end\n");
+
+        if ($interface->extendedAttributes->{"AppleCopyright"}) {
+            push(@privateHeaderContent, split("\r", $endAppleCopyright));
+        }
     }
 
     unless ($isProtocol) {
@@ -1039,7 +1157,11 @@ sub GenerateHeader
         $implType = $svgNativeType if $svgNativeType;
 
         # Generate interface definitions. 
-        @internalHeaderContent = split("\r", $implementationLicenseTemplate);
+        if ($interface->extendedAttributes->{"AppleCopyright"}) {
+            @internalHeaderContent = split("\r", $beginAppleCopyrightForHeaderFiles);
+        } else {
+            @internalHeaderContent = split("\r", $implementationLicenseTemplate);
+        }
 
         push(@internalHeaderContent, "\n#import <WebCore/$className.h>\n\n");
         push(@internalHeaderContent, "#import <WebCore/SVGAnimatedPropertyTearOff.h>\n\n") if $svgPropertyType;
@@ -1108,7 +1230,11 @@ sub GenerateImplementation
     $implType = $svgNativeType if $svgNativeType;
 
     # - Add default header template.
-    @implContentHeader = split("\r", $implementationLicenseTemplate);
+    if ($interface->extendedAttributes->{"AppleCopyright"}) {
+        @implContentHeader = split("\r", $beginAppleCopyrightForSourceFiles);
+    } else {
+        @implContentHeader = split("\r", $implementationLicenseTemplate);
+    }
 
     # - INCLUDES -
     push(@implContentHeader, "\n#import \"config.h\"\n");
@@ -1335,8 +1461,13 @@ sub GenerateImplementation
                 $getterContentHead = "kit($getterContentHead";
                 $getterContentTail .= ")";
             } elsif ($idlType eq "Color") {
-                $getterContentHead = "WebCore::nsColor($getterContentHead";
-                $getterContentTail .= ")";
+                if ($buildingForIPhone) {
+                    $getterContentHead = "WebCore::cachedCGColor($getterContentHead";
+                    $getterContentTail .= ", WebCore::ColorSpaceDeviceRGB)";
+                } else {
+                    $getterContentHead = "WebCore::nsColor($getterContentHead";
+                    $getterContentTail .= ")";
+                }
             } elsif ($attribute->signature->type eq "SerializedScriptValue") {
                 $getterContentHead = "$getterContentHead";
                 $getterContentTail .= "->toString()";                
@@ -1507,6 +1638,7 @@ sub GenerateImplementation
 
     # - Functions
     if ($numFunctions > 0) {
+        my $inAppleCopyright = 0;
         foreach my $function (@{$interface->functions}) {
             next if SkipFunction($function);
             next if ($function->signature->name eq "set" and $interface->extendedAttributes->{"TypedArray"});
@@ -1514,6 +1646,7 @@ sub GenerateImplementation
 
             my $functionName = $function->signature->name;
             my $returnType = GetObjCType($function->signature->type);
+            my $needsAppleCopyright = $function->signature->extendedAttributes->{"AppleCopyright"};
             my $hasParameters = @{$function->parameters};
             my $raisesExceptions = $function->signature->extendedAttributes->{"RaisesException"};
 
@@ -1724,6 +1857,16 @@ sub GenerateImplementation
                 }
             }
 
+            if ($needsAppleCopyright) {
+                if (!$inAppleCopyright) {
+                    push(@implContent, $beginAppleCopyrightForSourceFiles);
+                    $inAppleCopyright = 1;
+                }
+            } elsif ($inAppleCopyright) {
+                push(@implContent, $endAppleCopyright);
+                $inAppleCopyright = 0;
+            }
+
             my $conditionalString = $codeGenerator->GenerateConditionalString($function->signature);
             push(@implContent, "\n#if ${conditionalString}\n") if $conditionalString;
 
@@ -1750,10 +1893,15 @@ sub GenerateImplementation
             # Clear the hash
             %needsCustom = ();
         }
+        push(@implContent, $endAppleCopyright) if $inAppleCopyright;
     }
 
     # END implementation
     push(@implContent, "\@end\n");
+
+    if ($interface->extendedAttributes->{"AppleCopyright"}) {
+        push(@implContent, split("\r", $endAppleCopyright));
+    }
 
     # Generate internal interfaces
     push(@implContent, "\n$implType* core($className *wrapper)\n");
@@ -1792,6 +1940,10 @@ sub GenerateImplementation
     # - End the ifdef conditional if necessary
     push(@implContent, "\n#endif // ${conditionalString}\n") if $conditionalString;
 
+    if ($interface->extendedAttributes->{"AppleCopyright"}) {
+        push(@implContent, split("\r", $endAppleCopyright));
+    }
+
     # - Generate dependencies.
     if ($writeDependencies && @ancestorInterfaceNames) {
         push(@depsContent, "$className.h : ", join(" ", map { "$_.idl" } @ancestorInterfaceNames), "\n");
@@ -1803,11 +1955,11 @@ sub GenerateImplementation
 sub WriteData
 {
     my $object = shift;
-    my $dataNode = shift;
+    my $interface = shift;
     my $outputDir = shift;
 
     # Open files for writing...
-    my $name = $dataNode->name;
+    my $name = $interface->name;
     my $prefix = FileNamePrefix;
     my $headerFileName = "$outputDir/$prefix$name.h";
     my $privateHeaderFileName = "$outputDir/$prefix${name}Private.h";
@@ -1817,7 +1969,7 @@ sub WriteData
 
     # Write public header.
     my $contents = join "", @headerContentHeader;
-    map { $contents .= "\@class $_;\n" } sort keys(%headerForwardDeclarations);
+    map { $contents .= (IsCoreFoundationType($_) ? "typedef struct " . substr($_, 0, -3) . "* $_;\n" : "\@class $_;\n") } sort keys(%headerForwardDeclarations);
     map { $contents .= "\@protocol $_;\n" } sort keys(%headerForwardDeclarationsForProtocols);
 
     my $hasForwardDeclarations = keys(%headerForwardDeclarations) + keys(%headerForwardDeclarationsForProtocols);

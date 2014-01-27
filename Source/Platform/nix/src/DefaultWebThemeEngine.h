@@ -30,51 +30,51 @@
 
 namespace Nix {
 
-class DefaultWebThemeEngine FINAL : public ThemeEngine {
+class DefaultWebThemeEngine final : public ThemeEngine {
 public:
     // Text selection colors.
-    virtual Color activeSelectionBackgroundColor() const OVERRIDE;
-    virtual Color activeSelectionForegroundColor() const OVERRIDE;
-    virtual Color inactiveSelectionBackgroundColor() const OVERRIDE;
-    virtual Color inactiveSelectionForegroundColor() const OVERRIDE;
+    virtual Color activeSelectionBackgroundColor() const override;
+    virtual Color activeSelectionForegroundColor() const override;
+    virtual Color inactiveSelectionBackgroundColor() const override;
+    virtual Color inactiveSelectionForegroundColor() const override;
 
     // List box selection colors
-    virtual Color activeListBoxSelectionBackgroundColor() const OVERRIDE;
-    virtual Color activeListBoxSelectionForegroundColor() const OVERRIDE;
-    virtual Color inactiveListBoxSelectionBackgroundColor() const OVERRIDE;
-    virtual Color inactiveListBoxSelectionForegroundColor() const OVERRIDE;
+    virtual Color activeListBoxSelectionBackgroundColor() const override;
+    virtual Color activeListBoxSelectionForegroundColor() const override;
+    virtual Color inactiveListBoxSelectionBackgroundColor() const override;
+    virtual Color inactiveListBoxSelectionForegroundColor() const override;
 
-    virtual Color activeTextSearchHighlightColor() const OVERRIDE;
-    virtual Color inactiveTextSearchHighlightColor() const OVERRIDE;
+    virtual Color activeTextSearchHighlightColor() const override;
+    virtual Color inactiveTextSearchHighlightColor() const override;
 
-    virtual Color focusRingColor() const OVERRIDE;
+    virtual Color focusRingColor() const override;
 
-    virtual Color tapHighlightColor() const OVERRIDE;
+    virtual Color tapHighlightColor() const override;
 
-    virtual void paintButton(Canvas*, State, const Rect&, const ButtonExtraParams&) const OVERRIDE;
-    virtual void paintTextField(Canvas*, State, const Rect&) const OVERRIDE;
-    virtual void paintTextArea(Canvas*, State, const Rect&) const OVERRIDE;
-    virtual Size getCheckboxSize() const OVERRIDE;
-    virtual void paintCheckbox(Canvas*, State, const Rect&, const ButtonExtraParams&) const OVERRIDE;
-    virtual Size getRadioSize() const OVERRIDE;
-    virtual void paintRadio(Canvas*, State, const Rect&, const ButtonExtraParams&) const OVERRIDE;
-    virtual void paintMenuList(Canvas *, State, const Rect &) const OVERRIDE;
-    virtual void getMenuListPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const OVERRIDE;
-    virtual void paintProgressBar(Canvas*, State, const Rect&, const ProgressBarExtraParams&) const OVERRIDE;
-    virtual double getAnimationRepeatIntervalForProgressBar() const OVERRIDE;
-    virtual double getAnimationDurationForProgressBar() const OVERRIDE;
-    virtual void paintInnerSpinButton(Canvas *, State, const Rect &, const InnerSpinButtonExtraParams&) const OVERRIDE;
-    virtual void getInnerSpinButtonPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const OVERRIDE;
-    virtual void paintMeter(Canvas*, State, const Rect&, const MeterExtraParams&) const OVERRIDE;
-    virtual void paintSliderTrack(Canvas*, State, const Rect&) const OVERRIDE;
-    virtual void paintSliderThumb(Canvas*, State, const Rect&) const OVERRIDE;
+    virtual void paintButton(Canvas*, State, const Rect&, const ButtonExtraParams&) const override;
+    virtual void paintTextField(Canvas*, State, const Rect&) const override;
+    virtual void paintTextArea(Canvas*, State, const Rect&) const override;
+    virtual Size getCheckboxSize() const override;
+    virtual void paintCheckbox(Canvas*, State, const Rect&, const ButtonExtraParams&) const override;
+    virtual Size getRadioSize() const override;
+    virtual void paintRadio(Canvas*, State, const Rect&, const ButtonExtraParams&) const override;
+    virtual void paintMenuList(Canvas *, State, const Rect &) const override;
+    virtual void getMenuListPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const override;
+    virtual void paintProgressBar(Canvas*, State, const Rect&, const ProgressBarExtraParams&) const override;
+    virtual double getAnimationRepeatIntervalForProgressBar() const override;
+    virtual double getAnimationDurationForProgressBar() const override;
+    virtual void paintInnerSpinButton(Canvas *, State, const Rect &, const InnerSpinButtonExtraParams&) const override;
+    virtual void getInnerSpinButtonPadding(int& paddingTop, int& paddingLeft, int& paddingBottom, int& paddingRight) const override;
+    virtual void paintMeter(Canvas*, State, const Rect&, const MeterExtraParams&) const override;
+    virtual void paintSliderTrack(Canvas*, State, const Rect&) const override;
+    virtual void paintSliderThumb(Canvas*, State, const Rect&) const override;
 
     // Media Player
-    virtual void paintMediaPlayButton(Canvas*, MediaPlayerState, const Rect&) const OVERRIDE;
-    virtual void paintMediaMuteButton(Canvas*, MediaPlayerState, const Rect&) const OVERRIDE;
-    virtual void paintMediaSeekBackButton(Canvas*, const Rect&) const OVERRIDE;
-    virtual void paintMediaSeekForwardButton(Canvas*, const Rect&) const OVERRIDE;
-    virtual void paintMediaRewindButton(Canvas*, const Rect&) const OVERRIDE;
+    virtual void paintMediaPlayButton(Canvas*, MediaPlayerState, const Rect&) const override;
+    virtual void paintMediaMuteButton(Canvas*, MediaPlayerState, const Rect&) const override;
+    virtual void paintMediaSeekBackButton(Canvas*, const Rect&) const override;
+    virtual void paintMediaSeekForwardButton(Canvas*, const Rect&) const override;
+    virtual void paintMediaRewindButton(Canvas*, const Rect&) const override;
 };
 
 } // namespace Nix

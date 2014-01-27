@@ -41,10 +41,11 @@ class RenderBlockFlow;
 class RenderBox;
 class FloatingObject;
 
-class ShapeOutsideInfo FINAL : public ShapeInfo<RenderBox>, public MappedInfo<RenderBox, ShapeOutsideInfo> {
+class ShapeOutsideInfo final : public ShapeInfo<RenderBox>, public MappedInfo<RenderBox, ShapeOutsideInfo> {
 public:
     ShapeOutsideInfo(const RenderBox& renderer)
         : ShapeInfo<RenderBox>(renderer)
+        , m_lineOverlapsShape(false)
     {
     }
 
@@ -52,16 +53,17 @@ public:
 
     LayoutUnit leftMarginBoxDelta() const { return m_leftMarginBoxDelta; }
     LayoutUnit rightMarginBoxDelta() const { return m_rightMarginBoxDelta; }
+    bool lineOverlapsShape() const { return m_lineOverlapsShape; }
 
     void updateDeltasForContainingBlockLine(const RenderBlockFlow&, const FloatingObject&, LayoutUnit lineTop, LayoutUnit lineHeight);
 
-    virtual bool lineOverlapsShapeBounds() const OVERRIDE
+    virtual bool lineOverlapsShapeBounds() const override
     {
         return computedShape().lineOverlapsShapeMarginBounds(m_shapeLineTop, m_lineHeight);
     }
 
 protected:
-    virtual LayoutBox resolvedLayoutBox() const OVERRIDE
+    virtual LayoutBox resolvedLayoutBox() const override
     {
         if (shapeValue()->layoutBox() == BoxMissing) {
             if (shapeValue()->type() == ShapeValue::Image)
@@ -72,9 +74,9 @@ protected:
     }
 
 private:
-    virtual LayoutRect computedShapeLogicalBoundingBox() const OVERRIDE { return computedShape().shapeMarginLogicalBoundingBox(); }
-    virtual ShapeValue* shapeValue() const OVERRIDE;
-    virtual void getIntervals(LayoutUnit lineTop, LayoutUnit lineHeight, SegmentList& segments) const OVERRIDE
+    virtual LayoutRect computedShapeLogicalBoundingBox() const override { return computedShape().shapeMarginLogicalBoundingBox(); }
+    virtual ShapeValue* shapeValue() const override;
+    virtual void getIntervals(LayoutUnit lineTop, LayoutUnit lineHeight, SegmentList& segments) const override
     {
         return computedShape().getExcludedIntervals(lineTop, lineHeight, segments);
     }
@@ -84,6 +86,7 @@ private:
     LayoutUnit m_leftMarginBoxDelta;
     LayoutUnit m_rightMarginBoxDelta;
     LayoutUnit m_lineTop;
+    bool m_lineOverlapsShape;
 };
 
 }

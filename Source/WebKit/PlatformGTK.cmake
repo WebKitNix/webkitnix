@@ -56,6 +56,7 @@ list(APPEND WebKit_SOURCES
     gtk/WebCoreSupport/InspectorClientGtk.cpp
     gtk/WebCoreSupport/NavigatorContentUtilsClientGtk.cpp
     gtk/WebCoreSupport/PlatformStrategiesGtk.cpp
+    gtk/WebCoreSupport/ProgressTrackerClientGtk.cpp
     gtk/WebCoreSupport/TextCheckerClientGtk.cpp
     gtk/WebCoreSupport/UserMediaClientGtk.cpp
     gtk/WebCoreSupport/WebViewInputMethodFilter.cpp
@@ -153,14 +154,17 @@ add_custom_command(
     VERBATIM
 )
 
+# To generate webkitenumtypes.h we want to use all installed headers, except webkitenumtypes.h itself.
+set(WebKitGTK_ENUM_GENERATION_HEADERS ${WebKitGTK_INSTALLED_HEADERS})
+list(REMOVE_ITEM WebKitGTK_ENUM_GENERATION_HEADERS ${DERIVED_SOURCES_WEBKIT2GTK_API_DIR}/webkitenumtypes.h)
 add_custom_command(
     OUTPUT ${DERIVED_SOURCES_WEBKITGTK_API_DIR}/webkitenumtypes.h
            ${DERIVED_SOURCES_WEBKITGTK_API_DIR}/webkitenumtypes.cpp
-    DEPENDS ${WebKitGTK_INSTALLED_HEADERS}
+    DEPENDS ${WebKitGTK_ENUM_GENERATION_HEADERS}
 
-    COMMAND glib-mkenums --template ${WEBKIT_DIR}/gtk/webkit/webkitenumtypes.h.template ${WebKitGTK_INSTALLED_HEADERS} | sed s/web_kit/webkit/ | sed s/WEBKIT_TYPE_KIT/WEBKIT_TYPE/ > ${DERIVED_SOURCES_WEBKITGTK_API_DIR}/webkitenumtypes.h
+    COMMAND glib-mkenums --template ${WEBKIT_DIR}/gtk/webkit/webkitenumtypes.h.template ${WebKitGTK_ENUM_GENERATION_HEADERS} | sed s/web_kit/webkit/ | sed s/WEBKIT_TYPE_KIT/WEBKIT_TYPE/ > ${DERIVED_SOURCES_WEBKITGTK_API_DIR}/webkitenumtypes.h
 
-    COMMAND glib-mkenums --template ${WEBKIT_DIR}/gtk/webkit/webkitenumtypes.cpp.template ${WebKitGTK_INSTALLED_HEADERS} | sed s/web_kit/webkit/ > ${DERIVED_SOURCES_WEBKITGTK_API_DIR}/webkitenumtypes.cpp
+    COMMAND glib-mkenums --template ${WEBKIT_DIR}/gtk/webkit/webkitenumtypes.cpp.template ${WebKitGTK_ENUM_GENERATION_HEADERS} | sed s/web_kit/webkit/ > ${DERIVED_SOURCES_WEBKITGTK_API_DIR}/webkitenumtypes.cpp
     VERBATIM
 )
 

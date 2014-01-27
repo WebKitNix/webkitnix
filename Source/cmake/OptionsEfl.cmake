@@ -30,6 +30,7 @@ find_package(LibSoup 2.42.0 REQUIRED)
 
 set(WTF_USE_ICU_UNICODE 1)
 set(WTF_USE_SOUP 1)
+set(WTF_USE_UDIS86 1)
 
 add_definitions(-DWTF_USE_GLIB=1)
 add_definitions(-DWTF_USE_SOUP=1)
@@ -286,3 +287,6 @@ if (ENABLE_FTL_JIT)
     find_package(LLVM REQUIRED)
     set(HAVE_LLVM ON)
 endif ()
+
+# [E]WebKit2 tests need a hint to find out where processes such as WebProcess are located at.
+add_definitions(-DWEBKIT_EXEC_PATH=\"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}\")

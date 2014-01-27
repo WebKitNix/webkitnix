@@ -783,6 +783,9 @@
     <ClCompile Include="..\page\SuspendableTimer.cpp">
       <Filter>page</Filter>
     </ClCompile>
+    <ClCompile Include="..\page\UserContentController.cpp">
+      <Filter>page</Filter>
+    </ClCompile>
     <ClCompile Include="..\page\UserContentURLPattern.cpp">
       <Filter>page</Filter>
     </ClCompile>
@@ -2013,9 +2016,6 @@
     <ClCompile Include="..\platform\text\TextBreakIterator.cpp">
       <Filter>platform\text</Filter>
     </ClCompile>
-    <ClCompile Include="..\platform\text\TextBreakIteratorICU.cpp">
-      <Filter>platform\text</Filter>
-    </ClCompile>
     <ClCompile Include="..\platform\text\TextCodec.cpp">
       <Filter>platform\text</Filter>
     </ClCompile>
@@ -2365,9 +2365,6 @@
       <Filter>css</Filter>
     </ClCompile>
     <ClCompile Include="..\css\WebKitCSSShaderValue.cpp">
-      <Filter>css</Filter>
-    </ClCompile>
-    <ClCompile Include="..\css\WebKitCSSSVGDocumentValue.cpp">
       <Filter>css</Filter>
     </ClCompile>
     <ClCompile Include="..\css\WebKitCSSTransformValue.cpp">
@@ -4125,12 +4122,6 @@
     <ClCompile Include="..\html\forms\FileIconLoader.cpp">
       <Filter>html\forms</Filter>
     </ClCompile>
-    <ClCompile Include="..\html\parser\BackgroundHTMLInputStream.cpp">
-      <Filter>html\parser</Filter>
-    </ClCompile>
-    <ClCompile Include="..\html\parser\BackgroundHTMLParser.cpp">
-      <Filter>html\parser</Filter>
-    </ClCompile>
     <ClCompile Include="..\html\parser\CompactHTMLToken.cpp">
       <Filter>html\parser</Filter>
     </ClCompile>
@@ -4165,9 +4156,6 @@
       <Filter>html\parser</Filter>
     </ClCompile>
     <ClCompile Include="..\html\parser\HTMLParserScheduler.cpp">
-      <Filter>html\parser</Filter>
-    </ClCompile>
-    <ClCompile Include="..\html\parser\HTMLParserThread.cpp">
       <Filter>html\parser</Filter>
     </ClCompile>
     <ClCompile Include="..\html\parser\HTMLPreloadScanner.cpp">
@@ -4818,9 +4806,6 @@
     <ClCompile Include="..\inspector\InjectedScriptCanvasModule.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
-    <ClCompile Include="..\inspector\InspectorAgent.cpp">
-      <Filter>inspector</Filter>
-    </ClCompile>
     <ClCompile Include="..\inspector\InspectorAllInOne.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
@@ -5205,9 +5190,6 @@
     </ClCompile>
     <ClCompile Include="..\rendering\HitTestLocation.cpp">
       <Filter>rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="..\html\parser\HTMLIdentifier.cpp">
-      <Filter>html\parser</Filter>
     </ClCompile>
     <ClCompile Include="..\Modules\quota\NavigatorStorageQuota.cpp">
       <Filter>Modules\quota</Filter>
@@ -6631,6 +6613,9 @@
     <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureHalfFloat.cpp">
       <Filter>DerivedSources</Filter>
     </ClCompile>
+    <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureHalfFloatLinear.cpp">
+      <Filter>DerivedSources</Filter>
+    </ClCompile>
     <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESVertexArrayObject.cpp">
       <Filter>DerivedSources</Filter>
     </ClCompile>
@@ -6724,6 +6709,9 @@
     <ClCompile Include="..\html\canvas\OESTextureHalfFloat.cpp">
       <Filter>html\canvas</Filter>
     </ClCompile>
+    <ClCompile Include="..\html\canvas\OESTextureHalfFloatLinear.cpp">
+      <Filter>html\canvas</Filter>
+    </ClCompile>
     <ClCompile Include="..\html\canvas\OESVertexArrayObject.cpp">
       <Filter>html\canvas</Filter>
     </ClCompile>
@@ -6734,6 +6722,9 @@
       <Filter>html\canvas</Filter>
     </ClCompile>
     <ClCompile Include="..\platform\graphics\ANGLEWebKitBridge.cpp">
+      <Filter>platform\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\platform\graphics\FormatConverter.cpp">
       <Filter>platform\graphics</Filter>
     </ClCompile>
     <ClCompile Include="..\platform\graphics\GraphicsContext3D.cpp">
@@ -7709,6 +7700,9 @@
     <ClInclude Include="..\page\SuspendableTimer.h">
       <Filter>page</Filter>
     </ClInclude>
+    <ClInclude Include="..\page\UserContentController.h">
+      <Filter>page</Filter>
+    </ClInclude>
     <ClInclude Include="..\page\UserContentURLPattern.h">
       <Filter>page</Filter>
     </ClInclude>
@@ -7833,6 +7827,9 @@
       <Filter>loader</Filter>
     </ClInclude>
     <ClInclude Include="..\loader\ProgressTracker.h">
+      <Filter>loader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\loader\ProgressTrackerClient.h">
       <Filter>loader</Filter>
     </ClInclude>
     <ClInclude Include="..\loader\ResourceBuffer.h">
@@ -9288,9 +9285,6 @@
       <Filter>css</Filter>
     </ClInclude>
     <ClInclude Include="..\css\WebKitCSSShaderValue.h">
-      <Filter>css</Filter>
-    </ClInclude>
-    <ClInclude Include="..\css\WebKitCSSSVGDocumentValue.h">
       <Filter>css</Filter>
     </ClInclude>
     <ClInclude Include="..\css\WebKitCSSTransformValue.h">
@@ -11246,9 +11240,6 @@
     <ClInclude Include="..\html\parser\AtomicHTMLToken.h">
       <Filter>html\parser</Filter>
     </ClInclude>
-    <ClInclude Include="..\html\parser\BackgroundHTMLParser.h">
-      <Filter>html\parser</Filter>
-    </ClInclude>
     <ClInclude Include="..\html\parser\CompactHTMLToken.h">
       <Filter>html\parser</Filter>
     </ClInclude>
@@ -11286,9 +11277,6 @@
       <Filter>html\parser</Filter>
     </ClInclude>
     <ClInclude Include="..\html\parser\HTMLParserScheduler.h">
-      <Filter>html\parser</Filter>
-    </ClInclude>
-    <ClInclude Include="..\html\parser\HTMLParserThread.h">
       <Filter>html\parser</Filter>
     </ClInclude>
     <ClInclude Include="..\html\parser\HTMLPreloadScanner.h">
@@ -12266,6 +12254,9 @@
     <ClInclude Include="..\ForwardingHeaders\inspector\InjectedScriptModule.h">
       <Filter>ForwardingHeaders\inspector</Filter>
     </ClInclude>
+    <ClInclude Include="..\ForwardingHeaders\inspector\InspectorAgent.h">
+      <Filter>ForwardingHeaders\inspector</Filter>
+    </ClInclude>
     <ClInclude Include="..\ForwardingHeaders\inspector\InspectorAgentBase.h">
       <Filter>ForwardingHeaders\inspector</Filter>
     </ClInclude>
@@ -12277,7 +12268,7 @@
     </ClInclude>
     <ClInclude Include="..\ForwardingHeaders\inspector\InspectorEnvironment.h">
       <Filter>ForwardingHeaders\inspector</Filter>
-    </ClInclude
+    </ClInclude>
     <ClInclude Include="..\ForwardingHeaders\inspector\InspectorFrontendChannel.h">
       <Filter>ForwardingHeaders\inspector</Filter>
     </ClInclude>
@@ -12429,9 +12420,6 @@
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\InjectedScriptCanvasModule.h">
-      <Filter>inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inspector\InspectorAgent.h">
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\InspectorApplicationCacheAgent.h">
@@ -14470,6 +14458,9 @@
     <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureHalfFloat.h">
       <Filter>DerivedSources</Filter>
     </ClInclude>
+    <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESTextureHalfFloatLinear.h">
+      <Filter>DerivedSources</Filter>
+    </ClInclude>
     <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\WebCore\DerivedSources\JSOESVertexArrayObject.h">
       <Filter>DerivedSources</Filter>
     </ClInclude>
@@ -14566,6 +14557,9 @@
     <ClInclude Include="..\html\canvas\OESTextureHalfFloat.h">
       <Filter>html\canvas</Filter>
     </ClInclude>
+    <ClInclude Include="..\html\canvas\OESTextureHalfFloatLinear.h">
+      <Filter>html\canvas</Filter>
+    </ClInclude>
     <ClInclude Include="..\html\canvas\OESVertexArrayObject.h">
       <Filter>html\canvas</Filter>
     </ClInclude>
@@ -14588,6 +14582,9 @@
       <Filter>platform\audio</Filter>
     </ClInclude>
     <ClInclude Include="..\platform\graphics\ANGLEWebKitBridge.h">
+      <Filter>platform\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\platform\graphics\FormatConverter.h">
       <Filter>platform\graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\platform\graphics\GraphicsContext3D.h">

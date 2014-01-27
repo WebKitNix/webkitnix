@@ -31,7 +31,6 @@
 #include "PlatformScreen.h"
 #include "Region.h"
 #include "Supplementable.h"
-#include "ViewState.h"
 #include "ViewportArguments.h"
 #include <wtf/Forward.h>
 #include <wtf/HashMap.h>
@@ -93,6 +92,7 @@ class PluginData;
 class PluginViewBase;
 class PointerLockController;
 class ProgressTracker;
+class ProgressTrackerClient;
 class Range;
 class RenderObject;
 class RenderTheme;
@@ -101,6 +101,7 @@ class ScrollableArea;
 class ScrollingCoordinator;
 class Settings;
 class StorageNamespace;
+class UserContentController;
 class ValidationMessageClient;
 
 typedef uint64_t LinkHash;
@@ -134,6 +135,7 @@ public:
         DragClient* dragClient;
         InspectorClient* inspectorClient;
         PlugInClient* plugInClient;
+        ProgressTrackerClient* progressTrackerClient;
         RefPtr<BackForwardClient> backForwardClient;
         ValidationMessageClient* validationMessageClient;
         FrameLoaderClient* loaderClientForMainFrame;
@@ -201,7 +203,7 @@ public:
     ContextMenuController& contextMenuController() const { return *m_contextMenuController; }
 #endif
 #if ENABLE(INSPECTOR)
-    InspectorController* inspectorController() const { return m_inspectorController.get(); }
+    InspectorController& inspectorController() const { return *m_inspectorController; }
 #endif
 #if ENABLE(POINTER_LOCK)
     PointerLockController* pointerLockController() const { return m_pointerLockController.get(); }
@@ -295,18 +297,18 @@ public:
     unsigned pageCount() const;
 
     // Notifications when the Page starts and stops being presented via a native window.
-    void setViewState(ViewState::Flags, bool isInitial = false);
     void setIsVisible(bool isVisible, bool isInitial);
     void setIsPrerender();
-    bool isVisible() const { return m_viewState & ViewState::IsVisible; }
+    bool isVisible() const { return m_isVisible; }
 
     // Notification that this Page was moved into or out of a native window.
     void setIsInWindow(bool);
-    bool isInWindow() const { return m_viewState & ViewState::IsInWindow; }
+    bool isInWindow() const { return m_isInWindow; }
 
     void suspendScriptedAnimations();
     void resumeScriptedAnimations();
     bool scriptedAnimationsSuspended() const { return m_scriptedAnimationsSuspended; }
+    void setIsVisuallyIdle(bool);
 
     void userStyleSheetLocationChanged();
     const String& userStyleSheet() const;
@@ -417,12 +419,11 @@ public:
     void setLastSpatialNavigationCandidateCount(unsigned count) { m_lastSpatialNavigationCandidatesCount = count; }
     unsigned lastSpatialNavigationCandidateCount() const { return m_lastSpatialNavigationCandidatesCount; }
 
+    void setUserContentController(UserContentController*);
+    UserContentController* userContentController() { return m_userContentController.get(); }
+
 private:
     void initGroup();
-
-    void setIsInWindowInternal(bool);
-    void setIsVisibleInternal(bool isVisible, bool isInitial);
-    void setIsVisuallyIdleInternal(bool);
 
 #if ASSERT_DISABLED
     void checkSubframeCountConsistency() const { }
@@ -459,7 +460,7 @@ private:
     const std::unique_ptr<ContextMenuController> m_contextMenuController;
 #endif
 #if ENABLE(INSPECTOR)
-    OwnPtr<InspectorController> m_inspectorController;
+    const std::unique_ptr<InspectorController> m_inspectorController;
 #endif
 #if ENABLE(POINTER_LOCK)
     OwnPtr<PointerLockController> m_pointerLockController;
@@ -527,8 +528,9 @@ private:
     double m_timerAlignmentInterval;
 
     bool m_isEditable;
+    bool m_isInWindow;
+    bool m_isVisible;
     bool m_isPrerender;
-    ViewState::Flags m_viewState;
 
     LayoutMilestones m_requestedLayoutMilestones;
 
@@ -558,6 +560,8 @@ private:
 
     unsigned m_lastSpatialNavigationCandidatesCount;
     unsigned m_framesHandlingBeforeUnloadEvent;
+
+    RefPtr<UserContentController> m_userContentController;
 };
 
 inline PageGroup& Page::group()

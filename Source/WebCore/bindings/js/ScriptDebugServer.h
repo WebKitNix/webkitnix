@@ -34,7 +34,6 @@
 
 #include "ScriptBreakpoint.h"
 #include "ScriptDebugListener.h"
-#include "Timer.h"
 #include <bindings/ScriptObject.h>
 #include <debugger/Debugger.h>
 #include <wtf/HashMap.h>
@@ -59,26 +58,9 @@ public:
     void removeBreakpoint(JSC::BreakpointID);
     void clearBreakpoints();
 
-    bool canSetScriptSource();
-    bool setScriptSource(const String& sourceID, const String& newContent, bool preview, String* error, Deprecated::ScriptValue* newCallFrames, Deprecated::ScriptObject* result);
-    void updateCallStack(Deprecated::ScriptValue* callFrame);
+    virtual void recompileAllJSFunctions() = 0;
 
-    bool causesRecompilation() { return true; }
-    bool supportsSeparateScriptCompilationAndExecution() { return false; }
-
-    void recompileAllJSFunctionsSoon();
-    virtual void recompileAllJSFunctions(Timer<ScriptDebugServer>* = 0) = 0;
-
-    void setScriptPreprocessor(const String&)
-    {
-        // FIXME(webkit.org/b/82203): Implement preprocessor.
-    }
-
-    bool runningNestedMessageLoop() { return m_runningNestedMessageLoop; }
-
-    void compileScript(JSC::ExecState*, const String& expression, const String& sourceURL, String* scriptID, String* exceptionMessage);
-    void clearCompiledScripts();
-    void runScript(JSC::ExecState*, const String& scriptID, Deprecated::ScriptValue* result, bool* wasThrown, String* exceptionMessage);
+    const Vector<ScriptBreakpointAction>& getActionsForBreakpoint(JSC::BreakpointID);
 
     class Task {
         WTF_MAKE_FAST_ALLOCATED;
@@ -102,7 +84,7 @@ protected:
 
     virtual bool isContentScript(JSC::ExecState*);
 
-    bool evaluateBreakpointAction(const ScriptBreakpointAction&) const;
+    bool evaluateBreakpointAction(const ScriptBreakpointAction&);
 
     void dispatchFunctionToListeners(JavaScriptExecutionCallback, JSC::JSGlobalObject*);
     void dispatchFunctionToListeners(const ListenerSet& listeners, JavaScriptExecutionCallback callback);
@@ -110,8 +92,7 @@ protected:
     void dispatchDidContinue(ScriptDebugListener*);
     void dispatchDidParseSource(const ListenerSet& listeners, JSC::SourceProvider*, bool isContentScript);
     void dispatchFailedToParseSource(const ListenerSet& listeners, JSC::SourceProvider*, int errorLine, const String& errorMessage);
-
-    virtual void sourceParsed(JSC::ExecState*, JSC::SourceProvider*, int errorLine, const String& errorMsg) OVERRIDE;
+    void dispatchDidSampleProbe(JSC::ExecState*, int probeIdentifier, const Deprecated::ScriptValue& sample);
 
     bool m_doneProcessingDebuggerEvents;
 
@@ -119,16 +100,16 @@ private:
     typedef Vector<ScriptBreakpointAction> BreakpointActions;
     typedef HashMap<JSC::BreakpointID, BreakpointActions> BreakpointIDToActionsMap;
 
-    virtual bool needPauseHandling(JSC::JSGlobalObject*) OVERRIDE;
-    virtual void handleBreakpointHit(const JSC::Breakpoint&) OVERRIDE;
-    virtual void handleExceptionInBreakpointCondition(JSC::ExecState*, JSC::JSValue exception) const OVERRIDE;
-    virtual void handlePause(JSC::Debugger::ReasonForPause, JSC::JSGlobalObject*) OVERRIDE;
-    virtual void notifyDoneProcessingDebuggerEvents() OVERRIDE;
+    virtual void sourceParsed(JSC::ExecState*, JSC::SourceProvider*, int errorLine, const String& errorMsg) override final;
+    virtual bool needPauseHandling(JSC::JSGlobalObject*) override final;
+    virtual void handleBreakpointHit(const JSC::Breakpoint&) override final;
+    virtual void handleExceptionInBreakpointCondition(JSC::ExecState*, JSC::JSValue exception) const override final;
+    virtual void handlePause(JSC::Debugger::ReasonForPause, JSC::JSGlobalObject*) override final;
+    virtual void notifyDoneProcessingDebuggerEvents() override final;
 
+    unsigned m_hitCount;
     bool m_callingListeners;
-    bool m_runningNestedMessageLoop;
     BreakpointIDToActionsMap m_breakpointIDToActions;
-    Timer<ScriptDebugServer> m_recompileTimer;
 
     friend class DebuggerCallFrameScope;
 };

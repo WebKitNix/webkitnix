@@ -83,6 +83,7 @@
 #import <WebCore/Region.h>
 #import <WebCore/SharedBuffer.h>
 #import <WebCore/TextAlternativeWithRange.h>
+#import <WebCore/WebCoreCALayerExtras.h>
 #import <WebCore/WebCoreFullScreenPlaceholderView.h>
 #import <WebCore/WebCoreFullScreenWindow.h>
 #import <WebCore/WebCoreNSStringExtras.h>
@@ -1604,11 +1605,11 @@ static void extractUnderlines(NSAttributedString *string, Vector<CompositionUnde
 
     if (actualRange) {
         *actualRange = nsRange;
-        actualRange->length = [result.string.get() length];
+        actualRange->length = [result.string length];
     }
 
-    LOG(TextInput, "attributedSubstringFromRange:(%u, %u) -> \"%@\"", nsRange.location, nsRange.length, [result.string.get() string]);
-    return [[result.string.get() retain] autorelease];
+    LOG(TextInput, "attributedSubstringFromRange:(%u, %u) -> \"%@\"", nsRange.location, nsRange.length, [result.string string]);
+    return [[result.string retain] autorelease];
 }
 
 - (NSUInteger)characterIndexForPoint:(NSPoint)thePoint
@@ -2201,7 +2202,7 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
     }
         
     ColorSpaceData colorSpaceData;
-    colorSpaceData.cgColorSpace = [_data->_colorSpace.get() CGColorSpace];
+    colorSpaceData.cgColorSpace = [_data->_colorSpace CGColorSpace];
 
     return colorSpaceData;    
 }
@@ -2476,13 +2477,14 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
         if (!_data->_layerHostingView) {
             // Create an NSView that will host our layer tree.
             _data->_layerHostingView = adoptNS([[WKFlippedView alloc] initWithFrame:[self bounds]]);
-            [_data->_layerHostingView.get() setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+            [_data->_layerHostingView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
 
             [self addSubview:_data->_layerHostingView.get() positioned:NSWindowBelow relativeTo:nil];
 
             // Create a root layer that will back the NSView.
             RetainPtr<CALayer> layer = adoptNS([[CALayer alloc] init]);
+            [layer web_disableAllActions];
 #ifndef NDEBUG
             [layer setName:@"Hosting root layer"];
 #endif
@@ -2583,7 +2585,7 @@ static bool matchesExtensionOrEquivalent(NSString *filename, NSString *extension
     NSPasteboard *pasteboard = [NSPasteboard pasteboardWithName:pasteboardName];
     RetainPtr<NSMutableArray> types = adoptNS([[NSMutableArray alloc] initWithObjects:NSFilesPromisePboardType, nil]);
     
-    [types.get() addObjectsFromArray:archiveBuffer ? PasteboardTypes::forImagesWithArchive() : PasteboardTypes::forImages()];
+    [types addObjectsFromArray:archiveBuffer ? PasteboardTypes::forImagesWithArchive() : PasteboardTypes::forImages()];
     [pasteboard declareTypes:types.get() owner:self];
     if (!matchesExtensionOrEquivalent(filename, extension))
         filename = [[filename stringByAppendingString:@"."] stringByAppendingString:extension];
@@ -2674,7 +2676,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     }
     
     // FIXME: Report an error if we fail to create a file.
-    NSString *path = [[dropDestination path] stringByAppendingPathComponent:[wrapper.get() preferredFilename]];
+    NSString *path = [[dropDestination path] stringByAppendingPathComponent:[wrapper preferredFilename]];
     path = pathWithUniqueFilenameForPath(path);
     if (![wrapper writeToURL:[NSURL fileURLWithPath:path] options:NSFileWrapperWritingWithNameUpdating originalContentsURL:nil error:nullptr])
         LOG_ERROR("Failed to create image file via -[NSFileWrapper writeToURL:options:originalContentsURL:error:]");
@@ -2763,8 +2765,8 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     // 2) prevents any NSBeep; we don't ever want to beep here.
     RetainPtr<WKResponderChainSink> sink = adoptNS([[WKResponderChainSink alloc] initWithResponderChain:self]);
     [super doCommandBySelector:selector];
-    [sink.get() detach];
-    return ![sink.get() didReceiveUnhandledCommand];
+    [sink detach];
+    return ![sink didReceiveUnhandledCommand];
 }
 
 - (void)_setIntrinsicContentSize:(NSSize)intrinsicContentSize

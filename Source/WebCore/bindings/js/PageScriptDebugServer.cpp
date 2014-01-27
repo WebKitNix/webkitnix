@@ -52,6 +52,11 @@
 #include <wtf/PassOwnPtr.h>
 #include <wtf/StdLibExtras.h>
 
+#if PLATFORM(IOS)
+#include "JSDOMWindowBase.h"
+#include "WebCoreThreadInternal.h"
+#endif
+
 using namespace JSC;
 
 namespace WebCore {
@@ -89,10 +94,12 @@ void PageScriptDebugServer::addListener(ScriptDebugListener* listener, Page* pag
     OwnPtr<ListenerSet>& listeners = m_pageListenersMap.add(page, nullptr).iterator->value;
     if (!listeners)
         listeners = adoptPtr(new ListenerSet);
+
+    bool wasEmpty = listeners->isEmpty();
     listeners->add(listener);
 
-    recompileAllJSFunctionsSoon();
-    page->setDebugger(this);
+    if (wasEmpty)
+        didAddFirstListener(page);
 }
 
 void PageScriptDebugServer::removeListener(ScriptDebugListener* listener, Page* page)
@@ -106,20 +113,17 @@ void PageScriptDebugServer::removeListener(ScriptDebugListener* listener, Page* 
 
     ListenerSet* listeners = it->value.get();
     listeners->remove(listener);
+
     if (listeners->isEmpty()) {
         m_pageListenersMap.remove(it);
         didRemoveLastListener(page);
     }
 }
 
-void PageScriptDebugServer::recompileAllJSFunctions(Timer<ScriptDebugServer>*)
+void PageScriptDebugServer::recompileAllJSFunctions()
 {
     JSLockHolder lock(JSDOMWindow::commonVM());
-    // If JavaScript stack is not empty postpone recompilation.
-    if (JSDOMWindow::commonVM()->entryScope)
-        recompileAllJSFunctionsSoon();
-    else
-        Debugger::recompileAllJSFunctions(JSDOMWindow::commonVM());
+    Debugger::recompileAllJSFunctions(JSDOMWindow::commonVM());
 }
 
 ScriptDebugServer::ListenerSet* PageScriptDebugServer::getListenersForGlobalObject(JSGlobalObject* globalObject)
@@ -156,6 +160,13 @@ void PageScriptDebugServer::didContinue(JSC::JSGlobalObject* globalObject)
         setJavaScriptPaused(page->group(), false);
 }
 
+void PageScriptDebugServer::didAddFirstListener(Page* page)
+{
+    // Set debugger before recompiling to get sourceParsed callbacks.
+    page->setDebugger(this);
+    recompileAllJSFunctions();
+}
+
 void PageScriptDebugServer::didRemoveLastListener(Page* page)
 {
     ASSERT(page);
@@ -163,15 +174,33 @@ void PageScriptDebugServer::didRemoveLastListener(Page* page)
     if (m_pausedPage == page)
         m_doneProcessingDebuggerEvents = true;
 
-    recompileAllJSFunctionsSoon();
-    page->setDebugger(0);
+    // Clear debugger before recompiling because we do not need sourceParsed callbacks.
+    page->setDebugger(nullptr);
+    recompileAllJSFunctions();
 }
 
 void PageScriptDebugServer::runEventLoopWhilePaused()
 {
+#if PLATFORM(IOS)
+    // On iOS, running an EventLoop causes us to run a nested WebRunLoop.
+    // Since the WebThread is autoreleased at the end of run loop iterations
+    // we need to gracefully handle releasing and reacquiring the lock.
+    ASSERT(WebThreadIsLockedOrDisabled());
+    {
+        if (WebThreadIsEnabled())
+            JSC::JSLock::DropAllLocks dropAllLocks(WebCore::JSDOMWindowBase::commonVM(), JSC::JSLock::DropAllLocks::AlwaysDropLocks);
+        WebRunLoopEnableNested();
+#endif
+
     EventLoop loop;
     while (!m_doneProcessingDebuggerEvents && !loop.ended())
         loop.cycle();
+
+#if PLATFORM(IOS)
+        WebRunLoopDisableNested();
+    }
+    ASSERT(WebThreadIsLockedOrDisabled());
+#endif
 }
 
 void PageScriptDebugServer::setJavaScriptPaused(const PageGroup& pageGroup, bool paused)

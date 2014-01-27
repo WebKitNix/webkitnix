@@ -47,16 +47,16 @@ public:
     AudioDestinationNix(AudioIOCallback&, const String& inputDeviceId, unsigned numberOfInputChannels, unsigned numberOfOutputChannels, float sampleRate);
     virtual ~AudioDestinationNix();
 
-    virtual void start() OVERRIDE;
-    virtual void stop() OVERRIDE;
-    virtual bool isPlaying() OVERRIDE;
-    virtual float sampleRate() const OVERRIDE;
+    virtual void start() override;
+    virtual void stop() override;
+    virtual bool isPlaying() override;
+    virtual float sampleRate() const override;
 
     // WebKit::WebAudioDevice::RenderCallback
-    virtual void render(const std::vector<float*>& sourceData, const std::vector<float*>& audioData, size_t numberOfFrames) OVERRIDE;
+    virtual void render(const std::vector<float*>& sourceData, const std::vector<float*>& audioData, size_t numberOfFrames) override;
 
     // WebCore::AudioSourceProvider
-    virtual void provideInput(AudioBus*, size_t framesToProcess) OVERRIDE;
+    virtual void provideInput(AudioBus*, size_t framesToProcess) override;
 
 private:
     AudioIOCallback& m_callback;
@@ -65,12 +65,12 @@ private:
     RefPtr<AudioBus> m_renderBus;
     float m_sampleRate;
     bool m_isPlaying;
-    OwnPtr<Nix::AudioDevice> m_audioDevice;
+    std::unique_ptr<Nix::AudioDevice> m_audioDevice;
     size_t m_callbackBufferSize;
     String m_inputDeviceId;
 
-    OwnPtr<AudioFIFO> m_inputFifo;
-    OwnPtr<AudioPullFIFO> m_fifo;
+    std::unique_ptr<AudioFIFO> m_inputFifo;
+    std::unique_ptr<AudioPullFIFO> m_fifo;
 };
 
 } // namespace WebCore

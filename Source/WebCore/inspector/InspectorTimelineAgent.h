@@ -128,20 +128,16 @@ class InspectorTimelineAgent
 public:
     enum InspectorType { PageInspector, WorkerInspector };
 
-    static PassOwnPtr<InspectorTimelineAgent> create(InstrumentingAgents* instrumentingAgents, InspectorPageAgent* pageAgent, InspectorMemoryAgent* memoryAgent, InspectorType type, InspectorClient* client)
-    {
-        return adoptPtr(new InspectorTimelineAgent(instrumentingAgents, pageAgent, memoryAgent, type, client));
-    }
-
+    InspectorTimelineAgent(InstrumentingAgents*, InspectorPageAgent*, InspectorMemoryAgent*, InspectorType, InspectorClient*);
     ~InspectorTimelineAgent();
 
-    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) OVERRIDE;
-    virtual void willDestroyFrontendAndBackend() OVERRIDE;
+    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
+    virtual void willDestroyFrontendAndBackend() override;
 
-    virtual void start(ErrorString*, const int* maxCallStackDepth, const bool* includeDomCounters);
-    virtual void stop(ErrorString*);
-    virtual void canMonitorMainThread(ErrorString*, bool*);
-    virtual void supportsFrameInstrumentation(ErrorString*, bool*);
+    virtual void start(ErrorString*, const int* maxCallStackDepth, const bool* includeDomCounters) override;
+    virtual void stop(ErrorString*) override;
+    virtual void canMonitorMainThread(ErrorString*, bool*) override;
+    virtual void supportsFrameInstrumentation(ErrorString*, bool*) override;
 
     int id() const { return m_id; }
 
@@ -231,8 +227,6 @@ private:
         TimelineRecordType type;
         size_t usedHeapSizeAtStart;
     };
-
-    InspectorTimelineAgent(InstrumentingAgents*, InspectorPageAgent*, InspectorMemoryAgent*, InspectorType, InspectorClient*);
 
     void sendEvent(PassRefPtr<Inspector::InspectorObject>);
     void appendRecord(PassRefPtr<Inspector::InspectorObject> data, TimelineRecordType, bool captureCallStack, Frame*);

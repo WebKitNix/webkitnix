@@ -1,3 +1,170 @@
+2014-01-22  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK][CMake] Add support for building the NetworkProcess
+        https://bugs.webkit.org/show_bug.cgi?id=127195
+
+        Reviewed by Daniel Bates.
+
+        * Source/cmake/OptionsGTK.cmake: Turn on the network process and give it
+        a name like the WebProcess.
+
+2014-01-20  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        [CMAKE] Remove Nix from CMake scripts
+        https://bugs.webkit.org/show_bug.cgi?id=127264
+
+        Reviewed by Anders Carlsson.
+
+        * CMakeLists.txt:
+        * Source/CMakeLists.txt:
+        * Source/cmake/FindEGL.cmake:
+        * Source/cmake/OptionsCommon.cmake:
+
+2014-01-18  Anders Carlsson  <andersca@apple.com>
+
+        Remove ENABLE_THREADED_HTML_PARSER defines everywhere
+        https://bugs.webkit.org/show_bug.cgi?id=127225
+
+        Reviewed by Andreas Kling.
+
+        This concludes the removal of over 8.8 million lines of threaded parser code.
+
+        * Source/autotools/SetupWebKitFeatures.m4:
+        * Source/cmake/WebKitFeatures.cmake:
+        * Source/cmakeconfig.h.cmake:
+
+2014-01-18  Lauro Neto  <lauro.neto@openbossa.org>
+
+        Remove Nix files from WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=127176
+
+        Reviewed by Anders Carlsson.
+
+        * Source/cmake/OptionsNix.cmake: Removed.
+
+2014-01-18  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Bump the minimum required Clang version to 3.3
+        https://bugs.webkit.org/show_bug.cgi?id=127178
+
+        Reviewed by Martin Robinson.
+
+        * Source/autotools/CheckSystemAndBasicDependencies.m4: Require Clang 3.3 or later when using the Clang compiler to
+        build the GTK port. Building with Clang 3.2 doesn't work anymore and there's no point in fixing that, as we should
+        support the latest two versions of Clang (3.3 and 3.4), just like we do with GCC (4.7 and 4.8).
+
+2014-01-14  Dan Bernstein  <mitz@apple.com>
+
+        Only use color in make output when it’s going to a terminal.
+
+        Reviewed by Mark Rowe.
+
+        * Makefile.shared:
+
+2014-01-13  Martin Robinson  <mrobinson@igalia.com>
+
+        [CMake] Mark all dependency include paths and libraries as advanced variables
+        https://bugs.webkit.org/show_bug.cgi?id=126504
+
+        Reviewed by Daniel Bates.
+
+        * Source/cmake/FindATK.cmake: Mark result variable as advanced.
+        * Source/cmake/FindCairo.cmake: Ditto.
+        * Source/cmake/FindEGL.cmake: Ditto.
+        * Source/cmake/FindEnchant.cmake: Ditto.
+        * Source/cmake/FindGLIB.cmake: Ditto.
+        * Source/cmake/FindGStreamer.cmake: Ditto.
+        * Source/cmake/FindHarfBuzz.cmake: Ditto.
+        * Source/cmake/FindLibSoup.cmake: Ditto.
+
+2014-01-13  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK][CMake] Add a 'check' target
+        https://bugs.webkit.org/show_bug.cgi?id=126770
+
+        Reviewed by Daniel Bates.
+
+        * Source/PlatformGTK.cmake: Add a 'check' target that calls run-gtk-tests.
+
+2014-01-13  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        Unreviewed. Update NEWS and Versions.m4 for 2.3.4 release.
+
+        * Source/autotools/Versions.m4: Bump version numbers.
+
+2014-01-12  Sergio Correia  <sergio.correia@openbossa.org>
+
+        [EFL][WK2] Make API tests work again
+        https://bugs.webkit.org/show_bug.cgi?id=126769
+
+        Reviewed by Gyuyoung Kim.
+
+        The EFL and WK2 test binaries are currently being generated at *TestWebKitAPI/
+        [E]WebKit2, respectively, and this causes problems because the logic to find
+        where WebProcess is to look in the same directory of the running process and
+        then proceed to use LIBEXECDIR (typically /usr/loca/bin).
+
+        This patch introduces a WEBKIT_EXEC_PATH environment variable, inspired in the
+        Gtk port, which allows us to look for WebProcess initially in this directory,
+        if it's defined.
+
+        * Source/cmake/OptionsEfl.cmake: Define WEBKIT_EXEC_PATH, to be used by
+        [E]WebKit2 tests.
+
+2014-01-11  Dan Bernstein  <mitz@apple.com>
+
+        [Mac] xcodebuild color output is suppressed when using make
+        https://bugs.webkit.org/show_bug.cgi?id=126815
+
+        Reviewed by Anders Carlsson.
+
+        WHen using make, xcodebuild’s output is piped through a filter, which causes it not to
+        format its output with color and emphasis.
+
+        * Makefile.shared: Pass COLOR_DIAGNOSTICS=YES to xcodebuild to force color output on. Due to
+        xcodebuild limitations, this restores some of the formatting, but not all of it.
+
+2014-01-10  Benjamin Poulain  <bpoulain@apple.com>
+
+        Remove the BlackBerry port from trunk
+        https://bugs.webkit.org/show_bug.cgi?id=126715
+
+        Reviewed by Anders Carlsson.
+
+        * CMakeLists.txt:
+        * Source/cmake/OptionsCommon.cmake:
+
+2014-01-10  Tamas Gergely  <tgergely.u-szeged@partner.samsung.com>
+
+        [EFL][JSC] Enable udis86 disassembler on efl.
+        https://bugs.webkit.org/show_bug.cgi?id=125502
+
+        Reviewed by Michael Saboff.
+
+        Enable udis86 disassembler on efl and fix build warnings.
+
+        * Source/cmake/OptionsEfl.cmake:
+          Enable udis86 disassembler.
+
+2014-01-10  Benjamin Poulain  <bpoulain@apple.com>
+
+        Remove the BlackBerry port from trunk
+        https://bugs.webkit.org/show_bug.cgi?id=126715
+
+        Reviewed by Anders Carlsson.
+
+        * CMakeLists.txt:
+
+2014-01-09  Benjamin Poulain  <bpoulain@apple.com>
+
+        Remove the BlackBerry files outside WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=126715
+
+        Reviewed by Anders Carlsson.
+
+        * ManualTests/blackberry: Removed.
+        * Source/cmake/OptionsBlackBerry.cmake: Removed.
+
 2014-01-08  Martin Robinson  <mrobinson@igalia.com>
 
         [GTK] [CMake] Specify the executable and library output locations in the build

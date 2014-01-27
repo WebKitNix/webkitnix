@@ -158,10 +158,8 @@ WebInspector.ResourceSidebarPanel.prototype = {
         if (representedObject instanceof WebInspector.Resource && representedObject.isMainResource())
             representedObject = representedObject.parentFrame;
 
-        var newContentView = WebInspector.contentBrowser.contentViewForRepresentedObject(representedObject);
         var cookie = positionToReveal ? {lineNumber: positionToReveal.lineNumber, columnNumber: positionToReveal.columnNumber} : {};
-
-        WebInspector.contentBrowser.showContentView(newContentView, cookie);
+        WebInspector.contentBrowser.showContentViewForRepresentedObject(representedObject, cookie);
     },
 
     showSourceCodeLocation: function(sourceCodeLocation)
@@ -219,7 +217,7 @@ WebInspector.ResourceSidebarPanel.prototype = {
         // A custom implementation is needed for this since the frames are populated lazily.
 
         // The Frame is used as the representedObject instead of the main resource in our tree.
-        if (representedObject instanceof WebInspector.Resource && representedObject.parentFrame.mainResource === representedObject)
+        if (representedObject instanceof WebInspector.Resource && representedObject.parentFrame && representedObject.parentFrame.mainResource === representedObject)
             representedObject = representedObject.parentFrame;
 
         function isAncestor(ancestor, resourceOrFrame)

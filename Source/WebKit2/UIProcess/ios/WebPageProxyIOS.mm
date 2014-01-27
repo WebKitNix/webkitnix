@@ -29,9 +29,11 @@
 #import "NativeWebKeyboardEvent.h"
 #import "PageClient.h"
 #import "WKBrowsingContextControllerInternal.h"
+#import "WebKitSystemInterfaceIOS.h"
 #import "WebPageMessages.h"
 #import "WebProcessProxy.h"
 #import <WebCore/NotImplemented.h>
+#import <WebCore/UserAgent.h>
 #import <WebCore/SharedBuffer.h>
 
 using namespace WebCore;
@@ -45,12 +47,22 @@ void WebPageProxy::platformInitialize()
 #endif
 }
 
-String WebPageProxy::standardUserAgent(const String&)
+static String userVisibleWebKitVersionString()
 {
-    notImplemented();
+    // If the version is longer than 3 digits then the leading digits represent the version of the OS. Our user agent
+    // string should not include the leading digits, so strip them off and report the rest as the version. <rdar://problem/4997547>
+    NSString *fullVersion = [[NSBundle bundleForClass:NSClassFromString(@"WKView")] objectForInfoDictionaryKey:(NSString *)kCFBundleVersionKey];
+    NSRange nonDigitRange = [fullVersion rangeOfCharacterFromSet:[[NSCharacterSet decimalDigitCharacterSet] invertedSet]];
+    if (nonDigitRange.location == NSNotFound && fullVersion.length > 3)
+        return [fullVersion substringFromIndex:fullVersion.length - 3];
+    if (nonDigitRange.location != NSNotFound && nonDigitRange.location > 3)
+        return [fullVersion substringFromIndex:nonDigitRange.location - 3];
+    return fullVersion;
+}
 
-    // Just return the iOS 5.1 user agent for now.
-    return "Mozilla/5.0 (iPad; CPU OS 5_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9B176 Safari/7534.48.3";
+String WebPageProxy::standardUserAgent(const String& applicationName)
+{
+    return standardUserAgentWithApplicationName(applicationName, userVisibleWebKitVersionString());
 }
 
 void WebPageProxy::getIsSpeaking(bool&)
@@ -297,6 +309,21 @@ void WebPageProxy::selectWithTwoTouches(const WebCore::IntPoint from, const WebC
     m_process->send(Messages::WebPage::SelectWithTwoTouches(from, to, gestureType, gestureState, callbackID), m_pageID);
 }
 
+void WebPageProxy::didReceivePositionInformation(const InteractionInformationAtPosition& info)
+{
+    m_pageClient.positionInformationDidChange(info);
+}
+
+void WebPageProxy::getPositionInformation(const WebCore::IntPoint& point, InteractionInformationAtPosition& info)
+{
+    m_process->sendSync(Messages::WebPage::GetPositionInformation(point), Messages::WebPage::GetPositionInformation::Reply(info), m_pageID);
+}
+
+void WebPageProxy::requestPositionInformation(const WebCore::IntPoint& point)
+{
+    m_process->send(Messages::WebPage::RequestPositionInformation(point), m_pageID);
+}
+
 void WebPageProxy::notifyRevealedSelection()
 {
     m_pageClient.selectionDidChange();
@@ -378,6 +405,7 @@ void WebPageProxy::didFinishScrolling(const WebCore::FloatPoint& contentOffset)
 
 void WebPageProxy::didFinishZooming(float newScale)
 {
+    m_pageScaleFactor = newScale;
     process().send(Messages::WebPage::DidFinishZooming(newScale), m_pageID);
 }
 

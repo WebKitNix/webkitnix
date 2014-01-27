@@ -43,7 +43,6 @@
 #import "EventNames.h"
 #import "FormController.h"
 #import "FrameSelection.h"
-#import "FrameSnapshottingMac.h"
 #import "FrameView.h"
 #import "HTMLAreaElement.h"
 #import "HTMLDocument.h"
@@ -97,6 +96,16 @@ void Frame::initWithSimpleHTMLDocument(const String& style, const URL& url)
 
     rootElement->appendChild(body, ec);
     document->appendChild(rootElement, ec);
+}
+
+const ViewportArguments& Frame::viewportArguments() const
+{
+    return m_viewportArguments;
+}
+
+void Frame::setViewportArguments(const ViewportArguments& arguments)
+{
+    m_viewportArguments = arguments;
 }
 
 // FIXME: Extract the common code in indexCountOfWordPrecedingSelection() and wordsInCurrentParagraph() into a shared function.

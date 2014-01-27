@@ -59,12 +59,14 @@
 #include "PlatformMouseEvent.h"
 #include "PopupMenuClient.h"
 #include "ProgressTracker.h"
+#include "ProgressTrackerClientEfl.h"
 #include "RefPtrCairo.h"
 #include "RenderThemeEfl.h"
 #include "ResourceHandle.h"
 #include "RuntimeEnabledFeatures.h"
 #include "ScriptController.h"
 #include "Settings.h"
+#include "SoupNetworkSession.h"
 #include "TiledBackingStore.h"
 #include "c_instance.h"
 #include "ewk_contextmenu_private.h"
@@ -254,8 +256,6 @@ static const EditorCommand editorCommands[] = {
  */
 struct _Ewk_View_Private_Data {
     OwnPtr<WebCore::Page> page;
-    WebCore::Settings* pageSettings;
-    WebCore::Frame* mainFrame;
     WebCore::ViewportArguments viewportArguments;
     Ewk_History* history;
     OwnPtr<PageClientEfl> pageClient;
@@ -270,7 +270,6 @@ struct _Ewk_View_Private_Data {
 #if ENABLE(NAVIGATOR_CONTENT_UTILS) || ENABLE(CUSTOM_SCHEME_HANDLER)
     OwnPtr<WebCore::NavigatorContentUtilsClientEfl> navigatorContentUtilsClient;
 #endif
-    WebCore::NetworkStorageSession* storageSession;
     struct {
         Ewk_Menu menu;
         WebCore::PopupMenuClient* menuClient;
@@ -683,6 +682,7 @@ static Ewk_View_Private_Data* _ewk_view_priv_new(Ewk_View_Smart_Data* smartData)
     pageClients.inspectorClient = new WebCore::InspectorClientEfl(smartData->self);
 #endif
     pageClients.loaderClientForMainFrame = new WebCore::FrameLoaderClientEfl(smartData->self);
+    pageClients.progressTrackerClient = new WebCore::ProgressTrackerClientEfl(smartData->self);
     priv->page = adoptPtr(new WebCore::Page(pageClients));
 
 #if ENABLE(DEVICE_ORIENTATION)
@@ -715,7 +715,7 @@ static Ewk_View_Private_Data* _ewk_view_priv_new(Ewk_View_Smart_Data* smartData)
     }
 #endif
 
-    priv->pageSettings = &priv->page->settings();
+    WebCore::Settings& pageSettings = priv->page->settings();
 
     WebCore::LayoutMilestones layoutMilestones = WebCore::DidFirstLayout | WebCore::DidFirstVisuallyNonEmptyLayout;
     priv->page->addLayoutMilestones(layoutMilestones);
@@ -728,99 +728,98 @@ static Ewk_View_Private_Data* _ewk_view_priv_new(Ewk_View_Smart_Data* smartData)
     priv->viewportArguments.maxZoom = WebCore::ViewportArguments::ValueAuto;
     priv->viewportArguments.userZoom = true;
 
-    priv->pageSettings->setLoadsImagesAutomatically(true);
-    priv->pageSettings->setDefaultTextEncodingName("iso-8859-1");
-    priv->pageSettings->setDefaultFixedFontSize(12);
-    priv->pageSettings->setDefaultFontSize(16);
-    priv->pageSettings->setSerifFontFamily("serif");
-    priv->pageSettings->setFixedFontFamily("monotype");
-    priv->pageSettings->setSansSerifFontFamily("sans");
-    priv->pageSettings->setStandardFontFamily("sans");
-    priv->pageSettings->setHyperlinkAuditingEnabled(false);
+    pageSettings.setLoadsImagesAutomatically(true);
+    pageSettings.setDefaultTextEncodingName("iso-8859-1");
+    pageSettings.setDefaultFixedFontSize(12);
+    pageSettings.setDefaultFontSize(16);
+    pageSettings.setSerifFontFamily("serif");
+    pageSettings.setFixedFontFamily("monotype");
+    pageSettings.setSansSerifFontFamily("sans");
+    pageSettings.setStandardFontFamily("sans");
+    pageSettings.setHyperlinkAuditingEnabled(false);
     WebCore::RuntimeEnabledFeatures::sharedFeatures().setCSSRegionsEnabled(true);
 #if ENABLE(IFRAME_SEAMLESS)
     WebCore::RuntimeEnabledFeatures::sharedFeatures().setSeamlessIFramesEnabled(true);
 #endif
-    priv->pageSettings->setScriptEnabled(true);
-    priv->pageSettings->setPluginsEnabled(true);
-    priv->pageSettings->setLocalStorageEnabled(true);
-    priv->pageSettings->setOfflineWebApplicationCacheEnabled(true);
-    priv->pageSettings->setUsesPageCache(true);
-    priv->pageSettings->setUsesEncodingDetector(false);
+    pageSettings.setScriptEnabled(true);
+    pageSettings.setPluginsEnabled(true);
+    pageSettings.setLocalStorageEnabled(true);
+    pageSettings.setOfflineWebApplicationCacheEnabled(true);
+    pageSettings.setUsesPageCache(true);
+    pageSettings.setUsesEncodingDetector(false);
 #if ENABLE(WEB_AUDIO)
-    priv->pageSettings->setWebAudioEnabled(false);
+    pageSettings.setWebAudioEnabled(false);
 #endif
-    priv->pageSettings->setWebGLEnabled(true);
-    priv->pageSettings->setXSSAuditorEnabled(true);
+    pageSettings.setWebGLEnabled(true);
+    pageSettings.setXSSAuditorEnabled(true);
 #if ENABLE(FULLSCREEN_API)
-    priv->pageSettings->setFullScreenEnabled(true);
+    pageSettings.setFullScreenEnabled(true);
 #endif
-    priv->pageSettings->setInteractiveFormValidationEnabled(true);
+    pageSettings.setInteractiveFormValidationEnabled(true);
 #if USE(ACCELERATED_COMPOSITING)
-    priv->pageSettings->setAcceleratedCompositingEnabled(false);
+    pageSettings.setAcceleratedCompositingEnabled(false);
     char* debugVisualsEnvironment = getenv("WEBKIT_SHOW_COMPOSITING_DEBUG_VISUALS");
     bool showDebugVisuals = debugVisualsEnvironment && !strcmp(debugVisualsEnvironment, "1");
-    priv->pageSettings->setShowDebugBorders(showDebugVisuals);
-    priv->pageSettings->setShowRepaintCounter(showDebugVisuals);
+    pageSettings.setShowDebugBorders(showDebugVisuals);
+    pageSettings.setShowRepaintCounter(showDebugVisuals);
 #endif
 
-    url = priv->pageSettings->userStyleSheetLocation();
+    url = pageSettings.userStyleSheetLocation();
     priv->settings.userStylesheet = eina_stringshare_add(url.string().utf8().data());
 
-    priv->settings.encodingDefault = eina_stringshare_add
-                                          (priv->pageSettings->defaultTextEncodingName().utf8().data());
+    priv->settings.encodingDefault = eina_stringshare_add(pageSettings.defaultTextEncodingName().utf8().data());
     priv->settings.encodingCustom = 0;
 
-    string = priv->pageSettings->localStorageDatabasePath();
+    string = pageSettings.localStorageDatabasePath();
     priv->settings.localStorageDatabasePath = eina_stringshare_add(string.string().utf8().data());
 
-    priv->settings.fontMinimumSize = priv->pageSettings->minimumFontSize();
-    priv->settings.fontMinimumLogicalSize = priv->pageSettings->minimumLogicalFontSize();
-    priv->settings.fontDefaultSize = priv->pageSettings->defaultFontSize();
-    priv->settings.fontMonospaceSize = priv->pageSettings->defaultFixedFontSize();
+    priv->settings.fontMinimumSize = pageSettings.minimumFontSize();
+    priv->settings.fontMinimumLogicalSize = pageSettings.minimumLogicalFontSize();
+    priv->settings.fontDefaultSize = pageSettings.defaultFontSize();
+    priv->settings.fontMonospaceSize = pageSettings.defaultFixedFontSize();
 
-    string = priv->pageSettings->standardFontFamily();
+    string = pageSettings.standardFontFamily();
     priv->settings.fontStandard = eina_stringshare_add(string.string().utf8().data());
-    string = priv->pageSettings->cursiveFontFamily();
+    string = pageSettings.cursiveFontFamily();
     priv->settings.fontCursive = eina_stringshare_add(string.string().utf8().data());
-    string = priv->pageSettings->fixedFontFamily();
+    string = pageSettings.fixedFontFamily();
     priv->settings.fontMonospace = eina_stringshare_add(string.string().utf8().data());
-    string = priv->pageSettings->fantasyFontFamily();
+    string = pageSettings.fantasyFontFamily();
     priv->settings.fontFantasy = eina_stringshare_add(string.string().utf8().data());
-    string = priv->pageSettings->serifFontFamily();
+    string = pageSettings.serifFontFamily();
     priv->settings.fontSerif = eina_stringshare_add(string.string().utf8().data());
-    string = priv->pageSettings->sansSerifFontFamily();
+    string = pageSettings.sansSerifFontFamily();
     priv->settings.fontSansSerif = eina_stringshare_add(string.string().utf8().data());
 
-    priv->settings.autoLoadImages = priv->pageSettings->loadsImagesAutomatically();
-    priv->settings.autoShrinkImages = priv->pageSettings->shrinksStandaloneImagesToFit();
+    priv->settings.autoLoadImages = pageSettings.loadsImagesAutomatically();
+    priv->settings.autoShrinkImages = pageSettings.shrinksStandaloneImagesToFit();
     priv->settings.enableAutoResizeWindow = true;
-    priv->settings.enableDeveloperExtras = priv->pageSettings->developerExtrasEnabled();
-    priv->settings.enableScripts = priv->pageSettings->isScriptEnabled();
-    priv->settings.enablePlugins = priv->pageSettings->arePluginsEnabled();
-    priv->settings.enableFrameFlattening = priv->pageSettings->frameFlatteningEnabled();
+    priv->settings.enableDeveloperExtras = pageSettings.developerExtrasEnabled();
+    priv->settings.enableScripts = pageSettings.isScriptEnabled();
+    priv->settings.enablePlugins = pageSettings.arePluginsEnabled();
+    priv->settings.enableFrameFlattening = pageSettings.frameFlatteningEnabled();
 #if ENABLE(FULLSCREEN_API)
-    priv->settings.enableFullscreen = priv->pageSettings->fullScreenEnabled();
+    priv->settings.enableFullscreen = pageSettings.fullScreenEnabled();
 #endif
-    priv->settings.enableXSSAuditor = priv->pageSettings->xssAuditorEnabled();
-    priv->settings.hyperlinkAuditingEnabled = priv->pageSettings->hyperlinkAuditingEnabled();
-    priv->settings.scriptsCanOpenWindows = priv->pageSettings->javaScriptCanOpenWindowsAutomatically();
-    priv->settings.scriptsCanCloseWindows = priv->pageSettings->allowScriptsToCloseWindows();
+    priv->settings.enableXSSAuditor = pageSettings.xssAuditorEnabled();
+    priv->settings.hyperlinkAuditingEnabled = pageSettings.hyperlinkAuditingEnabled();
+    priv->settings.scriptsCanOpenWindows = pageSettings.javaScriptCanOpenWindowsAutomatically();
+    priv->settings.scriptsCanCloseWindows = pageSettings.allowScriptsToCloseWindows();
 #if ENABLE(VIDEO_TRACK)
-    priv->settings.shouldDisplayCaptions = priv->pageSettings->shouldDisplayCaptions();
-    priv->settings.shouldDisplaySubtitles = priv->pageSettings->shouldDisplaySubtitles();
-    priv->settings.shouldDisplayTextDescriptions = priv->pageSettings->shouldDisplayTextDescriptions();
+    priv->settings.shouldDisplayCaptions = pageSettings.shouldDisplayCaptions();
+    priv->settings.shouldDisplaySubtitles = pageSettings.shouldDisplaySubtitles();
+    priv->settings.shouldDisplayTextDescriptions = pageSettings.shouldDisplayTextDescriptions();
 #endif
-    priv->settings.scriptsCanAccessClipboard = priv->pageSettings->javaScriptCanAccessClipboard() && priv->pageSettings->DOMPasteAllowed();
-    priv->settings.resizableTextareas = priv->pageSettings->textAreasAreResizable();
-    priv->settings.privateBrowsing = priv->pageSettings->privateBrowsingEnabled();
-    priv->settings.caretBrowsing = priv->pageSettings->caretBrowsingEnabled();
-    priv->settings.spatialNavigation = priv->pageSettings->spatialNavigationEnabled();
-    priv->settings.localStorage = priv->pageSettings->localStorageEnabled();
+    priv->settings.scriptsCanAccessClipboard = pageSettings.javaScriptCanAccessClipboard() && pageSettings.DOMPasteAllowed();
+    priv->settings.resizableTextareas = pageSettings.textAreasAreResizable();
+    priv->settings.privateBrowsing = pageSettings.privateBrowsingEnabled();
+    priv->settings.caretBrowsing = pageSettings.caretBrowsingEnabled();
+    priv->settings.spatialNavigation = pageSettings.spatialNavigationEnabled();
+    priv->settings.localStorage = pageSettings.localStorageEnabled();
     priv->settings.offlineAppCache = true; // XXX no function to read setting; this keeps the original setting
-    priv->settings.pageCache = priv->pageSettings->usesPageCache();
-    priv->settings.encodingDetector = priv->pageSettings->usesEncodingDetector();
-    priv->settings.webGLEnabled = priv->pageSettings->webGLEnabled();
+    priv->settings.pageCache = pageSettings.usesPageCache();
+    priv->settings.encodingDetector = pageSettings.usesEncodingDetector();
+    priv->settings.webGLEnabled = pageSettings.webGLEnabled();
     priv->settings.tabsToLinks = true;
 
     priv->settings.userAgent = ewk_settings_default_user_agent_get();
@@ -832,16 +831,12 @@ static Ewk_View_Private_Data* _ewk_view_priv_new(Ewk_View_Smart_Data* smartData)
     priv->settings.zoomRange.maxScale = zoomMaximum;
     priv->settings.zoomRange.userScalable = true;
 
-    priv->settings.domTimerInterval = priv->pageSettings->defaultMinDOMTimerInterval();
+    priv->settings.domTimerInterval = pageSettings.defaultMinDOMTimerInterval();
 
-    priv->settings.allowUniversalAccessFromFileURLs = priv->pageSettings->allowUniversalAccessFromFileURLs();
-    priv->settings.allowFileAccessFromFileURLs = priv->pageSettings->allowFileAccessFromFileURLs();
-
-    priv->mainFrame = &priv->page->mainFrame();
+    priv->settings.allowUniversalAccessFromFileURLs = pageSettings.allowUniversalAccessFromFileURLs();
+    priv->settings.allowFileAccessFromFileURLs = pageSettings.allowFileAccessFromFileURLs();
 
     priv->history = ewk_history_new(static_cast<WebCore::BackForwardList*>(priv->page->backForwardClient()));
-
-    priv->storageSession = &WebCore::NetworkStorageSession::defaultStorageSession();
 
     priv->pageClient = adoptPtr(new PageClientEfl(smartData->self));
 
@@ -961,14 +956,14 @@ static void _ewk_view_smart_add(Evas_Object* ewkView)
         return;
     }
 
-    if (!ewk_frame_init(smartData->main_frame, ewkView, adoptPtr(static_cast<WebCore::FrameLoaderClientEfl*>(&priv->mainFrame->loader().client())))) {
+    if (!ewk_frame_init(smartData->main_frame, ewkView, adoptPtr(static_cast<WebCore::FrameLoaderClientEfl*>(&priv->page->mainFrame().loader().client())))) {
         ERR("Could not initialize main frme object.");
         evas_object_del(smartData->main_frame);
         smartData->main_frame = 0;
 
         return;
     }
-    EWKPrivate::setCoreFrame(smartData->main_frame, priv->mainFrame);
+    EWKPrivate::setCoreFrame(smartData->main_frame, &priv->page->mainFrame());
     priv->page->mainFrame().tree().setName(String());
     priv->page->mainFrame().init();
 
@@ -1154,6 +1149,8 @@ static void _ewk_view_smart_scrolls_process(Ewk_View_Smart_Data* smartData)
 
 static Eina_Bool _ewk_view_smart_repaints_process(Ewk_View_Smart_Data* smartData)
 {
+    EWK_VIEW_PRIV_GET(smartData, priv);
+
     if (smartData->animated_zoom.zoom.current < std::numeric_limits<float>::epsilon()) {
         Evas_Object* clip = evas_object_clip_get(smartData->backing_store);
 
@@ -1184,10 +1181,10 @@ static Eina_Bool _ewk_view_smart_repaints_process(Ewk_View_Smart_Data* smartData
         return false;
     }
 
-    ewk_view_layout_if_needed_recursive(smartData->_priv);
+    ewk_view_layout_if_needed_recursive(priv);
 
     size_t count;
-    const Eina_Rectangle* paintRequest = ewk_view_repaints_pop(smartData->_priv, &count);
+    const Eina_Rectangle* paintRequest = ewk_view_repaints_pop(priv, &count);
     const Eina_Rectangle* paintRequestEnd = paintRequest + count;
     for (; paintRequest < paintRequestEnd; paintRequest++)
         eina_tiler_rect_add(tiler, paintRequest);
@@ -1200,9 +1197,8 @@ static Eina_Bool _ewk_view_smart_repaints_process(Ewk_View_Smart_Data* smartData
     }
 
 #if USE(TILED_BACKING_STORE)
-    WebCore::Frame* mainFrame = EWKPrivate::coreFrame(smartData->main_frame);
-    if (mainFrame && mainFrame->tiledBackingStore())
-        mainFrame->tiledBackingStore()->coverWithTilesIfNeeded();
+    if (priv->page->mainFrame().tiledBackingStore())
+        priv->page->mainFrame().tiledBackingStore()->coverWithTilesIfNeeded();
 #endif
 
     Ewk_Paint_Context* context = ewk_paint_context_from_image_new(smartData->backing_store);
@@ -1217,9 +1213,9 @@ static Eina_Bool _ewk_view_smart_repaints_process(Ewk_View_Smart_Data* smartData
 #if ENABLE(INSPECTOR)
     WebCore::Page* page = EWKPrivate::corePage(smartData->self);
     if (page) {
-        WebCore::InspectorController* controller = page->inspectorController();
-        if (controller->highlightedNode())
-            controller->drawHighlight(*context->graphicContext);
+        WebCore::InspectorController& controller = page->inspectorController();
+        if (controller.highlightedNode())
+            controller.drawHighlight(*context->graphicContext);
     }
 #endif
 
@@ -1242,7 +1238,7 @@ static void _ewk_view_smart_calculate(Evas_Object* ewkView)
 
     smartData->changed.any = false;
 
-    if (!smartData->main_frame || !priv->mainFrame)
+    if (!smartData->main_frame)
         return;
 
     evas_object_geometry_get(ewkView, &x, &y, &width, &height);
@@ -1251,7 +1247,7 @@ static void _ewk_view_smart_calculate(Evas_Object* ewkView)
         ewkView, x, y, width, height, smartData->changed.size);
 
     if (smartData->changed.size && ((width != smartData->view.w) || (height != smartData->view.h))) {
-        WebCore::FrameView* view = priv->mainFrame->view();
+        WebCore::FrameView* view = priv->page->mainFrame().view();
         if (view) {
             view->resize(width, height);
             view->forceLayout();
@@ -1287,8 +1283,7 @@ static void _ewk_view_smart_calculate(Evas_Object* ewkView)
         ERR("failed to process repaints.");
 
     if (smartData->changed.frame_rect) {
-        WebCore::FrameView* view = priv->mainFrame->view();
-        view->frameRectsChanged(); /* force tree to get position from root */
+        priv->page->mainFrame().view()->frameRectsChanged();
         smartData->changed.frame_rect = false;
     }
 }
@@ -1524,7 +1519,7 @@ static const char* _ewk_view_editor_command_string_get(Ewk_View_Private_Data*, E
     return reinterpret_cast<const char*>(eina_hash_find(editorCommandHash.get(), &ewkCommand));
 }
 
-Eina_Bool ewk_view_base_smart_set(Ewk_View_Smart_Class* api)
+Eina_Bool ewk_view_smart_set(Ewk_View_Smart_Class* api)
 {
     EINA_SAFETY_ON_NULL_RETURN_VAL(api, false);
 
@@ -1582,27 +1577,22 @@ Eina_Bool ewk_view_base_smart_set(Ewk_View_Smart_Class* api)
     return true;
 }
 
-Eina_Bool ewk_view_single_smart_set(Ewk_View_Smart_Class* api)
+static inline Evas_Smart* _ewk_view_smart_class_new()
 {
-    return ewk_view_base_smart_set(api);
-}
-
-static inline Evas_Smart* _ewk_view_single_smart_class_new(void)
-{
-    static Ewk_View_Smart_Class api = EWK_VIEW_SMART_CLASS_INIT_NAME_VERSION(ewkViewSingleName);
+    static Ewk_View_Smart_Class api = EWK_VIEW_SMART_CLASS_INIT_NAME_VERSION(ewkViewTypeString);
     static Evas_Smart* smart = 0;
 
     if (EINA_UNLIKELY(!smart)) {
-        ewk_view_base_smart_set(&api);
+        ewk_view_smart_set(&api);
         smart = evas_smart_class_new(&api.sc);
     }
 
     return smart;
 }
 
-Evas_Object* ewk_view_single_add(Evas* canvas)
+Evas_Object* ewk_view_add(Evas* canvas)
 {
-    return evas_object_smart_add(canvas, _ewk_view_single_smart_class_new());
+    return evas_object_smart_add(canvas, _ewk_view_smart_class_new());
 }
 
 void ewk_view_fixed_layout_size_set(Evas_Object* ewkView, Evas_Coord width, Evas_Coord height)
@@ -1610,7 +1600,7 @@ void ewk_view_fixed_layout_size_set(Evas_Object* ewkView, Evas_Coord width, Evas
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
 
-    WebCore::FrameView* view = priv->mainFrame->view();
+    WebCore::FrameView* view = priv->page->mainFrame().view();
     if (!view)
         return;
 
@@ -1638,7 +1628,7 @@ void ewk_view_fixed_layout_size_get(const Evas_Object* ewkView, Evas_Coord* widt
         *height = 0;
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
-    WebCore::FrameView* view = priv->mainFrame->view();
+    WebCore::FrameView* view = priv->page->mainFrame().view();
     if (view->useFixedLayout()) {
         WebCore::IntSize size = view->fixedLayoutSize();
         if (width)
@@ -1743,7 +1733,7 @@ void ewk_view_bg_color_set(Evas_Object* ewkView, int red, int green, int blue, i
 
     evas_object_image_alpha_set(smartData->backing_store, alpha < 255);
 
-    WebCore::FrameView* view = smartData->_priv->mainFrame->view();
+    WebCore::FrameView* view = smartData->_priv->page->mainFrame().view();
     if (view) {
         WebCore::Color color;
 
@@ -2313,7 +2303,7 @@ Eina_Bool ewk_view_setting_user_agent_set(Evas_Object* ewkView, const char* user
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     if (eina_stringshare_replace(&priv->settings.userAgent, userAgent)) {
-        WebCore::FrameLoaderClientEfl& client = static_cast<WebCore::FrameLoaderClientEfl&>(priv->mainFrame->loader().client());
+        WebCore::FrameLoaderClientEfl& client = static_cast<WebCore::FrameLoaderClientEfl&>(priv->page->mainFrame().loader().client());
         client.setCustomUserAgent(String::fromUTF8(userAgent));
     }
     return true;
@@ -2332,7 +2322,7 @@ Eina_Bool ewk_view_setting_user_stylesheet_set(Evas_Object* ewkView, const char*
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     if (eina_stringshare_replace(&priv->settings.userStylesheet, uri)) {
         WebCore::URL kurl(WebCore::URL(), String::fromUTF8(uri));
-        priv->pageSettings->setUserStyleSheetLocation(kurl);
+        priv->page->settings().setUserStyleSheetLocation(kurl);
     }
     return true;
 }
@@ -2350,7 +2340,7 @@ Eina_Bool ewk_view_setting_auto_load_images_set(Evas_Object* ewkView, Eina_Bool 
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     automatic = !!automatic;
     if (priv->settings.autoLoadImages != automatic) {
-        priv->pageSettings->setLoadsImagesAutomatically(automatic);
+        priv->page->settings().setLoadsImagesAutomatically(automatic);
         priv->settings.autoLoadImages = automatic;
     }
     return true;
@@ -2369,7 +2359,7 @@ Eina_Bool ewk_view_setting_auto_shrink_images_set(Evas_Object* ewkView, Eina_Boo
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     automatic = !!automatic;
     if (priv->settings.autoShrinkImages != automatic) {
-        priv->pageSettings->setShrinksStandaloneImagesToFit(automatic);
+        priv->page->settings().setShrinksStandaloneImagesToFit(automatic);
         priv->settings.autoShrinkImages = automatic;
     }
     return true;
@@ -2403,7 +2393,7 @@ Eina_Bool ewk_view_setting_enable_scripts_set(Evas_Object* ewkView, Eina_Bool en
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.enableScripts != enable) {
-        priv->pageSettings->setScriptEnabled(enable);
+        priv->page->settings().setScriptEnabled(enable);
         priv->settings.enableScripts = enable;
     }
     return true;
@@ -2422,7 +2412,7 @@ Eina_Bool ewk_view_setting_enable_plugins_set(Evas_Object* ewkView, Eina_Bool en
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.enablePlugins != enable) {
-        priv->pageSettings->setPluginsEnabled(enable);
+        priv->page->settings().setPluginsEnabled(enable);
         priv->settings.enablePlugins = enable;
     }
     return true;
@@ -2441,7 +2431,7 @@ Eina_Bool ewk_view_setting_enable_frame_flattening_set(Evas_Object* ewkView, Ein
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.enableFrameFlattening != enable) {
-        priv->pageSettings->setFrameFlatteningEnabled(enable);
+        priv->page->settings().setFrameFlatteningEnabled(enable);
         priv->settings.enableFrameFlattening = enable;
     }
     return true;
@@ -2460,7 +2450,7 @@ Eina_Bool ewk_view_setting_scripts_can_open_windows_set(Evas_Object* ewkView, Ei
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     allow = !!allow;
     if (priv->settings.scriptsCanOpenWindows != allow) {
-        priv->pageSettings->setJavaScriptCanOpenWindowsAutomatically(allow);
+        priv->page->settings().setJavaScriptCanOpenWindowsAutomatically(allow);
         priv->settings.scriptsCanOpenWindows = allow;
     }
     return true;
@@ -2479,7 +2469,7 @@ Eina_Bool ewk_view_setting_scripts_can_close_windows_set(Evas_Object* ewkView, E
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     allow = !!allow;
     if (priv->settings.scriptsCanCloseWindows != allow) {
-        priv->pageSettings->setAllowScriptsToCloseWindows(allow);
+        priv->page->settings().setAllowScriptsToCloseWindows(allow);
         priv->settings.scriptsCanCloseWindows = allow;
     }
     return true;
@@ -2498,8 +2488,8 @@ Eina_Bool ewk_view_setting_scripts_can_access_clipboard_set(Evas_Object* ewkView
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     allow = !!allow;
     if (priv->settings.scriptsCanAccessClipboard != allow) {
-        priv->pageSettings->setJavaScriptCanAccessClipboard(allow);
-        priv->pageSettings->setDOMPasteAllowed(allow);
+        priv->page->settings().setJavaScriptCanAccessClipboard(allow);
+        priv->page->settings().setDOMPasteAllowed(allow);
         priv->settings.scriptsCanAccessClipboard = allow;
     }
     return true;
@@ -2518,7 +2508,7 @@ Eina_Bool ewk_view_setting_resizable_textareas_set(Evas_Object* ewkView, Eina_Bo
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.resizableTextareas != enable) {
-        priv->pageSettings->setTextAreasAreResizable(enable);
+        priv->page->settings().setTextAreasAreResizable(enable);
         priv->settings.resizableTextareas = enable;
     }
     return true;
@@ -2537,7 +2527,7 @@ Eina_Bool ewk_view_setting_private_browsing_set(Evas_Object* ewkView, Eina_Bool 
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.privateBrowsing != enable) {
-        priv->pageSettings->setPrivateBrowsingEnabled(enable);
+        priv->page->settings().setPrivateBrowsingEnabled(enable);
         priv->settings.privateBrowsing = enable;
     }
     return true;
@@ -2556,7 +2546,7 @@ Eina_Bool ewk_view_setting_application_cache_set(Evas_Object* ewkView, Eina_Bool
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.offlineAppCache != enable) {
-        priv->pageSettings->setOfflineWebApplicationCacheEnabled(enable);
+        priv->page->settings().setOfflineWebApplicationCacheEnabled(enable);
         priv->settings.offlineAppCache = enable;
     }
     return true;
@@ -2575,7 +2565,7 @@ Eina_Bool ewk_view_setting_caret_browsing_set(Evas_Object* ewkView, Eina_Bool en
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.caretBrowsing != enable) {
-        priv->pageSettings->setCaretBrowsingEnabled(enable);
+        priv->page->settings().setCaretBrowsingEnabled(enable);
         priv->settings.caretBrowsing = enable;
     }
     return true;
@@ -2621,7 +2611,7 @@ Eina_Bool ewk_view_setting_encoding_default_set(Evas_Object* ewkView, const char
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     if (eina_stringshare_replace(&priv->settings.encodingDefault, encoding))
-        priv->pageSettings->setDefaultTextEncodingName(String::fromUTF8(encoding));
+        priv->page->settings().setDefaultTextEncodingName(String::fromUTF8(encoding));
     return true;
 }
 
@@ -2631,7 +2621,7 @@ Eina_Bool ewk_view_setting_encoding_detector_set(Evas_Object* ewkView, Eina_Bool
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.encodingDetector != enable) {
-        priv->pageSettings->setUsesEncodingDetector(enable);
+        priv->page->settings().setUsesEncodingDetector(enable);
         priv->settings.encodingDetector = enable;
     }
     return true;
@@ -2657,7 +2647,7 @@ Eina_Bool ewk_view_setting_enable_developer_extras_set(Evas_Object* ewkView, Ein
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.enableDeveloperExtras != enable) {
-        priv->pageSettings->setDeveloperExtrasEnabled(enable);
+        priv->page->settings().setDeveloperExtrasEnabled(enable);
         priv->settings.enableDeveloperExtras = enable;
     }
     return true;
@@ -2675,7 +2665,7 @@ Eina_Bool ewk_view_setting_font_minimum_size_set(Evas_Object* ewkView, int size)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     if (priv->settings.fontMinimumSize != size) {
-        priv->pageSettings->setMinimumFontSize(size);
+        priv->page->settings().setMinimumFontSize(size);
         priv->settings.fontMinimumSize = size;
     }
     return true;
@@ -2693,7 +2683,7 @@ Eina_Bool ewk_view_setting_font_minimum_logical_size_set(Evas_Object* ewkView, i
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     if (priv->settings.fontMinimumLogicalSize != size) {
-        priv->pageSettings->setMinimumLogicalFontSize(size);
+        priv->page->settings().setMinimumLogicalFontSize(size);
         priv->settings.fontMinimumLogicalSize = size;
     }
     return true;
@@ -2711,7 +2701,7 @@ Eina_Bool ewk_view_setting_font_default_size_set(Evas_Object* ewkView, int size)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     if (priv->settings.fontDefaultSize != size) {
-        priv->pageSettings->setDefaultFontSize(size);
+        priv->page->settings().setDefaultFontSize(size);
         priv->settings.fontDefaultSize = size;
     }
     return true;
@@ -2729,7 +2719,7 @@ Eina_Bool ewk_view_setting_font_monospace_size_set(Evas_Object* ewkView, int siz
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     if (priv->settings.fontMonospaceSize != size) {
-        priv->pageSettings->setDefaultFixedFontSize(size);
+        priv->page->settings().setDefaultFixedFontSize(size);
         priv->settings.fontMonospaceSize = size;
     }
     return true;
@@ -2765,27 +2755,27 @@ Eina_Bool ewk_view_font_family_name_set(Evas_Object* ewkView, Ewk_Font_Family fo
     switch (fontFamily) {
     case EWK_FONT_FAMILY_STANDARD:
         eina_stringshare_replace(&priv->settings.fontStandard, name);
-        priv->pageSettings->setStandardFontFamily(AtomicString::fromUTF8(name));
+        priv->page->settings().setStandardFontFamily(AtomicString::fromUTF8(name));
         break;
     case EWK_FONT_FAMILY_CURSIVE:
         eina_stringshare_replace(&priv->settings.fontCursive, name);
-        priv->pageSettings->setCursiveFontFamily(AtomicString::fromUTF8(name));
+        priv->page->settings().setCursiveFontFamily(AtomicString::fromUTF8(name));
         break;
     case EWK_FONT_FAMILY_FANTASY:
         eina_stringshare_replace(&priv->settings.fontFantasy, name);
-        priv->pageSettings->setFantasyFontFamily(AtomicString::fromUTF8(name));
+        priv->page->settings().setFantasyFontFamily(AtomicString::fromUTF8(name));
         break;
     case EWK_FONT_FAMILY_MONOSPACE:
         eina_stringshare_replace(&priv->settings.fontMonospace, name);
-        priv->pageSettings->setFixedFontFamily(AtomicString::fromUTF8(name));
+        priv->page->settings().setFixedFontFamily(AtomicString::fromUTF8(name));
         break;
     case EWK_FONT_FAMILY_SERIF:
         eina_stringshare_replace(&priv->settings.fontSerif, name);
-        priv->pageSettings->setSerifFontFamily(AtomicString::fromUTF8(name));
+        priv->page->settings().setSerifFontFamily(AtomicString::fromUTF8(name));
         break;
     case EWK_FONT_FAMILY_SANS_SERIF:
         eina_stringshare_replace(&priv->settings.fontSansSerif, name);
-        priv->pageSettings->setSansSerifFontFamily(AtomicString::fromUTF8(name));
+        priv->page->settings().setSansSerifFontFamily(AtomicString::fromUTF8(name));
         break;
     default:
         return false;
@@ -2807,7 +2797,7 @@ Eina_Bool ewk_view_setting_spatial_navigation_set(Evas_Object* ewkView, Eina_Boo
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.spatialNavigation != enable) {
-        priv->pageSettings->setSpatialNavigationEnabled(enable);
+        priv->page->settings().setSpatialNavigationEnabled(enable);
         priv->settings.spatialNavigation = enable;
     }
     return true;
@@ -2826,7 +2816,7 @@ Eina_Bool ewk_view_setting_local_storage_set(Evas_Object* ewkView, Eina_Bool ena
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.localStorage != enable) {
-        priv->pageSettings->setLocalStorageEnabled(enable);
+        priv->page->settings().setLocalStorageEnabled(enable);
         priv->settings.localStorage = enable;
     }
     return true;
@@ -2845,7 +2835,7 @@ Eina_Bool ewk_view_setting_page_cache_set(Evas_Object* ewkView, Eina_Bool enable
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.pageCache != enable) {
-        priv->pageSettings->setUsesPageCache(enable);
+        priv->page->settings().setUsesPageCache(enable);
         priv->settings.pageCache = enable;
     }
     return true;
@@ -2863,7 +2853,7 @@ Eina_Bool ewk_view_setting_local_storage_database_path_set(Evas_Object* ewkView,
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     if (eina_stringshare_replace(&priv->settings.localStorageDatabasePath, path))
-        priv->pageSettings->setLocalStorageDatabasePath(String::fromUTF8(path));
+        priv->page->settings().setLocalStorageDatabasePath(String::fromUTF8(path));
     return true;
 }
 
@@ -2872,7 +2862,7 @@ Eina_Bool ewk_view_setting_minimum_timer_interval_set(Evas_Object* ewkView, doub
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     if (fabs(priv->settings.domTimerInterval - interval) >= std::numeric_limits<double>::epsilon()) {
-        priv->pageSettings->setMinDOMTimerInterval(interval);
+        priv->page->settings().setMinDOMTimerInterval(interval);
         priv->settings.domTimerInterval = interval;
     }
     return true;
@@ -2898,7 +2888,7 @@ Eina_Bool ewk_view_setting_enable_webgl_set(Evas_Object* ewkView, Eina_Bool enab
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.webGLEnabled != enable) {
-        priv->pageSettings->setWebGLEnabled(enable);
+        priv->page->settings().setWebGLEnabled(enable);
         priv->settings.webGLEnabled = enable;
     }
     return true;
@@ -2933,7 +2923,7 @@ Eina_Bool ewk_view_setting_enable_hyperlink_auditing_set(Evas_Object* ewkView, E
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.hyperlinkAuditingEnabled != enable) {
-        priv->pageSettings->setHyperlinkAuditingEnabled(enable);
+        priv->page->settings().setHyperlinkAuditingEnabled(enable);
         priv->settings.hyperlinkAuditingEnabled = enable;
     }
     return true;
@@ -2945,7 +2935,7 @@ Eina_Bool ewk_view_setting_allow_universal_access_from_file_urls_set(Evas_Object
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.allowUniversalAccessFromFileURLs != enable) {
-        priv->pageSettings->setAllowUniversalAccessFromFileURLs(enable);
+        priv->page->settings().setAllowUniversalAccessFromFileURLs(enable);
         priv->settings.allowUniversalAccessFromFileURLs = enable;
     }
     return true;
@@ -2964,7 +2954,7 @@ Eina_Bool ewk_view_setting_allow_file_access_from_file_urls_set(Evas_Object* ewk
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.allowFileAccessFromFileURLs != enable) {
-        priv->pageSettings->setAllowFileAccessFromFileURLs(enable);
+        priv->page->settings().setAllowFileAccessFromFileURLs(enable);
         priv->settings.allowFileAccessFromFileURLs = enable;
     }
     return true;
@@ -3045,7 +3035,7 @@ void ewk_view_layout_if_needed_recursive(Ewk_View_Private_Data* priv)
 {
     EINA_SAFETY_ON_NULL_RETURN(priv);
 
-    WebCore::FrameView* view = priv->mainFrame->view();
+    WebCore::FrameView* view = priv->page->mainFrame().view();
     if (!view) {
         ERR("no main frame view");
         return;
@@ -3068,7 +3058,7 @@ Eina_Bool ewk_view_paint(Ewk_View_Private_Data* priv, cairo_t* cr, const Eina_Re
     EINA_SAFETY_ON_NULL_RETURN_VAL(cr, false);
     EINA_SAFETY_ON_NULL_RETURN_VAL(area, false);
 
-    WebCore::FrameView* view = priv->mainFrame->view();
+    WebCore::FrameView* view = priv->page->mainFrame().view();
     EINA_SAFETY_ON_NULL_RETURN_VAL(view, false);
 
     view->updateLayoutAndStyleIfNeededRecursive();
@@ -3124,7 +3114,7 @@ Eina_Bool ewk_view_paint(Ewk_View_Private_Data* priv, Ewk_Paint_Context* context
     EINA_SAFETY_ON_NULL_RETURN_VAL(priv, false);
     EINA_SAFETY_ON_NULL_RETURN_VAL(context, false);
     EINA_SAFETY_ON_NULL_RETURN_VAL(area, false);
-    WebCore::FrameView* view = priv->mainFrame->view();
+    WebCore::FrameView* view = priv->page->mainFrame().view();
     EINA_SAFETY_ON_NULL_RETURN_VAL(view, false);
 
     ewk_paint_context_save(context);
@@ -3167,7 +3157,7 @@ Eina_Bool ewk_view_paint_contents(Ewk_View_Private_Data* priv, Ewk_Paint_Context
     EINA_SAFETY_ON_NULL_RETURN_VAL(priv, false);
     EINA_SAFETY_ON_NULL_RETURN_VAL(context, false);
     EINA_SAFETY_ON_NULL_RETURN_VAL(area, false);
-    WebCore::FrameView* view = priv->mainFrame->view();
+    WebCore::FrameView* view = priv->page->mainFrame().view();
     EINA_SAFETY_ON_NULL_RETURN_VAL(view, false);
 
     view->updateLayoutAndStyleIfNeededRecursive();
@@ -4309,10 +4299,10 @@ Eina_Bool ewk_view_js_object_add(Evas_Object* ewkView, Ewk_JS_Object* object, co
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
 
-    WebCore::JSDOMWindow* window = toJSDOMWindow(priv->mainFrame, WebCore::mainThreadNormalWorld());
+    WebCore::JSDOMWindow* window = toJSDOMWindow(&priv->page->mainFrame(), WebCore::mainThreadNormalWorld());
     JSC::JSLockHolder lock(window->globalExec());
     JSC::Bindings::RootObject* root;
-    root = priv->mainFrame->script().bindingRootObject();
+    root = priv->page->mainFrame().script().bindingRootObject();
 
     if (!window) {
         ERR("Warning: couldn't get window object");
@@ -4368,8 +4358,7 @@ WebCore::FloatRect ewk_view_page_rect_get(const Evas_Object* ewkView)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, WebCore::FloatRect(-1.0, -1.0, -1.0, -1.0));
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, WebCore::FloatRect(-1.0, -1.0, -1.0, -1.0));
 
-    WebCore::Frame& main_frame = priv->page->mainFrame();
-    return main_frame.view()->frameRect();
+    return priv->page->mainFrame().view()->frameRect();
 }
 
 #if ENABLE(TOUCH_EVENTS)
@@ -4545,7 +4534,7 @@ SoupSession* ewk_view_soup_session_get(const Evas_Object* ewkView)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, 0);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, 0);
-    return priv->storageSession->soupSession();
+    return WebCore::NetworkStorageSession::defaultStorageSession().soupNetworkSession().soupSession();
 }
 
 void ewk_view_soup_session_set(Evas_Object* ewkView, SoupSession* session)
@@ -4557,7 +4546,7 @@ void ewk_view_soup_session_set(Evas_Object* ewkView, SoupSession* session)
             "a SoupSessionSync was provided.");
         return;
     }
-    priv->storageSession->setSoupSession(session);
+    WebCore::NetworkStorageSession::defaultStorageSession().setSoupNetworkSession(WebCore::SoupNetworkSession::createForSoupSession(session));
 }
 
 Eina_Bool ewk_view_setting_enable_xss_auditor_get(const Evas_Object* ewkView)
@@ -4573,7 +4562,7 @@ void ewk_view_setting_enable_xss_auditor_set(Evas_Object* ewkView, Eina_Bool ena
     EWK_VIEW_PRIV_GET(smartData, priv);
     enable = !!enable;
     if (priv->settings.enableXSSAuditor != enable) {
-        priv->pageSettings->setXSSAuditorEnabled(enable);
+        priv->page->settings().setXSSAuditorEnabled(enable);
         priv->settings.enableXSSAuditor = enable;
     }
 }
@@ -4609,7 +4598,7 @@ void ewk_view_setting_should_display_captions_set(Evas_Object *ewkView, Eina_Boo
     EWK_VIEW_PRIV_GET(smartData, priv);
     enable = !!enable;
     if (priv->settings.shouldDisplayCaptions != enable) {
-        priv->pageSettings->setShouldDisplayCaptions(enable);
+        priv->page->settings().setShouldDisplayCaptions(enable);
         priv->settings.shouldDisplayCaptions = enable;
     }
 #else
@@ -4625,7 +4614,7 @@ void ewk_view_setting_should_display_subtitles_set(Evas_Object *ewkView, Eina_Bo
     EWK_VIEW_PRIV_GET(smartData, priv);
     enable = !!enable;
     if (priv->settings.shouldDisplaySubtitles != enable) {
-        priv->pageSettings->setShouldDisplaySubtitles(enable);
+        priv->page->settings().setShouldDisplaySubtitles(enable);
         priv->settings.shouldDisplaySubtitles = enable;
     }
 #else
@@ -4653,7 +4642,7 @@ void ewk_view_setting_should_display_text_descriptions_set(Evas_Object *ewkView,
     EWK_VIEW_PRIV_GET(smartData, priv);
     enable = !!enable;
     if (priv->settings.shouldDisplayTextDescriptions != enable) {
-        priv->pageSettings->setShouldDisplayTextDescriptions(enable);
+        priv->page->settings().setShouldDisplayTextDescriptions(enable);
         priv->settings.shouldDisplayTextDescriptions = enable;
     }
 #else
@@ -4668,7 +4657,7 @@ void ewk_view_inspector_show(const Evas_Object* ewkView)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
 
-    priv->page->inspectorController()->show();
+    priv->page->inspectorController().show();
 #else
     UNUSED_PARAM(ewkView);
 #endif
@@ -4680,7 +4669,7 @@ void ewk_view_inspector_close(const Evas_Object* ewkView)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
 
-    priv->page->inspectorController()->close();
+    priv->page->inspectorController().close();
 #else
     UNUSED_PARAM(ewkView);
 #endif
@@ -4872,7 +4861,7 @@ Eina_Bool ewk_view_setting_enable_fullscreen_set(Evas_Object* ewkView, Eina_Bool
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
     enable = !!enable;
     if (priv->settings.enableFullscreen != enable) {
-        priv->pageSettings->setFullScreenEnabled(enable);
+        priv->page->settings().setFullScreenEnabled(enable);
         priv->settings.enableFullscreen = enable;
     }
     return true;
@@ -4932,7 +4921,7 @@ Eina_Bool ewk_view_setting_tiled_backing_store_enabled_set(Evas_Object* ewkView,
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
 
-    priv->pageSettings->setTiledBackingStoreEnabled(enable);
+    priv->page->settings().setTiledBackingStoreEnabled(enable);
 
     return true;
 #else
@@ -4948,7 +4937,7 @@ Eina_Bool ewk_view_setting_tiled_backing_store_enabled_get(Evas_Object* ewkView)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
 
-    return priv->pageSettings->tiledBackingStoreEnabled();
+    return priv->page->settings().tiledBackingStoreEnabled();
 #else
     UNUSED_PARAM(ewkView);
     return false;
@@ -4970,8 +4959,8 @@ void ewk_view_tiled_backing_store_invalidate(Evas_Object* ewkView, const WebCore
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
 
-    if (priv->mainFrame->tiledBackingStore())
-        priv->mainFrame->tiledBackingStore()->invalidate(area);
+    if (priv->page->mainFrame().tiledBackingStore())
+        priv->page->mainFrame().tiledBackingStore()->invalidate(area);
 }
 #endif
 
@@ -4995,7 +4984,7 @@ WebCore::NetworkStorageSession* storageSession(const Evas_Object* ewkView)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, 0);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, 0);
-    return priv->storageSession;
+    return &WebCore::NetworkStorageSession::defaultStorageSession();
 }
 
 } // namespace EWKPrivate

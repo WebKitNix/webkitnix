@@ -38,9 +38,6 @@
 #include "StyleInheritedData.h"
 #include "StyleScopeResolver.h"
 #include "ViewportStyleResolver.h"
-#if ENABLE(CSS_FILTERS) && ENABLE(SVG)
-#include "WebKitCSSSVGDocumentValue.h"
-#endif
 #if ENABLE(CSS_SHADERS)
 #include "CustomFilterConstants.h"
 #endif
@@ -107,7 +104,6 @@ class StyledElement;
 class ViewportStyleResolver;
 class WebKitCSSFilterValue;
 class WebKitCSSShaderValue;
-class WebKitCSSSVGDocumentValue;
 
 class MediaQueryResult {
     WTF_MAKE_NONCOPYABLE(MediaQueryResult); WTF_MAKE_FAST_ALLOCATED;
@@ -379,7 +375,7 @@ private:
 public:
     typedef HashMap<CSSPropertyID, RefPtr<CSSValue>> PendingImagePropertyMap;
 #if ENABLE(CSS_FILTERS) && ENABLE(SVG)
-    typedef HashMap<FilterOperation*, RefPtr<WebKitCSSSVGDocumentValue>> PendingSVGDocumentMap;
+    typedef HashSet<CachedSVGDocumentReference*> PendingSVGDocumentSet;
 #endif
 
     class State {
@@ -432,7 +428,7 @@ public:
         bool applyPropertyToVisitedLinkStyle() const { return m_applyPropertyToVisitedLinkStyle; }
         PendingImagePropertyMap& pendingImageProperties() { return m_pendingImageProperties; }
 #if ENABLE(CSS_FILTERS) && ENABLE(SVG)
-        PendingSVGDocumentMap& pendingSVGDocuments() { return m_pendingSVGDocuments; }
+        PendingSVGDocumentSet& pendingSVGDocuments() { return m_pendingSVGDocuments; }
 #endif
 #if ENABLE(CSS_SHADERS)
         void setHasPendingShaders(bool hasPendingShaders) { m_hasPendingShaders = hasPendingShaders; }
@@ -486,7 +482,7 @@ public:
         bool m_hasPendingShaders;
 #endif
 #if ENABLE(CSS_FILTERS) && ENABLE(SVG)
-        PendingSVGDocumentMap m_pendingSVGDocuments;
+        PendingSVGDocumentSet m_pendingSVGDocuments;
 #endif
         CSSValue* m_lineHeightValue;
         bool m_fontDirty;
@@ -539,6 +535,7 @@ private:
     void applySVGProperty(CSSPropertyID, CSSValue*);
 #endif
 
+    PassRefPtr<StyleImage> loadPendingImage(StylePendingImage*, const ResourceLoaderOptions&);
     PassRefPtr<StyleImage> loadPendingImage(StylePendingImage*);
     void loadPendingImages();
 #if ENABLE(CSS_SHAPES)

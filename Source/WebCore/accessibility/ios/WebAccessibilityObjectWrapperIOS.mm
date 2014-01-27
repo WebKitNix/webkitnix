@@ -52,7 +52,7 @@
 #import "WebCoreThread.h"
 #import "VisibleUnits.h"
 
-#import <GraphicsServices/GraphicsServices.h>
+#import <CoreText/CoreText.h>
 
 @interface NSObject (AccessibilityPrivate)
 - (void)_accessibilityUnregister;
@@ -347,7 +347,7 @@ static AccessibilityObjectWrapper* AccessibilityUnignoredAncestor(AccessibilityO
     if ([self isAttachment])
         return [[self attachmentView] accessibilityElementAtIndex:index];
     
-    AccessibilityObject::AccessibilityChildrenVector children = m_object->children();
+    const auto& children = m_object->children();
     if (static_cast<unsigned>(index) >= children.size())
         return nil;
     
@@ -367,7 +367,7 @@ static AccessibilityObjectWrapper* AccessibilityUnignoredAncestor(AccessibilityO
     if ([self isAttachment])
         return [[self attachmentView] indexOfAccessibilityElement:element];
     
-    AccessibilityObject::AccessibilityChildrenVector children = m_object->children();
+    const auto& children = m_object->children();
     unsigned count = children.size();
     for (unsigned k = 0; k < count; ++k) {
         AccessibilityObjectWrapper* wrapper = children[k]->wrapper();
@@ -770,7 +770,7 @@ static void appendStringToResult(NSMutableString *result, NSString *string)
     if (!cell)
         return 0;
 
-    return toAccessibilityTableCell(cell);
+    return static_cast<AccessibilityTableCell*>(cell);
 }
 
 - (AccessibilityTable*)tableParent
@@ -783,7 +783,7 @@ static void appendStringToResult(NSMutableString *result, NSString *string)
     if (!parentTable)
         return 0;
     
-    return toAccessibilityTable(parentTable);
+    return static_cast<AccessibilityTable*>(parentTable);
 }
 
 - (id)accessibilityTitleElement
@@ -1073,7 +1073,7 @@ static void appendStringToResult(NSMutableString *result, NSString *string)
     if (role != LinkRole && role != WebCoreLinkRole)
         return NO;
     
-    AccessibilityObject::AccessibilityChildrenVector children = m_object->children();
+    const auto& children = m_object->children();
     unsigned childrenSize = children.size();
 
     // If there's only one child, then it doesn't have segmented children. 
@@ -1479,25 +1479,26 @@ static void AXAttributeStringSetHeadingLevel(NSMutableAttributedString* attrStri
         [attrString removeAttribute:UIAccessibilityTokenHeadingLevel range:range];
 }
 
-static void AXAttributeStringSetFont(NSMutableAttributedString* attrString, GSFontRef font, NSRange range)
+static void AXAttributeStringSetFont(NSMutableAttributedString* attrString, CTFontRef font, NSRange range)
 {
     if (!font)
         return;
     
-    const char* nameCStr = GSFontGetFullName(font);
-    const char* familyCStr = GSFontGetFamilyName(font);
-    NSNumber* size = [NSNumber numberWithFloat:GSFontGetSize(font)];
-    NSNumber* bold = [NSNumber numberWithBool:GSFontIsBold(font)];
-    GSFontTraitMask traits = GSFontGetTraits(font);
-    if (nameCStr)
-        [attrString addAttribute:UIAccessibilityTokenFontName value:[NSString stringWithUTF8String:nameCStr] range:range];
-    if (familyCStr)
-        [attrString addAttribute:UIAccessibilityTokenFontFamily value:[NSString stringWithUTF8String:familyCStr] range:range];
+    RetainPtr<CFStringRef> fullName = adoptCF(CTFontCopyFullName(font));
+    RetainPtr<CFStringRef> familyName = adoptCF(CTFontCopyFamilyName(font));
+
+    NSNumber* size = [NSNumber numberWithFloat:CTFontGetSize(font)];
+    CTFontSymbolicTraits traits = CTFontGetSymbolicTraits(font);
+    NSNumber* bold = [NSNumber numberWithBool:(traits & kCTFontTraitBold)];
+    if (fullName)
+        [attrString addAttribute:UIAccessibilityTokenFontName value:(NSString*)fullName.get() range:range];
+    if (familyName)
+        [attrString addAttribute:UIAccessibilityTokenFontFamily value:(NSString*)familyName.get() range:range];
     if ([size boolValue])
         [attrString addAttribute:UIAccessibilityTokenFontSize value:size range:range];
-    if ([bold boolValue] || (traits & GSBoldFontMask))
+    if ([bold boolValue] || (traits & kCTFontTraitBold))
         [attrString addAttribute:UIAccessibilityTokenBold value:[NSNumber numberWithBool:YES] range:range];
-    if (traits & GSItalicFontMask)
+    if (traits & kCTFontTraitItalic)
         [attrString addAttribute:UIAccessibilityTokenItalic value:[NSNumber numberWithBool:YES] range:range];
 
 }
@@ -1512,12 +1513,12 @@ static void AXAttributeStringSetNumber(NSMutableAttributedString* attrString, NS
 
 static void AXAttributeStringSetStyle(NSMutableAttributedString* attrString, RenderObject* renderer, NSRange range)
 {
-    RenderStyle* style = renderer->style();
+    RenderStyle& style = renderer->style();
     
     // set basic font info
-    AXAttributeStringSetFont(attrString, style->font().primaryFont()->getGSFont(), range);
+    AXAttributeStringSetFont(attrString, style.font().primaryFont()->getCTFont(), range);
                 
-    int decor = style->textDecorationsInEffect();
+    int decor = style.textDecorationsInEffect();
     if ((decor & (TextDecorationUnderline | TextDecorationLineThrough)) != 0) {
         // find colors using quirk mode approach (strict mode would use current
         // color for all but the root line box, which would use getTextDecorationColors)

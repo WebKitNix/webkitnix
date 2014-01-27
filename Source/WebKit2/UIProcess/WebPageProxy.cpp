@@ -107,7 +107,7 @@
 #include "ArgumentCodersGtk.h"
 #endif
 
-#if USE(SOUP)
+#if USE(SOUP) && !ENABLE(CUSTOM_PROTOCOLS)
 #include "WebSoupRequestManagerProxy.h"
 #endif
 
@@ -229,12 +229,12 @@ static const char* webKeyboardEventTypeString(WebEvent::Type type)
 }
 #endif // !LOG_DISABLED
 
-PassRefPtr<WebPageProxy> WebPageProxy::create(PageClient& pageClient, WebProcessProxy& process, WebPageGroup& pageGroup, uint64_t pageID)
+PassRefPtr<WebPageProxy> WebPageProxy::create(PageClient& pageClient, WebProcessProxy& process, WebPageGroup& pageGroup, API::Session& session, uint64_t pageID)
 {
-    return adoptRef(new WebPageProxy(pageClient, process, pageGroup, pageID));
+    return adoptRef(new WebPageProxy(pageClient, process, pageGroup, session, pageID));
 }
 
-WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, WebPageGroup& pageGroup, uint64_t pageID)
+WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, WebPageGroup& pageGroup, API::Session& session, uint64_t pageID)
     : m_pageClient(pageClient)
     , m_process(process)
     , m_pageGroup(pageGroup)
@@ -280,6 +280,7 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Web
     , m_needTouchEvents(false)
 #endif
     , m_pageID(pageID)
+    , m_session(session)
     , m_isPageSuspended(false)
 #if PLATFORM(MAC)
     , m_isSmartInsertDeleteEnabled(TextChecker::isSmartInsertDeleteEnabled())
@@ -518,8 +519,7 @@ void WebPageProxy::initializeWebPage()
         inspector()->enableRemoteInspection();
 #endif
 
-    initializeCreationParameters();
-    process().send(Messages::WebProcess::CreateWebPage(m_pageID, m_creationParameters), 0);
+    process().send(Messages::WebProcess::CreateWebPage(m_pageID, creationParameters()), 0);
 
 #if PLATFORM(MAC)
     send(Messages::WebPage::SetSmartInsertDeleteEnabled(m_isSmartInsertDeleteEnabled));
@@ -1613,6 +1613,7 @@ void WebPageProxy::scalePage(double scale, const IntPoint& origin)
     if (!isValid())
         return;
 
+    m_pageScaleFactor = scale;
     m_process->send(Messages::WebPage::ScalePage(scale, origin), m_pageID);
 }
 
@@ -2699,6 +2700,13 @@ void WebPageProxy::unavailablePluginButtonClicked(uint32_t opaquePluginUnavailab
 }
 #endif // ENABLE(NETSCAPE_PLUGIN_API)
 
+#if ENABLE(WEBGL)
+void WebPageProxy::webGLPolicyForURL(const String& url, uint32_t& loadPolicy)
+{
+    loadPolicy = static_cast<uint32_t>(m_loaderClient.webGLLoadPolicy(this, url));
+}
+#endif // ENABLE(WEBGL)
+
 void WebPageProxy::setToolbarsAreVisible(bool toolbarsAreVisible)
 {
     m_uiClient.setToolbarsAreVisible(this, toolbarsAreVisible);
@@ -3392,18 +3400,18 @@ int64_t WebPageProxy::spellDocumentTag()
 #if USE(UNIFIED_TEXT_CHECKING)
 void WebPageProxy::checkTextOfParagraph(const String& text, uint64_t checkingTypes, Vector<TextCheckingResult>& results)
 {
-    results = TextChecker::checkTextOfParagraph(spellDocumentTag(), text.characters(), text.length(), checkingTypes);
+    results = TextChecker::checkTextOfParagraph(spellDocumentTag(), text.deprecatedCharacters(), text.length(), checkingTypes);
 }
 #endif
 
 void WebPageProxy::checkSpellingOfString(const String& text, int32_t& misspellingLocation, int32_t& misspellingLength)
 {
-    TextChecker::checkSpellingOfString(spellDocumentTag(), text.characters(), text.length(), misspellingLocation, misspellingLength);
+    TextChecker::checkSpellingOfString(spellDocumentTag(), text.deprecatedCharacters(), text.length(), misspellingLocation, misspellingLength);
 }
 
 void WebPageProxy::checkGrammarOfString(const String& text, Vector<GrammarDetail>& grammarDetails, int32_t& badGrammarLocation, int32_t& badGrammarLength)
 {
-    TextChecker::checkGrammarOfString(spellDocumentTag(), text.characters(), text.length(), grammarDetails, badGrammarLocation, badGrammarLength);
+    TextChecker::checkGrammarOfString(spellDocumentTag(), text.deprecatedCharacters(), text.length(), grammarDetails, badGrammarLocation, badGrammarLength);
 }
 
 void WebPageProxy::spellingUIIsShowing(bool& isShowing)
@@ -3887,41 +3895,45 @@ void WebPageProxy::resetStateAfterProcessExited()
 #endif
 }
 
-void WebPageProxy::initializeCreationParameters()
+WebPageCreationParameters WebPageProxy::creationParameters()
 {
-    m_creationParameters.viewSize = m_pageClient.viewSize();
-    m_creationParameters.viewState = m_viewState;
-    m_creationParameters.drawingAreaType = m_drawingArea->type();
-    m_creationParameters.store = m_pageGroup->preferences()->store();
-    m_creationParameters.pageGroupData = m_pageGroup->data();
-    m_creationParameters.drawsBackground = m_drawsBackground;
-    m_creationParameters.drawsTransparentBackground = m_drawsTransparentBackground;
-    m_creationParameters.underlayColor = m_underlayColor;
-    m_creationParameters.areMemoryCacheClientCallsEnabled = m_areMemoryCacheClientCallsEnabled;
-    m_creationParameters.useFixedLayout = m_useFixedLayout;
-    m_creationParameters.fixedLayoutSize = m_fixedLayoutSize;
-    m_creationParameters.suppressScrollbarAnimations = m_suppressScrollbarAnimations;
-    m_creationParameters.paginationMode = m_paginationMode;
-    m_creationParameters.paginationBehavesLikeColumns = m_paginationBehavesLikeColumns;
-    m_creationParameters.pageLength = m_pageLength;
-    m_creationParameters.gapBetweenPages = m_gapBetweenPages;
-    m_creationParameters.userAgent = userAgent();
-    m_creationParameters.sessionState = SessionState(m_backForwardList->entries(), m_backForwardList->currentIndex());
-    m_creationParameters.highestUsedBackForwardItemID = WebBackForwardListItem::highedUsedItemID();
-    m_creationParameters.canRunBeforeUnloadConfirmPanel = m_uiClient.canRunBeforeUnloadConfirmPanel();
-    m_creationParameters.canRunModal = m_canRunModal;
-    m_creationParameters.deviceScaleFactor = deviceScaleFactor();
-    m_creationParameters.mediaVolume = m_mediaVolume;
-    m_creationParameters.mayStartMediaWhenInWindow = m_mayStartMediaWhenInWindow;
-    m_creationParameters.minimumLayoutSize = m_minimumLayoutSize;
-    m_creationParameters.autoSizingShouldExpandToViewHeight = m_autoSizingShouldExpandToViewHeight;
-    m_creationParameters.scrollPinningBehavior = m_scrollPinningBehavior;
-    m_creationParameters.backgroundExtendsBeyondPage = m_backgroundExtendsBeyondPage;
-    m_creationParameters.layerHostingMode = m_layerHostingMode;
+    WebPageCreationParameters parameters;
+
+    parameters.viewSize = m_pageClient.viewSize();
+    parameters.viewState = m_viewState;
+    parameters.drawingAreaType = m_drawingArea->type();
+    parameters.store = m_pageGroup->preferences()->store();
+    parameters.pageGroupData = m_pageGroup->data();
+    parameters.drawsBackground = m_drawsBackground;
+    parameters.drawsTransparentBackground = m_drawsTransparentBackground;
+    parameters.underlayColor = m_underlayColor;
+    parameters.areMemoryCacheClientCallsEnabled = m_areMemoryCacheClientCallsEnabled;
+    parameters.useFixedLayout = m_useFixedLayout;
+    parameters.fixedLayoutSize = m_fixedLayoutSize;
+    parameters.suppressScrollbarAnimations = m_suppressScrollbarAnimations;
+    parameters.paginationMode = m_paginationMode;
+    parameters.paginationBehavesLikeColumns = m_paginationBehavesLikeColumns;
+    parameters.pageLength = m_pageLength;
+    parameters.gapBetweenPages = m_gapBetweenPages;
+    parameters.userAgent = userAgent();
+    parameters.sessionState = SessionState(m_backForwardList->entries(), m_backForwardList->currentIndex());
+    parameters.highestUsedBackForwardItemID = WebBackForwardListItem::highedUsedItemID();
+    parameters.canRunBeforeUnloadConfirmPanel = m_uiClient.canRunBeforeUnloadConfirmPanel();
+    parameters.canRunModal = m_canRunModal;
+    parameters.deviceScaleFactor = deviceScaleFactor();
+    parameters.mediaVolume = m_mediaVolume;
+    parameters.mayStartMediaWhenInWindow = m_mayStartMediaWhenInWindow;
+    parameters.minimumLayoutSize = m_minimumLayoutSize;
+    parameters.autoSizingShouldExpandToViewHeight = m_autoSizingShouldExpandToViewHeight;
+    parameters.scrollPinningBehavior = m_scrollPinningBehavior;
+    parameters.backgroundExtendsBeyondPage = m_backgroundExtendsBeyondPage;
+    parameters.layerHostingMode = m_layerHostingMode;
 
 #if PLATFORM(MAC) && !PLATFORM(IOS)
-    m_creationParameters.colorSpace = m_pageClient.colorSpace();
+    parameters.colorSpace = m_pageClient.colorSpace();
 #endif
+
+    return parameters;
 }
 
 #if USE(ACCELERATED_COMPOSITING)
@@ -4280,11 +4292,6 @@ void WebPageProxy::savePDFToFileInDownloadsFolder(const String& suggestedFilenam
     saveDataToFileInDownloadsFolder(suggestedFilename, "application/pdf", originatingURLString, data.get());
 }
 
-void WebPageProxy::linkClicked(const String& url, const WebMouseEvent& event)
-{
-    m_process->send(Messages::WebPage::LinkClicked(url, event), m_pageID, 0);
-}
-
 void WebPageProxy::setMinimumLayoutSize(const IntSize& minimumLayoutSize)
 {
     if (m_minimumLayoutSize == minimumLayoutSize)
@@ -4369,7 +4376,7 @@ void WebPageProxy::dictationAlternatives(uint64_t dictationContext, Vector<Strin
 
 #endif // PLATFORM(MAC)
 
-#if USE(SOUP)
+#if USE(SOUP) && !ENABLE(CUSTOM_PROTOCOLS)
 void WebPageProxy::didReceiveURIRequest(String uriString, uint64_t requestID)
 {
     m_process->context().supplement<WebSoupRequestManagerProxy>()->didReceiveURIRequest(uriString, this, requestID);

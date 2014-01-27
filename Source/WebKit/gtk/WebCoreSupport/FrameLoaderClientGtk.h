@@ -111,10 +111,6 @@ namespace WebKit {
         virtual void revertToProvisionalState(WebCore::DocumentLoader*) { }
         virtual void setMainDocumentError(WebCore::DocumentLoader*, const WebCore::ResourceError&);
 
-        virtual void postProgressStartedNotification();
-        virtual void postProgressEstimateChangedNotification();
-        virtual void postProgressFinishedNotification();
-
         virtual PassRefPtr<WebCore::Frame> createFrame(const WebCore::URL& url, const WTF::String& name, WebCore::HTMLFrameOwnerElement* ownerElement,
                                    const WTF::String& referrer, bool allowsScrolling, int marginWidth, int marginHeight);
         virtual PassRefPtr<WebCore::Widget> createPlugin(const WebCore::IntSize&, WebCore::HTMLPlugInElement*, const WebCore::URL&, const WTF::Vector<WTF::String>&, const WTF::Vector<WTF::String>&, const WTF::String&, bool);
@@ -123,8 +119,6 @@ namespace WebKit {
         virtual PassRefPtr<WebCore::Widget> createJavaAppletWidget(const WebCore::IntSize&, WebCore::HTMLAppletElement*, const WebCore::URL& baseURL, const WTF::Vector<WTF::String>& paramNames, const WTF::Vector<WTF::String>& paramValues);
         virtual WTF::String overrideMediaType() const;
         virtual void dispatchDidClearWindowObjectInWorld(WebCore::DOMWrapperWorld&);
-        virtual void documentElementAvailable();
-        virtual void didPerformFirstNavigation() const;
 
         virtual void registerForIconNotification(bool);
 

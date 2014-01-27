@@ -169,22 +169,22 @@ protected:
     virtual void styleWillChange(StyleDifference, const RenderStyle& newStyle);
     virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle);
 
-    virtual void insertedIntoTree() OVERRIDE;
-    virtual void willBeRemovedFromTree() OVERRIDE;
-    virtual void willBeDestroyed() OVERRIDE;
+    virtual void insertedIntoTree() override;
+    virtual void willBeRemovedFromTree() override;
+    virtual void willBeDestroyed() override;
 
     void setRenderInlineAlwaysCreatesLineBoxes(bool b) { m_renderInlineAlwaysCreatesLineBoxes = b; }
     bool renderInlineAlwaysCreatesLineBoxes() const { return m_renderInlineAlwaysCreatesLineBoxes; }
 
 private:
-    void node() const WTF_DELETED_FUNCTION;
-    void nonPseudoNode() const WTF_DELETED_FUNCTION;
-    void generatingNode() const WTF_DELETED_FUNCTION;
-    void isText() const WTF_DELETED_FUNCTION;
-    void isRenderElement() const WTF_DELETED_FUNCTION;
+    void node() const = delete;
+    void nonPseudoNode() const = delete;
+    void generatingNode() const = delete;
+    void isText() const = delete;
+    void isRenderElement() const = delete;
 
-    virtual RenderObject* firstChildSlow() const OVERRIDE FINAL { return firstChild(); }
-    virtual RenderObject* lastChildSlow() const OVERRIDE FINAL { return lastChild(); }
+    virtual RenderObject* firstChildSlow() const override final { return firstChild(); }
+    virtual RenderObject* lastChildSlow() const override final { return lastChild(); }
 
     bool shouldRepaintForStyleDifference(StyleDifference) const;
     bool hasImmediateNonWhitespaceTextChildOrBorderOrOutline() const;

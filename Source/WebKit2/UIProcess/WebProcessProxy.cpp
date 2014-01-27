@@ -89,11 +89,12 @@ WebProcessProxy::WebProcessProxy(WebContext& context)
     , m_context(context)
     , m_mayHaveUniversalFileReadSandboxExtension(false)
 #if ENABLE(CUSTOM_PROTOCOLS)
-    , m_customProtocolManagerProxy(this)
+    , m_customProtocolManagerProxy(this, context)
 #endif
 #if PLATFORM(MAC)
     , m_processSuppressionEnabled(false)
 #endif
+    , m_numberOfTimesSuddenTerminationWasDisabled(0)
 {
     connect();
 }
@@ -102,6 +103,9 @@ WebProcessProxy::~WebProcessProxy()
 {
     if (m_webConnection)
         m_webConnection->invalidate();
+
+    while (m_numberOfTimesSuddenTerminationWasDisabled-- > 0)
+        WebCore::enableSuddenTermination();
 }
 
 void WebProcessProxy::getLaunchOptions(ProcessLauncher::LaunchOptions& launchOptions)
@@ -163,10 +167,10 @@ WebPageProxy* WebProcessProxy::webPage(uint64_t pageID)
     return globalPageMap().get(pageID);
 }
 
-PassRefPtr<WebPageProxy> WebProcessProxy::createWebPage(PageClient& pageClient, WebPageGroup& pageGroup)
+PassRefPtr<WebPageProxy> WebProcessProxy::createWebPage(PageClient& pageClient, WebPageGroup& pageGroup, API::Session& session)
 {
     uint64_t pageID = generatePageID();
-    RefPtr<WebPageProxy> webPage = WebPageProxy::create(pageClient, *this, pageGroup, pageID);
+    RefPtr<WebPageProxy> webPage = WebPageProxy::create(pageClient, *this, pageGroup, session, pageID);
     m_pageMap.set(pageID, webPage.get());
     globalPageMap().set(pageID, webPage.get());
 #if PLATFORM(MAC)
@@ -662,7 +666,9 @@ void WebProcessProxy::enableSuddenTermination()
     if (!isValid())
         return;
 
+    ASSERT(m_numberOfTimesSuddenTerminationWasDisabled);
     WebCore::enableSuddenTermination();
+    --m_numberOfTimesSuddenTerminationWasDisabled;
 }
 
 void WebProcessProxy::disableSuddenTermination()
@@ -671,6 +677,7 @@ void WebProcessProxy::disableSuddenTermination()
         return;
 
     WebCore::disableSuddenTermination();
+    ++m_numberOfTimesSuddenTerminationWasDisabled;
 }
 
 RefPtr<API::Object> WebProcessProxy::apiObjectByConvertingToHandles(API::Object* object)

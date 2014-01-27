@@ -58,19 +58,18 @@ typedef String ErrorString;
 class InspectorDOMDebuggerAgent : public InspectorAgentBase, public InspectorDebuggerAgent::Listener, public Inspector::InspectorDOMDebuggerBackendDispatcherHandler {
     WTF_MAKE_NONCOPYABLE(InspectorDOMDebuggerAgent);
 public:
-    static PassOwnPtr<InspectorDOMDebuggerAgent> create(InstrumentingAgents*, InspectorDOMAgent*, InspectorDebuggerAgent*);
-
+    InspectorDOMDebuggerAgent(InstrumentingAgents*, InspectorDOMAgent*, InspectorDebuggerAgent*);
     virtual ~InspectorDOMDebuggerAgent();
 
     // DOMDebugger API
-    virtual void setXHRBreakpoint(ErrorString*, const String& url);
-    virtual void removeXHRBreakpoint(ErrorString*, const String& url);
-    virtual void setEventListenerBreakpoint(ErrorString*, const String& eventName);
-    virtual void removeEventListenerBreakpoint(ErrorString*, const String& eventName);
-    virtual void setInstrumentationBreakpoint(ErrorString*, const String& eventName);
-    virtual void removeInstrumentationBreakpoint(ErrorString*, const String& eventName);
-    virtual void setDOMBreakpoint(ErrorString*, int nodeId, const String& type);
-    virtual void removeDOMBreakpoint(ErrorString*, int nodeId, const String& type);
+    virtual void setXHRBreakpoint(ErrorString*, const String& url) override;
+    virtual void removeXHRBreakpoint(ErrorString*, const String& url) override;
+    virtual void setEventListenerBreakpoint(ErrorString*, const String& eventName) override;
+    virtual void removeEventListenerBreakpoint(ErrorString*, const String& eventName) override;
+    virtual void setInstrumentationBreakpoint(ErrorString*, const String& eventName) override;
+    virtual void removeInstrumentationBreakpoint(ErrorString*, const String& eventName) override;
+    virtual void setDOMBreakpoint(ErrorString*, int nodeId, const String& type) override;
+    virtual void removeDOMBreakpoint(ErrorString*, int nodeId, const String& type) override;
 
     // InspectorInstrumentation API
     void willInsertDOMNode(Node* parent);
@@ -82,18 +81,16 @@ public:
     void willSendXMLHttpRequest(const String& url);
     void pauseOnNativeEventIfNeeded(bool isDOMEvent, const String& eventName, bool synchronous);
 
-    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) OVERRIDE;
-    virtual void willDestroyFrontendAndBackend() OVERRIDE;
-    virtual void discardAgent();
+    virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
+    virtual void willDestroyFrontendAndBackend() override;
+    virtual void discardAgent() override;
 
 private:
-    InspectorDOMDebuggerAgent(InstrumentingAgents*, InspectorDOMAgent*, InspectorDebuggerAgent*);
-
     // InspectorDebuggerAgent::Listener implementation.
-    virtual void debuggerWasEnabled();
-    virtual void debuggerWasDisabled();
-    virtual void stepInto();
-    virtual void didPause();
+    virtual void debuggerWasEnabled() override;
+    virtual void debuggerWasDisabled() override;
+    virtual void stepInto() override;
+    virtual void didPause() override;
     void disable();
 
     void descriptionForDOMEvent(Node* target, int breakpointType, bool insertion, Inspector::InspectorObject* description);

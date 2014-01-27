@@ -179,7 +179,8 @@ public:
     PassRefPtr<CSSValue> parseShapeProperty(CSSPropertyID);
 #endif
 
-    PassRefPtr<CSSBasicShape> parseBasicShape();
+    PassRefPtr<CSSValue> parseBasicShapeAndOrBox(CSSPropertyID propId);
+    PassRefPtr<CSSPrimitiveValue> parseBasicShape();
     PassRefPtr<CSSPrimitiveValue> parseShapeRadius(CSSParserValue*);
     PassRefPtr<CSSBasicShape> parseBasicShapeRectangle(CSSParserValueList*);
     PassRefPtr<CSSBasicShape> parseBasicShapeCircle(CSSParserValueList*);
@@ -288,6 +289,7 @@ public:
     bool parsePerspectiveOrigin(CSSPropertyID propId, CSSPropertyID& propId1, CSSPropertyID& propId2,  RefPtr<CSSValue>&, RefPtr<CSSValue>&);
 
     bool parseTextEmphasisStyle(bool important);
+    bool parseTextEmphasisPosition(bool important);
 
     void addTextDecorationProperty(CSSPropertyID, PassRefPtr<CSSValue>, bool important);
     bool parseTextDecoration(CSSPropertyID propId, bool important);
@@ -306,7 +308,6 @@ public:
 
     bool cssRegionsEnabled() const;
     bool cssCompositingEnabled() const;
-    bool parseFlowThread(const String& flowName);
     bool parseFlowThread(CSSPropertyID, bool important);
     bool parseRegionThread(CSSPropertyID, bool important);
 

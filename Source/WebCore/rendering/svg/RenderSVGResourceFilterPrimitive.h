@@ -36,7 +36,7 @@ namespace WebCore {
 class FilterEffect;
 class SVGFilterPrimitiveStandardAttributes;
 
-class RenderSVGResourceFilterPrimitive FINAL : public RenderSVGHiddenContainer {
+class RenderSVGResourceFilterPrimitive final : public RenderSVGHiddenContainer {
 public:
     RenderSVGResourceFilterPrimitive(SVGFilterPrimitiveStandardAttributes&, PassRef<RenderStyle>);
     SVGFilterPrimitiveStandardAttributes& filterPrimitiveElement() const;
@@ -57,7 +57,7 @@ public:
         static_cast<RenderSVGResourceFilter*>(filter)->primitiveAttributeChanged(this, attribute);
     }
 private:
-    void element() const WTF_DELETED_FUNCTION;
+    void element() const = delete;
 };
 
 } // namespace WebCore

@@ -43,7 +43,7 @@ namespace WebKit {
 
 class SQLiteIDBTransaction;
 
-class UniqueIDBDatabaseBackingStoreSQLite FINAL : public UniqueIDBDatabaseBackingStore {
+class UniqueIDBDatabaseBackingStoreSQLite final : public UniqueIDBDatabaseBackingStore {
 public:
     static PassRefPtr<UniqueIDBDatabaseBackingStore> create(const UniqueIDBDatabaseIdentifier& identifier, const String& databaseDirectory)
     {
@@ -52,15 +52,17 @@ public:
 
     virtual ~UniqueIDBDatabaseBackingStoreSQLite();
 
-    virtual std::unique_ptr<WebCore::IDBDatabaseMetadata> getOrEstablishMetadata() OVERRIDE;
+    virtual std::unique_ptr<WebCore::IDBDatabaseMetadata> getOrEstablishMetadata() override;
 
-    virtual bool establishTransaction(const IDBTransactionIdentifier&, const Vector<int64_t>& objectStoreIDs, WebCore::IndexedDB::TransactionMode) OVERRIDE;
-    virtual bool beginTransaction(const IDBTransactionIdentifier&) OVERRIDE;
-    virtual bool commitTransaction(const IDBTransactionIdentifier&) OVERRIDE;
-    virtual bool resetTransaction(const IDBTransactionIdentifier&) OVERRIDE;
-    virtual bool rollbackTransaction(const IDBTransactionIdentifier&) OVERRIDE;
+    virtual bool establishTransaction(const IDBTransactionIdentifier&, const Vector<int64_t>& objectStoreIDs, WebCore::IndexedDB::TransactionMode) override;
+    virtual bool beginTransaction(const IDBTransactionIdentifier&) override;
+    virtual bool commitTransaction(const IDBTransactionIdentifier&) override;
+    virtual bool resetTransaction(const IDBTransactionIdentifier&) override;
+    virtual bool rollbackTransaction(const IDBTransactionIdentifier&) override;
 
-    virtual bool changeDatabaseVersion(const IDBTransactionIdentifier&, uint64_t newVersion) OVERRIDE;
+    virtual bool changeDatabaseVersion(const IDBTransactionIdentifier&, uint64_t newVersion) override;
+    virtual bool createObjectStore(const IDBTransactionIdentifier&, const WebCore::IDBObjectStoreMetadata&) override;
+    virtual bool deleteObjectStore(const IDBTransactionIdentifier&, int64_t objectStoreID) override;
 
 private:
     UniqueIDBDatabaseBackingStoreSQLite(const UniqueIDBDatabaseIdentifier&, const String& databaseDirectory);

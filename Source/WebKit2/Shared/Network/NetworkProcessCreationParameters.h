@@ -58,15 +58,15 @@ struct NetworkProcessCreationParameters {
 
     bool shouldUseTestingNetworkSession;
 
+#if ENABLE(CUSTOM_PROTOCOLS)
+    Vector<String> urlSchemesRegisteredForCustomProtocols;
+#endif
+
 #if PLATFORM(MAC)
     String parentProcessName;
     String uiProcessBundleIdentifier;
     uint64_t nsURLCacheMemoryCapacity;
     uint64_t nsURLCacheDiskCapacity;
-
-#if ENABLE(CUSTOM_PROTOCOLS)
-    Vector<String> urlSchemesRegisteredForCustomProtocols;
-#endif
 
     String httpProxy;
     String httpsProxy;
@@ -77,6 +77,7 @@ struct NetworkProcessCreationParameters {
     uint32_t cookiePersistentStorageType;
     HTTPCookieAcceptPolicy cookieAcceptPolicy;
     bool ignoreTLSErrors;
+    Vector<String> languages;
 #endif
 };
 

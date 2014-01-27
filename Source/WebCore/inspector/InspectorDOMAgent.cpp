@@ -168,7 +168,7 @@ public:
     RevalidateStyleAttributeTask(InspectorDOMAgent*);
     void scheduleFor(Element*);
     void reset() { m_timer.stop(); }
-    void onTimer(Timer<RevalidateStyleAttributeTask>*);
+    void timerFired(Timer<RevalidateStyleAttributeTask>&);
 
 private:
     InspectorDOMAgent* m_domAgent;
@@ -178,7 +178,7 @@ private:
 
 RevalidateStyleAttributeTask::RevalidateStyleAttributeTask(InspectorDOMAgent* domAgent)
     : m_domAgent(domAgent)
-    , m_timer(this, &RevalidateStyleAttributeTask::onTimer)
+    , m_timer(this, &RevalidateStyleAttributeTask::timerFired)
 {
 }
 
@@ -189,7 +189,7 @@ void RevalidateStyleAttributeTask::scheduleFor(Element* element)
         m_timer.startOneShot(0);
 }
 
-void RevalidateStyleAttributeTask::onTimer(Timer<RevalidateStyleAttributeTask>*)
+void RevalidateStyleAttributeTask::timerFired(Timer<RevalidateStyleAttributeTask>&)
 {
     // The timer is stopped on m_domAgent destruction, so this method will never be called after m_domAgent has been destroyed.
     Vector<Element*> elements;
@@ -679,10 +679,8 @@ void InspectorDOMAgent::setAttributesAsText(ErrorString* errorString, int elemen
     }
 
     bool foundOriginalAttribute = false;
-    unsigned numAttrs = childElement->attributeCount();
-    for (unsigned i = 0; i < numAttrs; ++i) {
+    for (const Attribute& attribute : childElement->attributesIterator()) {
         // Add attribute pair
-        const Attribute& attribute = childElement->attributeAt(i);
         foundOriginalAttribute = foundOriginalAttribute || (name && attribute.name().toString() == *name);
         if (!m_domEditor->setAttribute(element, attribute.name().toString(), attribute.value(), errorString))
             return;
@@ -1322,10 +1320,8 @@ PassRefPtr<Inspector::TypeBuilder::Array<String>> InspectorDOMAgent::buildArrayF
     // Go through all attributes and serialize them.
     if (!element->hasAttributes())
         return attributesValue.release();
-    unsigned numAttrs = element->attributeCount();
-    for (unsigned i = 0; i < numAttrs; ++i) {
+    for (const Attribute& attribute : element->attributesIterator()) {
         // Add attribute pair
-        const Attribute& attribute = element->attributeAt(i);
         attributesValue->addItem(attribute.name().toString());
         attributesValue->addItem(attribute.value());
     }

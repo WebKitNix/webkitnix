@@ -26,6 +26,7 @@
 #ifndef NetworkStateNotifier_h
 #define NetworkStateNotifier_h
 
+#include <functional>
 #include <wtf/FastMalloc.h>
 #include <wtf/Noncopyable.h>
 #include <wtf/Vector.h>
@@ -58,8 +59,7 @@ public:
 #if PLATFORM(EFL)
     ~NetworkStateNotifier();
 #endif
-    typedef void (*NetworkStateChangeListener)(bool m_isOnLine);
-    void addNetworkStateChangeListener(NetworkStateChangeListener);
+    void addNetworkStateChangeListener(std::function<void (bool isOnLine)>);
 
     bool onLine() const { return m_isOnLine; }
     
@@ -67,19 +67,15 @@ public:
     void setIsOnLine(bool);
 #endif
 
-#if PLATFORM(BLACKBERRY)
-    void networkStateChange(bool online);
-#endif
-
 private:
     bool m_isOnLine;
-    Vector<NetworkStateChangeListener> m_listeners;
+    Vector<std::function<void (bool)>> m_listeners;
 
     void notifyNetworkStateChange();
     void updateState();
 
 #if PLATFORM(MAC) && !PLATFORM(IOS)
-    void networkStateChangeTimerFired(Timer<NetworkStateNotifier>*);
+    void networkStateChangeTimerFired(Timer<NetworkStateNotifier>&);
 
     static void dynamicStoreCallback(SCDynamicStoreRef, CFArrayRef changedKeys, void *info); 
 
@@ -104,7 +100,7 @@ private:
 #endif
 };
 
-#if !PLATFORM(MAC) && !PLATFORM(WIN) && !PLATFORM(BLACKBERRY) && !PLATFORM(EFL)
+#if !PLATFORM(MAC) && !PLATFORM(WIN) && !PLATFORM(EFL)
 
 inline NetworkStateNotifier::NetworkStateNotifier()
     : m_isOnLine(true)

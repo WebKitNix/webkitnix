@@ -57,8 +57,8 @@ private:
     DatabaseProcessIDBConnection(DatabaseToWebProcessConnection&, uint64_t idbConnectionIdentifier);
 
     // IPC::MessageSender
-    virtual IPC::Connection* messageSenderConnection() OVERRIDE;
-    virtual uint64_t messageSenderDestinationID() OVERRIDE { return m_serverConnectionIdentifier; }
+    virtual IPC::Connection* messageSenderConnection() override;
+    virtual uint64_t messageSenderDestinationID() override { return m_serverConnectionIdentifier; }
 
     // Message handlers.
     void establishConnection(const String& databaseName, const SecurityOriginData& openingOrigin, const SecurityOriginData& mainFrameOrigin);
@@ -69,7 +69,8 @@ private:
     void resetTransaction(uint64_t requestID, int64_t transactionID);
     void rollbackTransaction(uint64_t requestID, int64_t transactionID);
     void changeDatabaseVersion(uint64_t requestID, int64_t transactionID, uint64_t newVersion);
-
+    void createObjectStore(uint64_t requestID, int64_t transactionID, WebCore::IDBObjectStoreMetadata);
+    void deleteObjectStore(uint64_t requestID, int64_t transactionID, int64_t objectStoreID);
 
     Ref<DatabaseToWebProcessConnection> m_connection;
     uint64_t m_serverConnectionIdentifier;

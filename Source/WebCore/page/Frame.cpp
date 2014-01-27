@@ -92,6 +92,7 @@
 #include "TextIterator.h"
 #include "TextNodeTraversal.h"
 #include "TextResourceDecoder.h"
+#include "UserContentController.h"
 #include "UserContentURLPattern.h"
 #include "UserTypingGestureIndicator.h"
 #include "VisibleUnits.h"
@@ -162,9 +163,9 @@ Frame::Frame(Page& page, HTMLFrameOwnerElement* ownerElement, FrameLoaderClient&
     : m_mainFrame(ownerElement ? page.mainFrame() : static_cast<MainFrame&>(*this))
     , m_page(&page)
     , m_settings(&page.settings())
-    , m_treeNode(this, parentFromOwnerElement(ownerElement))
+    , m_treeNode(*this, parentFromOwnerElement(ownerElement))
     , m_loader(*this, frameLoaderClient)
-    , m_navigationScheduler(this)
+    , m_navigationScheduler(*this)
     , m_ownerElement(ownerElement)
     , m_script(std::make_unique<ScriptController>(*this))
     , m_editor(Editor::create(*this))
@@ -703,13 +704,17 @@ void Frame::injectUserScripts(UserScriptInjectionTime injectionTime)
     if (loader().stateMachine()->creatingInitialEmptyDocument() && !settings().shouldInjectUserScriptsInInitialEmptyDocument())
         return;
 
+    const auto* userContentController = m_page->userContentController();
+    if (!userContentController)
+        return;
+
     // Walk the hashtable. Inject by world.
-    const UserScriptMap* userScripts = m_page->group().userScripts();
+    const UserScriptMap* userScripts = userContentController->userScripts();
     if (!userScripts)
         return;
 
-    for (auto it = userScripts->begin(), end = userScripts->end(); it != end; ++it)
-        injectUserScriptsForWorld(*it->key.get(), *it->value, injectionTime);
+    for (const auto& worldAndUserScript : *userScripts)
+        injectUserScriptsForWorld(*worldAndUserScript.key, *worldAndUserScript.value, injectionTime);
 }
 
 void Frame::injectUserScriptsForWorld(DOMWrapperWorld& world, const UserScriptVector& userScripts, UserScriptInjectionTime injectionTime)

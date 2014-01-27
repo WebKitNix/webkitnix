@@ -98,6 +98,7 @@ bool Settings::gLowPowerVideoAudioBufferSizeEnabled = false;
 
 #if PLATFORM(IOS)
 bool Settings::gNetworkDataUsageTrackingEnabled = false;
+bool Settings::gAVKitEnabled = false;
 #endif
 
 // NOTEs
@@ -192,6 +193,7 @@ Settings::Settings(Page* page)
 #endif
     , m_showTiledScrollingIndicator(false)
     , m_tiledBackingStoreEnabled(false)
+    , m_backgroundShouldExtendBeyondPage(false)
     , m_dnsPrefetchingEnabled(false)
 #if ENABLE(TOUCH_EVENTS)
     , m_touchEventEmulationEnabled(false)
@@ -243,7 +245,7 @@ bool Settings::shouldEnableScreenFontSubstitutionByDefault()
 }
 #endif
 
-#if !PLATFORM(MAC) && !PLATFORM(BLACKBERRY)
+#if !PLATFORM(MAC)
 void Settings::initializeDefaultFontFamilies()
 {
     // Other platforms can set up fonts from a client, but on Mac, we want it in WebCore to share code between WebKit1 and WebKit2.
@@ -593,6 +595,18 @@ void Settings::setTiledBackingStoreEnabled(bool enabled)
     m_tiledBackingStoreEnabled = enabled;
 #if USE(TILED_BACKING_STORE)
     m_page->mainFrame().setTiledBackingStoreEnabled(enabled);
+#endif
+}
+
+void Settings::setBackgroundShouldExtendBeyondPage(bool shouldExtend)
+{
+    if (m_backgroundShouldExtendBeyondPage == shouldExtend)
+        return;
+
+    m_backgroundShouldExtendBeyondPage = shouldExtend;
+
+#if USE(ACCELERATED_COMPOSITING)
+    m_page->mainFrame().view()->setBackgroundExtendsBeyondPage(shouldExtend);
 #endif
 }
 

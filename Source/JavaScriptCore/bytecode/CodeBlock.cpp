@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2009, 2010, 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2008, 2009, 2010, 2012, 2013, 2014 Apple Inc. All rights reserved.
  * Copyright (C) 2008 Cameron Zwarich <cwzwarich@uwaterloo.ca>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1480,7 +1480,6 @@ CodeBlock::CodeBlock(CopyParsedBlockTag, CodeBlock& other)
     , m_sourceOffset(other.m_sourceOffset)
     , m_firstLineColumnOffset(other.m_firstLineColumnOffset)
     , m_codeType(other.m_codeType)
-    , m_additionalIdentifiers(other.m_additionalIdentifiers)
     , m_constantRegisters(other.m_constantRegisters)
     , m_functionDecls(other.m_functionDecls)
     , m_functionExprs(other.m_functionExprs)
@@ -1559,7 +1558,7 @@ CodeBlock::CodeBlock(ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlin
     setConstantRegisters(unlinkedCodeBlock->constantRegisters());
     if (unlinkedCodeBlock->usesGlobalObject())
         m_constantRegisters[unlinkedCodeBlock->globalObjectRegister().offset()].set(*m_vm, ownerExecutable, m_globalObject.get());
-    m_functionDecls.grow(unlinkedCodeBlock->numberOfFunctionDecls());
+    m_functionDecls.resizeToFit(unlinkedCodeBlock->numberOfFunctionDecls());
     for (size_t count = unlinkedCodeBlock->numberOfFunctionDecls(), i = 0; i < count; ++i) {
         UnlinkedFunctionExecutable* unlinkedExecutable = unlinkedCodeBlock->functionDecl(i);
         unsigned lineCount = unlinkedExecutable->lineCount();
@@ -1575,7 +1574,7 @@ CodeBlock::CodeBlock(ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlin
         m_functionDecls[i].set(*m_vm, ownerExecutable, executable);
     }
 
-    m_functionExprs.grow(unlinkedCodeBlock->numberOfFunctionExprs());
+    m_functionExprs.resizeToFit(unlinkedCodeBlock->numberOfFunctionExprs());
     for (size_t count = unlinkedCodeBlock->numberOfFunctionExprs(), i = 0; i < count; ++i) {
         UnlinkedFunctionExecutable* unlinkedExecutable = unlinkedCodeBlock->functionExpr(i);
         unsigned lineCount = unlinkedExecutable->lineCount();
@@ -1601,7 +1600,7 @@ CodeBlock::CodeBlock(ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlin
             }
         }
         if (size_t count = unlinkedCodeBlock->numberOfExceptionHandlers()) {
-            m_rareData->m_exceptionHandlers.grow(count);
+            m_rareData->m_exceptionHandlers.resizeToFit(count);
             size_t nonLocalScopeDepth = scope->depth();
             for (size_t i = 0; i < count; i++) {
                 const UnlinkedHandlerInfo& handler = unlinkedCodeBlock->exceptionHandler(i);
@@ -1816,9 +1815,11 @@ CodeBlock::CodeBlock(ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlin
             
         case op_captured_mov:
         case op_new_captured_func: {
-            StringImpl* uid = pc[i + 3].u.uid;
-            if (!uid)
+            if (pc[i + 3].u.index == UINT_MAX) {
+                instructions[i + 3].u.watchpointSet = 0;
                 break;
+            }
+            StringImpl* uid = identifier(pc[i + 3].u.index).impl();
             RELEASE_ASSERT(didCloneSymbolTable);
             ConcurrentJITLocker locker(m_symbolTable->m_lock);
             SymbolTable::Map::iterator iter = m_symbolTable->find(locker, uid);
@@ -2567,16 +2568,10 @@ void CodeBlock::expressionRangeForBytecodeOffset(unsigned bytecodeOffset, int& d
 
 void CodeBlock::shrinkToFit(ShrinkMode shrinkMode)
 {
-#if ENABLE(JIT)
-    m_callLinkInfos.shrinkToFit();
-#endif
     m_rareCaseProfiles.shrinkToFit();
     m_specialFastCaseProfiles.shrinkToFit();
     
     if (shrinkMode == EarlyShrink) {
-        m_additionalIdentifiers.shrinkToFit();
-        m_functionDecls.shrinkToFit();
-        m_functionExprs.shrinkToFit();
         m_constantRegisters.shrinkToFit();
         
         if (m_rareData) {
@@ -2584,9 +2579,6 @@ void CodeBlock::shrinkToFit(ShrinkMode shrinkMode)
             m_rareData->m_stringSwitchJumpTables.shrinkToFit();
         }
     } // else don't shrink these, because we would have already pointed pointers into these tables.
-
-    if (m_rareData)
-        m_rareData->m_exceptionHandlers.shrinkToFit();
 }
 
 void CodeBlock::createActivation(CallFrame* callFrame)
@@ -2682,31 +2674,6 @@ void CodeBlock::clearEvalCache()
     if (!m_rareData)
         return;
     m_rareData->m_evalCodeCache.clear();
-}
-
-template<typename T, size_t inlineCapacity, typename U, typename V>
-inline void replaceExistingEntries(Vector<T, inlineCapacity, U>& target, Vector<T, inlineCapacity, V>& source)
-{
-    ASSERT(target.size() <= source.size());
-    for (size_t i = 0; i < target.size(); ++i)
-        target[i] = source[i];
-}
-
-void CodeBlock::copyPostParseDataFrom(CodeBlock* alternative)
-{
-    if (!alternative)
-        return;
-    
-    replaceExistingEntries(m_constantRegisters, alternative->m_constantRegisters);
-    replaceExistingEntries(m_functionDecls, alternative->m_functionDecls);
-    replaceExistingEntries(m_functionExprs, alternative->m_functionExprs);
-    if (!!m_rareData && !!alternative->m_rareData)
-        replaceExistingEntries(m_rareData->m_constantBuffers, alternative->m_rareData->m_constantBuffers);
-}
-
-void CodeBlock::copyPostParseDataFromAlternative()
-{
-    copyPostParseDataFrom(m_alternative.get());
 }
 
 void CodeBlock::install()

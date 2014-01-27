@@ -54,6 +54,7 @@
 #include "CSSTimingFunctionValue.h"
 #include "CSSValueList.h"
 #include "CachedImage.h"
+#include "CachedResourceLoader.h"
 #include "CalculationValue.h"
 #include "ContentData.h"
 #include "Counter.h"
@@ -158,10 +159,6 @@
 #include "WebKitCSSShaderValue.h"
 #endif
 
-#if ENABLE(CSS_SHAPES)
-#include "CachedResourceLoader.h"
-#endif
-
 #if ENABLE(DASHBOARD_SUPPORT)
 #include "DashboardRegion.h"
 #endif
@@ -177,7 +174,6 @@
 #include "SVGElement.h"
 #include "SVGNames.h"
 #include "SVGURIReference.h"
-#include "WebKitCSSSVGDocumentValue.h"
 #endif
 
 #if ENABLE(VIDEO_TRACK)
@@ -3429,19 +3425,8 @@ void StyleResolver::loadPendingSVGDocuments()
         return;
 
     CachedResourceLoader* cachedResourceLoader = state.document().cachedResourceLoader();
-    for (auto it = state.pendingSVGDocuments().begin(), end = state.pendingSVGDocuments().end(); it != end; ++it) {
-        WebKitCSSSVGDocumentValue* value = it->value.get();
-        // FIXME: It is unclear why it should be null. Maybe an ASSERT instead?
-        if (!value)
-            continue;
-        CachedSVGDocument* cachedDocument = value->load(cachedResourceLoader);
-        if (!cachedDocument)
-            continue;
-
-        // Stash the CachedSVGDocument on the reference filter.
-        ReferenceFilterOperation& referenceFilter = *toReferenceFilterOperation(it->key);
-        referenceFilter.setCachedSVGDocumentReference(adoptPtr(new CachedSVGDocumentReference(cachedDocument)));
-    }
+    for (auto pendingDocument : state.pendingSVGDocuments())
+        pendingDocument->load(cachedResourceLoader);
     state.pendingSVGDocuments().clear();
 }
 #endif
@@ -3830,19 +3815,16 @@ bool StyleResolver::createFilterOperations(CSSValue* inValue, FilterOperations& 
                 continue;
             CSSValue* argument = filterValue->itemWithoutBoundsCheck(0);
 
-            if (!argument->isWebKitCSSSVGDocumentValue())
+            if (!argument->isPrimitiveValue())
                 continue;
 
-            WebKitCSSSVGDocumentValue* svgDocumentValue = toWebKitCSSSVGDocumentValue(argument);
-            URL url = m_state.document().completeURL(svgDocumentValue->url());
+            CSSPrimitiveValue& primitiveValue = toCSSPrimitiveValue(*argument);
+            String cssUrl = primitiveValue.getStringValue();
+            URL url = m_state.document().completeURL(cssUrl);
 
-            RefPtr<ReferenceFilterOperation> operation = ReferenceFilterOperation::create(svgDocumentValue->url(), url.fragmentIdentifier(), operationType);
-            if (SVGURIReference::isExternalURIReference(svgDocumentValue->url(), m_state.document())) {
-                if (!svgDocumentValue->loadRequested())
-                    m_state.pendingSVGDocuments().set(operation.get(), svgDocumentValue);
-                else if (svgDocumentValue->cachedSVGDocument())
-                    operation->setCachedSVGDocumentReference(adoptPtr(new CachedSVGDocumentReference(svgDocumentValue->cachedSVGDocument())));
-            }
+            RefPtr<ReferenceFilterOperation> operation = ReferenceFilterOperation::create(cssUrl, url.fragmentIdentifier(), operationType);
+            if (SVGURIReference::isExternalURIReference(cssUrl, m_state.document()))
+                m_state.pendingSVGDocuments().add(operation->createCachedSVGDocumentReference());
             operations.operations().append(operation);
 #endif
             continue;
@@ -3950,10 +3932,10 @@ bool StyleResolver::createFilterOperations(CSSValue* inValue, FilterOperations& 
 
 #endif
 
-PassRefPtr<StyleImage> StyleResolver::loadPendingImage(StylePendingImage* pendingImage)
+PassRefPtr<StyleImage> StyleResolver::loadPendingImage(StylePendingImage* pendingImage, const ResourceLoaderOptions& options)
 {
     if (auto imageValue = pendingImage->cssImageValue())
-        return imageValue->cachedImage(m_state.document().cachedResourceLoader());
+        return imageValue->cachedImage(m_state.document().cachedResourceLoader(), options);
 
     if (auto imageGeneratorValue = pendingImage->cssImageGeneratorValue()) {
         imageGeneratorValue->loadSubimages(m_state.document().cachedResourceLoader());
@@ -3965,12 +3947,16 @@ PassRefPtr<StyleImage> StyleResolver::loadPendingImage(StylePendingImage* pendin
 
 #if ENABLE(CSS_IMAGE_SET)
     if (CSSImageSetValue* imageSetValue = pendingImage->cssImageSetValue())
-        return imageSetValue->cachedImageSet(m_state.document().cachedResourceLoader());
+        return imageSetValue->cachedImageSet(m_state.document().cachedResourceLoader(), options);
 #endif
 
     return nullptr;
 }
 
+PassRefPtr<StyleImage> StyleResolver::loadPendingImage(StylePendingImage* pendingImage)
+{
+    return loadPendingImage(pendingImage, CachedResourceLoader::defaultCachedResourceOptions());
+}
 
 #if ENABLE(CSS_SHAPES)
 void StyleResolver::loadPendingShapeImage(ShapeValue* shapeValue)
@@ -3983,14 +3969,12 @@ void StyleResolver::loadPendingShapeImage(ShapeValue* shapeValue)
         return;
 
     StylePendingImage* pendingImage = static_cast<StylePendingImage*>(image);
-    CSSImageValue* cssImageValue =  pendingImage->cssImageValue();
-    CachedResourceLoader* cachedResourceLoader = m_state.document().cachedResourceLoader();
 
     ResourceLoaderOptions options = CachedResourceLoader::defaultCachedResourceOptions();
     options.requestOriginPolicy = PotentiallyCrossOriginEnabled;
     options.allowCredentials = DoNotAllowStoredCredentials;
 
-    shapeValue->setImage(cssImageValue->cachedImage(cachedResourceLoader, options));
+    shapeValue->setImage(loadPendingImage(pendingImage, options));
 }
 #endif
 
@@ -4252,8 +4236,8 @@ void StyleResolver::CascadedProperties::Property::apply(StyleResolver& resolver)
 
     // FIXME: It would be nice if line-height were less of a special snowflake.
     if (id == CSSPropertyLineHeight) {
-        if (cssValue[0])
-            state.setLineHeightValue(cssValue[0]);
+        if (auto value = state.style()->insideLink() == NotInsideLink ? cssValue[0] : cssValue[SelectorChecker::MatchLink])
+            state.setLineHeightValue(value);
         return;
     }
 

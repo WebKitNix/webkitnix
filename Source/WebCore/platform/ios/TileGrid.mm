@@ -85,7 +85,6 @@ void TileGrid::dropTilesOutsideRect(const IntRect& keepRect)
 void TileGrid::dropTilesBetweenRects(const IntRect& dropRect, const IntRect& keepRect)
 {
     Vector<TileIndex> toRemove;
-    TileMap::iterator end = m_tiles.end();
     for (auto tile : m_tiles) {
         TileIndex& index = tile.key;
         IntRect tileRect = tile.value->rect();
@@ -105,7 +104,7 @@ unsigned TileGrid::tileByteSize() const
 }
 
 template <typename T>
-static bool isFartherAway(const pair<double, T>& a, const pair<double, T>& b)
+static bool isFartherAway(const std::pair<double, T>& a, const std::pair<double, T>& b)
 {
     return a.first > b.first;
 }
@@ -124,7 +123,7 @@ bool TileGrid::dropDistantTiles(unsigned tilesNeeded, double shortestDistance)
     unsigned tilesToRemoveCount = bytesToReclaim / bytesPerTile;
 
     IntRect visibleRect = this->visibleRect();
-    Vector<pair<double, TileIndex>> toRemove;
+    Vector<std::pair<double, TileIndex>> toRemove;
     for (auto tile : m_tiles) {
         TileIndex& index = tile.key;
         IntRect tileRect = tile.value->rect();

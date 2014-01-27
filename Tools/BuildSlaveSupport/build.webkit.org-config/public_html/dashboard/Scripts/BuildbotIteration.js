@@ -274,10 +274,28 @@ BuildbotIteration.prototype = {
 
                     if (predicate(value)) {
                         var item = {path: key};
+
+                        // FIXME (bug 127186): Crash log URL will be incorrect if crash only happened on retry (e.g. "TEXT CRASH").
+                        // It should point to retries subdirectory, but the information about which attempt failed gets lost here.
                         if (value.actual.contains("CRASH"))
                             item.crash = true;
                         if (value.actual.contains("TIMEOUT"))
                             item.timeout = true;
+
+                        // FIXME (bug 127186): Similarly, we don't have a good way to present results for something like "TIMEOUT TEXT",
+                        // not even UI wise. For now, only show a diff link if the first attempt has the diff.
+                        if (value.actual.split(" ")[0].contains("TEXT"))
+                            item.has_diff = true;
+
+                        // FIXME (bug 127186): It is particularly unfortunate for image diffs, because we currently only check image results
+                        // on retry (except for reftests), so many times, you will see images on buidbot page, but not on the dashboard.
+                        // FIXME: Find a way to display expected mismatch reftest failures. 
+                        if (value.actual.split(" ")[0].contains("IMAGE") && value.reftest_type != "!=")
+                            item.has_image_diff = true;
+
+                        if (value.has_stderr)
+                            item.has_stderr = true;
+
                         result.push(item);
                     }
 
@@ -298,6 +316,8 @@ BuildbotIteration.prototype = {
                 callback();
                 return;
             }
+
+            this.hasPrettyPatch = data.has_pretty_patch;
 
             this.layoutTestResults.regressions = collectResults(data.tests, function(info) { return info["report"] === "REGRESSION" });
             console.assert(data.num_regressions === this.layoutTestResults.regressions.length);

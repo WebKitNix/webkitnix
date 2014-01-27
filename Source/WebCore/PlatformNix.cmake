@@ -23,8 +23,6 @@ list(APPEND WebCore_SOURCES
 
     html/shadow/MediaControlsNix.cpp
 
-    page/TouchAdjustment.cpp
-
     page/nix/EventHandlerNix.cpp
     page/nix/DragControllerNix.cpp
 
@@ -315,6 +313,7 @@ else ()
         platform/network/soup/ResourceRequestSoup.cpp
         platform/network/soup/ResourceResponseSoup.cpp
         platform/network/soup/SocketStreamHandleSoup.cpp
+        platform/network/soup/SoupNetworkSession.cpp
         platform/network/soup/SoupURIUtils.cpp
         platform/network/soup/SynchronousLoaderClientSoup.cpp
 

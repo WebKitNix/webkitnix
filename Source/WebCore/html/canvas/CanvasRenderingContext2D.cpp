@@ -88,7 +88,7 @@ public:
     {
     }
 
-    virtual void strokeStyle(GraphicsContext* c) OVERRIDE
+    virtual void strokeStyle(GraphicsContext* c) override
     {
         c->setStrokeThickness(m_canvasContext->lineWidth());
         c->setLineCap(m_canvasContext->getLineCap());
@@ -2143,7 +2143,7 @@ static void normalizeSpaces(String& text)
 
     unsigned textLength = text.length();
     Vector<UChar> charVector(textLength);
-    memcpy(charVector.data(), text.characters(), textLength * sizeof(UChar));
+    memcpy(charVector.data(), text.deprecatedCharacters(), textLength * sizeof(UChar));
 
     charVector[i++] = ' ';
 

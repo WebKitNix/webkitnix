@@ -33,6 +33,7 @@
 #include "InjectedBundleUserMessageCoders.h"
 #include "Logging.h"
 #include "PluginProcessConnectionManager.h"
+#include "SessionTracker.h"
 #include "StatisticsData.h"
 #include "UserData.h"
 #include "WebApplicationCacheManager.h"
@@ -127,7 +128,7 @@
 #include "WebResourceLoadScheduler.h"
 #endif
 
-#if USE(SOUP)
+#if USE(SOUP) && !ENABLE(CUSTOM_PROTOCOLS)
 #include "WebSoupRequestManager.h"
 #elif USE(CURL)
 #include "WebCurlRequestManager.h"
@@ -202,7 +203,7 @@ WebProcess::WebProcess()
 #if ENABLE(NETWORK_INFO)
     addSupplement<WebNetworkInfoManager>();
 #endif
-#if USE(SOUP)
+#if USE(SOUP) && !ENABLE(CUSTOM_PROTOCOLS)
     addSupplement<WebSoupRequestManager>();
 #elif USE(CURL)
     addSupplement<WebCurlRequestManager>();
@@ -339,7 +340,7 @@ void WebProcess::initializeWebProcess(const WebProcessCreationParameters& parame
         setShouldUseFontSmoothing(true);
 
 #if PLATFORM(MAC) || USE(CFNETWORK)
-    WebFrameNetworkingContext::setPrivateBrowsingStorageSessionIdentifierBase(parameters.uiProcessBundleIdentifier);
+    SessionTracker::setIdentifierBase(parameters.uiProcessBundleIdentifier);
 #endif
 
     if (parameters.shouldUseTestingNetworkSession)
@@ -456,17 +457,17 @@ void WebProcess::fullKeyboardAccessModeChanged(bool fullKeyboardAccessEnabled)
     m_fullKeyboardAccessEnabled = fullKeyboardAccessEnabled;
 }
 
-void WebProcess::ensurePrivateBrowsingSession()
+void WebProcess::ensurePrivateBrowsingSession(uint64_t sessionID)
 {
 #if PLATFORM(MAC) || USE(CFNETWORK) || USE(SOUP)
-    WebFrameNetworkingContext::ensurePrivateBrowsingSession();
+    WebFrameNetworkingContext::ensurePrivateBrowsingSession(sessionID);
 #endif
 }
 
-void WebProcess::destroyPrivateBrowsingSession()
+void WebProcess::destroyPrivateBrowsingSession(uint64_t sessionID)
 {
 #if PLATFORM(MAC) || USE(CFNETWORK) || USE(SOUP)
-    WebFrameNetworkingContext::destroyPrivateBrowsingSession();
+    SessionTracker::destroySession(sessionID);
 #endif
 }
 
@@ -568,7 +569,8 @@ void WebProcess::createWebPage(uint64_t pageID, const WebPageCreationParameters&
 
         // Balanced by an enableTermination in removeWebPage.
         disableTermination();
-    }
+    } else
+        result.iterator->value->reinitializeWebPage(parameters);
 
     ASSERT(result.iterator->value);
 }

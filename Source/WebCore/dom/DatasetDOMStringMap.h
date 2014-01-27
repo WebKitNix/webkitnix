@@ -32,23 +32,23 @@ namespace WebCore {
 
 class Element;
 
-class DatasetDOMStringMap FINAL : public DOMStringMap {
+class DatasetDOMStringMap final : public DOMStringMap {
 public:
     explicit DatasetDOMStringMap(Element& element)
         : m_element(element)
     {
     }
 
-    virtual void ref() OVERRIDE;
-    virtual void deref() OVERRIDE;
+    virtual void ref() override;
+    virtual void deref() override;
 
-    virtual void getNames(Vector<String>&) OVERRIDE;
-    virtual String item(const String& name) OVERRIDE;
-    virtual bool contains(const String& name) OVERRIDE;
-    virtual void setItem(const String& name, const String& value, ExceptionCode&) OVERRIDE;
-    virtual void deleteItem(const String& name, ExceptionCode&) OVERRIDE;
+    virtual void getNames(Vector<String>&) override;
+    virtual String item(const String& name) override;
+    virtual bool contains(const String& name) override;
+    virtual void setItem(const String& name, const String& value, ExceptionCode&) override;
+    virtual void deleteItem(const String& name, ExceptionCode&) override;
 
-    virtual Element* element() OVERRIDE { return &m_element; }
+    virtual Element* element() override { return &m_element; }
 
 private:
     Element& m_element;

@@ -51,8 +51,7 @@ namespace WebCore {
 // We don't let our line box tree for a single line get any deeper than this.
 const unsigned cMaxLineDepth = 200;
 
-class WordMeasurement {
-public:
+struct WordMeasurement {
     WordMeasurement()
         : renderer(0)
         , width(0)
@@ -609,7 +608,7 @@ inline void tryHyphenating(RenderText* text, const Font& font, const AtomicStrin
     if (prefixLength < minimumPrefixLength)
         return;
 
-    prefixLength = lastHyphenLocation(text->characters() + lastSpace, pos - lastSpace, std::min(prefixLength, pos - lastSpace - minimumSuffixLength) + 1, localeIdentifier);
+    prefixLength = lastHyphenLocation(text->deprecatedCharacters() + lastSpace, pos - lastSpace, std::min(prefixLength, pos - lastSpace - minimumSuffixLength) + 1, localeIdentifier);
     if (!prefixLength || prefixLength < minimumPrefixLength)
         return;
 
@@ -668,7 +667,7 @@ inline bool BreakingContext::handleText(WordMeasurements& wordMeasurements, bool
     bool canHyphenate = style.hyphens() == HyphensAuto && WebCore::canHyphenate(style.locale());
 
     unsigned lastSpace = m_current.offset();
-    float wordSpacing = m_currentStyle->wordSpacing();
+    float wordSpacing = m_currentStyle->font().wordSpacing();
     float lastSpaceWordSpacing = 0;
     float wordSpacingForWordMeasurement = 0;
 
@@ -1069,16 +1068,16 @@ inline void checkMidpoints(LineMidpointState& lineMidpointState, InlineIterator&
     // Check to see if our last midpoint is a start point beyond the line break. If so,
     // shave it off the list, and shave off a trailing space if the previous end point doesn't
     // preserve whitespace.
-    if (lBreak.renderer() && lineMidpointState.numMidpoints && !(lineMidpointState.numMidpoints % 2)) {
-        InlineIterator* midpoints = lineMidpointState.midpoints.data();
-        InlineIterator& endpoint = midpoints[lineMidpointState.numMidpoints - 2];
-        const InlineIterator& startpoint = midpoints[lineMidpointState.numMidpoints - 1];
+    if (lBreak.renderer() && lineMidpointState.numMidpoints() && !(lineMidpointState.numMidpoints() % 2)) {
+        InlineIterator* midpoints = lineMidpointState.midpoints().data();
+        InlineIterator& endpoint = midpoints[lineMidpointState.numMidpoints() - 2];
+        const InlineIterator& startpoint = midpoints[lineMidpointState.numMidpoints() - 1];
         InlineIterator currpoint = endpoint;
         while (!currpoint.atEnd() && currpoint != startpoint && currpoint != lBreak)
             currpoint.increment();
         if (currpoint == lBreak) {
             // We hit the line break before the start point. Shave off the start point.
-            lineMidpointState.numMidpoints--;
+            lineMidpointState.decreaseNumMidpoints();
             if (endpoint.renderer()->style().collapseWhiteSpace() && endpoint.renderer()->isText())
                 endpoint.setOffset(endpoint.offset() - 1);
         }

@@ -36,8 +36,12 @@
 #import <wtf/MainThread.h>
 #import <utility>
 
+#if PLATFORM(IOS)
+#import "TileControllerMemoryHandlerIOS.h"
+#endif
+
 namespace WebCore {
-    
+
 enum TileValidationPolicyFlag {
     PruneSecondaryTiles = 1 << 0,
     UnparentAllTiles = 1 << 1
@@ -83,6 +87,10 @@ TileController::TileController(PlatformCALayer* rootPlatformLayer)
 TileController::~TileController()
 {
     ASSERT(isMainThread());
+
+#if PLATFORM(IOS)
+    tileControllerMemoryHandler().removeTileController(this);
+#endif
 
     for (TileMap::iterator it = m_tiles.begin(), end = m_tiles.end(); it != end; ++it)
         it->value.layer->setOwner(nullptr);
@@ -284,7 +292,7 @@ void TileController::setVisibleRect(const FloatRect& visibleRect)
 bool TileController::tilesWouldChangeForVisibleRect(const FloatRect& newVisibleRect) const
 {
     FloatRect visibleRect = newVisibleRect;
-    visibleRect.intersect(m_exposedRect);
+    visibleRect.intersect(scaledExposedRect());
 
     if (visibleRect.isEmpty() || bounds().isEmpty())
         return false;
@@ -315,6 +323,14 @@ void TileController::setExposedRect(const FloatRect& exposedRect)
 
     m_exposedRect = exposedRect;
     setNeedsRevalidateTiles();
+}
+
+FloatRect TileController::scaledExposedRect() const
+{
+    // Since the exposedRect is in FrameView-relative coordinates, we need to scale into document space.
+    FloatRect scaledExposedRect = m_exposedRect;
+    scaledExposedRect.scale(1 / m_scale);
+    return scaledExposedRect;
 }
 
 void TileController::prepopulateRect(const FloatRect& rect)
@@ -480,7 +496,7 @@ void TileController::getTileIndexRangeForRect(const IntRect& rect, TileIndex& to
 FloatRect TileController::computeTileCoverageRect(const FloatRect& previousVisibleRect, const FloatRect& currentVisibleRect) const
 {
     FloatRect visibleRect = currentVisibleRect;
-    visibleRect.intersect(m_exposedRect);
+    visibleRect.intersect(scaledExposedRect());
 
     // If the page is not in a window (for example if it's in a background tab), we limit the tile coverage rect to the visible rect.
     if (!m_isInWindow)
@@ -685,7 +701,7 @@ void TileController::revalidateTiles(TileValidationPolicyFlags foregroundValidat
     FloatRect visibleRect = m_visibleRect;
     IntRect bounds = this->bounds();
 
-    visibleRect.intersect(m_exposedRect);
+    visibleRect.intersect(scaledExposedRect());
 
     if (visibleRect.isEmpty() || bounds.isEmpty())
         return;
@@ -824,6 +840,10 @@ TileController::TileCohort TileController::nextTileCohort() const
 void TileController::startedNewCohort(TileCohort cohort)
 {
     m_cohortList.append(TileCohortInfo(cohort, monotonicallyIncreasingTime()));
+#if PLATFORM(IOS)
+    if (!m_isInWindow)
+        tileControllerMemoryHandler().tileControllerGainedUnparentedTiles(this);
+#endif
 }
 
 TileController::TileCohort TileController::newestTileCohort() const
@@ -930,7 +950,7 @@ void TileController::updateTileCoverageMap()
     FloatRect containerBounds = bounds();
     FloatRect visibleRect = this->visibleRect();
 
-    visibleRect.intersect(m_exposedRect);
+    visibleRect.intersect(scaledExposedRect());
     visibleRect.contract(4, 4); // Layer is positioned 2px from top and left edges.
 
     float widthScale = 1;
@@ -1047,6 +1067,8 @@ void TileController::setTileMargins(int marginTop, int marginBottom, int marginL
     m_marginBottom = marginBottom;
     m_marginLeft = marginLeft;
     m_marginRight = marginRight;
+
+    setNeedsRevalidateTiles();
 }
 
 bool TileController::hasMargins() const
@@ -1168,5 +1190,17 @@ void TileController::drawTileMapContents(CGContextRef context, CGRect layerBound
     }
 }
     
+#if PLATFORM(IOS)
+void TileController::removeUnparentedTilesNow()
+{
+    while (!m_cohortList.isEmpty()) {
+        TileCohortInfo firstCohort = m_cohortList.takeFirst();
+        removeTilesInCohort(firstCohort.cohort);
+    }
+
+    if (m_tiledScrollingIndicatorLayer)
+        updateTileCoverageMap();
+}
+#endif
 
 } // namespace WebCore

@@ -51,7 +51,7 @@ public:
     void addListener(ScriptDebugListener*, Page*);
     void removeListener(ScriptDebugListener*, Page*);
 
-    virtual void recompileAllJSFunctions(Timer<ScriptDebugServer>*);
+    virtual void recompileAllJSFunctions() override;
 
 private:
     typedef HashMap<Page*, OwnPtr<ListenerSet>> PageListenersMap;
@@ -65,6 +65,7 @@ private:
 
     virtual void runEventLoopWhilePaused();
 
+    void didAddFirstListener(Page*);
     void didRemoveLastListener(Page*);
 
     void setJavaScriptPaused(const PageGroup&, bool paused);

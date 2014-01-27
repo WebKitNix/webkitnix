@@ -39,6 +39,9 @@ WebInspector.ContentView = function(representedObject)
         if (representedObject instanceof WebInspector.Script)
             return new WebInspector.ScriptContentView(representedObject);
 
+        if (representedObject instanceof WebInspector.TimelineRecording)
+            return new WebInspector.TimelineContentView(representedObject);
+
         if (representedObject instanceof WebInspector.DOMStorageObject)
             return new WebInspector.DOMStorageContentView(representedObject);
 
@@ -60,14 +63,8 @@ WebInspector.ContentView = function(representedObject)
         if (representedObject instanceof WebInspector.LogObject)
             return new WebInspector.LogContentView(representedObject);
 
-        if (representedObject instanceof WebInspector.TimelinesObject)
-            return new WebInspector.TimelinesContentView(representedObject);
-
         if (representedObject instanceof WebInspector.JavaScriptProfileObject)
             return new WebInspector.JavaScriptProfileView(representedObject);
-
-        if (representedObject instanceof WebInspector.CSSSelectorProfileObject)
-            return new WebInspector.CSSSelectorProfileView(representedObject);
 
         if (representedObject instanceof WebInspector.CanvasProfileObject)
             return new WebInspector.CanvasProfileView(representedObject);
@@ -107,6 +104,8 @@ WebInspector.ContentView.isViewable = function(representedObject)
         return true;
     if (representedObject instanceof WebInspector.Script)
         return true;
+    if (representedObject instanceof WebInspector.TimelineRecording)
+        return true;
     if (representedObject instanceof WebInspector.DOMStorageObject)
         return true;
     if (representedObject instanceof WebInspector.CookieStorageObject)
@@ -121,11 +120,7 @@ WebInspector.ContentView.isViewable = function(representedObject)
         return true;
     if (representedObject instanceof WebInspector.LogObject)
         return true;
-    if (representedObject instanceof WebInspector.TimelinesObject)
-        return true;
     if (representedObject instanceof WebInspector.JavaScriptProfileObject)
-        return true;
-    if (representedObject instanceof WebInspector.CSSSelectorProfileObject)
         return true;
     if (representedObject instanceof WebInspector.CanvasProfileObject)
         return true;

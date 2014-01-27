@@ -125,6 +125,9 @@ static bool validateSymbols(const Vector<ANGLEShaderSymbol>& symbols, CustomFilt
             }
             break;
         }
+        case SHADER_SYMBOL_TYPE_VARYING:
+            // No special validation for varying types.
+            break;
         default:
             ASSERT_NOT_REACHED();
             break;
@@ -604,7 +607,7 @@ CustomFilterProgramInfo CustomFilterValidatedProgram::validatedProgramInfo() con
     return CustomFilterProgramInfo(m_validatedVertexShader, m_validatedFragmentShader, m_programInfo.programType(), m_programInfo.mixSettings(), m_programInfo.meshType());
 }
 
-#if !PLATFORM(BLACKBERRY) && !USE(TEXTURE_MAPPER)
+#if !USE(TEXTURE_MAPPER)
 void CustomFilterValidatedProgram::platformInit()
 {
 }

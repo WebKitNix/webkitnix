@@ -59,7 +59,9 @@ struct _BrowserWindow {
     GdkPixbuf *favicon;
     GtkWidget *reloadOrStopButton;
     GtkWidget *fullScreenMessageLabel;
+    GtkWindow *parentWindow;
     guint fullScreenMessageLabelId;
+    guint resetEntryProgressTimeoutId;
 };
 
 struct _BrowserWindowClass {
@@ -153,9 +155,10 @@ static void webViewTitleChanged(WebKitWebView *webView, GParamSpec *pspec, Brows
     gtk_window_set_title(GTK_WINDOW(window), title ? title : defaultWindowTitle);
 }
 
-static gboolean resetEntryProgress(GtkEntry *entry)
+static gboolean resetEntryProgress(BrowserWindow *window)
 {
-    gtk_entry_set_progress_fraction(entry, 0);
+    gtk_entry_set_progress_fraction(GTK_ENTRY(window->uriEntry), 0);
+    window->resetEntryProgressTimeoutId = 0;
     return FALSE;
 }
 
@@ -164,8 +167,8 @@ static void webViewLoadProgressChanged(WebKitWebView *webView, GParamSpec *pspec
     gdouble progress = webkit_web_view_get_estimated_load_progress(webView);
     gtk_entry_set_progress_fraction(GTK_ENTRY(window->uriEntry), progress);
     if (progress == 1.0) {
-        guint id = g_timeout_add(500, (GSourceFunc)resetEntryProgress, window->uriEntry);
-        g_source_set_name_by_id(id, "[WebKit] resetEntryProgress");
+        window->resetEntryProgressTimeoutId = g_timeout_add(500, (GSourceFunc)resetEntryProgress, window);
+        g_source_set_name_by_id(window->resetEntryProgressTimeoutId, "[WebKit] resetEntryProgress");
     }
 }
 
@@ -269,6 +272,7 @@ static void webViewClose(WebKitWebView *webView, BrowserWindow *window)
 static void webViewRunAsModal(WebKitWebView *webView, BrowserWindow *window)
 {
     gtk_window_set_modal(GTK_WINDOW(window), TRUE);
+    gtk_window_set_transient_for(GTK_WINDOW(window), window->parentWindow);
 }
 
 static void webViewReadyToShow(WebKitWebView *webView, BrowserWindow *window)
@@ -512,6 +516,9 @@ static void browserWindowFinalize(GObject *gObject)
     if (window->fullScreenMessageLabelId)
         g_source_remove(window->fullScreenMessageLabelId);
 
+    if (window->resetEntryProgressTimeoutId)
+        g_source_remove(window->resetEntryProgressTimeoutId);
+
     G_OBJECT_CLASS(browser_window_parent_class)->finalize(gObject);
 
     if (g_atomic_int_dec_and_test(&windowCount))
@@ -700,10 +707,15 @@ GtkWidget *browser_window_new(WebKitWebView *view, GtkWindow *parent)
 {
     g_return_val_if_fail(WEBKIT_IS_WEB_VIEW(view), 0);
 
-    return GTK_WIDGET(g_object_new(BROWSER_TYPE_WINDOW,
-                                   "transient-for", parent,
-                                   "type", GTK_WINDOW_TOPLEVEL,
-                                   "view", view, NULL));
+    BrowserWindow *window = BROWSER_WINDOW(g_object_new(BROWSER_TYPE_WINDOW,
+        "type", GTK_WINDOW_TOPLEVEL, "view", view, NULL));
+
+    if (parent) {
+        window->parentWindow = parent;
+        g_object_add_weak_pointer(G_OBJECT(parent), (gpointer *)&window->parentWindow);
+    }
+
+    return GTK_WIDGET(window);
 }
 
 WebKitWebView *browser_window_get_view(BrowserWindow *window)

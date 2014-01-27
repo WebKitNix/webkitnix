@@ -149,6 +149,7 @@ public:
 
     StorageManager& storageManager() const { return *m_storageManager; }
 
+    PassRefPtr<WebPageProxy> createWebPage(PageClient&, WebPageGroup*, API::Session&, WebPageProxy* relatedPage = 0);
     PassRefPtr<WebPageProxy> createWebPage(PageClient&, WebPageGroup*, WebPageProxy* relatedPage = 0);
 
     const String& injectedBundlePath() const { return m_injectedBundlePath; }
@@ -186,8 +187,8 @@ public:
     void addVisitedLinkHash(WebCore::LinkHash);
 
     // MessageReceiver.
-    virtual void didReceiveMessage(IPC::Connection*, IPC::MessageDecoder&) OVERRIDE;
-    virtual void didReceiveSyncMessage(IPC::Connection*, IPC::MessageDecoder&, std::unique_ptr<IPC::MessageEncoder>&) OVERRIDE;
+    virtual void didReceiveMessage(IPC::Connection*, IPC::MessageDecoder&) override;
+    virtual void didReceiveSyncMessage(IPC::Connection*, IPC::MessageDecoder&, std::unique_ptr<IPC::MessageEncoder>&) override;
 
     void setCacheModel(CacheModel);
     CacheModel cacheModel() const { return m_cacheModel; }
@@ -291,6 +292,8 @@ public:
 
     static void willStartUsingPrivateBrowsing();
     static void willStopUsingPrivateBrowsing();
+
+    static bool isEphemeralSession(uint64_t sessionID);
 
 #if USE(SOUP)
     void setIgnoreTLSErrors(bool);
@@ -403,7 +406,7 @@ private:
 
 #if ENABLE(NETSCAPE_PLUGIN_API)
     // PluginInfoStoreClient:
-    virtual void pluginInfoStoreDidLoadPlugins(PluginInfoStore*) OVERRIDE;
+    virtual void pluginInfoStoreDidLoadPlugins(PluginInfoStore*) override;
 #endif
 
     IPC::MessageReceiverMap m_messageReceiverMap;

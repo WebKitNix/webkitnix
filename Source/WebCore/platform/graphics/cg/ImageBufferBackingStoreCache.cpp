@@ -27,6 +27,7 @@
 #include "ImageBufferBackingStoreCache.h"
 
 #if USE(IOSURFACE_CANVAS_BACKING_STORE)
+#include <CoreGraphics/CoreGraphics.h>
 #include <IOSurface/IOSurface.h>
 
 static const double purgeInterval = 5;
@@ -199,7 +200,7 @@ void ImageBufferBackingStoreCache::deallocate(IOSurfaceRef surface)
     CGContextRestoreGState(context);
     // Clear opportunistically so CG has more time to carry it out.
     CGContextClearRect(context, CGRectMake(0, 0, surfaceSize.width(), surfaceSize.height()));
-#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1090
+#if !PLATFORM(IOS) && __MAC_OS_X_VERSION_MIN_REQUIRED < 1090
     CGContextFlush(context);
 #endif
 
@@ -208,7 +209,7 @@ void ImageBufferBackingStoreCache::deallocate(IOSurfaceRef surface)
     schedulePurgeTimer();
 }
 
-void ImageBufferBackingStoreCache::timerFired(DeferrableOneShotTimer<ImageBufferBackingStoreCache>*)
+void ImageBufferBackingStoreCache::timerFired(DeferrableOneShotTimer<ImageBufferBackingStoreCache>&)
 {
     while (!m_cachedSurfaces.isEmpty()) {
         CachedSurfaceMap::iterator iter = m_cachedSurfaces.begin();

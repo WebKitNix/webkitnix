@@ -580,7 +580,7 @@ public:
 #else
     TextDecorationStyle textDecorationStyle() const { return TextDecorationStyleSolid; }
 #endif
-    float wordSpacing() const;
+    const Length& wordSpacing() const;
     float letterSpacing() const;
 
     float zoom() const { return visual->m_zoom; }
@@ -937,6 +937,7 @@ public:
 #endif
 #if PLATFORM(IOS)
     bool touchCalloutEnabled() const { return rareInheritedData->touchCalloutEnabled; }
+    Color compositionFillColor() const { return rareInheritedData->compositionFillColor; }
 #endif
 #if ENABLE(ACCELERATED_OVERFLOW_SCROLLING)
     bool useTouchOverflowScrolling() const { return rareInheritedData->useTouchOverflowScrolling; }
@@ -1189,7 +1190,7 @@ public:
 
     void setWhiteSpace(EWhiteSpace v) { inherited_flags._white_space = v; }
 
-    void setWordSpacing(float);
+    void setWordSpacing(Length);
     void setLetterSpacing(float);
 
     void clearBackgroundLayers() { m_background.access()->m_background = FillLayer(BackgroundFillLayer); }
@@ -1454,6 +1455,7 @@ public:
 #endif
 #if PLATFORM(IOS)
     void setTouchCalloutEnabled(bool v) { SET_VAR(rareInheritedData, touchCalloutEnabled, v); }
+    void setCompositionFillColor(const Color &c) { SET_VAR(rareInheritedData, compositionFillColor, c); }
 #endif
 #if ENABLE(ACCELERATED_OVERFLOW_SCROLLING)
     void setUseTouchOverflowScrolling(bool v) { SET_VAR(rareInheritedData, useTouchOverflowScrolling, v); }
@@ -1664,7 +1666,7 @@ public:
     static unsigned short initialColumnRuleWidth() { return 3; }
     static unsigned short initialOutlineWidth() { return 3; }
     static float initialLetterSpacing() { return 0; }
-    static float initialWordSpacing() { return 0; }
+    static Length initialWordSpacing() { return Length(Fixed); }
     static Length initialSize() { return Length(); }
     static Length initialMinSize() { return Length(Fixed); }
     static Length initialMaxSize() { return Length(Undefined); }
@@ -1767,7 +1769,7 @@ public:
     static TextEmphasisFill initialTextEmphasisFill() { return TextEmphasisFillFilled; }
     static TextEmphasisMark initialTextEmphasisMark() { return TextEmphasisMarkNone; }
     static const AtomicString& initialTextEmphasisCustomMark() { return nullAtom; }
-    static TextEmphasisPosition initialTextEmphasisPosition() { return TextEmphasisPositionOver; }
+    static TextEmphasisPosition initialTextEmphasisPosition() { return TextEmphasisPositionOver | TextEmphasisPositionRight; }
     static RubyPosition initialRubyPosition() { return RubyPositionBefore; }
     static LineBoxContain initialLineBoxContain() { return LineBoxContainBlock | LineBoxContainInline | LineBoxContainReplaced; }
     static ImageOrientationEnum initialImageOrientation() { return OriginTopLeft; }
@@ -1821,6 +1823,7 @@ public:
 #endif
 #if PLATFORM(IOS)
     static bool initialTouchCalloutEnabled() { return true; }
+    static Color initialCompositionFillColor() { return Color::compositionFill; }
 #endif
 #if ENABLE(TOUCH_EVENTS)
     static Color initialTapHighlightColor();

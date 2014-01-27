@@ -49,14 +49,14 @@
 
 namespace WebCore {
 
-class BoundingRectStrokeStyleApplier FINAL : public StrokeStyleApplier {
+class BoundingRectStrokeStyleApplier final : public StrokeStyleApplier {
 public:
     BoundingRectStrokeStyleApplier(const RenderSVGShape& renderer)
         : m_renderer(renderer)
     {
     }
 
-    virtual void strokeStyle(GraphicsContext* context) OVERRIDE
+    virtual void strokeStyle(GraphicsContext* context) override
     {
         SVGRenderSupport::applyStrokeStyleToContext(context, m_renderer.style(), m_renderer);
     }

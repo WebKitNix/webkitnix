@@ -48,15 +48,6 @@ class PlatformContextCairo;
 typedef WebCore::PlatformContextCairo PlatformGraphicsContext;
 #elif USE(WINGDI)
 typedef struct HDC__ PlatformGraphicsContext;
-#elif PLATFORM(BLACKBERRY)
-namespace BlackBerry {
-namespace Platform {
-namespace Graphics {
-class PlatformGraphicsContext;
-}
-}
-}
-using BlackBerry::Platform::Graphics::PlatformGraphicsContext;
 #else
 typedef void PlatformGraphicsContext;
 #endif
@@ -262,11 +253,7 @@ namespace WebCore {
         void applyFillPattern();
         void drawPath(const Path&);
 
-#if PLATFORM(IOS)
-        void drawNativeImage(PassNativeImagePtr, const FloatSize& selfSize, ColorSpace styleColorSpace, const FloatRect& destRect, const FloatRect& srcRect, float scale, CompositeOperator = CompositeSourceOver, BlendMode = BlendModeNormal, ImageOrientation = DefaultImageOrientation);
-#else
-        void drawNativeImage(PassNativeImagePtr, const FloatSize& selfSize, ColorSpace styleColorSpace, const FloatRect& destRect, const FloatRect& srcRect, CompositeOperator = CompositeSourceOver, BlendMode = BlendModeNormal, ImageOrientation = DefaultImageOrientation);
-#endif
+        void drawNativeImage(PassNativeImagePtr, const FloatSize& selfSize, ColorSpace styleColorSpace, const FloatRect& destRect, const FloatRect& srcRect, float scale = 1, CompositeOperator = CompositeSourceOver, BlendMode = BlendModeNormal, ImageOrientation = DefaultImageOrientation);
 
         // Allow font smoothing (LCD antialiasing). Not part of the graphics state.
         void setAllowsFontSmoothing(bool);
@@ -384,6 +371,7 @@ namespace WebCore {
 
         FloatRect computeLineBoundsForText(const FloatPoint&, float width, bool printing);
         void drawLineForText(const FloatPoint&, float width, bool printing);
+        void drawLinesForText(const FloatPoint&, const DashArray& widths, bool printing);
         enum DocumentMarkerLineStyle {
 #if PLATFORM(IOS)
             TextCheckingDictationPhraseWithAlternativesLineStyle,

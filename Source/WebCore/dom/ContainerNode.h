@@ -107,7 +107,7 @@ public:
 
     void cloneChildNodes(ContainerNode* clone);
 
-    virtual LayoutRect boundingBox() const OVERRIDE;
+    virtual LayoutRect boundingBox() const override;
 
     enum ChildChangeType { ElementInserted, ElementRemoved, TextInserted, TextRemoved, TextChanged, AllChildrenRemoved, NonContentsChildChanged };
     enum ChildChangeSource { ChildChangeSourceParser, ChildChangeSourceAPI };
@@ -169,7 +169,9 @@ private:
 
     void updateTreeAfterInsertion(Node& child);
 
-    bool isContainerNode() const WTF_DELETED_FUNCTION;
+    bool isContainerNode() const = delete;
+
+    void willRemoveChild(Node& child);
 
     Node* m_firstChild;
     Node* m_lastChild;

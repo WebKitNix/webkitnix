@@ -547,6 +547,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSOESTextureFloatLinear.h \
 	DerivedSources/WebCore/JSOESTextureHalfFloat.cpp \
 	DerivedSources/WebCore/JSOESTextureHalfFloat.h \
+	DerivedSources/WebCore/JSOESTextureHalfFloatLinear.cpp \
+	DerivedSources/WebCore/JSOESTextureHalfFloatLinear.h \
 	DerivedSources/WebCore/JSOESVertexArrayObject.cpp \
 	DerivedSources/WebCore/JSOESVertexArrayObject.h \
 	DerivedSources/WebCore/JSOESElementIndexUint.cpp \
@@ -1516,6 +1518,7 @@ dom_binding_idls += \
 	$(WebCore)/html/canvas/OESTextureFloat.idl \
 	$(WebCore)/html/canvas/OESTextureFloatLinear.idl \
 	$(WebCore)/html/canvas/OESTextureHalfFloat.idl \
+	$(WebCore)/html/canvas/OESTextureHalfFloatLinear.idl \
 	$(WebCore)/html/canvas/OESVertexArrayObject.idl \
 	$(WebCore)/html/canvas/OESElementIndexUint.idl \
 	$(WebCore)/html/canvas/WebGLActiveInfo.idl \
@@ -3266,6 +3269,8 @@ webcore_sources += \
 	Source/WebCore/html/canvas/OESTextureFloatLinear.h \
 	Source/WebCore/html/canvas/OESTextureHalfFloat.cpp \
 	Source/WebCore/html/canvas/OESTextureHalfFloat.h \
+	Source/WebCore/html/canvas/OESTextureHalfFloatLinear.cpp \
+	Source/WebCore/html/canvas/OESTextureHalfFloatLinear.h \
 	Source/WebCore/html/canvas/OESVertexArrayObject.cpp \
 	Source/WebCore/html/canvas/OESVertexArrayObject.h \
 	Source/WebCore/html/canvas/OESElementIndexUint.cpp \
@@ -3452,6 +3457,8 @@ webcore_sources += \
 	Source/WebCore/html/HTMLMediaSource.h \
 	Source/WebCore/html/HTMLMediaElement.cpp \
 	Source/WebCore/html/HTMLMediaElement.h \
+	Source/WebCore/html/HTMLMediaSession.cpp \
+	Source/WebCore/html/HTMLMediaSession.h \
 	Source/WebCore/html/HTMLMenuElement.cpp \
 	Source/WebCore/html/HTMLMenuElement.h \
 	Source/WebCore/html/HTMLMetaElement.cpp \
@@ -3570,14 +3577,8 @@ webcore_sources += \
 	Source/WebCore/html/NumberInputType.cpp \
 	Source/WebCore/html/NumberInputType.h \
 	Source/WebCore/html/parser/AtomicHTMLToken.h \
-	Source/WebCore/html/parser/BackgroundHTMLInputStream.cpp \
-	Source/WebCore/html/parser/BackgroundHTMLInputStream.h \
-	Source/WebCore/html/parser/BackgroundHTMLParser.cpp \
-	Source/WebCore/html/parser/BackgroundHTMLParser.h \
 	Source/WebCore/html/parser/CSSPreloadScanner.cpp \
 	Source/WebCore/html/parser/CSSPreloadScanner.h \
-	Source/WebCore/html/parser/CompactHTMLToken.cpp \
-	Source/WebCore/html/parser/CompactHTMLToken.h \
 	Source/WebCore/html/parser/HTMLConstructionSite.cpp \
 	Source/WebCore/html/parser/HTMLConstructionSite.h \
 	Source/WebCore/html/parser/HTMLDocumentParser.cpp \
@@ -3591,8 +3592,6 @@ webcore_sources += \
 	Source/WebCore/html/parser/HTMLEntityTable.h \
 	Source/WebCore/html/parser/HTMLFormattingElementList.cpp \
 	Source/WebCore/html/parser/HTMLFormattingElementList.h \
-	Source/WebCore/html/parser/HTMLIdentifier.cpp \
-	Source/WebCore/html/parser/HTMLIdentifier.h \
 	Source/WebCore/html/parser/HTMLInputStream.h \
 	Source/WebCore/html/parser/HTMLMetaCharsetParser.cpp \
 	Source/WebCore/html/parser/HTMLMetaCharsetParser.h \
@@ -3602,8 +3601,6 @@ webcore_sources += \
 	Source/WebCore/html/parser/HTMLParserOptions.h \
 	Source/WebCore/html/parser/HTMLParserScheduler.cpp \
 	Source/WebCore/html/parser/HTMLParserScheduler.h \
-	Source/WebCore/html/parser/HTMLParserThread.cpp \
-	Source/WebCore/html/parser/HTMLParserThread.h \
 	Source/WebCore/html/parser/HTMLPreloadScanner.cpp \
 	Source/WebCore/html/parser/HTMLPreloadScanner.h \
 	Source/WebCore/html/parser/HTMLResourcePreloader.cpp \
@@ -3619,8 +3616,6 @@ webcore_sources += \
 	Source/WebCore/html/parser/HTMLTokenizer.h \
 	Source/WebCore/html/parser/HTMLTreeBuilder.cpp \
 	Source/WebCore/html/parser/HTMLTreeBuilder.h \
-	Source/WebCore/html/parser/HTMLTreeBuilderSimulator.cpp \
-	Source/WebCore/html/parser/HTMLTreeBuilderSimulator.h \
 	Source/WebCore/html/parser/HTMLViewSourceParser.cpp \
 	Source/WebCore/html/parser/HTMLViewSourceParser.h \
 	Source/WebCore/html/parser/InputStreamPreprocessor.h \
@@ -3786,8 +3781,6 @@ webcore_sources += \
 	Source/WebCore/inspector/IdentifiersFactory.h \
 	Source/WebCore/inspector/InjectedScriptCanvasModule.cpp \
 	Source/WebCore/inspector/InjectedScriptCanvasModule.h \
-	Source/WebCore/inspector/InspectorAgent.cpp \
-	Source/WebCore/inspector/InspectorAgent.h \
 	Source/WebCore/inspector/InspectorApplicationCacheAgent.cpp \
 	Source/WebCore/inspector/InspectorApplicationCacheAgent.h \
 	Source/WebCore/inspector/InspectorCanvasAgent.cpp \
@@ -4024,6 +4017,7 @@ webcore_sources += \
 	Source/WebCore/loader/PolicyChecker.h \
 	Source/WebCore/loader/ProgressTracker.cpp \
 	Source/WebCore/loader/ProgressTracker.h \
+	Source/WebCore/loader/ProgressTrackerClient.h \
 	Source/WebCore/loader/NavigationScheduler.cpp \
 	Source/WebCore/loader/NavigationScheduler.h \
 	Source/WebCore/loader/ResourceBuffer.cpp \
@@ -4237,6 +4231,8 @@ webcore_sources += \
 	Source/WebCore/page/SpeechInputResultList.h \
 	Source/WebCore/page/SuspendableTimer.cpp \
 	Source/WebCore/page/SuspendableTimer.h \
+	Source/WebCore/page/UserContentController.cpp \
+	Source/WebCore/page/UserContentController.h \
 	Source/WebCore/page/UserContentTypes.h \
 	Source/WebCore/page/UserContentURLPattern.cpp \
 	Source/WebCore/page/UserContentURLPattern.h \
@@ -4245,6 +4241,7 @@ webcore_sources += \
 	Source/WebCore/page/UserStyleSheet.h \
 	Source/WebCore/page/UserStyleSheetTypes.h \
 	Source/WebCore/page/ValidationMessageClient.h \
+	Source/WebCore/page/ViewState.h \
 	Source/WebCore/page/WebCoreKeyboardUIMode.h \
 	Source/WebCore/page/WebKitPoint.h \
 	Source/WebCore/page/WindowFeatures.cpp \
@@ -4339,7 +4336,7 @@ webcore_sources += \
 	Source/WebCore/rendering/RenderAncestorIterator.h \
 	Source/WebCore/rendering/RenderBlock.cpp \
 	Source/WebCore/rendering/RenderBlock.h \
-    Source/WebCore/rendering/RenderBlockFlow.cpp \
+	Source/WebCore/rendering/RenderBlockFlow.cpp \
 	Source/WebCore/rendering/RenderBlockFlow.h \
 	Source/WebCore/rendering/RenderBlockLineLayout.cpp \
 	Source/WebCore/rendering/RenderBox.cpp \
@@ -4436,8 +4433,8 @@ webcore_sources += \
 	Source/WebCore/rendering/RenderMultiColumnFlowThread.h \
 	Source/WebCore/rendering/RenderMultiColumnSet.cpp \
 	Source/WebCore/rendering/RenderMultiColumnSet.h \
-    Source/WebCore/rendering/RenderNamedFlowFragment.cpp \
-    Source/WebCore/rendering/RenderNamedFlowFragment.h \
+	Source/WebCore/rendering/RenderNamedFlowFragment.cpp \
+	Source/WebCore/rendering/RenderNamedFlowFragment.h \
 	Source/WebCore/rendering/RenderNamedFlowThread.cpp \
 	Source/WebCore/rendering/RenderNamedFlowThread.h \
 	Source/WebCore/rendering/RenderObject.cpp \
@@ -4445,6 +4442,7 @@ webcore_sources += \
 	Source/WebCore/rendering/RenderOverflow.h \
 	Source/WebCore/rendering/RenderProgress.cpp \
 	Source/WebCore/rendering/RenderProgress.h \
+	Source/WebCore/rendering/RenderPtr.h \
 	Source/WebCore/rendering/RenderQuote.cpp \
 	Source/WebCore/rendering/RenderQuote.h \
 	Source/WebCore/rendering/RenderRegion.cpp \
@@ -4807,8 +4805,6 @@ webcore_svg_sources += \
 	Source/WebCore/css/SVGCSSComputedStyleDeclaration.cpp \
 	Source/WebCore/css/SVGCSSParser.cpp \
 	Source/WebCore/css/SVGCSSStyleSelector.cpp \
-	Source/WebCore/css/WebKitCSSSVGDocumentValue.cpp \
-	Source/WebCore/css/WebKitCSSSVGDocumentValue.h \
 	Source/WebCore/loader/cache/CachedSVGDocument.cpp \
 	Source/WebCore/loader/cache/CachedSVGDocument.h \
 	Source/WebCore/loader/cache/CachedSVGDocumentClient.h \
@@ -5362,6 +5358,8 @@ webcore_platform_sources += \
 	Source/WebCore/platform/graphics/filters/FilterOperations.h \
 	Source/WebCore/platform/graphics/gpu/DrawingBuffer.cpp \
 	Source/WebCore/platform/graphics/gpu/DrawingBuffer.h \
+	Source/WebCore/platform/graphics/FormatConverter.cpp \
+	Source/WebCore/platform/graphics/FormatConverter.h \
 	Source/WebCore/platform/graphics/GraphicsContext3D.cpp \
 	Source/WebCore/platform/graphics/GraphicsContext3D.h \
 	Source/WebCore/platform/graphics/GraphicsLayer.h \
@@ -5464,7 +5462,6 @@ webcore_platform_sources += \
 	Source/WebCore/platform/network/BlobRegistryImpl.h \
 	Source/WebCore/platform/network/BlobResourceHandle.cpp \
 	Source/WebCore/platform/network/BlobResourceHandle.h \
-	Source/WebCore/platform/network/soup/CertificateInfo.h \
 	Source/WebCore/platform/network/BlobStorageData.h \
 	Source/WebCore/platform/network/FormDataBuilder.cpp \
 	Source/WebCore/platform/network/FormDataBuilder.h \
@@ -5486,6 +5483,7 @@ webcore_platform_sources += \
 	Source/WebCore/platform/network/SynchronousLoaderClient.h \
 	Source/WebCore/platform/network/soup/AuthenticationChallenge.h \
 	Source/WebCore/platform/network/soup/AuthenticationChallengeSoup.cpp \
+	Source/WebCore/platform/network/soup/CertificateInfo.h \
 	Source/WebCore/platform/network/soup/CertificateInfo.cpp \
 	Source/WebCore/platform/network/soup/CookieJarSoup.cpp \
 	Source/WebCore/platform/network/soup/CookieJarSoup.h \
@@ -5498,6 +5496,8 @@ webcore_platform_sources += \
 	Source/WebCore/platform/network/soup/ResourceRequestSoup.cpp \
 	Source/WebCore/platform/network/soup/ResourceResponse.h \
 	Source/WebCore/platform/network/soup/ResourceResponseSoup.cpp \
+	Source/WebCore/platform/network/soup/SoupNetworkSession.h \
+	Source/WebCore/platform/network/soup/SoupNetworkSession.cpp \
 	Source/WebCore/platform/network/soup/SynchronousLoaderClientSoup.cpp \
 	Source/WebCore/platform/ScrollableArea.cpp \
 	Source/WebCore/platform/ScrollableArea.h \
@@ -5553,6 +5553,9 @@ platform_sources += \
 	Source/WebCore/platform/audio/AudioResampler.h \
 	Source/WebCore/platform/audio/AudioResamplerKernel.cpp \
 	Source/WebCore/platform/audio/AudioResamplerKernel.h \
+	Source/WebCore/platform/audio/AudioSession.cpp \
+	Source/WebCore/platform/audio/AudioSession.h \
+	Source/WebCore/platform/audio/AudioSessionListener.h \
 	Source/WebCore/platform/audio/AudioSourceProvider.h \
 	Source/WebCore/platform/audio/AudioSourceProviderClient.h \
 	Source/WebCore/platform/audio/AudioUtilities.cpp \
@@ -5967,6 +5970,12 @@ platform_sources += \
 	Source/WebCore/platform/soup/SharedBufferSoup.cpp \
 	Source/WebCore/platform/text/enchant/TextCheckerEnchant.h \
 	Source/WebCore/platform/text/enchant/TextCheckerEnchant.cpp \
+	Source/WebCore/platform/text/icu/UTextProvider.cpp \
+	Source/WebCore/platform/text/icu/UTextProvider.h \
+	Source/WebCore/platform/text/icu/UTextProviderLatin1.cpp \
+	Source/WebCore/platform/text/icu/UTextProviderLatin1.h \
+	Source/WebCore/platform/text/icu/UTextProviderUTF16.cpp \
+	Source/WebCore/platform/text/icu/UTextProviderUTF16.h \
 	Source/WebCore/platform/text/BidiContext.cpp \
 	Source/WebCore/platform/text/BidiContext.h \
 	Source/WebCore/platform/text/BidiResolver.h \
@@ -5998,7 +6007,6 @@ platform_sources += \
 	Source/WebCore/platform/text/TextBoundaries.h \
 	Source/WebCore/platform/text/TextBreakIterator.cpp \
 	Source/WebCore/platform/text/TextBreakIterator.h \
-	Source/WebCore/platform/text/TextBreakIteratorICU.cpp \
 	Source/WebCore/platform/text/TextBreakIteratorInternalICU.h \
 	Source/WebCore/platform/text/TextCheckerClient.h \
 	Source/WebCore/platform/text/TextChecking.h \

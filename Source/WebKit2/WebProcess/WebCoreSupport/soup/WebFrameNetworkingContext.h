@@ -42,8 +42,7 @@ public:
         return adoptRef(new WebFrameNetworkingContext(frame));
     }
 
-    static void ensurePrivateBrowsingSession();
-    static void destroyPrivateBrowsingSession();
+    static void ensurePrivateBrowsingSession(uint64_t sessionID);
 
     WebFrameLoaderClient* webFrameLoaderClient() const;
 

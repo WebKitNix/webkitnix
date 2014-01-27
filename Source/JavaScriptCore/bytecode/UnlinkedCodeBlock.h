@@ -33,7 +33,6 @@
 #include "Identifier.h"
 #include "JSCell.h"
 #include "JSString.h"
-#include "LineInfo.h"
 #include "ParserModes.h"
 #include "RegExp.h"
 #include "SpecialPointer.h"
@@ -229,11 +228,10 @@ struct UnlinkedInstruction {
     UnlinkedInstruction() { u.operand = 0; }
     UnlinkedInstruction(OpcodeID opcode) { u.opcode = opcode; }
     UnlinkedInstruction(int operand) { u.operand = operand; }
-    UnlinkedInstruction(StringImpl* uid) { u.uid = uid; }
     union {
         OpcodeID opcode;
         int32_t operand;
-        StringImpl* uid;
+        unsigned index;
     } u;
 };
 
@@ -462,6 +460,8 @@ public:
     ALWAYS_INLINE unsigned startColumn() const { return 0; }
     unsigned endColumn() const { return m_endColumn; }
 
+    void dumpExpressionRangeInfo(); // For debugging purpose only.
+
 protected:
     UnlinkedCodeBlock(VM*, Structure*, CodeType, const ExecutableInfo&);
     ~UnlinkedCodeBlock();
@@ -481,6 +481,8 @@ private:
         if (!m_rareData)
             m_rareData = adoptPtr(new RareData);
     }
+
+    void getLineAndColumn(ExpressionRangeInfo&, unsigned& line, unsigned& column);
 
     RefCountedArray<UnlinkedInstruction> m_unlinkedInstructions;
 

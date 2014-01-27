@@ -20,7 +20,7 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "config.h"
@@ -282,7 +282,6 @@ HTMLMediaElement::HTMLMediaElement(const QualifiedName& tagName, Document& docum
 #if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
     , m_proxyWidget(0)
 #endif
-    , m_restrictions(RequireUserGestureForFullscreenRestriction | RequirePageConsentToLoadMediaRestriction)
     , m_preload(MediaPlayer::Auto)
     , m_displayMode(Unknown)
     , m_processingMediaPlayerCallback(0)
@@ -337,7 +336,7 @@ HTMLMediaElement::HTMLMediaElement(const QualifiedName& tagName, Document& docum
 #if ENABLE(WEB_AUDIO)
     , m_audioSourceNode(0)
 #endif
-    , m_mediaSession(MediaSession::create(*this))
+    , m_mediaSession(HTMLMediaSession::create(*this))
     , m_reportedExtraMemoryCost(0)
 #if ENABLE(MEDIA_STREAM)
     , m_mediaStreamSrcObject(nullptr)
@@ -345,6 +344,9 @@ HTMLMediaElement::HTMLMediaElement(const QualifiedName& tagName, Document& docum
 {
     LOG(Media, "HTMLMediaElement::HTMLMediaElement");
     setHasCustomStyleResolveCallbacks();
+
+    m_mediaSession->addBehaviorRestriction(HTMLMediaSession::RequireUserGestureForFullscreen);
+    m_mediaSession->addBehaviorRestriction(HTMLMediaSession::RequirePageConsentToLoadMedia);
 
     // FIXME: We should clean up and look to better merge the iOS and non-iOS code below.
     Settings* settings = document.settings();
@@ -357,15 +359,15 @@ HTMLMediaElement::HTMLMediaElement(const QualifiedName& tagName, Document& docum
 #endif
 
     if (settings && settings->mediaPlaybackRequiresUserGesture()) {
-        addBehaviorRestriction(RequireUserGestureForRateChangeRestriction);
-        addBehaviorRestriction(RequireUserGestureForLoadRestriction);
+        m_mediaSession->addBehaviorRestriction(HTMLMediaSession::RequireUserGestureForRateChange);
+        m_mediaSession->addBehaviorRestriction(HTMLMediaSession::RequireUserGestureForLoad);
     }
 #else
     m_sendProgressEvents = false;
     if (!settings || settings->mediaPlaybackRequiresUserGesture()) {
-        addBehaviorRestriction(RequireUserGestureForRateChangeRestriction);
+        m_mediaSession->addBehaviorRestriction(HTMLMediaSession::RequireUserGestureForRateChange);
 #if ENABLE(IOS_AIRPLAY)
-        addBehaviorRestriction(RequireUserGestureToShowPlaybackTargetPicker);
+        m_mediaSession->addBehaviorRestriction(HTMLMediaSession::RequireUserGestureToShowPlaybackTargetPicker);
 #endif
     }
 #endif // !PLATFORM(IOS)
@@ -519,7 +521,7 @@ void HTMLMediaElement::parseAttribute(const QualifiedName& name, const AtomicStr
 #if PLATFORM(IOS)
         // Note, unless the restriction on requiring user action has been removed,
         // do not begin downloading data on iOS.
-        if (!userGestureRequiredForLoad() && !value.isNull()) {
+        if (!value.isNull() && m_mediaSession->dataLoadingPermitted(*this)) {
 #else
         // Trigger a reload, as long as the 'src' attribute is present.
         if (!value.isNull()) {
@@ -544,7 +546,7 @@ void HTMLMediaElement::parseAttribute(const QualifiedName& name, const AtomicStr
 
         // The attribute must be ignored if the autoplay attribute is present
         if (!autoplay() && m_player)
-            m_player->setPreload(m_preload);
+            m_player->setPreload(m_mediaSession->effectivePreloadForElement(*this));
 
     } else if (name == mediagroupAttr)
         setMediaGroup(value);
@@ -686,7 +688,7 @@ Node::InsertionNotificationRequest HTMLMediaElement::insertedInto(ContainerNode&
         m_inActiveDocument = true;
 
 #if PLATFORM(IOS)
-        if (!userGestureRequiredForLoad() && m_networkState == NETWORK_EMPTY && !fastGetAttribute(srcAttr).isEmpty())
+        if (m_networkState == NETWORK_EMPTY && !fastGetAttribute(srcAttr).isEmpty() && m_mediaSession->dataLoadingPermitted(*this))
 #else
         if (m_networkState == NETWORK_EMPTY && !fastGetAttribute(srcAttr).isEmpty())
 #endif
@@ -800,7 +802,7 @@ void HTMLMediaElement::scheduleEvent(const AtomicString& eventName)
     m_asyncEventQueue.enqueueEvent(event.release());
 }
 
-void HTMLMediaElement::loadTimerFired(Timer<HTMLMediaElement>*)
+void HTMLMediaElement::loadTimerFired(Timer<HTMLMediaElement>&)
 {
     Ref<HTMLMediaElement> protect(*this); // loadNextSourceChild may fire 'beforeload', which can make arbitrary DOM mutations.
 
@@ -893,7 +895,7 @@ void HTMLMediaElement::load()
     
     LOG(Media, "HTMLMediaElement::load()");
     
-    if (userGestureRequiredForLoad() && !ScriptController::processingUserGesture())
+    if (!m_mediaSession->dataLoadingPermitted(*this))
         return;
     if (ScriptController::processingUserGesture())
         removeBehaviorsRestrictionsAfterFirstUserGesture();
@@ -985,12 +987,13 @@ void HTMLMediaElement::prepareForLoad()
     // The spec doesn't say to block the load event until we actually run the asynchronous section
     // algorithm, but do it now because we won't start that until after the timer fires and the 
     // event may have already fired by then.
-    if (m_preload != MediaPlayer::None)
+    MediaPlayer::Preload effectivePreload = m_mediaSession->effectivePreloadForElement(*this);
+    if (effectivePreload != MediaPlayer::None)
         setShouldDelayLoadEvent(true);
 
 #if PLATFORM(IOS)
     Settings* settings = document().settings();
-    if (m_preload != MediaPlayer::None && settings && settings->mediaDataLoadsAutomatically())
+    if (effectivePreload != MediaPlayer::None && settings && settings->mediaDataLoadsAutomatically())
         prepareToPlay();
 #endif
 
@@ -1005,8 +1008,7 @@ void HTMLMediaElement::loadInternal()
     ASSERT(!NoEventDispatchAssertion::isEventDispatchForbidden());
 
     // If we can't start a load right away, start it later.
-    Page* page = document().page();
-    if (pageConsentRequiredForLoad() && page && !page->canStartMedia()) {
+    if (!m_mediaSession->pageAllowsDataLoading(*this)) {
         setShouldDelayLoadEvent(false);
         if (m_isWaitingUntilMediaCanStart)
             return;
@@ -1019,8 +1021,8 @@ void HTMLMediaElement::loadInternal()
 
     // Once the page has allowed an element to load media, it is free to load at will. This allows a 
     // playlist that starts in a foreground tab to continue automatically if the tab is subsequently 
-    // put in the the background.
-    removeBehaviorRestriction(RequirePageConsentToLoadMediaRestriction);
+    // put into the background.
+    m_mediaSession->removeBehaviorRestriction(HTMLMediaSession::RequirePageConsentToLoadMedia);
 
 #if ENABLE(VIDEO_TRACK)
     if (hasMediaControls())
@@ -1196,7 +1198,7 @@ void HTMLMediaElement::loadResource(const URL& initialURL, ContentType& contentT
 
 #if ENABLE(MEDIA_STREAM)
     if (MediaStreamRegistry::registry().lookup(url.string()))
-        removeBehaviorRestriction(RequireUserGestureForRateChangeRestriction);
+        m_mediaSession->removeBehaviorRestriction(HTMLMediaSession::RequireUserGestureForRateChange);
 #endif
 
     if (m_sendProgressEvents) 
@@ -1210,7 +1212,7 @@ void HTMLMediaElement::loadResource(const URL& initialURL, ContentType& contentT
     setDisplayMode(Unknown);
 
     if (!autoplay())
-        m_player->setPreload(m_preload);
+        m_player->setPreload(m_mediaSession->effectivePreloadForElement(*this));
     m_player->setPreservesPitch(m_webkitPreservesPitch);
 
     if (fastHasAttribute(mutedAttr))
@@ -2047,7 +2049,7 @@ void HTMLMediaElement::setReadyState(MediaPlayer::ReadyState state)
         if (isPotentiallyPlaying && oldState <= HAVE_CURRENT_DATA)
             scheduleEvent(eventNames().playingEvent);
 
-        if (m_autoplaying && m_paused && autoplay() && !document().isSandboxed(SandboxAutomaticFeatures) && !userGestureRequiredForRateChange()) {
+        if (m_autoplaying && m_paused && autoplay() && !document().isSandboxed(SandboxAutomaticFeatures) && m_mediaSession->playbackPermitted(*this)) {
             m_paused = false;
             invalidateCachedTime();
             scheduleEvent(eventNames().playEvent);
@@ -2195,7 +2197,7 @@ void HTMLMediaElement::setMediaKeys(MediaKeys* mediaKeys)
 }
 #endif
 
-void HTMLMediaElement::progressEventTimerFired(Timer<HTMLMediaElement>*)
+void HTMLMediaElement::progressEventTimerFired(Timer<HTMLMediaElement>&)
 {
     ASSERT(m_player);
     if (m_networkState != NETWORK_LOADING)
@@ -2599,7 +2601,7 @@ bool HTMLMediaElement::autoplay() const
     // lifted through Settings, or once the user explictly calls load() or play()
     // because they have OK'ed us loading data. This allows playback to continue if
     // the URL is changed while the movie is playing.
-    if (userGestureRequiredForRateChange() || userGestureRequiredForLoad())
+    if (!m_mediaSession->playbackPermitted(*this) || !m_mediaSession->dataLoadingPermitted(*this))
         return false;
 #endif
 
@@ -2634,7 +2636,7 @@ void HTMLMediaElement::play()
 {
     LOG(Media, "HTMLMediaElement::play()");
 
-    if (userGestureRequiredForRateChange() && !ScriptController::processingUserGesture())
+    if (!m_mediaSession->playbackPermitted(*this))
         return;
     if (ScriptController::processingUserGesture())
         removeBehaviorsRestrictionsAfterFirstUserGesture();
@@ -2683,7 +2685,7 @@ void HTMLMediaElement::pause()
 {
     LOG(Media, "HTMLMediaElement::pause()");
 
-    if (userGestureRequiredForRateChange() && !ScriptController::processingUserGesture())
+    if (!m_mediaSession->playbackPermitted(*this))
         return;
 
     if (m_mediaSession->state() == MediaSession::Interrupted) {
@@ -2704,7 +2706,7 @@ void HTMLMediaElement::pauseInternal()
 #if PLATFORM(IOS)
         // Unless the restriction on media requiring user action has been lifted
         // don't trigger loading if a script calls pause().
-        if (userGestureRequiredForRateChange())
+        if (!m_mediaSession->playbackPermitted(*this))
             return;
 #endif
         scheduleDelayedAction(LoadMediaResource);
@@ -2973,7 +2975,7 @@ void HTMLMediaElement::startPlaybackProgressTimer()
     m_playbackProgressTimer.startRepeating(maxTimeupdateEventFrequency);
 }
 
-void HTMLMediaElement::playbackProgressTimerFired(Timer<HTMLMediaElement>*)
+void HTMLMediaElement::playbackProgressTimerFired(Timer<HTMLMediaElement>&)
 {
     ASSERT(m_player);
 
@@ -4106,12 +4108,8 @@ PassRefPtr<TimeRanges> HTMLMediaElement::seekable() const
 
 bool HTMLMediaElement::potentiallyPlaying() const
 {
-    // "pausedToBuffer" means the media engine's rate is 0, but only because it had to stop playing
-    // when it ran out of buffered data. A movie is this state is "potentially playing", modulo the
-    // checks in couldPlayIfEnoughData().
-    bool pausedToBuffer = m_readyStateMaximum >= HAVE_FUTURE_DATA && m_readyState < HAVE_FUTURE_DATA;
-    
-    if (!pausedToBuffer && m_readyState < HAVE_FUTURE_DATA)
+    // When media engine ran out of buffered data it's not playing.
+    if (m_readyStateMaximum < HAVE_FUTURE_DATA && m_readyState < HAVE_FUTURE_DATA)
         return false;
 
     return couldPlayIfEnoughData() && !isBlockedOnMediaController();
@@ -4259,7 +4257,9 @@ void HTMLMediaElement::updatePlayState()
         invalidateCachedTime();
 
         if (playerPaused) {
-            if (!m_isFullscreen && isVideo() && document().page() && document().page()->chrome().requiresFullscreenForVideoPlayback())
+            m_mediaSession->clientWillBeginPlayback();
+
+            if (m_mediaSession->requiresFullscreenForVideoPlayback(*this))
                 enterFullscreen();
 
             // Set rate, muted before calling play in case they were set before the media engine was setup.
@@ -4451,7 +4451,7 @@ void HTMLMediaElement::suspend(ReasonForSuspension why)
     {
         case DocumentWillBecomeInactive:
             stop();
-            addBehaviorRestriction(RequirePageConsentToResumeMediaRestriction);
+            m_mediaSession->addBehaviorRestriction(HTMLMediaSession::RequirePageConsentToResumeMedia);
             break;
         case DocumentWillBePaused:
         case JavaScriptDebuggerPaused:
@@ -4468,13 +4468,12 @@ void HTMLMediaElement::resume()
 
     m_inActiveDocument = true;
 
-    Page* page = document().page();
-    if (pageConsentRequiredForResume() && page && !page->canStartMedia())
+    if (!m_mediaSession->pageAllowsPlaybackAfterResuming(*this))
         document().addMediaCanStartListener(this);
     else
         setPausedInternal(false);
 
-    removeBehaviorRestriction(RequirePageConsentToResumeMediaRestriction);
+    m_mediaSession->removeBehaviorRestriction(HTMLMediaSession::RequirePageConsentToResumeMedia);
 
     if (m_error && m_error->code() == MediaError::MEDIA_ERR_ABORTED) {
         // Restart the load if it was aborted in the middle by moving the document to the page cache.
@@ -4721,17 +4720,17 @@ void HTMLMediaElement::createMediaPlayerProxy()
 
 void HTMLMediaElement::updateWidget(PluginCreationOption)
 {
-    mediaElement->setNeedWidgetUpdate(false);
+    setNeedWidgetUpdate(false);
 
+    // FIXME: What if document().frame() is 0?
+
+    URL url;
     Vector<String> paramNames;
     Vector<String> paramValues;
-    // FIXME: Rename kurl to something more sensible.
-    URL kurl;
 
-    mediaElement->getPluginProxyParams(kurl, paramNames, paramValues);
-    // FIXME: What if document().frame() is 0?
+    getPluginProxyParams(url, paramNames, paramValues);
     SubframeLoader& loader = document().frame()->loader().subframeLoader();
-    loader.loadMediaPlayerProxyPlugin(*mediaElement, kurl, paramNames, paramValues);
+    loader.loadMediaPlayerProxyPlugin(*this, url, paramNames, paramValues);
 }
 
 #endif // ENABLE(PLUGIN_PROXY_FOR_VIDEO)
@@ -4745,7 +4744,7 @@ void HTMLMediaElement::webkitShowPlaybackTargetPicker()
     if (!m_player)
         return;
 
-    if (userGestureRequiredToShowPlaybackTargetPicker() && !ScriptController::processingUserGesture())
+    if (!m_mediaSession->showingPlaybackTargetPickerPermitted(*this))
         return;
 
     if (document().settings()->mediaPlaybackAllowsAirPlay())
@@ -4847,11 +4846,12 @@ void HTMLMediaElement::enterFullscreen()
     if (hasMediaControls())
         mediaControls()->enteredFullscreen();
     if (document().page()) {
-#if !PLATFORM(IOS)
-        document().page()->chrome().client().enterFullscreenForNode(this);
-        scheduleEvent(eventNames().webkitbeginfullscreenEvent);
-#else
-        if (m_player)
+        if (document().page()->chrome().client().supportsFullscreenForNode(this)) {
+            document().page()->chrome().client().enterFullscreenForNode(this);
+            scheduleEvent(eventNames().webkitbeginfullscreenEvent);
+        }
+#if PLATFORM(IOS)
+        else if (m_player)
             m_player->enterFullscreen();
 #endif
     }
@@ -4875,11 +4875,13 @@ void HTMLMediaElement::exitFullscreen()
     if (document().page()) {
         if (document().page()->chrome().requiresFullscreenForVideoPlayback())
             pauseInternal();
-#if !PLATFORM(IOS)
-        document().page()->chrome().client().exitFullscreenForNode(this);
-        scheduleEvent(eventNames().webkitendfullscreenEvent);
-#else
-        if (m_player)
+
+        if (document().page()->chrome().client().supportsFullscreenForNode(this)) {
+            document().page()->chrome().client().exitFullscreenForNode(this);
+            scheduleEvent(eventNames().webkitendfullscreenEvent);
+        }
+#if PLATFORM(IOS)
+        else if (m_player)
             m_player->exitFullscreen();
 #endif
     }
@@ -4905,8 +4907,32 @@ PlatformMedia HTMLMediaElement::platformMedia() const
 #if USE(ACCELERATED_COMPOSITING)
 PlatformLayer* HTMLMediaElement::platformLayer() const
 {
-    return m_player ? m_player->platformLayer() : 0;
+#if PLATFORM(IOS)
+    if (m_platformLayerBorrowed)
+        return nullptr;
+#endif
+    return m_player ? m_player->platformLayer() : nullptr;
 }
+
+#if PLATFORM(IOS)
+PlatformLayer* HTMLMediaElement::borrowPlatformLayer()
+{
+    ASSERT(!m_platformLayerBorrowed);
+    m_platformLayerBorrowed = true;
+    if (renderer())
+        renderer()->updateFromElement();
+    return m_player ? m_player->platformLayer() : nullptr;
+}
+
+void HTMLMediaElement::returnPlatformLayer(PlatformLayer* platformLayer)
+{
+    ASSERT_UNUSED(platformLayer, platformLayer == (m_player ? m_player->platformLayer() : nullptr));
+    ASSERT(m_platformLayerBorrowed);
+    m_platformLayerBorrowed = false;
+    if (renderer())
+        renderer()->updateFromElement();
+}
+#endif
 #endif
 
 bool HTMLMediaElement::hasClosedCaptions() const
@@ -5513,7 +5539,7 @@ bool HTMLMediaElement::mediaPlayerIsFullscreen() const
 
 bool HTMLMediaElement::mediaPlayerIsFullscreenPermitted() const
 {
-    return !userGestureRequiredForFullscreen() || ScriptController::processingUserGesture();
+    return m_mediaSession->fullscreenPermitted(*this);
 }
 
 bool HTMLMediaElement::mediaPlayerIsVideo() const
@@ -5597,11 +5623,11 @@ bool HTMLMediaElement::mediaPlayerShouldWaitForResponseToAuthenticationChallenge
 
 void HTMLMediaElement::removeBehaviorsRestrictionsAfterFirstUserGesture()
 {
-    removeBehaviorRestriction(RequireUserGestureForLoadRestriction);
-    removeBehaviorRestriction(RequireUserGestureForRateChangeRestriction);
-    removeBehaviorRestriction(RequireUserGestureForFullscreenRestriction);
+    m_mediaSession->removeBehaviorRestriction(HTMLMediaSession::RequireUserGestureForLoad);
+    m_mediaSession->removeBehaviorRestriction(HTMLMediaSession::RequireUserGestureForRateChange);
+    m_mediaSession->removeBehaviorRestriction(HTMLMediaSession::RequireUserGestureForFullscreen);
 #if ENABLE(IOS_AIRPLAY)
-    removeBehaviorRestriction(RequireUserGestureToShowPlaybackTargetPickerRestriction);
+    m_mediaSession->removeBehaviorRestriction(HTMLMediaSession::RequireUserGestureToShowPlaybackTargetPicker);
 #endif
 }
 
@@ -5752,6 +5778,12 @@ void HTMLMediaElement::endInterruption(MediaSession::EndInterruptionFlags flags)
 
     if (shouldResumePlayback)
         play();
+}
+
+void HTMLMediaElement::pausePlayback()
+{
+    if (!paused())
+        pause();
 }
 
 }

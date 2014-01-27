@@ -31,17 +31,16 @@
 namespace WebCore {
 
 class MediaSessionClient;
-class HTMLMediaElement;
 
 class MediaSession {
 public:
     static std::unique_ptr<MediaSession> create(MediaSessionClient&);
 
     MediaSession(MediaSessionClient&);
-    ~MediaSession();
+    virtual ~MediaSession();
 
     enum MediaType {
-        None,
+        None = 0,
         Video,
         Audio,
         WebAudio,
@@ -63,6 +62,11 @@ public:
     void beginInterruption();
     void endInterruption(EndInterruptionFlags);
 
+    void pauseSession();
+
+protected:
+    MediaSessionClient& client() const { return m_client; }
+
 private:
     MediaSessionClient& m_client;
     MediaType m_type;
@@ -78,7 +82,9 @@ public:
     
     virtual void beginInterruption() { }
     virtual void endInterruption(MediaSession::EndInterruptionFlags) { }
-    
+
+    virtual void pausePlayback() = 0;
+
 protected:
     virtual ~MediaSessionClient() { }
 };

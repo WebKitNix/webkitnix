@@ -79,22 +79,22 @@ public:
     {
     }
 
-    virtual void durationChanged() const OVERRIDE
+    virtual void durationChanged() const override
     {
         m_player->durationChanged();
     }
 
-    virtual void currentTimeChanged() const OVERRIDE
+    virtual void currentTimeChanged() const override
     {
         m_player->currentTimeChanged();
     }
 
-    virtual void readyStateChanged(ReadyState state) OVERRIDE
+    virtual void readyStateChanged(ReadyState state) override
     {
         m_player->setReadyState((MediaPlayer::ReadyState)state);
     }
 
-    virtual void networkStateChanged(NetworkState state) OVERRIDE
+    virtual void networkStateChanged(NetworkState state) override
     {
         m_player->setNetworkState((MediaPlayer::NetworkState)state);
     }

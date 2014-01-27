@@ -47,15 +47,15 @@ class RenderStyle;
 // http://dev.w3.org/csswg/css-regions/#the-flow-from-property.
 // list-item, table-caption, table-cell can become regions in addition to block | inline-block.
 
-class RenderNamedFlowFragment FINAL : public RenderRegion {
+class RenderNamedFlowFragment final : public RenderRegion {
 public:
     RenderNamedFlowFragment(Document&, PassRef<RenderStyle>);
     virtual ~RenderNamedFlowFragment();
 
     static PassRef<RenderStyle> createStyle(const RenderStyle& parentStyle);
 
-    virtual bool isRenderNamedFlowFragment() const OVERRIDE FINAL { return true; }
-    virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle) OVERRIDE;
+    virtual bool isRenderNamedFlowFragment() const override final { return true; }
+    virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle) override;
 
     virtual LayoutUnit pageLogicalHeight() const;
     LayoutUnit maxPageLogicalHeight() const;
@@ -65,9 +65,8 @@ public:
     // When the content inside the region requires the region to have a layer, the layer will be created on the region's
     // parent renderer instead.
     // This method returns that renderer holding the layer.
-    // The return value may be null.
-    RenderLayerModelObject* layerOwner() const { return parent() && parent()->isRenderLayerModelObject() ?
-        toRenderLayerModelObject(parent()) : nullptr; }
+    // The return value cannot be null because CSS Regions create Stacking Contexts (which means they create layers).
+    RenderLayerModelObject& layerOwner() const { return *toRenderLayerModelObject(parent()); }
 
     bool hasCustomRegionStyle() const { return m_hasCustomRegionStyle; }
     void setHasCustomRegionStyle(bool hasCustomRegionStyle) { m_hasCustomRegionStyle = hasCustomRegionStyle; }
@@ -76,11 +75,11 @@ public:
     void setRegionObjectsRegionStyle();
     void restoreRegionObjectsOriginalStyle();
     
-    virtual LayoutRect visualOverflowRect() const OVERRIDE;
+    virtual LayoutRect visualOverflowRect() const override;
 
     RenderNamedFlowThread* namedFlowThread() const;
 
-    virtual bool hasAutoLogicalHeight() const OVERRIDE { return m_hasAutoLogicalHeight; }
+    virtual bool hasAutoLogicalHeight() const override { return m_hasAutoLogicalHeight; }
 
     LayoutUnit computedAutoHeight() const { return m_computedAutoHeight; }
 
@@ -98,17 +97,17 @@ public:
 
     bool hasComputedAutoHeight() const { return m_hasComputedAutoHeight; }
 
-    virtual void attachRegion() OVERRIDE;
-    virtual void detachRegion() OVERRIDE;
+    virtual void attachRegion() override;
+    virtual void detachRegion() override;
 
-    virtual void updateLogicalHeight() OVERRIDE;
+    virtual void updateLogicalHeight() override;
 
 // FIXME: Temporarily public until we move all the CSSRegions functionality from RenderRegion to here.
 public:
     void checkRegionStyle();
 
 private:
-    virtual const char* renderName() const OVERRIDE { return "RenderNamedFlowFragment"; }
+    virtual const char* renderName() const override { return "RenderNamedFlowFragment"; }
 
     PassRefPtr<RenderStyle> computeStyleInRegion(const RenderObject*);
     void computeChildrenStyleInRegion(const RenderElement*);
@@ -121,7 +120,7 @@ private:
 
     bool shouldHaveAutoLogicalHeight() const;
 
-    virtual void layoutBlock(bool relayoutChildren, LayoutUnit pageLogicalHeight = 0) OVERRIDE;
+    virtual void layoutBlock(bool relayoutChildren, LayoutUnit pageLogicalHeight = 0) override;
 
     struct ObjectRegionStyleInfo {
         // Used to store the original style of the object in region

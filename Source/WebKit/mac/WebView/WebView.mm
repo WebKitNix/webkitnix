@@ -41,7 +41,6 @@
 #import "WebBaseNetscapePluginView.h"
 #import "WebCache.h"
 #import "WebChromeClient.h"
-#import "WebContextMenuClient.h"
 #import "WebDOMOperationsPrivate.h"
 #import "WebDataSourceInternal.h"
 #import "WebDatabaseManagerPrivate.h"
@@ -64,7 +63,6 @@
 #import "WebFrameLoaderClient.h"
 #import "WebFrameNetworkingContext.h"
 #import "WebFrameViewInternal.h"
-#import "WebFullScreenController.h"
 #import "WebGeolocationClient.h"
 #import "WebGeolocationPositionInternal.h"
 #import "WebHTMLRepresentation.h"
@@ -84,10 +82,6 @@
 #import "WebNSDataExtras.h"
 #import "WebNSDataExtrasPrivate.h"
 #import "WebNSDictionaryExtras.h"
-#import "WebNSEventExtras.h"
-#import "WebNSObjectExtras.h"
-#import "WebNSPasteboardExtras.h"
-#import "WebNSPrintOperationExtras.h"
 #import "WebNSURLExtras.h"
 #import "WebNSURLRequestExtras.h"
 #import "WebNSViewExtras.h"
@@ -100,6 +94,7 @@
 #import "WebPolicyDelegate.h"
 #import "WebPreferenceKeysPrivate.h"
 #import "WebPreferencesPrivate.h"
+#import "WebProgressTrackerClient.h"
 #import "WebScriptDebugDelegate.h"
 #import "WebScriptWorldInternal.h"
 #import "WebStorageManagerInternal.h"
@@ -116,6 +111,7 @@
 #import <WebCore/AlternativeTextUIController.h>
 #import <WebCore/AnimationController.h>
 #import <WebCore/ApplicationCacheStorage.h>
+#import <WebCore/BackForwardController.h>
 #import <WebCore/BackForwardList.h>
 #import <WebCore/MemoryCache.h>
 #import <WebCore/Chrome.h>
@@ -173,12 +169,11 @@
 #import <WebCore/SecurityPolicy.h>
 #import <WebCore/Settings.h>
 #import <WebCore/StyleProperties.h>
-#import <WebCore/SystemVersionMac.h>
 #import <WebCore/TextResourceDecoder.h>
 #import <WebCore/ThreadCheck.h>
+#import <WebCore/UserAgent.h>
 #import <WebCore/WebCoreObjCExtras.h>
 #import <WebCore/WebCoreView.h>
-#import <WebCore/WebVideoFullscreenController.h>
 #import <WebCore/Widget.h>
 #import <WebKit/DOM.h>
 #import <WebKit/DOMExtensions.h>
@@ -202,7 +197,16 @@
 #import <wtf/RunLoop.h>
 #import <wtf/StdLibExtras.h>
 
-#if PLATFORM(IOS)
+#if !PLATFORM(IOS)
+#import "WebContextMenuClient.h"
+#import "WebFullScreenController.h"
+#import "WebNSEventExtras.h"
+#import "WebNSObjectExtras.h"
+#import "WebNSPasteboardExtras.h"
+#import "WebNSPrintOperationExtras.h"
+#import "WebPDFView.h"
+#import <WebCore/WebVideoFullscreenController.h>
+#else
 #import "MemoryMeasure.h"
 #import "WebCaretChangeListener.h"
 #import "WebChromeClientIOS.h"
@@ -231,18 +235,21 @@
 #import <WebCore/SQLiteDatabaseTracker.h>
 #import <WebCore/SmartReplace.h>
 #import <WebCore/TextRun.h>
+#import <WebCore/TileCache.h>
+#import <WebCore/TileControllerMemoryHandlerIOS.h>
 #import <WebCore/WAKWindow.h>
 #import <WebCore/WebCoreThread.h>
 #import <WebCore/WebCoreThreadMessage.h>
 #import <WebCore/WebCoreThreadRun.h>
 #import <WebCore/WebEvent.h>
-#import <dispatch/private.h
+#import <WebCore/WebVideoFullscreenControllerAVKit.h>
+#import <dispatch/private.h>
 #import <wtf/FastMalloc.h>
 
 #if USE(ACCELERATED_COMPOSITING)
 #import <WebCore/GraphicsLayer.h>
 #endif
-#endif
+#endif // !PLATFORM(IOS)
 
 #if ENABLE(DASHBOARD_SUPPORT)
 #import <WebKit/WebDashboardRegion.h>
@@ -254,6 +261,7 @@
 #endif
 
 #if ENABLE(REMOTE_INSPECTOR)
+#import <JavaScriptCore/RemoteInspector.h>
 #if PLATFORM(IOS)
 #import "WebIndicateLayer.h"
 #endif
@@ -295,18 +303,9 @@
 @end
 #endif
 
-using namespace WebCore;
 using namespace JSC;
-
-#if defined(__ppc__) || defined(__ppc64__)
-#define PROCESSOR "PPC"
-#elif defined(__i386__) || defined(__x86_64__)
-#define PROCESSOR "Intel"
-#else
-#if !PLATFORM(IOS)
-#error Unknown architecture
-#endif
-#endif
+using namespace Inspector;
+using namespace WebCore;
 
 #define FOR_EACH_RESPONDER_SELECTOR(macro) \
 macro(alignCenter) \
@@ -456,7 +455,8 @@ static const char webViewIsOpen[] = "At least one WebView is still open.";
 
 #if PLATFORM(IOS)
 @interface WebView(WebViewPrivate)
-- (void)_preferencesChanged:(WebPreferences *)preferoid)_updateScreenScaleFromWindow;
+- (void)_preferencesChanged:(WebPreferences *)preferences;
+- (void)_updateScreenScaleFromWindow;
 @end
 
 @interface NSURLCache (WebPrivate)
@@ -675,81 +675,25 @@ static CFMutableSetRef allWebViewsSet;
 
 @implementation WebView (WebPrivate)
 
-#if !PLATFORM(IOS)
-static NSString *systemMarketingVersionForUserAgentString()
-{
-    // Use underscores instead of dots because when we first added the Mac OS X version to the user agent string
-    // we were concerned about old DHTML libraries interpreting "4." as Netscape 4. That's no longer a concern for us
-    // but we're sticking with the underscores for compatibility with the format used by older versions of Safari.
-    return [systemMarketingVersion() stringByReplacingOccurrencesOfString:@"." withString:@"_"];
-}
-#endif
-
-static NSString *createUserVisibleWebKitVersionString()
+static String userVisibleWebKitVersionString()
 {
     // If the version is longer than 3 digits then the leading digits represent the version of the OS. Our user agent
     // string should not include the leading digits, so strip them off and report the rest as the version. <rdar://problem/4997547>
     NSString *fullVersion = [[NSBundle bundleForClass:[WebView class]] objectForInfoDictionaryKey:(NSString *)kCFBundleVersionKey];
     NSRange nonDigitRange = [fullVersion rangeOfCharacterFromSet:[[NSCharacterSet decimalDigitCharacterSet] invertedSet]];
     if (nonDigitRange.location == NSNotFound && fullVersion.length > 3)
-        return [[fullVersion substringFromIndex:fullVersion.length - 3] copy];
+        return [fullVersion substringFromIndex:fullVersion.length - 3];
     if (nonDigitRange.location != NSNotFound && nonDigitRange.location > 3)
-        return [[fullVersion substringFromIndex:nonDigitRange.location - 3] copy];
-    return [fullVersion copy];
-}
-
-#if !PLATFORM(IOS)
-+ (NSString *)_standardUserAgentWithApplicationName:(NSString *)applicationName
-{
-    // Note: Do *not* move the initialization of osVersion nor webKitVersion into the declaration.
-    // Garbage collection won't correctly mark the global variable in that case <rdar://problem/5733674>.
-    static NSString *osVersion;
-    static NSString *webKitVersion;
-    if (!osVersion)
-        osVersion = [systemMarketingVersionForUserAgentString() retain];
-    if (!webKitVersion)
-        webKitVersion = createUserVisibleWebKitVersionString();
-    if ([applicationName length])
-        return [NSString stringWithFormat:@"Mozilla/5.0 (Macintosh; " PROCESSOR " Mac OS X %@) AppleWebKit/%@ (KHTML, like Gecko) %@", osVersion, webKitVersion, applicationName];
-    return [NSString stringWithFormat:@"Mozilla/5.0 (Macintosh; " PROCESSOR " Mac OS X %@) AppleWebKit/%@ (KHTML, like Gecko)", osVersion, webKitVersion];
-}
-#else
-+ (NSString *)_standardUserAgentWithApplicationName:(NSString *)applicationName osMarketingVersion:(NSString *)osMarketingVersion
-{
-    // Check to see if there is a user agent override for all WebKit clients.
-    CFPropertyListRef override = CFPreferencesCopyAppValue(CFSTR("UserAgent"), CFSTR("com.apple.WebFoundation"));
-    if (override) {
-        if (CFGetTypeID(override) == CFStringGetTypeID())
-            return (NSString *)CFBridgingRelease(override);
-        CFRelease(override);
-    }
-
-    static NSString *webKitVersion;
-    if (!webKitVersion)
-        webKitVersion = createUserVisibleWebKitVersionString();
-    if ([applicationName length])
-        return [NSString stringWithFormat:@"Mozilla/5.0 (%@; CPU %@ %@ like Mac OS X) AppleWebKit/%@ (KHTML, like Gecko) %@", WKGetDeviceName(), WKGetOSNameForUserAgent(), osMarketingVersion, webKitVersion, applicationName];
-    return [NSString stringWithFormat:@"Mozilla/5.0 (%@; CPU %@ %@ like Mac OS X) AppleWebKit/%@ (KHTML, like Gecko)", WKGetDeviceName(), WKGetOSNameForUserAgent(), osMarketingVersion,  webKitVersion];
+        return [fullVersion substringFromIndex:nonDigitRange.location - 3];
+    return fullVersion;
 }
 
 + (NSString *)_standardUserAgentWithApplicationName:(NSString *)applicationName
 {
-    static NSString *osMarketingVersion;
-    if (!osMarketingVersion) {
-#if !PLATFORM(IOS_SIMULATOR)
-        NSDictionary *systemInfo = [[NSDictionary alloc] initWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
-#else
-        NSString *rootDirectory = [NSString stringWithUTF8String:WebKitPlatformSystemRootDirectory()];
-        NSDictionary *systemInfo = [[NSDictionary alloc] initWithContentsOfFile:[rootDirectory stringByAppendingPathComponent:@"System/Library/CoreServices/SystemVersion.plist"]];
-#endif
-        NSString *productVersion = [systemInfo objectForKey:@"ProductVersion"];
-        // Due to <rdar://problem/3787996>, we must use something other than periods to delimit the marketing version.  Using underscores to match Leopard's new convention.
-        osMarketingVersion = !productVersion ? @"" : [[productVersion stringByReplacingOccurrencesOfString:@"." withString:@"_"] retain];
-        [systemInfo release];
-    }
-    return [self _standardUserAgentWithApplicationName:applicationName osMarketingVersion:osMarketingVersion];
+    return standardUserAgentWithApplicationName(applicationName, userVisibleWebKitVersionString());
 }
 
+#if PLATFORM(IOS)
 - (void)_setBrowserUserAgentProductVersion:(NSString *)productVersion buildVersion:(NSString *)buildVersion bundleVersion:(NSString *)bundleVersion
 {
     [self setApplicationNameForUserAgent:[NSString stringWithFormat:@"Version/%@ Mobile/%@ Safari/%@", productVersion, buildVersion, bundleVersion]];
@@ -759,7 +703,6 @@ static NSString *createUserVisibleWebKitVersionString()
 {
     [self setApplicationNameForUserAgent:[@"Mobile/" stringByAppendingString:buildVersion]];
 }
-
 #endif // PLATFORM(IOS)
 
 + (void)_reportException:(JSValueRef)exception inContext:(JSContextRef)context
@@ -978,6 +921,7 @@ static bool shouldUseLegacyBackgroundSizeShorthandBehavior()
     pageClients.editorClient = new WebEditorClient(self);
     pageClients.alternativeTextClient = new WebAlternativeTextClient(self);
     pageClients.loaderClientForMainFrame = new WebFrameLoaderClient;
+    pageClients.progressTrackerClient = new WebProgressTrackerClient(self);
     _private->page = new Page(pageClients);
 #if ENABLE(GEOLOCATION)
     WebCore::provideGeolocationTo(_private->page, new WebGeolocationClient(self));
@@ -1176,7 +1120,7 @@ static bool shouldUseLegacyBackgroundSizeShorthandBehavior()
 }
 
 - (id)initSimpleHTMLDocumentWithStyle:(NSString *)style frame:(CGRect)frame preferences:(WebPreferences *)preferences groupName:(NSString *)groupName
-{    
+{
     self = [super initWithFrame:frame];
     if (!self)
         return nil;
@@ -1200,12 +1144,10 @@ static bool shouldUseLegacyBackgroundSizeShorthandBehavior()
     // Production installs always disallow debugging simple HTML documents.
     // Internal installs allow debugging simple HTML documents (TextFields) if the Internal Setting is enabled.
     if (!isInternalInstall())
-        _private->allowsRemoteInspection = NO;
+        _private->page->setRemoteInspectionAllowed(false);
     else {
         static BOOL textFieldInspectionEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:WebKitTextFieldRemoteInspectionEnabledPreferenceKey];
-        _private->allowsRemoteInspection = textFieldInspectionEnabled;
-        if (_private->allowsRemoteInspection && autoStartRemoteInspector)
-            [WebView _enableRemoteInspector];
+        _private->page->setRemoteInspectionAllowed(textFieldInspectionEnabled);
     }
 #endif
     
@@ -1224,6 +1166,7 @@ static bool shouldUseLegacyBackgroundSizeShorthandBehavior()
     pageClients.editorClient = new WebEditorClient(self);
     pageClients.inspectorClient = new WebInspectorClient(self);
     pageClients.loaderClientForMainFrame = new WebFrameLoaderClient;
+    pageClients.progressTrackerClient = new WebProgressTrackerClient(self);
     _private->page = new Page(pageClients);
     
     [self setSmartInsertDeleteEnabled:YES];
@@ -1275,6 +1218,8 @@ static bool shouldUseLegacyBackgroundSizeShorthandBehavior()
     // Only perform the remaining if a non-simple document was created.
     if (!didOneTimeInitialization)
         return;
+
+    tileControllerMemoryHandler().trimUnparentedTilesToTarget(0);
 
 #if ENABLE(DISK_IMAGE_CACHE)
     {
@@ -1912,40 +1857,37 @@ static bool fastDocumentTeardownEnabled()
 #if ENABLE(REMOTE_INSPECTOR)
 + (void)_enableRemoteInspector
 {
-    // FIXME: Move this to a new Inspector::RemoteInspectorServer interface or remove it.
+    RemoteInspector::shared().start();
 }
 
 + (void)_disableRemoteInspector
 {
-    // FIXME: Move this to a new Inspector::RemoteInspectorServer interface or remove it.
+    RemoteInspector::shared().stop();
 }
 
 + (void)_disableAutoStartRemoteInspector
 {
-    // FIXME: Move this to a new Inspector::RemoteInspectorServer interface or remove it.
+    RemoteInspector::startDisabled();
 }
 
 + (BOOL)_isRemoteInspectorEnabled
 {
-    // FIXME: Move this to a new Inspector::RemoteInspectorServer interface or remove it.
-    return NO;
+    return RemoteInspector::shared().enabled();
 }
 
 + (BOOL)_hasRemoteInspectorSession
 {
-    // FIXME: Move this to a new Inspector::RemoteInspectorServer interface or remove it.
-    return NO;
+    return RemoteInspector::shared().hasActiveDebugSession();
 }
 
 - (BOOL)allowsRemoteInspection
 {
-    // FIXME: Move this to a new API.
-    return NO;
+    return _private->page->remoteInspectionAllowed();
 }
 
 - (void)setAllowsRemoteInspection:(BOOL)allow
 {
-    // FIXME: Move this to a new API.
+    _private->page->setRemoteInspectionAllowed(allow);
 }
 
 - (void)setIndicatingForRemoteInspector:(BOOL)enabled
@@ -1972,8 +1914,6 @@ static bool fastDocumentTeardownEnabled()
 #if PLATFORM(IOS)
 - (void)setHostApplicationBundleId:(NSString *)bundleId name:(NSString *)name
 {
-    // FIXME: This has not yet been ported to Inspector::RemoteInspectorServer.
-
     if (![_private->hostApplicationBundleId isEqualToString:bundleId]) {
         [_private->hostApplicationBundleId release];
         _private->hostApplicationBundleId = [bundleId copy];
@@ -1984,7 +1924,7 @@ static bool fastDocumentTeardownEnabled()
         _private->hostApplicationName = [name copy];
     }
 
-    [[WebView sharedWebInspectorServer] pushListing];
+    // FIXME: This has not yet been ported to Inspector::RemoteInspectorServer.
 }
 
 - (NSString *)hostApplicationBundleId
@@ -2304,16 +2244,7 @@ static bool needsSelfRetainWhileLoadingQuirk()
 #if !PLATFORM(IOS)
     settings.setExperimentalNotificationsEnabled([preferences experimentalNotificationsEnabled]);
 #endif
-
-    bool privateBrowsingEnabled = [preferences privateBrowsingEnabled];
-#if PLATFORM(MAC) || USE(CFNETWORK)
-    if (privateBrowsingEnabled)
-        WebFrameNetworkingContext::ensurePrivateBrowsingSession();
-    else
-        WebFrameNetworkingContext::destroyPrivateBrowsingSession();
-#endif
-    settings.setPrivateBrowsingEnabled(privateBrowsingEnabled);
-
+    settings.setPrivateBrowsingEnabled([preferences privateBrowsingEnabled]);
     settings.setSansSerifFontFamily([preferences sansSerifFontFamily]);
     settings.setSerifFontFamily([preferences serifFontFamily]);
     settings.setStandardFontFamily([preferences standardFontFamily]);
@@ -2424,6 +2355,7 @@ static bool needsSelfRetainWhileLoadingQuirk()
     settings.setAudioSessionCategoryOverride([preferences audioSessionCategoryOverride]);
     settings.setNetworkDataUsageTrackingEnabled([preferences networkDataUsageTrackingEnabled]);
     settings.setNetworkInterfaceName([preferences networkInterfaceName]);
+    settings.setAVKitEnabled([preferences avKitEnabled]);
 #endif
     settings.setMediaPlaybackRequiresUserGesture([preferences mediaPlaybackRequiresUserGesture]);
     settings.setMediaPlaybackAllowsInline([preferences mediaPlaybackAllowsInline]);
@@ -2928,10 +2860,33 @@ static inline IMP getMethod(id o, SEL s)
 #endif
 }
 
+- (void)_checkDidPerformFirstNavigation
+{
+    if (_private->_didPerformFirstNavigation)
+        return;
+
+    Page* page = _private->page;
+    if (!page)
+        return;
+
+    auto& backForwardController = page->backForward();
+
+    if (!backForwardController.backItem())
+        return;
+
+    _private->_didPerformFirstNavigation = YES;
+
+    if (_private->preferences.automaticallyDetectsCacheModel && _private->preferences.cacheModel < WebCacheModelDocumentBrowser)
+        _private->preferences.cacheModel = WebCacheModelDocumentBrowser;
+}
+
 - (void)_didCommitLoadForFrame:(WebFrame *)frame
 {
     if (frame == [self mainFrame])
         [self _didChangeValueForKey: _WebMainFrameURLKey];
+
+    [self _checkDidPerformFirstNavigation];
+
     [NSApp setWindowsNeedUpdate:YES];
 }
 
@@ -3029,12 +2984,8 @@ static inline IMP getMethod(id o, SEL s)
 
 - (void)_didCommitLoadForFrame:(WebFrame *)frame
 {
-    if (frame == [self mainFrame]) {
+    if (frame == [self mainFrame])
         _private->didDrawTiles = 0;
-#if ENABLE(REMOTE_INSPECTOR)
-        [[WebView sharedWebInspectorServer] pushListing];
-#endif
-    }
 }
 
 #endif // PLATFORM(IOS)
@@ -3621,7 +3572,7 @@ static inline IMP getMethod(id o, SEL s)
     return _private->page->setDefersLoading(defer);
 }
 
-#if USE(QUICK_LOOK)
+#if TARGET_OS_IPHONE && USE(QUICK_LOOK)
 - (NSDictionary *)quickLookContentForURL:(NSURL *)url
 {
     NSString *uti = qlPreviewConverterUTIForURL(url);
@@ -8518,7 +8469,7 @@ bool LayerFlushController::flushLayers()
 
 #endif
 
-#if ENABLE(VIDEO) && !PLATFORM(IOS)
+#if ENABLE(VIDEO)
 - (void)_enterFullscreenForNode:(WebCore::Node*)node
 {
     ASSERT(isHTMLVideoElement(node));
@@ -8541,7 +8492,11 @@ bool LayerFlushController::flushLayers()
     if (!_private->fullscreenController) {
         _private->fullscreenController = [[WebVideoFullscreenController alloc] init];
         [_private->fullscreenController setMediaElement:videoElement];
-        [_private->fullscreenController enterFullscreen:[[self window] screen]];        
+#if PLATFORM(IOS)
+        [_private->fullscreenController enterFullscreen:nil];
+#else
+        [_private->fullscreenController enterFullscreen:[[self window] screen]];
+#endif
     }
     else
         [_private->fullscreenController setMediaElement:videoElement];
