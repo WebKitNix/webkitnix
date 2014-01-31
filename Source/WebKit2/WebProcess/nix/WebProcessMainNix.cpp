@@ -35,7 +35,9 @@
 #include "WKBase.h"
 #include "WebKit2Initialize.h"
 #include <WebCore/CoordinatedGraphicsLayer.h>
+#ifdef WTF_USE_SOUP
 #include <WebCore/SoupNetworkSession.h>
+#endif
 #include <WebKit2/WebProcess.h>
 #include <unistd.h>
 #include <wtf/RunLoop.h>

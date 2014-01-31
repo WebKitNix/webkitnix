@@ -42,8 +42,8 @@ private:
     explicit WebCurlRequestManagerProxy(WebContext*);
 
     // WebContextSupplement
-    virtual void refWebContextSupplement() OVERRIDE;
-    virtual void derefWebContextSupplement() OVERRIDE;
+    virtual void refWebContextSupplement() override;
+    virtual void derefWebContextSupplement() override;
 };
 
 } // namespace WebKit

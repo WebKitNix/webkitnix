@@ -38,7 +38,7 @@ public:
 
 private:
     // IPC::MessageReceiver
-    void didReceiveMessage(IPC::Connection*, IPC::MessageDecoder&) OVERRIDE;
+    void didReceiveMessage(IPC::Connection*, IPC::MessageDecoder&) override;
 
     void setHostAllowsAnyHTTPSCertificate(const String&);
     void setClientCertificateInfo(const String&, const String&, const String&);
