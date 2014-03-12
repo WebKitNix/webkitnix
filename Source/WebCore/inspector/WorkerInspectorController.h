@@ -50,10 +50,10 @@ class InspectorBackendDispatcher;
 namespace WebCore {
 
 class InspectorInstrumentation;
-class InspectorRuntimeAgent;
 class InstrumentingAgents;
-class PageInjectedScriptManager;
+class WebInjectedScriptManager;
 class WorkerGlobalScope;
+class WorkerRuntimeAgent;
 
 class WorkerInspectorController final : public Inspector::InspectorEnvironment {
     WTF_MAKE_NONCOPYABLE(WorkerInspectorController);
@@ -63,26 +63,24 @@ public:
     ~WorkerInspectorController();
 
     void connectFrontend();
-    void disconnectFrontend();
+    void disconnectFrontend(Inspector::InspectorDisconnectReason);
     void dispatchMessageFromFrontend(const String&);
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     void resume();
-#endif
 
     virtual bool developerExtrasEnabled() const override { return true; }
     virtual bool canAccessInspectedScriptState(JSC::ExecState*) const override { return true; }
     virtual Inspector::InspectorFunctionCallHandler functionCallHandler() const override;
     virtual Inspector::InspectorEvaluateHandler evaluateHandler() const override;
     virtual void willCallInjectedScriptFunction(JSC::ExecState*, const String& scriptName, int scriptLine) override;
-    virtual void didCallInjectedScriptFunction() override;
+    virtual void didCallInjectedScriptFunction(JSC::ExecState*) override;
 
 private:
     friend InstrumentingAgents* instrumentationForWorkerGlobalScope(WorkerGlobalScope*);
 
     WorkerGlobalScope& m_workerGlobalScope;
     RefPtr<InstrumentingAgents> m_instrumentingAgents;
-    std::unique_ptr<PageInjectedScriptManager> m_injectedScriptManager;
-    InspectorRuntimeAgent* m_runtimeAgent;
+    std::unique_ptr<WebInjectedScriptManager> m_injectedScriptManager;
+    WorkerRuntimeAgent* m_runtimeAgent;
     Inspector::InspectorAgentRegistry m_agents;
     std::unique_ptr<InspectorFrontendChannel> m_frontendChannel;
     RefPtr<Inspector::InspectorBackendDispatcher> m_backendDispatcher;

@@ -25,6 +25,8 @@ messages -> WebPage LegacyReceiver {
     SetViewState(unsigned viewState, bool wantsDidUpdateViewState)
     SetLayerHostingMode(unsigned layerHostingMode)
 
+    SetSessionID(WebCore::SessionID sessionID)
+
     SetDrawsBackground(bool drawsBackground)
     SetDrawsTransparentBackground(bool drawsTransparentBackground)
 
@@ -39,15 +41,19 @@ messages -> WebPage LegacyReceiver {
     MouseEventSyncForTesting(WebKit::WebMouseEvent event) -> (bool handled)
     WheelEventSyncForTesting(WebKit::WebWheelEvent event) -> (bool handled)
 #if PLATFORM(IOS)
+    SetViewportConfigurationMinimumLayoutSize(WebCore::IntSize size)
+
     HandleTap(WebCore::IntPoint point)
     TapHighlightAtPosition(uint64_t requestID, WebCore::FloatPoint point)
     BlurAssistedNode()
     SelectWithGesture(WebCore::IntPoint point, uint32_t granularity, uint32_t gestureType, uint32_t gestureState, uint64_t callbackID)
     UpdateSelectionWithTouches(WebCore::IntPoint point, uint32_t touches, bool baseIsStart, uint64_t callbackID)
+    UpdateBlockSelectionWithTouch(WebCore::IntPoint point, uint32_t touch, uint32_t handlePosition)
     SelectWithTwoTouches(WebCore::IntPoint from, WebCore::IntPoint to, uint32_t gestureType, uint32_t gestureState, uint64_t callbackID)
     ExtendSelection(uint32_t granularity)
     RequestAutocorrectionData(String textForAutocorrection, uint64_t callbackID)
     ApplyAutocorrection(String correction, String originalText, uint64_t callbackID)
+    SyncApplyAutocorrection(String correction, String originalText) -> (bool autocorrectionApplied)
     RequestAutocorrectionContext(uint64_t callbackID)
     GetAutocorrectionContext() -> (String beforeContext, String markedText, String selectedText, String afterContext, uint64_t location, uint64_t length) 
     InsertText(String text, uint64_t replacementRangeStart, uint64_t replacementRangeEnd)
@@ -55,6 +61,16 @@ messages -> WebPage LegacyReceiver {
     ConfirmComposition()
     GetPositionInformation(WebCore::IntPoint point) -> (WebKit::InteractionInformationAtPosition information)
     RequestPositionInformation(WebCore::IntPoint point)
+    StartInteractionWithElementAtPosition(WebCore::IntPoint point)
+    StopInteraction()
+    PerformActionOnElement(uint32_t action)
+    FocusNextAssistedNode(bool isForward)
+    SetAssistedNodeValue(String value)
+    SetAssistedNodeValueAsNumber(double value)
+    SetAssistedNodeSelectedIndex(uint32_t index, bool allowMultipleSelection)
+    ApplicationWillResignActive()
+    ApplicationWillEnterForeground()
+    ApplicationDidBecomeActive()
 #endif
 
 #if ENABLE(TOUCH_EVENTS)
@@ -79,16 +95,15 @@ messages -> WebPage LegacyReceiver {
     GoToBackForwardItem(uint64_t backForwardItemID)
     TryRestoreScrollPosition()
 
-    LoadURL(String url, WebKit::SandboxExtension::Handle sandboxExtensionHandle, WebKit::WebContextUserMessageEncoder userData) Variadic
     LoadURLInFrame(String url, uint64_t frameID)
-    LoadURLRequest(WebCore::ResourceRequest request, WebKit::SandboxExtension::Handle sandboxExtensionHandle, WebKit::WebContextUserMessageEncoder userData) Variadic
+    LoadRequest(uint64_t navigationID, WebCore::ResourceRequest request, WebKit::SandboxExtension::Handle sandboxExtensionHandle, WebKit::WebContextUserMessageEncoder userData) Variadic
     LoadData(IPC::DataReference data, String MIMEType, String encoding, String baseURL, WebKit::WebContextUserMessageEncoder userData) Variadic
     LoadHTMLString(String htmlString, String baseURL, WebKit::WebContextUserMessageEncoder userData) Variadic
     LoadAlternateHTMLString(String htmlString, String baseURL, String unreachableURL, WebKit::WebContextUserMessageEncoder userData) Variadic
     LoadPlainTextString(String string, WebKit::WebContextUserMessageEncoder userData) Variadic
     LoadWebArchiveData(IPC::DataReference webArchiveData, WebKit::WebContextUserMessageEncoder userData) Variadic
 
-    Reload(bool reloadFromOrigin, WebKit::SandboxExtension::Handle sandboxExtensionHandle)
+    Reload(uint64_t navigationID, bool reloadFromOrigin, WebKit::SandboxExtension::Handle sandboxExtensionHandle)
     StopLoading()
 
     StopLoadingFrame(uint64_t frameID)
@@ -97,7 +112,6 @@ messages -> WebPage LegacyReceiver {
     RestoreSessionAndNavigateToCurrentItem(WebKit::SessionState state)
 
     DidRemoveBackForwardItem(uint64_t backForwardItemID)
-    SetWillGoToBackForwardItemCallbackEnabled(bool willGoToBackForwardItemEnabled)
 
     DidReceivePolicyDecision(uint64_t frameID, uint64_t listenerID, uint32_t policyAction, uint64_t downloadID)
 
@@ -118,7 +132,7 @@ messages -> WebPage LegacyReceiver {
     RunJavaScriptInMainFrame(String script, uint64_t callbackID)
     ForceRepaint(uint64_t callbackID)
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     # Dictionary support.
     PerformDictionaryLookupAtLocation(WebCore::FloatPoint point)
 #endif
@@ -169,6 +183,8 @@ messages -> WebPage LegacyReceiver {
     SelectFindMatch(uint32_t matchIndex)
     HideFindUI()
     CountStringMatches(String string, uint32_t findOptions, unsigned maxMatchCount)
+    
+    AddMIMETypeWithCustomContentProvider(String mimeType)
 
     # Drag and drop.
 #if PLATFORM(GTK) && ENABLE(DRAG_SUPPORT)
@@ -210,7 +226,7 @@ messages -> WebPage LegacyReceiver {
     LowercaseWord()
     CapitalizeWord()
 #endif
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     SetSmartInsertDeleteEnabled(bool isSmartInsertDeleteEnabled)
 #endif
 
@@ -228,7 +244,7 @@ messages -> WebPage LegacyReceiver {
     BeginPrinting(uint64_t frameID, WebKit::PrintInfo printInfo)
     EndPrinting()
     ComputePagesForPrinting(uint64_t frameID, WebKit::PrintInfo printInfo, uint64_t callbackID)
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     DrawRectToImage(uint64_t frameID, WebKit::PrintInfo printInfo, WebCore::IntRect rect, WebCore::IntSize imageSize, uint64_t callbackID)
     DrawPagesToPDF(uint64_t frameID, WebKit::PrintInfo printInfo, uint32_t first, uint32_t count, uint64_t callbackID)
 #endif
@@ -263,7 +279,7 @@ messages -> WebPage LegacyReceiver {
     CancelComposition()
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     # Complex text input support for plug-ins.
     SendComplexTextInputToPlugin(uint64_t pluginComplexTextInputIdentifier, String textInput)
 
@@ -286,7 +302,7 @@ messages -> WebPage LegacyReceiver {
     AcceptsFirstMouse(int eventNumber, WebKit::WebMouseEvent event) -> (bool result)
     InsertDictatedText(String text, uint64_t replacementRangeStart, uint64_t replacementRangeEnd, Vector<WebCore::DictationAlternative> dictationAlternatives) -> (bool handled, WebKit::EditorState newState)
 #endif
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+#if PLATFORM(MAC)
     InsertText(String text, uint64_t replacementRangeStart, uint64_t replacementRangeEnd) -> (bool handled, WebKit::EditorState newState)
     SetComposition(String text, Vector<WebCore::CompositionUnderline> underlines, uint64_t selectionStart, uint64_t selectionEnd, uint64_t replacementRangeStart, uint64_t replacementRangeEnd) -> (WebKit::EditorState newState)
     ConfirmComposition() -> (WebKit::EditorState newState)
@@ -303,15 +319,12 @@ messages -> WebPage LegacyReceiver {
     FindZoomableAreaForPoint(WebCore::IntPoint point, WebCore::IntSize area)
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     HandleAlternativeTextUIResult(String result)
 #endif
 
-    SetVisibilityStatePrerender()
-
 #if PLATFORM(IOS)
-    DidFinishScrolling(WebCore::FloatPoint contentOffset);
-    DidFinishZooming(float scale);
+    WillStartUserTriggeredZooming();
 #endif
 
 #if PLATFORM(GTK) && USE(TEXTURE_MAPPER_GL)
@@ -323,7 +336,11 @@ messages -> WebPage LegacyReceiver {
     SetScreenRect(WebCore::FloatRect rect);
 #endif
 
-    SetMainFrameInViewSourceMode(bool inViewSourceMode)
-    
+  
     SetScrollPinningBehavior(uint32_t pinning)
+
+    SetThumbnailScale(double scale)
+
+    GetBytecodeProfile(uint64_t callbackID)
+
 }

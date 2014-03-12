@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,7 +33,7 @@
 #include "DFGPhase.h"
 #include "DFGPredictionPropagationPhase.h"
 #include "DFGVariableAccessDataDump.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC { namespace DFG {
 
@@ -100,12 +100,14 @@ private:
         case BitRShift:
         case BitLShift:
         case BitURShift: {
-            fixBinaryIntEdges();
+            fixIntEdge(node->child1());
+            fixIntEdge(node->child2());
             break;
         }
 
         case ArithIMul: {
-            fixBinaryIntEdges();
+            fixIntEdge(node->child1());
+            fixIntEdge(node->child2());
             node->setOp(ArithMul);
             node->setArithMode(Arith::Unchecked);
             node->child1().setUseKind(Int32Use);
@@ -260,7 +262,7 @@ private:
                 else
                     node->setArithMode(Arith::CheckOverflowAndNegativeZero);
                 
-                m_insertionSet.insertNode(m_indexInBlock + 1, SpecNone, Phantom, node->codeOrigin, child1, child2);
+                m_insertionSet.insertNode(m_indexInBlock + 1, SpecNone, Phantom, node->origin, child1, child2);
                 break;
             }
             fixEdge<NumberUse>(node->child1());
@@ -389,10 +391,6 @@ private:
             break;
         }
             
-        case CompareStrictEqConstant: {
-            break;
-        }
-            
         case CompareStrictEq: {
             if (Node::shouldSpeculateBoolean(node->child1().node(), node->child2().node())) {
                 fixEdge<BooleanUse>(node->child1());
@@ -430,6 +428,14 @@ private:
                 fixEdge<ObjectUse>(node->child2());
                 break;
             }
+            if (node->child1()->shouldSpeculateMisc()) {
+                fixEdge<MiscUse>(node->child1());
+                break;
+            }
+            if (node->child2()->shouldSpeculateMisc()) {
+                fixEdge<MiscUse>(node->child2());
+                break;
+            }
             break;
         }
 
@@ -450,6 +456,7 @@ private:
         case GetByVal: {
             node->setArrayMode(
                 node->arrayMode().refine(
+                    m_graph, node,
                     node->child1()->prediction(),
                     node->child2()->prediction(),
                     SpecNone, node->flags()));
@@ -461,14 +468,14 @@ private:
             case Array::Double:
                 if (arrayMode.arrayClass() == Array::OriginalArray
                     && arrayMode.speculation() == Array::InBounds
-                    && m_graph.globalObjectFor(node->codeOrigin)->arrayPrototypeChainIsSane()
+                    && m_graph.globalObjectFor(node->origin.semantic)->arrayPrototypeChainIsSane()
                     && !(node->flags() & NodeBytecodeUsesAsOther))
                     node->setArrayMode(arrayMode.withSpeculation(Array::SaneChain));
                 break;
                 
             case Array::String:
                 if ((node->prediction() & ~SpecString)
-                    || m_graph.hasExitSite(node->codeOrigin, OutOfBounds))
+                    || m_graph.hasExitSite(node->origin.semantic, OutOfBounds))
                     node->setArrayMode(arrayMode.withSpeculation(Array::OutOfBounds));
                 break;
                 
@@ -507,6 +514,7 @@ private:
 
             node->setArrayMode(
                 node->arrayMode().refine(
+                    m_graph, node,
                     child1->prediction(),
                     child2->prediction(),
                     child3->prediction()));
@@ -570,7 +578,7 @@ private:
             case Array::Arguments:
                 fixEdge<KnownCellUse>(child1);
                 fixEdge<Int32Use>(child2);
-                insertStoreBarrier(m_indexInBlock, child1, child3);
+                insertStoreBarrier(m_indexInBlock, child1);
                 break;
             default:
                 fixEdge<KnownCellUse>(child1);
@@ -592,6 +600,7 @@ private:
             // that would break things.
             node->setArrayMode(
                 node->arrayMode().refine(
+                    m_graph, node,
                     node->child1()->prediction() & SpecCell,
                     SpecInt32,
                     node->child2()->prediction()));
@@ -607,7 +616,7 @@ private:
                 break;
             case Array::Contiguous:
             case Array::ArrayStorage:
-                insertStoreBarrier(m_indexInBlock, node->child1(), node->child2());
+                insertStoreBarrier(m_indexInBlock, node->child1());
                 break;
             default:
                 break;
@@ -664,10 +673,8 @@ private:
                     if (newChildEdge->hasBooleanResult()) {
                         node->children.setChild1(newChildEdge);
                         
-                        BasicBlock* toBeTaken = node->notTakenBlock();
-                        BasicBlock* toBeNotTaken = node->takenBlock();
-                        node->setTakenBlock(toBeTaken);
-                        node->setNotTakenBlock(toBeNotTaken);
+                        BranchData* data = node->branchData();
+                        std::swap(data->taken, data->notTaken);
                     }
                 }
             }
@@ -726,7 +733,7 @@ private:
                     // would have already exited by now, but insert a forced exit just to
                     // be safe.
                     m_insertionSet.insertNode(
-                        m_indexInBlock, SpecNone, ForceOSRExit, node->codeOrigin);
+                        m_indexInBlock, SpecNone, ForceOSRExit, node->origin);
                 }
                 break;
             case ALL_INT32_INDEXING_TYPES:
@@ -762,9 +769,9 @@ private:
         }
             
         case ToThis: {
-            ECMAMode ecmaMode = m_graph.executableFor(node->codeOrigin)->isStrictMode() ? StrictMode : NotStrictMode;
+            ECMAMode ecmaMode = m_graph.executableFor(node->origin.semantic)->isStrictMode() ? StrictMode : NotStrictMode;
 
-            if (isOtherSpeculation(node->child1()->prediction())) {
+            if (node->child1()->shouldSpeculateOther()) {
                 if (ecmaMode == StrictMode) {
                     fixEdge<OtherUse>(node->child1());
                     node->convertToIdentity();
@@ -772,10 +779,10 @@ private:
                 }
 
                 m_insertionSet.insertNode(
-                    m_indexInBlock, SpecNone, Phantom, node->codeOrigin,
+                    m_indexInBlock, SpecNone, Phantom, node->origin,
                     Edge(node->child1().node(), OtherUse));
                 observeUseKindOnNode<OtherUse>(node->child1().node());
-                node->convertToWeakConstant(m_graph.globalThisObjectFor(node->codeOrigin));
+                node->convertToWeakConstant(m_graph.globalThisObjectFor(node->origin.semantic));
                 break;
             }
             
@@ -802,7 +809,7 @@ private:
 
         case PutClosureVar: {
             fixEdge<KnownCellUse>(node->child1());
-            insertStoreBarrier(m_indexInBlock, node->child1(), node->child3());
+            insertStoreBarrier(m_indexInBlock, node->child1());
             break;
         }
 
@@ -843,9 +850,10 @@ private:
         }
             
         case PutById:
+        case PutByIdFlush:
         case PutByIdDirect: {
             fixEdge<CellUse>(node->child1());
-            insertStoreBarrier(m_indexInBlock, node->child1(), node->child2());
+            insertStoreBarrier(m_indexInBlock, node->child1());
             break;
         }
 
@@ -875,11 +883,22 @@ private:
             break;
         }
             
+        case MultiGetByOffset: {
+            fixEdge<CellUse>(node->child1());
+            break;
+        }
+            
         case PutByOffset: {
             if (!node->child1()->hasStorageResult())
                 fixEdge<KnownCellUse>(node->child1());
             fixEdge<KnownCellUse>(node->child2());
-            insertStoreBarrier(m_indexInBlock, node->child2(), node->child3());
+            insertStoreBarrier(m_indexInBlock, node->child2());
+            break;
+        }
+            
+        case MultiPutByOffset: {
+            fixEdge<CellUse>(node->child1());
+            insertStoreBarrier(m_indexInBlock, node->child1());
             break;
         }
             
@@ -935,6 +954,7 @@ private:
         case DoubleAsInt32:
         case Int32ToDouble:
         case ValueToInt32:
+        case HardPhantom: // HardPhantom would be trivial to handle but anyway we assert that we won't see it here yet.
             // These are just nodes that we don't currently expect to see during fixup.
             // If we ever wanted to insert them prior to fixup, then we just have to create
             // fixup rules for them.
@@ -942,26 +962,28 @@ private:
             break;
         
         case PutGlobalVar: {
-            Node* globalObjectNode = m_insertionSet.insertNode(m_indexInBlock, SpecNone, WeakJSConstant, node->codeOrigin, 
-                OpInfo(m_graph.globalObjectFor(node->codeOrigin)));
-            Node* barrierNode = m_graph.addNode(SpecNone, ConditionalStoreBarrier, m_currentNode->codeOrigin, 
-                Edge(globalObjectNode, KnownCellUse), Edge(node->child1().node(), UntypedUse));
-            fixupNode(barrierNode);
+            Node* globalObjectNode = m_insertionSet.insertNode(
+                m_indexInBlock, SpecNone, WeakJSConstant, node->origin, 
+                OpInfo(m_graph.globalObjectFor(node->origin.semantic)));
+            Node* barrierNode = m_graph.addNode(
+                SpecNone, StoreBarrier, m_currentNode->origin, 
+                Edge(globalObjectNode, KnownCellUse));
             m_insertionSet.insert(m_indexInBlock, barrierNode);
             break;
         }
 
         case TearOffActivation: {
-            Node* barrierNode = m_graph.addNode(SpecNone, StoreBarrierWithNullCheck, m_currentNode->codeOrigin, 
+            Node* barrierNode = m_graph.addNode(
+                SpecNone, StoreBarrierWithNullCheck, m_currentNode->origin, 
                 Edge(node->child1().node(), UntypedUse));
-            fixupNode(barrierNode);
             m_insertionSet.insert(m_indexInBlock, barrierNode);
             break;
         }
 
         case IsString:
             if (node->child1()->shouldSpeculateString()) {
-                m_insertionSet.insertNode(m_indexInBlock, SpecNone, Phantom, node->codeOrigin,
+                m_insertionSet.insertNode(
+                    m_indexInBlock, SpecNone, Phantom, node->origin,
                     Edge(node->child1().node(), StringUse));
                 m_graph.convertToConstant(node, jsBoolean(true));
                 observeUseKindOnNode<StringUse>(node);
@@ -991,6 +1013,8 @@ private:
         case NewArrayBuffer:
         case NewRegexp:
         case Breakpoint:
+        case ProfileWillCall:
+        case ProfileDidCall:
         case IsUndefined:
         case IsBoolean:
         case IsNumber:
@@ -1017,7 +1041,6 @@ private:
         case ExtractOSREntryLocal:
         case LoopHint:
         case StoreBarrier:
-        case ConditionalStoreBarrier:
         case StoreBarrierWithNullCheck:
         case FunctionReentryWatchpoint:
         case TypedArrayWatchpoint:
@@ -1032,6 +1055,24 @@ private:
         
         if (!node->containsMovHint())
             DFG_NODE_DO_TO_CHILDREN(m_graph, node, observeUntypedEdge);
+        
+        if (node->isTerminal()) {
+            // Terminal nodes don't need post-phantoms, and inserting them would violate
+            // the current requirement that a terminal is the last thing in a block. We
+            // should eventually change that requirement but even if we did, this would
+            // still be a valid optimization. All terminals accept just one input, and
+            // if that input is a conversion node then no further speculations will be
+            // performed.
+            // FIXME: Get rid of this by allowing Phantoms after terminals.
+            // https://bugs.webkit.org/show_bug.cgi?id=126778
+            m_requiredPhantoms.resize(0);
+        // Since StoreBarriers are recursively fixed up so that their children look 
+        // identical to that of the node they're barrier-ing, we need to avoid adding
+        // any Phantoms when processing them because this would invalidate the 
+        // InsertionSet's invariant of inserting things in a monotonically increasing
+        // order. This should be okay anyways because StoreBarriers can't exit. 
+        } else
+            addPhantomsIfNecessary();
     }
     
     void observeUntypedEdge(Node*, Edge& edge)
@@ -1045,7 +1086,7 @@ private:
     void createToString(Node* node, Edge& edge)
     {
         edge.setNode(m_insertionSet.insertNode(
-            m_indexInBlock, SpecString, ToString, node->codeOrigin,
+            m_indexInBlock, SpecString, ToString, node->origin,
             Edge(edge.node(), useKind)));
     }
     
@@ -1054,7 +1095,7 @@ private:
     {
         ASSERT(arrayMode == ArrayMode(Array::Generic));
         
-        if (!canOptimizeStringObjectAccess(node->codeOrigin))
+        if (!canOptimizeStringObjectAccess(node->origin.semantic))
             return;
         
         createToString<useKind>(node, node->child1());
@@ -1082,7 +1123,7 @@ private:
             // decision process much easier.
             observeUseKindOnNode<StringUse>(edge.node());
             m_insertionSet.insertNode(
-                m_indexInBlock, SpecNone, Phantom, node->codeOrigin,
+                m_indexInBlock, SpecNone, Phantom, node->origin,
                 Edge(edge.node(), StringUse));
             edge.setUseKind(KnownStringUse);
             return;
@@ -1141,14 +1182,14 @@ private:
         }
         
         if (node->child1()->shouldSpeculateStringObject()
-            && canOptimizeStringObjectAccess(node->codeOrigin)) {
+            && canOptimizeStringObjectAccess(node->origin.semantic)) {
             fixEdge<StringObjectUse>(node->child1());
             node->convertToToString();
             return;
         }
         
         if (node->child1()->shouldSpeculateStringOrStringObject()
-            && canOptimizeStringObjectAccess(node->codeOrigin)) {
+            && canOptimizeStringObjectAccess(node->origin.semantic)) {
             fixEdge<StringOrStringObjectUse>(node->child1());
             node->convertToToString();
             return;
@@ -1164,13 +1205,13 @@ private:
         }
         
         if (node->child1()->shouldSpeculateStringObject()
-            && canOptimizeStringObjectAccess(node->codeOrigin)) {
+            && canOptimizeStringObjectAccess(node->origin.semantic)) {
             fixEdge<StringObjectUse>(node->child1());
             return;
         }
         
         if (node->child1()->shouldSpeculateStringOrStringObject()
-            && canOptimizeStringObjectAccess(node->codeOrigin)) {
+            && canOptimizeStringObjectAccess(node->origin.semantic)) {
             fixEdge<StringOrStringObjectUse>(node->child1());
             return;
         }
@@ -1189,16 +1230,16 @@ private:
         
         ASSERT(leftUseKind == StringUse || leftUseKind == StringObjectUse || leftUseKind == StringOrStringObjectUse);
         
-        if (isStringObjectUse<leftUseKind>() && !canOptimizeStringObjectAccess(node->codeOrigin))
+        if (isStringObjectUse<leftUseKind>() && !canOptimizeStringObjectAccess(node->origin.semantic))
             return false;
         
         convertStringAddUse<leftUseKind>(node, left);
         
         if (right->shouldSpeculateString())
             convertStringAddUse<StringUse>(node, right);
-        else if (right->shouldSpeculateStringObject() && canOptimizeStringObjectAccess(node->codeOrigin))
+        else if (right->shouldSpeculateStringObject() && canOptimizeStringObjectAccess(node->origin.semantic))
             convertStringAddUse<StringObjectUse>(node, right);
-        else if (right->shouldSpeculateStringOrStringObject() && canOptimizeStringObjectAccess(node->codeOrigin))
+        else if (right->shouldSpeculateStringOrStringObject() && canOptimizeStringObjectAccess(node->origin.semantic))
             convertStringAddUse<StringOrStringObjectUse>(node, right);
         else {
             // At this point we know that the other operand is something weird. The semantically correct
@@ -1210,10 +1251,10 @@ private:
             // anything to @right, since ToPrimitive may be effectful.
             
             Node* toPrimitive = m_insertionSet.insertNode(
-                m_indexInBlock, resultOfToPrimitive(right->prediction()), ToPrimitive, node->codeOrigin,
-                Edge(right.node()));
+                m_indexInBlock, resultOfToPrimitive(right->prediction()), ToPrimitive,
+                node->origin, Edge(right.node()));
             Node* toString = m_insertionSet.insertNode(
-                m_indexInBlock, SpecString, ToString, node->codeOrigin, Edge(toPrimitive));
+                m_indexInBlock, SpecString, ToString, node->origin, Edge(toPrimitive));
             
             fixupToPrimitive(toPrimitive);
             fixupToString(toString);
@@ -1224,7 +1265,7 @@ private:
         // We're doing checks up there, so we need to make sure that the
         // *original* inputs to the addition are live up to here.
         m_insertionSet.insertNode(
-            m_indexInBlock, SpecNone, Phantom, node->codeOrigin,
+            m_indexInBlock, SpecNone, Phantom, node->origin,
             Edge(originalLeft), Edge(originalRight));
         
         convertToMakeRope(node);
@@ -1317,6 +1358,7 @@ private:
                 RELEASE_ASSERT_NOT_REACHED();
                 break;
             }
+            addPhantomsIfNecessary();
         }
         m_insertionSet.execute(block);
     }
@@ -1332,43 +1374,44 @@ private:
             if (node->op() != SetLocal)
                 continue;
             
-            if (node->child1().useKind() == UntypedUse)
+            if (node->child1().useKind() == UntypedUse) {
                 fixEdge<UntypedUse>(node->child1());
+                addPhantomsIfNecessary();
+            }
         }
         m_insertionSet.execute(block);
     }
     
-    Node* checkArray(ArrayMode arrayMode, const CodeOrigin& codeOrigin, Node* array, Node* index, bool (*storageCheck)(const ArrayMode&) = canCSEStorage)
+    Node* checkArray(ArrayMode arrayMode, const NodeOrigin& origin, Node* array, Node* index, bool (*storageCheck)(const ArrayMode&) = canCSEStorage)
     {
         ASSERT(arrayMode.isSpecific());
         
         if (arrayMode.type() == Array::String) {
             m_insertionSet.insertNode(
-                m_indexInBlock, SpecNone, Phantom, codeOrigin,
-                Edge(array, StringUse));
+                m_indexInBlock, SpecNone, Phantom, origin, Edge(array, StringUse));
         } else {
-            Structure* structure = arrayMode.originalArrayStructure(m_graph, codeOrigin);
+            Structure* structure = arrayMode.originalArrayStructure(m_graph, origin.semantic);
         
             Edge indexEdge = index ? Edge(index, Int32Use) : Edge();
         
             if (arrayMode.doesConversion()) {
                 if (structure) {
                     m_insertionSet.insertNode(
-                        m_indexInBlock, SpecNone, ArrayifyToStructure, codeOrigin,
+                        m_indexInBlock, SpecNone, ArrayifyToStructure, origin,
                         OpInfo(structure), OpInfo(arrayMode.asWord()), Edge(array, CellUse), indexEdge);
                 } else {
                     m_insertionSet.insertNode(
-                        m_indexInBlock, SpecNone, Arrayify, codeOrigin,
+                        m_indexInBlock, SpecNone, Arrayify, origin,
                         OpInfo(arrayMode.asWord()), Edge(array, CellUse), indexEdge);
                 }
             } else {
                 if (structure) {
                     m_insertionSet.insertNode(
-                        m_indexInBlock, SpecNone, CheckStructure, codeOrigin,
+                        m_indexInBlock, SpecNone, CheckStructure, origin,
                         OpInfo(m_graph.addStructureSet(structure)), Edge(array, CellUse));
                 } else {
                     m_insertionSet.insertNode(
-                        m_indexInBlock, SpecNone, CheckArray, codeOrigin,
+                        m_indexInBlock, SpecNone, CheckArray, origin,
                         OpInfo(arrayMode.asWord()), Edge(array, CellUse));
                 }
             }
@@ -1379,11 +1422,11 @@ private:
         
         if (arrayMode.usesButterfly()) {
             return m_insertionSet.insertNode(
-                m_indexInBlock, SpecNone, GetButterfly, codeOrigin, Edge(array, CellUse));
+                m_indexInBlock, SpecNone, GetButterfly, origin, Edge(array, CellUse));
         }
         
         return m_insertionSet.insertNode(
-            m_indexInBlock, SpecNone, GetIndexedPropertyStorage, codeOrigin,
+            m_indexInBlock, SpecNone, GetIndexedPropertyStorage, origin,
             OpInfo(arrayMode.asWord()), Edge(array, KnownCellUse));
     }
     
@@ -1394,7 +1437,7 @@ private:
         switch (node->arrayMode().type()) {
         case Array::ForceExit: {
             m_insertionSet.insertNode(
-                m_indexInBlock, SpecNone, ForceOSRExit, node->codeOrigin);
+                m_indexInBlock, SpecNone, ForceOSRExit, node->origin);
             return;
         }
             
@@ -1407,7 +1450,7 @@ private:
             return;
             
         default: {
-            Node* storage = checkArray(node->arrayMode(), node->codeOrigin, base.node(), index.node());
+            Node* storage = checkArray(node->arrayMode(), node->origin, base.node(), index.node());
             if (!storage)
                 return;
             
@@ -1507,9 +1550,10 @@ private:
                 // Int8ToDouble will convert int52's that fit in an int32 into a double
                 // rather than trying to create a boxed int32 like Int52ToValue does.
                 
+                m_requiredPhantoms.append(edge.node());
                 Node* result = m_insertionSet.insertNode(
                     m_indexInBlock, SpecInt52AsDouble, Int52ToDouble,
-                    m_currentNode->codeOrigin, Edge(edge.node(), NumberUse));
+                    m_currentNode->origin, Edge(edge.node(), NumberUse));
                 edge = Edge(result, useKind);
                 return;
             }
@@ -1560,9 +1604,10 @@ private:
             //
             // But the solution we use handles the above gracefully.
             
+            m_requiredPhantoms.append(edge.node());
             Node* result = m_insertionSet.insertNode(
                 m_indexInBlock, SpecInt52, Int52ToValue,
-                m_currentNode->codeOrigin, Edge(edge.node(), UntypedUse));
+                m_currentNode->origin, Edge(edge.node(), UntypedUse));
             edge = Edge(result, useKind);
             return;
         }
@@ -1572,25 +1617,18 @@ private:
         edge.setUseKind(useKind);
     }
     
-    void insertStoreBarrier(unsigned indexInBlock, Edge child1, Edge child2 = Edge())
+    void insertStoreBarrier(unsigned indexInBlock, Edge child1)
     {
-        Node* barrierNode;
-        if (!child2)
-            barrierNode = m_graph.addNode(SpecNone, StoreBarrier, m_currentNode->codeOrigin, Edge(child1.node(), child1.useKind()));
-        else {
-            barrierNode = m_graph.addNode(SpecNone, ConditionalStoreBarrier, m_currentNode->codeOrigin, 
-                Edge(child1.node(), child1.useKind()), Edge(child2.node(), child2.useKind()));
-        }
-        fixupNode(barrierNode);
+        Node* barrierNode = m_graph.addNode(SpecNone, StoreBarrier, m_currentNode->origin, child1);
         m_insertionSet.insert(indexInBlock, barrierNode);
     }
 
-    bool fixIntEdge(Edge& edge)
+    void fixIntEdge(Edge& edge)
     {
         Node* node = edge.node();
         if (node->shouldSpeculateInt32()) {
             fixEdge<Int32Use>(edge);
-            return false;
+            return;
         }
         
         UseKind useKind;
@@ -1603,32 +1641,21 @@ private:
         else
             useKind = NotCellUse;
         Node* newNode = m_insertionSet.insertNode(
-            m_indexInBlock, SpecInt32, ValueToInt32, m_currentNode->codeOrigin,
+            m_indexInBlock, SpecInt32, ValueToInt32, m_currentNode->origin,
             Edge(node, useKind));
         observeUseKindOnNode(node, useKind);
         
         edge = Edge(newNode, KnownInt32Use);
-        return true;
-    }
-    
-    void fixBinaryIntEdges()
-    {
-        AdjacencyList children = m_currentNode->children;
-        
-        // Call fixIntEdge() on both edges.
-        bool needPhantom =
-            fixIntEdge(m_currentNode->child1()) | fixIntEdge(m_currentNode->child2());
-        
-        if (!needPhantom)
-            return;
-        m_insertionSet.insertNode(m_indexInBlock + 1, SpecNone, Phantom, m_currentNode->codeOrigin, children);
+        m_requiredPhantoms.append(node);
     }
     
     void injectInt32ToDoubleNode(Edge& edge, UseKind useKind = NumberUse)
     {
+        m_requiredPhantoms.append(edge.node());
+        
         Node* result = m_insertionSet.insertNode(
             m_indexInBlock, SpecInt52AsDouble, Int32ToDouble,
-            m_currentNode->codeOrigin, Edge(edge.node(), NumberUse));
+            m_currentNode->origin, Edge(edge.node(), NumberUse));
         
         edge = Edge(result, useKind);
     }
@@ -1656,7 +1683,7 @@ private:
                 value);
         }
         edge.setNode(m_insertionSet.insertNode(
-            m_indexInBlock, SpecInt32, JSConstant, m_currentNode->codeOrigin,
+            m_indexInBlock, SpecInt32, JSConstant, m_currentNode->origin,
             OpInfo(constantRegister)));
     }
     
@@ -1700,9 +1727,9 @@ private:
     {
         if (!isInt32Speculation(node->prediction()))
             return false;
-        CodeBlock* profiledBlock = m_graph.baselineCodeBlockFor(node->codeOrigin);
+        CodeBlock* profiledBlock = m_graph.baselineCodeBlockFor(node->origin.semantic);
         ArrayProfile* arrayProfile = 
-            profiledBlock->getArrayProfile(node->codeOrigin.bytecodeIndex);
+            profiledBlock->getArrayProfile(node->origin.semantic.bytecodeIndex);
         ArrayMode arrayMode = ArrayMode(Array::SelectUsingPredictions);
         if (arrayProfile) {
             ConcurrentJITLocker locker(profiledBlock->m_lock);
@@ -1720,7 +1747,8 @@ private:
             }
         }
             
-        arrayMode = arrayMode.refine(node->child1()->prediction(), node->prediction());
+        arrayMode = arrayMode.refine(
+            m_graph, node, node->child1()->prediction(), node->prediction());
             
         if (arrayMode.type() == Array::Generic) {
             // Check if the input is something that we can't get array length for, but for which we
@@ -1754,10 +1782,10 @@ private:
         }
         
         Node* length = prependGetArrayLength(
-            node->codeOrigin, node->child1().node(), ArrayMode(toArrayType(type)));
+            node->origin, node->child1().node(), ArrayMode(toArrayType(type)));
         
         Node* shiftAmount = m_insertionSet.insertNode(
-            m_indexInBlock, SpecInt32, JSConstant, node->codeOrigin,
+            m_indexInBlock, SpecInt32, JSConstant, node->origin,
             OpInfo(m_graph.constantRegisterForConstant(jsNumber(logElementSize(type)))));
         
         // We can use a BitLShift here because typed arrays will never have a byteLength
@@ -1778,18 +1806,18 @@ private:
         fixEdge<KnownCellUse>(node->child1());
         node->setArrayMode(arrayMode);
             
-        Node* storage = checkArray(arrayMode, node->codeOrigin, node->child1().node(), 0, lengthNeedsStorage);
+        Node* storage = checkArray(arrayMode, node->origin, node->child1().node(), 0, lengthNeedsStorage);
         if (!storage)
             return;
             
         node->child2() = Edge(storage);
     }
     
-    Node* prependGetArrayLength(CodeOrigin codeOrigin, Node* child, ArrayMode arrayMode)
+    Node* prependGetArrayLength(NodeOrigin origin, Node* child, ArrayMode arrayMode)
     {
-        Node* storage = checkArray(arrayMode, codeOrigin, child, 0, lengthNeedsStorage);
+        Node* storage = checkArray(arrayMode, origin, child, 0, lengthNeedsStorage);
         return m_insertionSet.insertNode(
-            m_indexInBlock, SpecInt32, GetArrayLength, codeOrigin,
+            m_indexInBlock, SpecInt32, GetArrayLength, origin,
             OpInfo(arrayMode.asWord()), Edge(child, KnownCellUse), Edge(storage));
     }
     
@@ -1803,7 +1831,7 @@ private:
             return false;
         
         checkArray(
-            ArrayMode(toArrayType(type)), node->codeOrigin, node->child1().node(),
+            ArrayMode(toArrayType(type)), node->origin, node->child1().node(),
             0, neverNeedsStorage);
         
         node->setOp(GetTypedArrayByteOffset);
@@ -1811,12 +1839,27 @@ private:
         fixEdge<KnownCellUse>(node->child1());
         return true;
     }
+    
+    void addPhantomsIfNecessary()
+    {
+        if (m_requiredPhantoms.isEmpty())
+            return;
+        
+        for (unsigned i = m_requiredPhantoms.size(); i--;) {
+            m_insertionSet.insertNode(
+                m_indexInBlock + 1, SpecNone, Phantom, m_currentNode->origin,
+                Edge(m_requiredPhantoms[i], UntypedUse));
+        }
+        
+        m_requiredPhantoms.resize(0);
+    }
 
     BasicBlock* m_block;
     unsigned m_indexInBlock;
     Node* m_currentNode;
     InsertionSet m_insertionSet;
     bool m_profitabilityChanged;
+    Vector<Node*, 3> m_requiredPhantoms;
 };
     
 bool performFixup(Graph& graph)

@@ -5,6 +5,7 @@ set(JavaScriptCore_INCLUDE_DIRECTORIES
     "${JAVASCRIPTCORE_DIR}/ForwardingHeaders"
     "${JAVASCRIPTCORE_DIR}/assembler"
     "${JAVASCRIPTCORE_DIR}/bindings"
+    "${JAVASCRIPTCORE_DIR}/builtins"
     "${JAVASCRIPTCORE_DIR}/bytecode"
     "${JAVASCRIPTCORE_DIR}/bytecompiler"
     "${JAVASCRIPTCORE_DIR}/dfg"
@@ -52,6 +53,8 @@ set(JavaScriptCore_SOURCES
     bindings/ScriptObject.cpp
     bindings/ScriptValue.cpp
 
+    builtins/BuiltinExecutables.cpp
+
     bytecode/ArrayAllocationProfile.cpp
     bytecode/ArrayProfile.cpp
     bytecode/BytecodeBasicBlock.cpp
@@ -67,16 +70,20 @@ set(JavaScriptCore_SOURCES
     bytecode/DeferredCompilationCallback.cpp
     bytecode/ExecutionCounter.cpp
     bytecode/ExitKind.cpp
+    bytecode/ExitingJITType.cpp
     bytecode/GetByIdStatus.cpp
+    bytecode/GetByIdVariant.cpp
     bytecode/InlineCallFrameSet.cpp
     bytecode/JumpTable.cpp
     bytecode/LazyOperandValueProfile.cpp
     bytecode/MethodOfGettingAValueProfile.cpp
     bytecode/Opcode.cpp
+    bytecode/PolymorphicGetByIdList.cpp
     bytecode/PolymorphicPutByIdList.cpp
     bytecode/PreciseJumpTargets.cpp
     bytecode/ProfiledCodeBlockJettisoningWatchpoint.cpp
     bytecode/PutByIdStatus.cpp
+    bytecode/PutByIdVariant.cpp
     bytecode/ReduceWhitespace.cpp
     bytecode/SamplingTool.cpp
     bytecode/SpecialPointer.cpp
@@ -84,6 +91,7 @@ set(JavaScriptCore_SOURCES
     bytecode/StructureStubClearingWatchpoint.cpp
     bytecode/StructureStubInfo.cpp
     bytecode/UnlinkedCodeBlock.cpp
+    bytecode/UnlinkedInstructionStream.cpp
     bytecode/ValueRecovery.cpp
     bytecode/Watchpoint.cpp
 
@@ -137,7 +145,9 @@ set(JavaScriptCore_SOURCES
     dfg/DFGFlushLivenessAnalysisPhase.cpp
     dfg/DFGFlushedAt.cpp
     dfg/DFGGraph.cpp
+    dfg/DFGGraphSafepoint.cpp
     dfg/DFGInPlaceAbstractState.cpp
+    dfg/DFGIntegerCheckCombiningPhase.cpp
     dfg/DFGInvalidationPointInjectionPhase.cpp
     dfg/DFGJITCode.cpp
     dfg/DFGJITCompiler.cpp
@@ -171,12 +181,15 @@ set(JavaScriptCore_SOURCES
     dfg/DFGResurrectionForValidationPhase.cpp
     dfg/DFGSSAConversionPhase.cpp
     dfg/DFGSSALoweringPhase.cpp
+    dfg/DFGSafepoint.cpp
     dfg/DFGSpeculativeJIT.cpp
     dfg/DFGSpeculativeJIT32_64.cpp
     dfg/DFGSpeculativeJIT64.cpp
     dfg/DFGStackLayoutPhase.cpp
+    dfg/DFGStaticExecutionCountEstimationPhase.cpp
     dfg/DFGStoreBarrierElisionPhase.cpp
     dfg/DFGStrengthReductionPhase.cpp
+    dfg/DFGThreadData.cpp
     dfg/DFGThunks.cpp
     dfg/DFGTierUpCheckInjectionPhase.cpp
     dfg/DFGTypeCheckHoistingPhase.cpp
@@ -203,6 +216,7 @@ set(JavaScriptCore_SOURCES
     heap/CopiedSpace.cpp
     heap/CopyVisitor.cpp
     heap/DeferGC.cpp
+    heap/GCActivityCallback.cpp
     heap/GCThread.cpp
     heap/GCThreadSharedData.cpp
     heap/HandleSet.cpp
@@ -226,17 +240,31 @@ set(JavaScriptCore_SOURCES
     heap/WriteBarrierBuffer.cpp
     heap/WriteBarrierSupport.cpp
 
-    inspector/InspectorAgentRegistry.cpp
-    inspector/InspectorBackendDispatcher.cpp
-    inspector/InspectorValues.cpp
+    inspector/ConsoleMessage.cpp
+    inspector/ContentSearchUtilities.cpp
+    inspector/IdentifiersFactory.cpp
     inspector/InjectedScript.cpp
     inspector/InjectedScriptBase.cpp
     inspector/InjectedScriptHost.cpp
     inspector/InjectedScriptManager.cpp
     inspector/InjectedScriptModule.cpp
+    inspector/InspectorAgentRegistry.cpp
+    inspector/InspectorBackendDispatcher.cpp
+    inspector/InspectorValues.cpp
     inspector/JSInjectedScriptHost.cpp
     inspector/JSInjectedScriptHostPrototype.cpp
+    inspector/JSJavaScriptCallFrame.cpp
+    inspector/JSJavaScriptCallFramePrototype.cpp
+    inspector/JavaScriptCallFrame.cpp
+    inspector/ScriptArguments.cpp
+    inspector/ScriptCallFrame.cpp
+    inspector/ScriptCallStack.cpp
+    inspector/ScriptCallStackFactory.cpp
+    inspector/ScriptDebugServer.cpp
     inspector/agents/InspectorAgent.cpp
+    inspector/agents/InspectorConsoleAgent.cpp
+    inspector/agents/InspectorDebuggerAgent.cpp
+    inspector/agents/InspectorRuntimeAgent.cpp
 
     interpreter/AbstractPC.cpp
     interpreter/CallFrame.cpp
@@ -247,6 +275,7 @@ set(JavaScriptCore_SOURCES
     interpreter/VMInspector.cpp
 
     jit/AssemblyHelpers.cpp
+    jit/ArityCheckFailReturnThunks.cpp
     jit/ClosureCallStubRoutine.cpp
     jit/ExecutableAllocator.cpp
     jit/ExecutableAllocatorFixedVMPool.cpp
@@ -270,8 +299,11 @@ set(JavaScriptCore_SOURCES
     jit/JITStubs.cpp
     jit/JITThunks.cpp
     jit/JITToDFGDeferredCompilationCallback.cpp
+    jit/Reg.cpp
+    jit/RegisterPreservationWrapperGenerator.cpp
     jit/RegisterSet.cpp
     jit/Repatch.cpp
+    jit/ScratchRegisterAllocator.cpp
     jit/TempRegisterSet.cpp
     jit/ThunkGenerators.cpp
 
@@ -294,6 +326,7 @@ set(JavaScriptCore_SOURCES
     profiler/ProfilerCompilationKind.cpp
     profiler/ProfilerCompiledBytecode.cpp
     profiler/ProfilerDatabase.cpp
+    profiler/ProfilerJettisonReason.cpp
     profiler/ProfilerOSRExit.cpp
     profiler/ProfilerOSRExitSite.cpp
     profiler/ProfilerOrigin.cpp
@@ -322,6 +355,8 @@ set(JavaScriptCore_SOURCES
     runtime/CommonSlowPathsExceptions.cpp
     runtime/CompilationResult.cpp
     runtime/Completion.cpp
+    runtime/ConsoleClient.cpp
+    runtime/ConsolePrototype.cpp
     runtime/ConstructData.cpp
     runtime/DataView.cpp
     runtime/DataView.h
@@ -332,6 +367,7 @@ set(JavaScriptCore_SOURCES
     runtime/DumpContext.cpp
     runtime/Error.cpp
     runtime/ErrorConstructor.cpp
+    runtime/ErrorHandlingScope.cpp
     runtime/ErrorInstance.cpp
     runtime/ErrorPrototype.cpp
     runtime/ExceptionHelpers.cpp
@@ -339,7 +375,6 @@ set(JavaScriptCore_SOURCES
     runtime/FunctionConstructor.cpp
     runtime/FunctionExecutableDump.cpp
     runtime/FunctionPrototype.cpp
-    runtime/GCActivityCallback.cpp
     runtime/GetterSetter.cpp
     runtime/Identifier.cpp
     runtime/IndexingType.cpp
@@ -358,6 +393,7 @@ set(JavaScriptCore_SOURCES
     runtime/JSBoundFunction.cpp
     runtime/JSCJSValue.cpp
     runtime/JSCell.cpp
+    runtime/JSConsole.cpp
     runtime/JSDataView.cpp
     runtime/JSDataViewPrototype.cpp
     runtime/JSDateMath.cpp
@@ -383,7 +419,6 @@ set(JavaScriptCore_SOURCES
     runtime/JSSegmentedVariableObject.cpp
     runtime/JSSet.cpp
     runtime/JSSetIterator.cpp
-    runtime/JSStaticScopeObject.cpp
     runtime/JSString.cpp
     runtime/JSStringJoiner.cpp
     runtime/JSSymbolTableObject.cpp
@@ -442,6 +477,7 @@ set(JavaScriptCore_SOURCES
     runtime/StringRecursionChecker.cpp
     runtime/Structure.cpp
     runtime/StructureChain.cpp
+    runtime/StructureIDTable.cpp
     runtime/StructureRareData.cpp
     runtime/SymbolTable.cpp
     runtime/TestRunnerUtils.cpp
@@ -458,6 +494,7 @@ set(JavaScriptCore_SOURCES
     tools/CodeProfile.cpp
     tools/CodeProfiling.cpp
 
+    yarr/RegularExpression.cpp
     yarr/YarrCanonicalizeUCS2.cpp
     yarr/YarrInterpreter.cpp
     yarr/YarrJIT.cpp
@@ -563,24 +600,31 @@ if (ENABLE_LLINT)
     )
 
     add_custom_command(
+        OUTPUT ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/Bytecodes.h ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InitBytecodes.asm
+        MAIN_DEPENDENCY ${JAVASCRIPTCORE_DIR}/generate-bytecode-files
+        DEPENDS ${JAVASCRIPTCORE_DIR}/generate-bytecode-files bytecode/BytecodeList.json
+        COMMAND ${PYTHON_EXECUTABLE} ${JAVASCRIPTCORE_DIR}/generate-bytecode-files --bytecodes_h ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/Bytecodes.h --init_bytecodes_asm ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InitBytecodes.asm ${JAVASCRIPTCORE_DIR}/bytecode/BytecodeList.json
+        VERBATIM)
+
+    add_custom_command(
         OUTPUT ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntDesiredOffsets.h
         MAIN_DEPENDENCY ${JAVASCRIPTCORE_DIR}/offlineasm/generate_offset_extractor.rb
         DEPENDS ${LLINT_ASM} ${OFFLINE_ASM}
         COMMAND ${RUBY_EXECUTABLE} ${JAVASCRIPTCORE_DIR}/offlineasm/generate_offset_extractor.rb ${JAVASCRIPTCORE_DIR}/llint/LowLevelInterpreter.asm ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntDesiredOffsets.h
         VERBATIM)
 
-    # We add the header file directly to the ADD_EXECUTABLE call instead of setting the
-    # OBJECT_DEPENDS property in LLIntOffsetsExtractor.cpp because generate_offset_extractor.rb may
-    # not regenerate it in case the hash it calculates does not change.
-    # In this case, if some of the dependencies specified in the ADD_CUSTOM_COMMAND above have
-    # changed the command will always be called because the mtime of LLIntDesiredOffsets.h will
-    # always be older than that of its dependencies.
-    # Additionally, setting the OBJECT_DEPENDS property will make LLIntDesiredOffsets.h a Makefile
+    # We add the header files directly to the ADD_EXECUTABLE call instead of setting the
+    # OBJECT_DEPENDS property in LLIntOffsetsExtractor.cpp because generate_offset_extractor.rb and
+    # generate-bytecode-files may not regenerate the .h files in case the hash it calculates does not change.
+    # In this case, if some of the dependencies specified in the ADD_CUSTOM_COMMANDs above have
+    # changed the command will always be called because the mtime of the .h files will
+    # always be older than that of their dependencies.
+    # Additionally, setting the OBJECT_DEPENDS property will make the .h files a Makefile
     # dependency of both LLIntOffsetsExtractor and LLIntOffsetsExtractor.cpp, so the command will
-    # actually be run twice!
+    # actually be run multiple times!
     add_executable(LLIntOffsetsExtractor
         ${JAVASCRIPTCORE_DIR}/llint/LLIntOffsetsExtractor.cpp
-        ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntDesiredOffsets.h
+        ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntDesiredOffsets.h ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/Bytecodes.h
     )
     target_link_libraries(LLIntOffsetsExtractor WTF)
 
@@ -593,7 +637,7 @@ if (ENABLE_LLINT)
     add_custom_command(
         OUTPUT ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntAssembly.h
         MAIN_DEPENDENCY ${JAVASCRIPTCORE_DIR}/offlineasm/asm.rb
-        DEPENDS LLIntOffsetsExtractor ${LLINT_ASM} ${OFFLINE_ASM}
+        DEPENDS LLIntOffsetsExtractor ${LLINT_ASM} ${OFFLINE_ASM} ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InitBytecodes.asm
         COMMAND ${RUBY_EXECUTABLE} ${JAVASCRIPTCORE_DIR}/offlineasm/asm.rb ${JAVASCRIPTCORE_DIR}/llint/LowLevelInterpreter.asm $<TARGET_FILE:LLIntOffsetsExtractor> ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntAssembly.h
         COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntAssembly.h
         VERBATIM)
@@ -664,6 +708,7 @@ if (ENABLE_FTL_JIT)
         ftl/FTLCapabilities.cpp
         ftl/FTLCommonValues.cpp
         ftl/FTLCompile.cpp
+        ftl/FTLDWARFDebugLineInfo.cpp
         ftl/FTLExitArgument.cpp
         ftl/FTLExitArgumentForOperand.cpp
         ftl/FTLExitThunkGenerator.cpp
@@ -695,7 +740,7 @@ set(HASH_LUT_GENERATOR ${CMAKE_CURRENT_SOURCE_DIR}/create_hash_table)
 macro(GENERATE_HASH_LUT _input _output)
     add_custom_command(
         OUTPUT ${_output}
-        DEPENDS ${HASH_LUT_GENERATOR} ${_input}
+        DEPENDS ${HASH_LUT_GENERATOR} ${_input} ${CMAKE_CURRENT_SOURCE_DIR}/generate-js-builtins
         COMMAND ${PERL_EXECUTABLE} ${HASH_LUT_GENERATOR} ${_input} -i > ${_output}
         VERBATIM)
     list(APPEND JavaScriptCore_HEADERS ${_output})
@@ -724,11 +769,11 @@ set(JavaScriptCore_FORWARDING_HEADERS_DIRECTORIES
     yarr
 
     collector/handles
+    ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}
 )
 
 set(JavaScriptCore_FORWARDING_HEADERS_FILES
     API/APICast.h
-    API/APIShims.h
     API/JSBase.h
     API/JSCTestRunnerUtils.h
     API/JSContextRef.h
@@ -751,8 +796,12 @@ set(JavaScriptCore_FORWARDING_HEADERS_FILES
     assembler/LinkBuffer.h
     assembler/MacroAssembler.h
     assembler/MacroAssemblerCodeRef.h
+    assembler/MacroAssemblerCodeRef.h
     jit/GPRInfo.h
     runtime/VM.h
+
+    ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/JSCBuiltins.h
+    ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/Bytecodes.h
 )
 
 
@@ -782,6 +831,7 @@ ADD_SOURCE_DEPENDENCIES(${CMAKE_CURRENT_SOURCE_DIR}/parser/Lexer.cpp ${DERIVED_S
 set(JavaScriptCore_INSPECTOR_SCRIPTS_DIR "${JAVASCRIPTCORE_DIR}/inspector/scripts")
 
 set(JavaScriptCore_INSPECTOR_DOMAINS
+    inspector/protocol/Console.json
     inspector/protocol/Debugger.json
     inspector/protocol/GenericTypes.json
     inspector/protocol/InspectorDomain.json
@@ -803,16 +853,27 @@ add_custom_command(
     COMMAND ${PYTHON_EXECUTABLE} ${JavaScriptCore_INSPECTOR_SCRIPTS_DIR}/CodeGeneratorInspector.py ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJS.json --output_h_dir "${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}" --output_cpp_dir "${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}" --output_js_dir "${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}" --output_type JavaScript --write_always && mkdir -p ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/inspector && cp ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJSBackendDispatchers.h ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJSFrontendDispatchers.h ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJSTypeBuilders.h ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/inspector
     VERBATIM)
 
+# JSCBuiltins
+file(GLOB JSCBuiltins_js_files "${CMAKE_CURRENT_SOURCE_DIR}/builtins/*.js")
+add_custom_command(
+   OUTPUT ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/JSCBuiltins.cpp ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/JSCBuiltins.h
+   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/generate-js-builtins
+   DEPENDS ${JSCBuiltins_js_files}
+   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-js-builtins ${JSCBuiltins_js_files} ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/JSCBuiltins.h ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/JSCBuiltins.cpp
+   VERBATIM)
+
 list(APPEND JavaScriptCore_SOURCES
     ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJSBackendDispatchers.cpp
     ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJSFrontendDispatchers.cpp
     ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJSTypeBuilders.cpp
+    ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/JSCBuiltins.cpp
 )
 
 list(APPEND JavaScriptCore_HEADERS
     ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJSBackendDispatchers.h
     ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJSFrontendDispatchers.h
     ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/InspectorJSTypeBuilders.h
+    ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/JSCBuiltins.h
 )
 
 add_custom_command(

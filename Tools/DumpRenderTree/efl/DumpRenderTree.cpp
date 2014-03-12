@@ -156,11 +156,6 @@ static bool shouldDumpAsText(const String& pathOrURL)
     return pathOrURL.contains("dumpAsText/");
 }
 
-static bool shouldOpenWebInspector(const String& pathOrURL)
-{
-    return pathOrURL.contains("inspector/");
-}
-
 static void sendPixelResultsEOF()
 {
     puts("#EOF");
@@ -243,8 +238,6 @@ static void createTestRunner(const String& testURL, const String& expectedPixelH
         gTestRunner->setDumpFrameLoadCallbacks(true);
 
     gTestRunner->setDeveloperExtrasEnabled(true);
-    if (shouldOpenWebInspector(testURL))
-        gTestRunner->showWebInspector();
 
     gTestRunner->setDumpHistoryDelegateCallbacks(isGlobalHistoryTest(testURL));
 
@@ -436,7 +429,7 @@ void dump()
 static Ecore_Evas* initEcoreEvas()
 {
     Ecore_Evas* ecoreEvas = 0;
-#if defined(WTF_USE_ACCELERATED_COMPOSITING) && defined(HAVE_ECORE_X)
+#if defined(HAVE_ECORE_X)
     ecoreEvas = ecore_evas_new("opengl_x11", 0, 0, 800, 600, 0);
     if (!ecoreEvas)
 #endif

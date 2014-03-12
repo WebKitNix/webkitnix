@@ -47,9 +47,6 @@ enum TileValidationPolicyFlag {
     UnparentAllTiles = 1 << 1
 };
 
-static const int defaultTileWidth = 512;
-static const int defaultTileHeight = 512;
-
 PassOwnPtr<TileController> TileController::create(PlatformCALayer* rootPlatformLayer)
 {
     return adoptPtr(new TileController(rootPlatformLayer));
@@ -174,7 +171,7 @@ void TileController::setTileNeedsDisplayInRect(const TileIndex& tileIndex, TileI
         tileInfo.hasStaleContent = true;
 }
 
-void TileController::platformCALayerPaintContents(PlatformCALayer* platformCALayer, GraphicsContext& context, const IntRect&)
+void TileController::platformCALayerPaintContents(PlatformCALayer* platformCALayer, GraphicsContext& context, const FloatRect&)
 {
 #if PLATFORM(IOS)
     if (pthread_main_np())
@@ -302,11 +299,6 @@ bool TileController::tilesWouldChangeForVisibleRect(const FloatRect& newVisibleR
     scaledRect.scale(m_scale);
     IntRect currentCoverageRectInTileCoords(enclosingIntRect(scaledRect));
 
-    IntSize newTileSize = computeTileSize();
-    bool tileSizeChanged = newTileSize != m_tileSize;
-    if (tileSizeChanged)
-        return true;
-
     TileIndex topLeft;
     TileIndex bottomRight;
     getTileIndexRangeForRect(currentCoverageRectInTileCoords, topLeft, bottomRight);
@@ -327,7 +319,6 @@ void TileController::setExposedRect(const FloatRect& exposedRect)
 
 FloatRect TileController::scaledExposedRect() const
 {
-    // Since the exposedRect is in FrameView-relative coordinates, we need to scale into document space.
     FloatRect scaledExposedRect = m_exposedRect;
     scaledExposedRect.scale(1 / m_scale);
     return scaledExposedRect;
@@ -479,12 +470,12 @@ void TileController::getTileIndexRangeForRect(const IntRect& rect, TileIndex& to
     if (clampedRect.x() >= 0)
         topLeft.setX(clampedRect.x() / m_tileSize.width());
     else
-        topLeft.setX(clampedRect.x() / leftMarginWidth());
+        topLeft.setX(floorf((float)clampedRect.x() / leftMarginWidth()));
 
     if (clampedRect.y() >= 0)
         topLeft.setY(clampedRect.y() / m_tileSize.height());
     else
-        topLeft.setY(clampedRect.y() / topMarginHeight());
+        topLeft.setY(floorf((float)clampedRect.y() / topMarginHeight()));
 
     int bottomXRatio = ceil((float)clampedRect.maxX() / m_tileSize.width());
     bottomRight.setX(std::max(bottomXRatio - 1, 0));
@@ -502,55 +493,33 @@ FloatRect TileController::computeTileCoverageRect(const FloatRect& previousVisib
     if (!m_isInWindow)
         return visibleRect;
 
-    // If our tile coverage is just for slow-scrolling, then we want to limit the tile coverage to the visible rect, but
-    // we should include the margin tiles if we're close to an edge.
-    if (m_tileCoverage & CoverageForSlowScrolling) {
-        FloatSize coverageSize = visibleRect.size();
-        FloatPoint coverageOrigin = visibleRect.location();
-        float tileWidth = visibleRect.width();
-        float tileHeight = visibleRect.height();
-
-        // We're within one tile from the top, so we should make sure we have a top-margin tile.
-        if (visibleRect.y() < tileHeight) {
-            coverageSize.setHeight(coverageSize.height() + topMarginHeight());
-            coverageOrigin.setY(coverageOrigin.y() - topMarginHeight());
-        }
-
-        // We're within one tile from the left edge, so we should make sure we have a left-margin tile.
-        if (visibleRect.x() < tileWidth) {
-            coverageSize.setWidth(coverageSize.width() + leftMarginWidth());
-            coverageOrigin.setX(coverageOrigin.x() - leftMarginWidth());
-        }
-
-        IntSize layerSize = expandedIntSize(m_tileCacheLayer->bounds().size());
-        // We're within one tile from the bottom edge, so we should make sure we have a bottom-margin tile.
-        if (visibleRect.y() + tileHeight > layerSize.height() - tileHeight)
-            coverageSize.setHeight(coverageSize.height() + bottomMarginHeight());
-
-        // We're within one tile from the right edge, so we should make sure we have a right-margin tile.
-        if (visibleRect.x() + tileWidth > layerSize.width() - tileWidth)
-            coverageSize.setWidth(coverageSize.width() + rightMarginWidth());
-
-        return FloatRect(coverageOrigin, coverageSize);
-    }
-
     bool largeVisibleRectChange = !previousVisibleRect.isEmpty() && !visibleRect.intersects(previousVisibleRect);
     
     // FIXME: look at how far the document can scroll in each dimension.
     float coverageHorizontalSize = visibleRect.width();
     float coverageVerticalSize = visibleRect.height();
-    
+
+#if PLATFORM(IOS)
+    // FIXME: ViewUpdateDispatcher could do an amazing job at computing this (<rdar://problem/16205290>).
+    // In the meantime, just default to something good enough.
+    if (!largeVisibleRectChange) {
+        coverageHorizontalSize *= 1.5;
+        coverageVerticalSize *= 1.5;
+    }
+#else
     // Inflate the coverage rect so that it covers 2x of the visible width and 3x of the visible height.
     // These values were chosen because it's more common to have tall pages and to scroll vertically,
     // so we keep more tiles above and below the current area.
+
     if (m_tileCoverage & CoverageForHorizontalScrolling && !largeVisibleRectChange)
         coverageHorizontalSize *= 2;
 
     if (m_tileCoverage & CoverageForVerticalScrolling && !largeVisibleRectChange)
         coverageVerticalSize *= 3;
-    
+
     coverageVerticalSize += topMarginHeight() + bottomMarginHeight();
     coverageHorizontalSize += leftMarginWidth() + rightMarginWidth();
+#endif
 
     FloatRect coverageBounds = bounds();
     float coverageLeft = visibleRect.x() - (coverageHorizontalSize - visibleRect.width()) / 2;
@@ -562,17 +531,6 @@ FloatRect TileController::computeTileCoverageRect(const FloatRect& previousVisib
     coverageTop = std::max(coverageTop, coverageBounds.y());
 
     return FloatRect(coverageLeft, coverageTop, coverageHorizontalSize, coverageVerticalSize);
-}
-
-IntSize TileController::computeTileSize() const
-{
-    if (m_tileCoverage & CoverageForSlowScrolling) {
-        FloatSize tileSize = m_visibleRect.size();
-        tileSize.scale(m_scale);
-        return expandedIntSize(tileSize);
-    }
-
-    return IntSize(defaultTileWidth, defaultTileHeight);
 }
 
 void TileController::scheduleTileRevalidation(double interval)
@@ -713,49 +671,40 @@ void TileController::revalidateTiles(TileValidationPolicyFlags foregroundValidat
     scaledRect.scale(m_scale);
     IntRect coverageRectInTileCoords(enclosingIntRect(scaledRect));
 
-    IntSize oldTileSize = m_tileSize;
-    m_tileSize = computeTileSize();
-    bool tileSizeChanged = m_tileSize != oldTileSize;
+    TileCohort currCohort = nextTileCohort();
+    unsigned tilesInCohort = 0;
 
-    if (tileSizeChanged) {
-        removeAllTiles();
-        m_cohortList.clear();
-    } else {
-        TileCohort currCohort = nextTileCohort();
-        unsigned tilesInCohort = 0;
-        
-        // Move tiles newly outside the coverage rect into the cohort map.
-        for (TileMap::iterator it = m_tiles.begin(), end = m_tiles.end(); it != end; ++it) {
-            TileInfo& tileInfo = it->value;
-            TileIndex tileIndex = it->key;
+    // Move tiles newly outside the coverage rect into the cohort map.
+    for (TileMap::iterator it = m_tiles.begin(), end = m_tiles.end(); it != end; ++it) {
+        TileInfo& tileInfo = it->value;
+        TileIndex tileIndex = it->key;
 
-            PlatformCALayer* tileLayer = tileInfo.layer.get();
-            IntRect tileRect = rectForTileIndex(tileIndex);
-            if (tileRect.intersects(coverageRectInTileCoords)) {
-                tileInfo.cohort = VisibleTileCohort;
-                if (tileInfo.hasStaleContent) {
-                    // FIXME: store a dirty region per layer?
-                    tileLayer->setNeedsDisplay();
-                    tileInfo.hasStaleContent = false;
-                }
-            } else {
-                // Add to the currentCohort if not already in one.
-                if (tileInfo.cohort == VisibleTileCohort) {
-                    tileInfo.cohort = currCohort;
-                    ++tilesInCohort;
-                    
-                    if (m_unparentsOffscreenTiles)
-                        tileLayer->removeFromSuperlayer();
-                }
+        PlatformCALayer* tileLayer = tileInfo.layer.get();
+        IntRect tileRect = rectForTileIndex(tileIndex);
+        if (tileRect.intersects(coverageRectInTileCoords)) {
+            tileInfo.cohort = VisibleTileCohort;
+            if (tileInfo.hasStaleContent) {
+                // FIXME: store a dirty region per layer?
+                tileLayer->setNeedsDisplay();
+                tileInfo.hasStaleContent = false;
+            }
+        } else {
+            // Add to the currentCohort if not already in one.
+            if (tileInfo.cohort == VisibleTileCohort) {
+                tileInfo.cohort = currCohort;
+                ++tilesInCohort;
+
+                if (m_unparentsOffscreenTiles)
+                    tileLayer->removeFromSuperlayer();
             }
         }
-        
-        if (tilesInCohort)
-            startedNewCohort(currCohort);
-
-        if (!m_aggressivelyRetainsTiles)
-            scheduleCohortRemoval();
     }
+
+    if (tilesInCohort)
+        startedNewCohort(currCohort);
+
+    if (!m_aggressivelyRetainsTiles)
+        scheduleCohortRemoval();
 
     // Ensure primary tile coverage tiles.
     m_primaryTileCoverageRect = ensureTilesForRect(tileCoverageRect, CoverageType::PrimaryTiles);

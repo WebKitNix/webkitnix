@@ -32,6 +32,7 @@
 #include "CopiedSpaceInlines.h"
 #include "JSCell.h"
 #include "JSObject.h"
+#include "JSCInlines.h"
 #include "Structure.h"
 
 namespace JSC {
@@ -99,9 +100,8 @@ void ConservativeRoots::genericAddSpan(void* begin, void* end, MarkHook& markHoo
         end = swapTemp;
     }
 
-    ASSERT((static_cast<char*>(end) - static_cast<char*>(begin)) < 0x1000000);
-    ASSERT(isPointerAligned(begin));
-    ASSERT(isPointerAligned(end));
+    RELEASE_ASSERT(isPointerAligned(begin));
+    RELEASE_ASSERT(isPointerAligned(end));
 
     TinyBloomFilter filter = m_blocks->filter(); // Make a local copy of filter to show the compiler it won't alias, and can be register-allocated.
     for (char** it = static_cast<char**>(begin); it != static_cast<char**>(end); ++it)

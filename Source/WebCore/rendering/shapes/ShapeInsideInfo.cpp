@@ -30,7 +30,7 @@
 #include "config.h"
 #include "ShapeInsideInfo.h"
 
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
 
 #include "InlineIterator.h"
 #include "RenderBlock.h"
@@ -51,7 +51,7 @@ bool ShapeInsideInfo::isEnabledFor(const RenderBlock& renderer)
 
     switch (shapeValue->type()) {
     case ShapeValue::Shape:
-        return shapeValue->shape() && shapeValue->shape()->type() != BasicShape::BasicShapeInsetRectangleType && shapeValue->shape()->type() != BasicShape::BasicShapeInsetType;
+        return shapeValue->shape() && shapeValue->shape()->type() != BasicShape::BasicShapeInsetType;
     case ShapeValue::Image:
         return shapeValue->isImageValid() && checkShapeImageOrigin(renderer.document(), *(shapeValue->image()->cachedImage()));
     case ShapeValue::Box:
@@ -78,7 +78,7 @@ bool ShapeInsideInfo::updateSegmentsForLine(LayoutSize lineOffset, LayoutUnit li
 bool ShapeInsideInfo::updateSegmentsForLine(LayoutUnit lineTop, LayoutUnit lineHeight)
 {
     ASSERT(lineHeight >= 0);
-    m_shapeLineTop = lineTop - logicalTopOffset();
+    m_referenceBoxLineTop = lineTop - logicalTopOffset();
     m_lineHeight = lineHeight;
     m_segments.clear();
     m_segmentRanges.clear();
@@ -96,9 +96,9 @@ bool ShapeInsideInfo::adjustLogicalLineTop(float minSegmentWidth)
         return false;
 
     LayoutUnit newLineTop;
-    if (shape.firstIncludedIntervalLogicalTop(m_shapeLineTop, FloatSize(minSegmentWidth, m_lineHeight), newLineTop)) {
-        if (newLineTop > m_shapeLineTop) {
-            m_shapeLineTop = newLineTop;
+    if (shape.firstIncludedIntervalLogicalTop(m_referenceBoxLineTop, FloatSize(minSegmentWidth, m_lineHeight), newLineTop)) {
+        if (newLineTop > m_referenceBoxLineTop) {
+            m_referenceBoxLineTop = newLineTop;
             return true;
         }
     }
@@ -111,13 +111,18 @@ ShapeValue* ShapeInsideInfo::shapeValue() const
     return m_renderer.style().resolvedShapeInside();
 }
 
+const RenderStyle& ShapeInsideInfo::styleForWritingMode() const
+{
+    return m_renderer.style();
+}
+
 LayoutUnit ShapeInsideInfo::computeFirstFitPositionForFloat(const FloatSize floatSize) const
 {
     if (!floatSize.width() || shapeLogicalBottom() < logicalLineTop())
         return 0;
 
     LayoutUnit firstFitPosition = 0;
-    if (computedShape().firstIncludedIntervalLogicalTop(m_shapeLineTop, floatSize, firstFitPosition) && (m_shapeLineTop <= firstFitPosition))
+    if (computedShape().firstIncludedIntervalLogicalTop(m_referenceBoxLineTop, floatSize, firstFitPosition) && (m_referenceBoxLineTop <= firstFitPosition))
         return firstFitPosition;
 
     return 0;

@@ -74,13 +74,13 @@ public:
 
     virtual VisiblePosition positionForPoint(const LayoutPoint&) override;
 
-    bool is8Bit() const { return m_text.is8Bit(); }
+    bool is8Bit() const { return m_text.impl()->is8Bit(); }
     const LChar* characters8() const { return m_text.impl()->characters8(); }
     const UChar* characters16() const { return m_text.impl()->characters16(); }
-    const UChar* characters() const { return deprecatedCharacters(); } // FIXME: Delete this.
-    const UChar* deprecatedCharacters() const { return m_text.deprecatedCharacters(); }
-    UChar characterAt(unsigned i) const { return is8Bit() ? characters8()[i] : characters16()[i]; }
-    UChar operator[](unsigned i) const { return characterAt(i); }
+    const UChar* deprecatedCharacters() const { return m_text.impl()->deprecatedCharacters(); }
+    UChar characterAt(unsigned) const;
+    UChar uncheckedCharacterAt(unsigned) const;
+    UChar operator[](unsigned i) const { return uncheckedCharacterAt(i); }
     unsigned textLength() const { return m_text.impl()->length(); } // non virtual implementation of length()
     void positionLineBox(InlineTextBox&);
 
@@ -218,8 +218,21 @@ private:
     RenderTextLineBoxes m_lineBoxes;
 };
 
-template <> inline bool isRendererOfType<const RenderText>(const RenderObject& renderer) { return renderer.isText(); }
 RENDER_OBJECT_TYPE_CASTS(RenderText, isText())
+
+inline UChar RenderText::uncheckedCharacterAt(unsigned i) const
+{
+    ASSERT_WITH_SECURITY_IMPLICATION(i < textLength());
+    return is8Bit() ? characters8()[i] : characters16()[i];
+}
+
+inline UChar RenderText::characterAt(unsigned i) const
+{
+    if (i >= textLength())
+        return 0;
+
+    return uncheckedCharacterAt(i);
+}
 
 inline RenderStyle& RenderText::style() const
 {

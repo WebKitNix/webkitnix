@@ -35,7 +35,6 @@
 #include "RenderObject.h"
 #include "SplitElementCommand.h"
 #include "Text.h"
-#include "TextIterator.h"
 #include "VisibleUnits.h"
 #include "htmlediting.h"
 
@@ -109,7 +108,7 @@ void IndentOutdentCommand::indentIntoBlockquote(const Position& start, const Pos
         // Create a new blockquote and insert it as a child of the root editable element. We accomplish
         // this by splitting all parents of the current paragraph up to that point.
         targetBlockquote = createBlockElement();
-        if (outerBlock == start.containerNode())
+        if (outerBlock == nodeToSplitTo)
             insertNodeAt(targetBlockquote, start);
         else
             insertNodeBefore(targetBlockquote, outerBlock);

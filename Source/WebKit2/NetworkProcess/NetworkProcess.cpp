@@ -44,7 +44,9 @@
 #include "WebContextMessages.h"
 #include "WebCookieManager.h"
 #include <WebCore/Logging.h>
+#include <WebCore/MemoryPressureHandler.h>
 #include <WebCore/ResourceRequest.h>
+#include <WebCore/SessionID.h>
 #include <wtf/RunLoop.h>
 #include <wtf/text/CString.h>
 
@@ -65,7 +67,7 @@ NetworkProcess& NetworkProcess::shared()
 NetworkProcess::NetworkProcess()
     : m_hasSetCacheModel(false)
     , m_cacheModel(CacheModelDocumentViewer)
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     , m_clearCacheDispatchGroup(0)
 #endif
 {
@@ -155,6 +157,9 @@ void NetworkProcess::initializeNetworkProcess(const NetworkProcessCreationParame
 {
     platformInitializeNetworkProcess(parameters);
 
+    memoryPressureHandler().setLowMemoryHandler(lowMemoryHandler);
+    memoryPressureHandler().install();
+
     setCacheModel(static_cast<uint32_t>(parameters.cacheModel));
 
 #if PLATFORM(MAC) || USE(CFNETWORK)
@@ -163,7 +168,7 @@ void NetworkProcess::initializeNetworkProcess(const NetworkProcessCreationParame
 
     // FIXME: instead of handling this here, a message should be sent later (scales to multiple sessions)
     if (parameters.privateBrowsingEnabled)
-        RemoteNetworkingContext::ensurePrivateBrowsingSession(SessionTracker::legacyPrivateSessionID);
+        RemoteNetworkingContext::ensurePrivateBrowsingSession(SessionID::legacyPrivateSessionID());
 
     if (parameters.shouldUseTestingNetworkSession)
         NetworkStorageSession::switchToNewTestingSession();
@@ -190,7 +195,7 @@ void NetworkProcess::initializeConnection(IPC::Connection* connection)
 
 void NetworkProcess::createNetworkConnectionToWebProcess()
 {
-#if PLATFORM(MAC)
+#if OS(DARWIN)
     // Create the listening port.
     mach_port_t listeningPort;
     mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &listeningPort);
@@ -214,12 +219,12 @@ void NetworkProcess::createNetworkConnectionToWebProcess()
 #endif
 }
 
-void NetworkProcess::ensurePrivateBrowsingSession(uint64_t sessionID)
+void NetworkProcess::ensurePrivateBrowsingSession(SessionID sessionID)
 {
     RemoteNetworkingContext::ensurePrivateBrowsingSession(sessionID);
 }
 
-void NetworkProcess::destroyPrivateBrowsingSession(uint64_t sessionID)
+void NetworkProcess::destroyPrivateBrowsingSession(SessionID sessionID)
 {
     SessionTracker::destroySession(sessionID);
 }
@@ -267,7 +272,13 @@ void NetworkProcess::terminate()
     ChildProcess::terminate();
 }
 
-#if !PLATFORM(MAC)
+void NetworkProcess::lowMemoryHandler(bool critical)
+{
+    platformLowMemoryHandler(critical);
+    WTF::releaseFastMallocFreeMemory();
+}
+
+#if !PLATFORM(COCOA)
 void NetworkProcess::initializeProcess(const ChildProcessInitializationParameters&)
 {
 }
@@ -277,6 +288,10 @@ void NetworkProcess::initializeProcessName(const ChildProcessInitializationParam
 }
 
 void NetworkProcess::initializeSandbox(const ChildProcessInitializationParameters&, SandboxInitializationParameters&)
+{
+}
+
+void NetworkProcess::platformLowMemoryHandler(bool)
 {
 }
 #endif

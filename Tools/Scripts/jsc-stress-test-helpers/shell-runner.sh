@@ -31,6 +31,15 @@ then
     fi
 fi
 
+VERBOSE=0
+while getopts "v" OPTION
+do
+    case $OPTION in
+        v) VERBOSE=1
+            ;;
+    esac
+done
+
 indexFile=".index"
 testList=".all_tests.txt"
 tempFile=".temp.txt"
@@ -39,7 +48,7 @@ lockDir=".lock_dir"
 trap "kill -9 0" SIGINT SIGHUP SIGTERM
 
 echo 0 > ${indexFile}
-ls test_script_* > ${testList}
+find . -name 'test_script_*' -depth 1 > ${testList}
 
 function lock_test_list() {
     until mkdir ${lockDir} 2> /dev/null; do sleep 0; done
@@ -71,7 +80,7 @@ do
             mv ${tempFile} ${testList}
             unlock_test_list
 
-            sh ${nextTest} > /dev/null
+            [ $VERBOSE -eq 1 ] && sh ${nextTest} || sh ${nextTest} 1> /dev/null
 
             lock_test_list
         done

@@ -75,6 +75,7 @@ namespace WebCore {
 
     class AffineTransform;
     class DrawingBuffer;
+    class FloatRoundedRect;
     class Gradient;
     class GraphicsContextPlatformPrivate;
     class ImageBuffer;
@@ -102,10 +103,8 @@ namespace WebCore {
         SolidStroke,
         DottedStroke,
         DashedStroke,
-#if ENABLE(CSS3_TEXT_DECORATION)
         DoubleStroke,
         WavyStroke,
-#endif // CSS3_TEXT_DECORATION
     };
 
     enum InterpolationQuality {
@@ -272,8 +271,8 @@ namespace WebCore {
         // FIXME: ...except drawRect(), which fills properly but always strokes
         // using a 1-pixel stroke inset from the rect borders (of the correct
         // stroke color).
-        void drawRect(const IntRect&);
-        void drawLine(const IntPoint&, const IntPoint&);
+        void drawRect(const FloatRect&);
+        void drawLine(const FloatPoint&, const FloatPoint&);
 
 #if PLATFORM(IOS)
         void drawJoinedLines(CGPoint points[], unsigned count, bool antialias, CGLineCap = kCGLineCapButt);
@@ -296,9 +295,8 @@ namespace WebCore {
         void fillRect(const FloatRect&, const Color&, ColorSpace);
         void fillRect(const FloatRect&, Gradient&);
         void fillRect(const FloatRect&, const Color&, ColorSpace, CompositeOperator, BlendMode = BlendModeNormal);
-        void fillRoundedRect(const IntRect&, const IntSize& topLeft, const IntSize& topRight, const IntSize& bottomLeft, const IntSize& bottomRight, const Color&, ColorSpace);
-        void fillRoundedRect(const RoundedRect&, const Color&, ColorSpace, BlendMode = BlendModeNormal);
-        void fillRectWithRoundedHole(const IntRect&, const RoundedRect& roundedHoleRect, const Color&, ColorSpace);
+        void fillRoundedRect(const FloatRoundedRect&, const Color&, ColorSpace, BlendMode = BlendModeNormal);
+        void fillRectWithRoundedHole(const FloatRect&, const FloatRoundedRect& roundedHoleRect, const Color&, ColorSpace);
 
         void clearRect(const FloatRect&);
 
@@ -329,13 +327,10 @@ namespace WebCore {
 
         void clip(const IntRect&);
         void clip(const FloatRect&);
-        void clipRoundedRect(const RoundedRect&);
+        void clipRoundedRect(const FloatRoundedRect&);
 
-        // FIXME: Consider writing this in terms of a specialized RoundedRect that uses FloatRect and FloatSize radii.
-        void clipRoundedRect(const FloatRect&, const FloatSize& topLeft, const FloatSize& topRight, const FloatSize& bottomLeft, const FloatSize& bottomRight);
-
-        void clipOut(const IntRect&);
-        void clipOutRoundedRect(const RoundedRect&);
+        void clipOut(const FloatRect&);
+        void clipOutRoundedRect(const FloatRoundedRect&);
         void clipPath(const Path&, WindRule);
         void clipConvexPolygon(size_t numPoints, const FloatPoint*, bool antialias = true);
         void clipToImageBuffer(ImageBuffer*, const FloatRect&);
@@ -370,8 +365,8 @@ namespace WebCore {
         FloatRect roundToDevicePixels(const FloatRect&, RoundingMode = RoundAllSides);
 
         FloatRect computeLineBoundsForText(const FloatPoint&, float width, bool printing);
-        void drawLineForText(const FloatPoint&, float width, bool printing);
-        void drawLinesForText(const FloatPoint&, const DashArray& widths, bool printing);
+        void drawLineForText(const FloatPoint&, float width, bool printing, bool doubleLines = false);
+        void drawLinesForText(const FloatPoint&, const DashArray& widths, bool printing, bool doubleLines = false);
         enum DocumentMarkerLineStyle {
 #if PLATFORM(IOS)
             TextCheckingDictationPhraseWithAlternativesLineStyle,
@@ -536,11 +531,7 @@ namespace WebCore {
         static void adjustLineToPixelBoundaries(FloatPoint& p1, FloatPoint& p2, float strokeWidth, StrokeStyle);
 
     private:
-#if !PLATFORM(IOS)
-        void platformInit(PlatformGraphicsContext*);
-#else
-        void platformInit(PlatformGraphicsContext*, bool shouldUseContextColors);
-#endif
+        void platformInit(PlatformGraphicsContext*, bool shouldUseContextColors = false);
         void platformDestroy();
 
 #if PLATFORM(WIN) && !USE(WINGDI)
@@ -575,6 +566,8 @@ namespace WebCore {
 
         void platformFillEllipse(const FloatRect&);
         void platformStrokeEllipse(const FloatRect&);
+
+        void platformFillRoundedRect(const FloatRoundedRect&, const Color&, ColorSpace);
 
         GraphicsContextPlatformPrivate* m_data;
 

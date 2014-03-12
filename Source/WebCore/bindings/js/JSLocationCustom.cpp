@@ -30,17 +30,17 @@ using namespace JSC;
 
 namespace WebCore {
 
-static EncodedJSValue nonCachingStaticReplaceFunctionGetter(ExecState* exec, EncodedJSValue, EncodedJSValue, PropertyName propertyName)
+static EncodedJSValue nonCachingStaticReplaceFunctionGetter(ExecState* exec, JSObject*, EncodedJSValue, PropertyName propertyName)
 {
     return JSValue::encode(JSFunction::create(exec->vm(), exec->lexicalGlobalObject(), 1, propertyName.publicName(), jsLocationPrototypeFunctionReplace));
 }
 
-static EncodedJSValue nonCachingStaticReloadFunctionGetter(ExecState* exec, EncodedJSValue, EncodedJSValue, PropertyName propertyName)
+static EncodedJSValue nonCachingStaticReloadFunctionGetter(ExecState* exec, JSObject*, EncodedJSValue, PropertyName propertyName)
 {
     return JSValue::encode(JSFunction::create(exec->vm(), exec->lexicalGlobalObject(), 0, propertyName.publicName(), jsLocationPrototypeFunctionReload));
 }
 
-static EncodedJSValue nonCachingStaticAssignFunctionGetter(ExecState* exec, EncodedJSValue, EncodedJSValue, PropertyName propertyName)
+static EncodedJSValue nonCachingStaticAssignFunctionGetter(ExecState* exec, JSObject*, EncodedJSValue, PropertyName propertyName)
 {
     return JSValue::encode(JSFunction::create(exec->vm(), exec->lexicalGlobalObject(), 1, propertyName.publicName(), jsLocationPrototypeFunctionAssign));
 }
@@ -64,7 +64,7 @@ bool JSLocation::getOwnPropertySlotDelegate(ExecState* exec, PropertyName proper
 
     // Check for the few functions that we allow, even when called cross-domain.
     // Make these read-only / non-configurable to prevent writes via defineProperty.
-    const HashEntry* entry = JSLocationPrototype::info()->propHashTable(exec)->entry(exec, propertyName);
+    const HashTableValue* entry = JSLocationPrototype::info()->propHashTable(exec)->entry(exec, propertyName);
     if (entry && (entry->attributes() & JSC::Function)) {
         if (entry->function() == jsLocationPrototypeFunctionReplace) {
             slot.setCustom(this, ReadOnly | DontDelete | DontEnum, nonCachingStaticReplaceFunctionGetter);
@@ -98,7 +98,7 @@ bool JSLocation::putDelegate(ExecState* exec, PropertyName propertyName, JSValue
 
     bool sameDomainAccess = shouldAllowAccessToFrame(exec, frame);
 
-    const HashEntry* entry = JSLocation::info()->propHashTable(exec)->entry(exec, propertyName);
+    const HashTableValue* entry = JSLocation::info()->propHashTable(exec)->entry(exec, propertyName);
     if (!entry) {
         if (sameDomainAccess)
             JSObject::put(this, exec, propertyName, value, slot);

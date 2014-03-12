@@ -26,8 +26,6 @@
 #ifndef FTLAbstractHeap_h
 #define FTLAbstractHeap_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(FTL_JIT)
 
 #include "FTLAbbreviations.h"
@@ -139,7 +137,7 @@ private:
 
 class IndexedAbstractHeap {
 public:
-    IndexedAbstractHeap(LContext, AbstractHeap* parent, const char* heapName, size_t elementSize);
+    IndexedAbstractHeap(LContext, AbstractHeap* parent, const char* heapName, ptrdiff_t offset, size_t elementSize);
     ~IndexedAbstractHeap();
     
     const AbstractHeap& atAnyIndex() const { return m_heapForAnyIndex; }
@@ -168,6 +166,7 @@ private:
 
     AbstractHeap m_heapForAnyIndex;
     size_t m_heapNameLength;
+    ptrdiff_t m_offset;
     size_t m_elementSize;
     LValue m_scaleTerm;
     bool m_canShift;

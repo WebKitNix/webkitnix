@@ -32,7 +32,6 @@
 #include "InspectorWebBackendDispatchers.h"
 #include "InspectorWebFrontendDispatchers.h"
 #include <wtf/Noncopyable.h>
-#include <wtf/PassOwnPtr.h>
 
 namespace Inspector {
 class InspectorApplicationCacheFrontendDispatcher;
@@ -57,7 +56,7 @@ public:
     ~InspectorApplicationCacheAgent() { }
 
     virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
-    virtual void willDestroyFrontendAndBackend() override;
+    virtual void willDestroyFrontendAndBackend(Inspector::InspectorDisconnectReason) override;
 
     void updateApplicationCacheStatus(Frame*);
     void networkStateChanged();

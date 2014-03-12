@@ -21,8 +21,6 @@
  */
 
 #include "config.h"
-
-#if ENABLE(SVG)
 #include "SVGAElement.h"
 
 #include "Attr.h"
@@ -160,7 +158,7 @@ void SVGAElement::defaultEventHandler(Event* event)
             String url = stripLeadingAndTrailingHTMLSpaces(href());
 
             if (url[0] == '#') {
-                Element* targetElement = treeScope().getElementById(url.substring(1));
+                Element* targetElement = treeScope().getElementById(url.substringSharingImpl(1));
                 if (targetElement && isSVGSMILElement(*targetElement)) {
                     toSVGSMILElement(*targetElement).beginByLinkActivation();
                     event->setDefaultHandled();
@@ -241,5 +239,3 @@ bool SVGAElement::willRespondToMouseClickEvents()
 }
 
 } // namespace WebCore
-
-#endif // ENABLE(SVG)

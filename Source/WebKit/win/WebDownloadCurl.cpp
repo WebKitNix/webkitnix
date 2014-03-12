@@ -37,7 +37,6 @@
 #include "WebURLCredential.h"
 #include "WebURLResponse.h"
 
-#include <wtf/platform.h>
 #include <wtf/text/CString.h>
 
 #include <io.h>
@@ -181,7 +180,7 @@ void WebDownload::didReceiveResponse()
         if (suggestedFilename.isEmpty())
             suggestedFilename = pathGetFileName(response.url().string());
         suggestedFilename = decodeURLEscapeSequences(suggestedFilename);
-        BString suggestedFilenameBSTR(suggestedFilename.characters(), suggestedFilename.length());
+        BString suggestedFilenameBSTR(suggestedFilename.deprecatedCharacters(), suggestedFilename.length());
         m_delegate->decideDestinationWithSuggestedFilename(this, suggestedFilenameBSTR);
     }
 }

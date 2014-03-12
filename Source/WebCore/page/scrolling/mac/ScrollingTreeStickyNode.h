@@ -48,11 +48,13 @@ private:
     ScrollingTreeStickyNode(ScrollingTree&, ScrollingNodeID);
 
     virtual void updateBeforeChildren(const ScrollingStateNode&) override;
-    virtual void parentScrollPositionDidChange(const IntRect& viewportRect, const FloatSize& cumulativeDelta) override;
+    virtual void parentScrollPositionDidChange(const FloatRect& viewportRect, const FloatSize& cumulativeDelta) override;
 
     StickyPositionViewportConstraints m_constraints;
     RetainPtr<CALayer> m_layer;
 };
+
+SCROLLING_NODE_TYPE_CASTS(ScrollingTreeStickyNode, nodeType() == StickyNode);
 
 } // namespace WebCore
 

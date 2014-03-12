@@ -28,6 +28,7 @@
 #include "SessionTracker.h"
 #include "WebCookieManager.h"
 #include "WebFrameNetworkingContext.h"
+#include "WebPage.h"
 #include <WebCore/Frame.h>
 #include <WebCore/FrameLoader.h>
 #include <WebCore/FrameLoaderClient.h>
@@ -41,8 +42,10 @@ using namespace WebCore;
 
 namespace WebKit {
     
-void WebFrameNetworkingContext::ensurePrivateBrowsingSession(uint64_t sessionID)
+void WebFrameNetworkingContext::ensurePrivateBrowsingSession(SessionID sessionID)
 {
+    ASSERT(sessionID.isEphemeral());
+
     if (SessionTracker::session(sessionID))
         return;
 
@@ -52,7 +55,7 @@ void WebFrameNetworkingContext::ensurePrivateBrowsingSession(uint64_t sessionID)
     else
         base = SessionTracker::getIdentifierBase();
 
-    SessionTracker::session(sessionID) = NetworkStorageSession::createPrivateBrowsingSession(base + '.' + String::number(sessionID));
+    SessionTracker::setSession(sessionID, NetworkStorageSession::createPrivateBrowsingSession(base + '.' + String::number(sessionID.sessionID())));
 }
 
 void WebFrameNetworkingContext::setCookieAcceptPolicyForAllContexts(HTTPCookieAcceptPolicy policy)
@@ -62,7 +65,7 @@ void WebFrameNetworkingContext::setCookieAcceptPolicyForAllContexts(HTTPCookieAc
     if (RetainPtr<CFHTTPCookieStorageRef> cookieStorage = NetworkStorageSession::defaultStorageSession().cookieStorage())
         WKSetHTTPCookieAcceptPolicy(cookieStorage.get(), policy);
 
-    for (const auto& session : SessionTracker::getSessionMap().values()) {
+    for (const auto& session : SessionTracker::sessionMap().values()) {
         if (session)
             WKSetHTTPCookieAcceptPolicy(session->cookieStorage().get(), policy);
     }
@@ -97,13 +100,10 @@ ResourceError WebFrameNetworkingContext::blockedError(const ResourceRequest& req
 
 NetworkStorageSession& WebFrameNetworkingContext::storageSession() const
 {
-    ASSERT(isMainThread());
-
-    if (frame() && frame()->settings().privateBrowsingEnabled())
-        return *SessionTracker::session(SessionTracker::legacyPrivateSessionID);
-
-    return NetworkStorageSession::defaultStorageSession();
+    ASSERT(RunLoop::isMain());
+    return *SessionTracker::session(frame() ? frame()->page()->sessionID() : SessionID::defaultSessionID());
 }
+
 WebFrameLoaderClient* WebFrameNetworkingContext::webFrameLoaderClient() const
 {
     if (!frame())

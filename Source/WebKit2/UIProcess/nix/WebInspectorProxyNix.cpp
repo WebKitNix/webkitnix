@@ -30,6 +30,7 @@
 
 #include <WebCore/NotImplemented.h>
 #include <wtf/text/WTFString.h>
+#include <wtf/text/StringBuilder.h>
 
 namespace WebKit {
 
@@ -132,6 +133,15 @@ void WebInspectorProxy::platformSave(const String&, const String&, bool, bool)
 void WebInspectorProxy::platformAppend(const String&, const String&)
 {
     notImplemented();
+}
+
+String WebInspectorProxy::inspectorTestPageURL() const
+{
+    StringBuilder builder;
+    builder.append(inspectorBaseURL());
+    builder.appendLiteral("/Test.html");
+
+    return builder.toString();
 }
 
 } // namespace WebKit

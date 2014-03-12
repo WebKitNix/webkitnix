@@ -234,9 +234,9 @@
         return nullptr;
     
     WebCore::CachedResource* cachedResource = WebCore::memoryCache()->resourceForURL(url);
-    if (!cachedResource || cachedResource->type() != WebCore::CachedResource::ImageResource)
+    if (!cachedResource || !cachedResource->isImage())
         return nullptr;
-    WebCore::CachedImage* cachedImage = static_cast<WebCore::CachedImage*>(cachedResource);
+    WebCore::CachedImage* cachedImage = WebCore::toCachedImage(cachedResource);
     if (!cachedImage || !cachedImage->hasImage())
         return nullptr;
     return cachedImage->image()->getCGImageRef();

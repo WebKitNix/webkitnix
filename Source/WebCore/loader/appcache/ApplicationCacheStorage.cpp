@@ -31,20 +31,17 @@
 #include "ApplicationCacheHost.h"
 #include "ApplicationCacheResource.h"
 #include "FileSystem.h"
-#include "URL.h"
 #include "NotImplemented.h"
+#include "SQLiteDatabaseTracker.h"
 #include "SQLiteStatement.h"
 #include "SQLiteTransaction.h"
 #include "SecurityOrigin.h"
+#include "URL.h"
 #include "UUID.h"
-#include <wtf/text/CString.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/StringExtras.h>
+#include <wtf/text/CString.h>
 #include <wtf/text/StringBuilder.h>
-
-#if PLATFORM(IOS)
-#include "SQLiteDatabaseTracker.h"
-#endif
 
 namespace WebCore {
 
@@ -104,10 +101,8 @@ static unsigned urlHostHash(const URL& url)
 
 ApplicationCacheGroup* ApplicationCacheStorage::loadCacheGroup(const URL& manifestURL)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     openDatabase(false);
     if (!m_database.isOpen())
         return 0;
@@ -182,10 +177,8 @@ void ApplicationCacheStorage::loadManifestHostHashes()
     // to avoid trying to open the database over and over if it doesn't exist.
     hasLoadedHashes = true;
     
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     openDatabase(false);
     if (!m_database.isOpen())
         return;
@@ -229,10 +222,7 @@ ApplicationCacheGroup* ApplicationCacheStorage::cacheGroupForURL(const URL& url)
     if (!m_database.isOpen())
         return 0;
         
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
 
     // Check the database. Look for all cache groups with a newest cache.
     SQLiteStatement statement(m_database, "SELECT id, manifestURL, newestCache FROM CacheGroups WHERE newestCache IS NOT NULL");
@@ -280,10 +270,8 @@ ApplicationCacheGroup* ApplicationCacheStorage::cacheGroupForURL(const URL& url)
 
 ApplicationCacheGroup* ApplicationCacheStorage::fallbackCacheGroupForURL(const URL& url)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     ASSERT(!url.hasFragmentIdentifier());
 
     // Check if an appropriate cache already exists in memory.
@@ -455,10 +443,8 @@ void ApplicationCacheStorage::setDefaultOriginQuota(int64_t quota)
 
 bool ApplicationCacheStorage::calculateQuotaForOrigin(const SecurityOrigin* origin, int64_t& quota)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     // If an Origin record doesn't exist, then the COUNT will be 0 and quota will be 0.
     // Using the count to determine if a record existed or not is a safe way to determine
     // if a quota of 0 is real, from the record, or from null.
@@ -482,10 +468,8 @@ bool ApplicationCacheStorage::calculateQuotaForOrigin(const SecurityOrigin* orig
 
 bool ApplicationCacheStorage::calculateUsageForOrigin(const SecurityOrigin* origin, int64_t& usage)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     // If an Origins record doesn't exist, then the SUM will be null,
     // which will become 0, as expected, when converting to a number.
     SQLiteStatement statement(m_database, "SELECT SUM(Caches.size)"
@@ -510,10 +494,8 @@ bool ApplicationCacheStorage::calculateUsageForOrigin(const SecurityOrigin* orig
 
 bool ApplicationCacheStorage::calculateRemainingSizeForOriginExcludingCache(const SecurityOrigin* origin, ApplicationCache* cache, int64_t& remainingSize)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     openDatabase(false);
     if (!m_database.isOpen())
         return false;
@@ -563,10 +545,8 @@ bool ApplicationCacheStorage::calculateRemainingSizeForOriginExcludingCache(cons
 
 bool ApplicationCacheStorage::storeUpdatedQuotaForOrigin(const SecurityOrigin* origin, int64_t quota)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     openDatabase(true);
     if (!m_database.isOpen())
         return false;
@@ -586,9 +566,7 @@ bool ApplicationCacheStorage::storeUpdatedQuotaForOrigin(const SecurityOrigin* o
 
 bool ApplicationCacheStorage::executeSQLCommand(const String& sql)
 {
-#if PLATFORM(IOS)
     ASSERT(SQLiteDatabaseTracker::hasTransactionInProgress());
-#endif
     ASSERT(m_database.isOpen());
     
     bool result = m_database.executeCommand(sql);
@@ -606,9 +584,8 @@ static const int schemaVersion = 7;
     
 void ApplicationCacheStorage::verifySchemaVersion()
 {
-#if PLATFORM(IOS)
     ASSERT(SQLiteDatabaseTracker::hasTransactionInProgress());
-#endif
+
     int version = SQLiteStatement(m_database, "PRAGMA user_version").getColumnInt(0);
     if (version == schemaVersion)
         return;
@@ -633,10 +610,8 @@ void ApplicationCacheStorage::verifySchemaVersion()
     
 void ApplicationCacheStorage::openDatabase(bool createIfDoesNotExist)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     if (m_database.isOpen())
         return;
 
@@ -704,9 +679,7 @@ void ApplicationCacheStorage::openDatabase(bool createIfDoesNotExist)
 
 bool ApplicationCacheStorage::executeStatement(SQLiteStatement& statement)
 {
-#if PLATFORM(IOS)
     ASSERT(SQLiteDatabaseTracker::hasTransactionInProgress());
-#endif
     bool result = statement.executeCommand();
     if (!result)
         LOG_ERROR("Application Cache Storage: failed to execute statement \"%s\" error \"%s\"", 
@@ -717,11 +690,15 @@ bool ApplicationCacheStorage::executeStatement(SQLiteStatement& statement)
 
 bool ApplicationCacheStorage::store(ApplicationCacheGroup* group, GroupStorageIDJournal* journal)
 {
-#if PLATFORM(IOS)
     ASSERT(SQLiteDatabaseTracker::hasTransactionInProgress());
-#endif
     ASSERT(group->storageID() == 0);
     ASSERT(journal);
+
+    // For some reason, an app cache may be partially written to disk. In particular, there may be
+    // a cache group with an identical manifest URL and associated cache entries. We want to remove
+    // this cache group and its associated cache entries so that we can create it again (below) as
+    // a way to repair it.
+    deleteCacheGroupRecord(group->manifestURL());
 
     SQLiteStatement statement(m_database, "INSERT INTO CacheGroups (manifestHostHash, manifestURL, origin) VALUES (?, ?, ?)");
     if (statement.prepare() != SQLResultOk)
@@ -746,9 +723,7 @@ bool ApplicationCacheStorage::store(ApplicationCacheGroup* group, GroupStorageID
 
 bool ApplicationCacheStorage::store(ApplicationCache* cache, ResourceStorageIDJournal* storageIDJournal)
 {
-#if PLATFORM(IOS)
     ASSERT(SQLiteDatabaseTracker::hasTransactionInProgress());
-#endif
     ASSERT(cache->storageID() == 0);
     ASSERT(cache->group()->storageID() != 0);
     ASSERT(storageIDJournal);
@@ -830,9 +805,7 @@ bool ApplicationCacheStorage::store(ApplicationCache* cache, ResourceStorageIDJo
 
 bool ApplicationCacheStorage::store(ApplicationCacheResource* resource, unsigned cacheStorageID)
 {
-#if PLATFORM(IOS)
     ASSERT(SQLiteDatabaseTracker::hasTransactionInProgress());
-#endif
     ASSERT(cacheStorageID);
     ASSERT(!resource->storageID());
     
@@ -896,11 +869,10 @@ bool ApplicationCacheStorage::store(ApplicationCacheResource* resource, unsigned
     // Serialize the headers
     StringBuilder stringBuilder;
     
-    HTTPHeaderMap::const_iterator end = resource->response().httpHeaderFields().end();
-    for (HTTPHeaderMap::const_iterator it = resource->response().httpHeaderFields().begin(); it!= end; ++it) {
-        stringBuilder.append(it->key);
+    for (const auto& header : resource->response().httpHeaderFields()) {
+        stringBuilder.append(header.key);
         stringBuilder.append(':');
-        stringBuilder.append(it->value);
+        stringBuilder.append(header.value);
         stringBuilder.append('\n');
     }
     
@@ -950,10 +922,8 @@ bool ApplicationCacheStorage::store(ApplicationCacheResource* resource, unsigned
 
 bool ApplicationCacheStorage::storeUpdatedType(ApplicationCacheResource* resource, ApplicationCache* cache)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     ASSERT_UNUSED(cache, cache->storageID());
     ASSERT(resource->storageID());
 
@@ -970,10 +940,8 @@ bool ApplicationCacheStorage::storeUpdatedType(ApplicationCacheResource* resourc
 
 bool ApplicationCacheStorage::store(ApplicationCacheResource* resource, ApplicationCache* cache)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     ASSERT(cache->storageID());
     
     openDatabase(true);
@@ -1009,9 +977,7 @@ bool ApplicationCacheStorage::store(ApplicationCacheResource* resource, Applicat
 
 bool ApplicationCacheStorage::ensureOriginRecord(const SecurityOrigin* origin)
 {
-#if PLATFORM(IOS)
     ASSERT(SQLiteDatabaseTracker::hasTransactionInProgress());
-#endif
     SQLiteStatement insertOriginStatement(m_database, "INSERT INTO Origins (origin, quota) VALUES (?, ?)");
     if (insertOriginStatement.prepare() != SQLResultOk)
         return false;
@@ -1159,10 +1125,8 @@ static inline void parseHeaders(const String& headers, ResourceResponse& respons
     
 PassRefPtr<ApplicationCache> ApplicationCacheStorage::loadCache(unsigned storageID)
 {
-#if PLATFORM(IOS)
     ASSERT(SQLiteDatabaseTracker::hasTransactionInProgress());
-#endif
-    SQLiteStatement cacheStatement(m_database, 
+    SQLiteStatement cacheStatement(m_database,
                                    "SELECT url, statusCode, type, mimeType, textEncodingName, headers, CacheResourceData.data, CacheResourceData.path FROM CacheEntries INNER JOIN CacheResources ON CacheEntries.resource=CacheResources.id "
                                    "INNER JOIN CacheResourceData ON CacheResourceData.id=CacheResources.data WHERE CacheEntries.cache=?");
     if (cacheStatement.prepare() != SQLResultOk) {
@@ -1217,7 +1181,12 @@ PassRefPtr<ApplicationCache> ApplicationCacheStorage::loadCache(unsigned storage
 
     if (result != SQLResultDone)
         LOG_ERROR("Could not load cache resources, error \"%s\"", m_database.lastErrorMsg());
-    
+
+    if (!cache->manifestResource()) {
+        LOG_ERROR("Could not load application cache because there was no manifest resource");
+        return nullptr;
+    }
+
     // Load the online whitelist
     SQLiteStatement whitelistStatement(m_database, "SELECT url FROM CacheWhitelistURLs WHERE cache=?");
     if (whitelistStatement.prepare() != SQLResultOk)
@@ -1270,10 +1239,8 @@ PassRefPtr<ApplicationCache> ApplicationCacheStorage::loadCache(unsigned storage
     
 void ApplicationCacheStorage::remove(ApplicationCache* cache)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     if (!cache->storageID())
         return;
     
@@ -1311,10 +1278,8 @@ void ApplicationCacheStorage::remove(ApplicationCache* cache)
 
 void ApplicationCacheStorage::empty()
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     openDatabase(false);
     
     if (!m_database.isOpen())
@@ -1379,10 +1344,8 @@ bool ApplicationCacheStorage::writeDataToUniqueFileInDirectory(SharedBuffer* dat
 
 bool ApplicationCacheStorage::storeCopyOfCache(const String& cacheDirectory, ApplicationCacheHost* cacheHost)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     ApplicationCache* cache = cacheHost->applicationCache();
     if (!cache)
         return true;
@@ -1419,10 +1382,8 @@ bool ApplicationCacheStorage::storeCopyOfCache(const String& cacheDirectory, App
 
 bool ApplicationCacheStorage::manifestURLs(Vector<URL>* urls)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     ASSERT(urls);
     openDatabase(false);
     if (!m_database.isOpen())
@@ -1441,10 +1402,8 @@ bool ApplicationCacheStorage::manifestURLs(Vector<URL>* urls)
 
 bool ApplicationCacheStorage::cacheGroupSize(const String& manifestURL, int64_t* size)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     ASSERT(size);
     openDatabase(false);
     if (!m_database.isOpen())
@@ -1469,12 +1428,40 @@ bool ApplicationCacheStorage::cacheGroupSize(const String& manifestURL, int64_t*
     return true;
 }
 
+bool ApplicationCacheStorage::deleteCacheGroupRecord(const String& manifestURL)
+{
+    ASSERT(SQLiteDatabaseTracker::hasTransactionInProgress());
+    SQLiteStatement idStatement(m_database, "SELECT id FROM CacheGroups WHERE manifestURL=?");
+    if (idStatement.prepare() != SQLResultOk)
+        return false;
+
+    idStatement.bindText(1, manifestURL);
+
+    int result = idStatement.step();
+    if (result != SQLResultRow)
+        return false;
+
+    int64_t groupId = idStatement.getColumnInt64(0);
+
+    SQLiteStatement cacheStatement(m_database, "DELETE FROM Caches WHERE cacheGroup=?");
+    if (cacheStatement.prepare() != SQLResultOk)
+        return false;
+
+    SQLiteStatement groupStatement(m_database, "DELETE FROM CacheGroups WHERE id=?");
+    if (groupStatement.prepare() != SQLResultOk)
+        return false;
+
+    cacheStatement.bindInt64(1, groupId);
+    executeStatement(cacheStatement);
+    groupStatement.bindInt64(1, groupId);
+    executeStatement(groupStatement);
+    return true;
+}
+
 bool ApplicationCacheStorage::deleteCacheGroup(const String& manifestURL)
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     SQLiteTransaction deleteTransaction(m_database);
     // Check to see if the group is in memory.
     ApplicationCacheGroup* group = m_cachesInMemory.get(manifestURL);
@@ -1485,36 +1472,10 @@ bool ApplicationCacheStorage::deleteCacheGroup(const String& manifestURL)
         openDatabase(false);
         if (!m_database.isOpen())
             return false;
-
-        SQLiteStatement idStatement(m_database, "SELECT id FROM CacheGroups WHERE manifestURL=?");
-        if (idStatement.prepare() != SQLResultOk)
-            return false;
-
-        idStatement.bindText(1, manifestURL);
-
-        int result = idStatement.step();
-        if (result == SQLResultDone)
-            return false;
-
-        if (result != SQLResultRow) {
-            LOG_ERROR("Could not load cache group id, error \"%s\"", m_database.lastErrorMsg());
+        if (!deleteCacheGroupRecord(manifestURL)) {
+            LOG_ERROR("Could not delete cache group record, error \"%s\"", m_database.lastErrorMsg());
             return false;
         }
-
-        int64_t groupId = idStatement.getColumnInt64(0);
-
-        SQLiteStatement cacheStatement(m_database, "DELETE FROM Caches WHERE cacheGroup=?");
-        if (cacheStatement.prepare() != SQLResultOk)
-            return false;
-
-        SQLiteStatement groupStatement(m_database, "DELETE FROM CacheGroups WHERE id=?");
-        if (groupStatement.prepare() != SQLResultOk)
-            return false;
-
-        cacheStatement.bindInt64(1, groupId);
-        executeStatement(cacheStatement);
-        groupStatement.bindInt64(1, groupId);
-        executeStatement(groupStatement);
     }
 
     deleteTransaction.commit();
@@ -1526,10 +1487,8 @@ bool ApplicationCacheStorage::deleteCacheGroup(const String& manifestURL)
 
 void ApplicationCacheStorage::vacuumDatabaseFile()
 {
-#if PLATFORM(IOS)
-    // FIXME: Move the PLATFORM(IOS)-guards inside the constructor and destructor of SQLiteTransactionInProgressAutoCounter.
     SQLiteTransactionInProgressAutoCounter transactionCounter;
-#endif
+
     openDatabase(false);
     if (!m_database.isOpen())
         return;

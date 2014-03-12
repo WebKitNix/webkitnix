@@ -29,6 +29,7 @@
 #include "WebCoreArgumentCoders.h"
 #include "WebPage.h"
 #include "WebPageProxyMessages.h"
+#include "WebProcess.h"
 #include <WebCore/DocumentLoader.h>
 #include <WebCore/ErrorsGtk.h>
 #include <WebCore/Frame.h>
@@ -40,7 +41,7 @@
 #include <WebCore/URL.h>
 #include <gtk/gtk.h>
 #include <wtf/Vector.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 
 #ifdef HAVE_GTK_UNIX_PRINTING
 #include "PrinterListGtk.h"
@@ -52,7 +53,7 @@
 namespace WebKit {
 
 #ifdef HAVE_GTK_UNIX_PRINTING
-class WebPrintOperationGtkUnix: public WebPrintOperationGtk {
+class WebPrintOperationGtkUnix final: public WebPrintOperationGtk {
 public:
     WebPrintOperationGtkUnix(WebPage* page, const PrintInfo& printInfo)
         : WebPrintOperationGtk(page, printInfo)
@@ -60,7 +61,7 @@ public:
     {
     }
 
-    void startPrint(WebCore::PrintContext* printContext, uint64_t callbackID)
+    void startPrint(WebCore::PrintContext* printContext, uint64_t callbackID) override
     {
         m_printContext = printContext;
         m_callbackID = callbackID;
@@ -75,10 +76,10 @@ public:
 
         static int jobNumber = 0;
         const char* applicationName = g_get_application_name();
-        GOwnPtr<char>jobName(g_strdup_printf("%s job #%d", applicationName ? applicationName : "WebKit", ++jobNumber));
+        GUniquePtr<char>jobName(g_strdup_printf("%s job #%d", applicationName ? applicationName : "WebKit", ++jobNumber));
         m_printJob = adoptGRef(gtk_print_job_new(jobName.get(), printer, m_printSettings.get(), m_pageSetup.get()));
 
-        GOwnPtr<GError> error;
+        GUniqueOutPtr<GError> error;
         cairo_surface_t* surface = gtk_print_job_get_surface(m_printJob.get(), &error.outPtr());
         if (!surface) {
             printDone(printError(frameURL(), error->message));
@@ -103,7 +104,7 @@ public:
         print(surface, 72, 72);
     }
 
-    void startPage(cairo_t* cr)
+    void startPage(cairo_t* cr) override
     {
         if (!currentPageIsFirstPageOfSheet())
           return;
@@ -132,7 +133,7 @@ public:
             cairo_pdf_surface_set_size(surface, width, height);
     }
 
-    void endPage(cairo_t* cr)
+    void endPage(cairo_t* cr) override
     {
         if (currentPageIsLastPageOfSheet())
             cairo_show_page(cr);
@@ -147,10 +148,14 @@ public:
     static void printJobFinished(WebPrintOperationGtkUnix* printOperation)
     {
         printOperation->deref();
+        WebProcess::shared().enableTermination();
     }
 
-    void endPrint()
+    void endPrint() override
     {
+        // Disable web process termination until the print job finishes.
+        WebProcess::shared().disableTermination();
+
         cairo_surface_finish(gtk_print_job_get_surface(m_printJob.get(), 0));
         // Make sure the operation is alive until the job is sent.
         ref();
@@ -163,31 +168,31 @@ public:
 #endif
 
 #ifdef G_OS_WIN32
-class WebPrintOperationGtkWin32: public WebPrintOperationGtk {
+class WebPrintOperationGtkWin32 final: public WebPrintOperationGtk {
 public:
     WebPrintOperationGtkWin32(WebPage* page, const PrintInfo& printInfo)
         : WebPrintOperationGtk(page, printInfo)
     {
     }
 
-    void startPrint(WebCore::PrintContext* printContext, uint64_t callbackID)
+    void startPrint(WebCore::PrintContext* printContext, uint64_t callbackID) override
     {
         m_printContext = printContext;
         m_callbackID = callbackID;
         notImplemented();
     }
 
-    void startPage(cairo_t* cr)
+    void startPage(cairo_t* cr) override
     {
         notImplemented();
     }
 
-    void endPage(cairo_t* cr)
+    void endPage(cairo_t* cr) override
     {
         notImplemented();
     }
 
-    void endPrint()
+    void endPrint() override
     {
         notImplemented();
     }
@@ -413,6 +418,11 @@ WebPrintOperationGtk::~WebPrintOperationGtk()
 {
     if (m_printPagesIdleId)
         g_source_remove(m_printPagesIdleId);
+}
+
+void WebPrintOperationGtk::disconnectFromPage()
+{
+    m_webPage = nullptr;
 }
 
 int WebPrintOperationGtk::pageCount() const
@@ -694,8 +704,9 @@ void WebPrintOperationGtk::printDone(const WebCore::ResourceError& error)
         g_source_remove(m_printPagesIdleId);
     m_printPagesIdleId = 0;
 
-    // Print finished or failed, notify the UI process that we are done.
-    m_webPage->send(Messages::WebPageProxy::PrintFinishedCallback(error, m_callbackID));
+    // Print finished or failed, notify the UI process that we are done if the page hasn't been closed.
+    if (m_webPage)
+        m_webPage->didFinishPrintOperation(error, m_callbackID);
 }
 
 void WebPrintOperationGtk::print(cairo_surface_t* surface, double xDPI, double yDPI)

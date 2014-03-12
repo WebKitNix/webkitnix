@@ -29,12 +29,23 @@
 #if ENABLE(INSPECTOR)
 
 #include "Completion.h"
+#include "ErrorHandlingScope.h"
 #include "InjectedScriptHost.h"
 #include "InjectedScriptManager.h"
 #include "InspectorAgent.h"
 #include "InspectorBackendDispatcher.h"
 #include "InspectorFrontendChannel.h"
+#include "JSConsoleClient.h"
 #include "JSGlobalObject.h"
+#include "JSGlobalObjectConsoleAgent.h"
+#include "JSGlobalObjectDebuggerAgent.h"
+#include "JSGlobalObjectRuntimeAgent.h"
+#include "ScriptArguments.h"
+#include "ScriptCallStack.h"
+#include "ScriptCallStackFactory.h"
+#include <cxxabi.h>
+#include <dlfcn.h>
+#include <execinfo.h>
 
 using namespace JSC;
 
@@ -45,16 +56,31 @@ JSGlobalObjectInspectorController::JSGlobalObjectInspectorController(JSGlobalObj
     , m_injectedScriptManager(std::make_unique<InjectedScriptManager>(*this, InjectedScriptHost::create()))
     , m_inspectorFrontendChannel(nullptr)
 {
-    m_agents.append(std::make_unique<InspectorAgent>());
+    auto runtimeAgent = std::make_unique<JSGlobalObjectRuntimeAgent>(m_injectedScriptManager.get(), m_globalObject);
+    auto consoleAgent = std::make_unique<JSGlobalObjectConsoleAgent>(m_injectedScriptManager.get());
+    auto debuggerAgent = std::make_unique<JSGlobalObjectDebuggerAgent>(m_injectedScriptManager.get(), m_globalObject, consoleAgent.get());
 
-    // FIXME: Create RuntimeAgent.
-    // FIXME: Create DebuggerAgent.
-    (void)m_globalObject; // Will be used by RuntimeAgent.
+    m_consoleAgent = consoleAgent.get();
+    m_consoleClient = std::make_unique<JSConsoleClient>(m_consoleAgent);
+
+    runtimeAgent->setScriptDebugServer(&debuggerAgent->scriptDebugServer());
+
+    m_agents.append(std::make_unique<InspectorAgent>());
+    m_agents.append(std::move(runtimeAgent));
+    m_agents.append(std::move(consoleAgent));
+    m_agents.append(std::move(debuggerAgent));
 }
 
 JSGlobalObjectInspectorController::~JSGlobalObjectInspectorController()
 {
     m_agents.discardAgents();
+}
+
+void JSGlobalObjectInspectorController::globalObjectDestroyed()
+{
+    disconnectFrontend(InspectorDisconnectReason::InspectedTargetDestroyed);
+
+    m_injectedScriptManager->disconnect();
 }
 
 void JSGlobalObjectInspectorController::connectFrontend(InspectorFrontendChannel* frontendChannel)
@@ -68,24 +94,75 @@ void JSGlobalObjectInspectorController::connectFrontend(InspectorFrontendChannel
     m_agents.didCreateFrontendAndBackend(frontendChannel, m_inspectorBackendDispatcher.get());
 }
 
-void JSGlobalObjectInspectorController::disconnectFrontend()
+void JSGlobalObjectInspectorController::disconnectFrontend(InspectorDisconnectReason reason)
 {
     if (!m_inspectorFrontendChannel)
         return;
 
-    m_agents.willDestroyFrontendAndBackend();
+    m_agents.willDestroyFrontendAndBackend(reason);
 
     m_inspectorBackendDispatcher->clearFrontend();
     m_inspectorBackendDispatcher.clear();
     m_inspectorFrontendChannel = nullptr;
-
-    m_injectedScriptManager->disconnect();
 }
 
 void JSGlobalObjectInspectorController::dispatchMessageFromFrontend(const String& message)
 {
     if (m_inspectorBackendDispatcher)
         m_inspectorBackendDispatcher->dispatch(message);
+}
+
+void JSGlobalObjectInspectorController::appendAPIBacktrace(ScriptCallStack* callStack)
+{
+    static const int framesToShow = 31;
+    static const int framesToSkip = 3; // WTFGetBacktrace, appendAPIBacktrace, reportAPIException.
+
+    void* samples[framesToShow + framesToSkip];
+    int frames = framesToShow + framesToSkip;
+    WTFGetBacktrace(samples, &frames);
+
+    void** stack = samples + framesToSkip;
+    int size = frames - framesToSkip;
+    for (int i = 0; i < size; ++i) {
+        const char* mangledName = nullptr;
+        char* cxaDemangled = nullptr;
+        Dl_info info;
+        if (dladdr(stack[i], &info) && info.dli_sname)
+            mangledName = info.dli_sname;
+        if (mangledName)
+            cxaDemangled = abi::__cxa_demangle(mangledName, nullptr, nullptr, nullptr);
+        if (mangledName || cxaDemangled)
+            callStack->append(ScriptCallFrame(cxaDemangled ? cxaDemangled : mangledName, ASCIILiteral("[native code]"), 0, 0));
+        else
+            callStack->append(ScriptCallFrame(ASCIILiteral("?"), ASCIILiteral("[native code]"), 0, 0));
+        free(cxaDemangled);
+    }
+}
+
+void JSGlobalObjectInspectorController::reportAPIException(ExecState* exec, JSValue exception)
+{
+    if (!m_consoleAgent->enabled())
+        return;
+
+    if (isTerminatedExecutionException(exception))
+        return;
+
+    ErrorHandlingScope errorScope(exec->vm());
+
+    RefPtr<ScriptCallStack> callStack = createScriptCallStackFromException(exec, exception, ScriptCallStack::maxCallStackSizeToCapture);
+    appendAPIBacktrace(callStack.get());
+
+    // FIXME: <http://webkit.org/b/115087> Web Inspector: Should not evaluate JavaScript handling exceptions
+    // If this is a custom exception object, call toString on it to try and get a nice string representation for the exception.
+    String errorMessage = exception.toString(exec)->value(exec);
+    exec->clearException();
+
+    m_consoleAgent->addMessageToConsole(MessageSource::JS, MessageType::Log, MessageLevel::Error, errorMessage, callStack);
+}
+
+ConsoleClient* JSGlobalObjectInspectorController::consoleClient() const
+{
+    return m_consoleClient.get();
 }
 
 InspectorFunctionCallHandler JSGlobalObjectInspectorController::functionCallHandler() const

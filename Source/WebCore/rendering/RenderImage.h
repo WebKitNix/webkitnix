@@ -35,12 +35,9 @@ class HTMLMapElement;
 
 class RenderImage : public RenderReplaced {
 public:
-    RenderImage(Element&, PassRef<RenderStyle>, StyleImage* = nullptr);
+    RenderImage(Element&, PassRef<RenderStyle>, StyleImage* = nullptr, const float = 1.0f);
     RenderImage(Document&, PassRef<RenderStyle>, StyleImage* = nullptr);
     virtual ~RenderImage();
-
-    // Create a RenderStyle for generated content by inheriting from a pseudo style.
-    static PassRef<RenderStyle> createStyleInheritingFromPseudoStyle(const RenderStyle&);
 
     RenderImageResource& imageResource() { return *m_imageResource; }
     const RenderImageResource& imageResource() const { return *m_imageResource; }
@@ -52,8 +49,6 @@ public:
 
     HTMLMapElement* imageMap() const;
     void areaElementFocusChanged(HTMLAreaElement*);
-
-    void highQualityRepaintTimerFired(Timer<RenderImage>*);
     
 #if PLATFORM(IOS)
     virtual void collectSelectionRects(Vector<SelectionRect>&, unsigned, unsigned) override;
@@ -65,7 +60,12 @@ public:
 
     const String& altText() const { return m_altText; }
     void setAltText(const String& altText) { m_altText = altText; }
-    
+
+    inline void setImageDevicePixelRatio(float factor) { m_imageDevicePixelRatio = factor; }
+    float imageDevicePixelRatio() const { return m_imageDevicePixelRatio; }
+
+    void setHasShadowControls(bool hasShadowControls) { m_hasShadowControls = hasShadowControls; }
+
 protected:
     virtual bool needsPreferredWidthsRecalculation() const override final;
     virtual RenderBox* embeddedContentBox() const override final;
@@ -88,6 +88,8 @@ protected:
 private:
     virtual const char* renderName() const override { return "RenderImage"; }
 
+    virtual bool canHaveChildren() const override;
+
     virtual bool isImage() const override { return true; }
     virtual bool isRenderImage() const override final { return true; }
 
@@ -102,6 +104,8 @@ private:
 
     virtual bool boxShadowShouldBeAppliedToBackground(BackgroundBleedAvoidance, InlineFlowBox*) const override final;
 
+    virtual bool shadowControlsNeedCustomLayoutMetrics() const { return false; }
+
     IntSize imageSizeForError(CachedImage*) const;
     void imageDimensionsChanged(bool imageSizeChanged, const IntRect* = 0);
     bool updateIntrinsicSizeIfNeeded(const LayoutSize&, bool imageSizeChanged);
@@ -109,6 +113,8 @@ private:
     void updateInnerContentRect();
 
     void paintAreaElementFocusRing(PaintInfo&);
+    
+    void layoutShadowControls(const LayoutSize& oldSize);
 
     // Text to display as long as the image isn't available.
     String m_altText;
@@ -116,6 +122,8 @@ private:
     bool m_needsToSetSizeForAltText;
     bool m_didIncrementVisuallyNonEmptyPixelCount;
     bool m_isGeneratedContent;
+    bool m_hasShadowControls;
+    float m_imageDevicePixelRatio;
 
     friend class RenderImageScaleObserver;
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,11 +28,21 @@
 
 #if ENABLE(ASSEMBLER)
 
+#include "CodeBlock.h"
+#include "JITCode.h"
+#include "JSCInlines.h"
 #include "Options.h"
 #include "VM.h"
 #include <wtf/CompilationThread.h>
 
 namespace JSC {
+
+bool shouldShowDisassemblyFor(CodeBlock* codeBlock)
+{
+    if (JITCode::isOptimizingJIT(codeBlock->jitType()) && Options::showDFGDisassembly())
+        return true;
+    return Options::showDisassembly();
+}
 
 LinkBuffer::CodeRef LinkBuffer::finalizeCodeWithoutDisassembly()
 {
@@ -47,8 +57,6 @@ LinkBuffer::CodeRef LinkBuffer::finalizeCodeWithoutDisassembly()
 
 LinkBuffer::CodeRef LinkBuffer::finalizeCodeWithDisassembly(const char* format, ...)
 {
-    ASSERT(Options::showDisassembly() || Options::showDFGDisassembly());
-    
     CodeRef result = finalizeCodeWithoutDisassembly();
 
 #if ENABLE(DISASSEMBLER)
@@ -74,6 +82,8 @@ void LinkBuffer::copyCompactAndLinkCode(void* ownerUID, JITCompilationEffort eff
 {
     m_initialSize = m_assembler->m_assembler.codeSize();
     allocate(m_initialSize, ownerUID, effort);
+    if (didFailToAllocate())
+        return;
     uint8_t* inData = (uint8_t*)m_assembler->unlinkedCode();
     uint8_t* outData = reinterpret_cast<uint8_t*>(m_code);
     int readPtr = 0;
@@ -104,7 +114,7 @@ void LinkBuffer::copyCompactAndLinkCode(void* ownerUID, JITCompilationEffort eff
         if (jumpsToLink[i].to() >= jumpsToLink[i].from())
             target = outData + jumpsToLink[i].to() - offset; // Compensate for what we have collapsed so far
         else
-            target = outData + jumpsToLink[i].to() - m_assembler->executableOffsetFor(jumpsToLink[i].to());
+            target = outData + jumpsToLink[i].to() - executableOffsetFor(jumpsToLink[i].to());
             
         JumpLinkType jumpLinkType = m_assembler->computeJumpType(jumpsToLink[i], outData + writePtr, target);
         // Compact branch if we can...
@@ -124,7 +134,7 @@ void LinkBuffer::copyCompactAndLinkCode(void* ownerUID, JITCompilationEffort eff
         
     for (unsigned i = 0; i < jumpCount; ++i) {
         uint8_t* location = outData + jumpsToLink[i].from();
-        uint8_t* target = outData + jumpsToLink[i].to() - m_assembler->executableOffsetFor(jumpsToLink[i].to());
+        uint8_t* target = outData + jumpsToLink[i].to() - executableOffsetFor(jumpsToLink[i].to());
         m_assembler->link(jumpsToLink[i], location, target);
     }
 
@@ -188,6 +198,8 @@ void LinkBuffer::allocate(size_t initialSize, void* ownerUID, JITCompilationEffo
 
 void LinkBuffer::shrink(size_t newSize)
 {
+    if (!m_executableMemory)
+        return;
     m_size = newSize;
     m_executableMemory->shrink(m_size);
 }

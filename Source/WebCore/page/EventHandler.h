@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006, 2007, 2009, 2010, 2011, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2006-2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,7 +37,7 @@
 #include "TextEventInputType.h"
 #include "TextGranularity.h"
 #include "Timer.h"
-#include <wtf/Deque.h>
+#include "WheelEventDeltaTracker.h"
 #include <wtf/Forward.h>
 #include <wtf/OwnPtr.h>
 #include <wtf/RefPtr.h>
@@ -52,7 +52,7 @@ class WebEvent;
 #endif
 #endif // PLATFORM(IOS)
 
-#if PLATFORM(MAC) && !defined(__OBJC__)
+#if PLATFORM(COCOA) && !defined(__OBJC__)
 class NSView;
 #endif
 
@@ -69,6 +69,7 @@ namespace WebCore {
 
 class AutoscrollController;
 class Clipboard;
+class ContainerNode;
 class Document;
 class Element;
 class Event;
@@ -91,6 +92,7 @@ class RenderBox;
 class RenderElement;
 class RenderLayer;
 class RenderWidget;
+class ScrollableArea;
 class SVGElementInstance;
 class Scrollbar;
 class TextEvent;
@@ -198,6 +200,10 @@ public:
     void defaultWheelEventHandler(Node*, WheelEvent*);
     bool handlePasteGlobalSelection(const PlatformMouseEvent&);
 
+    void platformPrepareForWheelEvents(const PlatformWheelEvent& wheelEvent, const HitTestResult& result, Element*& wheelEventTarget, ContainerNode*& scrollableContainer, ScrollableArea*& scrollableArea, bool& isOverWidget);
+    void platformRecordWheelEvent(const PlatformWheelEvent&);
+    bool platformCompleteWheelEvent(const PlatformWheelEvent&, ContainerNode* scrollableContainer, ScrollableArea* scrollableArea);
+
 #if ENABLE(IOS_TOUCH_EVENTS) || ENABLE(IOS_GESTURE_EVENTS)
     typedef Vector<RefPtr<Touch>> TouchArray;
     typedef HashMap<EventTarget*, TouchArray*> EventTargetTouchMap;
@@ -250,7 +256,7 @@ public:
     
     void sendScrollEvent(); // Ditto
 
-#if PLATFORM(MAC) && defined(__OBJC__)
+#if PLATFORM(COCOA) && defined(__OBJC__)
 #if !PLATFORM(IOS)
     void mouseDown(NSEvent *);
     void mouseDragged(NSEvent *);
@@ -283,7 +289,7 @@ public:
 #else
     static WebEvent *currentEvent();
 #endif // !PLATFORM(IOS)
-#endif // PLATFORM(MAC) && defined(__OBJC__)
+#endif // PLATFORM(COCOA) && defined(__OBJC__)
 
 #if PLATFORM(IOS)
     void invalidateClick();
@@ -333,21 +339,16 @@ private:
     bool logicalScrollOverflow(ScrollLogicalDirection, ScrollGranularity, Node* startingNode = 0);
     
     bool shouldTurnVerticalTicksIntoHorizontal(const HitTestResult&, const PlatformWheelEvent&) const;
-    void recordWheelEventDelta(const PlatformWheelEvent&);
-    enum DominantScrollGestureDirection {
-        DominantScrollDirectionNone,
-        DominantScrollDirectionVertical,
-        DominantScrollDirectionHorizontal
-    };
-    DominantScrollGestureDirection dominantScrollGestureDirection() const;
     
     bool mouseDownMayStartSelect() const { return m_mouseDownMayStartSelect; }
 
     static bool isKeyboardOptionTab(KeyboardEvent*);
     static bool eventInvertsTabsToLinksClientCallResult(KeyboardEvent*);
 
+#if !ENABLE(IOS_TOUCH_EVENTS)
     void fakeMouseMoveEventTimerFired(Timer<EventHandler>&);
     void cancelFakeMouseMoveEvent();
+#endif
 
     bool isInsideScrollbar(const IntPoint&) const;
 
@@ -424,7 +425,7 @@ private:
 
     bool capturesDragging() const { return m_capturesDragging; }
 
-#if PLATFORM(MAC) && defined(__OBJC__)
+#if PLATFORM(COCOA) && defined(__OBJC__)
     NSView *mouseDownViewIfStillGood();
 
     PlatformMouseEvent currentPlatformMouseEvent() const;
@@ -472,13 +473,13 @@ private:
     bool m_mouseDownMayStartAutoscroll;
     bool m_mouseDownWasInSubframe;
 
+#if !ENABLE(IOS_TOUCH_EVENTS)
     Timer<EventHandler> m_fakeMouseMoveEventTimer;
+#endif
 
-#if ENABLE(SVG)
     bool m_svgPan;
     RefPtr<SVGElementInstance> m_instanceUnderMouse;
     RefPtr<SVGElementInstance> m_lastInstanceUnderMouse;
-#endif
 
     RenderLayer* m_resizeLayer;
 
@@ -525,16 +526,17 @@ private:
     double m_mouseDownTimestamp;
     PlatformMouseEvent m_mouseDown;
 
-    Deque<FloatSize> m_recentWheelEventDeltas;
+    OwnPtr<WheelEventDeltaTracker> m_recentWheelEventDeltaTracker;
     RefPtr<Element> m_latchedWheelEventElement;
-    bool m_inTrackingScrollGesturePhase;
     bool m_widgetIsLatched;
 
     RefPtr<Element> m_previousWheelScrolledElement;
 
-#if PLATFORM(MAC) || PLATFORM(IOS)
+#if PLATFORM(COCOA)
     NSView *m_mouseDownView;
+    RefPtr<ContainerNode> m_latchedScrollableContainer;
     bool m_sendingEventToSubview;
+    bool m_startedGestureAtScrollLimit;
 #if !PLATFORM(IOS)
     int m_activationEventNumber;
 #endif

@@ -26,7 +26,7 @@
 #include "JSFunction.h"
 #include "JSString.h"
 #include "ObjectPrototype.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC {
 
@@ -65,7 +65,7 @@ void BooleanPrototype::finishCreation(VM& vm, JSGlobalObject*)
 
 bool BooleanPrototype::getOwnPropertySlot(JSObject* object, ExecState* exec, PropertyName propertyName, PropertySlot &slot)
 {
-    return getStaticFunctionSlot<BooleanObject>(exec, ExecState::booleanPrototypeTable(exec), jsCast<BooleanPrototype*>(object), propertyName, slot);
+    return getStaticFunctionSlot<BooleanObject>(exec, ExecState::booleanPrototypeTable(exec->vm()), jsCast<BooleanPrototype*>(object), propertyName, slot);
 }
 
 // ------------------------------ Functions ---------------------------

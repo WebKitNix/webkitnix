@@ -39,7 +39,7 @@
 #include <WebCore/ViewState.h>
 #include <wtf/text/WTFString.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include "ColorSpaceData.h"
 #endif
 
@@ -84,6 +84,7 @@ struct WebPageCreationParameters {
     SessionState sessionState;
     uint64_t highestUsedBackForwardItemID;
 
+    uint64_t visitedLinkTableID;
     bool canRunBeforeUnloadConfirmPanel;
     bool canRunModal;
 
@@ -101,7 +102,7 @@ struct WebPageCreationParameters {
 
     LayerHostingMode layerHostingMode;
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     ColorSpaceData colorSpace;
 #endif
 };

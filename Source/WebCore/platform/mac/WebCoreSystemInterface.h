@@ -65,7 +65,7 @@ typedef FMFont ATSUFontID;
 typedef UInt16 ATSGlyphRef;
 #endif
 
-#if PLATFORM(MAC) && USE(CA)
+#if PLATFORM(COCOA) && USE(CA)
 #if !PLATFORM(IOS_SIMULATOR)
 typedef struct __IOSurface *IOSurfaceRef;
 #endif // !PLATFORM(IOS_SIMULATOR)
@@ -94,6 +94,7 @@ typedef const struct _CFURLRequest* CFURLRequestRef;
 #endif
 
 OBJC_CLASS AVAsset;
+OBJC_CLASS AVPlayer;
 OBJC_CLASS CALayer;
 OBJC_CLASS NSArray;
 OBJC_CLASS NSButtonCell;
@@ -261,9 +262,13 @@ extern CTTypesetterRef (*wkCreateCTTypesetterWithUniCharProviderAndOptions)(cons
 
 extern CGSize (*wkCTRunGetInitialAdvance)(CTRunRef);
 
-#if PLATFORM(MAC) && USE(CA) && !PLATFORM(IOS_SIMULATOR)
+#if PLATFORM(COCOA) && USE(CA) && !PLATFORM(IOS_SIMULATOR)
 extern CGContextRef (*wkIOSurfaceContextCreate)(IOSurfaceRef surface, unsigned width, unsigned height, CGColorSpaceRef colorSpace);
 extern CGImageRef (*wkIOSurfaceContextCreateImage)(CGContextRef context);
+#endif
+
+#if PLATFORM(MAC) || PLATFORM(IOS_SIMULATOR)
+extern void (*wkSetCrashReportApplicationSpecificInformation)(CFStringRef);
 #endif
 
 #if !PLATFORM(IOS)
@@ -272,7 +277,6 @@ extern int (*wkRecommendedScrollerStyle)(void);
 extern bool (*wkExecutableWasLinkedOnOrBeforeSnowLeopard)(void);
 
 extern CFStringRef (*wkCopyDefaultSearchProviderDisplayName)(void);
-extern void (*wkSetCrashReportApplicationSpecificInformation)(CFStringRef);
 
 extern NSURL *(*wkAVAssetResolvedURL)(AVAsset*);
 
@@ -280,10 +284,8 @@ extern NSCursor *(*wkCursor)(const char*);
 #endif // !PLATFORM(IOS)
     
 #if !PLATFORM(IOS)
-#if PLATFORM(MAC)
 extern NSArray *(*wkSpeechSynthesisGetVoiceIdentifiers)(void);
 extern NSString *(*wkSpeechSynthesisGetDefaultVoiceIdentifierForLocale)(NSLocale *);
-#endif
 
 extern void (*wkUnregisterUniqueIdForElement)(id element);
 extern void (*wkAccessibilityHandleFocusChanged)(void);    
@@ -368,6 +370,15 @@ extern bool (*wkIsPublicSuffix)(NSString *host);
 #if ENABLE(CACHE_PARTITIONING)
 extern CFStringRef (*wkCachePartitionKey)(void);
 #endif
+
+typedef enum {
+    wkExternalPlaybackTypeNone,
+    wkExternalPlaybackTypeAirPlay,
+    wkExternalPlaybackTypeTVOut,
+} wkExternalPlaybackType;
+extern int (*wkExernalDeviceTypeForPlayer)(AVPlayer *);
+extern NSString *(*wkExernalDeviceDisplayNameForPlayer)(AVPlayer *);
+
 }
 
 #endif

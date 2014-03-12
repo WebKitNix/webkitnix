@@ -63,11 +63,6 @@ HTMLInputElement& RenderSlider::element() const
     return toHTMLInputElement(nodeForNonAnonymous());
 }
 
-bool RenderSlider::canBeReplacedWithInlineRunIn() const
-{
-    return false;
-}
-
 int RenderSlider::baselinePosition(FontBaseline, bool /*firstLine*/, LineDirectionMode, LinePositionMode) const
 {
     // FIXME: Patch this function for writing-mode.
@@ -101,7 +96,7 @@ void RenderSlider::computePreferredLogicalWidths()
         m_minPreferredLogicalWidth = std::min(m_minPreferredLogicalWidth, adjustContentBoxLogicalWidthForBoxSizing(style().maxWidth().value()));
     }
 
-    LayoutUnit toAdd = borderAndPaddingWidth();
+    LayoutUnit toAdd = horizontalBorderAndPaddingExtent();
     m_minPreferredLogicalWidth += toAdd;
     m_maxPreferredLogicalWidth += toAdd;
 

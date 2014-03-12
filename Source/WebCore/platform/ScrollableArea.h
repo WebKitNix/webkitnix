@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2011 Apple Inc. All Rights Reserved.
+ * Copyright (C) 2008, 2011, 2014 Apple Inc. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,13 +33,13 @@ namespace WebCore {
 
 class FloatPoint;
 class GraphicsContext;
+class LayoutPoint;
+class LayoutSize;
 class PlatformTouchEvent;
 class PlatformWheelEvent;
 class ScrollAnimator;
-#if USE(ACCELERATED_COMPOSITING)
 class GraphicsLayer;
 class TiledBacking;
-#endif
 
 class ScrollableArea {
 public:
@@ -151,11 +151,29 @@ public:
     virtual IntPoint scrollPosition() const;
     virtual IntPoint minimumScrollPosition() const;
     virtual IntPoint maximumScrollPosition() const;
+    virtual bool scrolledToTop() const;
+    virtual bool scrolledToBottom() const;
+    virtual bool scrolledToLeft() const;
+    virtual bool scrolledToRight() const;
 
     enum VisibleContentRectIncludesScrollbars { ExcludeScrollbars, IncludeScrollbars };
-    virtual IntRect visibleContentRect(VisibleContentRectIncludesScrollbars = ExcludeScrollbars) const;
-    virtual int visibleHeight() const = 0;
-    virtual int visibleWidth() const = 0;
+    enum VisibleContentRectBehavior {
+        ContentsVisibleRect,
+#if PLATFORM(IOS)
+        LegacyIOSDocumentViewRect,
+        LegacyIOSDocumentVisibleRect = LegacyIOSDocumentViewRect
+#else
+        LegacyIOSDocumentVisibleRect = ContentsVisibleRect
+#endif
+    };
+
+    IntRect visibleContentRect(VisibleContentRectBehavior = ContentsVisibleRect) const;
+    IntRect visibleContentRectIncludingScrollbars(VisibleContentRectBehavior = ContentsVisibleRect) const;
+
+    int visibleWidth() const { return visibleSize().width(); }
+    int visibleHeight() const { return visibleSize().height(); }
+    virtual IntSize visibleSize() const = 0;
+
     virtual IntSize contentsSize() const = 0;
     virtual IntSize overhangAmount() const { return IntSize(); }
     virtual IntPoint lastKnownMousePosition() const { return IntPoint(); }
@@ -184,8 +202,8 @@ public:
     // NOTE: Only called from Internals for testing.
     void setScrollOffsetFromInternals(const IntPoint&);
 
-    static IntPoint constrainScrollPositionForOverhang(const IntRect& visibleContentRect, const IntSize& totalContentsSize, const IntPoint& scrollPosition, const IntPoint& scrollOrigin, int headerHeight, int footetHeight);
-    IntPoint constrainScrollPositionForOverhang(const IntPoint& scrollPosition);
+    static LayoutPoint constrainScrollPositionForOverhang(const LayoutRect& visibleContentRect, const LayoutSize& totalContentsSize, const LayoutPoint& scrollPosition, const LayoutPoint& scrollOrigin, int headerHeight, int footetHeight);
+    LayoutPoint constrainScrollPositionForOverhang(const LayoutPoint& scrollPosition);
 
     // Computes the double value for the scrollbar's current position and the current overhang amount.
     // This function is static so that it can be called from the main thread or the scrolling thread.
@@ -207,7 +225,6 @@ public:
     bool isPinnedVerticallyInDirection(int verticalScrollDelta) const;
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     virtual TiledBacking* tiledBacking() const { return 0; }
     virtual bool usesCompositedScrolling() const { return false; }
 
@@ -216,7 +233,6 @@ public:
 
     void verticalScrollbarLayerDidChange();
     void horizontalScrollbarLayerDidChange();
-#endif
 
 protected:
     ScrollableArea();
@@ -228,19 +244,21 @@ protected:
     virtual void invalidateScrollbarRect(Scrollbar*, const IntRect&) = 0;
     virtual void invalidateScrollCornerRect(const IntRect&) = 0;
 
-#if USE(ACCELERATED_COMPOSITING)
     friend class ScrollingCoordinator;
     virtual GraphicsLayer* layerForScrolling() const { return 0; }
     virtual GraphicsLayer* layerForScrollCorner() const { return 0; }
 #if ENABLE(RUBBER_BANDING)
     virtual GraphicsLayer* layerForOverhangAreas() const { return 0; }
 #endif
-#endif
+
     bool hasLayerForHorizontalScrollbar() const;
     bool hasLayerForVerticalScrollbar() const;
     bool hasLayerForScrollCorner() const;
 
+    virtual void sendWillRevealEdgeEventsIfNeeded(const IntPoint&, const IntPoint&) { }
+
 private:
+    virtual IntRect visibleContentRectInternal(VisibleContentRectIncludesScrollbars, VisibleContentRectBehavior) const;
     void scrollPositionChanged(const IntPoint&);
     
     // NOTE: Only called from the ScrollAnimator.

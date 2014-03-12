@@ -85,9 +85,7 @@ public:
     // These layers are painted and hit-tested by RenderView
     void collectFixedPositionedLayers(Vector<RenderLayer*>& fixedPosLayers) const;
 
-#if USE(ACCELERATED_COMPOSITING)
-    void updateRenderFlowThreadLayersIfNeeded();
-#endif
+    void updateFlowThreadsLayerToRegionMappingsIfNeeded();
 
 #ifndef NDEBUG
     bool isAutoLogicalHeightRegionsCountConsistent() const;

@@ -35,7 +35,6 @@
 
 #include "InspectorWebAgentBase.h"
 #include "InspectorWebBackendDispatchers.h"
-#include <wtf/PassOwnPtr.h>
 #include <wtf/text/WTFString.h>
 
 namespace Inspector {
@@ -54,7 +53,7 @@ public:
     ~InspectorIndexedDBAgent();
 
     virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
-    virtual void willDestroyFrontendAndBackend() override;
+    virtual void willDestroyFrontendAndBackend(Inspector::InspectorDisconnectReason) override;
 
     // Called from the front-end.
     virtual void enable(ErrorString*) override;

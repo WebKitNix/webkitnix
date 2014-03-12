@@ -43,7 +43,7 @@
 #include "TransformState.h"
 #include "VisiblePosition.h"
 
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
 #include "Frame.h"
 #endif
 
@@ -127,8 +127,6 @@ RenderInline* RenderInline::inlineElementContinuation() const
 void RenderInline::updateFromStyle()
 {
     RenderBoxModelObject::updateFromStyle();
-
-    setInline(true); // Needed for run-ins, since run-in is considered a block display type.
 
     // FIXME: Support transforms and reflections on inline flows someday.
     setHasTransform(false);
@@ -251,7 +249,7 @@ LayoutRect RenderInline::localCaretRect(InlineBox* inlineBox, int, LayoutUnit* e
     if (extraWidthToEndOfLine)
         *extraWidthToEndOfLine = 0;
 
-    LayoutRect caretRect = localCaretRectForEmptyElement(borderAndPaddingWidth(), 0);
+    LayoutRect caretRect = localCaretRectForEmptyElement(horizontalBorderAndPaddingExtent(), 0);
 
     if (InlineBox* firstBox = firstLineBox())
         caretRect.moveBy(roundedLayoutPoint(firstBox->topLeft()));
@@ -575,9 +573,9 @@ void RenderInline::generateCulledLineBoxRects(GeneratorContext& yield, const Ren
                 int logicalTop = rootBox.logicalTop() + (rootBox.lineStyle().font().fontMetrics().ascent() - containerStyle.font().fontMetrics().ascent());
                 int logicalHeight = containerStyle.font().fontMetrics().height();
                 if (isHorizontal)
-                    yield(FloatRect(currBox->inlineBoxWrapper()->x() - currBox->marginLeft(), logicalTop, currBox->width() + currBox->marginWidth(), logicalHeight));
+                    yield(FloatRect(currBox->inlineBoxWrapper()->x() - currBox->marginLeft(), logicalTop, currBox->width() + currBox->horizontalMarginExtent(), logicalHeight));
                 else
-                    yield(FloatRect(logicalTop, currBox->inlineBoxWrapper()->y() - currBox->marginTop(), logicalHeight, currBox->height() + currBox->marginHeight()));
+                    yield(FloatRect(logicalTop, currBox->inlineBoxWrapper()->y() - currBox->marginTop(), logicalHeight, currBox->height() + currBox->verticalMarginExtent()));
             }
         } else if (curr->isRenderInline()) {
             // If the child doesn't need line boxes either, then we can recur.
@@ -785,8 +783,6 @@ const char* RenderInline::renderName() const
         return "RenderInline (generated)";
     if (isAnonymous())
         return "RenderInline (generated)";
-    if (isRunIn())
-        return "RenderInline (run-in)";
     return "RenderInline";
 }
 
@@ -1086,8 +1082,8 @@ LayoutRect RenderInline::linesVisualOverflowBoundingBoxInRegion(const RenderRegi
 
 LayoutRect RenderInline::clippedOverflowRectForRepaint(const RenderLayerModelObject* repaintContainer) const
 {
-    // Only run-ins and first-letter renderers are allowed in here during layout. They mutate the tree triggering repaints.
-    ASSERT(!view().layoutStateEnabled() || isRunIn() || style().styleType() == FIRST_LETTER);
+    // Only first-letter renderers are allowed in here during layout. They mutate the tree triggering repaints.
+    ASSERT(!view().layoutStateEnabled() || style().styleType() == FIRST_LETTER);
 
     if (!firstLineBoxIncludingCulling() && !continuation())
         return LayoutRect();
@@ -1489,9 +1485,9 @@ void RenderInline::addFocusRingRects(Vector<IntRect>& rects, const LayoutPoint& 
 
     if (RenderBoxModelObject* continuation = this->continuation()) {
         if (continuation->isInline())
-            continuation->addFocusRingRects(rects, flooredLayoutPoint(additionalOffset + continuation->containingBlock()->location() - containingBlock()->location()), paintContainer);
+            continuation->addFocusRingRects(rects, flooredLayoutPoint(LayoutPoint(additionalOffset + continuation->containingBlock()->location() - containingBlock()->location())), paintContainer);
         else
-            continuation->addFocusRingRects(rects, flooredLayoutPoint(additionalOffset + toRenderBox(continuation)->location() - containingBlock()->location()), paintContainer);
+            continuation->addFocusRingRects(rects, flooredLayoutPoint(LayoutPoint(additionalOffset + toRenderBox(continuation)->location() - containingBlock()->location())), paintContainer);
     }
 }
 
@@ -1651,14 +1647,13 @@ void RenderInline::paintOutlineForLine(GraphicsContext* graphicsContext, const L
             antialias);
 }
 
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
 void RenderInline::addAnnotatedRegions(Vector<AnnotatedRegionValue>& regions)
 {
     // Convert the style regions to absolute coordinates.
     if (style().visibility() != VISIBLE)
         return;
 
-#if ENABLE(DASHBOARD_SUPPORT)
     const Vector<StyleDashboardRegion>& styleRegions = style().dashboardRegions();
     unsigned i, count = styleRegions.size();
     for (i = 0; i < count; i++) {
@@ -1693,24 +1688,6 @@ void RenderInline::addAnnotatedRegions(Vector<AnnotatedRegionValue>& regions)
 
         regions.append(region);
     }
-#else // ENABLE(DRAGGABLE_REGION)
-    if (style().getDraggableRegionMode() == DraggableRegionNone)
-        return;
-
-    AnnotatedRegionValue region;
-    region.draggable = style().getDraggableRegionMode() == DraggableRegionDrag;
-    region.bounds = linesBoundingBox();
-
-    RenderObject* container = containingBlock();
-    if (!container)
-        container = this;
-
-    FloatPoint absPos = container->localToAbsolute();
-    region.bounds.setX(absPos.x() + region.bounds.x());
-    region.bounds.setY(absPos.y() + region.bounds.y());
-    
-    regions.append(region);
-#endif
 }
 #endif
 

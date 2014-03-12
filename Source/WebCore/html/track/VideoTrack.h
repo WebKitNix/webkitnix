@@ -32,7 +32,6 @@
 #include "ExceptionCode.h"
 #include "TrackBase.h"
 #include "VideoTrackPrivate.h"
-#include <wtf/PassOwnPtr.h>
 #include <wtf/RefCounted.h>
 #include <wtf/text/WTFString.h>
 
@@ -85,9 +84,9 @@ private:
     virtual bool isValidKind(const AtomicString&) const override;
 
     virtual void selectedChanged(VideoTrackPrivate*, bool) override;
-    virtual void idChanged(TrackPrivateBase*, const String&) override;
-    virtual void labelChanged(TrackPrivateBase*, const String&) override;
-    virtual void languageChanged(TrackPrivateBase*, const String&) override;
+    virtual void idChanged(TrackPrivateBase*, const AtomicString&) override;
+    virtual void labelChanged(TrackPrivateBase*, const AtomicString&) override;
+    virtual void languageChanged(TrackPrivateBase*, const AtomicString&) override;
     virtual void willRemove(TrackPrivateBase*) override;
 
     virtual bool enabled() const override { return selected(); }

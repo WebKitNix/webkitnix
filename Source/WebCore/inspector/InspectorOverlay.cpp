@@ -121,11 +121,7 @@ static void buildRendererHighlight(RenderObject* renderer, RenderRegion* region,
     FrameView* mainView = containingFrame->page()->mainFrame().view();
 
     // RenderSVGRoot should be highlighted through the isBox() code path, all other SVG elements should just dump their absoluteQuads().
-#if ENABLE(SVG)
     bool isSVGRenderer = renderer->node() && renderer->node()->isSVGElement() && !renderer->isSVGRoot();
-#else
-    bool isSVGRenderer = false;
-#endif
 
     if (isSVGRenderer) {
         highlight->type = HighlightTypeRects;
@@ -168,7 +164,7 @@ static void buildRendererHighlight(RenderObject* renderer, RenderRegion* region,
                 paddingBox.width() - renderInline->paddingLeft() - renderInline->paddingRight(), paddingBox.height() - renderInline->paddingTop() - renderInline->paddingBottom());
             // Ignore marginTop and marginBottom for inlines.
             marginBox = LayoutRect(borderBox.x() - renderInline->marginLeft(), borderBox.y(),
-                borderBox.width() + renderInline->marginWidth(), borderBox.height());
+                borderBox.width() + renderInline->horizontalMarginExtent(), borderBox.height());
         }
 
         FloatQuad absContentQuad;
@@ -284,7 +280,7 @@ void InspectorOverlay::setPausedInDebuggerMessage(const String* message)
 void InspectorOverlay::hideHighlight()
 {
     m_highlightNode.clear();
-    m_highlightQuad.clear();
+    m_highlightQuad.reset();
     update();
 }
 
@@ -295,13 +291,13 @@ void InspectorOverlay::highlightNode(Node* node, const HighlightConfig& highligh
     update();
 }
 
-void InspectorOverlay::highlightQuad(PassOwnPtr<FloatQuad> quad, const HighlightConfig& highlightConfig)
+void InspectorOverlay::highlightQuad(std::unique_ptr<FloatQuad> quad, const HighlightConfig& highlightConfig)
 {
     if (m_quadHighlightConfig.usePageCoordinates)
         *quad -= m_page.mainFrame().view()->scrollOffset();
 
     m_quadHighlightConfig = highlightConfig;
-    m_highlightQuad = quad;
+    m_highlightQuad = std::move(quad);
     update();
 }
 
@@ -328,7 +324,7 @@ void InspectorOverlay::update()
 
     FrameView* overlayView = overlayPage()->mainFrame().view();
     IntSize viewportSize = view->visibleContentRect().size();
-    IntSize frameViewFullSize = view->visibleContentRect(ScrollableArea::IncludeScrollbars).size();
+    IntSize frameViewFullSize = view->visibleContentRectIncludingScrollbars().size();
     IntSize size = m_size.isEmpty() ? frameViewFullSize : m_size;
     overlayPage()->setPageScaleFactor(m_page.pageScaleFactor(), IntPoint());
     size.scale(m_page.pageScaleFactor());
@@ -406,7 +402,7 @@ static PassRefPtr<InspectorObject> buildObjectForRegionHighlight(FrameView* main
 
     // Move the link boxes slightly inside the region border box.
     LayoutUnit maxUsableHeight = std::max(LayoutUnit(), borderBox.height() - linkBoxMidpoint.height());
-    LayoutUnit linkBoxVerticalOffset = std::min(LayoutUnit(15), maxUsableHeight);
+    LayoutUnit linkBoxVerticalOffset = std::min(LayoutUnit::fromPixel(15), maxUsableHeight);
     incomingRectBox.move(0, linkBoxVerticalOffset);
     outgoingRectBox.move(0, -linkBoxVerticalOffset);
 
@@ -434,8 +430,7 @@ static PassRefPtr<InspectorArray> buildObjectForCSSRegionsHighlight(RenderRegion
     RefPtr<InspectorArray> array = InspectorArray::create();
 
     const RenderRegionList& regionList = flowThread->renderRegionList();
-    for (RenderRegionList::const_iterator iter = regionList.begin(); iter != regionList.end(); ++iter) {
-        RenderRegion* iterRegion = *iter;
+    for (auto& iterRegion : regionList) {
         if (!iterRegion->isValid())
             continue;
         RefPtr<InspectorObject> regionHighlightObject = buildObjectForRegionHighlight(mainFrameView, iterRegion);
@@ -753,7 +748,7 @@ Page* InspectorOverlay::overlayPage()
 
     Page::PageClients pageClients;
     fillWithEmptyClients(pageClients);
-    m_overlayPage = adoptPtr(new Page(pageClients));
+    m_overlayPage = std::make_unique<Page>(pageClients);
 
     Settings& settings = m_page.settings();
     Settings& overlaySettings = m_overlayPage->settings();
@@ -820,7 +815,7 @@ void InspectorOverlay::evaluateInOverlay(const String& method, PassRefPtr<Inspec
 
 void InspectorOverlay::freePage()
 {
-    m_overlayPage.clear();
+    m_overlayPage.reset();
 }
 
 } // namespace WebCore

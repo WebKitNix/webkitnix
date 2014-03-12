@@ -30,7 +30,7 @@
 #include <wtf/RefPtr.h>
 #include <wtf/text/TextPosition.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include <wtf/RetainPtr.h>
 OBJC_CLASS WebScriptObject;
 OBJC_CLASS JSContext;
@@ -148,11 +148,10 @@ public:
     PassRefPtr<JSC::Bindings::RootObject> createRootObject(void* nativeHandle);
 
 #if ENABLE(INSPECTOR)
-    static void setCaptureCallStackForUncaughtExceptions(bool);
     void collectIsolatedContexts(Vector<std::pair<JSC::ExecState*, SecurityOrigin*>>&);
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     WebScriptObject* windowScriptObject();
     JSContext *javaScriptContext();
 #endif
@@ -188,7 +187,7 @@ private:
 #if ENABLE(NETSCAPE_PLUGIN_API)
     NPObject* m_windowScriptNPObject;
 #endif
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     RetainPtr<WebScriptObject> m_windowScriptObject;
 #endif
 };

@@ -30,6 +30,7 @@
 namespace WebCore {
 
 class Position;
+class RenderRegion;
 
 class RenderInline : public RenderBoxModelObject {
 public:
@@ -164,7 +165,7 @@ private:
 
     virtual void imageChanged(WrappedImagePtr, const IntRect* = 0) override final;
 
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
     virtual void addAnnotatedRegions(Vector<AnnotatedRegionValue>&) override final;
 #endif
     

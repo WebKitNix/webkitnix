@@ -28,7 +28,9 @@
 
 #if ENABLE(INDEXED_DATABASE) && ENABLE(DATABASE_PROCESS)
 
-#include "IDBTransactionIdentifier.h"
+#include "IDBIdentifier.h"
+#include <WebCore/IDBDatabaseBackend.h>
+#include <wtf/HashMap.h>
 #include <wtf/Noncopyable.h>
 
 namespace WebCore {
@@ -37,40 +39,58 @@ class SQLiteDatabase;
 class SQLiteTransaction;
 
 namespace IndexedDB {
+enum class CursorDirection;
+enum class CursorType;
 enum class TransactionMode;
 }
+
+struct IDBKeyRangeData;
 
 }
 
 namespace WebKit {
 
+class SQLiteIDBCursor;
+class UniqueIDBDatabaseBackingStoreSQLite;
+
 class SQLiteIDBTransaction {
     WTF_MAKE_NONCOPYABLE(SQLiteIDBTransaction);
 public:
-    static std::unique_ptr<SQLiteIDBTransaction> create(const IDBTransactionIdentifier& identifier, WebCore::IndexedDB::TransactionMode mode)
+    static std::unique_ptr<SQLiteIDBTransaction> create(UniqueIDBDatabaseBackingStoreSQLite& backingStore, const IDBIdentifier& transactionIdentifier, WebCore::IndexedDB::TransactionMode mode)
     {
-        return std::unique_ptr<SQLiteIDBTransaction>(new SQLiteIDBTransaction(identifier, mode));
+        return std::unique_ptr<SQLiteIDBTransaction>(new SQLiteIDBTransaction(backingStore, transactionIdentifier, mode));
     }
 
     ~SQLiteIDBTransaction();
 
-    const IDBTransactionIdentifier& identifier() const { return m_identifier; }
+    const IDBIdentifier& transactionIdentifier() const { return m_identifier; }
 
     bool begin(WebCore::SQLiteDatabase&);
     bool commit();
     bool reset();
     bool rollback();
 
+    SQLiteIDBCursor* openCursor(int64_t objectStoreID, int64_t indexID, WebCore::IndexedDB::CursorDirection, WebCore::IndexedDB::CursorType, WebCore::IDBDatabaseBackend::TaskType, const WebCore::IDBKeyRangeData&);
+
+    void closeCursor(SQLiteIDBCursor&);
+    void notifyCursorsOfChanges(int64_t objectStoreID);
+
     WebCore::IndexedDB::TransactionMode mode() const { return m_mode; }
     bool inProgress() const;
 
-private:
-    SQLiteIDBTransaction(const IDBTransactionIdentifier&, WebCore::IndexedDB::TransactionMode);
+    WebCore::SQLiteTransaction* sqliteTransaction() const { return m_sqliteTransaction.get(); }
 
-    IDBTransactionIdentifier m_identifier;
+private:
+    SQLiteIDBTransaction(UniqueIDBDatabaseBackingStoreSQLite&, const IDBIdentifier& transactionIdentifier, WebCore::IndexedDB::TransactionMode);
+
+    void clearCursors();
+
+    IDBIdentifier m_identifier;
     WebCore::IndexedDB::TransactionMode m_mode;
 
+    UniqueIDBDatabaseBackingStoreSQLite& m_backingStore;
     std::unique_ptr<WebCore::SQLiteTransaction> m_sqliteTransaction;
+    HashMap<IDBIdentifier, std::unique_ptr<SQLiteIDBCursor>> m_cursors;
 };
 
 } // namespace WebKit

@@ -22,7 +22,6 @@
 #ifndef RenderSVGInlineText_h
 #define RenderSVGInlineText_h
 
-#if ENABLE(SVG)
 #include "Font.h"
 #include "RenderText.h"
 #include "SVGTextLayoutAttributes.h"
@@ -44,7 +43,7 @@ public:
     float scalingFactor() const { return m_scalingFactor; }
     const Font& scaledFont() const { return m_scaledFont; }
     void updateScaledFont();
-    static void computeNewScaledFontForStyle(RenderObject*, const RenderStyle*, float& scalingFactor, Font& scaledFont);
+    static void computeNewScaledFontForStyle(const RenderObject&, const RenderStyle&, float& scalingFactor, Font& scaledFont);
 
     // Preserves floating point precision for the use in DRT. It knows how to round and does a better job than enclosingIntRect.
     FloatRect floatLinesBoundingBox() const;
@@ -74,5 +73,4 @@ RENDER_OBJECT_TYPE_CASTS(RenderSVGInlineText, isSVGInlineText())
 
 }
 
-#endif // ENABLE(SVG)
 #endif // RenderSVGInlineText_h

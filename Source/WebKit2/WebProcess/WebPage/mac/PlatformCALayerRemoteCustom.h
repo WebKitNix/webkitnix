@@ -26,8 +26,6 @@
 #ifndef PlatformCALayerRemoteCustom_h
 #define PlatformCALayerRemoteCustom_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #include "PlatformCALayerRemote.h"
 
 namespace WebKit {
@@ -43,15 +41,16 @@ public:
 
     virtual uint32_t hostingContextID() override;
 
+    virtual void setNeedsDisplay(const WebCore::FloatRect* dirtyRect = 0) override;
+
 private:
     PlatformCALayerRemoteCustom(PlatformLayer*, WebCore::PlatformCALayerClient* owner, RemoteLayerTreeContext*);
 
     std::unique_ptr<LayerHostingContext> m_layerHostingContext;
     RetainPtr<PlatformLayer> m_platformLayer;
+    bool m_providesContents;
 };
 
 } // namespace WebKit
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // PlatformCALayerRemoteCustom_h

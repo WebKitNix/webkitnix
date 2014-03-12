@@ -16,7 +16,6 @@ var objects_exception = [
     'Attr',
     'CharacterData',
     'CDATASection',
-    'Document',
     'DocumentType',
     'Element',
     'Entity',
@@ -108,7 +107,6 @@ var objects_exception = [
     'NodeList',
     'Plugin',
     'PluginArray',
-    'Range',
     'Rect',
     'StyleSheet',
     'StyleSheetList',
@@ -136,7 +134,9 @@ var objects_exception = [
 var objects_constructor = [
     'Comment',
     'DOMParser',
+    'Document',
     'DocumentFragment',
+    'Range',
     'Text',
     'XMLHttpRequest',
     'XMLSerializer',
@@ -162,7 +162,7 @@ var objects_different_constructor = {
 function TryAllocate(node) {
     var Cons = this[node];
     if (!Cons) return 'no constructor';
-    try { return new Cons() + ''; }
+    try { return Object.prototype.toString.call(new Cons()); }
     catch (e) { return 'exception'; }
 }
 

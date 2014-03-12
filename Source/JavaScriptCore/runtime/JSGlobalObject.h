@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) 2007 Eric Seidel <eric@webkit.org>
- *  Copyright (C) 2007, 2008, 2009 Apple Inc. All rights reserved.
+ *  Copyright (C) 2007, 2008, 2009, 2014 Apple Inc. All rights reserved.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -46,10 +46,15 @@
 struct OpaqueJSClass;
 struct OpaqueJSClassContextData;
 
+namespace Inspector {
+class JSGlobalObjectInspectorController;
+}
+
 namespace JSC {
 
 class ArrayPrototype;
 class BooleanPrototype;
+class ConsoleClient;
 class Debugger;
 class ErrorConstructor;
 class ErrorPrototype;
@@ -60,6 +65,7 @@ class FunctionExecutable;
 class FunctionPrototype;
 class GetterSetter;
 class GlobalCodeBlock;
+class InputCursor;
 class JSGlobalObjectDebuggable;
 class JSPromiseConstructor;
 class JSPromisePrototype;
@@ -67,6 +73,7 @@ class JSStack;
 class LLIntOffsetsExtractor;
 class Microtask;
 class NativeErrorConstructor;
+class ObjectConstructor;
 class ProgramCodeBlock;
 class ProgramExecutable;
 class RegExpConstructor;
@@ -158,6 +165,7 @@ protected:
     WriteBarrier<NativeErrorConstructor> m_typeErrorConstructor;
     WriteBarrier<NativeErrorConstructor> m_URIErrorConstructor;
     WriteBarrier<JSPromiseConstructor> m_promiseConstructor;
+    WriteBarrier<ObjectConstructor> m_objectConstructor;
 
     WriteBarrier<JSFunction> m_evalFunction;
     WriteBarrier<JSFunction> m_callFunction;
@@ -196,6 +204,7 @@ protected:
     WriteBarrier<Structure> m_privateNameStructure;
     WriteBarrier<Structure> m_regExpMatchesArrayStructure;
     WriteBarrier<Structure> m_regExpStructure;
+    WriteBarrier<Structure> m_consoleStructure;
     WriteBarrier<Structure> m_internalFunctionStructure;
     
     WriteBarrier<Structure> m_iteratorResultStructure;
@@ -225,7 +234,12 @@ protected:
 
     Debugger* m_debugger;
 
+#if ENABLE(WEB_REPLAY)
+    RefPtr<InputCursor> m_inputCursor;
+#endif
+
 #if ENABLE(REMOTE_INSPECTOR)
+    std::unique_ptr<Inspector::JSGlobalObjectInspectorController> m_inspectorController;
     std::unique_ptr<JSGlobalObjectDebuggable> m_inspectorDebuggable;
 #endif
 
@@ -240,6 +254,7 @@ protected:
     bool m_evalEnabled;
     String m_evalDisabledErrorMessage;
     bool m_experimentsEnabled;
+    ConsoleClient* m_consoleClient;
 
     static JS_EXPORTDATA const GlobalObjectMethodTable s_globalObjectMethodTable;
     const GlobalObjectMethodTable* m_globalObjectMethodTable;
@@ -330,6 +345,7 @@ public:
     RegExpConstructor* regExpConstructor() const { return m_regExpConstructor.get(); }
 
     ErrorConstructor* errorConstructor() const { return m_errorConstructor.get(); }
+    ObjectConstructor* objectConstructor() const { return m_objectConstructor.get(); }
     NativeErrorConstructor* evalErrorConstructor() const { return m_evalErrorConstructor.get(); }
     NativeErrorConstructor* rangeErrorConstructor() const { return m_rangeErrorConstructor.get(); }
     NativeErrorConstructor* referenceErrorConstructor() const { return m_referenceErrorConstructor.get(); }
@@ -417,6 +433,18 @@ public:
     JS_EXPORT_PRIVATE void setRemoteDebuggingEnabled(bool);
     JS_EXPORT_PRIVATE bool remoteDebuggingEnabled() const;
 
+#if ENABLE(WEB_REPLAY)
+    JS_EXPORT_PRIVATE void setInputCursor(PassRefPtr<InputCursor>);
+    InputCursor& inputCursor() const { return *m_inputCursor; }
+#endif
+
+#if ENABLE(REMOTE_INSPECTOR)
+    Inspector::JSGlobalObjectInspectorController& inspectorController() const { return *m_inspectorController.get(); }
+#endif
+
+    JS_EXPORT_PRIVATE void setConsoleClient(ConsoleClient* consoleClient) { m_consoleClient = consoleClient; }
+    ConsoleClient* consoleClient() const { return m_consoleClient; }
+
     void setName(const String&);
     const String& name() const { return m_name; }
 
@@ -472,7 +500,6 @@ public:
 
     Debugger* debugger() const { return m_debugger; }
     void setDebugger(Debugger* debugger) { m_debugger = debugger; }
-    static ptrdiff_t debuggerOffset() { return OBJECT_OFFSETOF(JSGlobalObject, m_debugger); }
 
     const GlobalObjectMethodTable* globalObjectMethodTable() const { return m_globalObjectMethodTable; }
 
@@ -582,7 +609,7 @@ inline bool JSGlobalObject::hasOwnPropertyForWrite(ExecState* exec, PropertyName
 
 inline bool JSGlobalObject::symbolTableHasProperty(PropertyName propertyName)
 {
-    SymbolTableEntry entry = symbolTable()->inlineGet(propertyName.publicName());
+    SymbolTableEntry entry = symbolTable()->inlineGet(propertyName.uid());
     return !entry.isNull();
 }
 

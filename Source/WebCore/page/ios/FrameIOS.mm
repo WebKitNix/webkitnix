@@ -126,27 +126,25 @@ int Frame::indexCountOfWordPrecedingSelection(NSString *word) const
     if (searchRange->collapsed(exception))
         return result;
 
-    WordAwareIterator it(searchRange.get());
+    WordAwareIterator it(*searchRange);
     while (!it.atEnd()) {
-        const UChar* chars = it.characters();
-        int length = it.length();
-        if (length > 1 || !isSpaceOrNewline(chars[0])) {
+        StringView text = it.text();
+        int length = text.length();
+        if (length > 1 || !isSpaceOrNewline(text[0])) {
             int startOfWordBoundary = 0;
             for (int i = 1; i < length; i++) {
-                if (isSpaceOrNewline(chars[i]) || chars[i] == 0xA0) {
+                if (isSpaceOrNewline(text[i]) || text[i] == 0xA0) {
                     int wordLength = i - startOfWordBoundary;
-                    NSString *chunk = [[NSString alloc] initWithCharactersNoCopy:const_cast<unichar*>(chars) + startOfWordBoundary length:wordLength freeWhenDone:NO];
+                    RetainPtr<NSString> chunk = text.substring(startOfWordBoundary, wordLength).createNSStringWithoutCopying();
                     if ([chunk isEqualToString:word])
                         ++result;
-                    [chunk release];
                     startOfWordBoundary += wordLength + 1;
                 }
             }
             if (startOfWordBoundary < length) {
-                NSString *chunk = [[NSString alloc] initWithCharactersNoCopy:const_cast<unichar*>(chars) + startOfWordBoundary length:length - startOfWordBoundary freeWhenDone:NO];
+                RetainPtr<NSString> chunk = text.substring(startOfWordBoundary, length - startOfWordBoundary).createNSStringWithoutCopying();
                 if ([chunk isEqualToString:word])
                     ++result;
-                [chunk release];
             }
         }
         it.advance();
@@ -183,27 +181,25 @@ NSArray *Frame::wordsInCurrentParagraph() const
 
     NSMutableArray *words = [NSMutableArray array];
 
-    WordAwareIterator it(searchRange.get());
+    WordAwareIterator it(*searchRange);
     while (!it.atEnd()) {
-        const UChar* chars = it.characters();
-        int length = it.length();
-        if (length > 1 || !isSpaceOrNewline(chars[0])) {
+        StringView text = it.text();
+        int length = text.length();
+        if (length > 1 || !isSpaceOrNewline(text[0])) {
             int startOfWordBoundary = 0;
             for (int i = 1; i < length; i++) {
-                if (isSpaceOrNewline(chars[i]) || chars[i] == 0xA0) {
+                if (isSpaceOrNewline(text[i]) || text[i] == 0xA0) {
                     int wordLength = i - startOfWordBoundary;
                     if (wordLength > 0) {
-                        NSString *chunk = [[NSString alloc] initWithCharactersNoCopy:const_cast<unichar*>(chars) + startOfWordBoundary length:wordLength freeWhenDone:NO];
-                        [words addObject:chunk];
-                        [chunk release];
+                        RetainPtr<NSString> chunk = text.substring(startOfWordBoundary, wordLength).createNSString();
+                        [words addObject:chunk.get()];
                     }
                     startOfWordBoundary += wordLength + 1;
                 }
             }
             if (startOfWordBoundary < length) {
-                NSString *chunk = [[NSString alloc] initWithCharactersNoCopy:const_cast<unichar*>(chars) + startOfWordBoundary length:length - startOfWordBoundary freeWhenDone:NO];
-                [words addObject:chunk];
-                [chunk release];
+                RetainPtr<NSString> chunk = text.substring(startOfWordBoundary, length - startOfWordBoundary).createNSString();
+                [words addObject:chunk.get()];
             }
         }
         it.advance();
@@ -601,64 +597,27 @@ void Frame::updateLayout() const
 
 NSRect Frame::caretRect() const
 {
-    if (selection().isNone())
+    VisibleSelection visibleSelection = selection().selection();
+    if (visibleSelection.isNone())
         return CGRectZero;
-    return selection().isCaret() ? selection().absoluteCaretBounds() : VisiblePosition(selection().end()).absoluteCaretBounds();
+    return visibleSelection.isCaret() ? selection().absoluteCaretBounds() : VisiblePosition(visibleSelection.end()).absoluteCaretBounds();
 }
 
 NSRect Frame::rectForScrollToVisible() const
 {
     VisibleSelection selection(this->selection().selection());
-    return rectForSelection(selection);
-}
 
-NSRect Frame::rectForSelection(VisibleSelection& selection) const
-{
     if (selection.isNone())
         return CGRectZero;
 
     if (selection.isCaret())
         return caretRect();
 
-    EditorClient* client = editor().client();
-    if (client)
-        client->suppressSelectionNotifications();
-
-    VisibleSelection originalSelection(selection);
-    Position position;
-
-    // The selection controllers below need to be associated with a frame in order
-    // to calculate geometry. This causes them to do more work here than we would
-    // like. Ideally, we would have a sort offline geometry-only mode for selection
-    // controllers so we could do this kind of work as cheaply as possible.
-
-    position = originalSelection.start();
-    selection.setBase(position);
-    selection.setExtent(position);
-    FrameSelection startFrameSelection(const_cast<Frame*>(this));
-    startFrameSelection.suppressCloseTyping();
-    startFrameSelection.setSelection(selection);
-    FloatRect startRect(startFrameSelection.absoluteCaretBounds());
-    startFrameSelection.restoreCloseTyping();
-
-    position = originalSelection.end();
-    selection.setBase(position);
-    selection.setExtent(position);
-    FrameSelection endFrameSelection(const_cast<Frame*>(this));
-    endFrameSelection.suppressCloseTyping();
-    endFrameSelection.setSelection(selection);
-    FloatRect endRect(endFrameSelection.absoluteCaretBounds());
-    endFrameSelection.restoreCloseTyping();
-
-    if (client)
-        client->restoreSelectionNotifications();
-
-    return unionRect(startRect, endRect);
+    return unionRect(selection.visibleStart().absoluteCaretBounds(), selection.visibleEnd().absoluteCaretBounds());
 }
 
 DOMCSSStyleDeclaration* Frame::styleAtSelectionStart() const
 {
-    Position start = selection().start();
     RefPtr<EditingStyle> editingStyle = EditingStyle::styleAtSelectionStart(selection().selection());
     if (!editingStyle)
         return nullptr;
@@ -737,14 +696,14 @@ void Frame::setRangedSelectionBaseToCurrentSelection()
 
 void Frame::setRangedSelectionBaseToCurrentSelectionStart()
 {
-    FrameSelection& frameSelection = selection();
-    m_rangedSelectionBase = VisibleSelection(frameSelection.selection().start(), frameSelection.affinity());
+    const VisibleSelection& visibleSelection = selection().selection();
+    m_rangedSelectionBase = VisibleSelection(visibleSelection.start(), visibleSelection.affinity());
 }
 
 void Frame::setRangedSelectionBaseToCurrentSelectionEnd()
 {
-    FrameSelection& frameSelection = selection();
-    m_rangedSelectionBase = VisibleSelection(frameSelection.selection().end(), frameSelection.affinity());
+    const VisibleSelection& visibleSelection = selection().selection();
+    m_rangedSelectionBase = VisibleSelection(visibleSelection.end(), visibleSelection.affinity());
 }
 
 VisibleSelection Frame::rangedSelectionBase() const
@@ -759,14 +718,14 @@ void Frame::clearRangedSelectionInitialExtent()
 
 void Frame::setRangedSelectionInitialExtentToCurrentSelectionStart()
 {
-    FrameSelection& frameSelection = selection();
-    m_rangedSelectionInitialExtent = VisibleSelection(frameSelection.selection().start(), frameSelection.affinity());
+    const VisibleSelection& visibleSelection = selection().selection();
+    m_rangedSelectionInitialExtent = VisibleSelection(visibleSelection.start(), visibleSelection.affinity());
 }
 
 void Frame::setRangedSelectionInitialExtentToCurrentSelectionEnd()
 {
-    FrameSelection& frameSelection = selection();
-    m_rangedSelectionInitialExtent = VisibleSelection(frameSelection.selection().end(), frameSelection.affinity());
+    const VisibleSelection& visibleSelection = selection().selection();
+    m_rangedSelectionInitialExtent = VisibleSelection(visibleSelection.end(), visibleSelection.affinity());
 }
 
 VisibleSelection Frame::rangedSelectionInitialExtent() const
@@ -787,7 +746,7 @@ NSArray *Frame::interpretationsForCurrentRoot() const
     if (!document())
         return nil;
 
-    Element* root = selection().selectionType() == VisibleSelection::NoSelection ? document()->body() : selection().rootEditableElement();
+    Element* root = selection().selection().selectionType() == VisibleSelection::NoSelection ? document()->body() : selection().selection().rootEditableElement();
     unsigned rootChildCount = root->childNodeCount();
     RefPtr<Range> rangeOfRootContents = Range::create(*document(), createLegacyEditingPosition(root, 0), createLegacyEditingPosition(root, rootChildCount));
 
@@ -819,7 +778,7 @@ NSArray *Frame::interpretationsForCurrentRoot() const
                 RefPtr<Range> precedingTextRange = Range::create(*document(), precedingTextStartPosition, createLegacyEditingPosition(node, marker->startOffset()));
                 String precedingText = plainText(precedingTextRange.get());
                 if (unsigned length = precedingText.length()) {
-                    const UChar* characters = precedingText.characters();
+                    const UChar* characters = precedingText.deprecatedCharacters();
                     for (size_t i = 0; i < interpretationsCount; ++i)
                         interpretations.at(i).append(characters, length);
                 }
@@ -829,7 +788,7 @@ NSArray *Frame::interpretationsForCurrentRoot() const
             String visibleTextForMarker = plainText(rangeForMarker.get());
             size_t interpretationsCountForCurrentMarker = marker->alternatives().size() + 1;
             unsigned visibleTextForMarkerLength = visibleTextForMarker.length();
-            const UChar* visibleTextForMarkerCharacters = visibleTextForMarker.characters();
+            const UChar* visibleTextForMarkerCharacters = visibleTextForMarker.deprecatedCharacters();
             for (size_t i = 0; i < interpretationsCount; ++i) {
                 // Determine text for the ith interpretation. It will either be the visible text, or one of its
                 // alternatives stored in the marker.
@@ -839,7 +798,7 @@ NSArray *Frame::interpretationsForCurrentRoot() const
                     interpretations.at(i).append(visibleTextForMarkerCharacters, visibleTextForMarkerLength);
                 else {
                     const String& alternative = marker->alternatives().at(i % marker->alternatives().size());
-                    interpretations.at(i).append(alternative.characters(), alternative.length());
+                    interpretations.at(i).append(alternative.deprecatedCharacters(), alternative.length());
                 }
             }
 
@@ -852,7 +811,7 @@ NSArray *Frame::interpretationsForCurrentRoot() const
     // Finally, add any text after the last marker.
     RefPtr<Range> afterLastMarkerRange = Range::create(*document(), precedingTextStartPosition, createLegacyEditingPosition(root, rootChildCount));
     String textAfterLastMarker = plainText(afterLastMarkerRange.get());
-    const UChar* textAfterLastMarkerCharacters = textAfterLastMarker.characters();
+    const UChar* textAfterLastMarkerCharacters = textAfterLastMarker.deprecatedCharacters();
     if (unsigned length = textAfterLastMarker.length()) {
         for (size_t i = 0; i < interpretationsCount; ++i)
             interpretations.at(i).append(textAfterLastMarkerCharacters, length);
@@ -876,7 +835,6 @@ static bool anyFrameHasTiledLayers(Frame* rootFrame)
 
 void Frame::viewportOffsetChanged(ViewportOffsetChangeType changeType)
 {
-#if USE(ACCELERATED_COMPOSITING)
     if (changeType == IncrementalScrollOffset) {
         if (anyFrameHasTiledLayers(this)) {
             if (RenderView* root = contentRenderer())
@@ -888,15 +846,13 @@ void Frame::viewportOffsetChanged(ViewportOffsetChangeType changeType)
         if (RenderView* root = contentRenderer())
             root->compositor().updateCompositingLayers(CompositingUpdateOnScroll);
     }
-#endif
 }
 
 bool Frame::containsTiledBackingLayers() const
 {
-#if USE(ACCELERATED_COMPOSITING)
     if (RenderView* root = contentRenderer())
         return root->compositor().hasNonMainLayersWithTiledBacking();
-#endif
+
     return false;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Apple Inc.  All rights reserved.
+ * Copyright (C) 2012, 2014 Apple Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,6 +31,7 @@
 
 #include "InbandTextTrackPrivate.h"
 #include "Logging.h"
+#include "NotImplemented.h"
 #include <wtf/text/CString.h>
 
 namespace WebCore {
@@ -53,7 +54,7 @@ void InbandWebVTTTextTrack::parseWebVTTCueData(InbandTextTrackPrivate* trackPriv
 {
     ASSERT_UNUSED(trackPrivate, trackPrivate == m_private);
     if (!m_webVTTParser)
-        m_webVTTParser = WebVTTParser::create(this, scriptExecutionContext());
+        m_webVTTParser = std::make_unique<WebVTTParser>(static_cast<WebVTTParserClient*>(this), scriptExecutionContext());
     m_webVTTParser->parseBytes(data, length);
 }
 
@@ -63,18 +64,25 @@ void InbandWebVTTTextTrack::newCuesParsed()
     m_webVTTParser->getNewCues(cues);
     for (size_t i = 0; i < cues.size(); ++i) {
         RefPtr<WebVTTCueData> cueData = cues[i];
-        RefPtr<TextTrackCue> cue = TextTrackCue::create(*scriptExecutionContext(), cueData->startTime(), cueData->endTime(), cueData->content());
+        RefPtr<VTTCue> cue = VTTCue::create(*scriptExecutionContext(), cueData->startTime(), cueData->endTime(), cueData->content());
         cue->setId(cueData->id());
         cue->setCueSettings(cueData->settings());
 
-        if (hasCue(cue.get(), TextTrackCue::IgnoreDuration)) {
+        if (hasCue(cue.get(), VTTCue::IgnoreDuration)) {
             LOG(Media, "InbandWebVTTTextTrack::newCuesParsed ignoring already added cue: start=%.2f, end=%.2f, content=\"%s\"\n", cueData->startTime(), cueData->endTime(), cueData->content().utf8().data());
             return;
         }
-        addCue(cue.release());
+        addCue(cue.release(), ASSERT_NO_EXCEPTION);
     }
 }
-
+    
+#if ENABLE(WEBVTT_REGIONS)
+void InbandWebVTTTextTrack::newRegionsParsed()
+{
+    notImplemented();
+}
+#endif
+    
 void InbandWebVTTTextTrack::fileFailedToParse()
 {
     LOG(Media, "Unable to parse WebVTT stream.");

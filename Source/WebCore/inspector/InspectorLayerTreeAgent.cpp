@@ -30,12 +30,10 @@
 
 #include "config.h"
 
-#if USE(ACCELERATED_COMPOSITING)
 #if ENABLE(INSPECTOR)
 
 #include "InspectorLayerTreeAgent.h"
 
-#include "IdentifiersFactory.h"
 #include "InspectorDOMAgent.h"
 #include "InspectorWebFrontendDispatchers.h"
 #include "InstrumentingAgents.h"
@@ -45,6 +43,7 @@
 #include "RenderLayerBacking.h"
 #include "RenderLayerCompositor.h"
 #include "RenderView.h"
+#include <inspector/IdentifiersFactory.h>
 
 using namespace Inspector;
 
@@ -66,7 +65,7 @@ void InspectorLayerTreeAgent::didCreateFrontendAndBackend(Inspector::InspectorFr
     m_backendDispatcher = InspectorLayerTreeBackendDispatcher::create(backendDispatcher, this);
 }
 
-void InspectorLayerTreeAgent::willDestroyFrontendAndBackend()
+void InspectorLayerTreeAgent::willDestroyFrontendAndBackend(InspectorDisconnectReason)
 {
     m_frontendDispatcher = nullptr;
     m_backendDispatcher.clear();
@@ -295,7 +294,7 @@ void InspectorLayerTreeAgent::reasonsForCompositingLayer(ErrorString* errorStrin
 
     if (reasonsBitmask & CompositingReasonFilterWithCompositedDescendants)
         compositingReasons->setFilterWithCompositedDescendants(true);
-            
+
     if (reasonsBitmask & CompositingReasonBlendingWithCompositedDescendants)
         compositingReasons->setBlendingWithCompositedDescendants(true);
 
@@ -307,9 +306,6 @@ void InspectorLayerTreeAgent::reasonsForCompositingLayer(ErrorString* errorStrin
 
     if (reasonsBitmask & CompositingReasonRoot)
         compositingReasons->setRoot(true);
-
-    if (reasonsBitmask & CompositingReasonBlending)
-        compositingReasons->setBlending(true);
 }
 
 String InspectorLayerTreeAgent::bind(const RenderLayer* layer)
@@ -359,4 +355,3 @@ void InspectorLayerTreeAgent::unbindPseudoElement(PseudoElement* pseudoElement)
 } // namespace WebCore
 
 #endif // ENABLE(INSPECTOR)
-#endif // USE(ACCELERATED_COMPOSITING)

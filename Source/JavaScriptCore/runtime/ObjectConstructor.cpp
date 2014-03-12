@@ -22,7 +22,6 @@
 #include "ObjectConstructor.h"
 
 #include "ButterflyInlines.h"
-#include "CallFrameInlines.h"
 #include "CopiedSpaceInlines.h"
 #include "Error.h"
 #include "ExceptionHelpers.h"
@@ -31,7 +30,7 @@
 #include "JSGlobalObject.h"
 #include "Lookup.h"
 #include "ObjectPrototype.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include "PropertyDescriptor.h"
 #include "PropertyNameArray.h"
 #include "StackVisitor.h"
@@ -96,7 +95,7 @@ void ObjectConstructor::finishCreation(VM& vm, ObjectPrototype* objectPrototype)
 
 bool ObjectConstructor::getOwnPropertySlot(JSObject* object, ExecState* exec, PropertyName propertyName, PropertySlot &slot)
 {
-    return getStaticFunctionSlot<JSObject>(exec, ExecState::objectConstructorTable(exec), jsCast<ObjectConstructor*>(object), propertyName, slot);
+    return getStaticFunctionSlot<JSObject>(exec, ExecState::objectConstructorTable(exec->vm()), jsCast<ObjectConstructor*>(object), propertyName, slot);
 }
 
 static ALWAYS_INLINE JSObject* constructObject(ExecState* exec)
@@ -207,7 +206,7 @@ EncodedJSValue JSC_HOST_CALL objectConstructorGetOwnPropertyNames(ExecState* exe
     if (!exec->argument(0).isObject())
         return throwVMError(exec, createTypeError(exec, ASCIILiteral("Requested property names of a value that is not an object.")));
     PropertyNameArray properties(exec);
-    asObject(exec->argument(0))->methodTable()->getOwnPropertyNames(asObject(exec->argument(0)), exec, properties, IncludeDontEnumProperties);
+    asObject(exec->argument(0))->methodTable(exec->vm())->getOwnPropertyNames(asObject(exec->argument(0)), exec, properties, IncludeDontEnumProperties);
     JSArray* names = constructEmptyArray(exec, 0);
     size_t numProperties = properties.size();
     for (size_t i = 0; i < numProperties; i++)
@@ -221,7 +220,7 @@ EncodedJSValue JSC_HOST_CALL objectConstructorKeys(ExecState* exec)
     if (!exec->argument(0).isObject())
         return throwVMError(exec, createTypeError(exec, ASCIILiteral("Requested keys of a value that is not an object.")));
     PropertyNameArray properties(exec);
-    asObject(exec->argument(0))->methodTable()->getOwnPropertyNames(asObject(exec->argument(0)), exec, properties, ExcludeDontEnumProperties);
+    asObject(exec->argument(0))->methodTable(exec->vm())->getOwnPropertyNames(asObject(exec->argument(0)), exec, properties, ExcludeDontEnumProperties);
     JSArray* keys = constructEmptyArray(exec, 0);
     size_t numProperties = properties.size();
     for (size_t i = 0; i < numProperties; i++)
@@ -325,14 +324,14 @@ EncodedJSValue JSC_HOST_CALL objectConstructorDefineProperty(ExecState* exec)
         return JSValue::encode(jsNull());
     ASSERT((descriptor.attributes() & Accessor) || (!descriptor.isAccessorDescriptor()));
     ASSERT(!exec->hadException());
-    O->methodTable()->defineOwnProperty(O, exec, Identifier(exec, propertyName), descriptor, true);
+    O->methodTable(exec->vm())->defineOwnProperty(O, exec, Identifier(exec, propertyName), descriptor, true);
     return JSValue::encode(O);
 }
 
 static JSValue defineProperties(ExecState* exec, JSObject* object, JSObject* properties)
 {
     PropertyNameArray propertyNames(exec);
-    asObject(properties)->methodTable()->getOwnPropertyNames(asObject(properties), exec, propertyNames, ExcludeDontEnumProperties);
+    asObject(properties)->methodTable(exec->vm())->getOwnPropertyNames(asObject(properties), exec, propertyNames, ExcludeDontEnumProperties);
     size_t numProperties = propertyNames.size();
     Vector<PropertyDescriptor> descriptors;
     MarkedArgumentBuffer markBuffer;
@@ -355,7 +354,7 @@ static JSValue defineProperties(ExecState* exec, JSObject* object, JSObject* pro
         }
     }
     for (size_t i = 0; i < numProperties; i++) {
-        object->methodTable()->defineOwnProperty(object, exec, propertyNames[i], descriptors[i], true);
+        object->methodTable(exec->vm())->defineOwnProperty(object, exec, propertyNames[i], descriptors[i], true);
         if (exec->hadException())
             return jsNull();
     }
@@ -399,7 +398,7 @@ EncodedJSValue JSC_HOST_CALL objectConstructorSeal(ExecState* exec)
 
     // 2. For each named own property name P of O,
     PropertyNameArray properties(exec);
-    object->methodTable()->getOwnPropertyNames(object, exec, properties, IncludeDontEnumProperties);
+    object->methodTable(exec->vm())->getOwnPropertyNames(object, exec, properties, IncludeDontEnumProperties);
     PropertyNameArray::const_iterator end = properties.end();
     for (PropertyNameArray::const_iterator iter = properties.begin(); iter != end; ++iter) {
         // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
@@ -409,7 +408,7 @@ EncodedJSValue JSC_HOST_CALL objectConstructorSeal(ExecState* exec)
         // b. If desc.[[Configurable]] is true, set desc.[[Configurable]] to false.
         desc.setConfigurable(false);
         // c. Call the [[DefineOwnProperty]] internal method of O with P, desc, and true as arguments.
-        object->methodTable()->defineOwnProperty(object, exec, *iter, desc, true);
+        object->methodTable(exec->vm())->defineOwnProperty(object, exec, *iter, desc, true);
         if (exec->hadException())
             return JSValue::encode(obj);
     }
@@ -429,14 +428,14 @@ EncodedJSValue JSC_HOST_CALL objectConstructorFreeze(ExecState* exec)
         return throwVMError(exec, createTypeError(exec, ASCIILiteral("Object.freeze can only be called on Objects.")));
     JSObject* object = asObject(obj);
 
-    if (isJSFinalObject(object) && !hasIndexedProperties(object->structure()->indexingType())) {
+    if (isJSFinalObject(object) && !hasIndexedProperties(object->indexingType())) {
         object->freeze(exec->vm());
         return JSValue::encode(obj);
     }
 
     // 2. For each named own property name P of O,
     PropertyNameArray properties(exec);
-    object->methodTable()->getOwnPropertyNames(object, exec, properties, IncludeDontEnumProperties);
+    object->methodTable(exec->vm())->getOwnPropertyNames(object, exec, properties, IncludeDontEnumProperties);
     PropertyNameArray::const_iterator end = properties.end();
     for (PropertyNameArray::const_iterator iter = properties.begin(); iter != end; ++iter) {
         // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
@@ -450,7 +449,7 @@ EncodedJSValue JSC_HOST_CALL objectConstructorFreeze(ExecState* exec)
         // c. If desc.[[Configurable]] is true, set desc.[[Configurable]] to false.
         desc.setConfigurable(false);
         // d. Call the [[DefineOwnProperty]] internal method of O with P, desc, and true as arguments.
-        object->methodTable()->defineOwnProperty(object, exec, *iter, desc, true);
+        object->methodTable(exec->vm())->defineOwnProperty(object, exec, *iter, desc, true);
         if (exec->hadException())
             return JSValue::encode(obj);
     }
@@ -484,7 +483,7 @@ EncodedJSValue JSC_HOST_CALL objectConstructorIsSealed(ExecState* exec)
 
     // 2. For each named own property name P of O,
     PropertyNameArray properties(exec);
-    object->methodTable()->getOwnPropertyNames(object, exec, properties, IncludeDontEnumProperties);
+    object->methodTable(exec->vm())->getOwnPropertyNames(object, exec, properties, IncludeDontEnumProperties);
     PropertyNameArray::const_iterator end = properties.end();
     for (PropertyNameArray::const_iterator iter = properties.begin(); iter != end; ++iter) {
         // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
@@ -514,7 +513,7 @@ EncodedJSValue JSC_HOST_CALL objectConstructorIsFrozen(ExecState* exec)
 
     // 2. For each named own property name P of O,
     PropertyNameArray properties(exec);
-    object->methodTable()->getOwnPropertyNames(object, exec, properties, IncludeDontEnumProperties);
+    object->methodTable(exec->vm())->getOwnPropertyNames(object, exec, properties, IncludeDontEnumProperties);
     PropertyNameArray::const_iterator end = properties.end();
     for (PropertyNameArray::const_iterator iter = properties.begin(); iter != end; ++iter) {
         // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.

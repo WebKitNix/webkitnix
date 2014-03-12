@@ -350,7 +350,7 @@ void SliderThumbElement::defaultEventHandler(Event* event)
         return;
     }
 
-    MouseEvent* mouseEvent = static_cast<MouseEvent*>(event);
+    MouseEvent* mouseEvent = toMouseEvent(event);
     bool isLeftButton = mouseEvent->button() == LeftButton;
     const AtomicString& eventType = event->type();
 
@@ -579,6 +579,8 @@ const AtomicString& SliderThumbElement::shadowPseudoId() const
     HTMLInputElement* input = hostInput();
     if (!input)
         return sliderThumbShadowPseudoId();
+    if (!input->renderer())
+        return emptyAtom;
 
     const RenderStyle& sliderStyle = input->renderer()->style();
     switch (sliderStyle.appearance()) {
@@ -624,6 +626,8 @@ const AtomicString& SliderContainerElement::shadowPseudoId() const
     HTMLInputElement* input = shadowHost()->toInputElement();
     if (!input)
         return sliderContainer;
+    if (!input->renderer())
+        return emptyAtom;
 
     const RenderStyle& sliderStyle = input->renderer()->style();
     switch (sliderStyle.appearance()) {

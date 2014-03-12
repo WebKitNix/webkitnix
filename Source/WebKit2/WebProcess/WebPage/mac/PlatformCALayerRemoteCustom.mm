@@ -24,9 +24,6 @@
  */
 
 #include "config.h"
-
-#if USE(ACCELERATED_COMPOSITING)
-
 #import "PlatformCALayerRemoteCustom.h"
 
 #import "LayerHostingContext.h"
@@ -42,28 +39,33 @@
 using namespace WebCore;
 using namespace WebKit;
 
+static NSString * const platformCALayerPointer = @"WKPlatformCALayer";
 PlatformCALayerRemoteCustom::PlatformCALayerRemoteCustom(PlatformLayer* customLayer, PlatformCALayerClient* owner, RemoteLayerTreeContext* context)
     : PlatformCALayerRemote(LayerTypeCustom, owner, context)
 {
     switch (context->layerHostingMode()) {
-    case LayerHostingModeDefault:
+    case LayerHostingMode::InProcess:
         m_layerHostingContext = LayerHostingContext::createForPort(WebProcess::shared().compositingRenderServerPort());
         break;
-#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
-    case LayerHostingModeInWindowServer:
-        m_layerHostingContext = LayerHostingContext::createForWindowServer();
+#if HAVE(OUT_OF_PROCESS_LAYER_HOSTING)
+    case LayerHostingMode::OutOfProcess:
+        m_layerHostingContext = LayerHostingContext::createForExternalHostingProcess();
         break;
 #endif
     }
 
     m_layerHostingContext->setRootLayer(customLayer);
+    [customLayer setValue:[NSValue valueWithPointer:this] forKey:platformCALayerPointer];
 
     m_platformLayer = customLayer;
     [customLayer web_disableAllActions];
+
+    m_providesContents = [customLayer isKindOfClass:NSClassFromString(@"WebGLLayer")];
 }
 
 PlatformCALayerRemoteCustom::~PlatformCALayerRemoteCustom()
 {
+    [m_platformLayer setValue:nil forKey:platformCALayerPointer];
 }
 
 uint32_t PlatformCALayerRemoteCustom::hostingContextID()
@@ -71,4 +73,13 @@ uint32_t PlatformCALayerRemoteCustom::hostingContextID()
     return m_layerHostingContext->contextID();
 }
 
-#endif // USE(ACCELERATED_COMPOSITING)
+void PlatformCALayerRemoteCustom::setNeedsDisplay(const FloatRect* rect)
+{
+    if (m_providesContents) {
+        if (rect)
+            [m_platformLayer setNeedsDisplayInRect:*rect];
+        else
+            [m_platformLayer setNeedsDisplay];
+    } else
+        PlatformCALayerRemote::setNeedsDisplay(rect);
+}

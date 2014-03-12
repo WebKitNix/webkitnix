@@ -31,6 +31,7 @@
 #include "CodeBlock.h"
 #include "DFGJITCode.h"
 #include "Executable.h"
+#include "JSCInlines.h"
 
 namespace JSC { namespace DFG {
 
@@ -73,13 +74,24 @@ void ToFTLForOSREntryDeferredCompilationCallback::compilationDidComplete(
             ") result: ", result, "\n");
     }
     
-    if (result == CompilationSuccessful)
-        m_dfgCodeBlock->jitCode()->dfg()->osrEntryBlock = codeBlock;
+    JITCode* jitCode = m_dfgCodeBlock->jitCode()->dfg();
+        
+    switch (result) {
+    case CompilationSuccessful:
+        jitCode->osrEntryBlock = codeBlock;
+        break;
+    case CompilationFailed:
+        jitCode->osrEntryRetry = 0;
+        jitCode->abandonOSREntry = true;
+        break;
+    case CompilationDeferred:
+        RELEASE_ASSERT_NOT_REACHED();
+    case CompilationInvalidated:
+        jitCode->osrEntryRetry = 0;
+        break;
+    }
     
-    // FIXME: if we failed, we might want to just turn off OSR entry rather than
-    // totally turning off tier-up.
-    m_dfgCodeBlock->jitCode()->dfg()->setOptimizationThresholdBasedOnCompilationResult(
-        m_dfgCodeBlock.get(), result);
+    DeferredCompilationCallback::compilationDidComplete(codeBlock, result);
 }
 
 } } // JSC::DFG

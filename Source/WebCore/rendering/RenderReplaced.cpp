@@ -24,6 +24,7 @@
 #include "config.h"
 #include "RenderReplaced.h"
 
+#include "FloatRoundedRect.h"
 #include "Frame.h"
 #include "GraphicsContext.h"
 #include "InlineElementBox.h"
@@ -31,8 +32,9 @@
 #include "Page.h"
 #include "RenderBlock.h"
 #include "RenderFlowThread.h"
+#include "RenderImage.h"
 #include "RenderLayer.h"
-#include "RenderRegion.h"
+#include "RenderNamedFlowFragment.h"
 #include "RenderTheme.h"
 #include "RenderView.h"
 #include "VisiblePosition.h"
@@ -98,6 +100,18 @@ void RenderReplaced::layout()
     updateLogicalWidth();
     updateLogicalHeight();
 
+    // Now that we've calculated our preferred layout, we check to see
+    // if we should further constrain sizing to the intrinsic aspect ratio.
+    if (style().aspectRatioType() == AspectRatioFromIntrinsic && !m_intrinsicSize.isEmpty()) {
+        float aspectRatio = m_intrinsicSize.aspectRatio();
+        LayoutSize frameSize = size();
+        float frameAspectRatio = frameSize.aspectRatio();
+        if (frameAspectRatio < aspectRatio)
+            setHeight(computeReplacedLogicalHeightRespectingMinMaxHeight(frameSize.height() * frameAspectRatio / aspectRatio));
+        else if (frameAspectRatio > aspectRatio)
+            setWidth(computeReplacedLogicalWidthRespectingMinMaxWidth(frameSize.width() * aspectRatio / frameAspectRatio, ComputePreferred));
+    }
+
     clearOverflow();
     addVisualEffectOverflow();
     updateLayerTransform();
@@ -156,8 +170,8 @@ void RenderReplaced::paint(PaintInfo& paintInfo, const LayoutPoint& paintOffset)
         else {
             // Push a clip if we have a border radius, since we want to round the foreground content that gets painted.
             paintInfo.context->save();
-            RoundedRect roundedInnerRect = style().getRoundedInnerBorderFor(paintRect,
-                paddingTop() + borderTop(), paddingBottom() + borderBottom(), paddingLeft() + borderLeft(), paddingRight() + borderRight(), true, true);
+            FloatRoundedRect roundedInnerRect = FloatRoundedRect(style().getRoundedInnerBorderFor(paintRect,
+                paddingTop() + borderTop(), paddingBottom() + borderBottom(), paddingLeft() + borderLeft(), paddingRight() + borderRight(), true, true));
             clipRoundedInnerRect(paintInfo.context, paintRect, roundedInnerRect);
         }
     }
@@ -192,7 +206,7 @@ bool RenderReplaced::shouldPaint(PaintInfo& paintInfo, const LayoutPoint& paintO
         return false;
     
     // Check our region range to make sure we need to be painting in this region.
-    if (paintInfo.renderRegion && !paintInfo.renderRegion->flowThread()->objectShouldPaintInFlowRegion(this, paintInfo.renderRegion))
+    if (paintInfo.renderNamedFlowFragment && !paintInfo.renderNamedFlowFragment->flowThread()->objectShouldPaintInFlowRegion(this, paintInfo.renderNamedFlowFragment))
         return false;
 
     LayoutPoint adjustedPaintOffset = paintOffset + location();
@@ -270,8 +284,11 @@ void RenderReplaced::computeAspectRatioInformationForRenderBox(RenderBox* conten
             ASSERT(!isPercentageIntrinsicSize);
 
         // Handle zoom & vertical writing modes here, as the embedded document doesn't know about them.
-        if (!isPercentageIntrinsicSize)
+        if (!isPercentageIntrinsicSize) {
             intrinsicSize.scale(style().effectiveZoom());
+            if (isRenderImage())
+                intrinsicSize.scale(toRenderImage(this)->imageDevicePixelRatio());
+        }
 
         if (hasAspectRatio() && isPercentageIntrinsicSize)
             intrinsicRatio = 1;
@@ -329,7 +346,7 @@ LayoutRect RenderReplaced::replacedContentRect(const LayoutSize& intrinsicSize) 
         finalRect.setSize(finalRect.size().fitToAspectRatio(intrinsicSize, objectFit == ObjectFitCover ? AspectRatioFitGrow : AspectRatioFitShrink));
         if (objectFit != ObjectFitScaleDown || finalRect.width() <= intrinsicSize.width())
             break;
-        // fall through
+        FALLTHROUGH;
     case ObjectFitNone:
         finalRect.setSize(intrinsicSize);
         break;

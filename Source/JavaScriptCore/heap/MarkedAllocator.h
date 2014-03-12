@@ -21,6 +21,7 @@ public:
     static ptrdiff_t offsetOfFreeListHead();
 
     MarkedAllocator();
+    void lastChanceToFinalize();
     void reset();
     void stopAllocating();
     void resumeAllocating();
@@ -47,14 +48,15 @@ private:
     JS_EXPORT_PRIVATE void* allocateSlowCase(size_t);
     void* tryAllocate(size_t);
     void* tryAllocateHelper(size_t);
+    void* tryPopFreeList(size_t);
     MarkedBlock* allocateBlock(size_t);
     
     MarkedBlock::FreeList m_freeList;
     MarkedBlock* m_currentBlock;
     MarkedBlock* m_lastActiveBlock;
     MarkedBlock* m_nextBlockToSweep;
-    MarkedBlock* m_lastFullBlock;
     DoublyLinkedList<MarkedBlock> m_blockList;
+    DoublyLinkedList<MarkedBlock> m_retiredBlocks;
     size_t m_cellSize;
     MarkedBlock::DestructorType m_destructorType;
     Heap* m_heap;
@@ -70,7 +72,6 @@ inline MarkedAllocator::MarkedAllocator()
     : m_currentBlock(0)
     , m_lastActiveBlock(0)
     , m_nextBlockToSweep(0)
-    , m_lastFullBlock(0)
     , m_cellSize(0)
     , m_destructorType(MarkedBlock::None)
     , m_heap(0)
@@ -132,6 +133,11 @@ template <typename Functor> inline void MarkedAllocator::forEachBlock(Functor& f
 {
     MarkedBlock* next;
     for (MarkedBlock* block = m_blockList.head(); block; block = next) {
+        next = block->next();
+        functor(block);
+    }
+
+    for (MarkedBlock* block = m_retiredBlocks.head(); block; block = next) {
         next = block->next();
         functor(block);
     }

@@ -26,8 +26,6 @@
 #ifndef WebGLLayer_h
 #define WebGLLayer_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #import <QuartzCore/QuartzCore.h>
 
 namespace WebCore {
@@ -41,7 +39,6 @@ namespace WebCore {
 @interface WebGLLayer : CAOpenGLLayer
 #endif
 {
-    WebCore::GraphicsLayer* m_layerOwner;
     WebCore::GraphicsContext3D* m_context;
 }
 
@@ -50,7 +47,5 @@ namespace WebCore {
 - (CGImageRef)copyImageSnapshotWithColorSpace:(CGColorSpaceRef)colorSpace;
 
 @end
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // WebGLLayer_h

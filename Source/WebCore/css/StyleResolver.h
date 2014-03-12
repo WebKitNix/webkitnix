@@ -36,11 +36,8 @@
 #include "SelectorChecker.h"
 #include "SelectorFilter.h"
 #include "StyleInheritedData.h"
-#include "StyleScopeResolver.h"
 #include "ViewportStyleResolver.h"
-#if ENABLE(CSS_SHADERS)
-#include "CustomFilterConstants.h"
-#endif
+#include <memory>
 #include <wtf/HashMap.h>
 #include <wtf/HashSet.h>
 #include <wtf/RefPtr.h>
@@ -64,11 +61,6 @@ class CSSSelector;
 class CSSStyleSheet;
 class CSSValue;
 class ContainerNode;
-class CustomFilterOperation;
-class CustomFilterParameter;
-class CustomFilterParameterList;
-class CustomFilterProgram;
-struct CustomFilterProgramMixSettings;
 class Document;
 class DeprecatedStyleBuilder;
 class Element;
@@ -84,26 +76,19 @@ class RenderScrollbar;
 class RuleData;
 class RuleSet;
 class Settings;
-class StyleCustomFilterProgramCache;
-class StyleScopeResolver;
 class StyleImage;
 class StyleKeyframe;
 class StylePendingImage;
 class StyleProperties;
 class StyleRule;
-#if ENABLE(SHADOW_DOM)
-class StyleRuleHost;
-#endif
 class StyleRuleKeyframes;
 class StyleRulePage;
 class StyleRuleRegion;
-class StyleShader;
 class StyleSheet;
 class StyleSheetList;
 class StyledElement;
 class ViewportStyleResolver;
 class WebKitCSSFilterValue;
-class WebKitCSSShaderValue;
 
 class MediaQueryResult {
     WTF_MAKE_NONCOPYABLE(MediaQueryResult); WTF_MAKE_FAST_ALLOCATED;
@@ -157,11 +142,6 @@ public:
     // Using these during tree walk will allow style selector to optimize child and descendant selector lookups.
     void pushParentElement(Element*);
     void popParentElement(Element*);
-    void pushParentShadowRoot(const ShadowRoot*);
-    void popParentShadowRoot(const ShadowRoot*);
-#if ENABLE(SHADOW_DOM)
-    void addHostRule(StyleRuleHost* rule, bool hasDocumentSecurityOrigin, const ContainerNode* scope) { ensureScopeResolver()->addHostRule(rule, hasDocumentSecurityOrigin, scope); }
-#endif
 
     PassRef<RenderStyle> styleForElement(Element*, RenderStyle* parentStyle = 0, StyleSharingBehavior = AllowStyleSharing,
         RuleMatchingBehavior = MatchAllRules, RenderRegion* regionForStyling = 0);
@@ -178,7 +158,6 @@ public:
     RenderStyle* rootElementStyle() const { return m_state.rootElementStyle(); }
     Element* element() { return m_state.element(); }
     Document& document() { return m_document; }
-    StyleScopeResolver* scopeResolver() const { return m_scopeResolver.get(); }
     bool hasParentNode() const { return m_state.parentNode(); }
 
     // FIXME: It could be better to call m_ruleSets.appendAuthorStyleSheets() directly after we factor StyleRsolver further.
@@ -189,21 +168,12 @@ public:
     const DocumentRuleSets& ruleSets() const { return m_ruleSets; }
     SelectorFilter& selectorFilter() { return m_selectorFilter; }
 
-#if ENABLE(SHADOW_DOM)
-    StyleScopeResolver* ensureScopeResolver()
-    {
-        ASSERT(RuntimeEnabledFeatures::sharedFeatures().shadowDOMEnabled());
-        if (!m_scopeResolver)
-            m_scopeResolver = adoptPtr(new StyleScopeResolver());
-        return m_scopeResolver.get();
-    }
-#endif
+    const MediaQueryEvaluator& mediaQueryEvaluator() const { return *m_medium; }
 
 private:
     void initElement(Element*);
     RenderStyle* locateSharedStyle();
     bool styleSharingCandidateMatchesRuleSet(RuleSet*);
-    bool styleSharingCandidateMatchesHostRules();
     Node* locateCousinList(Element* parent, unsigned& visitedNodeCount) const;
     StyledElement* findSiblingForStyleSharing(Node*, unsigned& count) const;
     bool canShareStyleWithElement(StyledElement*) const;
@@ -264,25 +234,7 @@ public:
 
 #if ENABLE(CSS_FILTERS)
     bool createFilterOperations(CSSValue* inValue, FilterOperations& outOperations);
-#if ENABLE(CSS_SHADERS)
-    StyleShader* styleShader(CSSValue*);
-    StyleShader* cachedOrPendingStyleShaderFromValue(WebKitCSSShaderValue*);
-    bool parseCustomFilterParameterList(CSSValue*, CustomFilterParameterList&);
-    PassRefPtr<CustomFilterParameter> parseCustomFilterParameter(const String& name, CSSValue*);
-    PassRefPtr<CustomFilterParameter> parseCustomFilterColorParameter(const String& name, CSSValueList*);
-    PassRefPtr<CustomFilterParameter> parseCustomFilterArrayParameter(const String& name, CSSValueList*, bool);
-    PassRefPtr<CustomFilterParameter> parseCustomFilterNumberParameter(const String& name, CSSValueList*);
-    PassRefPtr<CustomFilterParameter> parseCustomFilterTransformParameter(const String& name, CSSValueList*);
-    PassRefPtr<CustomFilterOperation> createCustomFilterOperationWithAtRuleReferenceSyntax(WebKitCSSFilterValue*);
-    PassRefPtr<CustomFilterOperation> createCustomFilterOperationWithInlineSyntax(WebKitCSSFilterValue*);
-    PassRefPtr<CustomFilterOperation> createCustomFilterOperation(WebKitCSSFilterValue*);
-    void loadPendingShaders();
-    PassRefPtr<CustomFilterProgram> lookupCustomFilterProgram(WebKitCSSShaderValue* vertexShader, WebKitCSSShaderValue* fragmentShader, 
-        CustomFilterProgramType, const CustomFilterProgramMixSettings&, CustomFilterMeshType);
-#endif
-#if ENABLE(SVG)
     void loadPendingSVGDocuments();
-#endif
 #endif // ENABLE(CSS_FILTERS)
 
     void loadPendingResources();
@@ -342,7 +294,10 @@ private:
 #endif
 
     void adjustRenderStyle(RenderStyle& styleToAdjust, const RenderStyle& parentStyle, Element*);
+#if ENABLE(CSS_GRID_LAYOUT)
     void adjustGridItemPosition(RenderStyle& styleToAdjust, const RenderStyle& parentStyle) const;
+    std::unique_ptr<GridPosition> adjustNamedGridItemPosition(const NamedGridAreaMap&, const NamedGridLinesMap&, const GridPosition&, GridPositionSide) const;
+#endif
 
     bool fastRejectSelector(const RuleData&) const;
 
@@ -374,9 +329,6 @@ private:
 
 public:
     typedef HashMap<CSSPropertyID, RefPtr<CSSValue>> PendingImagePropertyMap;
-#if ENABLE(CSS_FILTERS) && ENABLE(SVG)
-    typedef HashSet<CachedSVGDocumentReference*> PendingSVGDocumentSet;
-#endif
 
     class State {
         WTF_MAKE_NONCOPYABLE(State);
@@ -392,9 +344,6 @@ public:
         , m_elementAffectedByClassRules(false)
         , m_applyPropertyToRegularStyle(true)
         , m_applyPropertyToVisitedLinkStyle(false)
-#if ENABLE(CSS_SHADERS)
-        , m_hasPendingShaders(false)
-#endif
         , m_lineHeightValue(0)
         , m_fontDirty(false)
         , m_hasUAAppearance(false)
@@ -427,12 +376,8 @@ public:
         bool applyPropertyToRegularStyle() const { return m_applyPropertyToRegularStyle; }
         bool applyPropertyToVisitedLinkStyle() const { return m_applyPropertyToVisitedLinkStyle; }
         PendingImagePropertyMap& pendingImageProperties() { return m_pendingImageProperties; }
-#if ENABLE(CSS_FILTERS) && ENABLE(SVG)
-        PendingSVGDocumentSet& pendingSVGDocuments() { return m_pendingSVGDocuments; }
-#endif
-#if ENABLE(CSS_SHADERS)
-        void setHasPendingShaders(bool hasPendingShaders) { m_hasPendingShaders = hasPendingShaders; }
-        bool hasPendingShaders() const { return m_hasPendingShaders; }
+#if ENABLE(CSS_FILTERS)
+        Vector<RefPtr<ReferenceFilterOperation>>& filtersWithPendingSVGDocuments() { return m_filtersWithPendingSVGDocuments; }
 #endif
 
         void setLineHeightValue(CSSValue* value) { m_lineHeightValue = value; }
@@ -478,11 +423,8 @@ public:
         bool m_applyPropertyToVisitedLinkStyle;
 
         PendingImagePropertyMap m_pendingImageProperties;
-#if ENABLE(CSS_SHADERS)
-        bool m_hasPendingShaders;
-#endif
-#if ENABLE(CSS_FILTERS) && ENABLE(SVG)
-        PendingSVGDocumentSet m_pendingSVGDocuments;
+#if ENABLE(CSS_FILTERS)
+        Vector<RefPtr<ReferenceFilterOperation>> m_filtersWithPendingSVGDocuments;
 #endif
         CSSValue* m_lineHeightValue;
         bool m_fontDirty;
@@ -531,12 +473,10 @@ private:
 
     void applyProperty(CSSPropertyID, CSSValue*);
 
-#if ENABLE(SVG)
     void applySVGProperty(CSSPropertyID, CSSValue*);
-#endif
 
-    PassRefPtr<StyleImage> loadPendingImage(StylePendingImage*, const ResourceLoaderOptions&);
-    PassRefPtr<StyleImage> loadPendingImage(StylePendingImage*);
+    PassRefPtr<StyleImage> loadPendingImage(const StylePendingImage&, const ResourceLoaderOptions&);
+    PassRefPtr<StyleImage> loadPendingImage(const StylePendingImage&);
     void loadPendingImages();
 #if ENABLE(CSS_SHAPES)
     void loadPendingShapeImage(ShapeValue*);
@@ -567,7 +507,7 @@ private:
 
     Timer<StyleResolver> m_matchedPropertiesCacheSweepTimer;
 
-    OwnPtr<MediaQueryEvaluator> m_medium;
+    std::unique_ptr<MediaQueryEvaluator> m_medium;
     RefPtr<RenderStyle> m_rootDefaultStyle;
 
     Document& m_document;
@@ -576,7 +516,7 @@ private:
     bool m_matchAuthorAndUserStyles;
 
     RefPtr<CSSFontSelector> m_fontSelector;
-    Vector<OwnPtr<MediaQueryResult>> m_viewportDependentMediaQueryResults;
+    Vector<std::unique_ptr<MediaQueryResult>> m_viewportDependentMediaQueryResults;
 
 #if ENABLE(CSS_DEVICE_ADAPTATION)
     RefPtr<ViewportStyleResolver> m_viewportStyleResolver;
@@ -584,15 +524,10 @@ private:
 
     const DeprecatedStyleBuilder& m_deprecatedStyleBuilder;
 
-    OwnPtr<StyleScopeResolver> m_scopeResolver;
     CSSToStyleMap m_styleMap;
     InspectorCSSOMWrappers m_inspectorCSSOMWrappers;
 
     State m_state;
-
-#if ENABLE(CSS_SHADERS)
-    OwnPtr<StyleCustomFilterProgramCache> m_customFilterProgramCache;
-#endif
 
     friend class DeprecatedStyleBuilder;
     friend bool operator==(const MatchedProperties&, const MatchedProperties&);

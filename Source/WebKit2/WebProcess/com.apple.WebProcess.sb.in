@@ -83,6 +83,10 @@
 (read-write-and-issue-extensions (extension "com.apple.app-sandbox.read-write"))
 (allow mach-lookup (extension "com.apple.app-sandbox.mach")) ;; FIXME: Should be removed when <rdar://problem/13066206> is fixed.
 
+;; Allow the OpenGL Profiler to attach.
+(if (defined? 'mach-register)
+    (allow mach-register (global-name-regex #"^_oglprof_attach_<[0-9]+>$")))
+
 ;; MediaAccessibility
 #if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
 (allow file-read* (home-literal "/Library/Preferences/com.apple.mediaaccessibility.plist"))
@@ -222,6 +226,7 @@
 ;; FIXME should be removed when <rdar://problem/9347205> + related radar in Safari is fixed
 (allow mach-lookup
        (global-name "org.h5l.kcm")
+       (global-name "com.apple.GSSCred")
        (global-name "com.apple.system.logger")
        (global-name "com.apple.system.notification_center"))
 (allow network-outbound

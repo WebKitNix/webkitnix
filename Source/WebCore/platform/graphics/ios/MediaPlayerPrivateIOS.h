@@ -90,7 +90,7 @@ private:
 
     virtual void load(const String& url) override;
 #if ENABLE(MEDIA_SOURCE)
-    virtual void load(const String&, PassRefPtr<HTMLMediaSource>) override { }
+    virtual void load(const String&, MediaSourcePrivateClient*) override { }
 #endif
     virtual void cancelLoad() override;
 
@@ -119,7 +119,7 @@ private:
     
     float maxTimeBuffered() const;
     virtual float maxTimeSeekable() const override;
-    virtual PassRefPtr<TimeRanges> buffered() const override;
+    virtual std::unique_ptr<PlatformTimeRanges> buffered() const override;
 
     virtual bool didLoadingProgress() const override;
     bool totalBytesKnown() const;
@@ -142,9 +142,7 @@ private:
     virtual void setHasPlaybackTargetAvailabilityListeners(bool) override;
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     virtual bool supportsAcceleratedRendering() const override;
-#endif
 
     virtual void setMediaPlayerProxy(WebMediaPlayerProxy*) override;
     void processPendingRequests();

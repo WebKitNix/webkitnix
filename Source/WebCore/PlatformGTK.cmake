@@ -25,7 +25,7 @@ list(APPEND WebCore_INCLUDE_DIRECTORIES
 )
 
 list(APPEND WebCore_SOURCES
-    editing/SmartReplaceICU.cpp
+    editing/SmartReplace.cpp
 
     html/shadow/MediaControlsGtk.cpp
 
@@ -40,7 +40,8 @@ list(APPEND WebCore_SOURCES
     platform/audio/gstreamer/FFTFrameGStreamer.cpp
     platform/audio/gstreamer/WebKitWebAudioSourceGStreamer.cpp
 
-    platform/geoclue/GeolocationProviderGeoclue.cpp
+    platform/geoclue/GeolocationProviderGeoclue1.cpp
+    platform/geoclue/GeolocationProviderGeoclue2.cpp
 
     platform/graphics/GraphicsContext3DPrivate.cpp
     platform/graphics/OpenGLShims.cpp
@@ -111,11 +112,11 @@ list(APPEND WebCore_SOURCES
     platform/mediastream/gstreamer/MediaStreamCenterGStreamer.cpp
 
     platform/network/soup/AuthenticationChallengeSoup.cpp
+    platform/network/soup/CertificateInfo.cpp
     platform/network/soup/CookieJarSoup.cpp
     platform/network/soup/CookieStorageSoup.cpp
     platform/network/soup/CredentialStorageSoup.cpp
     platform/network/soup/DNSSoup.cpp
-    platform/network/soup/GOwnPtrSoup.cpp
     platform/network/soup/NetworkStorageSessionSoup.cpp
     platform/network/soup/ProxyResolverSoup.cpp
     platform/network/soup/ProxyServerSoup.cpp
@@ -125,10 +126,10 @@ list(APPEND WebCore_SOURCES
     platform/network/soup/ResourceResponseSoup.cpp
     platform/network/soup/SocketStreamHandleSoup.cpp
     platform/network/soup/SoupNetworkSession.cpp
-    platform/network/soup/SoupURIUtils.cpp
     platform/network/soup/SynchronousLoaderClientSoup.cpp
 
     platform/soup/SharedBufferSoup.cpp
+    platform/soup/URLSoup.cpp
 
     platform/text/icu/UTextProvider.cpp
     platform/text/icu/UTextProviderLatin1.cpp
@@ -138,6 +139,10 @@ list(APPEND WebCore_SOURCES
     platform/text/TextEncodingDetectorICU.cpp
 
     platform/text/enchant/TextCheckerEnchant.cpp
+
+    platform/text/gtk/TextBreakIteratorInternalICUGtk.cpp
+
+    platform/network/gtk/CredentialBackingStore.cpp
 )
 
 list(APPEND WebCorePlatformGTK_SOURCES
@@ -153,6 +158,7 @@ list(APPEND WebCorePlatformGTK_SOURCES
     accessibility/atk/WebKitAccessibleInterfaceImage.cpp
     accessibility/atk/WebKitAccessibleInterfaceSelection.cpp
     accessibility/atk/WebKitAccessibleInterfaceTable.cpp
+    accessibility/atk/WebKitAccessibleInterfaceTableCell.cpp
     accessibility/atk/WebKitAccessibleInterfaceText.cpp
     accessibility/atk/WebKitAccessibleInterfaceValue.cpp
     accessibility/atk/WebKitAccessibleUtil.cpp
@@ -196,13 +202,13 @@ list(APPEND WebCorePlatformGTK_SOURCES
     platform/gtk/ErrorsGtk.cpp
     platform/gtk/EventLoopGtk.cpp
     platform/gtk/FileSystemGtk.cpp
-    platform/gtk/GOwnPtrGtk.cpp
     platform/gtk/GRefPtrGtk.cpp
     platform/gtk/GtkClickCounter.cpp
     platform/gtk/GtkDragAndDropHelper.cpp
     platform/gtk/GtkInputMethodFilter.cpp
     platform/gtk/GtkPluginWidget.cpp
     platform/gtk/GtkPopupMenu.cpp
+    platform/gtk/GtkTouchContextHelper.cpp
     platform/gtk/GtkUtilities.cpp
     platform/gtk/GtkVersioning.c
     platform/gtk/KeyBindingTranslator.cpp
@@ -236,40 +242,18 @@ list(APPEND WebCorePlatformGTK_SOURCES
     platform/gtk/WidgetBackingStoreGtkX11.cpp
     platform/gtk/WidgetGtk.cpp
     platform/gtk/WidgetRenderingContext.cpp
-
-    platform/network/gtk/CredentialBackingStore.cpp
-
-    platform/network/soup/AuthenticationChallengeSoup.cpp
-    platform/network/soup/CertificateInfo.cpp
-    platform/network/soup/CookieJarSoup.cpp
-    platform/network/soup/CookieStorageSoup.cpp
-    platform/network/soup/CredentialStorageSoup.cpp
-    platform/network/soup/DNSSoup.cpp
-    platform/network/soup/GOwnPtrSoup.cpp
-    platform/network/soup/NetworkStorageSessionSoup.cpp
-    platform/network/soup/ProxyResolverSoup.cpp
-    platform/network/soup/ProxyServerSoup.cpp
-    platform/network/soup/ResourceErrorSoup.cpp
-    platform/network/soup/ResourceHandleSoup.cpp
-    platform/network/soup/ResourceRequestSoup.cpp
-    platform/network/soup/ResourceResponseSoup.cpp
-    platform/network/soup/SocketStreamHandleSoup.cpp
-    platform/network/soup/SoupURIUtils.cpp
-    platform/network/soup/SynchronousLoaderClientSoup.cpp
-
-    platform/soup/SharedBufferSoup.cpp
-
-    platform/text/icu/UTextProvider.cpp
-    platform/text/icu/UTextProviderLatin1.cpp
-    platform/text/icu/UTextProviderUTF16.cpp
-    platform/text/LocaleICU.cpp
-    platform/text/TextCodecICU.cpp
-    platform/text/TextEncodingDetectorICU.cpp
-
-    platform/text/enchant/TextCheckerEnchant.cpp
-
-    platform/text/gtk/TextBreakIteratorInternalICUGtk.cpp
 )
+
+if (WTF_USE_GEOCLUE2)
+    list(APPEND WebCore_SOURCES
+        ${DERIVED_SOURCES_WEBCORE_DIR}/Geoclue2Interface.c
+    )
+    execute_process(COMMAND pkg-config --variable dbus_interface geoclue-2.0 OUTPUT_VARIABLE GEOCLUE_DBUS_INTERFACE)
+    add_custom_command(
+         OUTPUT ${DERIVED_SOURCES_WEBCORE_DIR}/Geoclue2Interface.c ${DERIVED_SOURCES_WEBCORE_DIR}/Geoclue2Interface.h
+         COMMAND gdbus-codegen --interface-prefix org.freedesktop.GeoClue2. --c-namespace Geoclue --generate-c-code ${DERIVED_SOURCES_WEBCORE_DIR}/Geoclue2Interface ${GEOCLUE_DBUS_INTERFACE}
+    )
+endif ()
 
 if (ENABLE_NETSCAPE_PLUGIN_API)
     list(APPEND WebCore_SOURCES
@@ -284,6 +268,8 @@ if (ENABLE_NETSCAPE_PLUGIN_API)
         plugins/gtk/PluginPackageGtk.cpp
         plugins/gtk/PluginViewGtk.cpp
         plugins/gtk/gtk2xtbin.c
+
+        plugins/x11/PluginViewX11.cpp
     )
 else ()
     list(APPEND WebCore_SOURCES
@@ -295,6 +281,13 @@ endif ()
 list(APPEND WebCore_USER_AGENT_STYLE_SHEETS
     ${WEBCORE_DIR}/css/mediaControlsGtk.css
 )
+
+set(WebCore_USER_AGENT_SCRIPTS
+    ${WEBCORE_DIR}/Modules/mediacontrols/mediaControlsApple.js
+    ${WEBCORE_DIR}/Modules/mediacontrols/mediaControlsGtk.js
+)
+
+set(WebCore_USER_AGENT_SCRIPTS_DEPENDENCIES ${WEBCORE_DIR}/platform/gtk/RenderThemeGtk.cpp)
 
 list(APPEND WebCore_LIBRARIES
     ${ATK_LIBRARIES}
@@ -452,273 +445,296 @@ set_property(
     APPEND
     PROPERTY INCLUDE_DIRECTORIES
         ${WebCore_INCLUDE_DIRECTORIES}
-        ${GTK3_INCLUDE_DIRS}
-        ${GDK3_INCLUDE_DIRS}
+        ${GTK_INCLUDE_DIRS}
+        ${GDK_INCLUDE_DIRS}
 )
 target_link_libraries(WebCorePlatformGTK
     ${WebCore_LIBRARIES}
-    ${GTK3_LIBRARIES}
-    ${GDK3_LIBRARIES}
+    ${GTK_LIBRARIES}
+    ${GDK_LIBRARIES}
 )
 
-if (ENABLE_WEBKIT2)
-    include_directories(
-        "${WebCore_INCLUDE_DIRECTORIES}"
-        "${DERIVED_SOURCES_DIR}"
-        "${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}"
-    )
+include_directories(
+    "${WebCore_INCLUDE_DIRECTORIES}"
+    "${DERIVED_SOURCES_DIR}"
+    "${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}"
+)
 
-    list(APPEND GObjectDOMBindings_SOURCES
-        bindings/gobject/ConvertToUTF8String.cpp
-        bindings/gobject/DOMObjectCache.cpp
-        bindings/gobject/GObjectEventListener.cpp
-        bindings/gobject/WebKitDOMCustom.cpp
-        bindings/gobject/WebKitDOMEventTarget.cpp
-        bindings/gobject/WebKitDOMHTMLPrivate.cpp
-        bindings/gobject/WebKitDOMObject.cpp
-        bindings/gobject/WebKitDOMPrivate.cpp
-        ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdomdefines.h
-        ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdom.h
-    )
+list(APPEND GObjectDOMBindings_SOURCES
+    bindings/gobject/ConvertToUTF8String.cpp
+    bindings/gobject/DOMObjectCache.cpp
+    bindings/gobject/GObjectEventListener.cpp
+    bindings/gobject/WebKitDOMCustom.cpp
+    bindings/gobject/WebKitDOMDeprecated.cpp
+    bindings/gobject/WebKitDOMEventTarget.cpp
+    bindings/gobject/WebKitDOMHTMLPrivate.cpp
+    bindings/gobject/WebKitDOMObject.cpp
+    bindings/gobject/WebKitDOMPrivate.cpp
+    ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdomdefines.h
+    ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdom.h
+)
 
+list(APPEND GObjectDOMBindings_IDL_FILES
+    Modules/battery/BatteryManager.idl
+    Modules/gamepad/Gamepad.idl
+    Modules/gamepad/GamepadList.idl
+    Modules/geolocation/Geolocation.idl
+    Modules/mediasource/VideoPlaybackQuality.idl
+    Modules/quota/StorageInfo.idl
+    Modules/quota/StorageQuota.idl
+    Modules/webdatabase/Database.idl
+
+    css/CSSRule.idl
+    css/CSSRuleList.idl
+    css/CSSStyleDeclaration.idl
+    css/CSSStyleSheet.idl
+    css/CSSValue.idl
+    css/DOMWindowCSS.idl
+    css/MediaList.idl
+    css/MediaQueryList.idl
+    css/StyleMedia.idl
+    css/StyleSheet.idl
+    css/StyleSheetList.idl
+
+    dom/Attr.idl
+    dom/CDATASection.idl
+    dom/CharacterData.idl
+    dom/Comment.idl
+    dom/DOMImplementation.idl
+    dom/DOMNamedFlowCollection.idl
+    dom/DOMStringList.idl
+    dom/DOMStringMap.idl
+    dom/Document.idl
+    dom/DocumentFragment.idl
+    dom/DocumentType.idl
+    dom/Element.idl
+    dom/EntityReference.idl
+    dom/Event.idl
+    dom/KeyboardEvent.idl
+    dom/MessagePort.idl
+    dom/MouseEvent.idl
+    dom/NamedNodeMap.idl
+    dom/Node.idl
+    dom/NodeFilter.idl
+    dom/NodeIterator.idl
+    dom/NodeList.idl
+    dom/ProcessingInstruction.idl
+    dom/Range.idl
+    dom/Text.idl
+    dom/Touch.idl
+    dom/TreeWalker.idl
+    dom/UIEvent.idl
+    dom/WebKitNamedFlow.idl
+    dom/WheelEvent.idl
+
+    fileapi/Blob.idl
+    fileapi/File.idl
+    fileapi/FileList.idl
+
+    html/DOMSettableTokenList.idl
+    html/DOMTokenList.idl
+    html/HTMLAnchorElement.idl
+    html/HTMLAppletElement.idl
+    html/HTMLAreaElement.idl
+    html/HTMLBRElement.idl
+    html/HTMLBaseElement.idl
+    html/HTMLBaseFontElement.idl
+    html/HTMLBodyElement.idl
+    html/HTMLButtonElement.idl
+    html/HTMLCanvasElement.idl
+    html/HTMLCollection.idl
+    html/HTMLDListElement.idl
+    html/HTMLDetailsElement.idl
+    html/HTMLDirectoryElement.idl
+    html/HTMLDivElement.idl
+    html/HTMLDocument.idl
+    html/HTMLElement.idl
+    html/HTMLEmbedElement.idl
+    html/HTMLFieldSetElement.idl
+    html/HTMLFontElement.idl
+    html/HTMLFormElement.idl
+    html/HTMLFrameElement.idl
+    html/HTMLFrameSetElement.idl
+    html/HTMLHRElement.idl
+    html/HTMLHeadElement.idl
+    html/HTMLHeadingElement.idl
+    html/HTMLHtmlElement.idl
+    html/HTMLIFrameElement.idl
+    html/HTMLImageElement.idl
+    html/HTMLInputElement.idl
+    html/HTMLKeygenElement.idl
+    html/HTMLLIElement.idl
+    html/HTMLLabelElement.idl
+    html/HTMLLegendElement.idl
+    html/HTMLLinkElement.idl
+    html/HTMLMapElement.idl
+    html/HTMLMarqueeElement.idl
+    html/HTMLMediaElement.idl
+    html/HTMLMenuElement.idl
+    html/HTMLMetaElement.idl
+    html/HTMLModElement.idl
+    html/HTMLOListElement.idl
+    html/HTMLObjectElement.idl
+    html/HTMLOptGroupElement.idl
+    html/HTMLOptionElement.idl
+    html/HTMLOptionsCollection.idl
+    html/HTMLParagraphElement.idl
+    html/HTMLParamElement.idl
+    html/HTMLPreElement.idl
+    html/HTMLQuoteElement.idl
+    html/HTMLScriptElement.idl
+    html/HTMLSelectElement.idl
+    html/HTMLStyleElement.idl
+    html/HTMLTableCaptionElement.idl
+    html/HTMLTableCellElement.idl
+    html/HTMLTableColElement.idl
+    html/HTMLTableElement.idl
+    html/HTMLTableRowElement.idl
+    html/HTMLTableSectionElement.idl
+    html/HTMLTextAreaElement.idl
+    html/HTMLTitleElement.idl
+    html/HTMLUListElement.idl
+    html/MediaController.idl
+    html/MediaError.idl
+    html/TimeRanges.idl
+    html/ValidityState.idl
+
+    loader/appcache/DOMApplicationCache.idl
+
+    page/BarProp.idl
+    page/DOMSecurityPolicy.idl
+    page/DOMSelection.idl
+    page/DOMWindow.idl
+    page/History.idl
+    page/Location.idl
+    page/Navigator.idl
+    page/Performance.idl
+    page/PerformanceEntry.idl
+    page/PerformanceEntryList.idl
+    page/PerformanceNavigation.idl
+    page/PerformanceTiming.idl
+    page/Screen.idl
+    page/WebKitPoint.idl
+
+    plugins/DOMMimeType.idl
+    plugins/DOMMimeTypeArray.idl
+    plugins/DOMPlugin.idl
+    plugins/DOMPluginArray.idl
+
+    storage/Storage.idl
+
+    xml/XPathExpression.idl
+    xml/XPathNSResolver.idl
+    xml/XPathResult.idl
+)
+
+if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
     list(APPEND GObjectDOMBindings_IDL_FILES
-        Modules/battery/BatteryManager.idl
-        Modules/gamepad/Gamepad.idl
-        Modules/gamepad/GamepadList.idl
-        Modules/geolocation/Geolocation.idl
-        Modules/mediasource/VideoPlaybackQuality.idl
-        Modules/quota/StorageInfo.idl
-        Modules/quota/StorageQuota.idl
-        Modules/webdatabase/Database.idl
+        html/HTMLAudioElement.idl
+        html/HTMLVideoElement.idl
 
-        css/CSSRule.idl
-        css/CSSRuleList.idl
-        css/CSSStyleDeclaration.idl
-        css/CSSStyleSheet.idl
-        css/CSSValue.idl
-        css/DOMWindowCSS.idl
-        css/MediaList.idl
-        css/MediaQueryList.idl
-        css/StyleMedia.idl
-        css/StyleSheet.idl
-        css/StyleSheetList.idl
-
-        dom/Attr.idl
-        dom/CDATASection.idl
-        dom/CharacterData.idl
-        dom/Comment.idl
-        dom/DOMImplementation.idl
-        dom/DOMNamedFlowCollection.idl
-        dom/DOMStringList.idl
-        dom/DOMStringMap.idl
-        dom/Document.idl
-        dom/DocumentFragment.idl
-        dom/DocumentType.idl
-        dom/Element.idl
-        dom/EntityReference.idl
-        dom/Event.idl
-        dom/KeyboardEvent.idl
-        dom/MessagePort.idl
-        dom/MouseEvent.idl
-        dom/NamedNodeMap.idl
-        dom/Node.idl
-        dom/NodeFilter.idl
-        dom/NodeIterator.idl
-        dom/NodeList.idl
-        dom/ProcessingInstruction.idl
-        dom/Range.idl
-        dom/ShadowRoot.idl
-        dom/Text.idl
-        dom/TreeWalker.idl
-        dom/UIEvent.idl
-        dom/WebKitNamedFlow.idl
-        dom/WheelEvent.idl
-
-        fileapi/Blob.idl
-        fileapi/File.idl
-        fileapi/FileList.idl
-
-        html/DOMSettableTokenList.idl
-        html/DOMTokenList.idl
-        html/HTMLAnchorElement.idl
-        html/HTMLAppletElement.idl
-        html/HTMLAreaElement.idl
-        html/HTMLBRElement.idl
-        html/HTMLBaseElement.idl
-        html/HTMLBaseFontElement.idl
-        html/HTMLBodyElement.idl
-        html/HTMLButtonElement.idl
-        html/HTMLCanvasElement.idl
-        html/HTMLCollection.idl
-        html/HTMLDListElement.idl
-        html/HTMLDetailsElement.idl
-        html/HTMLDirectoryElement.idl
-        html/HTMLDivElement.idl
-        html/HTMLDocument.idl
-        html/HTMLElement.idl
-        html/HTMLEmbedElement.idl
-        html/HTMLFieldSetElement.idl
-        html/HTMLFontElement.idl
-        html/HTMLFormElement.idl
-        html/HTMLFrameElement.idl
-        html/HTMLFrameSetElement.idl
-        html/HTMLHRElement.idl
-        html/HTMLHeadElement.idl
-        html/HTMLHeadingElement.idl
-        html/HTMLHtmlElement.idl
-        html/HTMLIFrameElement.idl
-        html/HTMLImageElement.idl
-        html/HTMLInputElement.idl
-        html/HTMLKeygenElement.idl
-        html/HTMLLIElement.idl
-        html/HTMLLabelElement.idl
-        html/HTMLLegendElement.idl
-        html/HTMLLinkElement.idl
-        html/HTMLMapElement.idl
-        html/HTMLMarqueeElement.idl
-        html/HTMLMediaElement.idl
-        html/HTMLMenuElement.idl
-        html/HTMLMetaElement.idl
-        html/HTMLModElement.idl
-        html/HTMLOListElement.idl
-        html/HTMLObjectElement.idl
-        html/HTMLOptGroupElement.idl
-        html/HTMLOptionElement.idl
-        html/HTMLOptionsCollection.idl
-        html/HTMLParagraphElement.idl
-        html/HTMLParamElement.idl
-        html/HTMLPreElement.idl
-        html/HTMLQuoteElement.idl
-        html/HTMLScriptElement.idl
-        html/HTMLSelectElement.idl
-        html/HTMLStyleElement.idl
-        html/HTMLTableCaptionElement.idl
-        html/HTMLTableCellElement.idl
-        html/HTMLTableColElement.idl
-        html/HTMLTableElement.idl
-        html/HTMLTableRowElement.idl
-        html/HTMLTableSectionElement.idl
-        html/HTMLTextAreaElement.idl
-        html/HTMLTitleElement.idl
-        html/HTMLUListElement.idl
-        html/MediaController.idl
-        html/MediaError.idl
-        html/TimeRanges.idl
-        html/ValidityState.idl
-
-        loader/appcache/DOMApplicationCache.idl
-
-        page/BarProp.idl
-        page/Console.idl
-        page/DOMSecurityPolicy.idl
-        page/DOMSelection.idl
-        page/DOMWindow.idl
-        page/History.idl
-        page/Location.idl
-        page/Navigator.idl
-        page/Performance.idl
-        page/PerformanceEntry.idl
-        page/PerformanceEntryList.idl
-        page/PerformanceNavigation.idl
-        page/PerformanceTiming.idl
-        page/Screen.idl
-        page/WebKitPoint.idl
-
-        plugins/DOMMimeType.idl
-        plugins/DOMMimeTypeArray.idl
-        plugins/DOMPlugin.idl
-        plugins/DOMPluginArray.idl
-
-        storage/Storage.idl
-
-        xml/XPathExpression.idl
-        xml/XPathNSResolver.idl
-        xml/XPathResult.idl
-    )
-
-    if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
-        list(APPEND GObjectDOMBindings_IDL_FILES
-            html/HTMLAudioElement.idl
-            html/HTMLVideoElement.idl
-
-            html/track/AudioTrack.idl
-            html/track/AudioTrackList.idl
-            html/track/TextTrack.idl
-            html/track/TextTrackCue.idl
-            html/track/TextTrackCueList.idl
-            html/track/TextTrackList.idl
-            html/track/TrackEvent.idl
-            html/track/VideoTrack.idl
-            html/track/VideoTrackList.idl
-        )
-    endif ()
-
-    set(GObjectDOMBindings_CLASS_LIST Custom EventTarget Object Deprecated)
-    set(GObjectDOMBindings_INSTALLED_HEADERS
-         ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdomdefines.h
-         ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdom.h
-         ${WEBCORE_DIR}/bindings/gobject/WebKitDOMCustom.h
-    )
-
-    foreach (file ${GObjectDOMBindings_IDL_FILES})
-        get_filename_component(classname ${file} NAME_WE)
-        list(APPEND GObjectDOMBindings_CLASS_LIST ${classname})
-        list(APPEND GObjectDOMBindings_INSTALLED_HEADERS ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/WebKitDOM${classname}.h)
-    endforeach ()
-
-    # Propagate this variable to the parent scope, so that it can be used in other parts of the build.
-    set(GObjectDOMBindings_INSTALLED_HEADERS ${GObjectDOMBindings_INSTALLED_HEADERS} PARENT_SCOPE)
-
-    set(GOBJECT_DOM_BINDINGS_FEATURES_DEFINES "LANGUAGE_GOBJECT=1 ${FEATURE_DEFINES_WITH_SPACE_SEPARATOR}")
-    string(REPLACE "ENABLE_INDEXED_DATABASE=1" "" GOBJECT_DOM_BINDINGS_FEATURES_DEFINES ${GOBJECT_DOM_BINDINGS_FEATURES_DEFINES})
-    string(REPLACE REGEX "ENABLE_SVG[A-Z_]+=1" "" GOBJECT_DOM_BINDINGS_FEATURES_DEFINES ${GOBJECT_DOM_BINDINGS_FEATURES_DEFINES})
-
-    file(MAKE_DIRECTORY ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR})
-
-    add_custom_command(
-        OUTPUT ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdomdefines.h
-        COMMAND echo ${GObjectDOMBindings_CLASS_LIST} | ${PERL_EXECUTABLE} ${WEBCORE_DIR}/bindings/scripts/gobject-generate-headers.pl defines > ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdomdefines.h
-    )
-
-    add_custom_command(
-        OUTPUT ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdom.h
-        COMMAND echo ${GObjectDOMBindings_CLASS_LIST} | ${PERL_EXECUTABLE} ${WEBCORE_DIR}/bindings/scripts/gobject-generate-headers.pl gdom > ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdom.h
-    )
-
-    add_custom_target(fake-installed-webkitdom-headers
-        COMMAND ln -n -s -f ${WEBCORE_DIR}/bindings/gobject/* ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}
-    )
-
-    GENERATE_BINDINGS(GObjectDOMBindings_SOURCES
-        "${GObjectDOMBindings_IDL_FILES}"
-        "${WEBCORE_DIR}"
-        "${IDL_INCLUDES}"
-        "${GOBJECT_DOM_BINDINGS_FEATURES_DEFINES}"
-        ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}
-        WebKitDOM GObject
-        ${IDL_ATTRIBUTES_FILE}
-        ${SUPPLEMENTAL_DEPENDENCY_FILE}
-        ${WINDOW_CONSTRUCTORS_FILE}
-        ${WORKERGLOBALSCOPE_CONSTRUCTORS_FILE}
-        ${SHAREDWORKERGLOBALSCOPE_CONSTRUCTORS_FILE}
-        ${DEDICATEDWORKERGLOBALSCOPE_CONSTRUCTORS_FILE})
-
-    add_definitions(-DBUILDING_WEBKIT)
-
-    add_library(GObjectDOMBindings STATIC ${GObjectDOMBindings_SOURCES})
-
-    WEBKIT_SET_EXTRA_COMPILER_FLAGS(GObjectDOMBindings)
-
-    add_dependencies(GObjectDOMBindings
-        WebCore
-        fake-installed-webkitdom-headers
-    )
-
-    install(FILES ${GObjectDOMBindings_INSTALLED_HEADERS}
-                  bindings/gobject/WebKitDOMEventTarget.h
-                  bindings/gobject/WebKitDOMDeprecated.h
-                  bindings/gobject/WebKitDOMObject.h
-            DESTINATION "${WEBKITGTK_HEADER_INSTALL_DIR}/webkitdom"
+        html/track/AudioTrack.idl
+        html/track/AudioTrackList.idl
+        html/track/TextTrack.idl
+        html/track/TextTrackCue.idl
+        html/track/TextTrackCueList.idl
+        html/track/TextTrackList.idl
+        html/track/TrackEvent.idl
+        html/track/VideoTrack.idl
+        html/track/VideoTrackList.idl
     )
 endif ()
 
+set(GObjectDOMBindings_CLASS_LIST Custom EventTarget Object Deprecated)
+set(GObjectDOMBindings_INSTALLED_HEADERS
+     ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdomdefines.h
+     ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdom.h
+     ${WEBCORE_DIR}/bindings/gobject/WebKitDOMCustom.h
+     ${WEBCORE_DIR}/bindings/gobject/WebKitDOMDeprecated.h
+     ${WEBCORE_DIR}/bindings/gobject/WebKitDOMEventTarget.h
+     ${WEBCORE_DIR}/bindings/gobject/WebKitDOMObject.h
+)
+file(GLOB GObjectDOMBindingsSymbolsFiles
+    "${WEBCORE_DIR}/bindings/gobject/WebKitDOM*.symbols"
+)
+
+foreach (file ${GObjectDOMBindings_IDL_FILES})
+    get_filename_component(classname ${file} NAME_WE)
+    list(APPEND GObjectDOMBindings_CLASS_LIST ${classname})
+    list(APPEND GObjectDOMBindings_INSTALLED_HEADERS ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/WebKitDOM${classname}.h)
+    list(APPEND GObjectDOMBindingsSymbolsFiles ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/WebKitDOM${classname}.symbols)
+endforeach ()
+
+set(GOBJECT_DOM_BINDINGS_FEATURES_DEFINES "LANGUAGE_GOBJECT=1 ${FEATURE_DEFINES_WITH_SPACE_SEPARATOR}")
+string(REPLACE "ENABLE_INDEXED_DATABASE=1" "" GOBJECT_DOM_BINDINGS_FEATURES_DEFINES ${GOBJECT_DOM_BINDINGS_FEATURES_DEFINES})
+string(REPLACE REGEX "ENABLE_SVG[A-Z_]+=1" "" GOBJECT_DOM_BINDINGS_FEATURES_DEFINES ${GOBJECT_DOM_BINDINGS_FEATURES_DEFINES})
+
+file(MAKE_DIRECTORY ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR})
+
+add_custom_command(
+    OUTPUT ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdomdefines.h
+    COMMAND echo ${GObjectDOMBindings_CLASS_LIST} | ${PERL_EXECUTABLE} ${WEBCORE_DIR}/bindings/scripts/gobject-generate-headers.pl defines > ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdomdefines.h
+)
+
+add_custom_command(
+    OUTPUT ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdom.h
+    COMMAND echo ${GObjectDOMBindings_CLASS_LIST} | ${PERL_EXECUTABLE} ${WEBCORE_DIR}/bindings/scripts/gobject-generate-headers.pl gdom > ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/webkitdom.h
+)
+
+add_custom_target(fake-installed-webkitdom-headers
+    COMMAND ln -n -s -f ${WEBCORE_DIR}/bindings/gobject/*.h ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}
+)
+
+GENERATE_BINDINGS(GObjectDOMBindings_SOURCES
+    "${GObjectDOMBindings_IDL_FILES}"
+    "${WEBCORE_DIR}"
+    "${IDL_INCLUDES}"
+    "${GOBJECT_DOM_BINDINGS_FEATURES_DEFINES}"
+    ${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}
+    WebKitDOM GObject
+    ${IDL_ATTRIBUTES_FILE}
+    ${SUPPLEMENTAL_DEPENDENCY_FILE}
+    ${WINDOW_CONSTRUCTORS_FILE}
+    ${WORKERGLOBALSCOPE_CONSTRUCTORS_FILE}
+    ${SHAREDWORKERGLOBALSCOPE_CONSTRUCTORS_FILE}
+    ${DEDICATEDWORKERGLOBALSCOPE_CONSTRUCTORS_FILE})
+
+add_definitions(-DBUILDING_WEBKIT)
+
+add_library(GObjectDOMBindings STATIC ${GObjectDOMBindings_SOURCES})
+
+WEBKIT_SET_EXTRA_COMPILER_FLAGS(GObjectDOMBindings)
+
+add_dependencies(GObjectDOMBindings
+    WebCore
+    fake-installed-webkitdom-headers
+)
+
+file(WRITE ${CMAKE_BINARY_DIR}/gtkdoc-webkitdom.cfg
+    "[webkitdomgtk]\n"
+    "pkgconfig_file=${WebKit2_PKGCONFIG_FILE}\n"
+    "namespace=webkit_dom\n"
+    "cflags=-I${CMAKE_SOURCE_DIR}/Source\n"
+    "       -I${WEBCORE_DIR}/bindings\n"
+    "       -I${WEBCORE_DIR}/bindings/gobject\n"
+    "       -I${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}\n"
+    "doc_dir=${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}/docs\n"
+    "source_dirs=${DERIVED_SOURCES_GOBJECT_DOM_BINDINGS_DIR}\n"
+    "            ${WEBCORE_DIR}/bindings/gobject\n"
+    "headers=${GObjectDOMBindings_INSTALLED_HEADERS}\n"
+)
+
+install(FILES ${GObjectDOMBindings_INSTALLED_HEADERS}
+        DESTINATION "${WEBKITGTK_HEADER_INSTALL_DIR}/webkitdom"
+)
+
+# Some installed headers are not on the list of headers used for gir generation.
+set(GObjectDOMBindings_GIR_HEADERS ${GObjectDOMBindings_INSTALLED_HEADERS})
+list(REMOVE_ITEM GObjectDOMBindings_GIR_HEADERS
+     bindings/gobject/WebKitDOMDeprecated.h
+     bindings/gobject/WebKitDOMEventTarget.h
+     bindings/gobject/WebKitDOMObject.h
+)
+
+# Propagate this variable to the parent scope, so that it can be used in other parts of the build.
+set(GObjectDOMBindings_GIR_HEADERS ${GObjectDOMBindings_GIR_HEADERS} PARENT_SCOPE)

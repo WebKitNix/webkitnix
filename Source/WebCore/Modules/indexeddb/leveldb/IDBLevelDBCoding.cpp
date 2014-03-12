@@ -297,7 +297,7 @@ Vector<char> encodeString(const String& s)
     size_t length = s.length();
     Vector<char> ret(length * sizeof(UChar));
 
-    const UChar* src = s.characters();
+    const UChar* src = s.deprecatedCharacters();
     UChar* dst = reinterpret_cast<UChar*>(ret.data());
     for (unsigned i = 0; i < length; ++i)
         *dst++ = htons(*src++);
@@ -417,6 +417,7 @@ void encodeIDBKey(const IDBKey& key, Vector<char, DefaultInlineBufferSize>& into
     switch (key.type()) {
     case IDBKey::InvalidType:
     case IDBKey::MinType:
+    case IDBKey::MaxType:
         ASSERT_NOT_REACHED();
         into.appendVector(encodeByte(IDBKeyNullTypeByte));
         return;

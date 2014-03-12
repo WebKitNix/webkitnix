@@ -32,16 +32,17 @@
 #include "DFGBlockInsertionSet.h"
 #include "DFGGraph.h"
 #include "DFGPhase.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include <wtf/HashMap.h>
 
 namespace JSC { namespace DFG {
 
 BasicBlock* createPreHeader(Graph& graph, BlockInsertionSet& insertionSet, BasicBlock* block)
 {
-    BasicBlock* preHeader = insertionSet.insertBefore(block);
+    // Don't bother to preserve execution frequencies for now.
+    BasicBlock* preHeader = insertionSet.insertBefore(block, QNaN);
     preHeader->appendNode(
-        graph, SpecNone, Jump, block->at(0)->codeOrigin, OpInfo(block));
+        graph, SpecNone, Jump, block->at(0)->origin, OpInfo(block));
     
     for (unsigned predecessorIndex = 0; predecessorIndex < block->predecessors.size(); predecessorIndex++) {
         BasicBlock* predecessor = block->predecessors[predecessorIndex];

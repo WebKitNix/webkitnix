@@ -26,6 +26,8 @@
 #import "config.h"
 #import "WebEditorClient.h"
 
+#if PLATFORM(IOS)
+
 #import "WebPage.h"
 #import <WebCore/KeyboardEvent.h>
 #import <WebCore/NotImplemented.h>
@@ -36,7 +38,7 @@ namespace WebKit {
     
 void WebEditorClient::handleKeyboardEvent(KeyboardEvent* event)
 {
-    if (m_page->handleEditingKeyboardEvent(event, false))
+    if (m_page->handleEditingKeyboardEvent(event))
         event->setDefaultHandled();
 }
 
@@ -72,16 +74,6 @@ DocumentFragment* WebEditorClient::documentFragmentFromAttributedString(NSAttrib
 void WebEditorClient::setInsertionPasteboard(const String&)
 {
     // This is used only by Mail, no need to implement it now.
-    notImplemented();
-}
-
-void WebEditorClient::suppressSelectionNotifications()
-{
-    notImplemented();
-}
-
-void WebEditorClient::restoreSelectionNotifications()
-{
     notImplemented();
 }
 
@@ -143,3 +135,5 @@ int WebEditorClient::pasteboardChangeCount()
 }
 
 } // namespace WebKit
+
+#endif // PLATFORM(IOS)

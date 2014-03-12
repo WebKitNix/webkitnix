@@ -126,9 +126,9 @@ public:
 
     virtual IntRect windowResizerRect() const override { return IntRect(); }
 
-    virtual void invalidateRootView(const IntRect&, bool) override { }
-    virtual void invalidateContentsAndRootView(const IntRect&, bool) override { }
-    virtual void invalidateContentsForSlowScroll(const IntRect&, bool) override { }
+    virtual void invalidateRootView(const IntRect&) override { }
+    virtual void invalidateContentsAndRootView(const IntRect&) override { }
+    virtual void invalidateContentsForSlowScroll(const IntRect&) override { }
     virtual void scroll(const IntSize&, const IntRect&, const IntRect&) override { }
 #if USE(TILED_BACKING_STORE)
     virtual void delegatedScrollRequested(const IntPoint&) { }
@@ -156,10 +156,6 @@ public:
     virtual void reachedMaxAppCacheSize(int64_t) override { }
     virtual void reachedApplicationCacheOriginQuota(SecurityOrigin*, int64_t) override { }
 
-#if ENABLE(DIRECTORY_UPLOAD)
-    virtual void enumerateChosenDirectory(FileChooser*) { }
-#endif
-
 #if ENABLE(INPUT_TYPE_COLOR)
     virtual PassOwnPtr<ColorChooser> createColorChooser(ColorChooserClient*, const Color&) override;
 #endif
@@ -171,8 +167,6 @@ public:
     virtual void runOpenPanel(Frame*, PassRefPtr<FileChooser>) override;
     virtual void loadIconForFiles(const Vector<String>&, FileIconLoader*) override { }
 
-    virtual void formStateDidChange(const Node*) override { }
-
     virtual void elementDidFocus(const Node*) override { }
     virtual void elementDidBlur(const Node*) override { }
 
@@ -183,11 +177,9 @@ public:
 
     virtual void scrollRectIntoView(const IntRect&) const override { }
 
-#if USE(ACCELERATED_COMPOSITING)
     virtual void attachRootGraphicsLayer(Frame*, GraphicsLayer*) override { }
     virtual void setNeedsOneShotDrawingSynchronization() override { }
     virtual void scheduleCompositingLayerFlush() override { }
-#endif
 
 #if PLATFORM(WIN)
     virtual void setLastSetCursorToCurrentCursor() override { }
@@ -203,7 +195,7 @@ public:
 #if ENABLE(TOUCH_EVENTS)
     virtual void didPreventDefaultForEvent() override { }
 #endif
-    virtual void didReceiveMobileDocType() override { }
+    virtual void didReceiveMobileDocType(bool) override { }
     virtual void setNeedsScrollNotifications(Frame*, bool) override { }
     virtual void observedContentChange(Frame*) override { }
     virtual void clearContentChangeObservers(Frame*) override { }
@@ -249,9 +241,8 @@ public:
     virtual bool hasWebView() const override { return true; } // mainly for assertions
 
     virtual void makeRepresentation(DocumentLoader*) override { }
-    virtual void forceLayout() override { }
 #if PLATFORM(IOS)
-    virtual void forceLayoutWithoutRecalculatingStyles() override { }
+    virtual bool forceLayoutOnRestoreFromPageCache() override { return false; }
 #endif
     virtual void forceLayoutForNonHTML() override { }
 
@@ -370,7 +361,6 @@ public:
     virtual void updateGlobalHistory() override { }
     virtual void updateGlobalHistoryRedirectLinks() override { }
     virtual bool shouldGoToHistoryItem(HistoryItem*) const override { return false; }
-    virtual bool shouldStopLoadingForHistoryItem(HistoryItem*) const override { return false; }
     virtual void updateGlobalHistoryItemForPage() override { }
     virtual void saveViewStateToItem(HistoryItem*) override { }
     virtual bool canCachePage() const override { return false; }
@@ -395,7 +385,7 @@ public:
 
     virtual void registerForIconNotification(bool) override { }
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     virtual RemoteAXObjectRef accessibilityRemoteObject() override { return 0; }
     virtual NSCachedURLResponse* willCacheResponse(DocumentLoader*, unsigned long, NSCachedURLResponse* response) const override { return response; }
 #endif
@@ -414,9 +404,9 @@ public:
     virtual bool shouldEraseMarkersAfterChangeSelection(TextCheckingType) const override { return true; }
     virtual void ignoreWordInSpellDocument(const String&) override { }
     virtual void learnWord(const String&) override { }
-    virtual void checkSpellingOfString(const UChar*, int, int*, int*) override { }
+    virtual void checkSpellingOfString(StringView, int*, int*) override { }
     virtual String getAutoCorrectSuggestionForMisspelledWord(const String&) override { return String(); }
-    virtual void checkGrammarOfString(const UChar*, int, Vector<GrammarDetail>&, int*, int*) override { }
+    virtual void checkGrammarOfString(StringView, Vector<GrammarDetail>&, int*, int*) override { }
 
 #if USE(UNIFIED_TEXT_CHECKING)
     virtual Vector<TextCheckingResult> checkTextOfParagraph(StringView, TextCheckingTypeMask) override { return Vector<TextCheckingResult>(); }
@@ -483,8 +473,6 @@ public:
     virtual void textDidChangeInTextArea(Element*) override { }
 
 #if PLATFORM(IOS)
-    virtual void suppressSelectionNotifications() override { }
-    virtual void restoreSelectionNotifications() override { }
     virtual void startDelayingAndCoalescingContentChangeNotifications() override { }
     virtual void stopDelayingAndCoalescingContentChangeNotifications() override { }
     virtual void writeDataToPasteboard(NSDictionary*) override { }
@@ -497,7 +485,7 @@ public:
     virtual int pasteboardChangeCount() override { return 0; }
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     virtual NSString* userVisibleString(NSURL*) override { return 0; }
     virtual DocumentFragment* documentFragmentFromAttributedString(NSAttributedString*, Vector<RefPtr<ArchiveResource>>&) override { return 0; };
     virtual void setInsertionPasteboard(const String&) override { };
@@ -570,7 +558,7 @@ public:
     virtual void speak(const String&) override { }
     virtual void stopSpeaking() override { }
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     virtual void searchWithSpotlight() override { }
 #endif
 

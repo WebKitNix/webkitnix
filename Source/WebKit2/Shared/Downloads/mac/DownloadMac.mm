@@ -26,6 +26,8 @@
 #import "config.h"
 #import "Download.h"
 
+#if PLATFORM(MAC)
+
 #import <WebCore/AuthenticationChallenge.h>
 #import <WebCore/AuthenticationMac.h>
 #import <WebCore/NotImplemented.h>
@@ -130,7 +132,7 @@ void Download::receivedCancellation(const AuthenticationChallenge& authenticatio
 // FIXME: It would be nice if these callbacks wouldn't have to be invoked on the main thread.
 static void dispatchOnMainThread(void (^block)())
 {
-    if (isMainThread()) {
+    if (RunLoop::isMain()) {
         block();
         return;
     }
@@ -270,3 +272,5 @@ static void dispatchOnMainThread(void (^block)())
 }
 
 @end
+
+#endif // PLATFORM(MAC)

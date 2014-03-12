@@ -23,8 +23,6 @@
  */
 
 #include "config.h"
-
-#if ENABLE(SVG)
 #include "SVGRenderSupport.h"
 
 #include "NodeRenderStyle.h"
@@ -85,8 +83,6 @@ void SVGRenderSupport::computeFloatRectForRepaint(const RenderElement& renderer,
 
 void SVGRenderSupport::mapLocalToContainer(const RenderElement& renderer, const RenderLayerModelObject* repaintContainer, TransformState& transformState, bool* wasFixed)
 {
-    transformState.applyTransform(renderer.localToParentTransform());
-
     ASSERT(renderer.parent());
     auto& parent = *renderer.parent();
     
@@ -95,6 +91,8 @@ void SVGRenderSupport::mapLocalToContainer(const RenderElement& renderer, const 
     // RenderSVGRoot's mapLocalToContainer method expects CSS box coordinates.
     if (parent.isSVGRoot())
         transformState.applyTransform(toRenderSVGRoot(parent).localToBorderBoxTransform());
+
+    transformState.applyTransform(renderer.localToParentTransform());
 
     MapCoordinatesFlags mode = UseTransforms;
     parent.mapLocalToContainer(repaintContainer, transformState, mode, wasFixed);
@@ -185,14 +183,14 @@ const RenderSVGRoot& SVGRenderSupport::findTreeRootObject(const RenderElement& s
     return *lineageOfType<RenderSVGRoot>(start).first();
 }
 
-static inline void invalidateResourcesOfChildren(RenderObject& start)
+static inline void invalidateResourcesOfChildren(RenderElement& renderer)
 {
-    ASSERT(!start.needsLayout());
-    if (SVGResources* resources = SVGResourcesCache::cachedResourcesForRenderObject(start))
-        resources->removeClientFromCache(start, false);
+    ASSERT(!renderer.needsLayout());
+    if (SVGResources* resources = SVGResourcesCache::cachedResourcesForRenderObject(renderer))
+        resources->removeClientFromCache(renderer, false);
 
-    for (RenderObject* child = start.firstChildSlow(); child; child = child->nextSibling())
-        invalidateResourcesOfChildren(*child);
+    for (auto& child : childrenOfType<RenderElement>(renderer))
+        invalidateResourcesOfChildren(child);
 }
 
 static inline bool layoutSizeOfNearestViewportChanged(const RenderElement& renderer)
@@ -288,8 +286,10 @@ void SVGRenderSupport::layoutChildren(RenderElement& start, bool selfNeedsLayout
     }
 
     // If the layout size changed, invalidate all resources of all children that didn't go through the layout() code path.
-    for (auto child : notlayoutedObjects)
-        invalidateResourcesOfChildren(*child);
+    for (auto child : notlayoutedObjects) {
+        if (child->isRenderElement())
+            invalidateResourcesOfChildren(toRenderElement(*child));
+    }
 }
 
 bool SVGRenderSupport::isOverflowHidden(const RenderElement& renderer)
@@ -440,12 +440,40 @@ void SVGRenderSupport::childAdded(RenderElement& parent, RenderObject& child)
     SVGRenderSupport::setRendererHasSVGShadow(child, SVGRenderSupport::rendererHasSVGShadow(parent) || SVGRenderSupport::rendererHasSVGShadow(child));
 }
 
-void SVGRenderSupport::styleChanged(RenderElement& renderer)
+void SVGRenderSupport::styleChanged(RenderElement& renderer, const RenderStyle* oldStyle)
 {
     auto parent = renderer.parent();
     SVGRenderSupport::setRendererHasSVGShadow(renderer, (parent && SVGRenderSupport::rendererHasSVGShadow(*parent)) || renderer.style().svgStyle().shadow());
-}
 
-}
-
+#if ENABLE(CSS_COMPOSITING)
+    if (renderer.element() && renderer.element()->isSVGElement() && (!oldStyle || renderer.style().hasBlendMode() != oldStyle->hasBlendMode()))
+        SVGRenderSupport::updateMaskedAncestorShouldIsolateBlending(renderer);
+#else
+    UNUSED_PARAM(oldStyle);
 #endif
+}
+
+#if ENABLE(CSS_COMPOSITING)
+bool SVGRenderSupport::isolatesBlending(const RenderStyle& style)
+{
+    return style.svgStyle().isolatesBlending() || style.hasBlendMode() || style.opacity() < 1.0f;
+}
+
+void SVGRenderSupport::updateMaskedAncestorShouldIsolateBlending(const RenderElement& renderer)
+{
+    ASSERT(renderer.element());
+    ASSERT(renderer.element()->isSVGElement());
+
+    bool maskedAncestorShouldIsolateBlending = renderer.style().hasBlendMode();
+    for (auto ancestor = renderer.element()->parentElement(); ancestor && ancestor->isSVGElement(); ancestor = ancestor->parentElement()) {
+        if (!toSVGElement(ancestor)->isSVGGraphicsElement() || !isolatesBlending(*ancestor->computedStyle()))
+            continue;
+
+        if (ancestor->computedStyle()->svgStyle().hasMasker())
+            toSVGGraphicsElement(ancestor)->setShouldIsolateBlending(maskedAncestorShouldIsolateBlending);
+
+        return;
+    }
+}
+#endif
+}

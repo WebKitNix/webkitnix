@@ -20,7 +20,6 @@
 #ifndef RenderSVGResourceMasker_h
 #define RenderSVGResourceMasker_h
 
-#if ENABLE(SVG)
 #include "GraphicsContext.h"
 #include "ImageBuffer.h"
 #include "IntSize.h"
@@ -43,8 +42,8 @@ public:
 
     SVGMaskElement& maskElement() const { return toSVGMaskElement(RenderSVGResourceContainer::element()); }
 
-    virtual void removeAllClientsFromCache(bool markForInvalidation = true);
-    virtual void removeClientFromCache(RenderObject&, bool markForInvalidation = true);
+    virtual void removeAllClientsFromCache(bool markForInvalidation = true) override;
+    virtual void removeClientFromCache(RenderElement&, bool markForInvalidation = true) override;
     virtual bool applyResource(RenderElement&, const RenderStyle&, GraphicsContext*&, unsigned short resourceMode) override;
     virtual FloatRect resourceBoundingBox(const RenderObject&) override;
 
@@ -68,5 +67,4 @@ private:
 
 }
 
-#endif
 #endif

@@ -34,6 +34,10 @@
 #include "ScriptExecutionContext.h"
 #include "TextTrackCueList.h"
 
+#if ENABLE(WEBVTT_REGIONS)
+#include "TextTrackRegionList.h"
+#endif
+
 namespace WebCore {
 
 LoadableTextTrack::LoadableTextTrack(HTMLTrackElement* track, const String& kind, const String& label, const String& language)
@@ -94,14 +98,14 @@ void LoadableTextTrack::loadTimerFired(Timer<LoadableTextTrack>&)
     // 4. Download: If URL is not the empty string, perform a potentially CORS-enabled fetch of URL, with the
     // mode being the state of the media element's crossorigin content attribute, the origin being the
     // origin of the media element's Document, and the default origin behaviour set to fail.
-    m_loader = TextTrackLoader::create(this, static_cast<ScriptExecutionContext*>(&m_trackElement->document()));
+    m_loader = std::make_unique<TextTrackLoader>(static_cast<TextTrackLoaderClient&>(*this), static_cast<ScriptExecutionContext*>(&m_trackElement->document()));
     if (!m_loader->load(m_url, m_trackElement->mediaElementCrossOriginAttribute()))
-        m_trackElement->didCompleteLoad(this, HTMLTrackElement::Failure);
+        m_trackElement->didCompleteLoad(HTMLTrackElement::Failure);
 }
 
 void LoadableTextTrack::newCuesAvailable(TextTrackLoader* loader)
 {
-    ASSERT_UNUSED(loader, m_loader == loader);
+    ASSERT_UNUSED(loader, m_loader.get() == loader);
 
     Vector<RefPtr<TextTrackCue>> newCues;
     m_loader->getNewCues(newCues);
@@ -118,25 +122,20 @@ void LoadableTextTrack::newCuesAvailable(TextTrackLoader* loader)
         client()->textTrackAddCues(this, m_cues.get());
 }
 
-void LoadableTextTrack::cueLoadingStarted(TextTrackLoader* loader)
-{
-    ASSERT_UNUSED(loader, m_loader == loader);
-}
-
 void LoadableTextTrack::cueLoadingCompleted(TextTrackLoader* loader, bool loadingFailed)
 {
-    ASSERT_UNUSED(loader, m_loader == loader);
+    ASSERT_UNUSED(loader, m_loader.get() == loader);
 
     if (!m_trackElement)
         return;
 
-    m_trackElement->didCompleteLoad(this, loadingFailed ? HTMLTrackElement::Failure : HTMLTrackElement::Success);
+    m_trackElement->didCompleteLoad(loadingFailed ? HTMLTrackElement::Failure : HTMLTrackElement::Success);
 }
 
 #if ENABLE(WEBVTT_REGIONS)
 void LoadableTextTrack::newRegionsAvailable(TextTrackLoader* loader)
 {
-    ASSERT_UNUSED(loader, m_loader == loader);
+    ASSERT_UNUSED(loader, m_loader.get() == loader);
 
     Vector<RefPtr<TextTrackRegion>> newRegions;
     m_loader->getNewRegions(newRegions);

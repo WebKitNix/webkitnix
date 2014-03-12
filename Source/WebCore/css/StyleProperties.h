@@ -27,6 +27,7 @@
 #include "CSSProperty.h"
 #include "CSSPropertyNames.h"
 #include "CSSValueKeywords.h"
+#include <memory>
 #include <wtf/ListHashSet.h>
 #include <wtf/Vector.h>
 #include <wtf/text/WTFString.h>
@@ -162,6 +163,7 @@ public:
 
     const CSSValue** valueArray() const;
     const StylePropertyMetadata* metadataArray() const;
+    int findPropertyIndex(CSSPropertyID) const;
 
     void* m_storage;
 
@@ -221,6 +223,8 @@ public:
     CSSStyleDeclaration* ensureCSSStyleDeclaration();
     CSSStyleDeclaration* ensureInlineCSSStyleDeclaration(StyledElement* parentElement);
 
+    int findPropertyIndex(CSSPropertyID) const;
+
     Vector<CSSProperty, 4> m_propertyVector;
 
 private:
@@ -230,10 +234,24 @@ private:
 
     bool removeShorthandProperty(CSSPropertyID);
     CSSProperty* findCSSPropertyWithID(CSSPropertyID);
-    OwnPtr<PropertySetCSSStyleDeclaration> m_cssomWrapper;
+    std::unique_ptr<PropertySetCSSStyleDeclaration> m_cssomWrapper;
 
     friend class StyleProperties;
 };
+
+TYPE_CASTS_BASE(MutableStyleProperties, StyleProperties, set, set->isMutable(), set.isMutable());
+
+inline MutableStyleProperties* toMutableStyleProperties(const RefPtr<StyleProperties>& set)
+{
+    return toMutableStyleProperties(set.get());
+}
+
+TYPE_CASTS_BASE(ImmutableStyleProperties, StyleProperties, set, !set->isMutable(), !set.isMutable());
+
+inline ImmutableStyleProperties* toImmutableStyleProperties(const RefPtr<StyleProperties>& set)
+{
+    return toImmutableStyleProperties(set.get());
+}
 
 inline const StylePropertyMetadata& StyleProperties::PropertyReference::propertyMetadata() const
 {
@@ -270,6 +288,13 @@ inline void StyleProperties::deref()
         delete static_cast<MutableStyleProperties*>(this);
     else
         delete static_cast<ImmutableStyleProperties*>(this);
+}
+
+inline int StyleProperties::findPropertyIndex(CSSPropertyID propertyID) const
+{
+    if (m_isMutable)
+        return toMutableStyleProperties(this)->findPropertyIndex(propertyID);
+    return toImmutableStyleProperties(this)->findPropertyIndex(propertyID);
 }
 
 } // namespace WebCore

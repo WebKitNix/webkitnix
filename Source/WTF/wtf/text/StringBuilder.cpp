@@ -33,10 +33,10 @@
 
 namespace WTF {
 
-static size_t expandedCapacity(size_t capacity, size_t newLength)
+static unsigned expandedCapacity(unsigned capacity, unsigned requiredLength)
 {
-    static const size_t minimumCapacity = 16;
-    return std::max(capacity, std::max(minimumCapacity, newLength * 2));
+    static const unsigned minimumCapacity = 16;
+    return std::max(requiredLength, std::max(minimumCapacity, capacity * 2));
 }
 
 void StringBuilder::reifyString() const
@@ -58,7 +58,7 @@ void StringBuilder::reifyString() const
     if (m_length == m_buffer->length())
         m_string = m_buffer.get();
     else
-        m_string = StringImpl::create(m_buffer, 0, m_length);
+        m_string = StringImpl::createSubstringSharingImpl(m_buffer, 0, m_length);
 
     if (m_buffer->has16BitShadow() && m_valid16BitShadowLength < m_length)
         m_buffer->upconvertCharacters(m_valid16BitShadowLength, m_length);
@@ -92,7 +92,7 @@ void StringBuilder::resize(unsigned newSize)
     ASSERT(m_length == m_string.length());
     ASSERT(newSize < m_string.length());
     m_length = newSize;
-    m_string = StringImpl::create(m_string.impl(), 0, newSize);
+    m_string = StringImpl::createSubstringSharingImpl(m_string.impl(), 0, newSize);
 }
 
 // Allocate a new 8 bit buffer, copying in currentCharacters (these may come from either m_string
@@ -233,7 +233,7 @@ CharType* StringBuilder::appendUninitializedSlow(unsigned requiredLength)
         reallocateBuffer<CharType>(expandedCapacity(capacity(), requiredLength));
     } else {
         ASSERT(m_string.length() == m_length);
-        allocateBuffer(m_length ? m_string.getCharacters<CharType>() : 0, expandedCapacity(capacity(), requiredLength));
+        allocateBuffer(m_length ? m_string.characters<CharType>() : 0, expandedCapacity(capacity(), requiredLength));
     }
     
     CharType* result = getBufferCharacters<CharType>() + m_length;

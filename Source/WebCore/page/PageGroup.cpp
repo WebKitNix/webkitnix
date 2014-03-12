@@ -29,6 +29,7 @@
 #include "Chrome.h"
 #include "ChromeClient.h"
 #include "DOMWrapperWorld.h"
+#include "DefaultVisitedLinkStore.h"
 #include "Document.h"
 #include "DocumentStyleSheetCollection.h"
 #include "GroupSettings.h"
@@ -39,10 +40,11 @@
 #include "Settings.h"
 #include "StorageNamespace.h"
 #include "UserContentController.h"
+#include "VisitedLinkStore.h"
 #include <wtf/StdLibExtras.h>
 
 #if ENABLE(VIDEO_TRACK)
-#if (PLATFORM(MAC) && !PLATFORM(IOS)) || HAVE(MEDIA_ACCESSIBILITY_FRAMEWORK)
+#if PLATFORM(MAC) || HAVE(MEDIA_ACCESSIBILITY_FRAMEWORK)
 #include "CaptionUserPreferencesMediaAF.h"
 #else
 #include "CaptionUserPreferences.h"
@@ -176,6 +178,14 @@ void PageGroup::removePage(Page& page)
     page.setUserContentController(nullptr);
 }
 
+VisitedLinkStore& PageGroup::visitedLinkStore()
+{
+    if (!m_visitedLinkStore)
+        m_visitedLinkStore = DefaultVisitedLinkStore::create();
+
+    return *m_visitedLinkStore;
+}
+
 bool PageGroup::isLinkVisited(LinkHash visitedLinkHash)
 {
     if (!m_visitedLinksPopulated) {
@@ -197,7 +207,8 @@ inline void PageGroup::addVisitedLink(LinkHash hash)
     ASSERT(shouldTrackVisitedLinks);
     if (!m_visitedLinkHashes.add(hash).isNewEntry)
         return;
-    Page::visitedStateChanged(this, hash);
+    for (auto& page : m_pages)
+        page->invalidateStylesForLink(hash);
     pageCache()->markPagesForVistedLinkStyleRecalc();
 }
 
@@ -222,7 +233,9 @@ void PageGroup::removeVisitedLink(const URL& url)
     ASSERT(m_visitedLinkHashes.contains(hash));
     m_visitedLinkHashes.remove(hash);
 
-    Page::allVisitedStateChanged(this);
+    // FIXME: Why can't we just invalidate the single visited link hash here?
+    for (auto& page : m_pages)
+        page->invalidateStylesForAllLinks();
     pageCache()->markPagesForVistedLinkStyleRecalc();
 }
 
@@ -232,7 +245,9 @@ void PageGroup::removeVisitedLinks()
     if (m_visitedLinkHashes.isEmpty())
         return;
     m_visitedLinkHashes.clear();
-    Page::allVisitedStateChanged(this);
+
+    for (auto& page : m_pages)
+        page->invalidateStylesForAllLinks();
     pageCache()->markPagesForVistedLinkStyleRecalc();
 }
 
@@ -318,7 +333,7 @@ void PageGroup::captionPreferencesChanged()
 CaptionUserPreferences* PageGroup::captionPreferences()
 {
     if (!m_captionPreferences) {
-#if (PLATFORM(MAC) && !PLATFORM(IOS)) || HAVE(MEDIA_ACCESSIBILITY_FRAMEWORK)
+#if PLATFORM(MAC) || HAVE(MEDIA_ACCESSIBILITY_FRAMEWORK)
         m_captionPreferences = std::make_unique<CaptionUserPreferencesMediaAF>(*this);
 #else
         m_captionPreferences = std::make_unique<CaptionUserPreferences>(*this);

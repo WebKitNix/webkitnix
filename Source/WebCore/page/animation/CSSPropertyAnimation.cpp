@@ -62,11 +62,6 @@ static inline int blendFunc(const AnimationBase*, int from, int to, double progr
     return blend(from, to, progress);
 }
 
-static inline unsigned blendFunc(const AnimationBase*, unsigned from, unsigned to, double progress)
-{
-    return blend(from, to, progress);
-}
-
 static inline double blendFunc(const AnimationBase*, double from, double to, double progress)
 {
     return blend(from, to, progress);
@@ -104,18 +99,18 @@ static inline ShadowStyle blendFunc(const AnimationBase* anim, ShadowStyle from,
     return result > 0 ? Normal : Inset;
 }
 
-static inline PassOwnPtr<ShadowData> blendFunc(const AnimationBase* anim, const ShadowData* from, const ShadowData* to, double progress)
+static inline std::unique_ptr<ShadowData> blendFunc(const AnimationBase* anim, const ShadowData* from, const ShadowData* to, double progress)
 {
     ASSERT(from && to);
     if (from->style() != to->style())
-        return adoptPtr(new ShadowData(*to));
+        return std::make_unique<ShadowData>(*to);
 
-    return adoptPtr(new ShadowData(blend(from->location(), to->location(), progress),
-                                   blend(from->radius(), to->radius(), progress),
-                                   blend(from->spread(), to->spread(), progress),
-                                   blendFunc(anim, from->style(), to->style(), progress),
-                                   from->isWebkitBoxShadow(),
-                                   blend(from->color(), to->color(), progress)));
+    return std::make_unique<ShadowData>(blend(from->location(), to->location(), progress),
+        blend(from->radius(), to->radius(), progress),
+        blend(from->spread(), to->spread(), progress),
+        blendFunc(anim, from->style(), to->style(), progress),
+        from->isWebkitBoxShadow(),
+        blend(from->color(), to->color(), progress));
 }
 
 static inline TransformOperations blendFunc(const AnimationBase* anim, const TransformOperations& from, const TransformOperations& to, double progress)
@@ -223,7 +218,7 @@ static inline PassRefPtr<StyleImage> blendFilter(const AnimationBase* anim, Cach
 
     RefPtr<StyleCachedImage> styledImage = StyleCachedImage::create(image);
     auto imageValue = CSSImageValue::create(image->url(), styledImage.get());
-    auto filterValue = ComputedStyleExtractor::valueForFilter(anim->renderer(), &anim->renderer()->style(), filterResult, DoNotAdjustPixelValues);
+    auto filterValue = ComputedStyleExtractor::valueForFilter(&anim->renderer()->style(), filterResult, DoNotAdjustPixelValues);
 
     auto result = CSSFilterImageValue::create(std::move(imageValue), std::move(filterValue));
     result.get().setFilterOperations(filterResult);
@@ -252,7 +247,6 @@ static inline LengthBox blendFunc(const AnimationBase* anim, const LengthBox& fr
     return result;
 }
 
-#if ENABLE(SVG)
 static inline SVGLength blendFunc(const AnimationBase*, const SVGLength& from, const SVGLength& to, double progress)
 {
     return to.blend(from, narrowPrecisionToFloat(progress));
@@ -277,7 +271,6 @@ static inline Vector<SVGLength> blendFunc(const AnimationBase*, const Vector<SVG
         result[i] = to[i % toLength].blend(from[i % fromLength], narrowPrecisionToFloat(progress));
     return result;
 }
-#endif
 
 static inline PassRefPtr<StyleImage> crossfadeBlend(const AnimationBase*, StyleCachedImage* fromStyleImage, StyleCachedImage* toStyleImage, double progress)
 {
@@ -331,7 +324,7 @@ static inline PassRefPtr<StyleImage> blendFunc(const AnimationBase* anim, StyleI
         CSSImageGeneratorValue& fromGenerated = toStyleGeneratedImage(from)->imageValue();
         if (fromGenerated.isFilterImageValue()) {
             CSSFilterImageValue& fromFilter = toCSSFilterImageValue(fromGenerated);
-            if (fromFilter.cachedImage() && static_cast<StyleCachedImage*>(to)->cachedImage() == fromFilter.cachedImage())
+            if (fromFilter.cachedImage() && toStyleCachedImage(to)->cachedImage() == fromFilter.cachedImage())
                 return blendFilter(anim, fromFilter.cachedImage(), fromFilter.filterOperations(), FilterOperations(), progress);
         }
         // FIXME: Add interpolation between cross-fade and image source.
@@ -339,7 +332,7 @@ static inline PassRefPtr<StyleImage> blendFunc(const AnimationBase* anim, StyleI
         CSSImageGeneratorValue& toGenerated = toStyleGeneratedImage(to)->imageValue();
         if (toGenerated.isFilterImageValue()) {
             CSSFilterImageValue& toFilter = toCSSFilterImageValue(toGenerated);
-            if (toFilter.cachedImage() && static_cast<StyleCachedImage*>(from)->cachedImage() == toFilter.cachedImage())     
+            if (toFilter.cachedImage() && toStyleCachedImage(from)->cachedImage() == toFilter.cachedImage())     
                 return blendFilter(anim, toFilter.cachedImage(), FilterOperations(), toFilter.filterOperations(), progress);
         }
 #endif
@@ -349,7 +342,7 @@ static inline PassRefPtr<StyleImage> blendFunc(const AnimationBase* anim, StyleI
     // FIXME: Add support cross fade between cached and generated images.
     // https://bugs.webkit.org/show_bug.cgi?id=78293
     if (from->isCachedImage() && to->isCachedImage())
-        return crossfadeBlend(anim, static_cast<StyleCachedImage*>(from), static_cast<StyleCachedImage*>(to), progress);
+        return crossfadeBlend(anim, toStyleCachedImage(from), toStyleCachedImage(to), progress);
 
     return to;
 }
@@ -389,9 +382,7 @@ public:
 
     CSSPropertyID property() const { return m_prop; }
 
-#if USE(ACCELERATED_COMPOSITING)
     virtual bool animationIsAccelerated() const { return false; }
-#endif
 
 private:
     CSSPropertyID m_prop;
@@ -533,7 +524,6 @@ protected:
 };
 
 
-#if USE(ACCELERATED_COMPOSITING)
 class PropertyWrapperAcceleratedOpacity : public PropertyWrapper<float> {
 public:
     PropertyWrapperAcceleratedOpacity()
@@ -583,7 +573,6 @@ public:
     }
 };
 #endif
-#endif // USE(ACCELERATED_COMPOSITING)
 
 static inline size_t shadowListLength(const ShadowData* shadow)
 {
@@ -612,7 +601,7 @@ static inline const ShadowData* shadowForBlending(const ShadowData* srcShadow, c
 
 class PropertyWrapperShadow : public AnimationPropertyWrapperBase {
 public:
-    PropertyWrapperShadow(CSSPropertyID prop, const ShadowData* (RenderStyle::*getter)() const, void (RenderStyle::*setter)(PassOwnPtr<ShadowData>, bool))
+    PropertyWrapperShadow(CSSPropertyID prop, const ShadowData* (RenderStyle::*getter)() const, void (RenderStyle::*setter)(std::unique_ptr<ShadowData>, bool))
         : AnimationPropertyWrapperBase(prop)
         , m_getter(getter)
         , m_setter(setter)
@@ -660,22 +649,22 @@ public:
     }
 
 private:
-    PassOwnPtr<ShadowData> blendSimpleOrMatchedShadowLists(const AnimationBase* anim, double progress, const ShadowData* shadowA, const ShadowData* shadowB) const
+    std::unique_ptr<ShadowData> blendSimpleOrMatchedShadowLists(const AnimationBase* anim, double progress, const ShadowData* shadowA, const ShadowData* shadowB) const
     {
-        OwnPtr<ShadowData> newShadowData;
+        std::unique_ptr<ShadowData> newShadowData;
         ShadowData* lastShadow = 0;
 
         while (shadowA || shadowB) {
             const ShadowData* srcShadow = shadowForBlending(shadowA, shadowB);
             const ShadowData* dstShadow = shadowForBlending(shadowB, shadowA);
 
-            OwnPtr<ShadowData> blendedShadow = blendFunc(anim, srcShadow, dstShadow, progress);
+            std::unique_ptr<ShadowData> blendedShadow = blendFunc(anim, srcShadow, dstShadow, progress);
             ShadowData* blendedShadowPtr = blendedShadow.get();
 
             if (!lastShadow)
-                newShadowData = blendedShadow.release();
+                newShadowData = std::move(blendedShadow);
             else
-                lastShadow->setNext(blendedShadow.release());
+                lastShadow->setNext(std::move(blendedShadow));
 
             lastShadow = blendedShadowPtr;
 
@@ -683,10 +672,10 @@ private:
             shadowB = shadowB ? shadowB->next() : 0;
         }
 
-        return newShadowData.release();
+        return newShadowData;
     }
 
-    PassOwnPtr<ShadowData> blendMismatchedShadowLists(const AnimationBase* anim, double progress, const ShadowData* shadowA, const ShadowData* shadowB, int fromLength, int toLength) const
+    std::unique_ptr<ShadowData> blendMismatchedShadowLists(const AnimationBase* anim, double progress, const ShadowData* shadowA, const ShadowData* shadowB, int fromLength, int toLength) const
     {
         // The shadows in ShadowData are stored in reverse order, so when animating mismatched lists,
         // reverse them and match from the end.
@@ -702,7 +691,7 @@ private:
             shadowB = shadowB->next();
         }
 
-        OwnPtr<ShadowData> newShadowData;
+        std::unique_ptr<ShadowData> newShadowData;
 
         int maxLength = std::max(fromLength, toLength);
         for (int i = 0; i < maxLength; ++i) {
@@ -712,17 +701,17 @@ private:
             const ShadowData* srcShadow = shadowForBlending(fromShadow, toShadow);
             const ShadowData* dstShadow = shadowForBlending(toShadow, fromShadow);
 
-            OwnPtr<ShadowData> blendedShadow = blendFunc(anim, srcShadow, dstShadow, progress);
+            std::unique_ptr<ShadowData> blendedShadow = blendFunc(anim, srcShadow, dstShadow, progress);
             // Insert at the start of the list to preserve the order.
-            blendedShadow->setNext(newShadowData.release());
-            newShadowData = blendedShadow.release();
+            blendedShadow->setNext(std::move(newShadowData));
+            newShadowData = std::move(blendedShadow);
         }
 
-        return newShadowData.release();
+        return newShadowData;
     }
 
     const ShadowData* (RenderStyle::*m_getter)() const;
-    void (RenderStyle::*m_setter)(PassOwnPtr<ShadowData>, bool);
+    void (RenderStyle::*m_setter)(std::unique_ptr<ShadowData>, bool);
 };
 
 class PropertyWrapperMaybeInvalidColor : public AnimationPropertyWrapperBase {
@@ -1026,7 +1015,6 @@ public:
     }
 };
 
-#if ENABLE(SVG)
 class PropertyWrapperSVGPaint : public AnimationPropertyWrapperBase {
 public:
     PropertyWrapperSVGPaint(CSSPropertyID prop, const SVGPaint::SVGPaintType& (RenderStyle::*paintTypeGetter)() const, Color (RenderStyle::*getter)() const, void (RenderStyle::*setter)(const Color&))
@@ -1086,7 +1074,6 @@ private:
     Color (RenderStyle::*m_getter)() const;
     void (RenderStyle::*m_setter)(const Color&);
 };
-#endif
 
 class CSSPropertyAnimationWrapperMap {
 public:
@@ -1154,10 +1141,10 @@ CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap()
 
         new PropertyWrapperFlex(),
 
-        new PropertyWrapper<unsigned>(CSSPropertyBorderLeftWidth, &RenderStyle::borderLeftWidth, &RenderStyle::setBorderLeftWidth),
-        new PropertyWrapper<unsigned>(CSSPropertyBorderRightWidth, &RenderStyle::borderRightWidth, &RenderStyle::setBorderRightWidth),
-        new PropertyWrapper<unsigned>(CSSPropertyBorderTopWidth, &RenderStyle::borderTopWidth, &RenderStyle::setBorderTopWidth),
-        new PropertyWrapper<unsigned>(CSSPropertyBorderBottomWidth, &RenderStyle::borderBottomWidth, &RenderStyle::setBorderBottomWidth),
+        new PropertyWrapper<float>(CSSPropertyBorderLeftWidth, &RenderStyle::borderLeftWidth, &RenderStyle::setBorderLeftWidth),
+        new PropertyWrapper<float>(CSSPropertyBorderRightWidth, &RenderStyle::borderRightWidth, &RenderStyle::setBorderRightWidth),
+        new PropertyWrapper<float>(CSSPropertyBorderTopWidth, &RenderStyle::borderTopWidth, &RenderStyle::setBorderTopWidth),
+        new PropertyWrapper<float>(CSSPropertyBorderBottomWidth, &RenderStyle::borderBottomWidth, &RenderStyle::setBorderBottomWidth),
         new LengthPropertyWrapper<Length>(CSSPropertyMarginLeft, &RenderStyle::marginLeft, &RenderStyle::setMarginLeft),
         new LengthPropertyWrapper<Length>(CSSPropertyMarginRight, &RenderStyle::marginRight, &RenderStyle::setMarginRight),
         new LengthPropertyWrapper<Length>(CSSPropertyMarginTop, &RenderStyle::marginTop, &RenderStyle::setMarginTop),
@@ -1232,24 +1219,18 @@ CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap()
 
         new LengthPropertyWrapper<LengthBox>(CSSPropertyClip, &RenderStyle::clip, &RenderStyle::setClip),
 
-#if USE(ACCELERATED_COMPOSITING)
         new PropertyWrapperAcceleratedOpacity(),
         new PropertyWrapperAcceleratedTransform(),
 #if ENABLE(CSS_FILTERS)
         new PropertyWrapperAcceleratedFilter(),
 #endif
-#else
-        new PropertyWrapper<float>(CSSPropertyOpacity, &RenderStyle::opacity, &RenderStyle::setOpacity),
-        new PropertyWrapper<const TransformOperations&>(CSSPropertyWebkitTransform, &RenderStyle::transform, &RenderStyle::setTransform),
-#if ENABLE(CSS_FILTERS)
-        new PropertyWrapper<const FilterOperations&>(CSSPropertyWebkitFilter, &RenderStyle::filter, &RenderStyle::setFilter),
-#endif
-#endif
 
         new PropertyWrapperClipPath(CSSPropertyWebkitClipPath, &RenderStyle::clipPath, &RenderStyle::setClipPath),
 
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
         new PropertyWrapperShape(CSSPropertyWebkitShapeInside, &RenderStyle::shapeInside, &RenderStyle::setShapeInside),
+#endif
+#if ENABLE(CSS_SHAPES)
         new PropertyWrapperShape(CSSPropertyWebkitShapeOutside, &RenderStyle::shapeOutside, &RenderStyle::setShapeOutside),
         new LengthPropertyWrapper<Length>(CSSPropertyWebkitShapeMargin, &RenderStyle::shapeMargin, &RenderStyle::setShapeMargin),
         new PropertyWrapper<float>(CSSPropertyWebkitShapeImageThreshold, &RenderStyle::shapeImageThreshold, &RenderStyle::setShapeImageThreshold),
@@ -1268,7 +1249,6 @@ CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap()
         new PropertyWrapperShadow(CSSPropertyWebkitBoxShadow, &RenderStyle::boxShadow, &RenderStyle::setBoxShadow),
         new PropertyWrapperShadow(CSSPropertyTextShadow, &RenderStyle::textShadow, &RenderStyle::setTextShadow),
 
-#if ENABLE(SVG)
         new PropertyWrapperSVGPaint(CSSPropertyFill, &RenderStyle::fillPaintType, &RenderStyle::fillPaintColor, &RenderStyle::setFillPaintColor),
         new PropertyWrapper<float>(CSSPropertyFillOpacity, &RenderStyle::fillOpacity, &RenderStyle::setFillOpacity),
 
@@ -1289,7 +1269,6 @@ CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap()
 
         new PropertyWrapper<SVGLength>(CSSPropertyBaselineShift, &RenderStyle::baselineShiftValue, &RenderStyle::setBaselineShiftValue),
         new PropertyWrapper<SVGLength>(CSSPropertyKerning, &RenderStyle::kerning, &RenderStyle::setKerning),
-#endif
     };
     const unsigned animatableLonghandPropertiesCount = WTF_ARRAY_LENGTH(animatableLonghandPropertyWrappers);
 
@@ -1393,23 +1372,17 @@ bool CSSPropertyAnimation::blendProperties(const AnimationBase* anim, CSSPropert
     AnimationPropertyWrapperBase* wrapper = CSSPropertyAnimationWrapperMap::instance().wrapperForProperty(prop);
     if (wrapper) {
         wrapper->blend(anim, dst, a, b, progress);
-#if USE(ACCELERATED_COMPOSITING)
         return !wrapper->animationIsAccelerated() || !anim->isAccelerated();
-#else
-        return true;
-#endif
     }
 
     return false;
 }
 
-#if USE(ACCELERATED_COMPOSITING)
 bool CSSPropertyAnimation::animationOfPropertyIsAccelerated(CSSPropertyID prop)
 {
     AnimationPropertyWrapperBase* wrapper = CSSPropertyAnimationWrapperMap::instance().wrapperForProperty(prop);
     return wrapper ? wrapper->animationIsAccelerated() : false;
 }
-#endif
 
 // Note: this is inefficient. It's only called from pauseTransitionAtTime().
 HashSet<CSSPropertyID> CSSPropertyAnimation::animatableShorthandsAffectingProperty(CSSPropertyID property)

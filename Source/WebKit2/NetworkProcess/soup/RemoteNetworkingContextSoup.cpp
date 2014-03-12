@@ -46,13 +46,7 @@ bool RemoteNetworkingContext::isValid() const
     return true;
 }
 
-uint64_t RemoteNetworkingContext::initiatingPageID() const
-{
-    notImplemented();
-    return 0;
-}
-
-void RemoteNetworkingContext::ensurePrivateBrowsingSession(uint64_t sessionID)
+void RemoteNetworkingContext::ensurePrivateBrowsingSession(SessionID sessionID)
 {
     notImplemented();
 }

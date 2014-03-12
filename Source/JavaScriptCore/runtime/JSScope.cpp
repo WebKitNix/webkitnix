@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, 2013 Apple Inc. All Rights Reserved.
+ * Copyright (C) 2012, 2013, 2014 Apple Inc. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,7 +30,7 @@
 #include "JSGlobalObject.h"
 #include "JSNameScope.h"
 #include "JSWithScope.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC {
 
@@ -111,7 +111,7 @@ static inline bool abstractAccess(ExecState* exec, JSScope* scope, const Identif
 JSObject* JSScope::objectAtScope(JSScope* scope)
 {
     JSObject* object = scope;
-    if (object->structure()->typeInfo().type() == WithScopeType)
+    if (object->type() == WithScopeType)
         return jsCast<JSWithScope*>(object)->object();
 
     return object;
@@ -155,6 +155,30 @@ ResolveOp JSScope::abstractResolve(ExecState* exec, JSScope* scope, const Identi
     }
 
     return op;
+}
+
+const char* resolveModeName(ResolveMode mode)
+{
+    static const char* const names[] = {
+        "ThrowIfNotFound",
+        "DoNotThrowIfNotFound"
+    };
+    return names[mode];
+}
+
+const char* resolveTypeName(ResolveType type)
+{
+    static const char* const names[] = {
+        "GlobalProperty",
+        "GlobalVar",
+        "ClosureVar",
+        "GlobalPropertyWithVarInjectionChecks",
+        "GlobalVarWithVarInjectionChecks",
+        "ClosureVarWithVarInjectionChecks",
+        "Dynamic"
+    };
+    ASSERT(type < sizeof(names) / sizeof(names[0]));
+    return names[type];
 }
 
 } // namespace JSC

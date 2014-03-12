@@ -43,7 +43,7 @@
 
 #include <gst/audio/streamvolume.h>
 
-#if GST_CHECK_VERSION(1, 1, 0) && USE(ACCELERATED_COMPOSITING) && USE(TEXTURE_MAPPER_GL)
+#if GST_CHECK_VERSION(1, 1, 0) && USE(TEXTURE_MAPPER_GL)
 #include "TextureMapperGL.h"
 #endif
 
@@ -249,6 +249,7 @@ void MediaPlayerPrivateGStreamerBase::volumeChanged()
     if (m_volumeTimerHandler)
         g_source_remove(m_volumeTimerHandler);
     m_volumeTimerHandler = g_idle_add_full(G_PRIORITY_DEFAULT, reinterpret_cast<GSourceFunc>(mediaPlayerPrivateVolumeChangeTimeoutCallback), this, 0);
+    g_source_set_name_by_id(m_volumeTimerHandler, "[WebKit] mediaPlayerPrivateVolumeChangeTimeoutCallback");
 }
 
 MediaPlayer::NetworkState MediaPlayerPrivateGStreamerBase::networkState() const
@@ -301,10 +302,11 @@ void MediaPlayerPrivateGStreamerBase::muteChanged()
     if (m_muteTimerHandler)
         g_source_remove(m_muteTimerHandler);
     m_muteTimerHandler = g_idle_add_full(G_PRIORITY_DEFAULT, reinterpret_cast<GSourceFunc>(mediaPlayerPrivateMuteChangeTimeoutCallback), this, 0);
+    g_source_set_name_by_id(m_muteTimerHandler, "[WebKit] mediaPlayerPrivateMuteChangeTimeoutCallback");
 }
 
 
-#if USE(ACCELERATED_COMPOSITING) && USE(TEXTURE_MAPPER_GL) && !USE(COORDINATED_GRAPHICS)
+#if USE(TEXTURE_MAPPER_GL) && !USE(COORDINATED_GRAPHICS)
 PassRefPtr<BitmapTexture> MediaPlayerPrivateGStreamerBase::updateTexture(TextureMapper* textureMapper)
 {
     GMutexLocker lock(m_bufferMutex);
@@ -357,7 +359,7 @@ void MediaPlayerPrivateGStreamerBase::triggerRepaint(GstBuffer* buffer)
         gst_buffer_replace(&m_buffer, buffer);
     }
 
-#if USE(ACCELERATED_COMPOSITING) && USE(TEXTURE_MAPPER_GL) && !USE(COORDINATED_GRAPHICS)
+#if USE(TEXTURE_MAPPER_GL) && !USE(COORDINATED_GRAPHICS)
     if (supportsAcceleratedRendering() && m_player->mediaPlayerClient()->mediaPlayerRenderingCanBeAccelerated(m_player) && client()) {
         client()->setPlatformLayerNeedsDisplay();
         return;
@@ -374,7 +376,7 @@ void MediaPlayerPrivateGStreamerBase::setSize(const IntSize& size)
 
 void MediaPlayerPrivateGStreamerBase::paint(GraphicsContext* context, const IntRect& rect)
 {
-#if USE(ACCELERATED_COMPOSITING) && USE(TEXTURE_MAPPER_GL) && !USE(COORDINATED_GRAPHICS)
+#if USE(TEXTURE_MAPPER_GL) && !USE(COORDINATED_GRAPHICS)
     if (client())
         return;
 #endif
@@ -401,7 +403,7 @@ void MediaPlayerPrivateGStreamerBase::paint(GraphicsContext* context, const IntR
         rect, gstImage->rect(), CompositeCopy, ImageOrientationDescription(), false);
 }
 
-#if USE(ACCELERATED_COMPOSITING) && USE(TEXTURE_MAPPER_GL) && !USE(COORDINATED_GRAPHICS)
+#if USE(TEXTURE_MAPPER_GL) && !USE(COORDINATED_GRAPHICS)
 void MediaPlayerPrivateGStreamerBase::paintToTextureMapper(TextureMapper* textureMapper, const FloatRect& targetRect, const TransformationMatrix& matrix, float opacity)
 {
     if (textureMapper->accelerationMode() != TextureMapper::OpenGLMode)

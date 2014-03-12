@@ -47,7 +47,7 @@
 #include "TextAutosizer.h"
 #include <limits>
 #include <wtf/NeverDestroyed.h>
-
+#include <wtf/StdLibExtras.h>
 
 namespace WebCore {
 
@@ -78,7 +78,7 @@ bool Settings::gShouldPaintNativeControls = true;
 bool Settings::gAVFoundationEnabled = false;
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 bool Settings::gQTKitEnabled = true;
 #endif
 
@@ -99,6 +99,7 @@ bool Settings::gLowPowerVideoAudioBufferSizeEnabled = false;
 #if PLATFORM(IOS)
 bool Settings::gNetworkDataUsageTrackingEnabled = false;
 bool Settings::gAVKitEnabled = false;
+bool Settings::gShouldOptOutOfNetworkStateObservation = false;
 #endif
 
 // NOTEs
@@ -124,11 +125,13 @@ static EditingBehaviorType editingBehaviorTypeForPlatform()
 
 #if PLATFORM(IOS)
 static const bool defaultFixedPositionCreatesStackingContext = true;
+static const bool defaultAcceleratedCompositingForFixedPositionEnabled = true;
 static const bool defaultMediaPlaybackAllowsInline = false;
 static const bool defaultMediaPlaybackRequiresUserGesture = true;
 static const bool defaultShouldRespectImageOrientation = true;
 #else
 static const bool defaultFixedPositionCreatesStackingContext = false;
+static const bool defaultAcceleratedCompositingForFixedPositionEnabled = false;
 static const bool defaultMediaPlaybackAllowsInline = true;
 static const bool defaultMediaPlaybackRequiresUserGesture = false;
 static const bool defaultShouldRespectImageOrientation = false;
@@ -146,7 +149,7 @@ static const bool defaultSelectTrailingWhitespaceEnabled = false;
 // This amount of time must have elapsed before we will even consider scheduling a layout without a delay.
 // FIXME: For faster machines this value can really be lowered to 200. 250 is adequate, but a little high
 // for dual G5s. :)
-static const int layoutScheduleThreshold = 250;
+static const auto layoutScheduleThreshold = std::chrono::milliseconds(250);
 
 Settings::Settings(Page* page)
     : m_page(0)
@@ -154,9 +157,6 @@ Settings::Settings(Page* page)
     , m_fontGenericFamilies(std::make_unique<FontGenericFamilies>())
     , m_storageBlockingPolicy(SecurityOrigin::AllowAllStorage)
     , m_layoutInterval(layoutScheduleThreshold)
-#if PLATFORM(IOS)
-    , m_maxParseDuration(-1)
-#endif
 #if ENABLE(TEXT_AUTOSIZING)
     , m_textAutosizingFontScaleFactor(1)
 #if HACK_FORCE_TEXT_AUTOSIZING_ON_DESKTOP
@@ -178,19 +178,6 @@ Settings::Settings(Page* page)
     , m_needsAdobeFrameReloadingQuirk(false)
     , m_usesPageCache(false)
     , m_fontRenderingMode(0)
-    , m_isCSSCustomFilterEnabled(false)
-#if PLATFORM(IOS)
-    , m_standalone(false)
-    , m_telephoneNumberParsingEnabled(false)
-    , m_mediaDataLoadsAutomatically(false)
-    , m_shouldTransformsAffectOverflow(true)
-    , m_shouldDispatchJavaScriptWindowOnErrorEvents(false)
-    , m_alwaysUseBaselineOfPrimaryFont(false)
-    , m_alwaysUseAcceleratedOverflowScroll(false)
-#endif
-#if ENABLE(CSS_STICKY_POSITION)
-    , m_cssStickyPositionEnabled(true)
-#endif
     , m_showTiledScrollingIndicator(false)
     , m_tiledBackingStoreEnabled(false)
     , m_backgroundShouldExtendBeyondPage(false)
@@ -238,14 +225,14 @@ double Settings::hiddenPageDOMTimerAlignmentInterval()
     return gHiddenPageDOMTimerAlignmentInterval;
 }
 
-#if !PLATFORM(MAC)
+#if !PLATFORM(COCOA)
 bool Settings::shouldEnableScreenFontSubstitutionByDefault()
 {
     return true;
 }
 #endif
 
-#if !PLATFORM(MAC)
+#if !PLATFORM(COCOA)
 void Settings::initializeDefaultFontFamilies()
 {
     // Other platforms can set up fonts from a client, but on Mac, we want it in WebCore to share code between WebKit1 and WebKit2.
@@ -498,17 +485,12 @@ double Settings::defaultDOMTimerAlignmentInterval()
     return gDefaultDOMTimerAlignmentInterval;
 }
 
-void Settings::setDOMTimerAlignmentInterval(double interval)
-{
-    m_page->setTimerAlignmentInterval(interval);
-}
-
 double Settings::domTimerAlignmentInterval() const
 {
     return m_page->timerAlignmentInterval();
 }
 
-void Settings::setLayoutInterval(int layoutInterval)
+void Settings::setLayoutInterval(std::chrono::milliseconds layoutInterval)
 {
     // FIXME: It seems weird that this function may disregard the specified layout interval.
     // We should either expose layoutScheduleThreshold or better communicate this invariant.
@@ -605,9 +587,7 @@ void Settings::setBackgroundShouldExtendBeyondPage(bool shouldExtend)
 
     m_backgroundShouldExtendBeyondPage = shouldExtend;
 
-#if USE(ACCELERATED_COMPOSITING)
     m_page->mainFrame().view()->setBackgroundExtendsBeyondPage(shouldExtend);
-#endif
 }
 
 #if USE(AVFOUNDATION)
@@ -621,7 +601,7 @@ void Settings::setAVFoundationEnabled(bool enabled)
 }
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 void Settings::setQTKitEnabled(bool enabled)
 {
     if (gQTKitEnabled == enabled)
@@ -694,7 +674,7 @@ void Settings::setHiddenPageDOMTimerThrottlingEnabled(bool flag)
     if (m_hiddenPageDOMTimerThrottlingEnabled == flag)
         return;
     m_hiddenPageDOMTimerThrottlingEnabled = flag;
-    m_page->hiddenPageDOMTimerThrottlingStateChanged();
+    m_page->pageThrottler().hiddenPageDOMTimerThrottlingStateChanged();
 }
 #endif
 
@@ -723,11 +703,6 @@ void Settings::setLowPowerVideoAudioBufferSizeEnabled(bool flag)
 }
 
 #if PLATFORM(IOS)
-void Settings::setStandalone(bool standalone)
-{
-    m_standalone = standalone;
-}
-
 void Settings::setAudioSessionCategoryOverride(unsigned sessionCategory)
 {
     AudioSession::sharedSession().setCategoryOverride(static_cast<AudioSession::CategoryType>(sessionCategory));

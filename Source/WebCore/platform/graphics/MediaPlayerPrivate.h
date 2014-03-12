@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009, 2010, 2011, 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2009-2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,8 +29,9 @@
 #if ENABLE(VIDEO)
 
 #include "MediaPlayer.h"
-#include "TimeRanges.h"
+#include "PlatformTimeRanges.h"
 #include <wtf/Forward.h>
+#include <wtf/OwnPtr.h>
 
 namespace WebCore {
 
@@ -46,16 +47,18 @@ public:
 
     virtual void load(const String& url) = 0;
 #if ENABLE(MEDIA_SOURCE)
-    virtual void load(const String& url, PassRefPtr<HTMLMediaSource>) = 0;
+    virtual void load(const String& url, MediaSourcePrivateClient*) = 0;
 #endif
     virtual void cancelLoad() = 0;
     
     virtual void prepareToPlay() { }
     virtual PlatformMedia platformMedia() const { return NoPlatformMedia; }
-#if USE(ACCELERATED_COMPOSITING)
     virtual PlatformLayer* platformLayer() const { return 0; }
+#if PLATFORM(IOS)
+    virtual void setVideoFullscreenLayer(PlatformLayer*) { }
+    virtual void setVideoFullscreenFrame(FloatRect) { }
+    virtual void setVideoFullscreenGravity(MediaPlayer::VideoGravity) { }
 #endif
-
     virtual void play() = 0;
     virtual void pause() = 0;    
 
@@ -110,11 +113,11 @@ public:
     virtual MediaPlayer::NetworkState networkState() const = 0;
     virtual MediaPlayer::ReadyState readyState() const = 0;
 
-    virtual PassRefPtr<TimeRanges> seekable() const { return maxTimeSeekableDouble() ? TimeRanges::create(minTimeSeekable(), maxTimeSeekableDouble()) : TimeRanges::create(); }
+    virtual std::unique_ptr<PlatformTimeRanges> seekable() const { return maxTimeSeekableDouble() ? PlatformTimeRanges::create(minTimeSeekable(), maxTimeSeekableDouble()) : PlatformTimeRanges::create(); }
     virtual float maxTimeSeekable() const { return 0; }
     virtual double maxTimeSeekableDouble() const { return maxTimeSeekable(); }
     virtual double minTimeSeekable() const { return 0; }
-    virtual PassRefPtr<TimeRanges> buffered() const = 0;
+    virtual std::unique_ptr<PlatformTimeRanges> buffered() const = 0;
 
     virtual bool didLoadingProgress() const = 0;
 
@@ -124,7 +127,7 @@ public:
 
     virtual void paintCurrentFrameInContext(GraphicsContext* c, const IntRect& r) { paint(c, r); }
     virtual bool copyVideoTextureToPlatformTexture(GraphicsContext3D*, Platform3DObject, GC3Dint, GC3Denum, GC3Denum, bool, bool) { return false; }
-    virtual PassNativeImagePtr nativeImageForCurrentTime() { return 0; }
+    virtual PassNativeImagePtr nativeImageForCurrentTime() { return nullptr; }
 
     virtual void setPreload(MediaPlayer::Preload) { }
 
@@ -146,6 +149,10 @@ public:
 
 #if ENABLE(IOS_AIRPLAY)
     virtual bool isCurrentPlaybackTargetWireless() const { return false; }
+
+    virtual String wirelessPlaybackTargetName() const { return emptyString(); }
+    virtual MediaPlayer::WirelessPlaybackTargetType wirelessPlaybackTargetType() const { return MediaPlayer::TargetTypeNone; }
+
     virtual void showPlaybackTargetPicker() { }
 
     virtual bool hasWirelessPlaybackTargets() const { return false; }
@@ -160,12 +167,10 @@ public:
     virtual bool canEnterFullscreen() const { return false; }
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     // whether accelerated rendering is supported by the media engine for the current media.
     virtual bool supportsAcceleratedRendering() const { return false; }
     // called when the rendering system flips the into or out of accelerated rendering mode.
     virtual void acceleratedRenderingStateChanged() { }
-#endif
 
     virtual bool shouldMaintainAspectRatio() const { return true; }
     virtual void setShouldMaintainAspectRatio(bool) { }
@@ -211,6 +216,10 @@ public:
     virtual MediaPlayer::MediaKeyException cancelKeyRequest(const String&, const String&) { return MediaPlayer::KeySystemNotSupported; }
 #endif
 
+#if ENABLE(ENCRYPTED_MEDIA_V2)
+    virtual std::unique_ptr<CDMSession> createSession(const String&) { return nullptr; }
+#endif
+
 #if ENABLE(VIDEO_TRACK)
     virtual bool requiresTextTrackRepresentation() const { return false; }
     virtual void setTextTrackRepresentation(TextTrackRepresentation*) { }
@@ -241,6 +250,10 @@ public:
     virtual unsigned long droppedVideoFrames() { return 0; }
     virtual unsigned long corruptedVideoFrames() { return 0; }
     virtual double totalFrameDelay() { return 0; }
+#endif
+
+#if ENABLE(AVF_CAPTIONS)
+    virtual void notifyTrackModeChanged() { }
 #endif
 };
 

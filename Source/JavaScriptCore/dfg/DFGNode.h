@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,12 +26,9 @@
 #ifndef DFGNode_h
 #define DFGNode_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(DFG_JIT)
 
 #include "CodeBlock.h"
-#include "CodeOrigin.h"
 #include "DFGAbstractValue.h"
 #include "DFGAdjacencyList.h"
 #include "DFGArithMode.h"
@@ -39,10 +36,13 @@
 #include "DFGCommon.h"
 #include "DFGLazyJSValue.h"
 #include "DFGNodeFlags.h"
+#include "DFGNodeOrigin.h"
 #include "DFGNodeType.h"
 #include "DFGVariableAccessData.h"
+#include "GetByIdVariant.h"
 #include "JSCJSValue.h"
 #include "Operands.h"
+#include "PutByIdVariant.h"
 #include "SpeculatedType.h"
 #include "StructureSet.h"
 #include "ValueProfile.h"
@@ -52,6 +52,19 @@ namespace JSC { namespace DFG {
 
 class Graph;
 struct BasicBlock;
+
+struct MultiGetByOffsetData {
+    unsigned identifierNumber;
+    Vector<GetByIdVariant, 2> variants;
+};
+
+struct MultiPutByOffsetData {
+    unsigned identifierNumber;
+    Vector<PutByIdVariant, 2> variants;
+    
+    bool writesStructures() const;
+    bool reallocatesStorage() const;
+};
 
 struct StructureTransitionData {
     Structure* previousStructure;
@@ -72,6 +85,55 @@ struct NewArrayBufferData {
     IndexingType indexingType;
 };
 
+struct BranchTarget {
+    BranchTarget()
+        : block(0)
+        , count(QNaN)
+    {
+    }
+    
+    explicit BranchTarget(BasicBlock* block)
+        : block(block)
+        , count(QNaN)
+    {
+    }
+    
+    void setBytecodeIndex(unsigned bytecodeIndex)
+    {
+        block = bitwise_cast<BasicBlock*>(static_cast<uintptr_t>(bytecodeIndex));
+    }
+    unsigned bytecodeIndex() const { return bitwise_cast<uintptr_t>(block); }
+    
+    void dump(PrintStream&) const;
+    
+    BasicBlock* block;
+    float count;
+};
+
+struct BranchData {
+    static BranchData withBytecodeIndices(
+        unsigned takenBytecodeIndex, unsigned notTakenBytecodeIndex)
+    {
+        BranchData result;
+        result.taken.block = bitwise_cast<BasicBlock*>(static_cast<uintptr_t>(takenBytecodeIndex));
+        result.notTaken.block = bitwise_cast<BasicBlock*>(static_cast<uintptr_t>(notTakenBytecodeIndex));
+        return result;
+    }
+    
+    unsigned takenBytecodeIndex() const { return taken.bytecodeIndex(); }
+    unsigned notTakenBytecodeIndex() const { return notTaken.bytecodeIndex(); }
+    
+    BasicBlock*& forCondition(bool condition)
+    {
+        if (condition)
+            return taken.block;
+        return notTaken.block;
+    }
+    
+    BranchTarget taken;
+    BranchTarget notTaken;
+};
+
 // The SwitchData and associated data structures duplicate the information in
 // JumpTable. The DFG may ultimately end up using the JumpTable, though it may
 // instead decide to do something different - this is entirely up to the DFG.
@@ -85,7 +147,6 @@ struct NewArrayBufferData {
 // values.
 struct SwitchCase {
     SwitchCase()
-        : target(0)
     {
     }
     
@@ -99,14 +160,12 @@ struct SwitchCase {
     {
         SwitchCase result;
         result.value = value;
-        result.target = bitwise_cast<BasicBlock*>(static_cast<uintptr_t>(bytecodeIndex));
+        result.target.setBytecodeIndex(bytecodeIndex);
         return result;
     }
     
-    unsigned targetBytecodeIndex() const { return bitwise_cast<uintptr_t>(target); }
-    
     LazyJSValue value;
-    BasicBlock* target;
+    BranchTarget target;
 };
 
 enum SwitchKind {
@@ -120,21 +179,14 @@ struct SwitchData {
     // constructing this should make sure to initialize everything they
     // care about manually.
     SwitchData()
-        : fallThrough(0)
-        , kind(static_cast<SwitchKind>(-1))
+        : kind(static_cast<SwitchKind>(-1))
         , switchTableIndex(UINT_MAX)
         , didUseJumpTable(false)
     {
     }
     
-    void setFallThroughBytecodeIndex(unsigned bytecodeIndex)
-    {
-        fallThrough = bitwise_cast<BasicBlock*>(static_cast<uintptr_t>(bytecodeIndex));
-    }
-    unsigned fallThroughBytecodeIndex() const { return bitwise_cast<uintptr_t>(fallThrough); }
-    
     Vector<SwitchCase> cases;
-    BasicBlock* fallThrough;
+    BranchTarget fallThrough;
     SwitchKind kind;
     unsigned switchTableIndex;
     bool didUseJumpTable;
@@ -161,9 +213,8 @@ struct Node {
     
     Node() { }
     
-    Node(NodeType op, CodeOrigin codeOrigin, const AdjacencyList& children)
-        : codeOrigin(codeOrigin)
-        , codeOriginForExitTarget(codeOrigin)
+    Node(NodeType op, NodeOrigin nodeOrigin, const AdjacencyList& children)
+        : origin(nodeOrigin)
         , children(children)
         , m_virtualRegister(VirtualRegister())
         , m_refCount(1)
@@ -174,9 +225,8 @@ struct Node {
     }
     
     // Construct a node with up to 3 children, no immediate value.
-    Node(NodeType op, CodeOrigin codeOrigin, Edge child1 = Edge(), Edge child2 = Edge(), Edge child3 = Edge())
-        : codeOrigin(codeOrigin)
-        , codeOriginForExitTarget(codeOrigin)
+    Node(NodeType op, NodeOrigin nodeOrigin, Edge child1 = Edge(), Edge child2 = Edge(), Edge child3 = Edge())
+        : origin(nodeOrigin)
         , children(AdjacencyList::Fixed, child1, child2, child3)
         , m_virtualRegister(VirtualRegister())
         , m_refCount(1)
@@ -190,9 +240,8 @@ struct Node {
     }
 
     // Construct a node with up to 3 children and an immediate value.
-    Node(NodeType op, CodeOrigin codeOrigin, OpInfo imm, Edge child1 = Edge(), Edge child2 = Edge(), Edge child3 = Edge())
-        : codeOrigin(codeOrigin)
-        , codeOriginForExitTarget(codeOrigin)
+    Node(NodeType op, NodeOrigin nodeOrigin, OpInfo imm, Edge child1 = Edge(), Edge child2 = Edge(), Edge child3 = Edge())
+        : origin(nodeOrigin)
         , children(AdjacencyList::Fixed, child1, child2, child3)
         , m_virtualRegister(VirtualRegister())
         , m_refCount(1)
@@ -206,9 +255,8 @@ struct Node {
     }
 
     // Construct a node with up to 3 children and two immediate values.
-    Node(NodeType op, CodeOrigin codeOrigin, OpInfo imm1, OpInfo imm2, Edge child1 = Edge(), Edge child2 = Edge(), Edge child3 = Edge())
-        : codeOrigin(codeOrigin)
-        , codeOriginForExitTarget(codeOrigin)
+    Node(NodeType op, NodeOrigin nodeOrigin, OpInfo imm1, OpInfo imm2, Edge child1 = Edge(), Edge child2 = Edge(), Edge child3 = Edge())
+        : origin(nodeOrigin)
         , children(AdjacencyList::Fixed, child1, child2, child3)
         , m_virtualRegister(VirtualRegister())
         , m_refCount(1)
@@ -222,9 +270,8 @@ struct Node {
     }
     
     // Construct a node with a variable number of children and two immediate values.
-    Node(VarArgTag, NodeType op, CodeOrigin codeOrigin, OpInfo imm1, OpInfo imm2, unsigned firstChild, unsigned numChildren)
-        : codeOrigin(codeOrigin)
-        , codeOriginForExitTarget(codeOrigin)
+    Node(VarArgTag, NodeType op, NodeOrigin nodeOrigin, OpInfo imm1, OpInfo imm2, unsigned firstChild, unsigned numChildren)
+        : origin(nodeOrigin)
         , children(AdjacencyList::Variable, firstChild, numChildren)
         , m_virtualRegister(VirtualRegister())
         , m_refCount(1)
@@ -332,7 +379,7 @@ struct Node {
     bool isStronglyProvedConstantIn(InlineCallFrame* inlineCallFrame)
     {
         return !!(flags() & NodeIsStaticConstant)
-            && codeOrigin.inlineCallFrame == inlineCallFrame;
+            && origin.semantic.inlineCallFrame == inlineCallFrame;
     }
     
     bool isStronglyProvedConstantIn(const CodeOrigin& codeOrigin)
@@ -411,7 +458,7 @@ struct Node {
     
     void convertToGetByOffset(unsigned storageAccessDataIndex, Edge storage)
     {
-        ASSERT(m_op == GetById || m_op == GetByIdFlush);
+        ASSERT(m_op == GetById || m_op == GetByIdFlush || m_op == MultiGetByOffset);
         m_opInfo = storageAccessDataIndex;
         children.setChild2(children.child1());
         children.child2().setUseKind(KnownCellUse);
@@ -422,7 +469,7 @@ struct Node {
     
     void convertToPutByOffset(unsigned storageAccessDataIndex, Edge storage)
     {
-        ASSERT(m_op == PutById || m_op == PutByIdDirect);
+        ASSERT(m_op == PutById || m_op == PutByIdDirect || m_op == MultiPutByOffset);
         m_opInfo = storageAccessDataIndex;
         children.setChild3(children.child2());
         children.setChild2(children.child1());
@@ -517,6 +564,16 @@ struct Node {
         return hasVariableAccessData(graph);
     }
     
+    // This is useful for debugging code, where a node that should have a variable
+    // access data doesn't have one because it hasn't been initialized yet.
+    VariableAccessData* tryGetVariableAccessData()
+    {
+        VariableAccessData* result = reinterpret_cast<VariableAccessData*>(m_opInfo);
+        if (!result)
+            return 0;
+        return result->find();
+    }
+    
     VariableAccessData* variableAccessData()
     {
         return reinterpret_cast<VariableAccessData*>(m_opInfo)->find();
@@ -583,7 +640,6 @@ struct Node {
     {
         switch (op()) {
         case StoreBarrier:
-        case ConditionalStoreBarrier:
         case StoreBarrierWithNullCheck:
             return true;
         default:
@@ -597,6 +653,7 @@ struct Node {
         case GetById:
         case GetByIdFlush:
         case PutById:
+        case PutByIdFlush:
         case PutByIdDirect:
             return true;
         default:
@@ -808,40 +865,22 @@ struct Node {
         }
     }
 
-    unsigned takenBytecodeOffsetDuringParsing()
+    unsigned targetBytecodeOffsetDuringParsing()
     {
-        ASSERT(isBranch() || isJump());
+        ASSERT(isJump());
         return m_opInfo;
     }
 
-    unsigned notTakenBytecodeOffsetDuringParsing()
+    BasicBlock*& targetBlock()
     {
-        ASSERT(isBranch());
-        return m_opInfo2;
-    }
-    
-    void setTakenBlock(BasicBlock* block)
-    {
-        ASSERT(isBranch() || isJump());
-        m_opInfo = bitwise_cast<uintptr_t>(block);
-    }
-    
-    void setNotTakenBlock(BasicBlock* block)
-    {
-        ASSERT(isBranch());
-        m_opInfo2 = bitwise_cast<uintptr_t>(block);
-    }
-    
-    BasicBlock*& takenBlock()
-    {
-        ASSERT(isBranch() || isJump());
+        ASSERT(isJump());
         return *bitwise_cast<BasicBlock**>(&m_opInfo);
     }
     
-    BasicBlock*& notTakenBlock()
+    BranchData* branchData()
     {
         ASSERT(isBranch());
-        return *bitwise_cast<BasicBlock**>(&m_opInfo2);
+        return bitwise_cast<BranchData*>(m_opInfo);
     }
     
     SwitchData* switchData()
@@ -868,25 +907,26 @@ struct Node {
     {
         if (isSwitch()) {
             if (index < switchData()->cases.size())
-                return switchData()->cases[index].target;
+                return switchData()->cases[index].target.block;
             RELEASE_ASSERT(index == switchData()->cases.size());
-            return switchData()->fallThrough;
+            return switchData()->fallThrough.block;
         }
         switch (index) {
         case 0:
-            return takenBlock();
+            if (isJump())
+                return targetBlock();
+            return branchData()->taken.block;
         case 1:
-            return notTakenBlock();
+            return branchData()->notTaken.block;
         default:
             RELEASE_ASSERT_NOT_REACHED();
-            return takenBlock();
+            return targetBlock();
         }
     }
     
     BasicBlock*& successorForCondition(bool condition)
     {
-        ASSERT(isBranch());
-        return condition ? takenBlock() : notTakenBlock();
+        return branchData()->forCondition(condition);
     }
     
     bool hasHeapPrediction()
@@ -900,6 +940,7 @@ struct Node {
         case Call:
         case Construct:
         case GetByOffset:
+        case MultiGetByOffset:
         case GetClosureVar:
         case ArrayPop:
         case ArrayPush:
@@ -1049,6 +1090,26 @@ struct Node {
         return m_opInfo;
     }
     
+    bool hasMultiGetByOffsetData()
+    {
+        return op() == MultiGetByOffset;
+    }
+    
+    MultiGetByOffsetData& multiGetByOffsetData()
+    {
+        return *reinterpret_cast<MultiGetByOffsetData*>(m_opInfo);
+    }
+    
+    bool hasMultiPutByOffsetData()
+    {
+        return op() == MultiPutByOffset;
+    }
+    
+    MultiPutByOffsetData& multiPutByOffsetData()
+    {
+        return *reinterpret_cast<MultiPutByOffsetData*>(m_opInfo);
+    }
+    
     bool hasFunctionDeclIndex()
     {
         return op() == NewFunction
@@ -1193,10 +1254,16 @@ struct Node {
         case PhantomArguments:
             return true;
         case Phantom:
+        case HardPhantom:
             return child1().useKindUnchecked() != UntypedUse || child2().useKindUnchecked() != UntypedUse || child3().useKindUnchecked() != UntypedUse;
         default:
             return shouldGenerate();
         }
+    }
+    
+    bool isSemanticallySkippable()
+    {
+        return op() == CountExecution;
     }
 
     unsigned refCount()
@@ -1263,9 +1330,14 @@ struct Node {
         return child1().useKind();
     }
     
+    bool isBinaryUseKind(UseKind left, UseKind right)
+    {
+        return child1().useKind() == left && child2().useKind() == right;
+    }
+    
     bool isBinaryUseKind(UseKind useKind)
     {
-        return child1().useKind() == useKind && child2().useKind() == useKind;
+        return isBinaryUseKind(useKind, useKind);
     }
     
     SpeculatedType prediction()
@@ -1331,6 +1403,16 @@ struct Node {
     bool shouldSpeculateBoolean()
     {
         return isBooleanSpeculation(prediction());
+    }
+    
+    bool shouldSpeculateOther()
+    {
+        return isOtherSpeculation(prediction());
+    }
+    
+    bool shouldSpeculateMisc()
+    {
+        return isMiscSpeculation(prediction());
     }
    
     bool shouldSpeculateStringIdent()
@@ -1522,12 +1604,9 @@ struct Node {
     }
     
     // NB. This class must have a trivial destructor.
-    
-    // Used for determining what bytecode this came from. This is important for
-    // debugging, exceptions, and even basic execution semantics.
-    CodeOrigin codeOrigin;
-    // Code origin for where the node exits to.
-    CodeOrigin codeOriginForExitTarget;
+
+    NodeOrigin origin;
+
     // References to up to 3 children, or links to a variable length set of children.
     AdjacencyList children;
 

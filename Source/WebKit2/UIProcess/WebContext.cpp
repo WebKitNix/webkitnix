@@ -27,12 +27,12 @@
 #include "WebContext.h"
 
 #include "APIArray.h"
+#include "APIHistoryClient.h"
 #include "DownloadProxy.h"
 #include "DownloadProxyMessages.h"
 #include "Logging.h"
 #include "MutableDictionary.h"
 #include "SandboxExtension.h"
-#include "SessionTracker.h"
 #include "StatisticsData.h"
 #include "TextChecker.h"
 #include "WKContextPrivate.h"
@@ -62,7 +62,8 @@
 #include <WebCore/LinkHash.h>
 #include <WebCore/Logging.h>
 #include <WebCore/ResourceRequest.h>
-#include <runtime/Operations.h>
+#include <WebCore/SessionID.h>
+#include <runtime/JSCInlines.h>
 #include <wtf/CurrentTime.h>
 #include <wtf/MainThread.h>
 #include <wtf/NeverDestroyed.h>
@@ -137,7 +138,9 @@ WebContext::WebContext(const String& injectedBundlePath)
     , m_processWithPageCache(0)
     , m_defaultPageGroup(WebPageGroup::createNonNull())
     , m_injectedBundlePath(injectedBundlePath)
-    , m_visitedLinkProvider(this)
+    , m_historyClient(std::make_unique<API::HistoryClient>())
+    , m_visitedLinkProvider(VisitedLinkProvider::create())
+    , m_visitedLinksPopulated(false)
     , m_plugInAutoStartProvider(this)
     , m_alwaysUsesComplexTextCodePath(false)
     , m_shouldUseFontSmoothing(true)
@@ -156,6 +159,7 @@ WebContext::WebContext(const String& injectedBundlePath)
 #if USE(SOUP)
     , m_ignoreTLSErrors(true)
 #endif
+    , m_memoryCacheDisabled(false)
 {
     platformInitialize();
 
@@ -214,7 +218,7 @@ WebContext::WebContext(const String& injectedBundlePath)
     m_storageManager->setLocalStorageDirectory(localStorageDirectory());
 }
 
-#if !PLATFORM(MAC)
+#if !PLATFORM(COCOA)
 void WebContext::platformInitialize()
 {
 }
@@ -272,11 +276,14 @@ void WebContext::initializeConnectionClient(const WKContextConnectionClientBase*
     m_connectionClient.initialize(client);
 }
 
-void WebContext::initializeHistoryClient(const WKContextHistoryClientBase* client)
+void WebContext::setHistoryClient(std::unique_ptr<API::HistoryClient> historyClient)
 {
-    m_historyClient.initialize(client);
+    if (!historyClient)
+        m_historyClient = std::make_unique<API::HistoryClient>();
+    else
+        m_historyClient = std::move(historyClient);
 
-    sendToAllProcesses(Messages::WebProcess::SetShouldTrackVisitedLinks(m_historyClient.shouldTrackVisitedLinks()));
+    sendToAllProcesses(Messages::WebProcess::SetShouldTrackVisitedLinks(m_historyClient->shouldTrackVisitedLinks()));
 }
 
 void WebContext::initializeDownloadClient(const WKContextDownloadClientBase* client)
@@ -380,7 +387,7 @@ void WebContext::ensureNetworkProcess()
 
     NetworkProcessCreationParameters parameters;
 
-    parameters.privateBrowsingEnabled = WebPreferences::anyPageGroupsAreUsingPrivateBrowsing();
+    parameters.privateBrowsingEnabled = WebPreferences::anyPagesAreUsingPrivateBrowsing();
 
     parameters.cacheModel = m_cacheModel;
 
@@ -395,6 +402,10 @@ void WebContext::ensureNetworkProcess()
 
     // Initialize the network process.
     m_networkProcess->send(Messages::NetworkProcess::InitializeNetworkProcess(parameters), 0);
+
+#if PLATFORM(COCOA)
+    m_networkProcess->send(Messages::NetworkProcess::SetQOS(networkProcessLatencyQOS(), networkProcessThroughputQOS()), 0);
+#endif
 }
 
 void WebContext::networkProcessCrashed(NetworkProcessProxy* networkProcessProxy)
@@ -480,16 +491,16 @@ void WebContext::setAnyPageGroupMightHavePrivateBrowsingEnabled(bool privateBrow
 #if ENABLE(NETWORK_PROCESS)
     if (usesNetworkProcess() && networkProcess()) {
         if (privateBrowsingEnabled)
-            networkProcess()->send(Messages::NetworkProcess::EnsurePrivateBrowsingSession(SessionTracker::legacyPrivateSessionID), 0);
+            networkProcess()->send(Messages::NetworkProcess::EnsurePrivateBrowsingSession(SessionID::legacyPrivateSessionID()), 0);
         else
-            networkProcess()->send(Messages::NetworkProcess::DestroyPrivateBrowsingSession(SessionTracker::legacyPrivateSessionID), 0);
+            networkProcess()->send(Messages::NetworkProcess::DestroyPrivateBrowsingSession(SessionID::legacyPrivateSessionID()), 0);
     }
 #endif // ENABLED(NETWORK_PROCESS)
 
     if (privateBrowsingEnabled)
-        sendToAllProcesses(Messages::WebProcess::EnsurePrivateBrowsingSession(SessionTracker::legacyPrivateSessionID));
+        sendToAllProcesses(Messages::WebProcess::EnsurePrivateBrowsingSession(SessionID::legacyPrivateSessionID()));
     else
-        sendToAllProcesses(Messages::WebProcess::DestroyPrivateBrowsingSession(SessionTracker::legacyPrivateSessionID));
+        sendToAllProcesses(Messages::WebProcess::DestroyPrivateBrowsingSession(SessionID::legacyPrivateSessionID()));
 }
 
 void (*s_invalidMessageCallback)(WKStringRef messageName);
@@ -564,7 +575,7 @@ WebProcessProxy& WebContext::createNewWebProcess()
 
     parameters.shouldUseTestingNetworkSession = m_shouldUseTestingNetworkSession;
 
-    parameters.shouldTrackVisitedLinks = m_historyClient.shouldTrackVisitedLinks();
+    parameters.shouldTrackVisitedLinks = m_historyClient->shouldTrackVisitedLinks();
     parameters.cacheModel = m_cacheModel;
     parameters.languages = userPreferredLanguages();
 
@@ -575,6 +586,9 @@ WebProcessProxy& WebContext::createNewWebProcess()
     copyToVector(m_schemesToRegisterAsNoAccess, parameters.urlSchemesRegisteredAsNoAccess);
     copyToVector(m_schemesToRegisterAsDisplayIsolated, parameters.urlSchemesRegisteredAsDisplayIsolated);
     copyToVector(m_schemesToRegisterAsCORSEnabled, parameters.urlSchemesRegisteredAsCORSEnabled);
+#if ENABLE(CACHE_PARTITIONING)
+    copyToVector(m_schemesToRegisterAsCachePartitioned, parameters.urlSchemesRegisteredAsCachePartitioned);
+#endif
 
     parameters.shouldAlwaysUseComplexTextCodePath = m_alwaysUsesComplexTextCodePath;
     parameters.shouldUseFontSmoothing = m_shouldUseFontSmoothing;
@@ -601,6 +615,8 @@ WebProcessProxy& WebContext::createNewWebProcess()
     parameters.plugInAutoStartOriginHashes = m_plugInAutoStartProvider.autoStartOriginHashesCopy();
     copyToVector(m_plugInAutoStartProvider.autoStartOrigins(), parameters.plugInAutoStartOrigins);
 
+    parameters.memoryCacheDisabled = m_memoryCacheDisabled;
+
     // Add any platform specific parameters
     platformInitializeWebProcess(parameters);
 
@@ -609,8 +625,12 @@ WebProcessProxy& WebContext::createNewWebProcess()
         injectedBundleInitializationUserData = m_injectedBundleInitializationUserData;
     process->send(Messages::WebProcess::InitializeWebProcess(parameters, WebContextUserMessageEncoder(injectedBundleInitializationUserData.get(), *process)), 0);
 
-    if (WebPreferences::anyPageGroupsAreUsingPrivateBrowsing())
-        process->send(Messages::WebProcess::EnsurePrivateBrowsingSession(SessionTracker::legacyPrivateSessionID), 0);
+#if PLATFORM(COCOA)
+    process->send(Messages::WebProcess::SetQOS(webProcessLatencyQOS(), webProcessThroughputQOS()), 0);
+#endif
+
+    if (WebPreferences::anyPagesAreUsingPrivateBrowsing())
+        process->send(Messages::WebProcess::EnsurePrivateBrowsingSession(SessionID::legacyPrivateSessionID()), 0);
 
     m_processes.append(process);
 
@@ -684,7 +704,11 @@ void WebContext::processDidFinishLaunching(WebProcessProxy* process)
 {
     ASSERT(m_processes.contains(process));
 
-    m_visitedLinkProvider.processDidFinishLaunching(process);
+    m_visitedLinkProvider->processDidFinishLaunching(process);
+    if (!m_visitedLinksPopulated) {
+        populateVisitedLinks();
+        m_visitedLinksPopulated = true;
+    }
 
     // Sometimes the memorySampler gets initialized after process initialization has happened but before the process has finished launching
     // so check if it needs to be started here
@@ -704,7 +728,7 @@ void WebContext::disconnectProcess(WebProcessProxy* process)
 {
     ASSERT(m_processes.contains(process));
 
-    m_visitedLinkProvider.processDidClose(process);
+    m_visitedLinkProvider->processDidClose(process);
 
     if (m_haveInitialEmptyProcess && process == m_processes.last())
         m_haveInitialEmptyProcess = false;
@@ -741,20 +765,25 @@ WebProcessProxy& WebContext::createNewWebProcessRespectingProcessCountLimit()
     if (m_processes.size() < m_webProcessCountLimit)
         return createNewWebProcess();
 
-    // Choose a process with fewest pages, to achieve flat distribution.
-    WebProcessProxy* result = nullptr;
-    unsigned fewestPagesSeen = UINT_MAX;
-    for (unsigned i = 0; i < m_processes.size(); ++i) {
-        if (fewestPagesSeen > m_processes[i]->pages().size()) {
-            result = m_processes[i].get();
-            fewestPagesSeen = m_processes[i]->pages().size();
-        }
-    }
-    return *result;
+    // Choose the process with fewest pages.
+    auto& process = *std::min_element(m_processes.begin(), m_processes.end(), [](const RefPtr<WebProcessProxy>& a, const RefPtr<WebProcessProxy>& b) {
+        return a->pageCount() < b->pageCount();
+    });
+
+    return *process;
 }
 
-PassRefPtr<WebPageProxy> WebContext::createWebPage(PageClient& pageClient, WebPageGroup* pageGroup, API::Session& session, WebPageProxy* relatedPage)
+PassRefPtr<WebPageProxy> WebContext::createWebPage(PageClient& pageClient, WebPageConfiguration configuration)
 {
+    if (!configuration.pageGroup)
+        configuration.pageGroup = &m_defaultPageGroup.get();
+    if (!configuration.preferences)
+        configuration.preferences = &configuration.pageGroup->preferences();
+    if (!configuration.visitedLinkProvider)
+        configuration.visitedLinkProvider = m_visitedLinkProvider.get();
+    if (!configuration.session)
+        configuration.session = configuration.preferences->privateBrowsingEnabled() ? &API::Session::legacyPrivateSession() : &API::Session::defaultSession();
+
     RefPtr<WebProcessProxy> process;
     if (m_processModel == ProcessModelSharedSecondaryProcess) {
         process = &ensureSharedWebProcess();
@@ -762,20 +791,14 @@ PassRefPtr<WebPageProxy> WebContext::createWebPage(PageClient& pageClient, WebPa
         if (m_haveInitialEmptyProcess) {
             process = m_processes.last();
             m_haveInitialEmptyProcess = false;
-        } else if (relatedPage) {
+        } else if (configuration.relatedPage) {
             // Sharing processes, e.g. when creating the page via window.open().
-            process = &relatedPage->process();
+            process = &configuration.relatedPage->process();
         } else
             process = &createNewWebProcessRespectingProcessCountLimit();
     }
 
-    return process->createWebPage(pageClient, pageGroup ? *pageGroup : m_defaultPageGroup.get(), session);
-}
-
-PassRefPtr<WebPageProxy> WebContext::createWebPage(PageClient& pageClient, WebPageGroup* pageGroup, WebPageProxy* relatedPage)
-{
-    WebPageGroup* group = pageGroup ? pageGroup : &m_defaultPageGroup.get();
-    return createWebPage(pageClient, group, group->preferences()->privateBrowsingEnabled() ? API::Session::legacyPrivateSession() : API::Session::defaultSession(), relatedPage);
+    return process->createWebPage(pageClient, std::move(configuration));
 }
 
 DownloadProxy* WebContext::download(WebPageProxy* initiatingPage, const ResourceRequest& request)
@@ -803,7 +826,7 @@ void WebContext::postMessageToInjectedBundle(const String& messageName, API::Obj
         return;
     }
 
-    for (auto process : m_processes) {
+    for (auto& process : m_processes) {
         // FIXME: Return early if the message body contains any references to WKPageRefs/WKFrameRefs etc. since they're local to a process.
         IPC::ArgumentEncoder messageData;
         messageData.encode(messageName);
@@ -827,7 +850,7 @@ void WebContext::didReceiveSynchronousMessageFromInjectedBundle(const String& me
 
 void WebContext::populateVisitedLinks()
 {
-    m_historyClient.populateVisitedLinks(this);
+    m_historyClient->populateVisitedLinks(this);
 }
 
 WebContext::Statistics& WebContext::statistics()
@@ -931,6 +954,14 @@ void WebContext::unregisterGlobalURLSchemeAsHavingCustomProtocolHandlers(const S
 }
 #endif
 
+#if ENABLE(CACHE_PARTITIONING)
+void WebContext::registerURLSchemeAsCachePartitioned(const String& urlScheme)
+{
+    m_schemesToRegisterAsCachePartitioned.add(urlScheme);
+    sendToAllProcesses(Messages::WebProcess::RegisterURLSchemeAsCachePartitioned(urlScheme));
+}
+#endif
+
 void WebContext::setCacheModel(CacheModel cacheModel)
 {
     m_cacheModel = cacheModel;
@@ -955,7 +986,7 @@ void WebContext::addVisitedLink(const String& visitedURL)
 
 void WebContext::addVisitedLinkHash(LinkHash linkHash)
 {
-    m_visitedLinkProvider.addVisitedLink(linkHash);
+    m_visitedLinkProvider->addVisitedLink(linkHash);
 }
 
 DownloadProxy* WebContext::createDownloadProxy()
@@ -1188,7 +1219,7 @@ void WebContext::allowSpecificHTTPSCertificateForHost(const WebCertificateInfo* 
 
 void WebContext::setHTTPPipeliningEnabled(bool enabled)
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     ResourceRequest::setHTTPPipeliningEnabled(enabled);
 #else
     UNUSED_PARAM(enabled);
@@ -1197,7 +1228,7 @@ void WebContext::setHTTPPipeliningEnabled(bool enabled)
 
 bool WebContext::httpPipeliningEnabled() const
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     return ResourceRequest::httpPipeliningEnabled();
 #else
     return false;
@@ -1258,7 +1289,7 @@ void WebContext::requestNetworkingStatistics(StatisticsRequest* request)
 #endif
 }
 
-#if !PLATFORM(MAC)
+#if !PLATFORM(COCOA)
 void WebContext::dummy(bool&)
 {
 }
@@ -1353,7 +1384,7 @@ void WebContext::pluginInfoStoreDidLoadPlugins(PluginInfoStore* store)
             mimeTypes.uncheckedAppend(API::String::create(mimeClassInfo.type));
         map.set(ASCIILiteral("mimes"), API::Array::create(std::move(mimeTypes)));
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
         map.set(ASCIILiteral("bundleId"), API::String::create(pluginModule.bundleIdentifier));
         map.set(ASCIILiteral("version"), API::String::create(pluginModule.versionString));
 #endif
@@ -1364,5 +1395,11 @@ void WebContext::pluginInfoStoreDidLoadPlugins(PluginInfoStore* store)
     m_client.plugInInformationBecameAvailable(this, API::Array::create(std::move(plugins)).get());
 }
 #endif
+    
+void WebContext::setMemoryCacheDisabled(bool disabled)
+{
+    m_memoryCacheDisabled = disabled;
+    sendToAllProcesses(Messages::WebProcess::SetMemoryCacheDisabled(disabled));
+}
 
 } // namespace WebKit

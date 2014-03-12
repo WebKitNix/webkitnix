@@ -37,6 +37,7 @@
 #include "InsertParagraphSeparatorCommand.h"
 #include "InsertTextCommand.h"
 #include "RenderElement.h"
+#include "TextIterator.h"
 #include "VisibleUnits.h"
 #include "htmlediting.h"
 
@@ -152,7 +153,7 @@ void TypingCommand::insertText(Document& document, const String& text, Options o
     ASSERT(frame);
 
     if (!text.isEmpty())
-        frame->editor().updateMarkersForWordsAffectedByEditing(isSpaceOrNewline(text.characters()[0]));
+        frame->editor().updateMarkersForWordsAffectedByEditing(isSpaceOrNewline(text.deprecatedCharacters()[0]));
     
     insertText(document, text, frame->selection().selection(), options, composition);
 }
@@ -291,7 +292,7 @@ void TypingCommand::markMisspellingsAfterTyping(ETypingCommand commandType)
 {
     Frame& frame = this->frame();
 
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+#if PLATFORM(MAC)
     if (!frame.editor().isContinuousSpellCheckingEnabled()
         && !frame.editor().isAutomaticQuoteSubstitutionEnabled()
         && !frame.editor().isAutomaticLinkDetectionEnabled()
@@ -345,7 +346,7 @@ void TypingCommand::typingAddedToOpenCommand(ETypingCommand commandTypeForAddedT
 
     updatePreservesTypingStyle(commandTypeForAddedTyping);
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     frame.editor().appliedEditing(this);
     // Since the spellchecking code may also perform corrections and other replacements, it should happen after the typing changes.
     if (!m_shouldPreventSpellChecking)

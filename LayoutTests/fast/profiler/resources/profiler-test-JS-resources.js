@@ -49,7 +49,7 @@ function printHeavyProfilesDataWithoutTime()
     var preElement = document.createElement("pre");
     preElement.appendChild(document.createTextNode("\n"));
 
-    var profiles = console.profiles;
+    var profiles = internals.consoleProfiles;
     for (var i = 0; i < profiles.length; ++i) {
         preElement.appendChild(document.createTextNode("Profile title: " + profiles[i].title + "\n"));
         printProfileNodeWithoutTime(preElement, profiles[i].heavyProfile.head, 0);
@@ -64,7 +64,7 @@ function printProfilesDataWithoutTime()
     var preElement = document.createElement("pre");
     preElement.appendChild(document.createTextNode("\n"));
 
-    var profiles = console.profiles;
+    var profiles = internals.consoleProfiles;
     for (var i = 0; i < profiles.length; ++i) {
         preElement.appendChild(document.createTextNode("Profile title: " + profiles[i].title + "\n"));
         printProfileNodeWithoutTime(preElement, profiles[i].head, 0);
@@ -76,12 +76,6 @@ function printProfilesDataWithoutTime()
 
 function printProfileNodeWithoutTime(preElement, node, indentLevel)
 {
-    if (node.functionName == "(idle)")
-        return;
-
-    if (!node.visible)
-        return;
-
     var space = "";
     for (var i = 0; i < indentLevel; ++i)
         space += "   "
@@ -92,7 +86,7 @@ function printProfileNodeWithoutTime(preElement, node, indentLevel)
     if (!strippedURL)
         strippedURL = "(no file)";
 
-    var line = space + node.functionName + " " + strippedURL + " (line " + node.lineNumber + ")\n";
+    var line = space + node.functionName + " " + strippedURL + " (line " + node.lineNumber + ":" + node.columnNumber + ")\n";
     preElement.appendChild(document.createTextNode(line));
 
     var children = node.children();

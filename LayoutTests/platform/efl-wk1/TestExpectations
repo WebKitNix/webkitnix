@@ -106,7 +106,6 @@ webkit.org/b/111984 accessibility/aria-hidden-updates-alldescendants.html [ Fail
 webkit.org/b/111988 accessibility/aria-readonly.html [ Failure ]
 webkit.org/b/111991 accessibility/aria-text-role.html [ Failure ]
 webkit.org/b/111992 accessibility/aria-used-on-image-maps.html [ Failure ]
-webkit.org/b/111994 accessibility/canvas-accessibilitynodeobject.html [ Failure ]
 webkit.org/b/111996 accessibility/canvas-fallback-content-2.html [ Failure ]
 webkit.org/b/111999 accessibility/disabled-controls-not-focusable.html [ Failure ]
 webkit.org/b/122109 accessibility/file-upload-button-stringvalue.html [ Failure ]
@@ -180,9 +179,6 @@ webkit.org/b/84589 http/tests/security/cross-frame-access-call.html [ Failure ]
 # Needs custom policy delegate enhancement to log DOM node info - EFL port is missing DOM node abstraction
 webkit.org/b/87972 fast/forms/mailto/formenctype-attribute-button-html.html [ Failure ]
 webkit.org/b/87972 fast/forms/mailto/formenctype-attribute-input-html.html [ Failure ]
-
-# New test introduced in r116694 fails
-webkit.org/b/86182 fast/frames/seamless/seamless-inherited-document-style.html [ Failure ]
 
 # Passes in some machines and fails on other (such as the bots).
 webkit.org/b/97021 fast/events/dont-loose-last-event.html [ Failure ]
@@ -275,9 +271,6 @@ webkit.org/b/102517 css3/device-adapt/opera [ Skip ]
 webkit.org/b/87972 fast/loader/policy-delegate-action-hit-test-zoomed.html [ Failure ]
 webkit.org/b/87972 fast/encoding/mailto-always-utf-8.html [ Failure ]
 
-# Fails after r133322
-webkit.org/b/98523 fast/images/repaint-subrect-grid.html [ Failure ]
-
 # DRT needs a setting for setShouldRespectImageOrientation
 webkit.org/b/101210 fast/images/exif-orientation.html [ Failure ]
 webkit.org/b/101210 fast/images/exif-orientation-composited.html [ Failure ]
@@ -308,14 +301,14 @@ http/tests/multipart/multipart-wait-before-boundary.html [ Timeout ]
 
 # Remaining websocket failures.
 Bug(EFL) http/tests/websocket/tests/hybi/close-on-unload-and-force-gc.html [ Timeout Pass ]
-Bug(EFL) http/tests/websocket/tests/hybi/close.html [ Failure Pass ]
-Bug(EFL) http/tests/websocket/tests/hybi/compressed-control-frame.html [ Timeout ]
-Bug(EFL) http/tests/websocket/tests/hybi/multiple-subprotocols.html [ Timeout Pass ]
 Bug(EFL) http/tests/websocket/tests/hybi/reload-crash.html [ Timeout ]
 Bug(EFL) http/tests/websocket/tests/hybi/zero-length-text.html [ Failure Pass ]
 Bug(EFL) http/tests/websocket/tests/hybi/workers/close-code-and-reason.html [ Failure ]
 Bug(EFL) http/tests/websocket/tests/hybi/workers/close-in-onmessage-crash.html [ Timeout ]
 Bug(EFL) http/tests/websocket/tests/hybi/workers/multiple-subprotocols.html [ Timeout Pass ]
+
+# EFL specific error : (_ecore_main_fd_handlers_bads_rem() No bad fd found)
+webkit.org/b/116587 http/tests/websocket/tests/hybi/compressed-control-frame.html [ Skip ]
 
 # DRT does not implement setAudioResult
 webkit.org/b/105881 webaudio/audiobuffersource-loop-points.html [ Skip ]
@@ -459,3 +452,5 @@ webgl/1.0.2/conformance/extensions/webgl-compressed-texture-s3tc.html [ Failure 
 
 # Currently working on 1.0.2 conformance, skip currently known failing tests.
 webgl/conformance/extensions/webgl-compressed-texture-s3tc.html [ Failure ]
+
+webkit.org/b/110338 fast/events/touch/emulate-touch-events.html [ Failure ]

@@ -66,7 +66,6 @@
 #import "SimpleFontData.h"
 #import "TextCheckerClient.h"
 #import "TextCheckingHelper.h"
-#import "TextIterator.h"
 #import "VisibleUnits.h"
 #import "WebCoreFrameView.h"
 #import "WebCoreObjCExtras.h"
@@ -201,6 +200,7 @@ static NSArray *convertMathPairsToNSArray(const AccessibilityObject::Accessibili
         case ChildrenText:
         case LabelByElementText:
             visibleTextAvailable = true;
+            break;
         default:
             break;
         }
@@ -230,6 +230,7 @@ static NSArray *convertMathPairsToNSArray(const AccessibilityObject::Accessibili
         case ChildrenText:
         case LabelByElementText:
             descriptiveTextAvailable = true;
+            break;
         default:
             break;
         }

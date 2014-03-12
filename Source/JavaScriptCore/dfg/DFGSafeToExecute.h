@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,8 +25,6 @@
 
 #ifndef DFGSafeToExecute_h
 #define DFGSafeToExecute_h
-
-#include <wtf/Platform.h>
 
 #if ENABLE(DFG_JIT)
 
@@ -61,6 +59,7 @@ public:
         case StringOrStringObjectUse:
         case NotCellUse:
         case OtherUse:
+        case MiscUse:
         case MachineIntUse:
             return;
             
@@ -122,6 +121,7 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node)
     case ZombieHint:
     case GetArgument:
     case Phantom:
+    case HardPhantom:
     case Upsilon:
     case Phi:
     case Flush:
@@ -155,6 +155,7 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node)
     case GetById:
     case GetByIdFlush:
     case PutById:
+    case PutByIdFlush:
     case PutByIdDirect:
     case CheckStructure:
     case CheckExecutable:
@@ -184,7 +185,6 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node)
     case CompareEq:
     case CompareEqConstant:
     case CompareStrictEq:
-    case CompareStrictEqConstant:
     case Call:
     case Construct:
     case NewObject:
@@ -193,6 +193,8 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node)
     case NewArrayBuffer:
     case NewRegexp:
     case Breakpoint:
+    case ProfileWillCall:
+    case ProfileDidCall:
     case CheckHasInstance:
     case InstanceOf:
     case IsUndefined:
@@ -241,7 +243,6 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node)
     case Int52ToDouble:
     case Int52ToValue:
     case StoreBarrier:
-    case ConditionalStoreBarrier:
     case StoreBarrierWithNullCheck:
     case InvalidationPoint:
     case NotifyWrite:
@@ -250,6 +251,8 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node)
     case CheckInBounds:
     case ConstantStoragePointer:
     case Check:
+    case MultiGetByOffset:
+    case MultiPutByOffset:
         return true;
         
     case GetByVal:

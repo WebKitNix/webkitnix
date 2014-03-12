@@ -37,7 +37,6 @@
 #include "FocusDirection.h"
 #include "HitTestRequest.h"
 #include "IconURL.h"
-#include "InspectorCounters.h"
 #include "MutationObserver.h"
 #include "PageVisibilityState.h"
 #include "PlatformScreen.h"
@@ -51,12 +50,18 @@
 #include "TreeScope.h"
 #include "UserActionElementSet.h"
 #include "ViewportArguments.h"
+#include <chrono>
+#include <memory>
 #include <wtf/Deque.h>
 #include <wtf/HashSet.h>
 #include <wtf/OwnPtr.h>
 #include <wtf/PassOwnPtr.h>
 #include <wtf/PassRefPtr.h>
 #include <wtf/WeakPtr.h>
+
+#if ENABLE(WEB_REPLAY)
+#include <replay/InputCursor.h>
+#endif
 
 namespace WebCore {
 
@@ -132,6 +137,7 @@ class ScriptableDocumentParser;
 class ScriptElementData;
 class ScriptRunner;
 class SecurityOrigin;
+class SelectorQuery;
 class SelectorQueryCache;
 class SerializedScriptValue;
 class SegmentedString;
@@ -140,6 +146,7 @@ class StyleResolver;
 class StyleSheet;
 class StyleSheetContents;
 class StyleSheetList;
+class SVGDocumentExtensions;
 class Text;
 class TextResourceDecoder;
 class TreeWalker;
@@ -151,15 +158,11 @@ class XPathExpression;
 class XPathNSResolver;
 class XPathResult;
 
-#if ENABLE(SVG)
-class SVGDocumentExtensions;
-#endif
-
 #if ENABLE(XSLT)
 class TransformSource;
 #endif
 
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
 struct AnnotatedRegionValue;
 #endif
 
@@ -238,6 +241,7 @@ enum DocumentClass {
     PluginDocumentClass = 1 << 3,
     MediaDocumentClass = 1 << 4,
     SVGDocumentClass = 1 << 5,
+    TextDocumentClass = 1 << 6
 };
 
 typedef unsigned char DocumentClassFlags;
@@ -256,7 +260,38 @@ public:
     {
         return adoptRef(new Document(frame, url, DefaultDocumentClass, NonRenderedPlaceholder));
     }
+    static PassRefPtr<Document> create(ScriptExecutionContext&);
+
     virtual ~Document();
+
+    // Nodes belonging to this document increase referencingNodeCount -
+    // these are enough to keep the document from being destroyed, but
+    // not enough to keep it from removing its children. This allows a
+    // node that outlives its document to still have a valid document
+    // pointer without introducing reference cycles.
+    void incrementReferencingNodeCount()
+    {
+        ASSERT(!m_deletionHasBegun);
+        ++m_referencingNodeCount;
+    }
+
+    void decrementReferencingNodeCount()
+    {
+        ASSERT(!m_deletionHasBegun || !m_referencingNodeCount);
+        --m_referencingNodeCount;
+        if (!m_referencingNodeCount && !refCount()) {
+#if !ASSERT_DISABLED
+            m_deletionHasBegun = true;
+#endif
+            delete this;
+        }
+    }
+
+    unsigned referencingNodeCount() const { return m_referencingNodeCount; }
+
+    void removedLastRef();
+
+    static HashSet<Document*>& allDocuments();
 
     MediaQueryMatcher& mediaQueryMatcher();
 
@@ -272,7 +307,7 @@ public:
     void removeImageElementByLowercasedUsemap(const AtomicStringImpl&, HTMLImageElement&);
     HTMLImageElement* imageElementByLowercasedUsemap(const AtomicStringImpl&) const;
 
-    SelectorQueryCache& selectorQueryCache();
+    SelectorQuery* selectorQueryForString(const String&, ExceptionCode&);
 
     // DOM methods & attributes for Document
 
@@ -304,6 +339,12 @@ public:
     DEFINE_ATTRIBUTE_EVENT_LISTENER(scroll);
     DEFINE_ATTRIBUTE_EVENT_LISTENER(select);
     DEFINE_ATTRIBUTE_EVENT_LISTENER(submit);
+#if ENABLE(WILL_REVEAL_EDGE_EVENTS)
+    DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitwillrevealbottom);
+    DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitwillrevealleft);
+    DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitwillrevealright);
+    DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitwillrevealtop);
+#endif
     DEFINE_ATTRIBUTE_EVENT_LISTENER(wheel);
 
     DEFINE_ATTRIBUTE_EVENT_LISTENER(blur);
@@ -341,9 +382,6 @@ public:
 #if ENABLE(POINTER_LOCK)
     DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitpointerlockchange);
     DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitpointerlockerror);
-#endif
-#if ENABLE(PAGE_VISIBILITY_API)
-    DEFINE_ATTRIBUTE_EVENT_LISTENER(visibilitychange);
 #endif
 #if ENABLE(CSP_NEXT)
     DEFINE_ATTRIBUTE_EVENT_LISTENER(securitypolicyviolation);
@@ -383,7 +421,6 @@ public:
     PassRefPtr<Element> createElementNS(const String& namespaceURI, const String& qualifiedName, ExceptionCode&);
     PassRefPtr<Element> createElement(const QualifiedName&, bool createdByParser);
 
-    bool cssStickyPositionEnabled() const;
     bool cssRegionsEnabled() const;
     bool cssCompositingEnabled() const;
 #if ENABLE(CSS_REGIONS)
@@ -394,7 +431,9 @@ public:
 
     bool regionBasedColumnsEnabled() const;
 
+#if ENABLE(CSS_GRID_LAYOUT)
     bool cssGridLayoutEnabled() const;
+#endif
 
     Element* elementFromPoint(int x, int y) const;
     PassRefPtr<Range> caretRangeFromPoint(int x, int y);
@@ -407,7 +446,7 @@ public:
     String charset() const { return Document::encoding(); }
     String characterSet() const { return Document::encoding(); }
 
-    String encoding() const;
+    AtomicString encoding() const;
 
     void setCharset(const String&);
 
@@ -434,6 +473,11 @@ public:
     void setDocumentURI(const String&);
 
     virtual URL baseURI() const override;
+
+#if ENABLE(WEB_REPLAY)
+    InputCursor& inputCursor() const { return *m_inputCursor; }
+    void setInputCursor(PassRefPtr<InputCursor> cursor) { m_inputCursor = cursor; }
+#endif
 
 #if ENABLE(PAGE_VISIBILITY_API)
     void visibilityStateChanged();
@@ -468,19 +512,16 @@ public:
     bool isSVGDocument() const { return m_documentClasses & SVGDocumentClass; }
     bool isPluginDocument() const { return m_documentClasses & PluginDocumentClass; }
     bool isMediaDocument() const { return m_documentClasses & MediaDocumentClass; }
-#if ENABLE(SVG)
+    bool isTextDocument() const { return m_documentClasses & TextDocumentClass; }
     bool hasSVGRootNode() const;
-#else
-    static bool hasSVGRootNode() { return false; }
-#endif
     virtual bool isFrameSet() const { return false; }
+
+    static ptrdiff_t documentClassesMemoryOffset() { return OBJECT_OFFSETOF(Document, m_documentClasses); }
+    static uint32_t isHTMLDocumentClassFlag() { return HTMLDocumentClass; }
 
     bool isSrcdocDocument() const { return m_isSrcdocDocument; }
 
     StyleResolver* styleResolverIfExists() const { return m_styleResolver.get(); }
-
-    bool isViewSource() const { return m_isViewSource; }
-    void setIsViewSource(bool);
 
     bool sawElementsInKnownNamespaces() const { return m_sawElementsInKnownNamespaces; }
 
@@ -545,6 +586,7 @@ public:
 
     void recalcStyle(Style::Change = Style::NoChange);
     void updateStyleIfNeeded();
+    bool updateStyleIfNeededForNode(const Node&);
     void updateLayout();
     void updateLayoutIgnorePendingStylesheets();
     PassRef<RenderStyle> styleForElementIgnoringPendingStylesheets(Element*);
@@ -661,11 +703,11 @@ public:
     void setReadyState(ReadyState);
     void setParsing(bool);
     bool parsing() const { return m_bParsing; }
-    int minimumLayoutDelay();
+    std::chrono::milliseconds minimumLayoutDelay();
 
     bool shouldScheduleLayout();
     bool isLayoutTimerActive();
-    int elapsedTime() const;
+    std::chrono::milliseconds elapsedTime() const;
     
     void setTextColor(const Color& color) { m_textColor = color; }
     Color textColor() const { return m_textColor; }
@@ -705,7 +747,7 @@ public:
     void hoveredElementDidDetach(Element*);
     void elementInActiveChainDidDetach(Element*);
 
-    void updateHoverActiveState(const HitTestRequest&, Element*, const PlatformMouseEvent* = 0, StyleResolverUpdateFlag = RecalcStyleIfNeeded);
+    void updateHoverActiveState(const HitTestRequest&, Element*, StyleResolverUpdateFlag = RecalcStyleIfNeeded);
 
     // Updates for :target (CSS3 selector).
     void setCSSTarget(Element*);
@@ -723,6 +765,8 @@ public:
     void unregisterNodeList(LiveNodeList&);
     void registerCollection(HTMLCollection&);
     void unregisterCollection(HTMLCollection&);
+    void collectionCachedIdNameMap(const HTMLCollection&);
+    void collectionWillClearIdNameMap(const HTMLCollection&);
     bool shouldInvalidateNodeListAndCollectionCaches(const QualifiedName* attrName = nullptr) const;
     void invalidateNodeListAndCollectionCaches(const QualifiedName* attrName);
 
@@ -818,9 +862,6 @@ public:
     // Returns 0 if this is the top level document.
     HTMLFrameOwnerElement* ownerElement() const;
 
-    HTMLIFrameElement* seamlessParentIFrame() const;
-    bool shouldDisplaySeamlesslyWithParent() const;
-
     // Used by DOM bindings; no direction known.
     String title() const { return m_title.string(); }
     void setTitle(const String&);
@@ -832,6 +873,8 @@ public:
     void setCookie(const String&, ExceptionCode&);
 
     String referrer() const;
+
+    String origin() const;
 
     String domain() const;
     void setDomain(const String& newDomain, ExceptionCode&);
@@ -904,7 +947,7 @@ public:
     bool inDesignMode() const;
 
     Document* parentDocument() const;
-    Document* topDocument() const;
+    Document& topDocument() const;
     
     ScriptRunner* scriptRunner() { return m_scriptRunner.get(); }
 
@@ -917,7 +960,7 @@ public:
     PassRefPtr<Document> transformSourceDocument() { return m_transformSourceDocument; }
     void setTransformSourceDocument(Document* doc) { m_transformSourceDocument = doc; }
 
-    void setTransformSource(PassOwnPtr<TransformSource>);
+    void setTransformSource(std::unique_ptr<TransformSource>);
     TransformSource* transformSource() const { return m_transformSource.get(); }
 #endif
 
@@ -1022,7 +1065,7 @@ public:
     void setFrameElementsShouldIgnoreScrolling(bool ignore) { m_frameElementsShouldIgnoreScrolling = ignore; }
     bool frameElementsShouldIgnoreScrolling() const { return m_frameElementsShouldIgnoreScrolling; }
 
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
     void setAnnotatedRegionsDirty(bool f) { m_annotatedRegionsDirty = f; }
     bool annotatedRegionsDirty() const { return m_annotatedRegionsDirty; }
     bool hasAnnotatedRegions () const { return m_hasAnnotatedRegions; }
@@ -1033,10 +1076,8 @@ public:
 
     virtual void removeAllEventListeners() override;
 
-#if ENABLE(SVG)
     const SVGDocumentExtensions* svgExtensions();
     SVGDocumentExtensions* accessSVGExtensions();
-#endif
 
     void initSecurityContext();
     void initContentSecurityPolicy();
@@ -1065,8 +1106,6 @@ public:
     void removeMediaCanStartListener(MediaCanStartListener*);
     MediaCanStartListener* takeAnyMediaCanStartListener();
 
-    const QualifiedName& idAttributeName() const { return m_idAttributeName; }
-    
 #if ENABLE(FULLSCREEN_API)
     bool webkitIsFullScreen() const { return m_fullScreenElement.get(); }
     bool webkitFullScreenKeyboardInputAllowed() const { return m_fullScreenElement.get() && m_areKeysEnabledInFullScreen; }
@@ -1136,7 +1175,7 @@ public:
 #endif
 
     virtual EventTarget* errorEventTarget() override;
-    virtual void logExceptionToConsole(const String& errorMessage, const String& sourceURL, int lineNumber, int columnNumber, PassRefPtr<ScriptCallStack>) override;
+    virtual void logExceptionToConsole(const String& errorMessage, const String& sourceURL, int lineNumber, int columnNumber, PassRefPtr<Inspector::ScriptCallStack>) override;
 
     void initDNSPrefetch();
 
@@ -1193,7 +1232,6 @@ public:
     void didRemoveAllPendingStylesheet();
     void setNeedsNotifyRemoveAllPendingStylesheet() { m_needsNotifyRemoveAllPendingStylesheet = true; }
     void clearStyleResolver();
-    void notifySeamlessChildDocumentsOfStylesheetUpdate() const;
 
     bool inStyleRecalc() { return m_inStyleRecalc; }
 
@@ -1208,6 +1246,9 @@ public:
 #endif
 
     void didAssociateFormControl(Element*);
+    bool hasDisabledFieldsetElement() const { return m_disabledFieldsetElementsCount; }
+    void addDisabledFieldsetElement() { m_disabledFieldsetElementsCount++; }
+    void removeDisabledFieldsetElement() { ASSERT(m_disabledFieldsetElementsCount); m_disabledFieldsetElementsCount--; }
 
     virtual void addConsoleMessage(MessageSource, MessageLevel, const String& message, unsigned long requestIdentifier = 0) override;
 
@@ -1220,6 +1261,11 @@ public:
     void ensurePlugInsInjectedScript(DOMWrapperWorld&);
 
     void setVisualUpdatesAllowedByClient(bool);
+
+#if ENABLE(SUBTLE_CRYPTO)
+    virtual bool wrapCryptoKey(const Vector<uint8_t>& key, Vector<uint8_t>& wrappedKey) override;
+    virtual bool unwrapCryptoKey(const Vector<uint8_t>& wrappedKey, Vector<uint8_t>& key) override;
+#endif
 
 protected:
     enum ConstructionFlags { Synthesized = 1, NonRenderedPlaceholder = 1 << 1 };
@@ -1241,8 +1287,6 @@ private:
     void createRenderTree();
     void detachParser();
 
-    virtual void dropChildren() override;
-
     typedef void (*ArgumentsCallback)(const String& keyString, const String& valueString, Document*, void* data);
     void processArguments(const String& features, void* data, ArgumentsCallback);
 
@@ -1259,7 +1303,7 @@ private:
     virtual void refScriptExecutionContext() override { ref(); }
     virtual void derefScriptExecutionContext() override { deref(); }
 
-    virtual void addMessage(MessageSource, MessageLevel, const String& message, const String& sourceURL, unsigned lineNumber, unsigned columnNumber, PassRefPtr<ScriptCallStack>, JSC::ExecState* = 0, unsigned long requestIdentifier = 0) override;
+    virtual void addMessage(MessageSource, MessageLevel, const String& message, const String& sourceURL, unsigned lineNumber, unsigned columnNumber, PassRefPtr<Inspector::ScriptCallStack>, JSC::ExecState* = 0, unsigned long requestIdentifier = 0) override;
 
     virtual double minimumTimerInterval() const override;
 
@@ -1274,8 +1318,6 @@ private:
     void buildAccessKeyMap(TreeScope* root);
 
     void createStyleResolver();
-
-    void seamlessParentUpdatedStylesheets();
 
     void loadEventDelayTimerFired(Timer<Document>&);
 
@@ -1309,9 +1351,12 @@ private:
     void didAssociateFormControlsTimerFired(Timer<Document>&);
 
     void styleResolverThrowawayTimerFired(DeferrableOneShotTimer<Document>&);
+
+    unsigned m_referencingNodeCount;
+
     DeferrableOneShotTimer<Document> m_styleResolverThrowawayTimer;
 
-    OwnPtr<StyleResolver> m_styleResolver;
+    std::unique_ptr<StyleResolver> m_styleResolver;
     bool m_didCalculateStyleResolver;
     bool m_hasNodesWithPlaceholderStyle;
     bool m_needsNotifyRemoveAllPendingStylesheet;
@@ -1352,7 +1397,7 @@ private:
 
     String m_baseTarget;
 
-    OwnPtr<DOMImplementation> m_implementation;
+    std::unique_ptr<DOMImplementation> m_implementation;
 
     RefPtr<CSSStyleSheet> m_elementSheet;
 
@@ -1385,12 +1430,12 @@ private:
     DocumentStyleSheetCollection m_styleSheetCollection;
     RefPtr<StyleSheetList> m_styleSheetList;
 
-    OwnPtr<FormController> m_formController;
+    std::unique_ptr<FormController> m_formController;
 
     Color m_linkColor;
     Color m_visitedLinkColor;
     Color m_activeLinkColor;
-    const OwnPtr<VisitedLinkState> m_visitedLinkState;
+    const std::unique_ptr<VisitedLinkState> m_visitedLinkState;
 
     bool m_visuallyOrdered;
     ReadyState m_readyState;
@@ -1417,8 +1462,8 @@ private:
     bool m_titleSetExplicitly;
     RefPtr<Element> m_titleElement;
 
-    OwnPtr<AXObjectCache> m_axObjectCache;
-    const OwnPtr<DocumentMarkerController> m_markers;
+    std::unique_ptr<AXObjectCache> m_axObjectCache;
+    const std::unique_ptr<DocumentMarkerController> m_markers;
     
     Timer<Document> m_updateFocusAppearanceTimer;
     Timer<Document> m_resetHiddenFocusElementTimer;
@@ -1433,7 +1478,7 @@ private:
     bool m_loadEventFinished;
 
     RefPtr<SerializedScriptValue> m_pendingStateObject;
-    double m_startTime;
+    std::chrono::steady_clock::time_point m_startTime;
     bool m_overMinimumLayoutThreshold;
     
     std::unique_ptr<ScriptRunner> m_scriptRunner;
@@ -1441,7 +1486,7 @@ private:
     Vector<RefPtr<HTMLScriptElement>> m_currentScriptStack;
 
 #if ENABLE(XSLT)
-    OwnPtr<TransformSource> m_transformSource;
+    std::unique_ptr<TransformSource> m_transformSource;
     RefPtr<Document> m_transformSourceDocument;
 #endif
 
@@ -1458,16 +1503,17 @@ private:
 
     HashSet<LiveNodeList*> m_listsInvalidatedAtDocument;
     HashSet<HTMLCollection*> m_collectionsInvalidatedAtDocument;
+#if !ASSERT_DISABLED
+    bool m_inInvalidateNodeListAndCollectionCaches;
+#endif
 
     unsigned m_nodeListAndCollectionCounts[numNodeListInvalidationTypes];
 
     RefPtr<XPathEvaluator> m_xpathEvaluator;
 
-#if ENABLE(SVG)
-    OwnPtr<SVGDocumentExtensions> m_svgExtensions;
-#endif
+    std::unique_ptr<SVGDocumentExtensions> m_svgExtensions;
 
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
     Vector<AnnotatedRegionValue> m_annotatedRegions;
     bool m_hasAnnotatedRegions;
     bool m_annotatedRegionsDirty;
@@ -1495,14 +1541,13 @@ private:
 
     DocumentOrderedMap m_imagesByUsemap;
 
-    OwnPtr<SelectorQueryCache> m_selectorQueryCache;
+    std::unique_ptr<SelectorQueryCache> m_selectorQueryCache;
 
     DocumentClassFlags m_documentClasses;
 
     bool m_isSynthesized;
     bool m_isNonRenderedPlaceholder;
 
-    bool m_isViewSource;
     bool m_sawElementsInKnownNamespaces;
     bool m_isSrcdocDocument;
 
@@ -1512,8 +1557,6 @@ private:
     WeakPtrFactory<Document> m_weakFactory;
 
     HashSet<MediaCanStartListener*> m_mediaCanStartListeners;
-
-    QualifiedName m_idAttributeName;
 
 #if ENABLE(FULLSCREEN_API)
     bool m_areKeysEnabledInFullScreen;
@@ -1548,7 +1591,7 @@ private:
     
     unsigned m_wheelEventHandlerCount;
 #if ENABLE(TOUCH_EVENTS)
-    OwnPtr<TouchEventTargetSet> m_touchEventTargets;
+    std::unique_ptr<TouchEventTargetSet> m_touchEventTargets;
 #endif
 
     double m_lastHandledUserGestureTimestamp;
@@ -1567,7 +1610,7 @@ private:
 #endif
 
 // FIXME: Find a better place for this functionality.
-#if PLATFORM(IOS)
+#if ENABLE(TELEPHONE_NUMBER_DETECTION)
 public:
 
     // These functions provide a two-level setting:
@@ -1601,7 +1644,7 @@ private:
 #endif
 
 #if ENABLE(TEXT_AUTOSIZING)
-    OwnPtr<TextAutosizer> m_textAutosizer;
+    std::unique_ptr<TextAutosizer> m_textAutosizer;
 #endif
 
     void platformSuspendOrStopActiveDOMObjects();
@@ -1620,7 +1663,7 @@ private:
     void sharedObjectPoolClearTimerFired(Timer<Document>&);
     Timer<Document> m_sharedObjectPoolClearTimer;
 
-    OwnPtr<DocumentSharedObjectPool> m_sharedObjectPool;
+    std::unique_ptr<DocumentSharedObjectPool> m_sharedObjectPool;
 
 #ifndef NDEBUG
     bool m_didDispatchViewportPropertiesChanged;
@@ -1638,8 +1681,13 @@ private:
     RefPtr<FontLoader> m_fontloader;
 #endif
 
+#if ENABLE(WEB_REPLAY)
+    RefPtr<InputCursor> m_inputCursor;
+#endif
+
     Timer<Document> m_didAssociateFormControlsTimer;
     HashSet<RefPtr<Element>> m_associatedFormControls;
+    unsigned m_disabledFieldsetElementsCount;
 
     bool m_hasInjectedPlugInsScript;
     bool m_renderTreeBeingDestroyed;
@@ -1666,23 +1714,21 @@ inline const Document* Document::templateDocument() const
 
 inline bool Node::isDocumentNode() const
 {
-    return this == documentInternal();
+    return this == &document();
 }
 
-inline Node::Node(Document* document, ConstructionType type)
+inline Node::Node(Document& document, ConstructionType type)
     : m_nodeFlags(type)
     , m_parentNode(0)
-    , m_treeScope(document ? document : &TreeScope::noDocumentInstance())
+    , m_treeScope(&document)
     , m_previous(0)
     , m_next(0)
 {
-    m_treeScope->selfOnlyRef();
+    document.incrementReferencingNodeCount();
 
 #if !defined(NDEBUG) || (defined(DUMP_NODE_STATISTICS) && DUMP_NODE_STATISTICS)
     trackForDebugging();
 #endif
-
-    InspectorCounters::incrementCounter(InspectorCounters::NodeCounter);
 }
 
 inline ScriptExecutionContext* Node::scriptExecutionContext() const
@@ -1692,29 +1738,7 @@ inline ScriptExecutionContext* Node::scriptExecutionContext() const
 
 Element* eventTargetElementForDocument(Document*);
 
-inline Document& toDocument(ScriptExecutionContext& scriptExecutionContext)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(scriptExecutionContext.isDocument());
-    return static_cast<Document&>(scriptExecutionContext);
-}
-
-inline const Document& toDocument(const ScriptExecutionContext& scriptExecutionContext)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(scriptExecutionContext.isDocument());
-    return static_cast<const Document&>(scriptExecutionContext);
-}
-
-inline Document* toDocument(ScriptExecutionContext* scriptExecutionContext)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(!scriptExecutionContext || scriptExecutionContext->isDocument());
-    return static_cast<Document*>(scriptExecutionContext);
-}
-
-inline const Document* toDocument(const ScriptExecutionContext* scriptExecutionContext)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(!scriptExecutionContext || scriptExecutionContext->isDocument());
-    return static_cast<const Document*>(scriptExecutionContext);
-}
+SCRIPT_EXECUTION_CONTEXT_TYPE_CASTS(Document)
 
 inline bool isDocument(const Node& node) { return node.isDocumentNode(); }
 void isDocument(const Document&); // Catch unnecessary runtime check of type known at compile time.

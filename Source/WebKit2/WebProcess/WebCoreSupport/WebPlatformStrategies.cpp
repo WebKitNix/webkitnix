@@ -54,6 +54,7 @@
 #include <WebCore/PlatformCookieJar.h>
 #include <WebCore/PlatformPasteboard.h>
 #include <WebCore/ResourceError.h>
+#include <WebCore/SessionID.h>
 #include <WebCore/StorageNamespace.h>
 #include <WebCore/SubframeLoader.h>
 #include <WebCore/URL.h>
@@ -72,13 +73,6 @@
 using namespace WebCore;
 
 namespace WebKit {
-
-#if ENABLE(NETWORK_PROCESS)
-static uint64_t legacySessionID(const NetworkStorageSession &session)
-{
-    return session.isPrivateBrowsingSession() ? SessionTracker::legacyPrivateSessionID : SessionTracker::defaultSessionID;
-}
-#endif
 
 void WebPlatformStrategies::initialize()
 {
@@ -129,11 +123,6 @@ StorageStrategy* WebPlatformStrategies::createStorageStrategy()
     return this;
 }
 
-VisitedLinkStrategy* WebPlatformStrategies::createVisitedLinkStrategy()
-{
-    return this;
-}
-
 // CookiesStrategy
 
 String WebPlatformStrategies::cookiesForDOM(const NetworkStorageSession& session, const URL& firstParty, const URL& url)
@@ -141,7 +130,7 @@ String WebPlatformStrategies::cookiesForDOM(const NetworkStorageSession& session
 #if ENABLE(NETWORK_PROCESS)
     if (WebProcess::shared().usesNetworkProcess()) {
         String result;
-        if (!WebProcess::shared().networkConnection()->connection()->sendSync(Messages::NetworkConnectionToWebProcess::CookiesForDOM(legacySessionID(session), firstParty, url), Messages::NetworkConnectionToWebProcess::CookiesForDOM::Reply(result), 0))
+        if (!WebProcess::shared().networkConnection()->connection()->sendSync(Messages::NetworkConnectionToWebProcess::CookiesForDOM(SessionTracker::sessionID(session), firstParty, url), Messages::NetworkConnectionToWebProcess::CookiesForDOM::Reply(result), 0))
             return String();
         return result;
     }
@@ -154,7 +143,7 @@ void WebPlatformStrategies::setCookiesFromDOM(const NetworkStorageSession& sessi
 {
 #if ENABLE(NETWORK_PROCESS)
     if (WebProcess::shared().usesNetworkProcess()) {
-        WebProcess::shared().networkConnection()->connection()->send(Messages::NetworkConnectionToWebProcess::SetCookiesFromDOM(legacySessionID(session), firstParty, url, cookieString), 0);
+        WebProcess::shared().networkConnection()->connection()->send(Messages::NetworkConnectionToWebProcess::SetCookiesFromDOM(SessionTracker::sessionID(session), firstParty, url, cookieString), 0);
         return;
     }
 #endif
@@ -167,7 +156,7 @@ bool WebPlatformStrategies::cookiesEnabled(const NetworkStorageSession& session,
 #if ENABLE(NETWORK_PROCESS)
     if (WebProcess::shared().usesNetworkProcess()) {
         bool result;
-        if (!WebProcess::shared().networkConnection()->connection()->sendSync(Messages::NetworkConnectionToWebProcess::CookiesEnabled(legacySessionID(session), firstParty, url), Messages::NetworkConnectionToWebProcess::CookiesEnabled::Reply(result), 0))
+        if (!WebProcess::shared().networkConnection()->connection()->sendSync(Messages::NetworkConnectionToWebProcess::CookiesEnabled(SessionTracker::sessionID(session), firstParty, url), Messages::NetworkConnectionToWebProcess::CookiesEnabled::Reply(result), 0))
             return false;
         return result;
     }
@@ -181,7 +170,7 @@ String WebPlatformStrategies::cookieRequestHeaderFieldValue(const NetworkStorage
 #if ENABLE(NETWORK_PROCESS)
     if (WebProcess::shared().usesNetworkProcess()) {
         String result;
-        if (!WebProcess::shared().networkConnection()->connection()->sendSync(Messages::NetworkConnectionToWebProcess::CookieRequestHeaderFieldValue(legacySessionID(session), firstParty, url), Messages::NetworkConnectionToWebProcess::CookieRequestHeaderFieldValue::Reply(result), 0))
+        if (!WebProcess::shared().networkConnection()->connection()->sendSync(Messages::NetworkConnectionToWebProcess::CookieRequestHeaderFieldValue(SessionTracker::sessionID(session), firstParty, url), Messages::NetworkConnectionToWebProcess::CookieRequestHeaderFieldValue::Reply(result), 0))
             return String();
         return result;
     }
@@ -194,7 +183,7 @@ bool WebPlatformStrategies::getRawCookies(const NetworkStorageSession& session, 
 {
 #if ENABLE(NETWORK_PROCESS)
     if (WebProcess::shared().usesNetworkProcess()) {
-        if (!WebProcess::shared().networkConnection()->connection()->sendSync(Messages::NetworkConnectionToWebProcess::GetRawCookies(legacySessionID(session), firstParty, url), Messages::NetworkConnectionToWebProcess::GetRawCookies::Reply(rawCookies), 0))
+        if (!WebProcess::shared().networkConnection()->connection()->sendSync(Messages::NetworkConnectionToWebProcess::GetRawCookies(SessionTracker::sessionID(session), firstParty, url), Messages::NetworkConnectionToWebProcess::GetRawCookies::Reply(rawCookies), 0))
             return false;
         return true;
     }
@@ -207,7 +196,7 @@ void WebPlatformStrategies::deleteCookie(const NetworkStorageSession& session, c
 {
 #if ENABLE(NETWORK_PROCESS)
     if (WebProcess::shared().usesNetworkProcess()) {
-        WebProcess::shared().networkConnection()->connection()->send(Messages::NetworkConnectionToWebProcess::DeleteCookie(legacySessionID(session), url, cookieName), 0);
+        WebProcess::shared().networkConnection()->connection()->send(Messages::NetworkConnectionToWebProcess::DeleteCookie(SessionTracker::sessionID(session), url, cookieName), 0);
         return;
     }
 #endif
@@ -270,12 +259,12 @@ void WebPlatformStrategies::loadResourceSynchronously(NetworkingContext* context
     loadParameters.identifier = resourceLoadIdentifier;
     loadParameters.webPageID = webPage ? webPage->pageID() : 0;
     loadParameters.webFrameID = webFrame ? webFrame->frameID() : 0;
+    loadParameters.sessionID = webPage ? webPage->sessionID() : SessionID::defaultSessionID();
     loadParameters.request = request;
     loadParameters.priority = ResourceLoadPriorityHighest;
     loadParameters.contentSniffingPolicy = SniffContent;
     loadParameters.allowStoredCredentials = storedCredentials;
     loadParameters.clientCredentialPolicy = clientCredentialPolicy;
-    loadParameters.inPrivateBrowsingMode = context->storageSession().isPrivateBrowsingSession();
     loadParameters.shouldClearReferrerOnHTTPSToHTTPRedirect = context->shouldClearReferrerOnHTTPSToHTTPRedirect();
 
     data.resize(0);
@@ -380,19 +369,7 @@ PassRefPtr<StorageNamespace> WebPlatformStrategies::sessionStorageNamespace(Page
 #endif
 }
 
-// VisitedLinkStrategy
-
-bool WebPlatformStrategies::isLinkVisited(Page*, LinkHash linkHash, const URL&, const AtomicString&)
-{
-    return WebProcess::shared().isLinkVisited(linkHash);
-}
-
-void WebPlatformStrategies::addVisitedLink(Page*, LinkHash linkHash)
-{
-    WebProcess::shared().addVisitedLink(linkHash);
-}
-
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 // PasteboardStrategy
 
 void WebPlatformStrategies::getTypes(Vector<String>& types, const String& pasteboardName)

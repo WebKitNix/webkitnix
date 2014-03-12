@@ -29,26 +29,54 @@ if (ENABLE_WEBKIT2)
     )
 endif ()
 
-add_custom_command(
-    OUTPUT "${CMAKE_BINARY_DIR}/docs-build.stamp"
-    DEPENDS ${DocumentationDependencies}
-    COMMAND CC="${CMAKE_C_COMPILER}" ${CMAKE_SOURCE_DIR}/Tools/gtk/generate-gtkdoc
-    COMMAND touch docs-build.stamp
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+macro(ADD_GTKDOC_GENERATOR _stamp_name _extra_args)
+    add_custom_command(
+        OUTPUT "${CMAKE_BINARY_DIR}/${_stamp_name}"
+        DEPENDS ${DocumentationDependencies}
+        COMMAND CC="${CMAKE_C_COMPILER}" ${CMAKE_SOURCE_DIR}/Tools/gtk/generate-gtkdoc ${_extra_args}
+        COMMAND touch ${_stamp_name}
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+endmacro()
+
+add_gtkdoc_generator("docs-build-no-html.stamp" "--skip-html")
+add_custom_target(gtkdoc-no-html ALL
+    DEPENDS "${CMAKE_BINARY_DIR}/docs-build-no-html.stamp"
 )
 
-add_custom_target(fake-docs-target ALL
+add_gtkdoc_generator("docs-build.stamp" "")
+add_custom_target(gtkdoc
     DEPENDS "${CMAKE_BINARY_DIR}/docs-build.stamp"
 )
 
-if (ENABLE_WEBKIT)
-    add_dependencies(fake-docs-target WebKit)
-endif ()
-
-if (ENABLE_WEBKIT2)
-    add_dependencies(fake-docs-target WebKit2)
-endif ()
-
 add_custom_target(check
-    COMMAND "${TOOLS_DIR}/Scripts/run-gtk-tests"
+    COMMAND ${TOOLS_DIR}/Scripts/run-gtk-tests
+    COMMAND ${TOOLS_DIR}/gtk/check-for-webkitdom-api-breaks
 )
+
+if (ENABLE_WEBKIT AND ENABLE_WEBKIT2)
+    add_custom_command(
+        OUTPUT ${CMAKE_BINARY_DIR}/webkitgtk-${PROJECT_VERSION}.tar
+        DEPENDS ${TOOLS_DIR}/gtk/make-dist.py
+        DEPENDS ${TOOLS_DIR}/gtk/manifest.txt
+        DEPENDS WebKit
+        DEPENDS WebKit2
+        DEPENDS gtkdoc
+        COMMAND ${TOOLS_DIR}/gtk/make-dist.py
+                --source-dir=${CMAKE_SOURCE_DIR}
+                --build-dir=${CMAKE_BINARY_DIR}
+                --tarball-root=/webkitgtk-${PROJECT_VERSION}
+                -o ${CMAKE_BINARY_DIR}/webkitgtk-${PROJECT_VERSION}.tar
+                ${TOOLS_DIR}/gtk/manifest.txt
+    )
+
+    add_custom_command(
+        OUTPUT ${CMAKE_BINARY_DIR}/webkitgtk-${PROJECT_VERSION}.tar.xz
+        DEPENDS ${CMAKE_BINARY_DIR}/webkitgtk-${PROJECT_VERSION}.tar
+        COMMAND xz -f ${CMAKE_BINARY_DIR}/webkitgtk-${PROJECT_VERSION}.tar
+    )
+
+    add_custom_target(dist
+        DEPENDS ${CMAKE_BINARY_DIR}/webkitgtk-${PROJECT_VERSION}.tar.xz
+    )
+endif ()

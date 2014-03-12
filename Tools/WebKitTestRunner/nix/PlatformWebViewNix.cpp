@@ -231,5 +231,9 @@ bool PlatformWebView::viewSupportsOptions(WKDictionaryRef options) const
     return m_usingFixedLayout == (options ? WKBooleanGetValue(static_cast<WKBooleanRef>(WKDictionaryGetItemForKey(options, useFixedLayoutKey.get()))) : false);
 }
 
+void PlatformWebView::changeWindowScaleIfNeeded(float)
+{
+}
+
 } // namespace WTR
 

@@ -43,23 +43,17 @@
 #include "Logging.h"
 #include "MainFrame.h"
 #include "Page.h"
+#include "PageCache.h"
 #include "PageTransitionEvent.h"
+#include "SVGDocumentExtensions.h"
 #include "ScriptController.h"
 #include "SerializedScriptValue.h"
 #include <wtf/RefCountedLeakCounter.h>
 #include <wtf/text/CString.h>
 
-#if ENABLE(SVG)
-#include "SVGDocumentExtensions.h"
-#endif
-
 #if ENABLE(TOUCH_EVENTS)
 #include "Chrome.h"
 #include "ChromeClient.h"
-#endif
-
-#if USE(ACCELERATED_COMPOSITING)
-#include "PageCache.h"
 #endif
 
 namespace WebCore {
@@ -73,9 +67,7 @@ CachedFrameBase::CachedFrameBase(Frame& frame)
     , m_mousePressNode(frame.eventHandler().mousePressNode())
     , m_url(frame.document()->url())
     , m_isMainFrame(!frame.tree().parent())
-#if USE(ACCELERATED_COMPOSITING)
     , m_isComposited(frame.view()->hasCompositedContent())
-#endif
 {
 }
 
@@ -98,10 +90,8 @@ void CachedFrameBase::restore()
     Frame& frame = m_view->frame();
     m_cachedFrameScriptData->restore(frame);
 
-#if ENABLE(SVG)
     if (m_document->svgExtensions())
         m_document->accessSVGExtensions()->unpauseAnimations();
-#endif
 
     frame.animation().resumeAnimationsForDocument(m_document.get());
     frame.eventHandler().setMousePressNode(m_mousePressNode.get());
@@ -112,10 +102,8 @@ void CachedFrameBase::restore()
     // cached page.
     frame.script().updatePlatformScriptObjects();
 
-#if USE(ACCELERATED_COMPOSITING)
     if (m_isComposited)
         frame.view()->restoreBackingStores();
-#endif
 
     frame.loader().client().didRestoreFromPageCache();
 
@@ -188,10 +176,8 @@ CachedFrame::CachedFrame(Frame& frame)
 
     frame.loader().client().savePlatformDataToCachedFrame(this);
 
-#if USE(ACCELERATED_COMPOSITING)
     if (m_isComposited && pageCache()->shouldClearBackingStores())
         frame.view()->clearBackingStores();
-#endif
 
     // documentWillSuspendForPageCache() can set up a layout timer on the FrameView, so clear timers after that.
     frame.clearTimers();

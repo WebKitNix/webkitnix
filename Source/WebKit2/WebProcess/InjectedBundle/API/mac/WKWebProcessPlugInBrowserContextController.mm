@@ -42,7 +42,9 @@
 #import "WKURLRequestNS.h"
 #import "WKWebProcessPluginFrameInternal.h"
 #import "WKWebProcessPlugInInternal.h"
+#import "WKWebProcessPlugInFormDelegatePrivate.h"
 #import "WKWebProcessPlugInLoadDelegate.h"
+#import "WKWebProcessPlugInNodeHandleInternal.h"
 #import "WKWebProcessPlugInPageGroupInternal.h"
 #import "WKWebProcessPlugInScriptWorldInternal.h"
 #import "WeakObjCPtr.h"
@@ -57,6 +59,7 @@ using namespace WebKit;
 @implementation WKWebProcessPlugInBrowserContextController {
     API::ObjectStorage<WebPage> _page;
     WeakObjCPtr<id <WKWebProcessPlugInLoadDelegate>> _loadDelegate;
+    WeakObjCPtr<id <WKWebProcessPlugInFormDelegatePrivate>> _formDelegate;
     
     RetainPtr<WKRemoteObjectRegistry> _remoteObjectRegistry;
 }
@@ -86,6 +89,15 @@ static void globalObjectIsAvailableForFrame(WKBundlePageRef page, WKBundleFrameR
 
     if ([loadDelegate respondsToSelector:@selector(webProcessPlugInBrowserContextController:globalObjectIsAvailableForFrame:inScriptWorld:)])
         [loadDelegate webProcessPlugInBrowserContextController:pluginContextController globalObjectIsAvailableForFrame:wrapper(*toImpl(frame)) inScriptWorld:wrapper(*toImpl(scriptWorld))];
+}
+
+static void didRemoveFrameFromHierarchy(WKBundlePageRef page, WKBundleFrameRef frame, WKTypeRef* userData, const void* clientInfo)
+{
+    WKWebProcessPlugInBrowserContextController *pluginContextController = (WKWebProcessPlugInBrowserContextController *)clientInfo;
+    auto loadDelegate = pluginContextController->_loadDelegate.get();
+
+    if ([loadDelegate respondsToSelector:@selector(webProcessPlugInBrowserContextController:didRemoveFrameFromHierarchy:)])
+        [loadDelegate webProcessPlugInBrowserContextController:pluginContextController didRemoveFrameFromHierarchy:wrapper(*toImpl(frame))];
 }
 
 static void didCommitLoadForFrame(WKBundlePageRef page, WKBundleFrameRef frame, WKTypeRef* userData, const void *clientInfo)
@@ -156,6 +168,7 @@ static void setUpPageLoaderClient(WKWebProcessPlugInBrowserContextController *co
     client.didSameDocumentNavigationForFrame = didSameDocumentNavigationForFrame;
     client.didFinishLoadForFrame = didFinishLoadForFrame;
     client.globalObjectIsAvailableForFrame = globalObjectIsAvailableForFrame;
+    client.didRemoveFrameFromHierarchy = didRemoveFrameFromHierarchy;
 
     client.didLayoutForFrame = didLayoutForFrame;
     client.didLayout = didLayout;
@@ -191,6 +204,27 @@ static void setUpResourceLoadClient(WKWebProcessPlugInBrowserContextController *
     client.willSendRequestForFrame = willSendRequestForFrame;
 
     page.initializeInjectedBundleResourceLoadClient(&client.base);
+}
+
+static void didFocusTextField(WKBundlePageRef page, WKBundleNodeHandleRef htmlInputElementHandleRef, WKBundleFrameRef frameRef, const void* clientInfo)
+{
+    WKWebProcessPlugInBrowserContextController *controller = (WKWebProcessPlugInBrowserContextController *)clientInfo;
+    auto formDelegate = controller->_formDelegate.get();
+
+    if ([formDelegate respondsToSelector:@selector(_webProcessPlugInBrowserContextController:didFocusTextField:inFrame:)])
+        [formDelegate _webProcessPlugInBrowserContextController:controller didFocusTextField:wrapper(*toImpl(htmlInputElementHandleRef)) inFrame:wrapper(*toImpl(frameRef))];
+}
+
+static void setUpFormClient(WKWebProcessPlugInBrowserContextController *contextController, WebPage& page)
+{
+    WKBundlePageFormClientV2 client;
+    memset(&client, 0, sizeof(client));
+
+    client.base.version = 2;
+    client.base.clientInfo = contextController;
+    client.didFocusTextField = didFocusTextField;
+
+    page.initializeInjectedBundleFormClient(&client.base);
 }
 
 - (id <WKWebProcessPlugInLoadDelegate>)loadDelegate
@@ -288,6 +322,21 @@ static void setUpResourceLoadClient(WKWebProcessPlugInBrowserContextController *
     }
 
     return _remoteObjectRegistry.get();
+}
+
+- (id <WKWebProcessPlugInFormDelegatePrivate>)_formDelegate
+{
+    return _formDelegate.getAutoreleased();
+}
+
+- (void)_setFormDelegate:(id <WKWebProcessPlugInFormDelegatePrivate>)formDelegate
+{
+    _formDelegate = formDelegate;
+
+    if (formDelegate)
+        setUpFormClient(self, *_page);
+    else
+        _page->initializeInjectedBundleFormClient(nullptr);
 }
 
 @end

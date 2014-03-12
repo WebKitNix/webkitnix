@@ -45,10 +45,8 @@ public:
 
     static IntSize defaultSize();
 
-#if USE(ACCELERATED_COMPOSITING)
     bool supportsAcceleratedRendering() const;
     void acceleratedRenderingStateChanged();
-#endif
 
     bool requiresImmediateCompositing() const;
 
@@ -92,7 +90,7 @@ private:
     LayoutSize m_cachedImageSize;
 };
 
-RENDER_OBJECT_TYPE_CASTS(RenderVideo, isVideo());
+RENDER_OBJECT_TYPE_CASTS(RenderVideo, isVideo())
 
 } // namespace WebCore
 

@@ -23,8 +23,6 @@
 #define ChromeClient_h
 
 #include "AXObjectCache.h"
-#include "ConsoleAPITypes.h"
-#include "ConsoleTypes.h"
 #include "Cursor.h"
 #include "FocusDirection.h"
 #include "FrameLoader.h"
@@ -37,6 +35,7 @@
 #include "ScrollingCoordinator.h"
 #include "SearchPopupMenu.h"
 #include "WebCoreKeyboardUIMode.h"
+#include <runtime/ConsoleTypes.h>
 #include <wtf/Forward.h>
 #include <wtf/PassOwnPtr.h>
 #include <wtf/Vector.h>
@@ -157,9 +156,9 @@ public:
 
     // Methods used by HostWindow.
     virtual bool supportsImmediateInvalidation() { return false; }
-    virtual void invalidateRootView(const IntRect&, bool immediate) = 0;
-    virtual void invalidateContentsAndRootView(const IntRect&, bool immediate) = 0;
-    virtual void invalidateContentsForSlowScroll(const IntRect&, bool immediate) = 0;
+    virtual void invalidateRootView(const IntRect&) = 0;
+    virtual void invalidateContentsAndRootView(const IntRect&) = 0;
+    virtual void invalidateContentsForSlowScroll(const IntRect&) = 0;
     virtual void scroll(const IntSize&, const IntRect&, const IntRect&) = 0;
 #if USE(TILED_BACKING_STORE)
     virtual void delegatedScrollRequested(const IntPoint&) = 0;
@@ -180,7 +179,6 @@ public:
     virtual void dispatchViewportPropertiesDidChange(const ViewportArguments&) const { }
 
     virtual void contentsSizeChanged(Frame*, const IntSize&) const = 0;
-    virtual void layoutUpdated(Frame*) const { }
     virtual void scrollRectIntoView(const IntRect&) const { }; // Currently only Mac has a non empty implementation.
 
     virtual bool shouldUnavailablePluginMessageBeButton(RenderEmbeddedObject::PluginUnavailabilityReason) const { return false; }
@@ -192,6 +190,8 @@ public:
     virtual void print(Frame*) = 0;
 
     virtual Color underlayColor() const { return Color(); }
+
+    virtual void pageExtendedBackgroundColorDidChange(Color) const { }
 
 #if ENABLE(SQL_DATABASE)
     virtual void exceededDatabaseQuota(Frame*, const String& databaseName, DatabaseDetails) = 0;
@@ -214,15 +214,12 @@ public:
     // the new cache.
     virtual void reachedApplicationCacheOriginQuota(SecurityOrigin*, int64_t totalSpaceNeeded) = 0;
 
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
     virtual void annotatedRegionsChanged();
 #endif
 
     virtual void populateVisitedLinks();
 
-    virtual FloatRect customHighlightRect(Node*, const AtomicString& type, const FloatRect& lineRect);
-    virtual void paintCustomHighlight(Node*, const AtomicString& type, const FloatRect& boxRect, const FloatRect& lineRect, bool behindText, bool entireLine);
-            
     virtual bool shouldReplaceWithGeneratedFileForUpload(const String& path, String& generatedFilename);
     virtual String generateReplacementFile(const String& path);
 
@@ -231,7 +228,7 @@ public:
 #endif
 
 #if PLATFORM(IOS)
-    virtual void didReceiveMobileDocType() = 0;
+    virtual void didReceiveMobileDocType(bool) = 0;
     virtual void setNeedsScrollNotifications(Frame*, bool) = 0;
     virtual void observedContentChange(Frame*) = 0;
     virtual void clearContentChangeObservers(Frame*) = 0;
@@ -272,22 +269,12 @@ public:
     virtual void runOpenPanel(Frame*, PassRefPtr<FileChooser>) = 0;
     // Asynchronous request to load an icon for specified filenames.
     virtual void loadIconForFiles(const Vector<String>&, FileIconLoader*) = 0;
-
-#if ENABLE(DIRECTORY_UPLOAD)
-    // Asychronous request to enumerate all files in a directory chosen by the user.
-    virtual void enumerateChosenDirectory(FileChooser*) = 0;
-#endif
-
-    // Notification that the given form element has changed. This function
-    // will be called frequently, so handling should be very fast.
-    virtual void formStateDidChange(const Node*) = 0;
         
     virtual void elementDidFocus(const Node*) { };
     virtual void elementDidBlur(const Node*) { };
     
     virtual bool shouldPaintEntireContents() const { return false; }
 
-#if USE(ACCELERATED_COMPOSITING)
     // Allows ports to customize the type of graphics layers created by this page.
     virtual GraphicsLayerFactory* graphicsLayerFactory() const { return 0; }
 
@@ -321,7 +308,6 @@ public:
     
     // Returns true if layer tree updates are disabled.
     virtual bool layerTreeStateIsFrozen() const { return false; }
-#endif
 
     virtual PassRefPtr<ScrollingCoordinator> createScrollingCoordinator(Page*) const { return nullptr; }
 
@@ -345,7 +331,7 @@ public:
     virtual IntRect visibleRectForTiledBackingStore() const { return IntRect(); }
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     virtual NSResponder *firstResponder() { return 0; }
     virtual void makeFirstResponder(NSResponder *) { }
     // Focuses on the containing view associated with this page.
@@ -423,11 +409,10 @@ public:
 
     virtual bool shouldUseTiledBackingForFrameView(const FrameView*) const { return false; }
 
-    // These methods are used to report pages that are performing
-    // some task that we consider to be "active", and so the user
-    // would likely want the page to remain running uninterrupted.
-    virtual void incrementActivePageCount() { }
-    virtual void decrementActivePageCount() { }
+#if ENABLE(SUBTLE_CRYPTO)
+    virtual bool wrapCryptoKey(const Vector<uint8_t>&, Vector<uint8_t>&) const { return false; }
+    virtual bool unwrapCryptoKey(const Vector<uint8_t>&, Vector<uint8_t>&) const { return false; }
+#endif
 
 protected:
     virtual ~ChromeClient() { }

@@ -45,6 +45,7 @@
 #endif
 #include "WebPageMessages.h"
 #include "WebPreferencesStore.h"
+#include <WebCore/GraphicsLayer.h>
 #if PLATFORM(MAC)
 #include <WebCore/KeyboardEvent.h>
 #endif
@@ -73,9 +74,9 @@ bool GetPluginProcessConnection::DelayedReply::send(const IPC::Connection::Handl
 {
     ASSERT(m_encoder);
     *m_encoder << connectionHandle;
-    bool result = m_connection->sendSyncReply(std::move(m_encoder));
+    bool _result = m_connection->sendSyncReply(std::move(m_encoder));
     m_connection = nullptr;
-    return result;
+    return _result;
 }
 
 TestMultipleAttributes::DelayedReply::DelayedReply(PassRefPtr<IPC::Connection> connection, std::unique_ptr<IPC::MessageEncoder> encoder)
@@ -92,9 +93,9 @@ TestMultipleAttributes::DelayedReply::~DelayedReply()
 bool TestMultipleAttributes::DelayedReply::send()
 {
     ASSERT(m_encoder);
-    bool result = m_connection->sendSyncReply(std::move(m_encoder));
+    bool _result = m_connection->sendSyncReply(std::move(m_encoder));
     m_connection = nullptr;
-    return result;
+    return _result;
 }
 
 } // namespace WebPage
@@ -159,6 +160,10 @@ void WebPage::didReceiveWebPageMessage(IPC::Connection*, IPC::MessageDecoder& de
     }
     if (decoder.messageName() == Messages::WebPage::TemplateTest::name()) {
         IPC::handleMessage<Messages::WebPage::TemplateTest>(decoder, this, &WebPage::templateTest);
+        return;
+    }
+    if (decoder.messageName() == Messages::WebPage::SetVideoLayerID::name()) {
+        IPC::handleMessage<Messages::WebPage::SetVideoLayerID>(decoder, this, &WebPage::setVideoLayerID);
         return;
     }
 #if PLATFORM(MAC)

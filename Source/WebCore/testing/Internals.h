@@ -50,18 +50,19 @@ class Element;
 class Frame;
 class InspectorFrontendChannelDummy;
 class InternalSettings;
+class MallocStatistics;
 class MemoryInfo;
 class Node;
 class Page;
 class Range;
 class ScriptExecutionContext;
-class ShadowRoot;
-class MallocStatistics;
+class ScriptProfile;
 class SerializedScriptValue;
 class TimeRanges;
 class TypeConversions;
 
 typedef int ExceptionCode;
+typedef Vector<RefPtr<ScriptProfile>> ProfilesArray;
 
 class Internals : public RefCounted<Internals>
                 , public ContextDestructionObserver {
@@ -80,14 +81,9 @@ public:
 
     PassRefPtr<CSSComputedStyleDeclaration> computedStyleIncludingVisitedInfo(Node*, ExceptionCode&) const;
 
-#if ENABLE(SHADOW_DOM)
-    typedef ShadowRoot ShadowRootIfShadowDOMEnabledOrNode;
-#else
-    typedef Node ShadowRootIfShadowDOMEnabledOrNode;
-#endif
-    ShadowRootIfShadowDOMEnabledOrNode* ensureShadowRoot(Element* host, ExceptionCode&);
-    ShadowRootIfShadowDOMEnabledOrNode* createShadowRoot(Element* host, ExceptionCode&);
-    ShadowRootIfShadowDOMEnabledOrNode* shadowRoot(Element* host, ExceptionCode&);
+    Node* ensureShadowRoot(Element* host, ExceptionCode&);
+    Node* createShadowRoot(Element* host, ExceptionCode&);
+    Node* shadowRoot(Element* host, ExceptionCode&);
     String shadowRootType(const Node*, ExceptionCode&) const;
     Element* includerFor(Node*, ExceptionCode&);
     String shadowPseudoId(Element*, ExceptionCode&);
@@ -175,6 +171,9 @@ public:
 
     String parserMetaData(Deprecated::ScriptValue = Deprecated::ScriptValue());
 
+    Node* findEditingDeleteButton();
+    void updateEditorUINowIfScheduled();
+
     bool hasSpellingMarker(int from, int length, ExceptionCode&);
     bool hasGrammarMarker(int from, int length, ExceptionCode&);
     bool hasAutocorrectedMarker(int from, int length, ExceptionCode&);
@@ -187,6 +186,8 @@ public:
 
     bool isOverwriteModeEnabled(ExceptionCode&);
     void toggleOverwriteModeEnabled(ExceptionCode&);
+
+    unsigned countMatchesForText(const String&, unsigned findOptions, const String& markMatches, ExceptionCode&);
 
     unsigned numberOfScrollableAreas(ExceptionCode&);
 
@@ -225,14 +226,18 @@ public:
     void insertAuthorCSS(const String&, ExceptionCode&) const;
     void insertUserCSS(const String&, ExceptionCode&) const;
 
-#if ENABLE(INSPECTOR)
+    const ProfilesArray& consoleProfiles() const;
+
     unsigned numberOfLiveNodes() const;
     unsigned numberOfLiveDocuments() const;
+
+#if ENABLE(INSPECTOR)
     Vector<String> consoleMessageArgumentCounts() const;
     PassRefPtr<DOMWindow> openDummyInspectorFrontend(const String& url);
     void closeDummyInspectorFrontend();
     void setInspectorResourcesDataSizeLimits(int maximumResourcesContentSize, int maximumSingleResourceContentSize, ExceptionCode&);
     void setJavaScriptProfilingEnabled(bool enabled, ExceptionCode&);
+    void setInspectorIsUnderTest(bool isUnderTest, ExceptionCode&);
 #endif
 
     String counterValue(Element*);
@@ -326,6 +331,8 @@ public:
 
     void beginMediaSessionInterruption();
     void endMediaSessionInterruption(const String&);
+    void applicationWillEnterForeground() const;
+    void applicationWillEnterBackground() const;
     void setMediaSessionRestrictions(const String& mediaType, const String& restrictions, ExceptionCode& ec);
 
 private:

@@ -24,17 +24,15 @@
 #include "RenderWidget.h"
 
 #include "AXObjectCache.h"
+#include "FloatRoundedRect.h"
 #include "Frame.h"
 #include "HTMLFrameOwnerElement.h"
 #include "HitTestResult.h"
 #include "RenderLayer.h"
+#include "RenderLayerBacking.h"
 #include "RenderView.h"
 #include <wtf/StackStats.h>
 #include <wtf/Ref.h>
-
-#if USE(ACCELERATED_COMPOSITING)
-#include "RenderLayerBacking.h"
-#endif
 
 namespace WebCore {
 
@@ -141,10 +139,9 @@ bool RenderWidget::setWidgetGeometry(const LayoutRect& frame)
     if (!weakThis)
         return true;
 
-#if USE(ACCELERATED_COMPOSITING)
     if (boundsChanged && hasLayer() && layer()->isComposited())
         layer()->backing()->updateAfterWidgetResize();
-#endif
+
     return oldFrameRect.size() != newFrameRect.size();
 }
 
@@ -227,16 +224,16 @@ void RenderWidget::paintContents(PaintInfo& paintInfo, const LayoutPoint& paintO
     IntPoint widgetLocation = m_widget->frameRect().location();
     IntPoint paintLocation(roundToInt(adjustedPaintOffset.x() + borderLeft() + paddingLeft()),
         roundToInt(adjustedPaintOffset.y() + borderTop() + paddingTop()));
-    IntRect paintRect = paintInfo.rect;
+    LayoutRect paintRect = paintInfo.rect;
 
-    IntSize widgetPaintOffset = paintLocation - widgetLocation;
+    LayoutSize widgetPaintOffset = paintLocation - widgetLocation;
     // When painting widgets into compositing layers, tx and ty are relative to the enclosing compositing layer,
     // not the root. In this case, shift the CTM and adjust the paintRect to be root-relative to fix plug-in drawing.
     if (!widgetPaintOffset.isZero()) {
         paintInfo.context->translate(widgetPaintOffset);
         paintRect.move(-widgetPaintOffset);
     }
-    m_widget->paint(paintInfo.context, paintRect);
+    m_widget->paint(paintInfo.context, pixelSnappedIntRect(paintRect));
 
     if (!widgetPaintOffset.isZero())
         paintInfo.context->translate(-widgetPaintOffset);
@@ -272,11 +269,6 @@ void RenderWidget::paint(PaintInfo& paintInfo, const LayoutPoint& paintOffset)
     if (paintInfo.phase != PaintPhaseForeground)
         return;
 
-#if PLATFORM(MAC)
-    if (style().highlight() != nullAtom && !paintInfo.context->paintingDisabled())
-        paintCustomHighlight(paintOffset, style().highlight(), true);
-#endif
-
     if (style().hasBorderRadius()) {
         LayoutRect borderRect = LayoutRect(adjustedPaintOffset, size());
 
@@ -285,8 +277,8 @@ void RenderWidget::paint(PaintInfo& paintInfo, const LayoutPoint& paintOffset)
 
         // Push a clip if we have a border radius, since we want to round the foreground content that gets painted.
         paintInfo.context->save();
-        RoundedRect roundedInnerRect = style().getRoundedInnerBorderFor(borderRect,
-            paddingTop() + borderTop(), paddingBottom() + borderBottom(), paddingLeft() + borderLeft(), paddingRight() + borderRight(), true, true);
+        FloatRoundedRect roundedInnerRect = FloatRoundedRect(style().getRoundedInnerBorderFor(borderRect,
+            paddingTop() + borderTop(), paddingBottom() + borderBottom(), paddingLeft() + borderLeft(), paddingRight() + borderRight(), true, true));
         clipRoundedInnerRect(paintInfo.context, borderRect, roundedInnerRect);
     }
 
@@ -384,7 +376,6 @@ bool RenderWidget::nodeAtPoint(const HitTestRequest& request, HitTestResult& res
     return inside;
 }
 
-#if USE(ACCELERATED_COMPOSITING)
 bool RenderWidget::requiresLayer() const
 {
     return RenderReplaced::requiresLayer() || requiresAcceleratedCompositing();
@@ -400,7 +391,6 @@ bool RenderWidget::requiresAcceleratedCompositing() const
 
     return false;
 }
-#endif
 
 bool RenderWidget::needsPreferredWidthsRecalculation() const
 {

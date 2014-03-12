@@ -37,7 +37,6 @@ namespace TestWebKitAPI {
 
 static bool finishedLoad = false;
 static bool scrollChanged = false;
-static bool scaleChanged = false;
 
 static void didFinishLoadForFrame(WKPageRef, WKFrameRef, WKTypeRef, const void*)
 {
@@ -47,11 +46,6 @@ static void didFinishLoadForFrame(WKPageRef, WKFrameRef, WKTypeRef, const void*)
 static void didChangeContentsPosition(WKViewRef, WKPoint p, const void*)
 {
     scrollChanged = true;
-}
-
-static void didChangeContentScaleFactor(WKViewRef, const void*)
-{
-    scaleChanged = true;
 }
 
 TEST(WebKitNix, BackForward)
@@ -80,7 +74,6 @@ TEST(WebKitNix, BackForward)
     memset(&viewClient, 0, sizeof(viewClient));
     viewClient.base.version = 0;
     viewClient.didChangeContentsPosition = didChangeContentsPosition;
-    viewClient.didChangeContentScaleFactor = didChangeContentScaleFactor;
     WKViewSetViewClient(view.get(), &viewClient.base);
 
     WKRetainPtr<WKURLRef> url = adoptWK(Util::createURLForResource("../nix/backforward1", "html"));
@@ -92,7 +85,6 @@ TEST(WebKitNix, BackForward)
 
     WKViewSetContentPosition(view.get(), point);
     WKViewSetContentScaleFactor(view.get(), newScale);
-    Util::run(&scaleChanged);
 
     float scale = WKViewGetContentScaleFactor(view.get());
     WKPoint contentPosition = WKViewGetContentPosition(view.get());
@@ -101,11 +93,9 @@ TEST(WebKitNix, BackForward)
     EXPECT_EQ(point.y, contentPosition.y);
 
     finishedLoad = false;
-    scaleChanged = false;
     url = adoptWK(Util::createURLForResource("../nix/backforward2", "html"));
     WKPageLoadURL(pageRef, url.get());
     Util::run(&finishedLoad);
-    Util::run(&scaleChanged);
 
     scale = WKViewGetContentScaleFactor(view.get());
     contentPosition = WKViewGetContentPosition(view.get());
@@ -113,13 +103,11 @@ TEST(WebKitNix, BackForward)
     EXPECT_EQ(0, contentPosition.x);
     EXPECT_EQ(0, contentPosition.y);
 
-    scaleChanged = false;
     WKPageGoBack(pageRef);
     scrollChanged = false;
     finishedLoad = false;
     Util::run(&finishedLoad);
     Util::run(&scrollChanged);
-    Util::run(&scaleChanged);
 
     scale = WKViewGetContentScaleFactor(view.get());
     contentPosition = WKViewGetContentPosition(view.get());
@@ -127,13 +115,11 @@ TEST(WebKitNix, BackForward)
     EXPECT_EQ(point.x, contentPosition.x);
     EXPECT_EQ(point.y, contentPosition.y);
 
-    scaleChanged = false;
     WKPageGoForward(pageRef);
     scrollChanged = false;
     finishedLoad = false;
     Util::run(&finishedLoad);
     Util::run(&scrollChanged);
-    Util::run(&scaleChanged);
 
     scale = WKViewGetContentScaleFactor(view.get());
     contentPosition = WKViewGetContentPosition(view.get());
@@ -141,13 +127,11 @@ TEST(WebKitNix, BackForward)
     EXPECT_EQ(0, contentPosition.x);
     EXPECT_EQ(0, contentPosition.y);
 
-    scaleChanged = false;
     WKPageGoBack(pageRef);
     scrollChanged = false;
     finishedLoad = false;
     Util::run(&finishedLoad);
     Util::run(&scrollChanged);
-    Util::run(&scaleChanged);
 
     scale = WKViewGetContentScaleFactor(view.get());
     contentPosition = WKViewGetContentPosition(view.get());
@@ -155,13 +139,11 @@ TEST(WebKitNix, BackForward)
     EXPECT_EQ(point.x, contentPosition.x);
     EXPECT_EQ(point.y, contentPosition.y);
 
-    scaleChanged = false;
     WKPageGoForward(pageRef);
     scrollChanged = false;
     finishedLoad = false;
     Util::run(&finishedLoad);
     Util::run(&scrollChanged);
-    Util::run(&scaleChanged);
 
     scale = WKViewGetContentScaleFactor(view.get());
     contentPosition = WKViewGetContentPosition(view.get());
@@ -169,13 +151,11 @@ TEST(WebKitNix, BackForward)
     EXPECT_EQ(0, contentPosition.x);
     EXPECT_EQ(0, contentPosition.y);
 
-    scaleChanged = false;
     WKPageGoBack(pageRef);
     scrollChanged = false;
     finishedLoad = false;
     Util::run(&finishedLoad);
     Util::run(&scrollChanged);
-    Util::run(&scaleChanged);
 
     scale = WKViewGetContentScaleFactor(view.get());
     contentPosition = WKViewGetContentPosition(view.get());
@@ -183,13 +163,11 @@ TEST(WebKitNix, BackForward)
     EXPECT_EQ(point.x, contentPosition.x);
     EXPECT_EQ(point.y, contentPosition.y);
 
-    scaleChanged = false;
     WKPageGoForward(pageRef);
     scrollChanged = false;
     finishedLoad = false;
     Util::run(&finishedLoad);
     Util::run(&scrollChanged);
-    Util::run(&scaleChanged);
 
     scale = WKViewGetContentScaleFactor(view.get());
     contentPosition = WKViewGetContentPosition(view.get());
@@ -197,13 +175,11 @@ TEST(WebKitNix, BackForward)
     EXPECT_EQ(0, contentPosition.x);
     EXPECT_EQ(0, contentPosition.y);
 
-    scaleChanged = false;
     WKPageGoBack(pageRef);
     scrollChanged = false;
     finishedLoad = false;
     Util::run(&finishedLoad);
     Util::run(&scrollChanged);
-    Util::run(&scaleChanged);
 
     scale = WKViewGetContentScaleFactor(view.get());
     contentPosition = WKViewGetContentPosition(view.get());

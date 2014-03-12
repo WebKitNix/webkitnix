@@ -88,7 +88,7 @@ static int countCharacter(const UChar* data, unsigned length, UChar character)
 std::unique_ptr<Length[]> newCoordsArray(const String& string, int& len)
 {
     unsigned length = string.length();
-    const UChar* data = string.characters();
+    const UChar* data = string.deprecatedCharacters();
     StringBuffer<UChar> spacified(length);
     for (unsigned i = 0; i < length; i++) {
         UChar cc = data[i];
@@ -223,8 +223,8 @@ Length Length::blendMixedTypes(const Length& from, double progress) const
     if (progress >= 1.0)
         return *this;
         
-    OwnPtr<CalcExpressionNode> blend = adoptPtr(new CalcExpressionBlendLength(from, *this, progress));
-    return Length(CalculationValue::create(blend.release(), CalculationRangeAll));
+    auto blend = std::make_unique<CalcExpressionBlendLength>(from, *this, progress);
+    return Length(CalculationValue::create(std::move(blend), CalculationRangeAll));
 }
           
 PassRefPtr<CalculationValue> Length::calculationValue() const

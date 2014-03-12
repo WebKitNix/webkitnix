@@ -53,6 +53,17 @@ void StackMaps::Constant::dump(PrintStream& out) const
     out.printf("0x%016llx", integer);
 }
 
+void StackMaps::StackSize::parse(DataView* view, unsigned& offset)
+{
+    functionOffset = view->read<uint32_t>(offset, true);
+    size = view->read<uint32_t>(offset, true);
+}
+
+void StackMaps::StackSize::dump(PrintStream& out) const
+{
+    out.print("(off:", functionOffset, ", size:", size, ")");
+}
+
 void StackMaps::Location::parse(DataView* view, unsigned& offset)
 {
     kind = static_cast<Kind>(view->read<uint8_t>(offset, true));
@@ -79,7 +90,9 @@ void StackMaps::Location::restoreInto(
 
 bool StackMaps::Record::parse(DataView* view, unsigned& offset)
 {
-    patchpointID = view->read<uint32_t>(offset, true);
+    int64_t id = view->read<int64_t>(offset, true);
+    ASSERT(static_cast<int32_t>(id) == id);
+    patchpointID = static_cast<uint32_t>(id);
     if (static_cast<int32_t>(patchpointID) < 0)
         return false;
     
@@ -89,6 +102,13 @@ bool StackMaps::Record::parse(DataView* view, unsigned& offset)
     unsigned length = view->read<uint16_t>(offset, true);
     while (length--)
         locations.append(readObject<Location>(view, offset));
+    
+    unsigned numLiveOuts = view->read<uint16_t>(offset, true);
+    while (numLiveOuts--) {
+        view->read<uint16_t>(offset, true); // regnum
+        view->read<uint8_t>(offset, true); // reserved
+        view->read<uint8_t>(offset, true); // size in bytes
+    }
     
     return true;
 }
@@ -105,6 +125,12 @@ bool StackMaps::parse(DataView* view)
     unsigned offset = 0;
     
     view->read<uint32_t>(offset, true); // Reserved (header)
+    
+    uint32_t numFunctions = view->read<uint32_t>(offset, true);
+    ASSERT(numFunctions == 1); // There should only be one stack size record
+    while (numFunctions--) {
+        stackSizes.append(readObject<StackSize>(view, offset));
+    }
     
     uint32_t numConstants = view->read<uint32_t>(offset, true);
     while (numConstants--)
@@ -123,11 +149,14 @@ bool StackMaps::parse(DataView* view)
 
 void StackMaps::dump(PrintStream& out) const
 {
-    out.print("Constants:[", listDump(constants), "], Records:[", listDump(records), "]");
+    out.print("StackSizes[", listDump(stackSizes), "], Constants:[", listDump(constants), "], Records:[", listDump(records), "]");
 }
 
 void StackMaps::dumpMultiline(PrintStream& out, const char* prefix) const
 {
+    out.print(prefix, "StackSizes:\n");
+    for (unsigned i = 0; i < stackSizes.size(); ++i)
+        out.print(prefix, "    ", stackSizes[i], "\n");
     out.print(prefix, "Constants:\n");
     for (unsigned i = 0; i < constants.size(); ++i)
         out.print(prefix, "    ", constants[i], "\n");
@@ -136,12 +165,19 @@ void StackMaps::dumpMultiline(PrintStream& out, const char* prefix) const
         out.print(prefix, "    ", records[i], "\n");
 }
 
-StackMaps::RecordMap StackMaps::getRecordMap() const
+StackMaps::RecordMap StackMaps::computeRecordMap() const
 {
     RecordMap result;
     for (unsigned i = records.size(); i--;)
-        result.add(records[i].patchpointID, records[i]);
+        result.add(records[i].patchpointID, Vector<Record>()).iterator->value.append(records[i]);
     return result;
+}
+
+unsigned StackMaps::stackSize() const
+{
+    RELEASE_ASSERT(stackSizes.size() == 1);
+
+    return stackSizes[0].size;
 }
 
 } } // namespace JSC::FTL

@@ -23,7 +23,6 @@
 #ifndef CachedSVGDocument_h
 #define CachedSVGDocument_h
 
-#if ENABLE(SVG)
 #include "CachedResource.h"
 #include "CachedResourceHandle.h"
 #include "SVGDocument.h"
@@ -33,7 +32,7 @@ namespace WebCore {
 
 class CachedSVGDocument final : public CachedResource {
 public:
-    explicit CachedSVGDocument(const ResourceRequest&);
+    explicit CachedSVGDocument(const ResourceRequest&, SessionID);
     virtual ~CachedSVGDocument();
 
     SVGDocument* document() const { return m_document.get(); }
@@ -49,8 +48,8 @@ private:
     virtual void finishLoading(ResourceBuffer*) override;
 };
 
-} // namespace WebCore
+CACHED_RESOURCE_TYPE_CASTS(CachedSVGDocument, CachedResource, CachedResource::SVGDocumentResource)
 
-#endif // USE(SVG)
+} // namespace WebCore
 
 #endif // CachedSVGDocument_h

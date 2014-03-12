@@ -239,7 +239,7 @@ NSDictionary* Editor::fontAttributesForSelectionStart() const
 
 bool Editor::canCopyExcludingStandaloneImages()
 {
-    FrameSelection& selection = m_frame.selection();
+    const VisibleSelection& selection = m_frame.selection().selection();
     return selection.isRange() && !selection.isInPasswordField();
 }
 
@@ -259,7 +259,7 @@ void Editor::takeFindStringFromSelection()
 void Editor::readSelectionFromPasteboard(const String& pasteboardName)
 {
     Pasteboard pasteboard(pasteboardName);
-    if (m_frame.selection().isContentRichlyEditable())
+    if (m_frame.selection().selection().isContentRichlyEditable())
         pasteWithPasteboard(&pasteboard, true);
     else
         pasteAsPlainTextWithPasteboard(pasteboard);
@@ -366,7 +366,7 @@ void Editor::writeSelectionToPasteboard(Pasteboard& pasteboard)
 static void getImage(Element& imageElement, RefPtr<Image>& image, CachedImage*& cachedImage)
 {
     auto renderer = imageElement.renderer();
-    if (!renderer || !renderer->isImage())
+    if (!renderer || !renderer->isRenderImage())
         return;
 
     CachedImage* tentativeCachedImage = toRenderImage(renderer)->cachedImage();
@@ -545,7 +545,7 @@ bool Editor::WebContentReader::readImage(PassRefPtr<SharedBuffer> buffer, const 
     ASSERT(type.contains('/'));
     String typeAsFilenameWithExtension = type;
     typeAsFilenameWithExtension.replace('/', '.');
-    URL imageURL = URL(URL(), "webkit-fake-url://" + createCanonicalUUIDString() + '/' + typeAsFilenameWithExtension);
+    URL imageURL = URL::fakeURLWithRelativePart(typeAsFilenameWithExtension);
 
     fragment = frame.editor().createFragmentForImageResourceAndAddResource(ArchiveResource::create(buffer, imageURL, type, emptyString(), emptyString()));
     return fragment;

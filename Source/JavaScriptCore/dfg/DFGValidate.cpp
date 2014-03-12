@@ -29,6 +29,7 @@
 #if ENABLE(DFG_JIT)
 
 #include "CodeBlockWithJITType.h"
+#include "JSCInlines.h"
 #include <wtf/Assertions.h>
 #include <wtf/BitVector.h>
 
@@ -181,6 +182,18 @@ public:
                     V_EQUAL((node), m_myRefCounts.get(node), node->adjustedRefCount());
                 else
                     V_EQUAL((node), node->refCount(), 1);
+            }
+            
+            for (size_t i = 0 ; i < block->size() - 1; ++i) {
+                Node* node = block->at(i);
+                VALIDATE((node), !node->isTerminal());
+            }
+            
+            for (size_t i = 0; i < block->size(); ++i) {
+                Node* node = block->at(i);
+                
+                if (node->hasStructure())
+                    VALIDATE((node), !!node->structure());
             }
         }
         
@@ -341,6 +354,7 @@ private:
                     case Phantom:
                         if (m_graph.m_form == LoadStore && !j)
                             break;
+                        FALLTHROUGH;
                     default:
                         VALIDATE((node, edge), !phisInThisBlock.contains(edge.node()));
                         break;
@@ -400,18 +414,18 @@ private:
                 continue;
             
             unsigned nodeIndex = 0;
-            for (; nodeIndex < block->size() && !block->at(nodeIndex)->codeOrigin.isSet(); nodeIndex++) { }
+            for (; nodeIndex < block->size() && !block->at(nodeIndex)->origin.isSet(); nodeIndex++) { }
             
             VALIDATE((block), nodeIndex < block->size());
             
             for (; nodeIndex < block->size(); nodeIndex++)
-                VALIDATE((block->at(nodeIndex)), block->at(nodeIndex)->codeOrigin.isSet());
+                VALIDATE((block->at(nodeIndex)), block->at(nodeIndex)->origin.isSet());
             
             for (unsigned nodeIndex = 0; nodeIndex < block->size(); ++nodeIndex) {
                 Node* node = block->at(nodeIndex);
                 switch (node->op()) {
                 case Phi:
-                    VALIDATE((node), !node->codeOrigin.isSet());
+                    VALIDATE((node), !node->origin.isSet());
                     break;
                     
                 default:

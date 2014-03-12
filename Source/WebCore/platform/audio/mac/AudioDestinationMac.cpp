@@ -30,7 +30,7 @@
 
 #if ENABLE(WEB_AUDIO)
 
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+#if PLATFORM(MAC)
 
 #include "AudioDestinationMac.h"
 
@@ -128,12 +128,12 @@ void AudioDestinationMac::configure()
     AudioStreamBasicDescription streamFormat;
     streamFormat.mSampleRate = m_sampleRate;
     streamFormat.mFormatID = kAudioFormatLinearPCM;
-    streamFormat.mFormatFlags = kAudioFormatFlagsCanonical | kAudioFormatFlagIsNonInterleaved;
-    streamFormat.mBitsPerChannel = 8 * sizeof(AudioSampleType);
+    streamFormat.mFormatFlags = kAudioFormatFlagsNativeFloatPacked | kAudioFormatFlagIsNonInterleaved;
+    streamFormat.mBitsPerChannel = 8 * sizeof(Float32);
     streamFormat.mChannelsPerFrame = 2;
     streamFormat.mFramesPerPacket = 1;
-    streamFormat.mBytesPerPacket = sizeof(AudioSampleType);
-    streamFormat.mBytesPerFrame = sizeof(AudioSampleType);
+    streamFormat.mBytesPerPacket = sizeof(Float32);
+    streamFormat.mBytesPerFrame = sizeof(Float32);
 
     result = AudioUnitSetProperty(m_outputUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, (void*)&streamFormat, sizeof(AudioStreamBasicDescription));
     ASSERT(!result);
@@ -183,6 +183,6 @@ OSStatus AudioDestinationMac::inputProc(void* userData, AudioUnitRenderActionFla
 
 } // namespace WebCore
 
-#endif // PLATFORM(MAC) && !PLATFORM(IOS)
+#endif // PLATFORM(MAC)
 
 #endif // ENABLE(WEB_AUDIO)

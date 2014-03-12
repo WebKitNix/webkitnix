@@ -126,6 +126,7 @@ libwebkit2gtk_@WEBKITGTK_API_MAJOR_VERSION@_@WEBKITGTK_API_MINOR_VERSION@_la_CPP
 	-I$(srcdir)/Source/WebKit2/UIProcess/Network/CustomProtocols/soup \
 	-I$(srcdir)/Source/WebKit2/UIProcess/Notifications \
 	-I$(srcdir)/Source/WebKit2/UIProcess/Plugins \
+	-I$(srcdir)/Source/WebKit2/UIProcess/Plugins/gtk \
 	-I$(srcdir)/Source/WebKit2/UIProcess/Plugins/unix \
 	-I$(srcdir)/Source/WebKit2/UIProcess/Storage \
 	-I$(srcdir)/Source/WebKit2/UIProcess/soup \
@@ -241,10 +242,8 @@ libwebkit2gtk_@WEBKITGTK_API_MAJOR_VERSION@_@WEBKITGTK_API_MINOR_VERSION@_la_LIB
 	libANGLE.la
 endif
 
-if ENABLE_SVG
 libwebkit2gtk_@WEBKITGTK_API_MAJOR_VERSION@_@WEBKITGTK_API_MINOR_VERSION@_la_LIBADD += \
 	libWebCoreSVG.la
-endif
 
 libwebkit2gtk_@WEBKITGTK_API_MAJOR_VERSION@_@WEBKITGTK_API_MINOR_VERSION@_la_LIBADD += \
 	libjavascriptcoregtk-@WEBKITGTK_API_MAJOR_VERSION@.@WEBKITGTK_API_MINOR_VERSION@.la \
@@ -286,7 +285,9 @@ webkit2gtk_h_api += \
 	$(webkit2gtk_web_extension_h_api)
 
 if ENABLE_WEBKIT2
-pkgconfig_DATA += Source/WebKit2/webkit2gtk-@WEBKITGTK_API_VERSION@.pc
+pkgconfig_DATA += \
+	Source/WebKit2/webkit2gtk-@WEBKITGTK_API_VERSION@.pc \
+	Source/WebKit2/webkit2gtk-web-extension-@WEBKITGTK_API_VERSION@.pc
 
 if ENABLE_INTROSPECTION
 
@@ -359,7 +360,7 @@ WebKit2WebExtension-@WEBKITGTK_API_VERSION@.gir: $(G_IR_SCANNER) WebKit2-@WEBKIT
 	     --pkg=gobject-2.0 \
 	     --pkg=gtk+-@GTK_API_VERSION@ \
 	     --pkg=libsoup-2.4 \
-	     --pkg-export=webkit2gtk-@WEBKITGTK_API_VERSION@ \
+	     --pkg-export=webkit2gtk-web-extension-@WEBKITGTK_API_VERSION@ \
 	     --output=$@ \
 	     --add-include-path=$(WebKit2) \
 	     --add-include-path=$(top_builddir) \
@@ -401,12 +402,12 @@ BUILT_SOURCES += $(top_builddir)/stamp-webkit2-forwarding-headers
 $(GENSOURCES_WEBKIT2)/webkit2gtk/include/webkit2: $(webkit2gtk_h_api)
 	$(AM_V_GEN)mkdir -p $(GENSOURCES_WEBKIT2)/webkit2gtk/include \
 	&& rm -f $@ \
-	&& ln -n -s -f ${shell pwd}/$(WebKit2)/UIProcess/API/gtk $@
+	&& ln -n -s -f ${shell cd $(WebKit2)/UIProcess/API/gtk && pwd} $@
 
 $(GENSOURCES_WEBKIT2)/webkit2extension/include/webkit2: $(webkit2gtk_h_api)
 	$(AM_V_GEN)mkdir -p $(GENSOURCES_WEBKIT2)/webkit2extension/include \
 	&& rm -f $@ \
-	&& ln -n -s -f ${shell pwd}/$(WebKit2)/WebProcess/InjectedBundle/API/gtk $@
+	&& ln -n -s -f ${shell cd $(WebKit2)/WebProcess/InjectedBundle/API/gtk && pwd} $@
 
 BUILT_SOURCES += \
 	$(GENSOURCES_WEBKIT2)/webkit2extension/include/webkit2 \
@@ -428,7 +429,6 @@ vpath %.messages.in = \
 	$(WebKit2)/UIProcess/Plugins \
 	$(WebKit2)/UIProcess/ResourceCache \
 	$(WebKit2)/UIProcess/Storage \
-	$(WebKit2)/UIProcess/soup \
 	$(WebKit2)/WebProcess \
 	$(WebKit2)/WebProcess/ApplicationCache \
 	$(WebKit2)/WebProcess/Battery \
@@ -690,10 +690,10 @@ webcore_layer_gtk2_deps = \
 	libWebCoreGtk2.la \
 	libWebCore.la \
 	libWebCoreModules.la
-if ENABLE_SVG
+
 webcore_layer_gtk2_deps += \
 	libWebCoreSVG.la
-endif
+
 if ENABLE_INDEXED_DATABASE
 webcore_layer_gtk2_deps += \
 	libLevelDB.la
@@ -805,6 +805,27 @@ Programs_WebKitPluginProcess_LDADD = \
 Programs_WebKitPluginProcess_CXXFLAGS = \
 	-fvisibility-inlines-hidden \
 	$(global_cxxflags)
+
+if ENABLE_WEBKIT2
+# It would be nice to use the CPPFLAGS from the WebKit2 library here, but the prefix
+# header doesn't seem to play nicely with the gtkdoc tools.
+gtkdoc-webkit2gtk.cfg: $(WebKit2)/GNUmakefile.am $(WebKit2)/GNUmakefile.list.am
+	$(AM_V_GEN)echo "[webkit2gtk]" > $@ && \
+	echo "pkgconfig_file=$(webkit2_pkg_config_file)" >> $@ && \
+	echo "namespace=webkit" >> $@ && \
+	echo -e "cflags=-I$(srcdir)/Source\n \
+       -I$(WebKit2)/UIProcess/API/gtk\n \
+       -IDerivedSources/webkit2gtk/include\n \
+       -IDerivedSources/WebKit2/webkit2gtk\n" >> $@ && \
+	echo "doc_dir=$(WebKit2)/UIProcess/API/gtk/docs" >> $@ && \
+	echo -e "source_dirs=$(WebKit2)/UIProcess/API/gtk\n \
+           $(WebKit2)/WebProcess/InjectedBundle/API/gtk\n \
+           DerivedSources/WebKit2/webkit2gtk/webkit2\n" >> $@ && \
+	echo -e "headers=$(webkit2gtk_ui_h_api)\n \
+         $(webkit2gtk_web_extension_h_api)\n \
+         DerivedSources/WebKit2/webkit2gtk/webkit2/WebKitVersion.h" >> $@
+BUILT_SOURCES += gtkdoc-webkit2gtk.cfg
+endif
 
 EXTRA_DIST += \
 	$(WebKit2)/UIProcess/API/gtk/docs/webkit2gtk-docs.sgml \

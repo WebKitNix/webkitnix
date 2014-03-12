@@ -30,7 +30,7 @@
 
 #include "CodeBlock.h"
 #include "LinkBuffer.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC {
 
@@ -49,12 +49,12 @@ JITInlineCacheGenerator::JITInlineCacheGenerator(CodeBlock* codeBlock, CodeOrigi
 
 JITByIdGenerator::JITByIdGenerator(
     CodeBlock* codeBlock, CodeOrigin codeOrigin, const RegisterSet& usedRegisters,
-    GPRReg callFrameRegister, JSValueRegs base, JSValueRegs value, bool registersFlushed)
+    JSValueRegs base, JSValueRegs value, SpillRegistersMode spillMode)
     : JITInlineCacheGenerator(codeBlock, codeOrigin)
     , m_base(base)
     , m_value(value)
 {
-    m_stubInfo->patch.registersFlushed = registersFlushed;
+    m_stubInfo->patch.spillMode = spillMode;
     m_stubInfo->patch.usedRegisters = usedRegisters;
     
     // This is a convenience - in cases where the only registers you're using are base/value,
@@ -62,7 +62,6 @@ JITByIdGenerator::JITByIdGenerator(
     m_stubInfo->patch.usedRegisters.set(base);
     m_stubInfo->patch.usedRegisters.set(value);
     
-    m_stubInfo->patch.callFrameRegister = static_cast<int8_t>(callFrameRegister);
     m_stubInfo->patch.baseGPR = static_cast<int8_t>(base.payloadGPR());
     m_stubInfo->patch.valueGPR = static_cast<int8_t>(value.payloadGPR());
 #if USE(JSVALUE32_64)
@@ -102,10 +101,10 @@ void JITByIdGenerator::finalize(LinkBuffer& linkBuffer)
 
 void JITByIdGenerator::generateFastPathChecks(MacroAssembler& jit, GPRReg butterfly)
 {
-    m_structureCheck = jit.patchableBranchPtrWithPatch(
+    m_structureCheck = jit.patchableBranch32WithPatch(
         MacroAssembler::NotEqual,
-        MacroAssembler::Address(m_base.payloadGPR(), JSCell::structureOffset()),
-        m_structureImm, MacroAssembler::TrustedImmPtr(reinterpret_cast<void*>(unusedPointer)));
+        MacroAssembler::Address(m_base.payloadGPR(), JSCell::structureIDOffset()),
+        m_structureImm, MacroAssembler::TrustedImm32(0));
     
     m_propertyStorageLoad = jit.convertibleLoadPtr(
         MacroAssembler::Address(m_base.payloadGPR(), JSObject::butterflyOffset()), butterfly);
@@ -130,11 +129,9 @@ void JITGetByIdGenerator::generateFastPath(MacroAssembler& jit)
 
 JITPutByIdGenerator::JITPutByIdGenerator(
     CodeBlock* codeBlock, CodeOrigin codeOrigin, const RegisterSet& usedRegisters,
-    GPRReg callFrameRegister, JSValueRegs base, JSValueRegs value, GPRReg scratch,
-    bool registersFlushed, ECMAMode ecmaMode, PutKind putKind)
-    : JITByIdGenerator(
-        codeBlock, codeOrigin, usedRegisters, callFrameRegister, base, value,
-        registersFlushed)
+    JSValueRegs base, JSValueRegs value, GPRReg scratch, SpillRegistersMode spillMode,
+    ECMAMode ecmaMode, PutKind putKind)
+    : JITByIdGenerator(codeBlock, codeOrigin, usedRegisters, base, value, spillMode)
     , m_scratch(scratch)
     , m_ecmaMode(ecmaMode)
     , m_putKind(putKind)

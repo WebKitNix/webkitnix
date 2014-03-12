@@ -23,7 +23,6 @@
 
 #include <Eina.h>
 #include <Evas.h>
-#include <cairo.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -352,28 +351,6 @@ EAPI const char       *ewk_history_item_uri_get(const Ewk_History_Item *item);
 EAPI const char       *ewk_history_item_uri_original_get(const Ewk_History_Item *item);
 
 /**
- * Query last visited time for given history item.
- *
- * @param item history item to query.
- *
- * @return the time in seconds this item was visited.
- */
-EAPI double            ewk_history_item_time_last_visited_get(const Ewk_History_Item *item);
-
-/**
- * Get the icon (aka favicon) associated with this history item.
- *
- * @note in order to have this working, one must open icon database
- *       with ewk_settings_icon_database_path_set().
- *
- * @param item history item to query.
- *
- * @return the surface reference or @c NULL on errors. Note that the
- *         reference may be to a standard fallback icon.
- */
-EAPI cairo_surface_t  *ewk_history_item_icon_surface_get(const Ewk_History_Item *item);
-
-/**
  * Add an Evas_Object of type 'image' to given canvas with history item icon.
  *
  * This is an utility function that creates an Evas_Object of type
@@ -399,15 +376,6 @@ EAPI Evas_Object      *ewk_history_item_icon_object_add(const Ewk_History_Item *
  * @return @c EINA_TRUE if in cache, @c EINA_FALSE otherwise.
  */
 EAPI Eina_Bool         ewk_history_item_page_cache_exists(const Ewk_History_Item *item);
-
-/**
- * Query number of times item was visited.
- *
- * @param item history item to query.
- *
- * @return number of visits.
- */
-EAPI int               ewk_history_item_visit_count(const Ewk_History_Item *item);
 
 /**
  * Query if last visit to item was failure or not.

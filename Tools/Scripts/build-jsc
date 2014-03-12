@@ -39,7 +39,9 @@ my $coverageSupport = 0;
 my $showHelp = 0;
 my $ftlJIT = 0;
 my $forceCLoop = 0;
+my $cli = 0;
 my $makeArgs = "";
+my $copyLibraries = 1;
 
 my $programName = basename($0);
 my $usage = <<EOF;
@@ -47,7 +49,9 @@ Usage: $programName [options] [options to pass to build system]
   --help                        Show this help message
   --[no-]coverage               Toggle code coverage support (default: $coverageSupport)
   --[no-]ftl-jit                Toggle FTL JIT support (default: $ftlJIT)
+  --[no-]copy-libraries         Toggle whether to copy libraries (default: $copyLibraries)
   --cloop                       Use C Loop interpreter (default: $forceCLoop)
+  --cli                         Build the new jsc command line interface (default: $cli)
   --makeargs=<arguments>        Optional Makefile flags
 EOF
 
@@ -56,6 +60,8 @@ GetOptions(
     'help' => \$showHelp,
     'ftl-jit!' => \$ftlJIT,
     'cloop!' => \$forceCLoop,
+    'cli!' => \$cli,
+    'copy-libraries!' => \$copyLibraries,
     'makeargs=s' => \$makeArgs
 );
 
@@ -84,14 +90,19 @@ if (cmakeBasedPortName()) {
 
 if (isAppleMacWebKit()) {
     if ($ftlJIT) {
-        $ENV{ENABLE_FTL_JIT} = 1;
         push @options, "ENABLE_FTL_JIT=ENABLE_FTL_JIT";
     }
     if ($forceCLoop) {
-        $ENV{ENABLE_LLINT_C_LOOP} = 1;
         push @options, "ENABLE_LLINT_C_LOOP=ENABLE_LLINT_C_LOOP";
     }
-    (system("perl", "Tools/Scripts/copy-webkitlibraries-to-product-directory", productDir()) == 0) or die;
+    if ($copyLibraries) {
+        my @copyLibrariesArgs = ("perl", "Tools/Scripts/copy-webkitlibraries-to-product-directory");
+        if ($ftlJIT) {
+            push @copyLibrariesArgs, "--llvm";
+        }
+        push @copyLibrariesArgs, productDir();
+        (system(@copyLibrariesArgs) == 0) or die;
+    }
 }
 
 sub buildMyProject
@@ -118,3 +129,6 @@ sub buildMyProject
 
 buildMyProject("Source/WTF", "WTF");
 buildMyProject("Source/JavaScriptCore", "JavaScriptCore");
+if (isAppleMacWebKit() && $cli) {
+    buildMyProject("Tools/jsc-cli", "jsc-cli");
+}

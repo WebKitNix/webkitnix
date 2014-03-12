@@ -30,6 +30,7 @@
 #include <WebCore/ResourceHandle.h>
 #include <WebCore/ResourceLoaderOptions.h>
 #include <WebCore/ResourceRequest.h>
+#include <WebCore/SessionID.h>
 
 #if ENABLE(NETWORK_PROCESS)
 
@@ -52,6 +53,7 @@ public:
     ResourceLoadIdentifier identifier;
     uint64_t webPageID;
     uint64_t webFrameID;
+    WebCore::SessionID sessionID;
     WebCore::ResourceRequest request;
     SandboxExtension::HandleArray requestBodySandboxExtensions; // Created automatically for the sender.
     SandboxExtension::Handle resourceSandboxExtension; // Created automatically for the sender.
@@ -59,7 +61,6 @@ public:
     WebCore::ContentSniffingPolicy contentSniffingPolicy;
     WebCore::StoredCredentials allowStoredCredentials;
     WebCore::ClientCredentialPolicy clientCredentialPolicy;
-    bool inPrivateBrowsingMode;
     bool shouldClearReferrerOnHTTPSToHTTPRedirect;
     bool isMainResource;
 };

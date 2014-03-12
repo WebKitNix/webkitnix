@@ -9,6 +9,7 @@
  * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  * Copyright (C) Research In Motion Limited 2011. All rights reserved.
  * Copyright (C) 2012 Google Inc. All rights reserved.
+ * Copyright (C) 2014 Igalia S.L.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -39,7 +40,7 @@
 #include "CSSFontFeatureValue.h"
 #include "CSSFontSelector.h"
 #include "CSSFontValue.h"
-#include "CSSGridTemplateValue.h"
+#include "CSSFunctionValue.h"
 #include "CSSLineBoxContainValue.h"
 #include "CSSPageRule.h"
 #include "CSSParser.h"
@@ -55,6 +56,8 @@
 #include "CSSValueList.h"
 #include "CachedImage.h"
 #include "CachedResourceLoader.h"
+#include "CachedSVGDocument.h"
+#include "CachedSVGDocumentReference.h"
 #include "CalculationValue.h"
 #include "ContentData.h"
 #include "Counter.h"
@@ -89,6 +92,7 @@
 #include "Page.h"
 #include "PageRuleCollector.h"
 #include "Pair.h"
+#include "PseudoElement.h"
 #include "QuotesData.h"
 #include "Rect.h"
 #include "RenderRegion.h"
@@ -98,8 +102,12 @@
 #include "RenderTheme.h"
 #include "RenderView.h"
 #include "RuleSet.h"
+#include "SVGDocument.h"
 #include "SVGDocumentExtensions.h"
+#include "SVGElement.h"
 #include "SVGFontFaceElement.h"
+#include "SVGNames.h"
+#include "SVGURIReference.h"
 #include "SecurityOrigin.h"
 #include "SelectorCheckerFastPath.h"
 #include "Settings.h"
@@ -136,27 +144,13 @@
 #include "WebKitCSSFilterValue.h"
 #endif
 
+#if ENABLE(CSS_GRID_LAYOUT)
+#include "CSSGridTemplateAreasValue.h"
+#endif
+
 #if ENABLE(CSS_IMAGE_SET)
 #include "CSSImageSetValue.h"
 #include "StyleCachedImageSet.h"
-#endif
-
-#if ENABLE(CSS_SHADERS)
-#include "CustomFilterArrayParameter.h"
-#include "CustomFilterColorParameter.h"
-#include "CustomFilterConstants.h"
-#include "CustomFilterNumberParameter.h"
-#include "CustomFilterOperation.h"
-#include "CustomFilterParameter.h"
-#include "CustomFilterProgramInfo.h"
-#include "CustomFilterTransformParameter.h"
-#include "StyleCachedShader.h"
-#include "StyleCustomFilterProgram.h"
-#include "StyleCustomFilterProgramCache.h"
-#include "StylePendingShader.h"
-#include "StyleShader.h"
-#include "WebKitCSSMixFunctionValue.h"
-#include "WebKitCSSShaderValue.h"
 #endif
 
 #if ENABLE(DASHBOARD_SUPPORT)
@@ -165,15 +159,6 @@
 
 #if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
 #include "HTMLAudioElement.h"
-#endif
-
-#if ENABLE(SVG)
-#include "CachedSVGDocument.h"
-#include "CachedSVGDocumentReference.h"
-#include "SVGDocument.h"
-#include "SVGElement.h"
-#include "SVGNames.h"
-#include "SVGURIReference.h"
 #endif
 
 #if ENABLE(VIDEO_TRACK)
@@ -256,11 +241,8 @@ inline void StyleResolver::State::clear()
     m_parentNode = nullptr;
     m_regionForStyling = nullptr;
     m_pendingImageProperties.clear();
-#if ENABLE(CSS_SHADERS)
-    m_hasPendingShaders = false;
-#endif
-#if ENABLE(CSS_FILTERS) && ENABLE(SVG)
-    m_pendingSVGDocuments.clear();
+#if ENABLE(CSS_FILTERS)
+    m_filtersWithPendingSVGDocuments.clear();
 #endif
 }
 
@@ -298,15 +280,15 @@ StyleResolver::StyleResolver(Document& document, bool matchAuthorAndUserStyles)
     // is always from the document that owns the style selector
     FrameView* view = m_document.view();
     if (view)
-        m_medium = adoptPtr(new MediaQueryEvaluator(view->mediaType()));
+        m_medium = std::make_unique<MediaQueryEvaluator>(view->mediaType());
     else
-        m_medium = adoptPtr(new MediaQueryEvaluator("all"));
+        m_medium = std::make_unique<MediaQueryEvaluator>("all");
 
     if (root)
         m_rootDefaultStyle = styleForElement(root, 0, DisallowStyleSharing, MatchOnlyUserAgentRules);
 
     if (m_rootDefaultStyle && view)
-        m_medium = adoptPtr(new MediaQueryEvaluator(view->mediaType(), &view->frame(), m_rootDefaultStyle.get()));
+        m_medium = std::make_unique<MediaQueryEvaluator>(view->mediaType(), &view->frame(), m_rootDefaultStyle.get());
 
     m_ruleSets.resetAuthorStyle();
 
@@ -327,7 +309,7 @@ StyleResolver::StyleResolver(Document& document, bool matchAuthorAndUserStyles)
 
 void StyleResolver::appendAuthorStyleSheets(unsigned firstNew, const Vector<RefPtr<CSSStyleSheet>>& styleSheets)
 {
-    m_ruleSets.appendAuthorStyleSheets(firstNew, styleSheets, m_medium.get(), m_inspectorCSSOMWrappers, document().isViewSource(), this);
+    m_ruleSets.appendAuthorStyleSheets(firstNew, styleSheets, m_medium.get(), m_inspectorCSSOMWrappers, this);
     if (auto renderView = document().renderView())
         renderView->style().font().update(fontSelector());
 
@@ -348,10 +330,6 @@ void StyleResolver::pushParentElement(Element* parent)
         m_selectorFilter.setupParentStack(parent);
     else
         m_selectorFilter.pushParent(parent);
-
-    // Note: We mustn't skip ShadowRoot nodes for the scope stack.
-    if (m_scopeResolver)
-        m_scopeResolver->push(parent, parent->parentOrShadowHostNode());
 }
 
 void StyleResolver::popParentElement(Element* parent)
@@ -360,22 +338,6 @@ void StyleResolver::popParentElement(Element* parent)
     // Pause maintaining the stack in this case.
     if (m_selectorFilter.parentStackIsConsistent(parent))
         m_selectorFilter.popParent();
-    if (m_scopeResolver)
-        m_scopeResolver->pop(parent);
-}
-
-void StyleResolver::pushParentShadowRoot(const ShadowRoot* shadowRoot)
-{
-    ASSERT(shadowRoot->hostElement());
-    if (m_scopeResolver)
-        m_scopeResolver->push(shadowRoot, shadowRoot->hostElement());
-}
-
-void StyleResolver::popParentShadowRoot(const ShadowRoot* shadowRoot)
-{
-    ASSERT(shadowRoot->hostElement());
-    if (m_scopeResolver)
-        m_scopeResolver->pop(shadowRoot);
 }
 
 // This is a simplified style setting function for keyframe styles
@@ -417,15 +379,6 @@ void StyleResolver::sweepMatchedPropertiesCache(Timer<StyleResolver>*)
     m_matchedPropertiesCacheAdditionsSinceLastSweep = 0;
 }
 
-inline bool StyleResolver::styleSharingCandidateMatchesHostRules()
-{
-#if ENABLE(SHADOW_DOM)
-    return m_scopeResolver && m_scopeResolver->styleSharingCandidateMatchesHostRules(m_state.element());
-#else
-    return false;
-#endif
-}
-
 bool StyleResolver::classNamesAffectedByRules(const SpaceSplitString& classNames) const
 {
     for (unsigned i = 0; i < classNames.size(); ++i) {
@@ -458,7 +411,7 @@ inline void StyleResolver::State::initForStyleResolve(Document& document, Elemen
     m_regionForStyling = regionForStyling;
 
     if (e) {
-        m_parentNode = NodeRenderingTraversal::parent(e);
+        m_parentNode = e->isPseudoElement() ? toPseudoElement(e)->hostElement() : NodeRenderingTraversal::parent(e);
         bool resetStyleInheritance = hasShadowRootParent(*e) && toShadowRoot(e->parentNode())->resetStyleInheritance();
         m_parentStyle = resetStyleInheritance ? 0 :
             parentStyle ? parentStyle :
@@ -496,10 +449,8 @@ Node* StyleResolver::locateCousinList(Element* parent, unsigned& visitedNodeCoun
     StyledElement* p = toStyledElement(parent);
     if (p->inlineStyle())
         return 0;
-#if ENABLE(SVG)
     if (p->isSVGElement() && toSVGElement(p)->animatedSMILStyleProperties())
         return 0;
-#endif
     if (p->hasID() && m_ruleSets.features().idsInRules.contains(p->idForStyleResolution().impl()))
         return 0;
 
@@ -516,9 +467,6 @@ Node* StyleResolver::locateCousinList(Element* parent, unsigned& visitedNodeCoun
             ++subcount;
             if (currentNode->renderStyle() == parentStyle && currentNode->lastChild()
                 && currentNode->isElementNode() && !parentElementPreventsSharing(toElement(currentNode))
-#if ENABLE(SHADOW_DOM)
-                && !toElement(currentNode)->authorShadowRoot()
-#endif
                 ) {
                 // Adjust for unused reserved tries.
                 visitedNodeCount -= cStyleSearchThreshold - subcount;
@@ -540,7 +488,7 @@ bool StyleResolver::styleSharingCandidateMatchesRuleSet(RuleSet* ruleSet)
     if (!ruleSet)
         return false;
 
-    ElementRuleCollector collector(this, m_state);
+    ElementRuleCollector collector(*m_state.element(), m_state.style(), m_ruleSets, m_selectorFilter);
     return collector.hasAnyMatchingRules(ruleSet);
 }
 
@@ -614,18 +562,14 @@ bool StyleResolver::sharingCandidateHasIdenticalStyleAffectingAttributes(StyledE
         if (sharingCandidate->hasClass() && classNamesAffectedByRules(sharingCandidate->classNames()))
             return false;
     } else if (sharingCandidate->hasClass()) {
-#if ENABLE(SVG)
         // SVG elements require a (slow!) getAttribute comparision because "class" is an animatable attribute for SVG.
         if (state.element()->isSVGElement()) {
             if (state.element()->getAttribute(classAttr) != sharingCandidate->getAttribute(classAttr))
                 return false;
         } else {
-#endif
             if (state.element()->classNames() != sharingCandidate->classNames())
                 return false;
-#if ENABLE(SVG)
         }
-#endif
     } else
         return false;
 
@@ -659,10 +603,8 @@ bool StyleResolver::canShareStyleWithElement(StyledElement* element) const
         return false;
     if (element->needsStyleRecalc())
         return false;
-#if ENABLE(SVG)
     if (element->isSVGElement() && toSVGElement(element)->animatedSMILStyleProperties())
         return false;
-#endif
     if (element->isLink() != state.element()->isLink())
         return false;
     if (element->hovered() != state.element()->hovered())
@@ -700,7 +642,6 @@ bool StyleResolver::canShareStyleWithElement(StyledElement* element) const
     if (style->transitions() || style->animations())
         return false;
 
-#if USE(ACCELERATED_COMPOSITING)
     // Turn off style sharing for elements that can gain layers for reasons outside of the style system.
     // See comments in RenderObject::setStyle().
     if (element->hasTagName(iframeTag) || element->hasTagName(frameTag) || element->hasTagName(embedTag) || element->hasTagName(objectTag) || element->hasTagName(appletTag) || element->hasTagName(canvasTag))
@@ -710,8 +651,6 @@ bool StyleResolver::canShareStyleWithElement(StyledElement* element) const
     // With proxying, the media elements are backed by a RenderEmbeddedObject.
     if ((element->hasTagName(videoTag) || element->hasTagName(audioTag)) && toHTMLMediaElement(element)->shouldUseVideoPluginProxy())
         return false;
-#endif
-
 #endif
 
     if (elementHasDirectionAuto(element))
@@ -758,10 +697,8 @@ RenderStyle* StyleResolver::locateSharedStyle()
     // If the element has inline style it is probably unique.
     if (state.styledElement()->inlineStyle())
         return 0;
-#if ENABLE(SVG)
     if (state.styledElement()->isSVGElement() && toSVGElement(state.styledElement())->animatedSMILStyleProperties())
         return 0;
-#endif
     // Ids stop style sharing if they show up in the stylesheets.
     if (state.styledElement()->hasID() && m_ruleSets.features().idsInRules.contains(state.styledElement()->idForStyleResolution().impl()))
         return 0;
@@ -797,9 +734,6 @@ RenderStyle* StyleResolver::locateSharedStyle()
         return 0;
     // Can't share if attribute rules apply.
     if (styleSharingCandidateMatchesRuleSet(m_ruleSets.uncommonAttribute()))
-        return 0;
-    // Can't share if @host @-rules apply.
-    if (styleSharingCandidateMatchesHostRules())
         return 0;
     // Tracking child index requires unique style for each node. This may get set by the sibling rule match above.
     if (parentElementPreventsSharing(state.element()->parentElement()))
@@ -862,9 +796,9 @@ PassRef<RenderStyle> StyleResolver::styleForElement(Element* element, RenderStyl
     bool needsCollection = false;
     CSSDefaultStyleSheets::ensureDefaultStyleSheetsForElement(element, needsCollection);
     if (needsCollection)
-        m_ruleSets.collectFeatures(document().isViewSource(), m_scopeResolver.get());
+        m_ruleSets.collectFeatures();
 
-    ElementRuleCollector collector(this, state);
+    ElementRuleCollector collector(*element, state.style(), m_ruleSets, m_selectorFilter);
     collector.setRegionForStyling(regionForStyling);
     collector.setMedium(m_medium.get());
 
@@ -1007,17 +941,17 @@ void StyleResolver::keyframeStylesForAnimation(Element* e, const RenderStyle* el
     }
 }
 
-PassRefPtr<RenderStyle> StyleResolver::pseudoStyleForElement(Element* e, const PseudoStyleRequest& pseudoStyleRequest, RenderStyle* parentStyle)
+PassRefPtr<RenderStyle> StyleResolver::pseudoStyleForElement(Element* element, const PseudoStyleRequest& pseudoStyleRequest, RenderStyle* parentStyle)
 {
     ASSERT(parentStyle);
-    if (!e)
+    if (!element)
         return 0;
 
     State& state = m_state;
 
-    initElement(e);
+    initElement(element);
 
-    state.initForStyleResolve(document(), e, parentStyle);
+    state.initForStyleResolve(document(), element, parentStyle);
 
     if (m_state.parentStyle()) {
         state.setStyle(RenderStyle::create());
@@ -1031,7 +965,7 @@ PassRefPtr<RenderStyle> StyleResolver::pseudoStyleForElement(Element* e, const P
     // those rules.
 
     // Check UA, user and author rules.
-    ElementRuleCollector collector(this, state);
+    ElementRuleCollector collector(*element, m_state.style(), m_ruleSets, m_selectorFilter);
     collector.setPseudoStyleRequest(pseudoStyleRequest);
     collector.setMedium(m_medium.get());
     collector.matchUARules();
@@ -1046,7 +980,7 @@ PassRefPtr<RenderStyle> StyleResolver::pseudoStyleForElement(Element* e, const P
 
     state.style()->setStyleType(pseudoStyleRequest.pseudoId);
 
-    applyMatchedProperties(collector.matchedResult(), e);
+    applyMatchedProperties(collector.matchedResult(), element);
 
     // Clean up our style object's display and text decorations (among other fixups).
     adjustRenderStyle(*state.style(), *m_state.parentStyle(), 0);
@@ -1144,7 +1078,9 @@ static EDisplay equivalentBlockDisplay(EDisplay display, bool isFloating, bool s
     case TABLE:
     case BOX:
     case FLEX:
+#if ENABLE(CSS_GRID_LAYOUT)
     case GRID:
+#endif
         return display;
 
     case LIST_ITEM:
@@ -1158,11 +1094,12 @@ static EDisplay equivalentBlockDisplay(EDisplay display, bool isFloating, bool s
         return BOX;
     case INLINE_FLEX:
         return FLEX;
+#if ENABLE(CSS_GRID_LAYOUT)
     case INLINE_GRID:
         return GRID;
+#endif
 
     case INLINE:
-    case RUN_IN:
     case COMPACT:
     case INLINE_BLOCK:
     case TABLE_ROW_GROUP:
@@ -1183,11 +1120,11 @@ static EDisplay equivalentBlockDisplay(EDisplay display, bool isFloating, bool s
 }
 
 // CSS requires text-decoration to be reset at each DOM element for tables, 
-// inline blocks, inline tables, run-ins, shadow DOM crossings, floating elements,
+// inline blocks, inline tables, shadow DOM crossings, floating elements,
 // and absolute or relatively positioned elements.
 static bool doesNotInheritTextDecoration(const RenderStyle& style, Element* e)
 {
-    return style.display() == TABLE || style.display() == INLINE_TABLE || style.display() == RUN_IN
+    return style.display() == TABLE || style.display() == INLINE_TABLE
         || style.display() == INLINE_BLOCK || style.display() == INLINE_BOX || isAtShadowBoundary(e)
         || style.isFloating() || style.hasOutOfFlowPosition();
 }
@@ -1273,7 +1210,7 @@ void StyleResolver::adjustRenderStyle(RenderStyle& style, const RenderStyle& par
         // on some sites).
         if ((style.display() == TABLE_HEADER_GROUP || style.display() == TABLE_ROW_GROUP
             || style.display() == TABLE_FOOTER_GROUP || style.display() == TABLE_ROW)
-            && style.hasInFlowPosition())
+            && style.position() == RelativePosition)
             style.setPosition(StaticPosition);
 
         // writing-mode does not apply to table row groups, table column groups, table rows, and table columns.
@@ -1310,6 +1247,7 @@ void StyleResolver::adjustRenderStyle(RenderStyle& style, const RenderStyle& par
         || style.boxReflect()
         || style.hasFilter()
         || style.hasBlendMode()
+        || style.hasIsolation()
         || style.position() == StickyPosition
         || (style.position() == FixedPosition && e && e->document().page() && e->document().page()->settings().fixedPositionCreatesStackingContext())
         || style.hasFlowFrom()
@@ -1321,6 +1259,10 @@ void StyleResolver::adjustRenderStyle(RenderStyle& style, const RenderStyle& par
         style.setOverflowX(style.overflowX() == OVISIBLE ? OAUTO : style.overflowX());
         style.setOverflowY(style.overflowY() == OVISIBLE ? OAUTO : style.overflowY());
     }
+
+    // Disallow -webkit-user-modify on :pseudo and ::pseudo elements.
+    if (e && !e->shadowPseudoId().isNull())
+        style.setUserModify(READ_ONLY);
 
     if (doesNotInheritTextDecoration(style, e))
         style.setTextDecorationsInEffect(style.textDecoration());
@@ -1396,16 +1338,14 @@ void StyleResolver::adjustRenderStyle(RenderStyle& style, const RenderStyle& par
     // FIXME: when dropping the -webkit prefix on transform-style, we should also have opacity < 1 cause flattening.
     if (style.preserves3D() && (style.overflowX() != OVISIBLE
         || style.overflowY() != OVISIBLE
-        || style.hasFilter()))
+        || style.hasFilter()
+        || style.hasBlendMode()))
         style.setTransformStyle3D(TransformStyle3DFlat);
 
-    // Seamless iframes behave like blocks. Map their display to inline-block when marked inline.
-    if (e && e->hasTagName(iframeTag) && style.display() == INLINE && toHTMLIFrameElement(e)->shouldDisplaySeamlessly())
-        style.setDisplay(INLINE_BLOCK);
-
+#if ENABLE(CSS_GRID_LAYOUT)
     adjustGridItemPosition(style, parentStyle);
+#endif
 
-#if ENABLE(SVG)
     if (e && e->isSVGElement()) {
         // Spec: http://www.w3.org/TR/SVG/masking.html#OverflowProperty
         if (style.overflowY() == OSCROLL)
@@ -1430,8 +1370,88 @@ void StyleResolver::adjustRenderStyle(RenderStyle& style, const RenderStyle& par
         // SVG text layout code expects us to be a block-level style element.
         if ((e->hasTagName(SVGNames::foreignObjectTag) || e->hasTagName(SVGNames::textTag)) && style.isDisplayInlineType())
             style.setDisplay(BLOCK);
+
+        // SVG text layout code expects us to be an inline-level style element.
+        if ((e->hasTagName(SVGNames::tspanTag) || e->hasTagName(SVGNames::textPathTag)) && style.display() != NONE && !style.isDisplayInlineType())
+            style.setDisplay(INLINE);
     }
-#endif
+}
+
+#if ENABLE(CSS_GRID_LAYOUT)
+static inline bool gridLineDefinedBeforeGridArea(const String& gridLineName, const String& gridAreaName, const NamedGridAreaMap& gridAreaMap, const NamedGridLinesMap& namedLinesMap, GridPositionSide side)
+{
+    ASSERT(namedLinesMap.contains(gridLineName));
+    // Grid line indexes are inserted in order.
+    size_t namedGridLineFirstDefinition = GridPosition::adjustGridPositionForSide(namedLinesMap.get(gridLineName)[0], side);
+
+    ASSERT(gridAreaMap.contains(gridAreaName));
+    const GridCoordinate& gridAreaCoordinates = gridAreaMap.get(gridAreaName);
+
+    // GridCoordinate refers to tracks while the indexes in namedLinesMap refer to lines, that's why we need to add 1 to
+    // the grid coordinate to get the end line index.
+    switch (side) {
+    case ColumnStartSide:
+        return namedGridLineFirstDefinition < gridAreaCoordinates.columns.initialPositionIndex;
+    case ColumnEndSide:
+        return namedGridLineFirstDefinition < gridAreaCoordinates.columns.finalPositionIndex;
+    case RowStartSide:
+        return namedGridLineFirstDefinition < gridAreaCoordinates.rows.initialPositionIndex;
+    case RowEndSide:
+        return namedGridLineFirstDefinition < gridAreaCoordinates.rows.finalPositionIndex;
+    }
+    ASSERT_NOT_REACHED();
+    return false;
+}
+
+std::unique_ptr<GridPosition> StyleResolver::adjustNamedGridItemPosition(const NamedGridAreaMap& gridAreaMap, const NamedGridLinesMap& namedLinesMap, const GridPosition& position, GridPositionSide side) const
+{
+    ASSERT(position.isNamedGridArea());
+    // The StyleBuilder always treats <custom-ident> as a named grid area. We must decide here if they are going to be
+    // resolved to either a grid area or a grid line.
+
+    String namedGridAreaOrGridLine = position.namedGridLine();
+    bool hasStartSuffix = namedGridAreaOrGridLine.endsWith("-start");
+    bool hasEndSuffix = namedGridAreaOrGridLine.endsWith("-end");
+    bool isStartSide = side == ColumnStartSide || side == RowStartSide;
+    bool hasStartSuffixForStartSide = hasStartSuffix && isStartSide;
+    bool hasEndSuffixForEndSide = hasEndSuffix && !isStartSide;
+    size_t suffixLength = hasStartSuffix ? strlen("-start") : strlen("-end");
+    String gridAreaName = hasStartSuffixForStartSide || hasEndSuffixForEndSide ? namedGridAreaOrGridLine.substring(0, namedGridAreaOrGridLine.length() - suffixLength) : namedGridAreaOrGridLine;
+
+    if (gridAreaMap.contains(gridAreaName)) {
+        String gridLineName;
+        if (isStartSide && !hasStartSuffix)
+            gridLineName = namedGridAreaOrGridLine + "-start";
+        else if (!isStartSide && !hasEndSuffix)
+            gridLineName = namedGridAreaOrGridLine + "-end";
+        else
+            gridLineName = namedGridAreaOrGridLine;
+
+        if (namedLinesMap.contains(gridLineName) && gridLineDefinedBeforeGridArea(gridLineName, gridAreaName, gridAreaMap, namedLinesMap, side)) {
+            // Use the explicitly defined grid line defined before the grid area instead of the grid area.
+            auto adjustedPosition = std::make_unique<GridPosition>();
+            adjustedPosition->setExplicitPosition(1, gridLineName);
+            return adjustedPosition;
+        }
+
+        if (hasStartSuffixForStartSide || hasEndSuffixForEndSide) {
+            // Renderer expects the grid area name instead of the implicit grid line name.
+            auto adjustedPosition = std::make_unique<GridPosition>();
+            adjustedPosition->setNamedGridArea(gridAreaName);
+            return adjustedPosition;
+        }
+
+        return nullptr;
+    }
+
+    if (namedLinesMap.contains(namedGridAreaOrGridLine)) {
+        auto adjustedPosition = std::make_unique<GridPosition>();
+        adjustedPosition->setExplicitPosition(1, namedGridAreaOrGridLine);
+        return adjustedPosition;
+    }
+
+    // We must clear unknown named grid areas
+    return std::make_unique<GridPosition>();
 }
 
 void StyleResolver::adjustGridItemPosition(RenderStyle& style, const RenderStyle& parentStyle) const
@@ -1452,24 +1472,32 @@ void StyleResolver::adjustGridItemPosition(RenderStyle& style, const RenderStyle
         style.setGridItemRowEnd(GridPosition());
     }
 
-    // Unknown named grid area compute to 'auto'.
-    const NamedGridAreaMap& map = parentStyle.namedGridArea();
+    // If the grid position is a single <custom-ident> then the spec mandates us to resolve it following this steps:
+    //     * If there is a named grid area called <custom-ident> resolve the position to the area's corresponding edge.
+    //         * If a grid area was found with that name, check that there is no <custom-ident>-start or <custom-ident>-end (depending
+    // on the css property being defined) specified before the grid area. If that's the case resolve to that grid line.
+    //     * Otherwise check if there is a grid line named <custom-ident>.
+    //     * Otherwise treat it as auto.
+    const NamedGridLinesMap& namedGridColumnLines = parentStyle.namedGridColumnLines();
+    const NamedGridLinesMap& namedGridRowLines = parentStyle.namedGridRowLines();
+    const NamedGridAreaMap& gridAreaMap = parentStyle.namedGridArea();
 
-#define CLEAR_UNKNOWN_NAMED_AREA(prop, Prop) \
-    if (prop.isNamedGridArea() && !map.contains(prop.namedGridLine())) \
-        style.setGridItem##Prop(GridPosition());
+#define ADJUST_GRID_POSITION_MAYBE(position, Prop, namedGridLines, side) \
+    if (position.isNamedGridArea()) {                                   \
+        std::unique_ptr<GridPosition> adjustedPosition = adjustNamedGridItemPosition(gridAreaMap, namedGridLines, position, side); \
+        if (adjustedPosition)                                           \
+            style.setGridItem##Prop(*adjustedPosition);                 \
+    }
 
-    CLEAR_UNKNOWN_NAMED_AREA(columnStartPosition, ColumnStart);
-    CLEAR_UNKNOWN_NAMED_AREA(columnEndPosition, ColumnEnd);
-    CLEAR_UNKNOWN_NAMED_AREA(rowStartPosition, RowStart);
-    CLEAR_UNKNOWN_NAMED_AREA(rowEndPosition, RowEnd);
+    ADJUST_GRID_POSITION_MAYBE(columnStartPosition, ColumnStart, namedGridColumnLines, ColumnStartSide);
+    ADJUST_GRID_POSITION_MAYBE(columnEndPosition, ColumnEnd, namedGridColumnLines, ColumnEndSide);
+    ADJUST_GRID_POSITION_MAYBE(rowStartPosition, RowStart, namedGridRowLines, RowStartSide);
+    ADJUST_GRID_POSITION_MAYBE(rowEndPosition, RowEnd, namedGridRowLines, RowEndSide);
 }
+#endif /* ENABLE(CSS_GRID_LAYOUT) */
 
 bool StyleResolver::checkRegionStyle(Element* regionElement)
 {
-    // FIXME (BUG 72472): We don't add @-webkit-region rules of scoped style sheets for the moment,
-    // so all region rules are global by default. Verify whether that can stand or needs changing.
-
     unsigned rulesSize = m_ruleSets.authorStyle()->regionSelectorsAndRuleSets().size();
     for (unsigned i = 0; i < rulesSize; ++i) {
         ASSERT(m_ruleSets.authorStyle()->regionSelectorsAndRuleSets().at(i).ruleSet.get());
@@ -1526,15 +1554,15 @@ Vector<RefPtr<StyleRuleBase>> StyleResolver::styleRulesForElement(Element* e, un
     return pseudoStyleRulesForElement(e, NOPSEUDO, rulesToInclude);
 }
 
-Vector<RefPtr<StyleRuleBase>> StyleResolver::pseudoStyleRulesForElement(Element* e, PseudoId pseudoId, unsigned rulesToInclude)
+Vector<RefPtr<StyleRuleBase>> StyleResolver::pseudoStyleRulesForElement(Element* element, PseudoId pseudoId, unsigned rulesToInclude)
 {
-    if (!e || !e->document().haveStylesheetsLoaded())
+    if (!element || !element->document().haveStylesheetsLoaded())
         return Vector<RefPtr<StyleRuleBase>>();
 
-    initElement(e);
-    m_state.initForStyleResolve(document(), e, 0);
+    initElement(element);
+    m_state.initForStyleResolve(document(), element, 0);
 
-    ElementRuleCollector collector(this, m_state);
+    ElementRuleCollector collector(*element, m_state.style(), m_ruleSets, m_selectorFilter);
     collector.setMode(SelectorChecker::CollectingRules);
     collector.setPseudoStyleRequest(PseudoStyleRequest(pseudoId));
     collector.setMedium(m_medium.get());
@@ -1581,14 +1609,12 @@ static bool shouldApplyPropertyInParseOrder(CSSPropertyID propertyID)
     case CSSPropertyBorderImageOutset:
     case CSSPropertyBorderImageRepeat:
     case CSSPropertyBorderImageWidth:
-#if ENABLE(CSS3_TEXT_DECORATION)
     case CSSPropertyWebkitTextDecoration:
     case CSSPropertyWebkitTextDecorationLine:
     case CSSPropertyWebkitTextDecorationStyle:
     case CSSPropertyWebkitTextDecorationColor:
     case CSSPropertyWebkitTextDecorationSkip:
     case CSSPropertyWebkitTextUnderlinePosition:
-#endif
     case CSSPropertyTextDecoration:
         return true;
     default:
@@ -1858,16 +1884,12 @@ inline bool isValidVisitedLinkProperty(CSSPropertyID id)
     case CSSPropertyColor:
     case CSSPropertyOutlineColor:
     case CSSPropertyWebkitColumnRuleColor:
-#if ENABLE(CSS3_TEXT_DECORATION)
     case CSSPropertyWebkitTextDecorationColor:
-#endif
     case CSSPropertyWebkitTextEmphasisColor:
     case CSSPropertyWebkitTextFillColor:
     case CSSPropertyWebkitTextStrokeColor:
-#if ENABLE(SVG)
     case CSSPropertyFill:
     case CSSPropertyStroke:
-#endif
         return true;
     default:
         break;
@@ -1947,6 +1969,7 @@ bool StyleResolver::useSVGZoomRules()
     return m_state.element() && m_state.element()->isSVGElement();
 }
 
+#if ENABLE(CSS_GRID_LAYOUT)
 static bool createGridTrackBreadth(CSSPrimitiveValue* primitiveValue, const StyleResolver::State& state, GridLength& workingLength)
 {
     if (primitiveValue->getValueID() == CSSValueWebkitMinContent) {
@@ -1965,7 +1988,7 @@ static bool createGridTrackBreadth(CSSPrimitiveValue* primitiveValue, const Styl
         return true;
     }
 
-    workingLength = primitiveValue->convertToLength<FixedIntegerConversion | PercentConversion | ViewportPercentageConversion | AutoConversion>(state.style(), state.rootElementStyle(), state.style()->effectiveZoom());
+    workingLength = primitiveValue->convertToLength<FixedIntegerConversion | PercentConversion | ViewportPercentageConversion | CalculatedConversion | AutoConversion>(state.style(), state.rootElementStyle(), state.style()->effectiveZoom());
     if (workingLength.length().isUndefined())
         return false;
 
@@ -1977,12 +2000,8 @@ static bool createGridTrackBreadth(CSSPrimitiveValue* primitiveValue, const Styl
 
 static bool createGridTrackSize(CSSValue* value, GridTrackSize& trackSize, const StyleResolver::State& state)
 {
-    if (!value->isPrimitiveValue())
-        return false;
-
-    CSSPrimitiveValue* primitiveValue = toCSSPrimitiveValue(value);
-    Pair* minMaxTrackBreadth = primitiveValue->getPairValue();
-    if (!minMaxTrackBreadth) {
+    if (value->isPrimitiveValue()) {
+        CSSPrimitiveValue* primitiveValue = toCSSPrimitiveValue(value);
         GridLength workingLength;
         if (!createGridTrackBreadth(primitiveValue, state, workingLength))
             return false;
@@ -1991,9 +2010,12 @@ static bool createGridTrackSize(CSSValue* value, GridTrackSize& trackSize, const
         return true;
     }
 
+    CSSFunctionValue* minmaxFunction = toCSSFunctionValue(value);
+    CSSValueList* arguments = minmaxFunction->arguments();
+    ASSERT_WITH_SECURITY_IMPLICATION(arguments->length() == 2);
     GridLength minTrackBreadth;
     GridLength maxTrackBreadth;
-    if (!createGridTrackBreadth(minMaxTrackBreadth->first(), state, minTrackBreadth) || !createGridTrackBreadth(minMaxTrackBreadth->second(), state, maxTrackBreadth))
+    if (!createGridTrackBreadth(toCSSPrimitiveValue(arguments->itemWithoutBoundsCheck(0)), state, minTrackBreadth) || !createGridTrackBreadth(toCSSPrimitiveValue(arguments->itemWithoutBoundsCheck(1)), state, maxTrackBreadth))
         return false;
 
     trackSize.setMinMax(minTrackBreadth, maxTrackBreadth);
@@ -2089,6 +2111,7 @@ static bool createGridPosition(CSSValue* value, GridPosition& position)
 
     return true;
 }
+#endif /* ENABLE(CSS_GRID_LAYOUT) */
 
 void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
 {
@@ -2250,7 +2273,9 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
             }
             if (!didSet)
                 state.style()->setContentAltText(emptyAtom);
+            return;
         }
+        
     case CSSPropertyQuotes:
         if (isInherit) {
             state.style()->setQuotes(state.parentStyle()->quotes());
@@ -2368,9 +2393,11 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
     case CSSPropertyWebkitColumnRule:
     case CSSPropertyWebkitFlex:
     case CSSPropertyWebkitFlexFlow:
+#if ENABLE(CSS_GRID_LAYOUT)
     case CSSPropertyWebkitGridArea:
     case CSSPropertyWebkitGridColumn:
     case CSSPropertyWebkitGridRow:
+#endif
     case CSSPropertyWebkitMarginCollapse:
     case CSSPropertyWebkitMarquee:
     case CSSPropertyWebkitMask:
@@ -2390,8 +2417,8 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
     case CSSPropertyWebkitBoxShadow: {
         if (isInherit) {
             if (id == CSSPropertyTextShadow)
-                return state.style()->setTextShadow(state.parentStyle()->textShadow() ? adoptPtr(new ShadowData(*state.parentStyle()->textShadow())) : nullptr);
-            return state.style()->setBoxShadow(state.parentStyle()->boxShadow() ? adoptPtr(new ShadowData(*state.parentStyle()->boxShadow())) : nullptr);
+                return state.style()->setTextShadow(state.parentStyle()->textShadow() ? std::make_unique<ShadowData>(*state.parentStyle()->textShadow()) : nullptr);
+            return state.style()->setBoxShadow(state.parentStyle()->boxShadow() ? std::make_unique<ShadowData>(*state.parentStyle()->boxShadow()) : nullptr);
         }
         if (isInitial || primitiveValue) // initial | none
             return id == CSSPropertyTextShadow ? state.style()->setTextShadow(nullptr) : state.style()->setBoxShadow(nullptr);
@@ -2423,11 +2450,11 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
             else if (state.style())
                 color = state.style()->color();
 
-            OwnPtr<ShadowData> shadowData = adoptPtr(new ShadowData(IntPoint(x, y), blur, spread, shadowStyle, id == CSSPropertyWebkitBoxShadow, color.isValid() ? color : Color::transparent));
+            auto shadowData = std::make_unique<ShadowData>(IntPoint(x, y), blur, spread, shadowStyle, id == CSSPropertyWebkitBoxShadow, color.isValid() ? color : Color::transparent);
             if (id == CSSPropertyTextShadow)
-                state.style()->setTextShadow(shadowData.release(), i.index()); // add to the list if this is not the first entry
+                state.style()->setTextShadow(std::move(shadowData), i.index()); // add to the list if this is not the first entry
             else
-                state.style()->setBoxShadow(shadowData.release(), i.index()); // add to the list if this is not the first entry
+                state.style()->setBoxShadow(std::move(shadowData), i.index()); // add to the list if this is not the first entry
         }
         return;
     }
@@ -2529,15 +2556,6 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
 
         state.document().setHasAnnotatedRegions(true);
 
-        return;
-    }
-#endif
-#if ENABLE(DRAGGABLE_REGION)
-    case CSSPropertyWebkitAppRegion: {
-        if (!primitiveValue || !primitiveValue->getValueID())
-            return;
-        state.style()->setDraggableRegionMode(primitiveValue->getValueID() == CSSValueDrag ? DraggableRegionDrag : DraggableRegionNoDrag);
-        state.document().setHasAnnotatedRegions(true);
         return;
     }
 #endif
@@ -2731,6 +2749,7 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
         return;
     }
 #endif
+#if ENABLE(CSS_GRID_LAYOUT)
     case CSSPropertyWebkitGridAutoColumns: {
         HANDLE_INHERIT_AND_INITIAL(gridAutoColumns, GridAutoColumns);
         GridTrackSize trackSize;
@@ -2747,7 +2766,7 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
         state.style()->setGridAutoRows(trackSize);
         return;
     }
-    case CSSPropertyWebkitGridDefinitionColumns: {
+    case CSSPropertyWebkitGridTemplateColumns: {
         if (isInherit) {
             m_state.style()->setGridColumns(m_state.parentStyle()->gridColumns());
             m_state.style()->setNamedGridColumnLines(m_state.parentStyle()->namedGridColumnLines());
@@ -2766,7 +2785,7 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
         state.style()->setNamedGridColumnLines(namedGridLines);
         return;
     }
-    case CSSPropertyWebkitGridDefinitionRows: {
+    case CSSPropertyWebkitGridTemplateRows: {
         if (isInherit) {
             m_state.style()->setGridRows(m_state.parentStyle()->gridRows());
             m_state.style()->setNamedGridRowLines(m_state.parentStyle()->namedGridRowLines());
@@ -2819,7 +2838,7 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
         state.style()->setGridItemRowEnd(rowEndPosition);
         return;
     }
-    case CSSPropertyWebkitGridTemplate: {
+    case CSSPropertyWebkitGridTemplateAreas: {
         if (isInherit) {
             state.style()->setNamedGridArea(state.parentStyle()->namedGridArea());
             state.style()->setNamedGridAreaRowCount(state.parentStyle()->namedGridAreaRowCount());
@@ -2838,13 +2857,13 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
             return;
         }
 
-        CSSGridTemplateValue* gridTemplateValue = toCSSGridTemplateValue(value);
+        CSSGridTemplateAreasValue* gridTemplateValue = toCSSGridTemplateAreasValue(value);
         state.style()->setNamedGridArea(gridTemplateValue->gridAreaMap());
         state.style()->setNamedGridAreaRowCount(gridTemplateValue->rowCount());
         state.style()->setNamedGridAreaColumnCount(gridTemplateValue->columnCount());
         return;
     }
-
+#endif /* ENABLE(CSS_GRID_LAYOUT) */
     // These properties are aliased and DeprecatedStyleBuilder already applied the property on the prefixed version.
     case CSSPropertyTransitionDelay:
     case CSSPropertyTransitionDuration:
@@ -3021,7 +3040,6 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
     case CSSPropertyWebkitFontKerning:
     case CSSPropertyWebkitFontSmoothing:
     case CSSPropertyWebkitFontVariantLigatures:
-    case CSSPropertyWebkitHighlight:
     case CSSPropertyWebkitHyphenateCharacter:
     case CSSPropertyWebkitHyphenateLimitAfter:
     case CSSPropertyWebkitHyphenateLimitBefore:
@@ -3071,13 +3089,11 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
     case CSSPropertyWebkitTextAlignLast:
     case CSSPropertyWebkitTextJustify:
 #endif // CSS3_TEXT
-#if ENABLE(CSS3_TEXT_DECORATION)
     case CSSPropertyWebkitTextDecorationLine:
     case CSSPropertyWebkitTextDecorationStyle:
     case CSSPropertyWebkitTextDecorationColor:
     case CSSPropertyWebkitTextDecorationSkip:
     case CSSPropertyWebkitTextUnderlinePosition:
-#endif
     case CSSPropertyWebkitTextEmphasisColor:
     case CSSPropertyWebkitTextEmphasisPosition:
     case CSSPropertyWebkitTextEmphasisStyle:
@@ -3096,20 +3112,18 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
     case CSSPropertyWebkitUserModify:
     case CSSPropertyWebkitUserSelect:
     case CSSPropertyWebkitClipPath:
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
+    case CSSPropertyWebkitShapeInside:
+    case CSSPropertyWebkitShapePadding:
+#endif
 #if ENABLE(CSS_SHAPES)
     case CSSPropertyWebkitShapeMargin:
-    case CSSPropertyWebkitShapePadding:
     case CSSPropertyWebkitShapeImageThreshold:
-    case CSSPropertyWebkitShapeInside:
     case CSSPropertyWebkitShapeOutside:
 #endif
 #if ENABLE(CSS_EXCLUSIONS)
     case CSSPropertyWebkitWrapFlow:
     case CSSPropertyWebkitWrapThrough:
-#endif
-#if ENABLE(CSS_SHADERS)
-    case CSSPropertyMix:
-    case CSSPropertyParameters:
 #endif
     case CSSPropertyWhiteSpace:
     case CSSPropertyWidows:
@@ -3128,10 +3142,8 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
         ASSERT_NOT_REACHED();
         return;
     default:
-#if ENABLE(SVG)
         // Try the SVG properties
         applySVGProperty(id, value);
-#endif
         return;
     }
 }
@@ -3216,6 +3228,9 @@ void StyleResolver::checkForTextSizeAdjust(RenderStyle* style)
 
 void StyleResolver::checkForZoomChange(RenderStyle* style, RenderStyle* parentStyle)
 {
+    if (!parentStyle)
+        return;
+    
     if (style->effectiveZoom() == parentStyle->effectiveZoom())
         return;
 
@@ -3363,7 +3378,7 @@ Color StyleResolver::colorFromPrimitiveValue(CSSPrimitiveValue* value, bool forV
 
 void StyleResolver::addViewportDependentMediaQueryResult(const MediaQueryExp* expr, bool result)
 {
-    m_viewportDependentMediaQueryResults.append(adoptPtr(new MediaQueryResult(*expr, result)));
+    m_viewportDependentMediaQueryResults.append(std::make_unique<MediaQueryResult>(*expr, result));
 }
 
 bool StyleResolver::affectedByViewportChange() const
@@ -3402,17 +3417,12 @@ static FilterOperation::OperationType filterOperationForType(WebKitCSSFilterValu
         return FilterOperation::BLUR;
     case WebKitCSSFilterValue::DropShadowFilterOperation:
         return FilterOperation::DROP_SHADOW;
-#if ENABLE(CSS_SHADERS)
-    case WebKitCSSFilterValue::CustomFilterOperation:
-        return FilterOperation::CUSTOM;
-#endif
     case WebKitCSSFilterValue::UnknownFilterOperation:
         return FilterOperation::NONE;
     }
     return FilterOperation::NONE;
 }
 
-#if ENABLE(CSS_FILTERS) && ENABLE(SVG)
 void StyleResolver::loadPendingSVGDocuments()
 {
     State& state = m_state;
@@ -3421,349 +3431,15 @@ void StyleResolver::loadPendingSVGDocuments()
     // style is NULL. We don't know exactly why this happens. Our guess is
     // reentering styleForElement().
     ASSERT(state.style());
-    if (!state.style() || !state.style()->hasFilter() || state.pendingSVGDocuments().isEmpty())
+    if (!state.style() || !state.style()->hasFilter() || state.filtersWithPendingSVGDocuments().isEmpty())
         return;
 
     CachedResourceLoader* cachedResourceLoader = state.document().cachedResourceLoader();
-    for (auto pendingDocument : state.pendingSVGDocuments())
-        pendingDocument->load(cachedResourceLoader);
-    state.pendingSVGDocuments().clear();
+    for (auto& filterOperation : state.filtersWithPendingSVGDocuments())
+        filterOperation->getOrCreateCachedSVGDocumentReference()->load(cachedResourceLoader);
+
+    state.filtersWithPendingSVGDocuments().clear();
 }
-#endif
-
-#if ENABLE(CSS_SHADERS)
-StyleShader* StyleResolver::styleShader(CSSValue* value)
-{
-    if (value->isWebKitCSSShaderValue())
-        return cachedOrPendingStyleShaderFromValue(toWebKitCSSShaderValue(value));
-    return 0;
-}
-
-StyleShader* StyleResolver::cachedOrPendingStyleShaderFromValue(WebKitCSSShaderValue* value)
-{
-    StyleShader* shader = value->cachedOrPendingShader();
-    if (shader && shader->isPendingShader())
-        m_state.setHasPendingShaders(true);
-    return shader;
-}
-
-PassRefPtr<CustomFilterProgram> StyleResolver::lookupCustomFilterProgram(WebKitCSSShaderValue* vertexShader, WebKitCSSShaderValue* fragmentShader, 
-    CustomFilterProgramType programType, const CustomFilterProgramMixSettings& mixSettings, CustomFilterMeshType meshType)
-{
-    CachedResourceLoader* cachedResourceLoader = m_state.document().cachedResourceLoader();
-    URL vertexShaderURL = vertexShader ? vertexShader->completeURL(cachedResourceLoader) : URL();
-    URL fragmentShaderURL = fragmentShader ? fragmentShader->completeURL(cachedResourceLoader) : URL();
-    RefPtr<StyleCustomFilterProgram> program;
-    if (m_customFilterProgramCache)
-        program = m_customFilterProgramCache->lookup(CustomFilterProgramInfo(vertexShaderURL, fragmentShaderURL, programType, mixSettings, meshType));
-    if (!program) {
-        // Create a new StyleCustomFilterProgram that will be resolved during the loadPendingShaders and added to the cache.
-        program = StyleCustomFilterProgram::create(vertexShaderURL, vertexShader ? styleShader(vertexShader) : 0, 
-            fragmentShaderURL, fragmentShader ? styleShader(fragmentShader) : 0, programType, mixSettings, meshType);
-    }
-    return program.release();
-}
-
-void StyleResolver::loadPendingShaders()
-{
-    // FIXME: We shouldn't have to check that style is non-null. This is a speculative fix for:
-    // https://bugs.webkit.org/show_bug.cgi?id=117665
-    if (!m_state.hasPendingShaders() || !m_state.style() || !m_state.style()->hasFilter())
-        return;
-
-    CachedResourceLoader* cachedResourceLoader = m_state.document().cachedResourceLoader();
-
-    Vector<RefPtr<FilterOperation>>& filterOperations = m_state.style()->mutableFilter().operations();
-    for (unsigned i = 0; i < filterOperations.size(); ++i) {
-        RefPtr<FilterOperation> filterOperation = filterOperations.at(i);
-        if (filterOperation->type() == FilterOperation::CUSTOM) {
-            CustomFilterOperation* customFilter = static_cast<CustomFilterOperation*>(filterOperation.get());
-            ASSERT(customFilter->program());
-            StyleCustomFilterProgram* program = static_cast<StyleCustomFilterProgram*>(customFilter->program());
-            // Note that the StylePendingShaders could be already resolved to StyleCachedShaders. That's because the rule was matched before.
-            // However, the StyleCustomFilterProgram that was initially created could have been removed from the cache in the meanwhile,
-            // meaning that we get a new StyleCustomFilterProgram here that is not yet in the cache, but already has loaded StyleShaders.
-            if (!program->hasPendingShaders() && program->inCache())
-                continue;
-            if (!m_customFilterProgramCache)
-                m_customFilterProgramCache = adoptPtr(new StyleCustomFilterProgramCache());
-            RefPtr<StyleCustomFilterProgram> styleProgram = m_customFilterProgramCache->lookup(program);
-            if (styleProgram.get())
-                customFilter->setProgram(styleProgram.release());
-            else {
-                if (program->vertexShader() && program->vertexShader()->isPendingShader()) {
-                    WebKitCSSShaderValue* shaderValue = static_cast<StylePendingShader*>(program->vertexShader())->cssShaderValue();
-                    program->setVertexShader(shaderValue->cachedShader(cachedResourceLoader));
-                }
-                if (program->fragmentShader() && program->fragmentShader()->isPendingShader()) {
-                    WebKitCSSShaderValue* shaderValue = static_cast<StylePendingShader*>(program->fragmentShader())->cssShaderValue();
-                    program->setFragmentShader(shaderValue->cachedShader(cachedResourceLoader));
-                }
-                m_customFilterProgramCache->add(program);
-            }
-        }
-    }
-    m_state.setHasPendingShaders(false);
-}
-
-static bool sortParametersByNameComparator(const RefPtr<CustomFilterParameter>& a, const RefPtr<CustomFilterParameter>& b)
-{
-    return codePointCompareLessThan(a->name(), b->name());
-}
-
-PassRefPtr<CustomFilterParameter> StyleResolver::parseCustomFilterArrayParameter(const String& name, CSSValueList* values, bool isArray)
-{
-    RefPtr<CustomFilterArrayParameter> arrayParameter = CustomFilterArrayParameter::create(name, isArray ? CustomFilterArrayParameter::ARRAY : CustomFilterArrayParameter::MATRIX);
-    for (unsigned i = 0, length = values->length(); i < length; ++i) {
-        CSSValue* value = values->itemWithoutBoundsCheck(i);
-        if (!value->isPrimitiveValue())
-            return 0;
-        CSSPrimitiveValue* primitiveValue = toCSSPrimitiveValue(value);
-        if (primitiveValue->primitiveType() != CSSPrimitiveValue::CSS_NUMBER)
-            return 0;
-        arrayParameter->addValue(primitiveValue->getDoubleValue());
-    }
-    return arrayParameter.release();
-}
-
-PassRefPtr<CustomFilterParameter> StyleResolver::parseCustomFilterColorParameter(const String& name, CSSValueList* values)
-{
-    ASSERT(values->length());
-    CSSPrimitiveValue* firstPrimitiveValue = toCSSPrimitiveValue(values->itemWithoutBoundsCheck(0));
-    RefPtr<CustomFilterColorParameter> colorParameter = CustomFilterColorParameter::create(name);
-    colorParameter->setColor(Color(firstPrimitiveValue->getRGBA32Value()));
-    return colorParameter.release();
-}
-
-PassRefPtr<CustomFilterParameter> StyleResolver::parseCustomFilterNumberParameter(const String& name, CSSValueList* values)
-{
-    RefPtr<CustomFilterNumberParameter> numberParameter = CustomFilterNumberParameter::create(name);
-    for (unsigned i = 0; i < values->length(); ++i) {
-        CSSValue* value = values->itemWithoutBoundsCheck(i);
-        if (!value->isPrimitiveValue())
-            return 0;
-        CSSPrimitiveValue* primitiveValue = toCSSPrimitiveValue(value);
-        if (primitiveValue->primitiveType() != CSSPrimitiveValue::CSS_NUMBER)
-            return 0;
-        numberParameter->addValue(primitiveValue->getDoubleValue());
-    }
-    return numberParameter.release();
-}
-
-PassRefPtr<CustomFilterParameter> StyleResolver::parseCustomFilterTransformParameter(const String& name, CSSValueList* values)
-{
-    RefPtr<CustomFilterTransformParameter> transformParameter = CustomFilterTransformParameter::create(name);
-    TransformOperations operations;
-    transformsForValue(m_state.style(), m_state.rootElementStyle(), values, operations);
-    transformParameter->setOperations(operations);
-    return transformParameter.release();
-}
-
-PassRefPtr<CustomFilterParameter> StyleResolver::parseCustomFilterParameter(const String& name, CSSValue* parameterValue)
-{
-    // FIXME: Implement other parameters types parsing.
-    // textures: https://bugs.webkit.org/show_bug.cgi?id=71442
-    // mat2, mat3, mat4: https://bugs.webkit.org/show_bug.cgi?id=71444
-    // Number parameters are wrapped inside a CSSValueList and all
-    // the other functions values inherit from CSSValueList.
-    if (!parameterValue->isValueList())
-        return 0;
-
-    CSSValueList* values = toCSSValueList(parameterValue);
-    if (!values->length())
-        return 0;
-
-    if (parameterValue->isWebKitCSSArrayFunctionValue())
-        return parseCustomFilterArrayParameter(name, values, true);
-
-    if (parameterValue->isWebKitCSSMatFunctionValue())
-        return parseCustomFilterArrayParameter(name, values, false);
-
-    // If the first value of the list is a transform function,
-    // then we could safely assume that all the remaining items
-    // are transforms. parseCustomFilterTransformParameter will
-    // return 0 if that assumption is incorrect.
-    if (values->itemWithoutBoundsCheck(0)->isWebKitCSSTransformValue())
-        return parseCustomFilterTransformParameter(name, values);
-
-    // We can only have arrays of colors or numbers, so use the first value to choose between those two.
-    // We need up to 4 values (all booleans or all numbers).
-    if (!values->itemWithoutBoundsCheck(0)->isPrimitiveValue() || values->length() > 4)
-        return 0;
-    
-    CSSPrimitiveValue* firstPrimitiveValue = toCSSPrimitiveValue(values->itemWithoutBoundsCheck(0));
-    if (firstPrimitiveValue->primitiveType() == CSSPrimitiveValue::CSS_NUMBER)
-        return parseCustomFilterNumberParameter(name, values);
-
-    if (firstPrimitiveValue->primitiveType() == CSSPrimitiveValue::CSS_RGBCOLOR)
-        return parseCustomFilterColorParameter(name, values);
-
-    return 0;
-}
-
-bool StyleResolver::parseCustomFilterParameterList(CSSValue* parametersValue, CustomFilterParameterList& parameterList)
-{
-    HashSet<String> knownParameterNames;
-    CSSValueListIterator parameterIterator(parametersValue);
-    for (; parameterIterator.hasMore(); parameterIterator.advance()) {
-        if (!parameterIterator.value()->isValueList())
-            return false;
-        CSSValueListIterator iterator(parameterIterator.value());
-        if (!iterator.isPrimitiveValue())
-            return false;
-        CSSPrimitiveValue* primitiveValue = toCSSPrimitiveValue(iterator.value());
-        if (primitiveValue->primitiveType() != CSSPrimitiveValue::CSS_STRING)
-            return false;
-        
-        String name = primitiveValue->getStringValue();
-        // Do not allow duplicate parameter names.
-        if (knownParameterNames.contains(name))
-            return false;
-        knownParameterNames.add(name);
-        
-        iterator.advance();
-        
-        if (!iterator.hasMore())
-            return false;
-        
-        RefPtr<CustomFilterParameter> parameter = parseCustomFilterParameter(name, iterator.value());
-        if (!parameter)
-            return false;
-        parameterList.append(parameter.release());
-    }
-    
-    // Make sure we sort the parameters before passing them down to the CustomFilterOperation.
-    std::sort(parameterList.begin(), parameterList.end(), sortParametersByNameComparator);
-    
-    return true;
-}
-
-PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperationWithAtRuleReferenceSyntax(WebKitCSSFilterValue* filterValue)
-{
-    // FIXME: Implement style resolution for the custom filter at-rule reference syntax.
-    UNUSED_PARAM(filterValue);
-    return 0;
-}
-
-PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperationWithInlineSyntax(WebKitCSSFilterValue* filterValue)
-{
-    CSSValue* shadersValue = filterValue->itemWithoutBoundsCheck(0);
-    ASSERT_WITH_SECURITY_IMPLICATION(shadersValue->isValueList());
-    CSSValueList* shadersList = toCSSValueList(shadersValue);
-
-    unsigned shadersListLength = shadersList->length();
-    ASSERT(shadersListLength);
-
-
-    WebKitCSSShaderValue* vertexShader = 0;
-    WebKitCSSShaderValue* fragmentShader = 0;
-
-    if (shadersList->itemWithoutBoundsCheck(0)->isWebKitCSSShaderValue())
-        vertexShader = toWebKitCSSShaderValue(shadersList->itemWithoutBoundsCheck(0));
-
-    CustomFilterProgramType programType = PROGRAM_TYPE_BLENDS_ELEMENT_TEXTURE;
-    CustomFilterProgramMixSettings mixSettings;
-
-    if (shadersListLength > 1) {
-        CSSValue* fragmentShaderOrMixFunction = shadersList->itemWithoutBoundsCheck(1);
-        if (fragmentShaderOrMixFunction->isWebKitCSSMixFunctionValue()) {
-            WebKitCSSMixFunctionValue* mixFunction = toWebKitCSSMixFunctionValue(fragmentShaderOrMixFunction);
-            CSSValueListIterator iterator(mixFunction);
-
-            ASSERT(mixFunction->length());
-            if (iterator.value()->isWebKitCSSShaderValue())
-                fragmentShader = toWebKitCSSShaderValue(iterator.value());
-
-            iterator.advance();
-
-            ASSERT(mixFunction->length() <= 3);
-            while (iterator.hasMore()) {
-                CSSPrimitiveValue* primitiveValue = toCSSPrimitiveValue(iterator.value());
-                if (CSSParser::isBlendMode(primitiveValue->getValueID()))
-                    mixSettings.blendMode = *primitiveValue;
-                else if (CSSParser::isCompositeOperator(primitiveValue->getValueID()))
-                    mixSettings.compositeOperator = *primitiveValue;
-                else
-                    ASSERT_NOT_REACHED();
-                iterator.advance();
-            }
-        } else {
-            programType = PROGRAM_TYPE_NO_ELEMENT_TEXTURE;
-            if (fragmentShaderOrMixFunction->isWebKitCSSShaderValue())
-                fragmentShader = toWebKitCSSShaderValue(fragmentShaderOrMixFunction);
-        }
-    }
-
-    if (!vertexShader && !fragmentShader)
-        return 0;
-
-    unsigned meshRows = 1;
-    unsigned meshColumns = 1;
-    CustomFilterMeshType meshType = MeshTypeAttached;
-    
-    CSSValue* parametersValue = 0;
-    
-    if (filterValue->length() > 1) {
-        CSSValueListIterator iterator(filterValue->itemWithoutBoundsCheck(1));
-        
-        // The second value might be the mesh box or the list of parameters:
-        // If it starts with a number or any of the mesh-box identifiers it is 
-        // the mesh-box list, if not it means it is the parameters list.
-
-        if (iterator.hasMore() && iterator.isPrimitiveValue()) {
-            CSSPrimitiveValue* primitiveValue = toCSSPrimitiveValue(iterator.value());
-            if (primitiveValue->isNumber()) {
-                // If only one integer value is specified, it will set both
-                // the rows and the columns.
-                meshColumns = meshRows = primitiveValue->getIntValue();
-                iterator.advance();
-                
-                // Try to match another number for the rows.
-                if (iterator.hasMore() && iterator.isPrimitiveValue()) {
-                    CSSPrimitiveValue* primitiveValue = toCSSPrimitiveValue(iterator.value());
-                    if (primitiveValue->isNumber()) {
-                        meshRows = primitiveValue->getIntValue();
-                        iterator.advance();
-                    }
-                }
-            }
-        }
-        
-        if (iterator.hasMore() && iterator.isPrimitiveValue()) {
-            CSSPrimitiveValue* primitiveValue = toCSSPrimitiveValue(iterator.value());
-            if (primitiveValue->getValueID() == CSSValueDetached) {
-                meshType = MeshTypeDetached;
-                iterator.advance();
-            }
-        }
-        
-        if (!iterator.index()) {
-            // If no value was consumed from the mesh value, then it is just a parameter list, meaning that we end up
-            // having just two CSSListValues: list of shaders and list of parameters.
-            ASSERT(filterValue->length() == 2);
-            parametersValue = filterValue->itemWithoutBoundsCheck(1);
-        }
-    }
-    
-    if (filterValue->length() > 2 && !parametersValue)
-        parametersValue = filterValue->itemWithoutBoundsCheck(2);
-    
-    CustomFilterParameterList parameterList;
-    if (parametersValue && !parseCustomFilterParameterList(parametersValue, parameterList))
-        return 0;
-
-    RefPtr<CustomFilterProgram> program = lookupCustomFilterProgram(vertexShader, fragmentShader, programType, mixSettings, meshType);
-    return CustomFilterOperation::create(program.release(), parameterList, meshRows, meshColumns);
-}
-
-PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperation(WebKitCSSFilterValue* filterValue)
-{
-    ASSERT(filterValue->length());
-    bool isAtRuleReferenceSyntax = filterValue->itemWithoutBoundsCheck(0)->isPrimitiveValue();
-    return isAtRuleReferenceSyntax ? createCustomFilterOperationWithAtRuleReferenceSyntax(filterValue) : createCustomFilterOperationWithInlineSyntax(filterValue);
-}
-
-#endif
 
 bool StyleResolver::createFilterOperations(CSSValue* inValue, FilterOperations& outOperations)
 {
@@ -3794,23 +3470,7 @@ bool StyleResolver::createFilterOperations(CSSValue* inValue, FilterOperations& 
         WebKitCSSFilterValue* filterValue = toWebKitCSSFilterValue(i.value());
         FilterOperation::OperationType operationType = filterOperationForType(filterValue->operationType());
 
-#if ENABLE(CSS_SHADERS)
-        if (operationType == FilterOperation::VALIDATED_CUSTOM) {
-            // ValidatedCustomFilterOperation is not supposed to end up in the RenderStyle.
-            ASSERT_NOT_REACHED();
-            continue;
-        }
-        if (operationType == FilterOperation::CUSTOM) {
-            RefPtr<CustomFilterOperation> operation = createCustomFilterOperation(filterValue);
-            if (!operation)
-                return false;
-            
-            operations.operations().append(operation);
-            continue;
-        }
-#endif
         if (operationType == FilterOperation::REFERENCE) {
-#if ENABLE(SVG)
             if (filterValue->length() != 1)
                 continue;
             CSSValue* argument = filterValue->itemWithoutBoundsCheck(0);
@@ -3824,9 +3484,9 @@ bool StyleResolver::createFilterOperations(CSSValue* inValue, FilterOperations& 
 
             RefPtr<ReferenceFilterOperation> operation = ReferenceFilterOperation::create(cssUrl, url.fragmentIdentifier(), operationType);
             if (SVGURIReference::isExternalURIReference(cssUrl, m_state.document()))
-                m_state.pendingSVGDocuments().add(operation->createCachedSVGDocumentReference());
+                state.filtersWithPendingSVGDocuments().append(operation);
+
             operations.operations().append(operation);
-#endif
             continue;
         }
 
@@ -3932,28 +3592,28 @@ bool StyleResolver::createFilterOperations(CSSValue* inValue, FilterOperations& 
 
 #endif
 
-PassRefPtr<StyleImage> StyleResolver::loadPendingImage(StylePendingImage* pendingImage, const ResourceLoaderOptions& options)
+PassRefPtr<StyleImage> StyleResolver::loadPendingImage(const StylePendingImage& pendingImage, const ResourceLoaderOptions& options)
 {
-    if (auto imageValue = pendingImage->cssImageValue())
+    if (auto imageValue = pendingImage.cssImageValue())
         return imageValue->cachedImage(m_state.document().cachedResourceLoader(), options);
 
-    if (auto imageGeneratorValue = pendingImage->cssImageGeneratorValue()) {
+    if (auto imageGeneratorValue = pendingImage.cssImageGeneratorValue()) {
         imageGeneratorValue->loadSubimages(m_state.document().cachedResourceLoader());
         return StyleGeneratedImage::create(*imageGeneratorValue);
     }
 
-    if (auto cursorImageValue = pendingImage->cssCursorImageValue())
+    if (auto cursorImageValue = pendingImage.cssCursorImageValue())
         return cursorImageValue->cachedImage(m_state.document().cachedResourceLoader());
 
 #if ENABLE(CSS_IMAGE_SET)
-    if (CSSImageSetValue* imageSetValue = pendingImage->cssImageSetValue())
+    if (auto imageSetValue = pendingImage.cssImageSetValue())
         return imageSetValue->cachedImageSet(m_state.document().cachedResourceLoader(), options);
 #endif
 
     return nullptr;
 }
 
-PassRefPtr<StyleImage> StyleResolver::loadPendingImage(StylePendingImage* pendingImage)
+PassRefPtr<StyleImage> StyleResolver::loadPendingImage(const StylePendingImage& pendingImage)
 {
     return loadPendingImage(pendingImage, CachedResourceLoader::defaultCachedResourceOptions());
 }
@@ -3968,7 +3628,7 @@ void StyleResolver::loadPendingShapeImage(ShapeValue* shapeValue)
     if (!image || !image->isPendingImage())
         return;
 
-    StylePendingImage* pendingImage = static_cast<StylePendingImage*>(image);
+    auto& pendingImage = toStylePendingImage(*image);
 
     ResourceLoaderOptions options = CachedResourceLoader::defaultCachedResourceOptions();
     options.requestOriginPolicy = PotentiallyCrossOriginEnabled;
@@ -3990,19 +3650,20 @@ void StyleResolver::loadPendingImages()
         switch (currentProperty) {
         case CSSPropertyBackgroundImage: {
             for (FillLayer* backgroundLayer = m_state.style()->accessBackgroundLayers(); backgroundLayer; backgroundLayer = backgroundLayer->next()) {
-                if (backgroundLayer->image() && backgroundLayer->image()->isPendingImage())
-                    backgroundLayer->setImage(loadPendingImage(static_cast<StylePendingImage*>(backgroundLayer->image())));
+                auto styleImage = backgroundLayer->image();
+                if (styleImage && styleImage->isPendingImage())
+                    backgroundLayer->setImage(loadPendingImage(toStylePendingImage(*styleImage)));
             }
             break;
         }
         case CSSPropertyContent: {
             for (ContentData* contentData = const_cast<ContentData*>(m_state.style()->contentData()); contentData; contentData = contentData->next()) {
                 if (contentData->isImage()) {
-                    StyleImage* image = static_cast<ImageContentData*>(contentData)->image();
-                    if (image->isPendingImage()) {
-                        RefPtr<StyleImage> loadedImage = loadPendingImage(static_cast<StylePendingImage*>(image));
+                    auto& styleImage = toImageContentData(contentData)->image();
+                    if (styleImage.isPendingImage()) {
+                        RefPtr<StyleImage> loadedImage = loadPendingImage(toStylePendingImage(styleImage));
                         if (loadedImage)
-                            static_cast<ImageContentData*>(contentData)->setImage(loadedImage.release());
+                            toImageContentData(contentData)->setImage(loadedImage.release());
                     }
                 }
             }
@@ -4012,50 +3673,56 @@ void StyleResolver::loadPendingImages()
             if (CursorList* cursorList = m_state.style()->cursors()) {
                 for (size_t i = 0; i < cursorList->size(); ++i) {
                     CursorData& currentCursor = cursorList->at(i);
-                    if (StyleImage* image = currentCursor.image()) {
-                        if (image->isPendingImage())
-                            currentCursor.setImage(loadPendingImage(static_cast<StylePendingImage*>(image)));
-                    }
+                    auto styleImage = currentCursor.image();
+                    if (styleImage && styleImage->isPendingImage())
+                        currentCursor.setImage(loadPendingImage(toStylePendingImage(*styleImage)));
                 }
             }
             break;
         }
         case CSSPropertyListStyleImage: {
-            if (m_state.style()->listStyleImage() && m_state.style()->listStyleImage()->isPendingImage())
-                m_state.style()->setListStyleImage(loadPendingImage(static_cast<StylePendingImage*>(m_state.style()->listStyleImage())));
+            auto styleImage = m_state.style()->listStyleImage();
+            if (styleImage && styleImage->isPendingImage())
+                m_state.style()->setListStyleImage(loadPendingImage(toStylePendingImage(*styleImage)));
             break;
         }
         case CSSPropertyBorderImageSource: {
-            if (m_state.style()->borderImageSource() && m_state.style()->borderImageSource()->isPendingImage())
-                m_state.style()->setBorderImageSource(loadPendingImage(static_cast<StylePendingImage*>(m_state.style()->borderImageSource())));
+            auto styleImage = m_state.style()->borderImageSource();
+            if (styleImage && styleImage->isPendingImage())
+                m_state.style()->setBorderImageSource(loadPendingImage(toStylePendingImage(*styleImage)));
             break;
         }
         case CSSPropertyWebkitBoxReflect: {
             if (StyleReflection* reflection = m_state.style()->boxReflect()) {
                 const NinePieceImage& maskImage = reflection->mask();
-                if (maskImage.image() && maskImage.image()->isPendingImage()) {
-                    RefPtr<StyleImage> loadedImage = loadPendingImage(static_cast<StylePendingImage*>(maskImage.image()));
+                auto styleImage = maskImage.image();
+                if (styleImage && styleImage->isPendingImage()) {
+                    RefPtr<StyleImage> loadedImage = loadPendingImage(toStylePendingImage(*styleImage));
                     reflection->setMask(NinePieceImage(loadedImage.release(), maskImage.imageSlices(), maskImage.fill(), maskImage.borderSlices(), maskImage.outset(), maskImage.horizontalRule(), maskImage.verticalRule()));
                 }
             }
             break;
         }
         case CSSPropertyWebkitMaskBoxImageSource: {
-            if (m_state.style()->maskBoxImageSource() && m_state.style()->maskBoxImageSource()->isPendingImage())
-                m_state.style()->setMaskBoxImageSource(loadPendingImage(static_cast<StylePendingImage*>(m_state.style()->maskBoxImageSource())));
+            auto styleImage = m_state.style()->maskBoxImageSource();
+            if (styleImage && styleImage->isPendingImage())
+                m_state.style()->setMaskBoxImageSource(loadPendingImage(toStylePendingImage(*styleImage)));
             break;
         }
         case CSSPropertyWebkitMaskImage: {
             for (FillLayer* maskLayer = m_state.style()->accessMaskLayers(); maskLayer; maskLayer = maskLayer->next()) {
-                if (maskLayer->image() && maskLayer->image()->isPendingImage())
-                    maskLayer->setImage(loadPendingImage(static_cast<StylePendingImage*>(maskLayer->image())));
+                auto styleImage = maskLayer->image();
+                if (styleImage && styleImage->isPendingImage())
+                    maskLayer->setImage(loadPendingImage(toStylePendingImage(*styleImage)));
             }
             break;
         }
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
         case CSSPropertyWebkitShapeInside:
             loadPendingShapeImage(m_state.style()->shapeInside());
             break;
+#endif
+#if ENABLE(CSS_SHAPES)
         case CSSPropertyWebkitShapeOutside:
             loadPendingShapeImage(m_state.style()->shapeOutside());
             break;
@@ -4090,12 +3757,7 @@ void StyleResolver::loadPendingResources()
     // Start loading images referenced by this style.
     loadPendingImages();
 
-#if ENABLE(CSS_SHADERS)
-    // Start loading the shaders referenced by this style.
-    loadPendingShaders();
-#endif
-    
-#if ENABLE(CSS_FILTERS) && ENABLE(SVG)
+#if ENABLE(CSS_FILTERS)
     // Start loading the SVG Documents referenced by this style.
     loadPendingSVGDocuments();
 #endif
@@ -4110,7 +3772,7 @@ inline StyleResolver::MatchedProperties::MatchedProperties()
 {
 }
 
-inline StyleResolver::MatchedProperties::~MatchedProperties()
+StyleResolver::MatchedProperties::~MatchedProperties()
 {
 }
 

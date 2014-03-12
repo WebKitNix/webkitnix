@@ -26,8 +26,6 @@
 #include "config.h"
 #include "XSSAuditorDelegate.h"
 
-#include "Console.h"
-#include "DOMWindow.h"
 #include "Document.h"
 #include "DocumentLoader.h"
 #include "FormData.h"
@@ -98,7 +96,7 @@ void XSSAuditorDelegate::didBlockScript(const XSSInfo& xssInfo)
 {
     ASSERT(isMainThread());
 
-    m_document.addConsoleMessage(JSMessageSource, ErrorMessageLevel, buildConsoleError(xssInfo, m_document.url().string()));
+    m_document.addConsoleMessage(MessageSource::JS, MessageLevel::Error, buildConsoleError(xssInfo, m_document.url().string()));
 
     FrameLoader& frameLoader = m_document.frame()->loader();
     if (xssInfo.m_didBlockEntirePage)
@@ -110,7 +108,7 @@ void XSSAuditorDelegate::didBlockScript(const XSSInfo& xssInfo)
         frameLoader.client().didDetectXSS(m_document.url(), xssInfo.m_didBlockEntirePage);
 
         if (!m_reportURL.isEmpty())
-            PingLoader::sendViolationReport(m_document.frame(), m_reportURL, generateViolationReport());
+            PingLoader::sendViolationReport(*m_document.frame(), m_reportURL, generateViolationReport());
     }
 
     if (xssInfo.m_didBlockEntirePage)

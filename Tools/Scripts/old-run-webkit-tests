@@ -63,6 +63,7 @@ use File::Spec::Functions;
 use File::Temp;
 use FindBin;
 use Getopt::Long;
+use IO::Handle;
 use IPC::Open2;
 use IPC::Open3;
 use MIME::Base64;
@@ -126,11 +127,17 @@ sub toURL($);
 sub toWindowsPath($);
 sub validateSkippedArg($$;$);
 sub writeToFile($$);
+sub installAndLaunchDumpToolAppUsingNotification($$);
+sub openIPhoneSimulator();
+sub quitDumpToolUsingNotification();
+sub quitIPhoneSimulator();
+sub simulatorSessionUUID();
 
 # Argument handling
 my $addPlatformExceptions = 0;
 my @additionalPlatformDirectories = ();
 my $complexText = 0;
+my $iOSExpectedResultsDir = '';
 my $exitAfterNFailures = 0;
 my $exitAfterNCrashesOrTimeouts = 0;
 my $generateNewResults = isAppleMacWebKit() ? 1 : 0;
@@ -217,10 +224,35 @@ my %previousWindowsPostMortemDebuggerValues;
 
 my $realPlatform;
 
-my @macPlatforms = ("mac-leopard", "mac-snowleopard", "mac-lion", "mac");
+my $haveInstallediOSDumpToolAppOnce;
+
+my @iPhoneSimulatorPlatforms = qw(ios-sim);
+my @macPlatforms = ("mac-mountainlion", "mac");
 my @winPlatforms = ("win-xp", "win-vista", "win-7sp0", "win");
 
-if (isAppleMacWebKit()) {
+if (isIOSWebKit()) {
+    my $simulatorVersionHash = iPhoneSimulatorVersion();
+    my $simulatorVersion = "v" . $simulatorVersionHash->{major} . "." . $simulatorVersionHash->{minor};
+
+    sub versionFromPlatformSuffix {
+        my $version = shift;
+        $version =~ s/^-//;
+        $version =~ s/-/./g;
+        return "v$version";
+    }
+
+    foreach my $iphoneSimulatorPlatform (reverse @iPhoneSimulatorPlatforms) {
+        if (!$platform) {
+            $platform = $iphoneSimulatorPlatform;
+            next;
+        }
+        die "Invalid platform: $iphoneSimulatorPlatform" unless $iphoneSimulatorPlatform =~ /^iphone-simulator((-[0-9]+){2})$/;
+        last if eval(versionFromPlatformSuffix($1) . " lt $simulatorVersion");
+        $platform = $iphoneSimulatorPlatform;
+    }
+
+    $tolerance = 1.0;
+} elsif (isAppleMacWebKit()) {
     if (isSnowLeopard()) {
         $platform = "mac-snowleopard";
         $tolerance = 0.1;
@@ -272,11 +304,13 @@ my $sampleDefault = $runSample ? "run" : "do not run";
 
 my $usage = <<EOF;
 Usage: $programName [options] [testdir|testpath ...]
+  --32-bit                        Run tests in 32-bit mode
   --add-platform-exceptions       Put new results for non-platform-specific failing tests into the platform-specific results directory
   --additional-platform-directory path/to/directory
                                   Look in the specified directory before looking in any of the default platform-specific directories
   --complex-text                  Use the complex text code path for all text (Mac OS X and Windows only)
-  -c|--configuration config       Set DumpRenderTree build configuration
+  -c|--configuration config       Set DumpRenderTree/WebKitTestRunner build configuration
+  -e|--expected-results           Specify an alternate directory for expected results (iOS only)
   --gc-between-tests              Force garbage collection between each test
   -g|--guard-malloc               Enable Guard Malloc
   --exit-after-n-failures N       Exit after the first N failures (includes crashes) instead of running all tests
@@ -291,7 +325,7 @@ Usage: $programName [options] [testdir|testpath ...]
   --[no-]show-results             Same as --[no-]launch-safari
   -l|--leaks                      Enable leaks checking
   --[no-]new-test-results         Generate results for new tests
-  --nthly n                       Restart DumpRenderTree every n tests (default: $testsPerDumpTool)
+  --nthly n                       Restart DumpRenderTree/WebKitTestRunner every n tests (default: $testsPerDumpTool)
   -p|--pixel-tests                Enable pixel tests
   --tolerance t                   Ignore image differences less than this percentage (default: $tolerance)
   --platform                      Override the detected platform to use for tests and results (default: $platform)
@@ -327,6 +361,7 @@ my $getOptionsResult = GetOptions(
     'add-platform-exceptions' => \$addPlatformExceptions,
     'additional-platform-directory=s' => \@additionalPlatformDirectories,
     'complex-text' => \$complexText,
+    'expected-results|e=s' => \$iOSExpectedResultsDir,  # PLATFORM_IOS 
     'exit-after-n-failures=i' => \$exitAfterNFailures,
     'exit-after-n-crashes-or-timeouts=i' => \$exitAfterNCrashesOrTimeouts,
     'gc-between-tests' => \$gcBetweenTests,
@@ -379,7 +414,10 @@ if (!$getOptionsResult || $showHelp) {
 }
 
 if ($useWebKitTestRunner) {
-    if (isAppleMacWebKit()) {
+    if (isIOSWebKit()) {
+        $realPlatform = $platform;
+        $platform = "ios-sim-wk2";
+    } elsif (isAppleMacWebKit()) {
         $realPlatform = $platform;
         $platform = "mac-wk2";
     } elsif (isAppleWinWebKit()) {
@@ -416,6 +454,8 @@ setConfigurationProductDir(Cwd::abs_path($root)) if (defined($root));
 my $productDir = productDir();
 $productDir .= "/Programs" if isGtk();
 
+quitIPhoneSimulator() if isIOSWebKit();
+
 # Save the current directory before chaging it via chdirWebKit
 my $currentDir = cwd();
 chdirWebKit();
@@ -428,6 +468,9 @@ if (!defined($root) && !$noBuildDumpTool) {
 }
 
 my $dumpToolName = $useWebKitTestRunner ? "WebKitTestRunner" : "DumpRenderTree";
+if (isIOSWebKit()) {
+    $dumpToolName = $useWebKitTestRunner ? "WebKitTestRunnerApp.app/WebKitTestRunnerApp" : "DumpRenderTree.app/DumpRenderTree";
+}
 
 if (isAppleWinWebKit()) {
     $dumpToolName .= "_debug" if configuration() eq "Debug_All";
@@ -442,7 +485,24 @@ $imageDiffTool .= "_debug" if isCygwin() && configuration() eq "Debug_All";
 $imageDiffTool .= "_debug" if isCygwin() && configuration() eq "Debug_Cairo";
 die "can't find executable $imageDiffTool (looked in $productDir)\n" if $pixelTests && !-x $imageDiffTool;
 
-checkFrameworks() unless isCygwin();
+checkFrameworks() unless isCygwin() or isIOSWebKit();
+
+if (isIOSWebKit()) {
+    push @INC, $productDir . "/lib/perl5/darwin-thread-multi-2level";
+    require IPhoneSimulatorNotification;
+}
+
+if (isAppleMacWebKit()) {
+    push @INC, $productDir;
+    eval 'use DumpRenderTreeSupport;';
+}
+
+openIPhoneSimulator() if isIOSWebKit();
+
+if (isAppleMacWebKit()) {
+    push @INC, $productDir;
+    require DumpRenderTreeSupport;
+}
 
 my $layoutTestsName = "LayoutTests";
 my $testDirectory = File::Spec->rel2abs($layoutTestsName);
@@ -453,13 +513,14 @@ my @platformResultHierarchy = buildPlatformResultHierarchy();
 my @platformTestHierarchy = buildPlatformTestHierarchy(@platformResultHierarchy);
 
 $expectedDirectory = $ENV{"WebKitExpectedTestResultsDirectory"} if $ENV{"WebKitExpectedTestResultsDirectory"};
+$expectedDirectory = $iOSExpectedResultsDir if $iOSExpectedResultsDir && isIOSWebKit();
 
 $testResultsDirectory = File::Spec->catfile($currentDir, $testResultsDirectory);
 # $testResultsDirectory must be empty before testing.
 rmtree $testResultsDirectory;
 my $testResults = File::Spec->catfile($testResultsDirectory, "results.html");
 
-if (isAppleMacWebKit()) {
+if (isAppleMacWebKit() && !isIOSWebKit()) {
     print STDERR "Compiling Java tests\n";
     my $javaTestsDirectory = catdir($testDirectory, "java");
 
@@ -1097,6 +1158,8 @@ printf "\n%0.2fs total testing time\n", $totalTestingTime . "";
 
 !$isDumpToolOpen || die "Failed to close $dumpToolName.\n";
 
+quitIPhoneSimulator() if isIOSWebKit();
+
 $isHttpdOpen = !closeHTTPD();
 closeWebSocketServer();
 
@@ -1196,6 +1259,9 @@ if (isGtk()) {
   system "cygstart", $testResults if $launchSafari;
 } elsif (isWindows()) {
   system "start", $testResults if $launchSafari;
+} elsif (isIOSWebKit()) {
+  # Don't use run-safari, since it tries to load iOS frameworks in OS X Safari.
+  system "open", "-a", "Safari", $testResults if $launchSafari;
 } else {
   system "Tools/Scripts/run-safari", @configurationArgs, "-NSOpen", $testResults if $launchSafari;
 }
@@ -1285,6 +1351,127 @@ sub writeToFile($$)
     open NEWFILE, ">", "$filePath" or die "Could not create $filePath. $!\n";
     print NEWFILE $contents;
     close NEWFILE;
+}
+
+sub installAndLaunchDumpToolAppUsingNotification($$)
+{
+    my ($args, $cleanEnv) = @_;
+
+    my $iPhoneSimulatorNotification = new IPhoneSimulatorNotification;
+    $iPhoneSimulatorNotification->startObservingApplicationLaunchedNotification();
+
+    my $makeNSDictionaryFromHash = sub {
+        my ($dict) = @_;
+        my $result = NSMutableDictionary->alloc()->initWithCapacity_(scalar(keys %{$dict}));
+        for my $key (keys %{$dict}) {
+            $result->setObject_forKey_(NSString->stringWithCString_($dict->{$key}), NSString->stringWithCString_($key));
+        }
+        return $result->autorelease();
+    };
+
+    my $makeNSArrayFromArray = sub {
+        my ($array) = @_;
+        my $result = NSMutableArray->alloc()->initWithCapacity_(scalar(@{$array}));
+        for my $item (@{$array}) {
+            $result->addObject_(NSString->stringWithCString_($item));
+        }
+        return $result->autorelease();
+    };
+
+    my $deviceName = architecture() eq 'i386' ? "iPhone Retina (4-inch)" : "iPhone Retina (4-inch 64-bit)";
+
+    my $sdkRoot = `xcrun --sdk iphonesimulator --show-sdk-path`;
+    chomp $sdkRoot;
+
+    my $identifier = iOSDumpToolAppIdentifier();
+    my $applicationPath;
+
+    if ($useWebKitTestRunner) {
+        $applicationPath = "$productDir/WebKitTestRunnerApp.app";
+    } else {
+        $applicationPath = "$productDir/DumpRenderTree.app";
+    }
+
+    my $dict = {
+        applicationArguments => &$makeNSArrayFromArray($args),
+        applicationEnvironment => &$makeNSDictionaryFromHash($cleanEnv),
+        applicationIdentifier => NSString->stringWithCString_($identifier),
+        applicationPath => NSString->stringWithCString_($applicationPath),
+        deviceInfo => NSString->stringWithCString_($deviceName),
+        sessionOwner => NSString->stringWithCString_($programName),
+        sessionUUID => NSString->stringWithCString_(simulatorSessionUUID()),
+        sdkRoot => NSString->stringWithCString_($sdkRoot),
+    };
+    $iPhoneSimulatorNotification->postStartSessionNotification($dict);
+
+    while (!$iPhoneSimulatorNotification->hasReceivedApplicationLaunchedNotification()) {
+        my $date = NSDate->alloc()->initWithTimeIntervalSinceNow_(0.1);
+        NSRunLoop->currentRunLoop->runUntilDate_($date);
+        $date->release();
+    }
+
+    print "$identifier has launched.\n";
+
+    $iPhoneSimulatorNotification->stopObservingApplicationLaunchedNotification();
+
+    return $iPhoneSimulatorNotification->applicationLaunchedApplicationPID();
+}
+
+sub openIPhoneSimulator()
+{
+    my $iPhoneSimulatorNotification = new IPhoneSimulatorNotification;
+    $iPhoneSimulatorNotification->startObservingReadyNotification();
+
+    my $deviceName = architecture() eq 'i386' ? "iPhone Retina (4-inch)" : "iPhone Retina (4-inch 64-bit)";
+
+    system "open", "-a", "iOS Simulator", "--args", "-SessionOnLaunch", "NO", "-SimulateDevice", $deviceName;
+
+    die $! if exitStatus($?);
+
+    while (!$iPhoneSimulatorNotification->hasReceivedReadyNotification()) {
+        my $date = NSDate->alloc()->initWithTimeIntervalSinceNow_(0.1);
+        NSRunLoop->currentRunLoop->runUntilDate_($date);
+        $date->release();
+    }
+
+    $iPhoneSimulatorNotification->stopObservingReadyNotification();
+}
+
+sub quitDumpToolUsingNotification()
+{
+    my $iPhoneSimulatorNotification = new IPhoneSimulatorNotification;
+    $iPhoneSimulatorNotification->startObservingApplicationQuitNotification();
+
+    my $dict = {
+        sessionUUID => NSString->stringWithCString_(simulatorSessionUUID()),
+    };
+    $iPhoneSimulatorNotification->postEndSessionNotification($dict);
+
+    # FIXME: <rdar://problem/7443077> DumpRenderTree should exit without having to use kill -9 from run-webkit-tests
+    kill 9, $dumpToolPID;
+
+    my $timeoutCounter = 0;
+    while (!$iPhoneSimulatorNotification->hasReceivedApplicationQuitNotification()) {
+        my $date = NSDate->alloc()->initWithTimeIntervalSinceNow_(0.1);
+        NSRunLoop->currentRunLoop->runUntilDate_($date);
+        $date->release();
+        if (++$timeoutCounter >= 600) {
+            print STDERR "ERROR: Hang waiting for application quit notification. Did $dumpToolName crash instead?\n";
+            last;
+        }
+    }
+
+    $iPhoneSimulatorNotification->stopObservingApplicationQuitNotification();
+}
+
+sub quitIPhoneSimulator()
+{
+    system "osascript", "-e", "tell application \"iPhone Simulator\" to quit";
+}
+
+sub simulatorSessionUUID()
+{
+    return "theAwesomeUniqueSessionIdentifierForDumpRenderTree";
 }
 
 # Break up a path into the directory (with slash) and base name.
@@ -1379,9 +1566,20 @@ sub openDiffTool()
     return if !$pixelTests;
 
     my %CLEAN_ENV;
+    my @command = ($imageDiffTool);;
+    unshift(@command, 'xcrun', '-sdk', xcodeSDK(), 'sim') if willUseIOSSimulatorSDKWhenBuilding();
     $CLEAN_ENV{MallocStackLogging} = 1 if $shouldCheckLeaks;
-    $imageDiffToolPID = open2(\*DIFFIN, \*DIFFOUT, $imageDiffTool, launchWithEnv(@diffToolArgs, %CLEAN_ENV)) or die "unable to open $imageDiffTool\n";
+    $imageDiffToolPID = open2(\*DIFFIN, \*DIFFOUT, @command, launchWithEnv(@diffToolArgs, %CLEAN_ENV)) or die "unable to open $imageDiffTool\n";
     $isDiffToolOpen = 1;
+}
+
+sub unlinkFIFOs()
+{
+    if ($useWebKitTestRunner) {
+        unlink </tmp/WebKitTestRunner_*>;
+    } else {
+        unlink </tmp/DumpRenderTree_*>;
+    }
 }
 
 sub buildDumpTool($)
@@ -1403,8 +1601,10 @@ sub buildDumpTool($)
         $childErr = ">&STDERR";
     }
 
-    my @args = argumentsForConfiguration();
-    my $buildProcess = open3($childIn, $childOut, $childErr, $perlInterpreter, File::Spec->catfile(qw(Tools Scripts), $dumpToolBuildScript), @args) or die "Failed to run build-dumprendertree";
+    my @args = ('--sdk', xcodeSDK(), argumentsForConfiguration());
+    push @args, ('-target', 'WebKitTestRunnerApp') if $useWebKitTestRunner and $dumpToolName eq 'WebKitTestRunner';
+
+    my $buildProcess = open3($childIn, $childOut, $childErr, $perlInterpreter, File::Spec->catfile(qw(Tools Scripts), $dumpToolBuildScript), @args) or die "Failed to run build-$dumpToolName";
     close($childIn);
     waitpid $buildProcess, 0;
     my $buildResult = $?;
@@ -1417,6 +1617,11 @@ sub buildDumpTool($)
         print STDERR "Compiling $dumpToolName failed!\n";
         exit exitStatus($buildResult);
     }
+}
+
+sub iOSDumpToolAppIdentifier()
+{
+    return $useWebKitTestRunner ? "org.webkit.WebKitTestRunnerApp" : "org.webkit.DumpRenderTree";
 }
 
 sub openDumpTool()
@@ -1468,6 +1673,7 @@ sub openDumpTool()
         }
 
         $CLEAN_ENV{DYLD_FRAMEWORK_PATH} = $productDir;
+        $CLEAN_ENV{DYLD_LIBRARY_PATH} = $productDir;
         $CLEAN_ENV{DYLD_INSERT_LIBRARIES} = "/usr/lib/libgmalloc.dylib" if $guardMalloc;
     } elsif (isCygwin()) {
         $CLEAN_ENV{HOMEDRIVE} = $ENV{'HOMEDRIVE'};
@@ -1489,8 +1695,8 @@ sub openDumpTool()
     }
 
     my @args = ($dumpTool, @toolArgs);
-    if (isAppleMacWebKit()) { 
-        unshift @args, "arch", "-" . architecture();             
+    if (isAppleMacWebKit() and !isIOSWebKit()) {
+        unshift @args, "arch", "-" . architecture();
     }
 
     if ($useWebKitTestRunner) {
@@ -1501,7 +1707,58 @@ sub openDumpTool()
 
     $CLEAN_ENV{MallocStackLogging} = 1 if $shouldCheckLeaks;
 
-    $dumpToolPID = open3(\*OUT, \*IN, \*ERROR, launchWithEnv(@args, %CLEAN_ENV)) or die "Failed to start tool: $dumpTool\n";
+    if (isIOSWebKit()) {
+        unlinkFIFOs();
+
+        my $appIdentifier = iOSDumpToolAppIdentifier();
+
+        my $fifoName = $useWebKitTestRunner ? "WebKitTestRunner" : "DumpRenderTree";
+        my $fifoOut = "/tmp/${fifoName}_OUT";
+        my $fifoIn = "/tmp/${fifoName}_IN";
+        my $fifoError = "/tmp/${fifoName}_ERROR";
+
+        foreach my $fifo ($fifoOut, $fifoIn, $fifoError) {
+            if (! -e $fifo) {
+                system('mkfifo', $fifo) == 0 or die "Couldn't mkfifo $fifo";
+            }
+        }
+
+        open(\*OUT, "+> $fifoIn") or die "Couldn't open $fifoIn!";
+        open(\*IN, "+< $fifoOut") or die "Couldn't open $fifoOut!";
+        open(\*ERROR, "+< $fifoError") or die "Couldn't open $fifoError!";
+        OUT->autoflush(1);
+
+        shift @args; # remove the actual binary name
+
+        if ($haveInstallediOSDumpToolAppOnce) {
+            my $simPath = `xcrun -sdk iphonesimulator -find sim`;
+            chomp $simPath;
+
+            my @env = map {
+                my $key = $_;
+                my $val = $CLEAN_ENV{$key};
+                ("-env", "$key=$val");
+            } keys %CLEAN_ENV;
+
+            my $archFlag = architecture() eq 'i386' ? '--arch=32' : '--arch=64';
+
+            local(*LAUNCHIN, *LAUNCHOUT);
+            open2(\*LAUNCHIN, \*LAUNCHOUT, $simPath, $archFlag, "LaunchApp", @env, $appIdentifier, @args) || die "$!";
+            my $stdout = <LAUNCHIN>;
+            if ($stdout =~ /Launched $appIdentifier with process ID ([0-9]+)/) {
+                $dumpToolPID = $1;
+            } else {
+                die "Could not launch $appIdentifier: $!";
+            }
+            close(LAUNCHOUT) || die "$!";
+            close(LAUNCHIN) || die "$!";
+        } else {
+            $dumpToolPID = installAndLaunchDumpToolAppUsingNotification(\@args, \%CLEAN_ENV);
+            $haveInstallediOSDumpToolAppOnce = 1;
+        }
+    } else {
+        $dumpToolPID = open3(\*OUT, \*IN, \*ERROR, launchWithEnv(@args, %CLEAN_ENV)) or die "Failed to start tool: $dumpTool\n";
+    }
     $isDumpToolOpen = 1;
     $dumpToolCrashed = 0;
 }
@@ -1516,8 +1773,17 @@ sub closeDumpTool()
 
     close IN;
     close OUT;
+    if (isIOSWebKit() && !dumpToolDidCrash()) {
+        if ($haveInstallediOSDumpToolAppOnce) {
+            kill 9, $dumpToolPID;
+        } else {
+            quitDumpToolUsingNotification();
+        }
+
+        unlinkFIFOs();
+    }
     waitpid $dumpToolPID, 0;
-    
+ 
     # check for WebCore counter leaks.
     if ($shouldCheckLeaks) {
         while (<ERROR>) {
@@ -1532,10 +1798,18 @@ sub dumpToolDidCrash()
 {
     return 1 if $dumpToolCrashed;
     return 0 unless $isDumpToolOpen;
-    my $pid = waitpid(-1, WNOHANG);
-    return 1 if ($pid == $dumpToolPID);
+    if (isIOSWebKit()) {
+        my $count = kill 0, $dumpToolPID;
+        return 1 if !$count;
+    } else {
+        my $pid = waitpid(-1, WNOHANG);
+        return 1 if ($pid == $dumpToolPID);
+    }
 
-    return 0;
+    # On Mac OS X, crashing may be significantly delayed by crash reporter.
+    return 0 unless isAppleMacWebKit() or isIOSWebKit();
+
+    return DumpRenderTreeSupport::processIsCrashing($dumpToolPID);
 }
 
 sub configureAndOpenHTTPDIfNeeded()
@@ -1673,7 +1947,8 @@ sub expectedDirectoryForTest($;$;$)
         push @extraPlatforms, "mac-wk2" if $platform eq "win-wk2";
         push @extraPlatforms, qw(mac-lion mac);
     }
-  
+    push @extraPlatforms, @macPlatforms if isIOSWebKit();
+
     push @directories, map { catdir($platformBaseDirectory, $_) } @extraPlatforms;
     push @directories, $expectedDirectory;
 
@@ -2109,17 +2384,19 @@ sub buildPlatformResultHierarchy()
     mkpath($platformTestDirectory) if ($platform eq "undefined" && !-d "$platformTestDirectory");
 
     my @platforms;
-    
+
     my $isMac = $platform =~ /^mac/;
     my $isWin = $platform =~ /^win/;
-    if ($isMac || $isWin) {
+    my $isIOS = $platform =~ /^ios/;
+    if ($isMac || $isWin || $isIOS) {
         my $effectivePlatform = $platform;
-        if ($platform eq "mac-wk2" || $platform eq "win-wk2") {
+        if ($platform eq "mac-wk2" || $platform eq "win-wk2" || $platform eq "ios-sim-wk2") {
             push @platforms, $platform;
             $effectivePlatform = $realPlatform;
         }
 
         my @platformList = $isMac ? @macPlatforms : @winPlatforms;
+        @platformList = @iPhoneSimulatorPlatforms if $isIOS;
         my $i;
         for ($i = 0; $i < @platformList; $i++) {
             last if $platformList[$i] eq $effectivePlatform;
@@ -2143,7 +2420,7 @@ sub buildPlatformResultHierarchy()
         my $scoped = catdir($platformBaseDirectory, $platforms[$i]);
         push(@hierarchy, $scoped) if (-d $scoped);
     }
-    
+ 
     unshift @hierarchy, grep { -d $_ } @additionalPlatformDirectories;
 
     return @hierarchy;

@@ -26,36 +26,18 @@
 #ifndef PlatformLayer_h
 #define PlatformLayer_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 OBJC_CLASS CALayer;
 typedef CALayer PlatformLayer;
 #elif PLATFORM(WIN) && USE(CA)
 typedef struct _CACFLayer PlatformLayer;
-#elif PLATFORM(WIN) && USE(TEXTURE_MAPPER)
+#elif USE(TEXTURE_MAPPER)
 namespace WebCore {
 class TextureMapperPlatformLayer;
 typedef TextureMapperPlatformLayer PlatformLayer;
 };
-#elif PLATFORM(GTK)
-#if USE(TEXTURE_MAPPER_GL)
-namespace WebCore {
-class TextureMapperPlatformLayer;
-typedef TextureMapperPlatformLayer PlatformLayer;
-};
-#endif
-#elif PLATFORM(EFL) || PLATFORM(NIX)
-#if USE(TEXTURE_MAPPER)
-namespace WebCore {
-class TextureMapperPlatformLayer;
-typedef TextureMapperPlatformLayer PlatformLayer;
-};
-#endif // USE(TEXTURE_MAPPER)
 #else
 typedef void* PlatformLayer;
 #endif
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // PlatformLayer_h

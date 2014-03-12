@@ -37,7 +37,7 @@ namespace WebCore {
 #if ENABLE(XSLT)
     class CachedXSLStyleSheet final : public CachedResource {
     public:
-        CachedXSLStyleSheet(const ResourceRequest&);
+        CachedXSLStyleSheet(const ResourceRequest&, SessionID);
 
         const String& sheet() const { return m_sheet; }
 
@@ -56,6 +56,8 @@ namespace WebCore {
         virtual String encoding() const override;
         virtual void finishLoading(ResourceBuffer*) override;
     };
+
+CACHED_RESOURCE_TYPE_CASTS(CachedXSLStyleSheet, CachedResource, CachedResource::XSLStyleSheet)
 
 #endif
 

@@ -26,6 +26,8 @@
 #import "config.h"
 #import "WKAccessibilityWebPageObject.h"
 
+#if PLATFORM(MAC)
+
 #import "WebFrame.h"
 #import "WebPage.h"
 #import "WKArray.h"
@@ -188,9 +190,9 @@ using namespace WebKit;
     return nil;
 }
 
-- (NSPoint)_convertScreenPointToWindow:(NSPoint)point
+- (NSPoint)_convertScreenPointToRootView:(NSPoint)point
 {
-    return m_page->screenToWindow(IntPoint(point.x, point.y));
+    return m_page->screenToRootView(IntPoint(point.x, point.y));
 }
 
 - (id)accessibilityAttributeValue:(NSString *)attribute forParameter:(id)parameter
@@ -198,7 +200,7 @@ using namespace WebKit;
     WKRetainPtr<WKTypeRef> pageOverlayParameter = 0;
     
     if ([parameter isKindOfClass:[NSValue class]] && strcmp([(NSValue*)parameter objCType], @encode(NSPoint)) == 0) {
-        NSPoint point = [self _convertScreenPointToWindow:[(NSValue *)parameter pointValue]];
+        NSPoint point = [self _convertScreenPointToRootView:[(NSValue *)parameter pointValue]];
         pageOverlayParameter = WKPointCreate(WKPointMake(point.x, point.y));
     }
     
@@ -220,6 +222,8 @@ using namespace WebKit;
     return YES;
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 - (id)accessibilityHitTest:(NSPoint)point 
 {
     // Hit-test point comes in as bottom-screen coordinates. Needs to be normalized to the frame of the web page.
@@ -244,11 +248,13 @@ using namespace WebKit;
     
     return [[self accessibilityRootObjectWrapper] accessibilityHitTest:point];
 }
+#pragma clang diagnostic pop
 
 - (id)accessibilityFocusedUIElement 
 {
     return [[self accessibilityRootObjectWrapper] accessibilityFocusedUIElement];
 }
 
-
 @end
+
+#endif // PLATFORM(MAC)

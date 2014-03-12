@@ -46,7 +46,7 @@
 #include <wtf/TemporaryChange.h>
 #include <wtf/text/WTFString.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include "LayerHostingContext.h"
 #endif
 
@@ -59,16 +59,14 @@ PluginControllerProxy::PluginControllerProxy(WebProcessConnection* connection, c
     , m_pluginInstanceID(creationParameters.pluginInstanceID)
     , m_userAgent(creationParameters.userAgent)
     , m_isPrivateBrowsingEnabled(creationParameters.isPrivateBrowsingEnabled)
-#if USE(ACCELERATED_COMPOSITING)
     , m_isAcceleratedCompositingEnabled(creationParameters.isAcceleratedCompositingEnabled)
-#endif
     , m_isInitializing(false)
     , m_paintTimer(RunLoop::main(), this, &PluginControllerProxy::paint)
     , m_pluginDestructionProtectCount(0)
     , m_pluginDestroyTimer(RunLoop::main(), this, &PluginControllerProxy::destroy)
     , m_waitingForDidUpdate(false)
     , m_pluginCanceledManualStreamLoad(false)
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     , m_isComplexTextInputEnabled(false)
 #endif
     , m_contentsScaleFactor(creationParameters.contentsScaleFactor)
@@ -180,7 +178,7 @@ void PluginControllerProxy::paint()
     // Create a graphics context.
     auto graphicsContext = m_backingStore->createGraphicsContext();
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     // FIXME: We should really call applyDeviceScaleFactor instead of scale, but that ends up calling into WKSI
     // which we currently don't have initiated in the plug-in process.
     graphicsContext->scale(FloatSize(m_contentsScaleFactor, m_contentsScaleFactor));

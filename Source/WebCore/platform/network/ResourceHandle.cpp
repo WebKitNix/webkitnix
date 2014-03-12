@@ -153,7 +153,7 @@ void ResourceHandle::setClient(ResourceHandleClient* client)
     d->m_client = client;
 }
 
-#if !PLATFORM(MAC) && !USE(CFNETWORK) && !USE(SOUP)
+#if !PLATFORM(COCOA) && !USE(CFNETWORK) && !USE(SOUP)
 // ResourceHandle never uses async client calls on these platforms yet.
 void ResourceHandle::continueWillSendRequest(const ResourceRequest&)
 {
@@ -200,7 +200,7 @@ bool ResourceHandle::hasAuthenticationChallenge() const
 
 void ResourceHandle::clearAuthentication()
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     d->m_currentMacChallenge = nil;
 #endif
     d->m_currentWebChallenge.nullify();
@@ -213,7 +213,7 @@ bool ResourceHandle::shouldContentSniff() const
 
 bool ResourceHandle::shouldContentSniffURL(const URL& url)
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (shouldForceContentSniffing)
         return true;
 #endif

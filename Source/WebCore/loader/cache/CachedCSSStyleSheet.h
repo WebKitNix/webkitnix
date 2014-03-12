@@ -38,7 +38,7 @@ namespace WebCore {
 
     class CachedCSSStyleSheet final : public CachedResource {
     public:
-        CachedCSSStyleSheet(const ResourceRequest&, const String& charset);
+        CachedCSSStyleSheet(const ResourceRequest&, const String& charset, SessionID);
         virtual ~CachedCSSStyleSheet();
 
         const String sheetText(bool enforceMIMEType = true, bool* hasValidMIMEType = 0) const;
@@ -66,6 +66,8 @@ namespace WebCore {
 
         RefPtr<StyleSheetContents> m_parsedStyleSheetCache;
     };
+
+CACHED_RESOURCE_TYPE_CASTS(CachedCSSStyleSheet, CachedResource, CachedResource::CSSStyleSheet)
 
 }
 

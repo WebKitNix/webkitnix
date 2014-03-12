@@ -35,7 +35,7 @@
 #include "TextureMapperFPSCounter.h"
 #include "TextureMapperLayer.h"
 #include "Timer.h"
-#include <wtf/Functional.h>
+#include <functional>
 #include <wtf/HashSet.h>
 #include <wtf/ThreadingPrimitives.h>
 #include <wtf/Vector.h>
@@ -47,8 +47,6 @@
 namespace WebCore {
 
 class CoordinatedBackingStore;
-class CustomFilterProgram;
-class CustomFilterProgramInfo;
 
 class CoordinatedGraphicsSceneClient {
 public:
@@ -67,7 +65,7 @@ public:
     void paintToGraphicsContext(PlatformGraphicsContext*);
     void setScrollPosition(const FloatPoint&);
     void detach();
-    void appendUpdate(const Function<void()>&);
+    void appendUpdate(std::function<void()>);
 
     WebCore::TextureMapperLayer* findScrollableContentsLayerAt(const WebCore::FloatPoint&);
 
@@ -118,13 +116,6 @@ private:
     void clearImageBackingContents(CoordinatedImageBackingID);
     void removeImageBacking(CoordinatedImageBackingID);
 
-#if ENABLE(CSS_SHADERS)
-    void syncCustomFilterPrograms(const CoordinatedGraphicsState&);
-    void injectCachedCustomFilterPrograms(const FilterOperations& filters) const;
-    void createCustomFilterProgram(int id, const CustomFilterProgramInfo&);
-    void removeCustomFilterProgram(int id);
-#endif
-
     TextureMapperLayer* layerByID(CoordinatedLayerID id)
     {
         ASSERT(m_layers.contains(id));
@@ -137,7 +128,7 @@ private:
     void syncRemoteContent();
     void adjustPositionForFixedLayers();
 
-    void dispatchOnMainThread(const Function<void()>&);
+    void dispatchOnMainThread(std::function<void()>);
     void updateViewport();
     void renderNextFrame();
     void purgeBackingStores();
@@ -159,7 +150,7 @@ private:
     void dispatchCommitScrollOffset(uint32_t layerID, const IntSize& offset);
 
     // Render queue can be accessed ony from main thread or updatePaintNode call stack!
-    Vector<Function<void()> > m_renderQueue;
+    Vector<std::function<void()>> m_renderQueue;
     Mutex m_renderQueueMutex;
 
     OwnPtr<TextureMapper> m_textureMapper;
@@ -196,11 +187,6 @@ private:
     FloatPoint m_renderedContentsScrollPosition;
     Color m_backgroundColor;
     bool m_setDrawsBackground;
-
-#if ENABLE(CSS_SHADERS)
-    typedef HashMap<int, RefPtr<CustomFilterProgram> > CustomFilterProgramMap;
-    CustomFilterProgramMap m_customFilterPrograms;
-#endif
 
     TextureMapperFPSCounter m_fpsCounter;
 

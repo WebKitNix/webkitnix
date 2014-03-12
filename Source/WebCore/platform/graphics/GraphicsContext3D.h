@@ -50,7 +50,7 @@
 #undef VERSION
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #if PLATFORM(IOS)
 #include <OpenGLES/ES2/gl.h>
 #ifdef __OBJC__
@@ -425,7 +425,8 @@ public:
         UNPACK_PREMULTIPLY_ALPHA_WEBGL = 0x9241,
         CONTEXT_LOST_WEBGL = 0x9242,
         UNPACK_COLORSPACE_CONVERSION_WEBGL = 0x9243,
-        BROWSER_DEFAULT_WEBGL = 0x9244
+        BROWSER_DEFAULT_WEBGL = 0x9244,
+        VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE = 0x88FE
     };
 
     // Context creation attributes.
@@ -483,16 +484,14 @@ public:
     static PassRefPtr<GraphicsContext3D> createForCurrentGLContext();
     ~GraphicsContext3D();
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     PlatformGraphicsContext3D platformGraphicsContext3D() const { return m_contextObj; }
     Platform3DObject platformTexture() const { return m_compositorTexture; }
     CALayer* platformLayer() const { return reinterpret_cast<CALayer*>(m_webGLLayer.get()); }
 #else
     PlatformGraphicsContext3D platformGraphicsContext3D();
     Platform3DObject platformTexture() const;
-#if USE(ACCELERATED_COMPOSITING)
     PlatformLayer* platformLayer() const;
-#endif
 #endif
 
     bool makeContextCurrent();
@@ -826,6 +825,10 @@ public:
     void viewport(GC3Dint x, GC3Dint y, GC3Dsizei width, GC3Dsizei height);
 
     void reshape(int width, int height);
+
+    void drawArraysInstanced(GC3Denum mode, GC3Dint first, GC3Dsizei count, GC3Dsizei primcount);
+    void drawElementsInstanced(GC3Denum mode, GC3Dsizei count, GC3Denum type, GC3Dintptr offset, GC3Dsizei primcount);
+    void vertexAttribDivisor(GC3Duint index, GC3Duint divisor);
 
 #if PLATFORM(GTK) || PLATFORM(EFL) || USE(CAIRO)
     void paintToCanvas(const unsigned char* imagePixels, int imageWidth, int imageHeight,

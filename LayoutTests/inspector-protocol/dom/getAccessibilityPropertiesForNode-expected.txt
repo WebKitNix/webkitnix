@@ -1,0 +1,326 @@
+Checking Web Inspector protocol for the Accessibility Node Inspector.
+
+Total elements to be tested: 50.
+
+<li role="treeitem" aria-expanded="false">collapsed</li>
+    exists: true
+    label: 
+    role: treeitem
+    expanded: false
+
+<li role="treeitem" aria-expanded="true">expanded</li>
+    exists: true
+    label: 
+    role: treeitem
+    expanded: true
+
+<div role="tab" aria-selected="false">not selected</div>
+    exists: true
+    label: 
+    role: tab
+
+<div role="tab" aria-selected="true">selected</div>
+    exists: true
+    label: 
+    role: tab
+    selected: true
+
+<div role="option" aria-selected="false">not selected</div>
+    exists: true
+    label: 
+    role: option
+
+<div role="option" aria-selected="true">selected</div>
+    exists: true
+    label: 
+    role: option
+    selected: true
+
+<option>not selected</option>
+    exists: false
+    label: 
+    role: 
+
+<option selected="">FIXME: Selected is false. Expected true. http://webkit.org/b/129835</option>
+    exists: false
+    label: 
+    role: 
+
+<img src="./404.gif" alt="x" style="display:none;">
+    exists: false
+    label: 
+    role: 
+
+<img src="./404.gif" alt="x" aria-hidden="true">
+    exists: true
+    label: 
+    role: img
+    ignored: true
+    ignoredByDefault: true
+    hidden: true
+
+<img src="./404.gif" alt="x">
+    exists: true
+    label: 
+    role: img
+
+<img src="./404.gif" alt="">
+    exists: true
+    label: 
+    role: img
+    ignored: true
+
+<img src="./404.gif">
+    exists: true
+    label: 
+    role: img
+    ignored: true
+
+<input style="display:none;">
+    exists: false
+    label: 
+    role: 
+
+<input aria-hidden="true">
+    exists: true
+    label: 
+    role: 
+    ignored: true
+    ignoredByDefault: true
+    hidden: true
+    required: false
+
+<div role="radio" aria-checked="false">unchecked</div>
+    exists: true
+    label: 
+    role: radio
+    checked: false
+    required: false
+
+<div role="radio" aria-checked="mixed">unchecked [sic] mixed state will not be exposed on radios per ARIA spec.</div>
+    exists: true
+    label: 
+    role: radio
+    checked: false
+    required: false
+
+<div role="radio" aria-checked="true">checked</div>
+    exists: true
+    label: 
+    role: radio
+    checked: true
+    required: false
+
+<div role="radio">unchecked (checked undefined evals to false on radio)</div>
+    exists: true
+    label: 
+    role: radio
+    checked: false
+    required: false
+
+<input type="radio" checked="">
+    exists: true
+    label: 
+    role: radio
+    checked: true
+    required: false
+
+<input type="radio">
+    exists: true
+    label: 
+    role: radio
+    checked: false
+    required: false
+
+<div role="checkbox" aria-checked="false">unchecked</div>
+    exists: true
+    label: 
+    role: checkbox
+    checked: false
+    required: false
+
+<div role="checkbox" aria-checked="mixed">mixed</div>
+    exists: true
+    label: 
+    role: checkbox
+    checked: mixed
+    required: false
+
+<div role="checkbox" aria-checked="true">checked</div>
+    exists: true
+    label: 
+    role: checkbox
+    checked: true
+    required: false
+
+<div role="checkbox">unchecked (checked undefined evals to false on checkbox)</div>
+    exists: true
+    label: 
+    role: checkbox
+    checked: false
+    required: false
+
+<input type="checkbox" checked="">
+    exists: true
+    label: 
+    role: checkbox
+    checked: true
+    required: false
+
+<input type="checkbox">
+    exists: true
+    label: 
+    role: checkbox
+    checked: false
+    required: false
+
+<div role="textbox" tabindex="0" aria-disabled="true">disabled</div>
+    exists: true
+    label: 
+    role: 
+    disabled: true
+    readonly: true
+    required: false
+
+<input disabled="" value="disabled">
+    exists: true
+    label: 
+    role: 
+    disabled: true
+    required: false
+
+<div role="textbox" tabindex="0" aria-readonly="true">readonly</div>
+    exists: true
+    label: 
+    role: 
+    readonly: true
+    required: false
+
+<input readonly="" value="readonly">
+    exists: true
+    label: 
+    role: 
+    readonly: true
+    required: false
+
+<input aria-invalid="foo" value="fake value will eval to true">
+    exists: true
+    label: 
+    role: 
+    invalid: true
+    required: false
+
+<input aria-invalid="spelling" value="invalid spelling">
+    exists: true
+    label: 
+    role: 
+    invalid: spelling
+    required: false
+
+<input aria-required="true" value="required">
+    exists: true
+    label: 
+    role: 
+    required: true
+
+<input required="">
+    exists: true
+    label: 
+    role: 
+    required: true
+
+<input>
+    exists: true
+    label: 
+    role: 
+    required: false
+
+<input type="button">
+    exists: true
+    label: 
+    role: button
+
+<button></button>
+    exists: true
+    label: 
+    role: button
+
+<div role="button" tabindex="0" aria-pressed="false">Not Pressed.</div>
+    exists: true
+    label: 
+    role: 
+    pressed: false
+    required: false
+
+<div role="button" tabindex="0" aria-pressed="true">FIXME: Pressed is false. Expected true. http://webkit.org/b/129830</div>
+    exists: true
+    label: 
+    role: 
+    pressed: false
+    required: false
+
+<div role="button" tabindex="0" aria-disabled="true">disabled</div>
+    exists: true
+    label: 
+    role: button
+    disabled: true
+
+<div role="button" tabindex="0"></div>
+    exists: true
+    label: 
+    role: button
+
+<span aria-hidden="true"></span>
+    exists: true
+    label: 
+    role: 
+    ignored: true
+    ignoredByDefault: true
+    hidden: true
+
+<span></span>
+    exists: true
+    label: 
+    role: 
+    ignored: true
+    ignoredByDefault: true
+
+<div aria-hidden="true"></div>
+    exists: true
+    label: 
+    role: 
+    ignored: true
+    ignoredByDefault: true
+    hidden: true
+
+<div></div>
+    exists: true
+    label: 
+    role: 
+    ignored: true
+
+<div role="presentation"><div></div></div>
+    exists: true
+    label: 
+    role: presentation
+    ignored: true
+
+<div><div></div></div>
+    exists: true
+    label: 
+    role: 
+    ignored: true
+
+<script style="display:block;"></script>
+    exists: true
+    label: 
+    role: group
+    ignored: true
+
+<script></script>
+    exists: false
+    label: 
+    role: 
+
+
+

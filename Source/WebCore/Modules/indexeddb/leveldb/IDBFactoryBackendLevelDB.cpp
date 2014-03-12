@@ -84,11 +84,10 @@ void IDBFactoryBackendLevelDB::removeIDBDatabaseBackend(const String& uniqueIden
     m_databaseBackendMap.remove(uniqueIdentifier);
 }
 
-void IDBFactoryBackendLevelDB::getDatabaseNames(PassRefPtr<IDBCallbacks> callbacks, PassRefPtr<SecurityOrigin> securityOrigin, ScriptExecutionContext*, const String& dataDirectory)
+void IDBFactoryBackendLevelDB::getDatabaseNames(PassRefPtr<IDBCallbacks> callbacks, const SecurityOrigin& openingOrigin, const SecurityOrigin&, ScriptExecutionContext*, const String& dataDirectory)
 {
-    ASSERT(securityOrigin);
     LOG(StorageAPI, "IDBFactoryBackendLevelDB::getDatabaseNames");
-    RefPtr<IDBBackingStoreLevelDB> backingStore = openBackingStore(*securityOrigin, dataDirectory);
+    RefPtr<IDBBackingStoreLevelDB> backingStore = openBackingStore(openingOrigin, dataDirectory);
     if (!backingStore) {
         callbacks->onError(IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Internal error opening backing store for indexedDB.webkitGetDatabaseNames."));
         return;
@@ -103,10 +102,10 @@ void IDBFactoryBackendLevelDB::getDatabaseNames(PassRefPtr<IDBCallbacks> callbac
     callbacks->onSuccess(databaseNames.release());
 }
 
-void IDBFactoryBackendLevelDB::deleteDatabase(const String& name, PassRefPtr<IDBCallbacks> callbacks, PassRefPtr<SecurityOrigin> securityOrigin, ScriptExecutionContext*, const String& dataDirectory)
+void IDBFactoryBackendLevelDB::deleteDatabase(const String& name, const SecurityOrigin& openingOrigin, const SecurityOrigin&, PassRefPtr<IDBCallbacks> callbacks, ScriptExecutionContext*, const String& dataDirectory)
 {
     LOG(StorageAPI, "IDBFactoryBackendLevelDB::deleteDatabase");
-    const String uniqueIdentifier = computeUniqueIdentifier(name, *securityOrigin);
+    const String uniqueIdentifier = computeUniqueIdentifier(name, openingOrigin);
 
     IDBDatabaseBackendMap::iterator it = m_databaseBackendMap.find(uniqueIdentifier);
     if (it != m_databaseBackendMap.end()) {
@@ -117,7 +116,7 @@ void IDBFactoryBackendLevelDB::deleteDatabase(const String& name, PassRefPtr<IDB
     }
 
     // FIXME: Everything from now on should be done on another thread.
-    RefPtr<IDBBackingStoreLevelDB> backingStore = openBackingStore(*securityOrigin, dataDirectory);
+    RefPtr<IDBBackingStoreLevelDB> backingStore = openBackingStore(openingOrigin, dataDirectory);
     if (!backingStore) {
         callbacks->onError(IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Internal error opening backing store for indexedDB.deleteDatabase."));
         return;

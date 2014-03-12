@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2008 INdT - Instituto Nokia de Tecnologia
  * Copyright (C) 2009, 2010 ProFUSION embedded systems
- * Copyright (C) 2009, 2010, 2011 Samsung Electronics
+ * Copyright (C) 2009-2014 Samsung Electronics
  * Copyright (C) 2012 Intel Corporation
  *
  * All rights reserved.
@@ -97,7 +97,7 @@ static const Ecore_Getopt options = {
     "0.0.1",
     "(C)2008 INdT (The Nokia Technology Institute)\n"
     "(C)2009, 2010 ProFUSION embedded systems\n"
-    "(C)2009, 2010, 2011 Samsung Electronics\n"
+    "(C)2009-2014 Samsung Electronics\n"
     "(C)2012 Intel Corporation\n",
     "GPL",
     "Test Web Browser using the Enlightenment Foundation Libraries of WebKit",
@@ -182,35 +182,29 @@ find_app_from_ee(Ecore_Evas *ee)
 }
 
 static void
-print_history(Eina_List *list)
+print_history(Eina_List *list, Evas *e)
 {
     Eina_List *l;
     void *d;
 
     if (!verbose)
-       return;
+        return;
 
     printf("Session history contains:\n");
 
     EINA_LIST_FOREACH(list, l, d) {
-       Ewk_History_Item *item = (Ewk_History_Item*)d;
-       cairo_surface_t *cs = ewk_history_item_icon_surface_get(item);
-       char buf[PATH_MAX];
-       int s = snprintf(buf, sizeof(buf), "/tmp/favicon-%s.png", ewk_history_item_uri_original_get(item));
-       for (s--; s >= (int)sizeof("/tmp/favicon-"); s--) {
-           if (!isalnum(buf[s]) && buf[s] != '.')
-               buf[s] = '_';
-       }
-       cs = ewk_history_item_icon_surface_get(item);
+        Ewk_History_Item *item = (Ewk_History_Item*)d;
+        Evas_Object *icon = ewk_history_item_icon_object_add(item, e);
+        char buf[PATH_MAX];
+        int s = snprintf(buf, sizeof(buf), "/tmp/favicon-%s.png", ewk_history_item_uri_original_get(item));
+        for (s--; s >= (int)sizeof("/tmp/favicon-"); s--) {
+            if (!isalnum(buf[s]) && buf[s] != '.')
+                buf[s] = '_';
+        }
 
-       if (cs && cairo_surface_status(cs) == CAIRO_STATUS_SUCCESS)
-           cairo_surface_write_to_png(cs, buf);
-       else
-           buf[0] = '\0';
+        evas_object_image_save(icon, buf, NULL, NULL);
 
-       printf("* '%s' title='%s' icon='%s'\n",
-              ewk_history_item_uri_original_get(item),
-              ewk_history_item_title_get(item), buf);
+        printf("* '%s' title='%s' icon='%s'\n", ewk_history_item_uri_original_get(item), ewk_history_item_title_get(item), buf);
     }
 }
 
@@ -499,7 +493,7 @@ on_key_down(void *data, Evas *e, Evas_Object *obj, void *event_info)
         if (ewk_view_back_possible(obj)) {
             Ewk_History *history = ewk_view_history_get(obj);
             Eina_List *list = ewk_history_back_list_get(history);
-            print_history(list);
+            print_history(list, e);
             ewk_history_item_list_free(list);
             ewk_view_back(obj);
         } else
@@ -509,7 +503,7 @@ on_key_down(void *data, Evas *e, Evas_Object *obj, void *event_info)
         if (ewk_view_forward_possible(obj)) {
             Ewk_History *history = ewk_view_history_get(obj);
             Eina_List *list = ewk_history_forward_list_get(history);
-            print_history(list);
+            print_history(list, e);
             ewk_history_item_list_free(list);
             ewk_view_forward(obj);
         } else
@@ -590,24 +584,6 @@ on_key_down(void *data, Evas *e, Evas_Object *obj, void *event_info)
     } else if (!strcmp(ev->key, "n") && ctrlPressed) {
         info("Create new window (Ctrl+n) was pressed.");
         browserCreate("http://www.google.com", app->userArgs);
-    } else if (!strcmp(ev->key, "g") && ctrlPressed ) {
-        Evas_Coord x, y, w, h;
-        Evas_Object *frame = ewk_view_frame_main_get(obj);
-        float zoom = zoomLevels[currentZoomLevel] / 100.0;
-
-        ewk_frame_visible_content_geometry_get(frame, EINA_FALSE, &x, &y, &w, &h);
-        x -= w;
-        y -= h;
-        w *= 4;
-        h *= 4;
-        info("Pre-render %d,%d + %dx%d", x, y, w, h);
-        ewk_view_pre_render_region(obj, x, y, w, h, zoom);
-    } else if (!strcmp(ev->key, "r") && ctrlPressed) {
-        info("Pre-render 1 extra column/row with current zoom");
-        ewk_view_pre_render_relative_radius(obj, 1);
-    } else if (!strcmp(ev->key, "p") && ctrlPressed) {
-        info("Pre-rendering start");
-        ewk_view_pre_render_start(obj);
     } else if (!strcmp(ev->key, "d") && ctrlPressed) {
         info("Render suspended");
         ewk_view_disable_render(obj);
@@ -816,11 +792,11 @@ windowCreate(User_Arguments *userArgs)
         return NULL;
     }
 
-#if defined(WTF_USE_ACCELERATED_COMPOSITING) && defined(HAVE_ECORE_X)
+#if defined(HAVE_ECORE_X)
     if (userArgs->engine)
 #endif
         app->ee = ecore_evas_new(userArgs->engine, 0, 0, userArgs->geometry.w, userArgs->geometry.h, NULL);
-#if defined(WTF_USE_ACCELERATED_COMPOSITING) && defined(HAVE_ECORE_X)
+#if defined(HAVE_ECORE_X)
     else {
         const char* engine = "opengl_x11";
         app->ee = ecore_evas_new(engine, 0, 0, userArgs->geometry.w, userArgs->geometry.h, NULL);

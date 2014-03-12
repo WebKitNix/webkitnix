@@ -483,8 +483,6 @@ public:
         [NSNumber numberWithBool:NO],   WebKitJavaScriptCanAccessClipboardPreferenceKey,
         [NSNumber numberWithBool:YES],  WebKitXSSAuditorEnabledPreferenceKey,
         [NSNumber numberWithBool:YES],  WebKitAcceleratedCompositingEnabledPreferenceKey,
-        // CSS Shaders also need WebGL enabled (which is disabled by default), so we can keep it enabled for now.
-        [NSNumber numberWithBool:YES], WebKitCSSCustomFilterEnabledPreferenceKey,
         [NSNumber numberWithBool:YES], WebKitCSSRegionsEnabledPreferenceKey,
         [NSNumber numberWithBool:YES], WebKitCSSCompositingEnabledPreferenceKey,
         [NSNumber numberWithBool:NO],  WebKitCSSGridLayoutEnabledPreferenceKey,
@@ -572,11 +570,6 @@ public:
         [NSNumber numberWithBool:NO],     WebKitNetworkDataUsageTrackingEnabledPreferenceKey,
         @"",                              WebKitNetworkInterfaceNamePreferenceKey,
 #endif
-#if ENABLE(DISK_IMAGE_CACHE)
-        [NSNumber numberWithBool:YES], WebKitDiskImageCacheEnabledPreferenceKey,
-        [NSNumber numberWithUnsignedInt:(100 * 1024)], WebKitDiskImageCacheMinimumImageSizePreferenceKey,
-        [NSNumber numberWithUnsignedInt:(100 * 1024 * 1024)], WebKitDiskImageCacheMaximumCacheSizePreferenceKey,
-#endif
 #if ENABLE(IOS_TEXT_AUTOSIZING)
         [NSNumber numberWithFloat:WKGetMinimumZoomFontSize()], WebKitMinimumZoomFontSizePreferenceKey,
 #endif
@@ -601,6 +594,9 @@ public:
 #endif
 #if ENABLE(MEDIA_SOURCE)
         [NSNumber numberWithBool:NO], WebKitMediaSourceEnabledPreferenceKey,
+#endif
+#if ENABLE(IMAGE_CONTROLS)
+        [NSNumber numberWithBool:NO], WebKitImageControlsEnabledPreferenceKey,
 #endif
         nil];
 
@@ -1874,16 +1870,6 @@ static NSString *classIBCreatorID = nil;
     [self _setBoolValue:enabled forKey:WebKitAcceleratedCompositingEnabledPreferenceKey];
 }
 
-- (BOOL)cssCustomFilterEnabled
-{
-    return [self _boolValueForKey:WebKitCSSCustomFilterEnabledPreferenceKey];
-}
-
-- (void)setCSSCustomFilterEnabled:(BOOL)enabled
-{
-    [self _setBoolValue:enabled forKey:WebKitCSSCustomFilterEnabledPreferenceKey];
-}
-
 - (BOOL)cssRegionsEnabled
 {
     return [self _boolValueForKey:WebKitCSSRegionsEnabledPreferenceKey];
@@ -2280,16 +2266,6 @@ static NSString *classIBCreatorID = nil;
     [self _setBoolValue:flag forKey:WebKitMockScrollbarsEnabledPreferenceKey];
 }
 
-- (BOOL)seamlessIFramesEnabled
-{
-    return [self _boolValueForKey:WebKitSeamlessIFramesEnabledPreferenceKey];
-}
-
-- (void)setSeamlessIFramesEnabled:(BOOL)flag
-{
-    [self _setBoolValue:flag forKey:WebKitSeamlessIFramesEnabledPreferenceKey];
-}
-
 - (NSString *)pictographFontFamily
 {
     return [self _stringValueForKey: WebKitPictographFontPreferenceKey];
@@ -2560,6 +2536,26 @@ static bool needsScreenFontsEnabledQuirk()
 - (void)setMediaSourceEnabled:(BOOL)enabled
 {
     [self _setBoolValue:enabled forKey:WebKitMediaSourceEnabledPreferenceKey];
+}
+
+- (BOOL)imageControlsEnabled
+{
+    return [self _boolValueForKey:WebKitImageControlsEnabledPreferenceKey];
+}
+
+- (void)setImageControlsEnabled:(BOOL)enabled
+{
+    [self _setBoolValue:enabled forKey:WebKitImageControlsEnabledPreferenceKey];
+}
+
+- (BOOL)shouldConvertPositionStyleOnCopy
+{
+    return [self _boolValueForKey:WebKitShouldConvertPositionStyleOnCopyPreferenceKey];
+}
+
+- (void)setShouldConvertPositionStyleOnCopy:(BOOL)enabled
+{
+    [self _setBoolValue:enabled forKey:WebKitShouldConvertPositionStyleOnCopyPreferenceKey];
 }
 
 @end

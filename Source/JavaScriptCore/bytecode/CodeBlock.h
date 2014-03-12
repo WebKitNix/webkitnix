@@ -56,7 +56,6 @@
 #include "HandlerInfo.h"
 #include "ObjectAllocationProfile.h"
 #include "Options.h"
-#include "Operations.h"
 #include "PutPropertySlot.h"
 #include "Instruction.h"
 #include "JITCode.h"
@@ -66,6 +65,7 @@
 #include "LLIntCallLinkInfo.h"
 #include "LazyOperandValueProfile.h"
 #include "ProfilerCompilation.h"
+#include "ProfilerJettisonReason.h"
 #include "RegExpObject.h"
 #include "StructureStubInfo.h"
 #include "UnconditionalFinalizer.h"
@@ -146,7 +146,7 @@ public:
     void visitAggregate(SlotVisitor&);
 
     void dumpBytecode(PrintStream& = WTF::dataFile());
-    void dumpBytecode(PrintStream&, unsigned bytecodeOffset);
+    void dumpBytecode(PrintStream&, unsigned bytecodeOffset, const StubInfoMap& = StubInfoMap());
     void printStructures(PrintStream&, const Instruction*);
     void printStructure(PrintStream&, const char* name, const Instruction*, int operand);
 
@@ -175,6 +175,9 @@ public:
     void expressionRangeForBytecodeOffset(unsigned bytecodeOffset, int& divot,
                                           int& startOffset, int& endOffset, unsigned& line, unsigned& column);
 
+    void getStubInfoMap(const ConcurrentJITLocker&, StubInfoMap& result);
+    void getStubInfoMap(StubInfoMap& result);
+
 #if ENABLE(JIT)
     StructureStubInfo* addStubInfo();
     Bag<StructureStubInfo>::iterator begin() { return m_stubInfos.begin(); }
@@ -182,8 +185,6 @@ public:
 
     void resetStub(StructureStubInfo&);
     
-    void getStubInfoMap(const ConcurrentJITLocker&, StubInfoMap& result);
-
     ByValInfo& getByValInfo(unsigned bytecodeIndex)
     {
         return *(binarySearch<ByValInfo, unsigned>(m_byValInfos, m_byValInfos.size(), bytecodeIndex, getByValInfoBytecodeIndex));
@@ -256,17 +257,15 @@ public:
     // Exactly equivalent to codeBlock->ownerExecutable()->newReplacementCodeBlockFor(codeBlock->specializationKind())
     PassRefPtr<CodeBlock> newReplacement();
     
-    void setJITCode(PassRefPtr<JITCode> code, MacroAssemblerCodePtr codeWithArityCheck)
+    void setJITCode(PassRefPtr<JITCode> code)
     {
         ASSERT(m_heap->isDeferred());
         m_heap->reportExtraMemoryCost(code->size());
         ConcurrentJITLocker locker(m_lock);
         WTF::storeStoreFence(); // This is probably not needed because the lock will also do something similar, but it's good to be paranoid.
         m_jitCode = code;
-        m_jitCodeWithArityCheck = codeWithArityCheck;
     }
     PassRefPtr<JITCode> jitCode() { return m_jitCode; }
-    MacroAssemblerCodePtr jitCodeWithArityCheck() { return m_jitCodeWithArityCheck; }
     JITCode::JITType jitType() const
     {
         JITCode* jitCode = m_jitCode.get();
@@ -297,7 +296,7 @@ public:
     bool hasOptimizedReplacement(); // the typeToReplace is my JITType
 #endif
 
-    void jettison(ReoptimizationMode = DontCountReoptimization);
+    void jettison(Profiler::JettisonReason, ReoptimizationMode = DontCountReoptimization);
     
     ScriptExecutable* ownerExecutable() const { return m_ownerExecutable.get(); }
 
@@ -307,7 +306,6 @@ public:
     void setThisRegister(VirtualRegister thisRegister) { m_thisRegister = thisRegister; }
     VirtualRegister thisRegister() const { return m_thisRegister; }
 
-    bool needsFullScopeChain() const { return m_unlinkedCode->needsFullScopeChain(); }
     bool usesEval() const { return m_unlinkedCode->usesEval(); }
 
     void setArgumentsRegister(VirtualRegister argumentsRegister)
@@ -334,21 +332,20 @@ public:
 
     VirtualRegister activationRegister() const
     {
-        ASSERT(needsFullScopeChain());
+        ASSERT(m_activationRegister.isValid());
         return m_activationRegister;
     }
 
     VirtualRegister uncheckedActivationRegister()
     {
-        if (!needsFullScopeChain())
-            return VirtualRegister();
-        return activationRegister();
+        return m_activationRegister;
     }
 
     bool usesArguments() const { return m_argumentsRegister.isValid(); }
 
     bool needsActivation() const
     {
+        ASSERT(m_activationRegister.isValid() == m_needsActivation);
         return m_needsActivation;
     }
     
@@ -392,8 +389,6 @@ public:
 
     size_t numberOfJumpTargets() const { return m_unlinkedCode->numberOfJumpTargets(); }
     unsigned jumpTarget(int index) const { return m_unlinkedCode->jumpTarget(index); }
-
-    void createActivation(CallFrame*);
 
     void clearEvalCache();
 
@@ -491,8 +486,8 @@ public:
     RareCaseProfile* specialFastCaseProfileForBytecodeOffset(int bytecodeOffset)
     {
         return tryBinarySearch<RareCaseProfile, int>(
-                                                     m_specialFastCaseProfiles, m_specialFastCaseProfiles.size(), bytecodeOffset,
-                                                     getRareCaseProfileBytecodeOffset);
+            m_specialFastCaseProfiles, m_specialFastCaseProfiles.size(), bytecodeOffset,
+            getRareCaseProfileBytecodeOffset);
     }
 
     bool likelyToTakeSpecialFastCase(int bytecodeOffset)
@@ -578,11 +573,15 @@ public:
         ConcurrentJITLocker locker(m_lock);
         return m_exitProfile.add(locker, site);
     }
-        
+
+    bool hasExitSite(const ConcurrentJITLocker& locker, const DFG::FrequentExitSite& site) const
+    {
+        return m_exitProfile.hasExitSite(locker, site);
+    }
     bool hasExitSite(const DFG::FrequentExitSite& site) const
     {
         ConcurrentJITLocker locker(m_lock);
-        return m_exitProfile.hasExitSite(locker, site);
+        return hasExitSite(locker, site);
     }
 
     DFG::ExitProfile& exitProfile() { return m_exitProfile; }
@@ -590,11 +589,6 @@ public:
     CompressedLazyOperandValueProfileHolder& lazyOperandValueProfiles()
     {
         return m_lazyOperandValueProfiles;
-    }
-#else // ENABLE(DFG_JIT)
-    bool addFrequentExitSite(const DFG::FrequentExitSite&)
-    {
-        return false;
     }
 #endif // ENABLE(DFG_JIT)
 
@@ -675,15 +669,26 @@ public:
         return constantBufferAsVector(index).data();
     }
 
+    Heap* heap() const { return m_heap; }
     JSGlobalObject* globalObject() { return m_globalObject.get(); }
 
     JSGlobalObject* globalObjectFor(CodeOrigin);
 
     BytecodeLivenessAnalysis& livenessAnalysis()
     {
-        if (!m_livenessAnalysis)
-            m_livenessAnalysis = std::make_unique<BytecodeLivenessAnalysis>(this);
-        return *m_livenessAnalysis;
+        {
+            ConcurrentJITLocker locker(m_lock);
+            if (!!m_livenessAnalysis)
+                return *m_livenessAnalysis;
+        }
+        std::unique_ptr<BytecodeLivenessAnalysis> analysis =
+            std::make_unique<BytecodeLivenessAnalysis>(this);
+        {
+            ConcurrentJITLocker locker(m_lock);
+            if (!m_livenessAnalysis)
+                m_livenessAnalysis = std::move(analysis);
+            return *m_livenessAnalysis;
+        }
     }
     
     void validate();
@@ -769,7 +774,7 @@ public:
     // When we observe a lot of speculation failures, we trigger a
     // reoptimization. But each time, we increase the optimization trigger
     // to avoid thrashing.
-    unsigned reoptimizationRetryCounter() const;
+    JS_EXPORT_PRIVATE unsigned reoptimizationRetryCounter() const;
     void countReoptimization();
 #if ENABLE(JIT)
     unsigned numberOfDFGCompiles();
@@ -868,12 +873,37 @@ public:
     void updateAllPredictions();
 
     unsigned frameRegisterCount();
+    int stackPointerOffset();
 
+    bool hasOpDebugForLineAndColumn(unsigned line, unsigned column);
+
+    bool hasDebuggerRequests() const { return m_debuggerRequests; }
+    void* debuggerRequestsAddress() { return &m_debuggerRequests; }
+
+    void addBreakpoint(unsigned numBreakpoints);
+    void removeBreakpoint(unsigned numBreakpoints)
+    {
+        ASSERT(m_numBreakpoints >= numBreakpoints);
+        m_numBreakpoints -= numBreakpoints;
+    }
+
+    enum SteppingMode {
+        SteppingModeDisabled,
+        SteppingModeEnabled
+    };
+    void setSteppingMode(SteppingMode);
+
+    void clearDebuggerRequests()
+    {
+        m_steppingMode = SteppingModeDisabled;
+        m_numBreakpoints = 0;
+    }
+    
     // FIXME: Make these remaining members private.
 
     int m_numCalleeRegisters;
     int m_numVars;
-    bool m_isConstructor;
+    bool m_isConstructor : 1;
     
     // This is intentionally public; it's the responsibility of anyone doing any
     // of the following to hold the lock:
@@ -893,10 +923,11 @@ public:
     // concurrent compilation threads finish what they're doing.
     mutable ConcurrentJITLock m_lock;
     
-    bool m_shouldAlwaysBeInlined;
-    bool m_allTransitionsHaveBeenMarked; // Initialized and used on every GC.
+    bool m_shouldAlwaysBeInlined; // Not a bitfield because the JIT wants to store to it.
+    bool m_allTransitionsHaveBeenMarked : 1; // Initialized and used on every GC.
     
-    bool m_didFailFTLCompilation;
+    bool m_didFailFTLCompilation : 1;
+    bool m_hasBeenCompiledWithFTL : 1;
 
     // Internal methods for use by validation code. It would be private if it wasn't
     // for the fact that we use it from anonymous namespaces.
@@ -947,16 +978,8 @@ private:
     enum CacheDumpMode { DumpCaches, DontDumpCaches };
     void printCallOp(PrintStream&, ExecState*, int location, const Instruction*&, const char* op, CacheDumpMode, bool& hasPrintedProfiling);
     void printPutByIdOp(PrintStream&, ExecState*, int location, const Instruction*&, const char* op);
-    void printLocationAndOp(PrintStream& out, ExecState*, int location, const Instruction*&, const char* op)
-    {
-        out.printf("[%4d] %-17s ", location, op);
-    }
-
-    void printLocationOpAndRegisterOperand(PrintStream& out, ExecState* exec, int location, const Instruction*& it, const char* op, int operand)
-    {
-        printLocationAndOp(out, exec, location, it, op);
-        out.printf("%s", registerName(operand).data());
-    }
+    void printLocationAndOp(PrintStream&, ExecState*, int location, const Instruction*&, const char* op);
+    void printLocationOpAndRegisterOperand(PrintStream&, ExecState*, int location, const Instruction*& it, const char* op, int operand);
 
     void beginDumpProfiling(PrintStream&, bool& hasPrintedProfiling);
     void dumpValueProfiling(PrintStream&, const Instruction*&, bool& hasPrintedProfiling);
@@ -1005,6 +1028,14 @@ private:
 #endif
     WriteBarrier<UnlinkedCodeBlock> m_unlinkedCode;
     int m_numParameters;
+    union {
+        unsigned m_debuggerRequests;
+        struct {
+            unsigned m_hasDebuggerStatement : 1;
+            unsigned m_steppingMode : 1;
+            unsigned m_numBreakpoints : 30;
+        };
+    };
     WriteBarrier<ScriptExecutable> m_ownerExecutable;
     VM* m_vm;
 
@@ -1029,7 +1060,6 @@ private:
     SentinelLinkedList<LLIntCallLinkInfo, BasicRawSentinelNode<LLIntCallLinkInfo>> m_incomingLLIntCalls;
 #endif
     RefPtr<JITCode> m_jitCode;
-    MacroAssemblerCodePtr m_jitCodeWithArityCheck;
 #if ENABLE(JIT)
     Bag<StructureStubInfo> m_stubInfos;
     Vector<ByValInfo> m_byValInfos;
@@ -1248,9 +1278,20 @@ inline void CodeBlockSet::mark(void* candidateCodeBlock)
     if (iter == m_set.end())
         return;
     
-    (*iter)->m_mayBeExecuting = true;
+    mark(*iter);
+}
+
+inline void CodeBlockSet::mark(CodeBlock* codeBlock)
+{
+    if (!codeBlock)
+        return;
+    
+    if (codeBlock->m_mayBeExecuting)
+        return;
+    
+    codeBlock->m_mayBeExecuting = true;
 #if ENABLE(GGC)
-    m_currentlyExecuting.append(static_cast<CodeBlock*>(candidateCodeBlock));
+    m_currentlyExecuting.append(codeBlock);
 #endif
 }
 

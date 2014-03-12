@@ -24,19 +24,108 @@
  */
 
 #import "config.h"
-#import "WKWebViewConfiguration.h"
+#import "WKWebViewConfigurationInternal.h"
 
 #if WK_API_ENABLED
 
-@implementation WKWebViewConfiguration
+#import "WKWebViewContentProviderRegistry.h"
+#import "WeakObjCPtr.h"
+#import <wtf/RetainPtr.h>
+
+@implementation WKWebViewConfiguration {
+    RetainPtr<WKProcessPool> _processPool;
+    RetainPtr<WKPreferences> _preferences;
+    RetainPtr<WKVisitedLinkProvider> _visitedLinkProvider;
+    WebKit::WeakObjCPtr<WKWebView> _relatedWebView;
+    RetainPtr<NSString> _groupIdentifier;
+#if PLATFORM(IOS)
+    RetainPtr<WKWebViewContentProviderRegistry> _contentProviderRegistry;
+#endif
+}
+
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<%@: %p; processPool = %@; preferences = %@>", NSStringFromClass(self.class), self, _processPool.get(), _preferences.get()];
+}
 
 - (id)copyWithZone:(NSZone *)zone
 {
     WKWebViewConfiguration *configuration = [[[self class] allocWithZone:zone] init];
 
-    configuration.processClass = _processClass;
+    configuration.processPool = _processPool.get();
+    configuration.preferences = _preferences.get();
+    configuration._relatedWebView = _relatedWebView.get().get();
+#if PLATFORM(IOS)
+    configuration._contentProviderRegistry = _contentProviderRegistry.get();
+#endif
 
     return configuration;
+}
+
+- (WKProcessPool *)processPool
+{
+    return _processPool.get();
+}
+
+- (void)setProcessPool:(WKProcessPool *)processPool
+{
+    _processPool = processPool;
+}
+
+- (WKPreferences *)preferences
+{
+    return _preferences.get();
+}
+
+- (void)setPreferences:(WKPreferences *)preferences
+{
+    _preferences = preferences;
+}
+
+- (WKVisitedLinkProvider *)visitedLinkProvider
+{
+    return _visitedLinkProvider.get();
+}
+
+- (void)setVisitedLinkProvider:(WKVisitedLinkProvider *)visitedLinkProvider
+{
+    _visitedLinkProvider = visitedLinkProvider;
+}
+
+#if PLATFORM(IOS)
+- (WKWebViewContentProviderRegistry *)_contentProviderRegistry
+{
+    return _contentProviderRegistry.get();
+}
+
+- (void)_setContentProviderRegistry:(WKWebViewContentProviderRegistry *)registry
+{
+    _contentProviderRegistry = registry;
+}
+#endif
+
+@end
+
+@implementation WKWebViewConfiguration (WKPrivate)
+
+- (WKWebView *)_relatedWebView
+{
+    return _relatedWebView.getAutoreleased();
+}
+
+- (void)_setRelatedWebView:(WKWebView *)relatedWebView
+{
+    _relatedWebView = relatedWebView;
+}
+
+- (NSString *)_groupIdentifier
+{
+    return _groupIdentifier.get();
+}
+
+- (void)_setGroupIdentifier:(NSString *)groupIdentifier
+{
+    _groupIdentifier = groupIdentifier;
 }
 
 @end

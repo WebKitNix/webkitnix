@@ -44,7 +44,6 @@
 #include "CSSFunctionValue.cpp"
 #include "CSSGradientValue.cpp"
 #include "CSSGroupingRule.cpp"
-#include "CSSHostRule.cpp"
 #include "CSSImageGeneratorValue.cpp"
 #include "CSSImageSetValue.cpp"
 #include "CSSImageValue.cpp"
@@ -84,5 +83,4 @@
 #include "StyleProperties.cpp"
 #include "StylePropertyShorthand.cpp"
 #include "StyleResolver.cpp"
-#include "StyleScopeResolver.cpp"
 #include "ViewportStyleResolver.cpp"

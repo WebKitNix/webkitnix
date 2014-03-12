@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,6 +29,7 @@
 #include "JSExportMacros.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <wtf/StdLibExtras.h>
 
 namespace JSC {
 
@@ -94,6 +95,10 @@ typedef OptionRange optionRange;
     v(bool, useDFGJIT, true) \
     v(bool, useRegExpJIT, true) \
     \
+    v(unsigned, maxPerThreadStackUsage, 4 * MB) \
+    v(unsigned, reservedZoneSize, 128 * KB) \
+    v(unsigned, errorModeReservedZoneSize, 64 * KB) \
+    \
     v(bool, crashIfCantAllocateJITMemory, false) \
     \
     v(bool, forceDFGCodeBlockLiveness, false) \
@@ -101,28 +106,42 @@ typedef OptionRange optionRange;
     v(bool, dumpGeneratedBytecodes, false) \
     v(bool, dumpBytecodeLivenessResults, false) \
     v(bool, validateBytecode, false) \
+    v(bool, forceDebuggerBytecodeGeneration, false) \
+    v(bool, forceProfilerBytecodeGeneration, false) \
     \
     /* showDisassembly implies showDFGDisassembly. */ \
     v(bool, showDisassembly, false) \
     v(bool, showDFGDisassembly, false) \
+    v(bool, showFTLDisassembly, false) \
     v(bool, showAllDFGNodes, false) \
     v(optionRange, bytecodeRangeToDFGCompile, 0) \
     v(bool, dumpBytecodeAtDFGTime, false) \
     v(bool, dumpGraphAtEachPhase, false) \
     v(bool, verboseCompilation, false) \
+    v(bool, verboseFTLCompilation, false) \
     v(bool, logCompilationChanges, false) \
     v(bool, printEachOSRExit, false) \
     v(bool, validateGraph, false) \
     v(bool, validateGraphAtEachPhase, false) \
     v(bool, verboseOSR, false) \
+    v(bool, verboseFTLOSRExit, false) \
     v(bool, verboseCallLink, false) \
     v(bool, verboseCompilationQueue, false) \
     v(bool, reportCompileTimes, false) \
+    v(bool, reportFTLCompileTimes, false) \
     v(bool, verboseCFA, false) \
+    v(bool, verboseFTLToJSThunk, false) \
+    v(bool, verboseFTLFailure, false) \
+    v(bool, alwaysComputeHash, false) \
+    v(bool, testTheFTL, false) \
+    v(bool, verboseSanitizeStack, false) \
+    v(bool, alwaysDoFullCollection, false) \
     \
-    v(bool, enableOSREntryInLoops, true) \
+    v(bool, enableOSREntryToDFG, true) \
+    v(bool, enableOSREntryToFTL, true) \
     \
-    v(bool, useExperimentalFTL, false) \
+    v(bool, useFTLJIT, true) \
+    v(bool, enableExperimentalFTLCoverage, false) \
     v(bool, useFTLTBAA, true) \
     v(bool, enableLLVMFastISel, false) \
     v(bool, useLLVMSmallCodeModel, false) \
@@ -134,10 +153,13 @@ typedef OptionRange optionRange;
     v(unsigned, llvmBackendOptimizationLevel, 2) \
     v(unsigned, llvmOptimizationLevel, 2) \
     v(unsigned, llvmSizeLevel, 0) \
+    v(unsigned, llvmMaxStackSize, 128 * KB) \
+    v(bool, llvmDisallowAVX, true) \
     v(bool, ftlCrashes, false) /* fool-proof way of checking that you ended up in the FTL. ;-) */\
     \
     v(bool, enableConcurrentJIT, true) \
-    v(unsigned, numberOfCompilerThreads, computeNumberOfWorkerThreads(2) - 1) \
+    v(unsigned, numberOfDFGCompilerThreads, computeNumberOfWorkerThreads(2) - 1) \
+    v(unsigned, numberOfFTLCompilerThreads, computeNumberOfWorkerThreads(8) - 1) \
     \
     v(bool, enableProfiler, false) \
     \
@@ -146,14 +168,28 @@ typedef OptionRange optionRange;
     \
     v(bool, enableArchitectureSpecificOptimizations, true) \
     \
-    v(unsigned, maximumOptimizationCandidateInstructionCount, 10000) \
+    v(bool, breakOnThrow, false) \
+    \
+    v(unsigned, maximumOptimizationCandidateInstructionCount, 100000) \
     \
     v(unsigned, maximumFunctionForCallInlineCandidateInstructionCount, 180) \
     v(unsigned, maximumFunctionForClosureCallInlineCandidateInstructionCount, 100) \
     v(unsigned, maximumFunctionForConstructInlineCandidateInstructionCount, 100) \
     \
+    v(unsigned, maximumFTLCandidateInstructionCount, 20000) \
+    \
     /* Depth of inline stack, so 1 = no inlining, 2 = one level, etc. */ \
     v(unsigned, maximumInliningDepth, 5) \
+    v(unsigned, maximumInliningRecursion, 2) \
+    v(unsigned, maximumInliningDepthForMustInline, 7) \
+    v(unsigned, maximumInliningRecursionForMustInline, 3) \
+    \
+    /* Maximum size of a caller for enabling inlining. This is purely to protect us */\
+    /* from super long compiles that take a lot of memory. */\
+    v(unsigned, maximumInliningCallerSize, 10000) \
+    \
+    v(bool, enablePolyvariantCallInlining, true) \
+    v(bool, enablePolyvariantByIdInlining, true) \
     \
     v(unsigned, maximumBinaryStringSwitchCaseLength, 50) \
     v(unsigned, maximumBinaryStringSwitchTotalLength, 2000) \
@@ -167,11 +203,12 @@ typedef OptionRange optionRange;
     v(int32, executionCounterIncrementForLoop, 1) \
     v(int32, executionCounterIncrementForEntry, 15) \
     \
-    v(int32, thresholdForFTLOptimizeAfterWarmUp, 25000) \
+    v(int32, thresholdForFTLOptimizeAfterWarmUp, 100000) \
     v(int32, thresholdForFTLOptimizeSoon, 1000) \
     v(int32, ftlTierUpCounterIncrementForLoop, 1) \
     v(int32, ftlTierUpCounterIncrementForReturn, 15) \
     v(unsigned, ftlOSREntryFailureCountForReoptimization, 15) \
+    v(unsigned, ftlOSREntryRetryThreshold, 100) \
     \
     v(int32, evalThresholdMultiplier, 10) \
     \
@@ -201,6 +238,7 @@ typedef OptionRange optionRange;
     v(unsigned, opaqueRootMergeThreshold, 1000) \
     v(double, minHeapUtilization, 0.8) \
     v(double, minCopiedBlockUtilization, 0.9) \
+    v(double, minMarkedBlockUtilization, 0.9) \
     \
     v(bool, forceWeakRandomSeed, false) \
     v(unsigned, forcedWeakRandomSeed, 0) \
@@ -210,6 +248,7 @@ typedef OptionRange optionRange;
     v(bool, showObjectStatistics, false) \
     \
     v(bool, logGC, false) \
+    v(bool, disableGC, false) \
     v(unsigned, gcMaxHeapSize, 0) \
     v(bool, recordGCPauseTimes, false) \
     v(bool, logHeapStatisticsAtExit, false)
@@ -240,7 +279,8 @@ public:
 
     // Declare accessors for each option:
 #define FOR_EACH_OPTION(type_, name_, defaultValue_) \
-    ALWAYS_INLINE static type_& name_() { return s_options[OPT_##name_].u.type_##Val; }
+    ALWAYS_INLINE static type_& name_() { return s_options[OPT_##name_].u.type_##Val; } \
+    static bool name_##WasOverridden() { return s_options[OPT_##name_].didOverride; }
 
     JSC_OPTIONS(FOR_EACH_OPTION)
 #undef FOR_EACH_OPTION
@@ -263,6 +303,7 @@ private:
             int32 int32Val;
             OptionRange optionRangeVal;
         } u;
+        bool didOverride;
     };
 
     // For storing constant meta data about each option:

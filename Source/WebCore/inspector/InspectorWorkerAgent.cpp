@@ -40,7 +40,6 @@
 #include "URL.h"
 #include "WorkerGlobalScopeProxy.h"
 #include <inspector/InspectorValues.h>
-#include <wtf/PassOwnPtr.h>
 #include <wtf/RefPtr.h>
 
 using namespace Inspector;
@@ -122,7 +121,7 @@ void InspectorWorkerAgent::didCreateFrontendAndBackend(Inspector::InspectorFront
     m_backendDispatcher = InspectorWorkerBackendDispatcher::create(backendDispatcher, this);
 }
 
-void InspectorWorkerAgent::willDestroyFrontendAndBackend()
+void InspectorWorkerAgent::willDestroyFrontendAndBackend(InspectorDisconnectReason)
 {
     m_shouldPauseDedicatedWorkerOnStart = false;
     disable(nullptr);

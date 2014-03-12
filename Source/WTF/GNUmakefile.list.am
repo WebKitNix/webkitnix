@@ -27,6 +27,8 @@ wtf_sources += \
     Source/WTF/wtf/CompilationThread.h \
     Source/WTF/wtf/Compression.h \
     Source/WTF/wtf/Compression.cpp \
+    Source/WTF/wtf/CryptographicUtilities.cpp \
+    Source/WTF/wtf/CryptographicUtilities.h \
     Source/WTF/wtf/CryptographicallyRandomNumber.cpp \
     Source/WTF/wtf/CryptographicallyRandomNumber.h \
     Source/WTF/wtf/CurrentTime.cpp \
@@ -65,6 +67,7 @@ wtf_sources += \
     Source/WTF/wtf/HashFunctions.h \
     Source/WTF/wtf/HashIterators.h \
     Source/WTF/wtf/HashMap.h \
+    Source/WTF/wtf/HashMethod.h \
     Source/WTF/wtf/HashSet.h \
     Source/WTF/wtf/HashTable.cpp \
     Source/WTF/wtf/HashTable.h \
@@ -151,6 +154,7 @@ wtf_sources += \
     Source/WTF/wtf/Spectrum.h \
     Source/WTF/wtf/StackBounds.cpp \
     Source/WTF/wtf/StackBounds.h \
+    Source/WTF/wtf/StackStats.cpp \
     Source/WTF/wtf/StackStats.h \
     Source/WTF/wtf/StaticConstructors.h \
     Source/WTF/wtf/StdLibExtras.h \
@@ -209,8 +213,6 @@ wtf_sources += \
     Source/WTF/wtf/dtoa/strtod.h \
     Source/WTF/wtf/dtoa/utils.h \
     Source/WTF/wtf/gobject/GMutexLocker.h \
-    Source/WTF/wtf/gobject/GOwnPtr.cpp \
-    Source/WTF/wtf/gobject/GOwnPtr.h \
     Source/WTF/wtf/gobject/GRefPtr.cpp \
     Source/WTF/wtf/gobject/GRefPtr.h \
     Source/WTF/wtf/gobject/GTypedefs.h \
@@ -232,6 +234,7 @@ wtf_sources += \
     Source/WTF/wtf/text/CString.cpp \
     Source/WTF/wtf/text/CString.h \
     Source/WTF/wtf/text/IntegerToStringConversion.h \
+    Source/WTF/wtf/text/LChar.h \
     Source/WTF/wtf/text/StringBuffer.h \
     Source/WTF/wtf/text/StringBuilder.cpp \
     Source/WTF/wtf/text/StringBuilder.h \
@@ -250,10 +253,6 @@ wtf_sources += \
     Source/WTF/wtf/unicode/CharacterNames.h \
     Source/WTF/wtf/unicode/Collator.h \
     Source/WTF/wtf/unicode/CollatorDefault.cpp \
-    Source/WTF/wtf/unicode/ScriptCodesFromICU.h \
     Source/WTF/wtf/unicode/UTF8.cpp \
     Source/WTF/wtf/unicode/UTF8.h \
-    Source/WTF/wtf/unicode/Unicode.h \
-    Source/WTF/wtf/unicode/UnicodeMacrosFromICU.h \
-    Source/WTF/wtf/unicode/icu/CollatorICU.cpp \
-    Source/WTF/wtf/unicode/icu/UnicodeIcu.h
+    Source/WTF/wtf/unicode/icu/CollatorICU.cpp

@@ -33,7 +33,7 @@
 #include <wtf/text/CString.h>
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include "WebKitSystemInterface.h"
 #endif
 
@@ -66,8 +66,10 @@ void WebResourceCacheManager::cfURLCacheHostNamesWithCallback(CacheCallback call
     WKCFURLCacheCopyAllPartitionNames(^(CFArrayRef partitionNames) {
         RetainPtr<CFArrayRef> hostNamesInPersistentStore = adoptCF(WKCFURLCacheCopyAllHostNamesInPersistentStoreForPartition(CFSTR("")));
         RetainPtr<CFMutableArrayRef> hostNames = adoptCF(CFArrayCreateMutableCopy(0, 0, hostNamesInPersistentStore.get()));
-        CFArrayAppendArray(hostNames.get(), partitionNames, CFRangeMake(0, CFArrayGetCount(partitionNames)));
-        CFRelease(partitionNames);
+        if (partitionNames) {
+            CFArrayAppendArray(hostNames.get(), partitionNames, CFRangeMake(0, CFArrayGetCount(partitionNames)));
+            CFRelease(partitionNames);
+        }
         callback(std::move(hostNames));
     });
 }

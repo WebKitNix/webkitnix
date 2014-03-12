@@ -7,6 +7,9 @@
     <Filter Include="bindings">
       <UniqueIdentifier>{0bace123-4582-eebc-9314-7819b376c198}</UniqueIdentifier>
     </Filter>
+    <Filter Include="builtins">
+      <UniqueIdentifier>{3b9d72a5-135b-43b3-a524-c6d2b9d29d35}</UniqueIdentifier>
+    </Filter>
     <Filter Include="bytecode">
       <UniqueIdentifier>{766088a0-1216-4854-aa43-560c5e283668}</UniqueIdentifier>
     </Filter>
@@ -108,6 +111,9 @@
     <ClCompile Include="..\assembler\MacroAssembler.cpp">
       <Filter>assembler</Filter>
     </ClCompile>
+    <ClCompile Include="..\builtins\BuiltinExecutables.cpp">
+      <Filter>builtins</Filter>
+    </ClCompile>
     <ClCompile Include="..\bytecode\ArrayAllocationProfile.cpp">
       <Filter>bytecode</Filter>
     </ClCompile>
@@ -186,6 +192,9 @@
     <ClCompile Include="..\bytecode\UnlinkedCodeBlock.cpp">
       <Filter>bytecode</Filter>
     </ClCompile>
+    <ClCompile Include="..\bytecode\UnlinkedInstructionStream.cpp">
+      <Filter>bytecode</Filter>
+    </ClCompile>
     <ClCompile Include="..\bytecode\Watchpoint.cpp">
       <Filter>bytecode</Filter>
     </ClCompile>
@@ -217,6 +226,9 @@
       <Filter>heap</Filter>
     </ClCompile>
     <ClCompile Include="..\heap\CopyVisitor.cpp">
+      <Filter>heap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\heap\GCActivityCallback.cpp">
       <Filter>heap</Filter>
     </ClCompile>
     <ClCompile Include="..\heap\GCThread.cpp">
@@ -285,6 +297,9 @@
     <ClCompile Include="..\heap\WriteBarrierSupport.cpp">
       <Filter>heap</Filter>
     </ClCompile>
+    <ClCompile Include="..\inspector\ContentSearchUtilities.cpp">
+      <Filter>inspector</Filter>
+    </ClCompile>
     <ClCompile Include="..\inspector\InspectorAgentRegistry.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
@@ -295,6 +310,12 @@
       <Filter>inspector</Filter>
     </ClCompile>
     <ClCompile Include="..\inspector\agents\InspectorAgent.cpp">
+      <Filter>inspector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\inspector\agents\InspectorDebuggerAgent.cpp">
+      <Filter>inspector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\inspector\agents\InspectorRuntimeAgent.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
     <ClCompile Include="..\interpreter\AbstractPC.cpp">
@@ -504,6 +525,12 @@
     <ClCompile Include="..\runtime\Completion.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
+    <ClCompile Include="..\runtime\ConsoleClient.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\runtime\ConsolePrototype.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
     <ClCompile Include="..\runtime\ConstructData.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
@@ -525,6 +552,9 @@
     <ClCompile Include="..\runtime\ErrorConstructor.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
+    <ClCompile Include="..\runtime\ErrorHandlingScope.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
     <ClCompile Include="..\runtime\ErrorInstance.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
@@ -541,9 +571,6 @@
       <Filter>runtime</Filter>
     </ClCompile>
     <ClCompile Include="..\runtime\FunctionPrototype.cpp">
-      <Filter>runtime</Filter>
-    </ClCompile>
-    <ClCompile Include="..\runtime\GCActivityCallback.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
     <ClCompile Include="..\runtime\GetterSetter.cpp">
@@ -574,6 +601,9 @@
       <Filter>runtime</Filter>
     </ClCompile>
     <ClCompile Include="..\runtime\JSCell.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\runtime\JSConsole.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
     <ClCompile Include="..\runtime\JSDateMath.cpp">
@@ -774,6 +804,9 @@
     <ClCompile Include="..\runtime\StructureChain.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
+    <ClCompile Include="..\runtime\StructureIDTable.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
     <ClCompile Include="..\runtime\SymbolTable.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
@@ -788,6 +821,9 @@
     </ClCompile>
     <ClCompile Include="..\tools\CodeProfiling.cpp">
       <Filter>tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\yarr\RegularExpression.cpp">
+      <Filter>yarr</Filter>
     </ClCompile>
     <ClCompile Include="..\yarr\YarrCanonicalizeUCS2.cpp">
       <Filter>yarr</Filter>
@@ -1311,6 +1347,15 @@
     <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\InspectorJSTypeBuilders.cpp">
       <Filter>Derived Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\jit\ArityCheckFailReturnThunks.cpp">
+      <Filter>jit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jit\RegisterPreservationWrapperGenerator.cpp">
+      <Filter>jit</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSCBuiltins.cpp">
+      <Filter>Derived Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\API\APICallbackFunction.h">
@@ -1427,11 +1472,17 @@
     <ClInclude Include="..\assembler\MacroAssemblerX86_64.h">
       <Filter>assembler</Filter>
     </ClInclude>
+    <ClInclude Include="..\assembler\MaxFrameExtentForSlowPathCall.h">
+      <Filter>assembler</Filter>
+    </ClInclude>
     <ClInclude Include="..\assembler\RepatchBuffer.h">
       <Filter>assembler</Filter>
     </ClInclude>
     <ClInclude Include="..\assembler\X86Assembler.h">
       <Filter>assembler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\builtins\BuiltinExecutables.h">
+      <Filter>builtins</Filter>
     </ClInclude>
     <ClInclude Include="..\bytecode\ArrayAllocationProfile.h">
       <Filter>bytecode</Filter>
@@ -1547,6 +1598,9 @@
     <ClInclude Include="..\bytecode\UnlinkedCodeBlock.h">
       <Filter>bytecode</Filter>
     </ClInclude>
+    <ClInclude Include="..\bytecode\UnlinkedInstructionStream.h">
+      <Filter>bytecode</Filter>
+    </ClInclude>
     <ClInclude Include="..\bytecode\ValueProfile.h">
       <Filter>bytecode</Filter>
     </ClInclude>
@@ -1631,6 +1685,15 @@
     <ClInclude Include="..\heap\DeferGC.h">
       <Filter>heap</Filter>
     </ClInclude>
+    <ClInclude Include="..\heap\GCActivityCallback.h">
+      <Filter>heap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\heap\GCSegmentedArray.h">
+      <Filter>heap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\heap\GCSegmentedArrayInlines.h">
+      <Filter>heap</Filter>
+    </ClInclude>
     <ClInclude Include="..\heap\GCAssertions.h">
       <Filter>heap</Filter>
     </ClInclude>
@@ -1709,9 +1772,6 @@
     <ClInclude Include="..\heap\MarkStack.h">
       <Filter>heap</Filter>
     </ClInclude>
-    <ClInclude Include="..\heap\MarkStackInlines.h">
-      <Filter>heap</Filter>
-    </ClInclude>
     <ClInclude Include="..\heap\RecursiveAllocationScope.h">
       <Filter>heap</Filter>
     </ClInclude>
@@ -1766,6 +1826,9 @@
     <ClInclude Include="..\heap\WriteBarrierSupport.h">
       <Filter>heap</Filter>
     </ClInclude>
+    <ClInclude Include="..\inspector\ContentSearchUtilities.h">
+      <Filter>inspector</Filter>
+    </ClInclude>
     <ClInclude Include="..\inspector\InspectorAgentBase.h">
       <Filter>inspector</Filter>
     </ClInclude>
@@ -1785,6 +1848,12 @@
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\agents\InspectorAgent.h">
+      <Filter>inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inspector\agents\InspectorDebuggerAgent.h">
+      <Filter>inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inspector\agents\InspectorRuntimeAgent.h">
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\interpreter\AbstractPC.h">
@@ -2078,6 +2147,15 @@
     <ClInclude Include="..\runtime\Completion.h">
       <Filter>runtime</Filter>
     </ClInclude>
+    <ClInclude Include="..\runtime\ConsoleClient.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\ConsolePrototype.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\ConsoleTypes.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
     <ClInclude Include="..\runtime\ConstructData.h">
       <Filter>runtime</Filter>
     </ClInclude>
@@ -2102,6 +2180,9 @@
     <ClInclude Include="..\runtime\ErrorConstructor.h">
       <Filter>runtime</Filter>
     </ClInclude>
+    <ClInclude Include="..\runtime\ErrorHandlingScope.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
     <ClInclude Include="..\runtime\ErrorInstance.h">
       <Filter>runtime</Filter>
     </ClInclude>
@@ -2118,9 +2199,6 @@
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\FunctionPrototype.h">
-      <Filter>runtime</Filter>
-    </ClInclude>
-    <ClInclude Include="..\runtime\GCActivityCallback.h">
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\GetterSetter.h">
@@ -2160,6 +2238,9 @@
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\JSCell.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\JSConsole.h">
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\JSDateMath.h">
@@ -2372,7 +2453,16 @@
     <ClInclude Include="..\runtime\Structure.h">
       <Filter>runtime</Filter>
     </ClInclude>
+    <ClInclude Include="..\runtime\StructureIDBlobh">
+      <Filter>runtime</Filter>
+    </ClInclude>
     <ClInclude Include="..\runtime\StructureChain.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\StructureIDBlob.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\runtime\StructureIDTable.h">
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\StructureTransitionTable.h">
@@ -2399,6 +2489,9 @@
     <ClInclude Include="..\runtime\WriteBarrier.h">
       <Filter>runtime</Filter>
     </ClInclude>
+    <ClInclude Include="..\runtime\WriteBarrierInlines.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
     <ClInclude Include="..\tools\CodeProfile.h">
       <Filter>tools</Filter>
     </ClInclude>
@@ -2412,6 +2505,9 @@
       <Filter>tools</Filter>
     </ClInclude>
     <ClInclude Include="..\yarr\Yarr.h">
+      <Filter>yarr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\yarr\RegularExpression.h">
       <Filter>yarr</Filter>
     </ClInclude>
     <ClInclude Include="..\yarr\YarrCanonicalizeUCS2.h">
@@ -2509,6 +2605,9 @@
       <Filter>Derived Sources</Filter>
     </ClInclude>
     <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\ArrayPrototype.lut.h">
+      <Filter>Derived Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSCBuiltins.h">
       <Filter>Derived Sources</Filter>
     </ClInclude>
     <ClInclude Include="..\runtime\VM.h">
@@ -3258,15 +3357,23 @@
     <ClInclude Include="..\runtime\ConstantMode.h">
       <Filter>runtime</Filter>
     </ClInclude>
+    <ClInclude Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\JSDataViewPrototype.lut.h" />
+    <ClInclude Include="..\jit\ArityCheckFailReturnThunks.h">
+      <Filter>jit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\jit\RegisterPreservationWrapperGenerator.h">
+      <Filter>jit</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="JavaScriptCorePreLink.cmd" />
     <None Include="JavaScriptCorePostBuild.cmd" />
     <None Include="JavaScriptCorePreBuild.cmd" />
+    <None Include="..\bytecode\BytecodeList.json">
+      <Filter>bytecode</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="..\jit\JITStubsMSVC64.asm">
-      <Filter>jit</Filter>
-    </MASM>
+    <MASM Include="$(ConfigurationBuildDir)\obj$(PlatformArchitecture)\$(ProjectName)\DerivedSources\LowLevelInterpreterWin.asm" />
   </ItemGroup>
 </Project>

@@ -17,7 +17,7 @@ list(APPEND WebCore_INCLUDE_DIRECTORIES
 )
 
 list(APPEND WebCore_SOURCES
-    editing/SmartReplaceICU.cpp
+    editing/SmartReplace.cpp
 
     editing/nix/EditorNix.cpp
 
@@ -304,7 +304,6 @@ else ()
         platform/network/soup/CookieStorageSoup.cpp
         platform/network/soup/CredentialStorageSoup.cpp
         platform/network/soup/DNSSoup.cpp
-        platform/network/soup/GOwnPtrSoup.cpp
         platform/network/soup/NetworkStorageSessionSoup.cpp
         platform/network/soup/ProxyResolverSoup.cpp
         platform/network/soup/ProxyServerSoup.cpp
@@ -314,10 +313,10 @@ else ()
         platform/network/soup/ResourceResponseSoup.cpp
         platform/network/soup/SocketStreamHandleSoup.cpp
         platform/network/soup/SoupNetworkSession.cpp
-        platform/network/soup/SoupURIUtils.cpp
         platform/network/soup/SynchronousLoaderClientSoup.cpp
 
         platform/soup/SharedBufferSoup.cpp
+        platform/soup/URLSoup.cpp
     )
 
     list(APPEND WebCore_INCLUDE_DIRECTORIES

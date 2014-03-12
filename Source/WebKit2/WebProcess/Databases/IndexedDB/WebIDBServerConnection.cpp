@@ -30,6 +30,7 @@
 #if ENABLE(INDEXED_DATABASE) && ENABLE(DATABASE_PROCESS)
 
 #include "AsyncRequest.h"
+#include "DataReference.h"
 #include "DatabaseProcessIDBConnectionMessages.h"
 #include "DatabaseToWebProcessConnectionMessages.h"
 #include "Logging.h"
@@ -37,6 +38,7 @@
 #include "WebProcess.h"
 #include "WebToDatabaseProcessConnection.h"
 #include <WebCore/IDBDatabaseMetadata.h>
+#include <WebCore/IDBKeyRangeData.h>
 #include <WebCore/SecurityOrigin.h>
 
 using namespace WebCore;
@@ -45,7 +47,7 @@ namespace WebKit {
 
 static uint64_t generateServerConnectionIdentifier()
 {
-    ASSERT(isMainThread());
+    ASSERT(RunLoop::isMain());
     static uint64_t identifier = 0;
     return ++identifier;
 }
@@ -83,6 +85,31 @@ bool WebIDBServerConnection::isClosed()
 
 void WebIDBServerConnection::deleteDatabase(const String& name, BoolCallbackFunction successCallback)
 {
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<bool>::create(successCallback);
+
+    serverRequest->setAbortHandler([successCallback]() {
+        successCallback(false);
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess deleteDatabase request ID %llu", requestID);
+
+    send(Messages::DatabaseProcessIDBConnection::DeleteDatabase(requestID, name));
+}
+
+void WebIDBServerConnection::didDeleteDatabase(uint64_t requestID, bool success)
+{
+    LOG(IDB, "WebProcess didDeleteDatabase request ID %llu", requestID);
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    serverRequest->completeRequest(success);
 }
 
 void WebIDBServerConnection::getOrEstablishIDBDatabaseMetadata(GetIDBDatabaseMetadataFunction completionCallback)
@@ -117,6 +144,16 @@ void WebIDBServerConnection::didGetOrEstablishIDBDatabaseMetadata(uint64_t reque
 
 void WebIDBServerConnection::close()
 {
+    LOG(IDB, "WebProcess close");
+
+    RefPtr<WebIDBServerConnection> protector(this);
+
+    for (auto& request : m_serverRequests)
+        request.value->requestAborted();
+
+    m_serverRequests.clear();
+
+    send(Messages::DatabaseProcessIDBConnection::Close());
 }
 
 void WebIDBServerConnection::openTransaction(int64_t transactionID, const HashSet<int64_t>& objectStoreIDs, IndexedDB::TransactionMode mode, BoolCallbackFunction successCallback)
@@ -288,36 +325,259 @@ void WebIDBServerConnection::didCreateObjectStore(uint64_t requestID, bool succe
     serverRequest->completeRequest(success ? nullptr : IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured creating object store"));
 }
 
-void WebIDBServerConnection::createIndex(IDBTransactionBackend&, const CreateIndexOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::createIndex(IDBTransactionBackend&transaction, const CreateIndexOperation& operation, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured creating index"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess create index request ID %llu", requestID);
+
+    send(Messages::DatabaseProcessIDBConnection::CreateIndex(requestID, transaction.id(), operation.objectStoreID(), operation.idbIndexMetadata()));
 }
 
-void WebIDBServerConnection::deleteIndex(IDBTransactionBackend&, const DeleteIndexOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::didCreateIndex(uint64_t requestID, bool success)
 {
+    LOG(IDB, "WebProcess didCreateIndex request ID %llu", requestID);
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    serverRequest->completeRequest(success ? nullptr : IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured creating index"));
 }
 
-void WebIDBServerConnection::get(IDBTransactionBackend&, const GetOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::deleteIndex(IDBTransactionBackend&transaction, const DeleteIndexOperation& operation, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured deleting index"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess delete index request ID %llu", requestID);
+
+    send(Messages::DatabaseProcessIDBConnection::DeleteIndex(requestID, transaction.id(), operation.objectStoreID(), operation.idbIndexMetadata().id));
 }
 
-void WebIDBServerConnection::put(IDBTransactionBackend&, const PutOperation&, std::function<void(PassRefPtr<IDBKey>, PassRefPtr<IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::didDeleteIndex(uint64_t requestID, bool success)
 {
+    LOG(IDB, "WebProcess didDeleteIndex request ID %llu", requestID);
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    serverRequest->completeRequest(success ? nullptr : IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured deleting index"));
 }
 
-void WebIDBServerConnection::openCursor(IDBTransactionBackend&, const OpenCursorOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::get(IDBTransactionBackend& transaction, const GetOperation& operation, std::function<void(const IDBGetResult&, PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<const IDBGetResult&, PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(IDBGetResult(), IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured getting record"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess get request ID %llu", requestID);
+
+    ASSERT(operation.keyRange());
+
+    send(Messages::DatabaseProcessIDBConnection::GetRecord(requestID, transaction.id(), operation.objectStoreID(), operation.indexID(), operation.keyRange(), static_cast<int64_t>(operation.cursorType())));
 }
 
-void WebIDBServerConnection::count(IDBTransactionBackend&, const CountOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::put(IDBTransactionBackend& transaction, const PutOperation& operation, std::function<void(PassRefPtr<IDBKey>, PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<PassRefPtr<IDBKey>, PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(nullptr, IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured putting record"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess put request ID %llu", requestID);
+
+    ASSERT(operation.value());
+
+    IPC::DataReference value(reinterpret_cast<const uint8_t*>(operation.value()->data()), operation.value()->size());
+
+    Vector<Vector<IDBKeyData>> indexKeys;
+    for (const auto& keys : operation.indexKeys()) {
+        indexKeys.append(Vector<IDBKeyData>());
+        for (const auto& key : keys)
+            indexKeys.last().append(IDBKeyData(key.get()));
+    }
+
+    send(Messages::DatabaseProcessIDBConnection::PutRecord(requestID, transaction.id(), operation.objectStore().id, IDBKeyData(operation.key()), value, operation.putMode(), operation.indexIDs(), indexKeys));
 }
 
-void WebIDBServerConnection::deleteRange(IDBTransactionBackend&, const DeleteRangeOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::didPutRecord(uint64_t requestID, const WebCore::IDBKeyData& resultKey, uint32_t errorCode, const String& errorMessage)
 {
+    LOG(IDB, "WebProcess didPutRecord request ID %llu (error - %s)", requestID, errorMessage.utf8().data());
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    serverRequest->completeRequest(resultKey.isNull ? nullptr : resultKey.maybeCreateIDBKey(), errorCode ? IDBDatabaseError::create(errorCode, errorMessage) : nullptr);
 }
 
-void WebIDBServerConnection::clearObjectStore(IDBTransactionBackend&, const ClearObjectStoreOperation&, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+void WebIDBServerConnection::didGetRecord(uint64_t requestID, const WebCore::IDBGetResult& getResult, uint32_t errorCode, const String& errorMessage)
 {
+    LOG(IDB, "WebProcess didGetRecord request ID %llu (error - %s)", requestID, errorMessage.utf8().data());
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    serverRequest->completeRequest(getResult, errorCode ? IDBDatabaseError::create(errorCode, errorMessage) : nullptr);
+}
+
+void WebIDBServerConnection::didOpenCursor(uint64_t requestID, int64_t cursorID, const IDBKeyData& key, const IDBKeyData& primaryKey, const IPC::DataReference& valueData, uint32_t errorCode, const String& errorMessage)
+{
+    LOG(IDB, "WebProcess didOpenCursor request ID %llu (error - %s)", requestID, errorMessage.utf8().data());
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    RefPtr<SharedBuffer> value = SharedBuffer::create(valueData.data(), valueData.size());
+    serverRequest->completeRequest(cursorID, key.maybeCreateIDBKey(), primaryKey.maybeCreateIDBKey(), value.release(), errorCode ? IDBDatabaseError::create(errorCode, errorMessage) : nullptr);
+}
+
+void WebIDBServerConnection::didAdvanceCursor(uint64_t requestID, const IDBKeyData& key, const IDBKeyData& primaryKey, const IPC::DataReference& valueData, uint32_t errorCode, const String& errorMessage)
+{
+    LOG(IDB, "WebProcess didAdvanceCursor request ID %llu (error - %s)", requestID, errorMessage.utf8().data());
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    RefPtr<SharedBuffer> value = SharedBuffer::create(valueData.data(), valueData.size());
+    serverRequest->completeRequest(key.maybeCreateIDBKey(), primaryKey.maybeCreateIDBKey(), value.release(), errorCode ? IDBDatabaseError::create(errorCode, errorMessage) : nullptr);
+}
+
+void WebIDBServerConnection::didIterateCursor(uint64_t requestID, const IDBKeyData& key, const IDBKeyData& primaryKey, const IPC::DataReference& valueData, uint32_t errorCode, const String& errorMessage)
+{
+    LOG(IDB, "WebProcess didIterateCursor request ID %llu (error - %s)", requestID, errorMessage.utf8().data());
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    RefPtr<SharedBuffer> value = SharedBuffer::create(valueData.data(), valueData.size());
+    serverRequest->completeRequest(key.maybeCreateIDBKey(), primaryKey.maybeCreateIDBKey(), value.release(), errorCode ? IDBDatabaseError::create(errorCode, errorMessage) : nullptr);
+}
+
+void WebIDBServerConnection::count(IDBTransactionBackend& transaction, const CountOperation& operation, std::function<void(int64_t, PassRefPtr<IDBDatabaseError>)> completionCallback)
+{
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<int64_t, PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(0, IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured getting count"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess count request ID %llu", requestID);
+
+    send(Messages::DatabaseProcessIDBConnection::Count(requestID, transaction.id(), operation.objectStoreID(), operation.indexID(), IDBKeyRangeData(operation.keyRange())));
+}
+
+void WebIDBServerConnection::didCount(uint64_t requestID, int64_t count, uint32_t errorCode, const String& errorMessage)
+{
+    LOG(IDB, "WebProcess didCount %lli request ID %llu (error - %s)", count, requestID, errorMessage.utf8().data());
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    serverRequest->completeRequest(count, errorCode ? IDBDatabaseError::create(errorCode, errorMessage) : nullptr);
+}
+
+void WebIDBServerConnection::deleteRange(IDBTransactionBackend& transaction, const DeleteRangeOperation& operation, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+{
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured getting count"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess deleteRange request ID %llu", requestID);
+
+    send(Messages::DatabaseProcessIDBConnection::DeleteRange(requestID, transaction.id(), operation.objectStoreID(), IDBKeyRangeData(operation.keyRange())));
+}
+
+void WebIDBServerConnection::didDeleteRange(uint64_t requestID, uint32_t errorCode, const String& errorMessage)
+{
+    LOG(IDB, "WebProcess didDeleteRange request ID %llu", requestID);
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    serverRequest->completeRequest(errorCode ? IDBDatabaseError::create(errorCode, errorMessage) : nullptr);
+}
+
+void WebIDBServerConnection::clearObjectStore(IDBTransactionBackend&, const ClearObjectStoreOperation& operation, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
+{
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured clearing object store"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess clearObjectStore request ID %llu", requestID);
+
+    send(Messages::DatabaseProcessIDBConnection::ClearObjectStore(requestID, operation.transaction()->id(), operation.objectStoreID()));
+}
+
+void WebIDBServerConnection::didClearObjectStore(uint64_t requestID, bool success)
+{
+    LOG(IDB, "WebProcess didClearObjectStore request ID %llu", requestID);
+
+    RefPtr<AsyncRequest> serverRequest = m_serverRequests.take(requestID);
+
+    if (!serverRequest)
+        return;
+
+    serverRequest->completeRequest(success ? nullptr : IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured clearing object store"));
 }
 
 void WebIDBServerConnection::deleteObjectStore(IDBTransactionBackend&, const DeleteObjectStoreOperation& operation, std::function<void(PassRefPtr<IDBDatabaseError>)> completionCallback)
@@ -378,20 +638,55 @@ void WebIDBServerConnection::didChangeDatabaseVersion(uint64_t requestID, bool s
     serverRequest->completeRequest(success ? nullptr : IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured changing database version"));
 }
 
-void WebIDBServerConnection::cursorAdvance(IDBCursorBackend&, const CursorAdvanceOperation&, std::function<void()> completionCallback)
+void WebIDBServerConnection::openCursor(IDBTransactionBackend&, const OpenCursorOperation& operation, std::function<void(int64_t, PassRefPtr<IDBKey>, PassRefPtr<IDBKey>, PassRefPtr<SharedBuffer>, PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<int64_t, PassRefPtr<IDBKey>, PassRefPtr<IDBKey>, PassRefPtr<SharedBuffer>, PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(0, nullptr, nullptr, nullptr, IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured opening database cursor"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess openCursor request ID %llu", requestID);
+
+    send(Messages::DatabaseProcessIDBConnection::OpenCursor(requestID, operation.transactionID(), operation.objectStoreID(), operation.indexID(), static_cast<int64_t>(operation.direction()), static_cast<int64_t>(operation.cursorType()), static_cast<int64_t>(operation.taskType()), operation.keyRange()));
 }
 
-void WebIDBServerConnection::cursorIterate(IDBCursorBackend&, const CursorIterationOperation&, std::function<void()> completionCallback)
+void WebIDBServerConnection::cursorAdvance(IDBCursorBackend&, const CursorAdvanceOperation& operation, std::function<void(PassRefPtr<IDBKey>, PassRefPtr<IDBKey>, PassRefPtr<SharedBuffer>, PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<PassRefPtr<IDBKey>, PassRefPtr<IDBKey>, PassRefPtr<SharedBuffer>, PassRefPtr<IDBDatabaseError>>::create(completionCallback);
+
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(nullptr, nullptr, nullptr, IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured advancing database cursor"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess cursorAdvance request ID %llu", requestID);
+
+    send(Messages::DatabaseProcessIDBConnection::CursorAdvance(requestID, operation.cursorID(), operation.count()));
 }
 
-void WebIDBServerConnection::cursorPrefetchIteration(IDBCursorBackend&, const CursorPrefetchIterationOperation&, std::function<void()> completionCallback)
+void WebIDBServerConnection::cursorIterate(IDBCursorBackend&, const CursorIterationOperation& operation, std::function<void(PassRefPtr<IDBKey>, PassRefPtr<IDBKey>, PassRefPtr<SharedBuffer>, PassRefPtr<IDBDatabaseError>)> completionCallback)
 {
-}
+    RefPtr<AsyncRequest> serverRequest = AsyncRequestImpl<PassRefPtr<IDBKey>, PassRefPtr<IDBKey>, PassRefPtr<SharedBuffer>, PassRefPtr<IDBDatabaseError>>::create(completionCallback);
 
-void WebIDBServerConnection::cursorPrefetchReset(IDBCursorBackend&, int usedPrefetches)
-{
+    serverRequest->setAbortHandler([completionCallback]() {
+        completionCallback(nullptr, nullptr, nullptr, IDBDatabaseError::create(IDBDatabaseException::UnknownError, "Unknown error occured iterating database cursor"));
+    });
+
+    uint64_t requestID = serverRequest->requestID();
+    ASSERT(!m_serverRequests.contains(requestID));
+    m_serverRequests.add(requestID, serverRequest.release());
+
+    LOG(IDB, "WebProcess cursorIterate request ID %llu", requestID);
+
+    send(Messages::DatabaseProcessIDBConnection::CursorIterate(requestID, operation.cursorID(), operation.key()));
 }
 
 IPC::Connection* WebIDBServerConnection::messageSenderConnection()

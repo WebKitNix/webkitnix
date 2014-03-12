@@ -572,8 +572,6 @@ Could be worth adding to the API.
 - (void)_setAllowsMessaging:(BOOL)aFlag;
 - (BOOL)_allowsMessaging;
 
-- (void)_setNetworkStateIsOnline:(BOOL)isOnLine;
-
 - (void)_setCustomFixedPositionLayoutRectInWebThread:(CGRect)rect synchronize:(BOOL)synchronize;
 - (void)_setCustomFixedPositionLayoutRect:(CGRect)rect;
 
@@ -583,6 +581,13 @@ Could be worth adding to the API.
 - (void)_overflowScrollPositionChangedTo:(CGPoint)offset forNode:(DOMNode *)node isUserScroll:(BOOL)userScroll;
 
 - (NSArray *)_touchEventRegions;
+
+/*!
+    @method _doNotStartObservingNetworkReachability
+    @abstract Does not start observation of network reachability in any WebView.
+    @discussion To take effect, this method must be called before the first WebView is created.
+ */
++ (void)_doNotStartObservingNetworkReachability;
 #endif
 
 #if !TARGET_OS_IPHONE
@@ -697,18 +702,6 @@ Could be worth adding to the API.
 #endif /* TARGET_OS_IPHONE */
 
 /*!
-    @method _setInViewSourceMode:
-    @abstract Used to place a WebView into a special source-viewing mode.
-  */
-- (void)_setInViewSourceMode:(BOOL)flag;
-
-/*!
-    @method _inViewSourceMode;
-    @abstract Whether or not the WebView is in source-view mode for HTML.
-  */
-- (BOOL)_inViewSourceMode;
-
-/*!
     @method _attachScriptDebuggerToAllFrames
     @abstract Attaches a script debugger to all frames belonging to the receiver.
  */
@@ -762,9 +755,6 @@ Could be worth adding to the API.
 // SPI for DumpRenderTree
 - (void)_executeCoreCommandByName:(NSString *)name value:(NSString *)value;
 - (void)_clearMainFrameName;
-
-- (void)_setCustomHTMLTokenizerTimeDelay:(double)timeDelay;
-- (void)_setCustomHTMLTokenizerChunkSize:(int)chunkSize;
 
 - (void)setSelectTrailingWhitespaceEnabled:(BOOL)flag;
 - (BOOL)isSelectTrailingWhitespaceEnabled;

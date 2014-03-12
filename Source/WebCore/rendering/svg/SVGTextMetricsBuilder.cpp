@@ -18,8 +18,6 @@
  */
 
 #include "config.h"
-
-#if ENABLE(SVG)
 #include "SVGTextMetricsBuilder.h"
 
 #include "RenderSVGInlineText.h"
@@ -207,7 +205,7 @@ void SVGTextMetricsBuilder::measureTextRenderer(RenderSVGInlineText* text)
 {
     ASSERT(text);
 
-    RenderSVGText* textRoot = RenderSVGText::locateRenderSVGTextAncestor(text);
+    auto* textRoot = RenderSVGText::locateRenderSVGTextAncestor(*text);
     if (!textRoot)
         return;
 
@@ -223,5 +221,3 @@ void SVGTextMetricsBuilder::buildMetricsAndLayoutAttributes(RenderSVGText* textR
 }
 
 }
-
-#endif // ENABLE(SVG)

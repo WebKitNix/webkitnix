@@ -33,7 +33,8 @@
 #include "Deque.h"
 #include "Functional.h"
 #include "StdLibExtras.h"
-#include "Threading.h"
+#include <mutex>
+#include <wtf/NeverDestroyed.h>
 #include <wtf/ThreadSpecific.h>
 
 namespace WTF {
@@ -64,24 +65,25 @@ public:
 typedef Deque<FunctionWithContext> FunctionQueue;
 
 static bool callbacksPaused; // This global variable is only accessed from main thread.
-#if !PLATFORM(MAC)
+#if !OS(DARWIN) || PLATFORM(EFL) || PLATFORM(GTK)
 static ThreadIdentifier mainThreadIdentifier;
 #endif
 
-static Mutex& mainThreadFunctionQueueMutex()
+static std::mutex& mainThreadFunctionQueueMutex()
 {
-    DEFINE_STATIC_LOCAL(Mutex, staticMutex, ());
-    return staticMutex;
+    static NeverDestroyed<std::mutex> mutex;
+    
+    return mutex;
 }
 
 static FunctionQueue& functionQueue()
 {
-    DEFINE_STATIC_LOCAL(FunctionQueue, staticFunctionQueue, ());
-    return staticFunctionQueue;
+    static NeverDestroyed<FunctionQueue> functionQueue;
+    return functionQueue;
 }
 
 
-#if !PLATFORM(MAC)
+#if !OS(DARWIN) || PLATFORM(EFL) || PLATFORM(GTK)
 
 void initializeMainThread()
 {
@@ -140,7 +142,7 @@ void initializeWebThread()
 #endif
 
 // 0.1 sec delays in UI is approximate threshold when they become noticeable. Have a limit that's half of that.
-static const double maxRunLoopSuspensionTime = 0.05;
+static const auto maxRunLoopSuspensionTime = std::chrono::milliseconds(50);
 
 void dispatchFunctionsFromMainThread()
 {
@@ -149,12 +151,12 @@ void dispatchFunctionsFromMainThread()
     if (callbacksPaused)
         return;
 
-    double startTime = monotonicallyIncreasingTime();
+    auto startTime = std::chrono::steady_clock::now();
 
     FunctionWithContext invocation;
     while (true) {
         {
-            MutexLocker locker(mainThreadFunctionQueueMutex());
+            std::lock_guard<std::mutex> lock(mainThreadFunctionQueueMutex());
             if (!functionQueue().size())
                 break;
             invocation = functionQueue().takeFirst();
@@ -166,7 +168,7 @@ void dispatchFunctionsFromMainThread()
         // yield so the user input can be processed. Otherwise user may not be able to even close the window.
         // This code has effect only in case the scheduleDispatchFunctionsOnMainThread() is implemented in a way that
         // allows input events to be processed before we are back here.
-        if (monotonicallyIncreasingTime() - startTime > maxRunLoopSuspensionTime) {
+        if (std::chrono::steady_clock::now() - startTime > maxRunLoopSuspensionTime) {
             scheduleDispatchFunctionsOnMainThread();
             break;
         }
@@ -178,7 +180,7 @@ void callOnMainThread(MainThreadFunction* function, void* context)
     ASSERT(function);
     bool needToSchedule = false;
     {
-        MutexLocker locker(mainThreadFunctionQueueMutex());
+        std::lock_guard<std::mutex> lock(mainThreadFunctionQueueMutex());
         needToSchedule = functionQueue().size() == 0;
         functionQueue().append(FunctionWithContext(function, context));
     }
@@ -190,7 +192,7 @@ void cancelCallOnMainThread(MainThreadFunction* function, void* context)
 {
     ASSERT(function);
 
-    MutexLocker locker(mainThreadFunctionQueueMutex());
+    std::lock_guard<std::mutex> lock(mainThreadFunctionQueueMutex());
 
     FunctionWithContextFinder pred(FunctionWithContext(function, context));
 
@@ -228,7 +230,7 @@ void setMainThreadCallbacksPaused(bool paused)
         scheduleDispatchFunctionsOnMainThread();
 }
 
-#if !PLATFORM(MAC)
+#if !OS(DARWIN) || PLATFORM(EFL) || PLATFORM(GTK)
 bool isMainThread()
 {
     return currentThread() == mainThreadIdentifier;
@@ -272,7 +274,7 @@ bool isMainThreadOrGCThread()
 
     return isMainThread();
 }
-#elif PLATFORM(MAC)
+#elif OS(DARWIN) && !PLATFORM(EFL) && !PLATFORM(GTK)
 // This is necessary because JavaScriptCore.exp doesn't support preprocessor macros.
 bool isMainThreadOrGCThread()
 {

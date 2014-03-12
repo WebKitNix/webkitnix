@@ -28,7 +28,7 @@
 
 #include "CopiedSpaceInlines.h"
 #include "GCActivityCallback.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include "Options.h"
 
 namespace JSC {
@@ -253,6 +253,7 @@ void CopiedSpace::doneCopying()
         // We don't add the block to the blockSet because it was never removed.
         ASSERT(m_blockSet.contains(block));
         blockFilter->add(reinterpret_cast<Bits>(block));
+        block->didSurviveGC();
         toSpace->push(block);
     }
 

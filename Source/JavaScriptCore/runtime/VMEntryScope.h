@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,20 +42,14 @@ public:
 
     JSGlobalObject* globalObject() const { return m_globalObject; }
 
+    void setRecompilationNeeded(bool recompileNeeded) { m_recompilationNeeded = recompileNeeded; }
+
 private:
-    size_t requiredCapacity() const;
-
     VM& m_vm;
-    StackStats::CheckPoint m_stackCheckPoint;
-    StackBounds m_stack;
     JSGlobalObject* m_globalObject;
-
-    // m_prev and m_prevStackLimit may belong to a different thread's stack.
-    VMEntryScope* m_prev;
-    void* m_prevStackLimit;
+    bool m_recompilationNeeded;
 };
 
 } // namespace JSC
 
 #endif // VMEntryScope_h
-

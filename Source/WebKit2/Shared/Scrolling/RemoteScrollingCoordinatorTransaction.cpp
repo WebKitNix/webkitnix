@@ -108,16 +108,18 @@ void ArgumentCoder<ScrollingStateScrollingNode>::encode(ArgumentEncoder& encoder
 {
     encoder << static_cast<const ScrollingStateNode&>(node);
     
-    SCROLLING_NODE_ENCODE(ViewportRect, viewportRect)
+    SCROLLING_NODE_ENCODE(ViewportSize, viewportSize)
     SCROLLING_NODE_ENCODE(TotalContentsSize, totalContentsSize)
+    SCROLLING_NODE_ENCODE(ScrollPosition, scrollPosition)
     SCROLLING_NODE_ENCODE(ScrollOrigin, scrollOrigin)
     SCROLLING_NODE_ENCODE(FrameScaleFactor, frameScaleFactor)
-//    SCROLLING_NODE_ENCODE(NonFastScrollableRegion, nonFastScrollableRegion) // FIXME: no encoder support for Region
+    SCROLLING_NODE_ENCODE(NonFastScrollableRegion, nonFastScrollableRegion)
     SCROLLING_NODE_ENCODE(WheelEventHandlerCount, wheelEventHandlerCount)
     SCROLLING_NODE_ENCODE(ReasonsForSynchronousScrolling, synchronousScrollingReasons)
     SCROLLING_NODE_ENCODE(ScrollableAreaParams, scrollableAreaParameters)
     SCROLLING_NODE_ENCODE_ENUM(BehaviorForFixedElements, scrollBehaviorForFixedElements)
-    // FIXME: encode requestedScrollPosition?
+    SCROLLING_NODE_ENCODE(RequestedScrollPosition, requestedScrollPosition)
+    SCROLLING_NODE_ENCODE(RequestedScrollPosition, requestedScrollPositionRepresentsProgrammaticScroll)
     SCROLLING_NODE_ENCODE(HeaderHeight, headerHeight)
     SCROLLING_NODE_ENCODE(FooterHeight, footerHeight)
 }
@@ -143,16 +145,29 @@ bool ArgumentCoder<ScrollingStateScrollingNode>::decode(ArgumentDecoder& decoder
     if (!decoder.decode(static_cast<ScrollingStateNode&>(node)))
         return false;
 
-    SCROLLING_NODE_DECODE(ViewportRect, IntRect, setViewportRect);
+    SCROLLING_NODE_DECODE(ViewportSize, FloatSize, setViewportSize);
     SCROLLING_NODE_DECODE(TotalContentsSize, IntSize, setTotalContentsSize);
+    SCROLLING_NODE_DECODE(ScrollPosition, FloatPoint, setScrollPosition);
     SCROLLING_NODE_DECODE(ScrollOrigin, IntPoint, setScrollOrigin);
     SCROLLING_NODE_DECODE(FrameScaleFactor, float, setFrameScaleFactor);
-//    SCROLLING_NODE_DECODE(NonFastScrollableRegion, Region, setNonFastScrollableRegion); // FIXME: no decoder support for Region.
+    SCROLLING_NODE_DECODE(NonFastScrollableRegion, Region, setNonFastScrollableRegion);
     SCROLLING_NODE_DECODE(WheelEventHandlerCount, int, setWheelEventHandlerCount);
     SCROLLING_NODE_DECODE(ReasonsForSynchronousScrolling, SynchronousScrollingReasons, setSynchronousScrollingReasons);
     SCROLLING_NODE_DECODE(ScrollableAreaParams, ScrollableAreaParameters, setScrollableAreaParameters);
     SCROLLING_NODE_DECODE_ENUM(BehaviorForFixedElements, ScrollBehaviorForFixedElements, setScrollBehaviorForFixedElements);
-    // FIXME: decode requestedScrollPosition?
+
+    if (node.hasChangedProperty(ScrollingStateScrollingNode::RequestedScrollPosition)) {
+        FloatPoint scrollPosition;
+        if (!decoder.decode(scrollPosition))
+            return false;
+
+        bool representsProgrammaticScroll;
+        if (!decoder.decode(representsProgrammaticScroll))
+            return false;
+
+        node.setRequestedScrollPosition(scrollPosition, representsProgrammaticScroll);
+    }
+
     SCROLLING_NODE_DECODE(HeaderHeight, int, setHeaderHeight);
     SCROLLING_NODE_DECODE(FooterHeight, int, setFooterHeight);
 
@@ -234,6 +249,9 @@ void RemoteScrollingCoordinatorTransaction::encode(IPC::ArgumentEncoder& encoder
 {
     int numNodes = m_scrollingStateTree ? m_scrollingStateTree->nodeCount() : 0;
     encoder << numNodes;
+    
+    bool hasNewRootNode = m_scrollingStateTree ? m_scrollingStateTree->hasNewRootStateNode() : false;
+    encoder << hasNewRootNode;
 
     if (m_scrollingStateTree) {
         if (const ScrollingStateNode* rootNode = m_scrollingStateTree->rootStateNode())
@@ -255,6 +273,10 @@ bool RemoteScrollingCoordinatorTransaction::decode(IPC::ArgumentDecoder& decoder
     if (!decoder.decode(numNodes))
         return false;
 
+    bool hasNewRootNode;
+    if (!decoder.decode(hasNewRootNode))
+        return false;
+    
     m_scrollingStateTree = ScrollingStateTree::create();
     
     for (int i = 0; i < numNodes; ++i) {
@@ -290,6 +312,8 @@ bool RemoteScrollingCoordinatorTransaction::decode(IPC::ArgumentDecoder& decoder
             break;
         }
     }
+
+    m_scrollingStateTree->setHasNewRootStateNode(hasNewRootNode);
 
     // Removed nodes
     Vector<ScrollingNodeID> removedNodes;

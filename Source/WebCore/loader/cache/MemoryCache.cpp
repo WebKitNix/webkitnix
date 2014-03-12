@@ -25,6 +25,7 @@
 
 #include "BitmapImage.h"
 #include "CachedImage.h"
+#include "CachedImageClient.h"
 #include "CachedResource.h"
 #include "CachedResourceHandle.h"
 #include "CrossThreadTask.h"
@@ -79,6 +80,17 @@ MemoryCache::MemoryCache()
 {
 }
 
+MemoryCache::CachedResourceMap& MemoryCache::getSessionMap(SessionID sessionID)
+{
+    ASSERT(sessionID.isValid());
+    CachedResourceMap* map = m_sessionResources.get(sessionID);
+    if (!map) {
+        m_sessionResources.set(sessionID, std::make_unique<CachedResourceMap>());
+        map = m_sessionResources.get(sessionID);
+    }
+    return *map;
+}
+
 URL MemoryCache::removeFragmentIdentifierIfNeeded(const URL& originalURL)
 {
     if (!originalURL.hasFragmentIdentifier())
@@ -100,15 +112,16 @@ bool MemoryCache::add(CachedResource* resource)
 
     ASSERT(WTF::isMainThread());
 
+    CachedResourceMap& resources = getSessionMap(resource->sessionID());
 #if ENABLE(CACHE_PARTITIONING)
-    CachedResourceItem* originMap = m_resources.get(resource->url());
+    CachedResourceItem* originMap = resources.get(resource->url());
     if (!originMap) {
         originMap = new CachedResourceItem;
-        m_resources.set(resource->url(), adoptPtr(originMap));
+        resources.set(resource->url(), adoptPtr(originMap));
     }
     originMap->set(resource->cachePartition(), resource);
 #else
-    m_resources.set(resource->url(), resource);
+    resources.set(resource->url(), resource);
 #endif
     resource->setInCache(true);
     
@@ -133,17 +146,18 @@ void MemoryCache::revalidationSucceeded(CachedResource* revalidatingResource, co
 
     evict(revalidatingResource);
 
+    CachedResourceMap& resources = getSessionMap(resource->sessionID());
 #if ENABLE(CACHE_PARTITIONING)
-    ASSERT(!m_resources.get(resource->url()) || !m_resources.get(resource->url())->get(resource->cachePartition()));
-    CachedResourceItem* originMap = m_resources.get(resource->url());
+    ASSERT(!resources.get(resource->url()) || !resources.get(resource->url())->get(resource->cachePartition()));
+    CachedResourceItem* originMap = resources.get(resource->url());
     if (!originMap) {
         originMap = new CachedResourceItem;
-        m_resources.set(resource->url(), adoptPtr(originMap));
+        resources.set(resource->url(), adoptPtr(originMap));
     }
     originMap->set(resource->cachePartition(), resource);
 #else
-    ASSERT(!m_resources.get(resource->url()));
-    m_resources.set(resource->url(), resource);
+    ASSERT(!resources.get(resource->url()));
+    resources.set(resource->url(), resource);
 #endif
     resource->setInCache(true);
     resource->updateResponseAfterRevalidation(response);
@@ -170,20 +184,31 @@ void MemoryCache::revalidationFailed(CachedResource* revalidatingResource)
 
 CachedResource* MemoryCache::resourceForURL(const URL& resourceURL)
 {
-    return resourceForRequest(ResourceRequest(resourceURL));
+    return resourceForURL(resourceURL, SessionID::defaultSessionID());
 }
 
-CachedResource* MemoryCache::resourceForRequest(const ResourceRequest& request)
+CachedResource* MemoryCache::resourceForURL(const URL& resourceURL, SessionID sessionID)
+{
+    return resourceForRequest(ResourceRequest(resourceURL), sessionID);
+}
+
+CachedResource* MemoryCache::resourceForRequest(const ResourceRequest& request, SessionID sessionID)
+{
+    return resourceForRequestImpl(request, getSessionMap(sessionID));
+}
+
+CachedResource* MemoryCache::resourceForRequestImpl(const ResourceRequest& request, CachedResourceMap& resources)
 {
     ASSERT(WTF::isMainThread());
     URL url = removeFragmentIdentifierIfNeeded(request.url());
+
 #if ENABLE(CACHE_PARTITIONING)
-    CachedResourceItem* item = m_resources.get(url);
+    CachedResourceItem* item = resources.get(url);
     CachedResource* resource = 0;
     if (item)
         resource = item->get(request.cachePartition());
 #else
-    CachedResource* resource = m_resources.get(url);
+    CachedResource* resource = resources.get(url);
 #endif
     bool wasPurgeable = MemoryCache::shouldMakeResourcePurgeableOnEviction() && resource && resource->isPurgeable();
     if (resource && !resource->makePurgeable(false)) {
@@ -215,47 +240,52 @@ unsigned MemoryCache::liveCapacity() const
 #if USE(CG)
 // FIXME: Remove the USE(CG) once we either make NativeImagePtr a smart pointer on all platforms or
 // remove the usage of CFRetain() in MemoryCache::addImageToCache() so as to make the code platform-independent.
+static CachedImageClient& dummyCachedImageClient()
+{
+    DEFINE_STATIC_LOCAL(CachedImageClient, client, ());
+    return client;
+}
+
 bool MemoryCache::addImageToCache(NativeImagePtr image, const URL& url, const String& cachePartition)
 {
     ASSERT(image);
+    SessionID sessionID = SessionID::defaultSessionID();
     removeImageFromCache(url, cachePartition); // Remove cache entry if it already exists.
 
     RefPtr<BitmapImage> bitmapImage = BitmapImage::create(image, nullptr);
     if (!bitmapImage)
         return false;
 
-    CachedImageManual* cachedImage = new CachedImageManual(url, bitmapImage.get());
-    if (!cachedImage)
-        return false;
+    std::unique_ptr<CachedImage> cachedImage = std::make_unique<CachedImage>(url, bitmapImage.get(), CachedImage::ManuallyCached, sessionID);
 
     // Actual release of the CGImageRef is done in BitmapImage.
     CFRetain(image);
-    cachedImage->addFakeClient();
+    cachedImage->addClient(&dummyCachedImageClient());
     cachedImage->setDecodedSize(bitmapImage->decodedSize());
 #if ENABLE(CACHE_PARTITIONING)
     cachedImage->resourceRequest().setCachePartition(cachePartition);
 #endif
-    add(cachedImage);
     return true;
 }
 
 void MemoryCache::removeImageFromCache(const URL& url, const String& cachePartition)
 {
+    CachedResourceMap& resources = getSessionMap(SessionID::defaultSessionID());
 #if ENABLE(CACHE_PARTITIONING)
     CachedResource* resource;
-    if (CachedResourceItem* item = m_resources.get(url))
+    if (CachedResourceItem* item = resources.get(url))
         resource = item->get(ResourceRequest::partitionName(cachePartition));
     else
         resource = nullptr;
 #else
     UNUSED_PARAM(cachePartition);
-    CachedResource* resource = m_resources.get(url);
+    CachedResource* resource = resources.get(url);
 #endif
     if (!resource)
         return;
 
     // A resource exists and is not a manually cached image, so just remove it.
-    if (!resource->isImage() || !static_cast<CachedImage*>(resource)->isManual()) {
+    if (!resource->isImage() || !toCachedImage(resource)->isManuallyCached()) {
         evict(resource);
         return;
     }
@@ -265,7 +295,7 @@ void MemoryCache::removeImageFromCache(const URL& url, const String& cachePartit
     // dead resources are pruned. That might be immediately since
     // removing the last client triggers a MemoryCache::prune, so the
     // resource may be deleted after this call.
-    static_cast<CachedImageManual*>(resource)->removeFakeClient();
+    toCachedImage(resource)->removeClient(&dummyCachedImageClient());
 }
 #endif
 
@@ -517,17 +547,18 @@ void MemoryCache::evict(CachedResource* resource)
     LOG(ResourceLoading, "Evicting resource %p for '%s' from cache", resource, resource->url().string().latin1().data());
     // The resource may have already been removed by someone other than our caller,
     // who needed a fresh copy for a reload. See <http://bugs.webkit.org/show_bug.cgi?id=12479#c6>.
+    CachedResourceMap& resources = getSessionMap(resource->sessionID());
     if (resource->inCache()) {
         // Remove from the resource map.
 #if ENABLE(CACHE_PARTITIONING)
-        CachedResourceItem* item = m_resources.get(resource->url());
+        CachedResourceItem* item = resources.get(resource->url());
         if (item) {
             item->remove(resource->cachePartition());
             if (!item->size())
-                m_resources.remove(resource->url());
+                resources.remove(resource->url());
         }
 #else
-        m_resources.remove(resource->url());
+        resources.remove(resource->url());
 #endif
         resource->setInCache(false);
 
@@ -542,9 +573,9 @@ void MemoryCache::evict(CachedResource* resource)
             adjustSize(resource->hasClients(), -static_cast<int>(resource->size()));
     } else
 #if ENABLE(CACHE_PARTITIONING)
-        ASSERT(!m_resources.get(resource->url()) || m_resources.get(resource->url())->get(resource->cachePartition()) != resource);
+        ASSERT(!resources.get(resource->url()) || resources.get(resource->url())->get(resource->cachePartition()) != resource);
 #else
-        ASSERT(m_resources.get(resource->url()) != resource);
+        ASSERT(resources.get(resource->url()) != resource);
 #endif
 
     resource->deleteIfPossible();
@@ -664,31 +695,33 @@ void MemoryCache::removeResourcesWithOrigin(SecurityOrigin* origin)
 {
     Vector<CachedResource*> resourcesWithOrigin;
 
-    CachedResourceMap::iterator e = m_resources.end();
+    for (auto& resources : m_sessionResources) {
+        CachedResourceMap::iterator e = resources.value->end();
 #if ENABLE(CACHE_PARTITIONING)
-    String originPartition = ResourceRequest::partitionName(origin->host());
+        String originPartition = ResourceRequest::partitionName(origin->host());
 #endif
 
-    for (CachedResourceMap::iterator it = m_resources.begin(); it != e; ++it) {
+        for (CachedResourceMap::iterator it = resources.value->begin(); it != e; ++it) {
 #if ENABLE(CACHE_PARTITIONING)
-        for (CachedResourceItem::iterator itemIterator = it->value->begin(); itemIterator != it->value->end(); ++itemIterator) {
-            CachedResource* resource = itemIterator->value;
-            String partition = itemIterator->key;
-            if (partition == originPartition) {
-                resourcesWithOrigin.append(resource);
-                continue;
-            }
+            for (CachedResourceItem::iterator itemIterator = it->value->begin(); itemIterator != it->value->end(); ++itemIterator) {
+                CachedResource* resource = itemIterator->value;
+                String partition = itemIterator->key;
+                if (partition == originPartition) {
+                    resourcesWithOrigin.append(resource);
+                    continue;
+                }
 #else
-            CachedResource* resource = it->value;
+                CachedResource* resource = it->value;
 #endif
-            RefPtr<SecurityOrigin> resourceOrigin = SecurityOrigin::createFromString(resource->url());
-            if (!resourceOrigin)
-                continue;
-            if (resourceOrigin->equal(origin))
-                resourcesWithOrigin.append(resource);
+                RefPtr<SecurityOrigin> resourceOrigin = SecurityOrigin::createFromString(resource->url());
+                if (!resourceOrigin)
+                    continue;
+                if (resourceOrigin->equal(origin))
+                    resourcesWithOrigin.append(resource);
 #if ENABLE(CACHE_PARTITIONING)
-        }
+            }
 #endif
+        }
     }
 
     for (size_t i = 0; i < resourcesWithOrigin.size(); ++i)
@@ -700,16 +733,18 @@ void MemoryCache::getOriginsWithCache(SecurityOriginSet& origins)
 #if ENABLE(CACHE_PARTITIONING)
     DEFINE_STATIC_LOCAL(String, httpString, ("http"));
 #endif
-    CachedResourceMap::iterator e = m_resources.end();
-    for (CachedResourceMap::iterator it = m_resources.begin(); it != e; ++it) {
+    for (auto& resources : m_sessionResources) {
+        CachedResourceMap::iterator e = resources.value->end();
+        for (CachedResourceMap::iterator it = resources.value->begin(); it != e; ++it) {
 #if ENABLE(CACHE_PARTITIONING)
-        if (it->value->begin()->key == emptyString())
-            origins.add(SecurityOrigin::createFromString(it->value->begin()->value->url()));
-        else
-            origins.add(SecurityOrigin::create(httpString, it->value->begin()->key, 0));
+            if (it->value->begin()->key == emptyString())
+                origins.add(SecurityOrigin::createFromString(it->value->begin()->value->url()));
+            else
+                origins.add(SecurityOrigin::create(httpString, it->value->begin()->key, 0));
 #else
-        origins.add(SecurityOrigin::createFromString(it->value->url()));
+            origins.add(SecurityOrigin::createFromString(it->value->url()));
 #endif
+        }
     }
 }
 
@@ -803,32 +838,54 @@ void MemoryCache::adjustSize(bool live, int delta)
     }
 }
 
-void MemoryCache::removeUrlFromCache(ScriptExecutionContext* context, const String& urlString)
+void MemoryCache::removeUrlFromCache(ScriptExecutionContext* context, const String& urlString, SessionID sessionID)
 {
-    removeRequestFromCache(context, ResourceRequest(urlString));
+    removeRequestFromCache(context, ResourceRequest(urlString), sessionID);
 }
 
-void MemoryCache::removeRequestFromCache(ScriptExecutionContext* context, const ResourceRequest& request)
+void MemoryCache::removeRequestFromCache(ScriptExecutionContext* context, const ResourceRequest& request, SessionID sessionID)
 {
     if (context->isWorkerGlobalScope()) {
-        WorkerGlobalScope* workerGlobalScope = static_cast<WorkerGlobalScope*>(context);
-        workerGlobalScope->thread()->workerLoaderProxy().postTaskToLoader(createCallbackTask(&crossThreadRemoveRequestFromCache, request));
+        toWorkerGlobalScope(context)->thread().workerLoaderProxy().postTaskToLoader(createCallbackTask(&crossThreadRemoveRequestFromCache, request, sessionID));
         return;
     }
 
-    removeRequestFromCacheImpl(context, request);
+    removeRequestFromCacheImpl(context, request, sessionID);
 }
 
-void MemoryCache::removeRequestFromCacheImpl(ScriptExecutionContext*, const ResourceRequest& request)
+void MemoryCache::removeRequestFromCacheImpl(ScriptExecutionContext*, const ResourceRequest& request, SessionID sessionID)
 {
-    if (CachedResource* resource = memoryCache()->resourceForRequest(request))
+    if (CachedResource* resource = memoryCache()->resourceForRequest(request, sessionID))
         memoryCache()->remove(resource);
 }
 
-void MemoryCache::crossThreadRemoveRequestFromCache(ScriptExecutionContext* context, PassOwnPtr<WebCore::CrossThreadResourceRequestData> requestData)
+void MemoryCache::removeRequestFromSessionCaches(ScriptExecutionContext* context, const ResourceRequest& request)
+{
+    if (context->isWorkerGlobalScope()) {
+        toWorkerGlobalScope(context)->thread().workerLoaderProxy().postTaskToLoader(createCallbackTask(&crossThreadRemoveRequestFromSessionCaches, request));
+        return;
+    }
+    removeRequestFromSessionCachesImpl(context, request);
+}
+
+void MemoryCache::removeRequestFromSessionCachesImpl(ScriptExecutionContext*, const ResourceRequest& request)
+{
+    for (auto& resources : memoryCache()->m_sessionResources) {
+        if (CachedResource* resource = memoryCache()->resourceForRequestImpl(request, *resources.value))
+        memoryCache()->remove(resource);
+    }
+}
+
+void MemoryCache::crossThreadRemoveRequestFromCache(ScriptExecutionContext* context, PassOwnPtr<WebCore::CrossThreadResourceRequestData> requestData, SessionID sessionID)
 {
     OwnPtr<ResourceRequest> request(ResourceRequest::adopt(requestData));
-    MemoryCache::removeRequestFromCacheImpl(context, *request);
+    MemoryCache::removeRequestFromCacheImpl(context, *request, sessionID);
+}
+
+void MemoryCache::crossThreadRemoveRequestFromSessionCaches(ScriptExecutionContext* context, PassOwnPtr<WebCore::CrossThreadResourceRequestData> requestData)
+{
+    OwnPtr<ResourceRequest> request(ResourceRequest::adopt(requestData));
+    MemoryCache::removeRequestFromSessionCaches(context, *request);
 }
 
 void MemoryCache::TypeStatistic::addResource(CachedResource* o)
@@ -851,38 +908,41 @@ void MemoryCache::TypeStatistic::addResource(CachedResource* o)
 MemoryCache::Statistics MemoryCache::getStatistics()
 {
     Statistics stats;
-    CachedResourceMap::iterator e = m_resources.end();
-    for (CachedResourceMap::iterator i = m_resources.begin(); i != e; ++i) {
+
+    for (auto& resources : m_sessionResources) {
+        CachedResourceMap::iterator e = resources.value->end();
+        for (CachedResourceMap::iterator i = resources.value->begin(); i != e; ++i) {
 #if ENABLE(CACHE_PARTITIONING)
-        for (CachedResourceItem::iterator itemIterator = i->value->begin(); itemIterator != i->value->end(); ++itemIterator) {
-            CachedResource* resource = itemIterator->value;
+            for (CachedResourceItem::iterator itemIterator = i->value->begin(); itemIterator != i->value->end(); ++itemIterator) {
+                CachedResource* resource = itemIterator->value;
 #else
-            CachedResource* resource = i->value;
+                CachedResource* resource = i->value;
 #endif
-            switch (resource->type()) {
-            case CachedResource::ImageResource:
-                stats.images.addResource(resource);
-                break;
-            case CachedResource::CSSStyleSheet:
-                stats.cssStyleSheets.addResource(resource);
-                break;
-            case CachedResource::Script:
-                stats.scripts.addResource(resource);
-                break;
+                switch (resource->type()) {
+                case CachedResource::ImageResource:
+                    stats.images.addResource(resource);
+                    break;
+                case CachedResource::CSSStyleSheet:
+                    stats.cssStyleSheets.addResource(resource);
+                    break;
+                case CachedResource::Script:
+                    stats.scripts.addResource(resource);
+                    break;
 #if ENABLE(XSLT)
-            case CachedResource::XSLStyleSheet:
-                stats.xslStyleSheets.addResource(resource);
-                break;
+                case CachedResource::XSLStyleSheet:
+                    stats.xslStyleSheets.addResource(resource);
+                    break;
 #endif
-            case CachedResource::FontResource:
-                stats.fonts.addResource(resource);
-                break;
-            default:
-                break;
-            }
+                case CachedResource::FontResource:
+                    stats.fonts.addResource(resource);
+                    break;
+                default:
+                    break;
+                }
 #if ENABLE(CACHE_PARTITIONING)
-        }
+            }
 #endif
+        }
     }
     return stats;
 }
@@ -894,8 +954,11 @@ void MemoryCache::setDisabled(bool disabled)
         return;
 
     for (;;) {
-        CachedResourceMap::iterator outerIterator = m_resources.begin();
-        if (outerIterator == m_resources.end())
+        SessionCachedResourceMap::iterator sessionIterator = m_sessionResources.begin();
+        if (sessionIterator == m_sessionResources.end())
+            break;
+        CachedResourceMap::iterator outerIterator = sessionIterator->value->begin();
+        if (outerIterator == sessionIterator->value->end())
             break;
 #if ENABLE(CACHE_PARTITIONING)
         CachedResourceItem::iterator innerIterator = outerIterator->value->begin();

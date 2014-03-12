@@ -457,7 +457,7 @@ LayoutUnit RenderFlexibleBox::mainAxisContentExtent(LayoutUnit contentLogicalHei
         computeLogicalHeight(borderBoxLogicalHeight, logicalTop(), computedValues);
         if (computedValues.m_extent == LayoutUnit::max())
             return computedValues.m_extent;
-        return std::max(LayoutUnit(0), computedValues.m_extent - borderPaddingAndScrollbar);
+        return std::max(LayoutUnit::fromPixel(0), computedValues.m_extent - borderPaddingAndScrollbar);
     }
     return contentLogicalWidth();
 }
@@ -634,7 +634,7 @@ LayoutUnit RenderFlexibleBox::flowAwareMarginAfterForChild(RenderBox& child) con
 
 LayoutUnit RenderFlexibleBox::crossAxisMarginExtentForChild(RenderBox& child) const
 {
-    return isHorizontalFlow() ? child.marginHeight() : child.marginWidth();
+    return isHorizontalFlow() ? child.verticalMarginExtent() : child.horizontalMarginExtent();
 }
 
 LayoutUnit RenderFlexibleBox::crossAxisScrollbarExtent() const
@@ -657,7 +657,7 @@ void RenderFlexibleBox::setFlowAwareLocationForChild(RenderBox& child, const Lay
 
 LayoutUnit RenderFlexibleBox::mainAxisBorderAndPaddingExtentForChild(RenderBox& child) const
 {
-    return isHorizontalFlow() ? child.borderAndPaddingWidth() : child.borderAndPaddingHeight();
+    return isHorizontalFlow() ? child.horizontalBorderAndPaddingExtent() : child.verticalBorderAndPaddingExtent();
 }
 
 LayoutUnit RenderFlexibleBox::mainAxisScrollbarExtentForChild(RenderBox& child) const
@@ -682,7 +682,7 @@ LayoutUnit RenderFlexibleBox::preferredMainAxisContentExtentForChild(RenderBox& 
         ASSERT(mainAxisExtent - mainAxisBorderAndPaddingExtentForChild(child) >= 0);
         return mainAxisExtent - mainAxisBorderAndPaddingExtentForChild(child);
     }
-    return std::max(LayoutUnit(0), computeMainAxisExtentForChild(child, MainOrPreferredSize, flexBasis));
+    return std::max(LayoutUnit::fromPixel(0), computeMainAxisExtentForChild(child, MainOrPreferredSize, flexBasis));
 }
 
 void RenderFlexibleBox::layoutFlexItems(bool relayoutChildren, Vector<LineContext>& lineContexts)
@@ -901,7 +901,7 @@ bool RenderFlexibleBox::computeNextFlexLine(OrderedFlexItemList& orderedChildren
 
         LayoutUnit childMainAxisExtent = preferredMainAxisContentExtentForChild(*child, hasInfiniteLineLength);
         LayoutUnit childMainAxisMarginBoxExtent = mainAxisBorderAndPaddingExtentForChild(*child) + childMainAxisExtent;
-        childMainAxisMarginBoxExtent += isHorizontalFlow() ? child->marginWidth() : child->marginHeight();
+        childMainAxisMarginBoxExtent += isHorizontalFlow() ? child->horizontalMarginExtent() : child->verticalMarginExtent();
 
         if (isMultiline() && preferredMainAxisExtent + childMainAxisMarginBoxExtent > lineBreakLength && lineHasInFlowItem)
             break;
@@ -1269,7 +1269,7 @@ void RenderFlexibleBox::alignChildren(const Vector<LineContext>& lineContexts)
                 continue;
             }
 
-            if (updateAutoMarginsInCrossAxis(*child, std::max(LayoutUnit(0), availableAlignmentSpaceForChild(lineCrossAxisExtent, *child))))
+            if (updateAutoMarginsInCrossAxis(*child, std::max(LayoutUnit::fromPixel(0), availableAlignmentSpaceForChild(lineCrossAxisExtent, *child))))
                 continue;
 
             switch (alignmentForChild(*child)) {
@@ -1382,6 +1382,24 @@ void RenderFlexibleBox::flipForWrapReverse(const Vector<LineContext>& lineContex
             adjustAlignmentForChild(*child, newOffset - originalOffset);
         }
     }
+}
+
+bool RenderFlexibleBox::isTopLayoutOverflowAllowed() const
+{
+    bool hasTopOverflow = RenderBlock::isTopLayoutOverflowAllowed();
+    if (hasTopOverflow || !style().isReverseFlexDirection())
+        return hasTopOverflow;
+    
+    return !isHorizontalFlow();
+}
+
+bool RenderFlexibleBox::isLeftLayoutOverflowAllowed() const
+{
+    bool hasLeftOverflow = RenderBlock::isLeftLayoutOverflowAllowed();
+    if (hasLeftOverflow || !style().isReverseFlexDirection())
+        return hasLeftOverflow;
+    
+    return isHorizontalFlow();
 }
 
 }

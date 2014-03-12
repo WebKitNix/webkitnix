@@ -26,9 +26,9 @@
 #include "config.h"
 #include "PlatformWebView.h"
 
-#include <WebCore/GOwnPtrGtk.h>
+#include <WebCore/GUniquePtrGtk.h>
 #include <gtk/gtk.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 
 namespace TestWebKitAPI {
 
@@ -58,7 +58,7 @@ void PlatformWebView::resizeTo(unsigned width, unsigned height)
 
 static void doKeyStroke(GtkWidget* viewWidget, unsigned int keyVal)
 {
-    GOwnPtr<GdkEvent> event(gdk_event_new(GDK_KEY_PRESS));
+    GUniquePtr<GdkEvent> event(gdk_event_new(GDK_KEY_PRESS));
     event->key.keyval = keyVal;
     event->key.time = GDK_CURRENT_TIME;
     event->key.state = 0;
@@ -67,7 +67,7 @@ static void doKeyStroke(GtkWidget* viewWidget, unsigned int keyVal)
     gdk_event_set_device(event.get(), gdk_device_manager_get_client_pointer(gdk_display_get_device_manager(gtk_widget_get_display(viewWidget))));
 
     // When synthesizing an event, an invalid hardware_keycode value can cause it to be badly processed by GTK+.
-    GOwnPtr<GdkKeymapKey> keys;
+    GUniqueOutPtr<GdkKeymapKey> keys;
     int keysCount;
     if (gdk_keymap_get_entries_for_keyval(gdk_keymap_get_default(), keyVal, &keys.outPtr(), &keysCount))
         event->key.hardware_keycode = keys.get()[0].keycode;
@@ -95,7 +95,7 @@ void PlatformWebView::simulateAltKeyPress()
 
 static void doMouseButtonEvent(GtkWidget* viewWidget, GdkEventType eventType, int x, int y, unsigned int button)
 {
-    GOwnPtr<GdkEvent> event(gdk_event_new(eventType));
+    GUniquePtr<GdkEvent> event(gdk_event_new(eventType));
     event->button.x = x;
     event->button.y = y;
     event->button.button = button;
@@ -124,7 +124,7 @@ void PlatformWebView::simulateRightClick(unsigned x, unsigned y)
 
 void PlatformWebView::simulateMouseMove(unsigned x, unsigned y)
 {
-    GOwnPtr<GdkEvent> event(gdk_event_new(GDK_MOTION_NOTIFY));
+    GUniquePtr<GdkEvent> event(gdk_event_new(GDK_MOTION_NOTIFY));
     event->motion.x = x;
     event->motion.y = y;
     event->motion.time = GDK_CURRENT_TIME;

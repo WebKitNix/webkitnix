@@ -29,12 +29,11 @@
 #include "LLIntCommon.h"
 #include <wtf/Assertions.h>
 #include <wtf/InlineASM.h>
-#include <wtf/Platform.h>
-
 
 #if ENABLE(LLINT_C_LOOP)
 #define OFFLINE_ASM_C_LOOP 1
 #define OFFLINE_ASM_X86 0
+#define OFFLINE_ASM_X86_WIN 0
 #define OFFLINE_ASM_ARM 0
 #define OFFLINE_ASM_ARMv7 0
 #define OFFLINE_ASM_ARMv7_TRADITIONAL 0
@@ -48,10 +47,16 @@
 
 #define OFFLINE_ASM_C_LOOP 0
 
-#if CPU(X86)
+#if CPU(X86) && !PLATFORM(WIN)
 #define OFFLINE_ASM_X86 1
 #else
 #define OFFLINE_ASM_X86 0
+#endif
+
+#if CPU(X86) && PLATFORM(WIN)
+#define OFFLINE_ASM_X86_WIN 1
+#else
+#define OFFLINE_ASM_X86_WIN 0
 #endif
 
 #ifdef __ARM_ARCH_7S__

@@ -21,11 +21,10 @@
 #include "config.h"
 #include "RegExp.h"
 
-#include "APIShims.h"
 #include <wtf/CurrentTime.h>
 #include "InitializeThreading.h"
+#include "JSCInlines.h"
 #include "JSGlobalObject.h"
-#include "Operations.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -490,7 +489,7 @@ static void parseArguments(int argc, char** argv, CommandLine& options)
 int realMain(int argc, char** argv)
 {
     VM* vm = VM::create(LargeHeap).leakRef();
-    APIEntryShim shim(vm);
+    JSLockHolder locker(vm);
 
     CommandLine options;
     parseArguments(argc, argv, options);

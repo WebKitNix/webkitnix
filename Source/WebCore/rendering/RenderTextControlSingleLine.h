@@ -43,6 +43,7 @@ public:
 protected:
     virtual void centerContainerIfNeeded(RenderBox*) const { }
     virtual LayoutUnit computeLogicalHeightLimit() const;
+    void centerRenderer(RenderBox& renderer) const;
     HTMLElement* containerElement() const;
     HTMLElement* innerBlockElement() const;
     HTMLInputElement& inputElement() const;
@@ -68,7 +69,7 @@ private:
     virtual int scrollHeight() const override;
     virtual void setScrollLeft(int) override;
     virtual void setScrollTop(int) override;
-    virtual bool scroll(ScrollDirection, ScrollGranularity, float multiplier = 1, Element** stopElement = 0) override final;
+    virtual bool scroll(ScrollDirection, ScrollGranularity, float multiplier = 1, Element** stopElement = nullptr, RenderBox* startBox = nullptr, const IntPoint& wheelEventAbsolutePoint = IntPoint()) override final;
     virtual bool logicalScroll(ScrollLogicalDirection, ScrollGranularity, float multiplier = 1, Element** stopElement = 0) override final;
 
     int textBlockWidth() const;

@@ -24,7 +24,6 @@
 
 #include "CSSCharsetRule.h"
 #include "CSSFontFaceRule.h"
-#include "CSSHostRule.h"
 #include "CSSImportRule.h"
 #include "CSSMediaRule.h"
 #include "CSSPageRule.h"
@@ -33,7 +32,6 @@
 #include "CSSUnknownRule.h"
 #include "StyleProperties.h"
 #include "StyleRuleImport.h"
-#include "WebKitCSSFilterRule.h"
 #include "WebKitCSSKeyframeRule.h"
 #include "WebKitCSSKeyframesRule.h"
 #include "WebKitCSSRegionRule.h"
@@ -88,19 +86,9 @@ void StyleRuleBase::destroy()
     case Keyframes:
         delete static_cast<StyleRuleKeyframes*>(this);
         return;
-#if ENABLE(SHADOW_DOM)
-    case HostInternal:
-        delete static_cast<StyleRuleHost*>(this);
-        return;
-#endif
 #if ENABLE(CSS_DEVICE_ADAPTATION)
     case Viewport:
         delete static_cast<StyleRuleViewport*>(this);
-        return;
-#endif
-#if ENABLE(CSS_SHADERS)
-    case Filter:
-        delete static_cast<StyleRuleFilter*>(this);
         return;
 #endif
     case Unknown:
@@ -136,17 +124,9 @@ PassRef<StyleRuleBase> StyleRuleBase::copy() const
 #endif
     case Keyframes:
         return static_cast<const StyleRuleKeyframes*>(this)->copy();
-#if ENABLE(SHADOW_DOM)
-    case HostInternal:
-        return static_cast<const StyleRuleHost*>(this)->copy();
-#endif
 #if ENABLE(CSS_DEVICE_ADAPTATION)
     case Viewport:
         return static_cast<const StyleRuleViewport*>(this)->copy();
-#endif
-#if ENABLE(CSS_SHADERS)
-    case Filter:
-        return static_cast<const StyleRuleFilter*>(this)->copy();
 #endif
     case Import:
         // FIXME: Copy import rules.
@@ -200,16 +180,6 @@ PassRefPtr<CSSRule> StyleRuleBase::createCSSOMWrapper(CSSStyleSheet* parentSheet
 #if ENABLE(CSS_DEVICE_ADAPTATION)
     case Viewport:
         rule = WebKitCSSViewportRule::create(static_cast<StyleRuleViewport*>(self), parentSheet);
-        break;
-#endif
-#if ENABLE(SHADOW_DOM)
-    case HostInternal:
-        rule = CSSHostRule::create(static_cast<StyleRuleHost*>(self), parentSheet);
-        break;
-#endif
-#if ENABLE(CSS_SHADERS)
-    case Filter:
-        rule = WebKitCSSFilterRule::create(static_cast<StyleRuleFilter*>(self), parentSheet);
         break;
 #endif
     case Unknown:
@@ -394,7 +364,7 @@ StyleRuleSupports::StyleRuleSupports(const StyleRuleSupports& o)
 }
 #endif
 
-StyleRuleRegion::StyleRuleRegion(Vector<OwnPtr<CSSParserSelector>>* selectors, Vector<RefPtr<StyleRuleBase>>& adoptRules)
+StyleRuleRegion::StyleRuleRegion(Vector<std::unique_ptr<CSSParserSelector>>* selectors, Vector<RefPtr<StyleRuleBase>>& adoptRules)
     : StyleRuleGroup(Region, adoptRules)
 {
     m_selectorList.adoptSelectorVector(*selectors);
@@ -431,33 +401,5 @@ MutableStyleProperties& StyleRuleViewport::mutableProperties()
     return static_cast<MutableStyleProperties&>(m_properties.get());
 }
 #endif // ENABLE(CSS_DEVICE_ADAPTATION)
-
-#if ENABLE(CSS_SHADERS)
-StyleRuleFilter::StyleRuleFilter(const String& filterName, PassRef<StyleProperties> properties)
-    : StyleRuleBase(Filter, 0)
-    , m_filterName(filterName)
-    , m_properties(std::move(properties))
-{
-}
-
-StyleRuleFilter::StyleRuleFilter(const StyleRuleFilter& o)
-    : StyleRuleBase(o)
-    , m_filterName(o.m_filterName)
-    , m_properties(o.m_properties->mutableCopy())
-{
-}
-
-StyleRuleFilter::~StyleRuleFilter()
-{
-}
-
-MutableStyleProperties& StyleRuleFilter::mutableProperties()
-{
-    if (!m_properties->isMutable())
-        m_properties = m_properties->mutableCopy();
-    return static_cast<MutableStyleProperties&>(m_properties.get());
-}
-
-#endif // ENABLE(CSS_SHADERS)
 
 } // namespace WebCore

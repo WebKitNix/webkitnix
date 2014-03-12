@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2008, 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,8 +26,6 @@
 #ifndef StructureStubInfo_h
 #define StructureStubInfo_h
 
-#include <wtf/Platform.h>
-
 #include "CodeOrigin.h"
 #include "Instruction.h"
 #include "JITStubRoutine.h"
@@ -35,6 +33,7 @@
 #include "Opcode.h"
 #include "PolymorphicAccessStructureList.h"
 #include "RegisterSet.h"
+#include "SpillRegistersMode.h"
 #include "Structure.h"
 #include "StructureStubClearingWatchpoint.h"
 #include <wtf/OwnPtr.h>
@@ -43,23 +42,18 @@ namespace JSC {
 
 #if ENABLE(JIT)
 
+class PolymorphicGetByIdList;
 class PolymorphicPutByIdList;
 
 enum AccessType {
     access_get_by_id_self,
-    access_get_by_id_proto,
     access_get_by_id_chain,
-    access_get_by_id_self_list,
-    access_get_by_id_proto_list,
+    access_get_by_id_list,
     access_put_by_id_transition_normal,
     access_put_by_id_transition_direct,
     access_put_by_id_replace,
     access_put_by_id_list,
     access_unset,
-    access_get_by_id_generic,
-    access_put_by_id_generic,
-    access_get_array_length,
-    access_get_string_length,
     access_in_list
 };
 
@@ -67,13 +61,8 @@ inline bool isGetByIdAccess(AccessType accessType)
 {
     switch (accessType) {
     case access_get_by_id_self:
-    case access_get_by_id_proto:
     case access_get_by_id_chain:
-    case access_get_by_id_self_list:
-    case access_get_by_id_proto_list:
-    case access_get_by_id_generic:
-    case access_get_array_length:
-    case access_get_string_length:
+    case access_get_by_id_list:
         return true;
     default:
         return false;
@@ -87,7 +76,6 @@ inline bool isPutByIdAccess(AccessType accessType)
     case access_put_by_id_transition_direct:
     case access_put_by_id_replace:
     case access_put_by_id_list:
-    case access_put_by_id_generic:
         return true;
     default:
         return false;
@@ -129,21 +117,10 @@ struct StructureStubInfo {
         u.getByIdChain.isDirect = isDirect;
     }
 
-    void initGetByIdSelfList(PolymorphicAccessStructureList* structureList, int listSize, bool didSelfPatching = false)
+    void initGetByIdList(PolymorphicGetByIdList* list)
     {
-        accessType = access_get_by_id_self_list;
-
-        u.getByIdSelfList.structureList = structureList;
-        u.getByIdSelfList.listSize = listSize;
-        u.getByIdSelfList.didSelfPatching = didSelfPatching;
-    }
-
-    void initGetByIdProtoList(PolymorphicAccessStructureList* structureList, int listSize)
-    {
-        accessType = access_get_by_id_proto_list;
-
-        u.getByIdProtoList.structureList = structureList;
-        u.getByIdProtoList.listSize = listSize;
+        accessType = access_get_by_id_list;
+        u.getByIdList.list = list;
     }
 
     // PutById*
@@ -215,8 +192,7 @@ struct StructureStubInfo {
     CodeOrigin codeOrigin;
 
     struct {
-        int8_t registersFlushed;
-        int8_t callFrameRegister;
+        SpillRegistersMode spillMode : 8;
         int8_t baseGPR;
 #if USE(JSVALUE32_64)
         int8_t valueTagGPR;
@@ -255,14 +231,8 @@ struct StructureStubInfo {
             bool isDirect : 1;
         } getByIdChain;
         struct {
-            PolymorphicAccessStructureList* structureList;
-            int listSize : 31;
-            bool didSelfPatching : 1;
-        } getByIdSelfList;
-        struct {
-            PolymorphicAccessStructureList* structureList;
-            int listSize;
-        } getByIdProtoList;
+            PolymorphicGetByIdList* list;
+        } getByIdList;
         struct {
             WriteBarrierBase<Structure> previousStructure;
             WriteBarrierBase<Structure> structure;
@@ -290,7 +260,7 @@ inline CodeOrigin getStructureStubInfoCodeOrigin(StructureStubInfo& structureStu
     return structureStubInfo.codeOrigin;
 }
 
-typedef HashMap<CodeOrigin, StructureStubInfo*> StubInfoMap;
+typedef HashMap<CodeOrigin, StructureStubInfo*, CodeOriginApproximateHash> StubInfoMap;
 
 #else
 

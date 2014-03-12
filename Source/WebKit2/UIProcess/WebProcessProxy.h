@@ -78,10 +78,12 @@ public:
     WebContext& context() { return m_context.get(); }
 
     static WebPageProxy* webPage(uint64_t pageID);
-    PassRefPtr<WebPageProxy> createWebPage(PageClient&, WebPageGroup&, API::Session&);
+    PassRefPtr<WebPageProxy> createWebPage(PageClient&, const WebPageConfiguration&);
     void addExistingWebPage(WebPageProxy*, uint64_t pageID);
     void removeWebPage(uint64_t pageID);
-    Vector<WebPageProxy*> pages() const;
+
+    WTF::IteratorRange<WebPageProxyMap::const_iterator::Values> pages() const { return m_pageMap.values(); }
+    unsigned pageCount() const { return m_pageMap.size(); }
 
     WebBackForwardListItem* webBackForwardItem(uint64_t itemID) const;
 
@@ -113,7 +115,7 @@ public:
     void didSaveToPageCache();
     void releasePageCache();
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     bool allPagesAreProcessSuppressible() const;
     void updateProcessSuppressionState();
 #endif
@@ -126,6 +128,8 @@ public:
     RefPtr<API::Object> apiObjectByConvertingToHandles(API::Object*);
 
     void windowServerConnectionStateChanged();
+
+    void updateProcessState();
 
 private:
     explicit WebProcessProxy(WebContext&);
@@ -205,14 +209,18 @@ private:
     CustomProtocolManagerProxy m_customProtocolManagerProxy;
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     HashSet<uint64_t> m_processSuppressiblePages;
     bool m_processSuppressionEnabled;
 #endif
 
     int m_numberOfTimesSuddenTerminationWasDisabled;
 };
-    
+
+#if !PLATFORM(IOS)
+inline void WebProcessProxy::updateProcessState() { }
+#endif
+
 } // namespace WebKit
 
 #endif // WebProcessProxy_h

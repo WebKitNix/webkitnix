@@ -26,8 +26,6 @@
 #import "config.h"
 #import "RemoteLayerBackingStore.h"
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #import "ArgumentCoders.h"
 #import "MachPort.h"
 #import "PlatformCALayerRemote.h"
@@ -344,10 +342,8 @@ void RemoteLayerBackingStore::enumerateRectsBeingDrawn(CGContextRef context, voi
     inverseTransform = CGAffineTransformScale(inverseTransform, m_scale, -m_scale);
     inverseTransform = CGAffineTransformTranslate(inverseTransform, 0, -m_size.height());
 
-    for (auto rect : m_paintingRects) {
+    for (const auto& rect : m_paintingRects) {
         CGRect rectToDraw = CGRectApplyAffineTransform(rect, inverseTransform);
         block(rectToDraw);
     }
 }
-
-#endif // USE(ACCELERATED_COMPOSITING)

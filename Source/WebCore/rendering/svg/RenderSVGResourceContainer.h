@@ -20,7 +20,6 @@
 #ifndef RenderSVGResourceContainer_h
 #define RenderSVGResourceContainer_h
 
-#if ENABLE(SVG)
 #include "RenderSVGHiddenContainer.h"
 #include "RenderSVGResource.h"
 
@@ -37,7 +36,6 @@ public:
     virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle) override final;
 
     virtual bool isSVGResourceContainer() const override final { return true; }
-    virtual RenderSVGResourceContainer* toRenderSVGResourceContainer() override final { return this; }
 
     static bool shouldTransformOnTextPainting(RenderObject*, AffineTransform&);
     static AffineTransform transformOnNonScalingStroke(RenderObject*, const AffineTransform& resourceTransform);
@@ -63,8 +61,8 @@ protected:
 
 private:
     friend class SVGResourcesCache;
-    void addClient(RenderObject*);
-    void removeClient(RenderObject*);
+    void addClient(RenderElement&);
+    void removeClient(RenderElement&);
 
 private:
     virtual void willBeDestroyed() override final;
@@ -73,9 +71,11 @@ private:
     AtomicString m_id;
     bool m_registered : 1;
     bool m_isInvalidating : 1;
-    HashSet<RenderObject*> m_clients;
+    HashSet<RenderElement*> m_clients;
     HashSet<RenderLayer*> m_clientLayers;
 };
+
+RENDER_OBJECT_TYPE_CASTS(RenderSVGResourceContainer, isSVGResourceContainer())
 
 inline RenderSVGResourceContainer* getRenderSVGResourceContainerById(Document& document, const AtomicString& id)
 {
@@ -99,5 +99,4 @@ Renderer* getRenderSVGResourceById(Document& document, const AtomicString& id)
 
 }
 
-#endif
 #endif

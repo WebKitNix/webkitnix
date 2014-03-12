@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 1999 Lars Knoll (knoll@kde.org)
- * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2013, 2014 Apple Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -25,6 +25,7 @@
 #include "MediaQueryEvaluator.h"
 #include "SelectorChecker.h"
 #include "StyleResolver.h"
+#include <memory>
 #include <wtf/RefPtr.h>
 #include <wtf/Vector.h>
 
@@ -36,21 +37,20 @@ class RenderRegion;
 class RuleData;
 class RuleSet;
 class SelectorFilter;
-class StyleScopeResolver;
 
 class ElementRuleCollector {
 public:
-    ElementRuleCollector(StyleResolver* styleResolver, const StyleResolver::State& state)
-        : m_state(state)
-        , m_ruleSets(styleResolver->ruleSets())
-        , m_selectorFilter(styleResolver->selectorFilter())
-        , m_scopeResolver(styleResolver->scopeResolver())
+    ElementRuleCollector(Element& element, RenderStyle* style, const DocumentRuleSets& ruleSets, const SelectorFilter& selectorFilter)
+        : m_element(element)
+        , m_style(style)
+        , m_ruleSets(ruleSets)
+        , m_selectorFilter(selectorFilter)
         , m_isPrintStyle(false)
         , m_regionForStyling(0)
         , m_pseudoStyleRequest(NOPSEUDO)
         , m_sameOriginOnly(false)
         , m_mode(SelectorChecker::ResolvingStyle)
-        , m_canUseFastReject(m_selectorFilter.parentStackIsConsistent(state.parentNode()))
+        , m_canUseFastReject(m_selectorFilter.parentStackIsConsistent(element.parentNode()))
     {
     }
 
@@ -70,8 +70,10 @@ public:
     StyleResolver::MatchResult& matchedResult();
     const Vector<RefPtr<StyleRuleBase>>& matchedRuleList() const;
 
+    bool hasMatchedRules() const { return m_matchedRules && !m_matchedRules->isEmpty(); }
+    void clearMatchedRules();
+
 private:
-    Document& document() { return m_state.document(); }
     void addElementStyleProperties(const StyleProperties*, bool isCacheable = true);
 
     void matchUARules(RuleSet*);
@@ -85,12 +87,11 @@ private:
     void sortAndTransferMatchedRules();
 
     void addMatchedRule(const RuleData*);
-    void clearMatchedRules();
 
-    const StyleResolver::State& m_state;
-    DocumentRuleSets& m_ruleSets;
-    SelectorFilter& m_selectorFilter;
-    StyleScopeResolver* m_scopeResolver;
+    Element& m_element;
+    RenderStyle* m_style;
+    const DocumentRuleSets& m_ruleSets;
+    const SelectorFilter& m_selectorFilter;
 
     bool m_isPrintStyle;
     RenderRegion* m_regionForStyling;
@@ -99,7 +100,7 @@ private:
     SelectorChecker::Mode m_mode;
     bool m_canUseFastReject;
 
-    OwnPtr<Vector<const RuleData*, 32>> m_matchedRules;
+    std::unique_ptr<Vector<const RuleData*, 32>> m_matchedRules;
 
     // Output.
     Vector<RefPtr<StyleRuleBase>> m_matchedRuleList;

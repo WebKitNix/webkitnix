@@ -70,7 +70,7 @@ private:
     virtual bool isViewFocused() override;
     virtual bool isViewVisible() override;
     virtual bool isViewInWindow() override;
-    virtual void processDidCrash() override;
+    virtual void processDidExit() override;
     virtual void didRelaunchProcess() override;
     virtual void pageClosed() override;
     virtual void preferencesDidChange() override;
@@ -84,8 +84,8 @@ private:
     virtual void executeUndoRedo(WebPageProxy::UndoOrRedo) override;
     virtual WebCore::FloatRect convertToDeviceSpace(const WebCore::FloatRect&) override;
     virtual WebCore::FloatRect convertToUserSpace(const WebCore::FloatRect&) override;
-    virtual WebCore::IntPoint screenToWindow(const WebCore::IntPoint&) override;
-    virtual WebCore::IntRect windowToScreen(const WebCore::IntRect&) override;
+    virtual WebCore::IntPoint screenToRootView(const WebCore::IntPoint&) override;
+    virtual WebCore::IntRect rootViewToScreen(const WebCore::IntRect&) override;
     virtual void doneWithKeyEvent(const NativeWebKeyboardEvent&, bool wasEventHandled) override;
     virtual PassRefPtr<WebPopupMenuProxy> createPopupMenuProxy(WebPageProxy*) override;
     virtual PassRefPtr<WebContextMenuProxy> createContextMenuProxy(WebPageProxy*) override;
@@ -97,14 +97,12 @@ private:
     virtual void updateTextInputState() override;
     virtual void startDrag(const WebCore::DragData&, PassRefPtr<ShareableBitmap> dragImage) override;
 
-#if USE(ACCELERATED_COMPOSITING)
     virtual void enterAcceleratedCompositingMode(const LayerTreeContext&) override;
     virtual void exitAcceleratedCompositingMode() override;
     virtual void updateAcceleratedCompositingMode(const LayerTreeContext&) override;
-#endif
 
     virtual void handleDownloadRequest(DownloadProxy*) override;
-    virtual void didCommitLoadForMainFrame() override;
+    virtual void didCommitLoadForMainFrame(const String& mimeType, bool useCustomContentProvider) override;
 
     // Auxiliary Client Creation
 #if ENABLE(FULLSCREEN_API)
@@ -120,6 +118,10 @@ private:
     virtual void beganEnterFullScreen(const WebCore::IntRect& initialFrame, const WebCore::IntRect& finalFrame) override;
     virtual void beganExitFullScreen(const WebCore::IntRect& initialFrame, const WebCore::IntRect& finalFrame) override;
 #endif
+
+    virtual void didFinishLoadingDataForCustomContentProvider(const String& suggestedFilename, const IPC::DataReference&) override;
+
+    virtual void doneWithTouchEvent(const NativeWebTouchEvent&, bool wasEventHandled) override;
 
     // Members of PageClientImpl class
     GtkWidget* m_viewWidget;

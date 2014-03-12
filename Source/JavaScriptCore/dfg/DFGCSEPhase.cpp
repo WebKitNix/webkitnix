@@ -28,10 +28,12 @@
 
 #if ENABLE(DFG_JIT)
 
+#include "DFGAbstractHeap.h"
+#include "DFGClobberize.h"
 #include "DFGEdgeUsesStructure.h"
 #include "DFGGraph.h"
 #include "DFGPhase.h"
-#include "JSCellInlines.h"
+#include "JSCInlines.h"
 #include <array>
 #include <wtf/FastBitVector.h>
 
@@ -124,9 +126,9 @@ private:
 
     Node* pureCSE(Node* node)
     {
-        Edge child1 = node->child1();
-        Edge child2 = node->child2();
-        Edge child3 = node->child3();
+        Edge child1 = node->child1().sanitized();
+        Edge child2 = node->child2().sanitized();
+        Edge child3 = node->child3().sanitized();
         
         for (unsigned i = endIndexForPureCSE(); i--;) {
             Node* otherNode = m_currentBlock->at(i);
@@ -136,24 +138,19 @@ private:
             if (node->op() != otherNode->op())
                 continue;
             
-            if (node->hasArithMode()) {
-                if (node->arithMode() != otherNode->arithMode())
-                    continue;
-            }
-            
-            Edge otherChild = otherNode->child1();
+            Edge otherChild = otherNode->child1().sanitized();
             if (!otherChild)
                 return otherNode;
             if (otherChild != child1)
                 continue;
             
-            otherChild = otherNode->child2();
+            otherChild = otherNode->child2().sanitized();
             if (!otherChild)
                 return otherNode;
             if (otherChild != child2)
                 continue;
             
-            otherChild = otherNode->child3();
+            otherChild = otherNode->child3().sanitized();
             if (!otherChild)
                 return otherNode;
             if (otherChild != child3)
@@ -172,7 +169,7 @@ private:
                 return 0;
             switch (otherNode->op()) {
             case Int32ToDouble:
-                if (otherNode->child1() == node->child1())
+                if (otherNode->child1().sanitized() == node->child1().sanitized())
                     return otherNode;
                 break;
             default:
@@ -498,7 +495,12 @@ private:
             case PutByOffset:
                 // Setting a property cannot change the structure.
                 break;
-                    
+                
+            case MultiPutByOffset:
+                if (node->multiPutByOffsetData().writesStructures())
+                    return false;
+                break;
+                
             case PutByValDirect:
             case PutByVal:
             case PutByValAlias:
@@ -547,6 +549,11 @@ private:
                 // Setting a property cannot change the structure.
                 break;
                     
+            case MultiPutByOffset:
+                if (node->multiPutByOffsetData().writesStructures())
+                    return false;
+                break;
+                
             case PutByValDirect:
             case PutByVal:
             case PutByValAlias:
@@ -620,6 +627,7 @@ private:
             case NewStringObject:
             case MakeRope:
             case NewTypedArray:
+            case MultiPutByOffset:
                 return 0;
                 
             // This either exits, causes a GC (lazy string allocation), or clobbers
@@ -644,24 +652,38 @@ private:
         return 0;
     }
     
-    Node* getByOffsetLoadElimination(unsigned identifierNumber, Node* child1)
+    Node* getByOffsetLoadElimination(unsigned identifierNumber, Node* base)
     {
         for (unsigned i = m_indexInBlock; i--;) {
             Node* node = m_currentBlock->at(i);
-            if (node == child1)
+            if (node == base)
                 break;
 
             switch (node->op()) {
             case GetByOffset:
-                if (node->child1() == child1
+                if (node->child2() == base
                     && m_graph.m_storageAccessData[node->storageAccessDataIndex()].identifierNumber == identifierNumber)
+                    return node;
+                break;
+                
+            case MultiGetByOffset:
+                if (node->child1() == base
+                    && node->multiGetByOffsetData().identifierNumber == identifierNumber)
                     return node;
                 break;
                 
             case PutByOffset:
                 if (m_graph.m_storageAccessData[node->storageAccessDataIndex()].identifierNumber == identifierNumber) {
-                    if (node->child1() == child1) // Must be same property storage.
+                    if (node->child2() == base) // Must be same property storage.
                         return node->child3().node();
+                    return 0;
+                }
+                break;
+                
+            case MultiPutByOffset:
+                if (node->multiPutByOffsetData().identifierNumber == identifierNumber) {
+                    if (node->child1() == base)
+                        return node->child2().node();
                     return 0;
                 }
                 break;
@@ -706,7 +728,12 @@ private:
                     return 0;
                 }
                 break;
-                    
+                
+            case MultiPutByOffset:
+                if (node->multiPutByOffsetData().identifierNumber == identifierNumber)
+                    return 0;
+                break;
+                
             case PutByValDirect:
             case PutByVal:
             case PutByValAlias:
@@ -770,6 +797,11 @@ private:
                 // We could check if the arrayification could affect our butterfly.
                 // But that seems like it would take Effort.
                 return 0;
+                
+            case MultiPutByOffset:
+                if (node->multiPutByOffsetData().reallocatesStorage())
+                    return 0;
+                break;
                 
             default:
                 if (m_graph.clobbersWorld(node))
@@ -960,7 +992,7 @@ private:
                 
             case GetMyScope:
             case SkipTopScope:
-                if (node->codeOrigin.inlineCallFrame)
+                if (node->origin.semantic.inlineCallFrame)
                     break;
                 if (m_graph.uncheckedActivationRegister() == local)
                     result.mayBeAccessed = true;
@@ -969,7 +1001,7 @@ private:
             case CheckArgumentsNotCreated:
             case GetMyArgumentsLength:
             case GetMyArgumentsLengthSafe:
-                if (m_graph.uncheckedArgumentsRegisterFor(node->codeOrigin) == local)
+                if (m_graph.uncheckedArgumentsRegisterFor(node->origin.semantic) == local)
                     result.mayBeAccessed = true;
                 break;
                 
@@ -1004,6 +1036,18 @@ private:
         // Be safe in release mode.
         result.mayBeAccessed = true;
         return result;
+    }
+    
+    bool invalidationPointElimination()
+    {
+        for (unsigned i = m_indexInBlock; i--;) {
+            Node* node = m_currentBlock->at(i);
+            if (node->op() == InvalidationPoint)
+                return true;
+            if (writesOverlap(m_graph, node, Watchpoint_fire))
+                break;
+        }
+        return false;
     }
     
     void eliminateIrrelevantPhantomChildren(Node* node)
@@ -1080,12 +1124,6 @@ private:
         case BitRShift:
         case BitLShift:
         case BitURShift:
-        case ArithAdd:
-        case ArithSub:
-        case ArithNegate:
-        case ArithMul:
-        case ArithMod:
-        case ArithDiv:
         case ArithAbs:
         case ArithMin:
         case ArithMax:
@@ -1100,7 +1138,6 @@ private:
         case IsString:
         case IsObject:
         case IsFunction:
-        case DoubleAsInt32:
         case LogicalNot:
         case SkipTopScope:
         case SkipScope:
@@ -1116,6 +1153,28 @@ private:
                 break;
             setReplacement(pureCSE(node));
             break;
+            
+        case ArithAdd:
+        case ArithSub:
+        case ArithNegate:
+        case ArithMul:
+        case ArithDiv:
+        case ArithMod:
+        case UInt32ToNumber:
+        case DoubleAsInt32: {
+            if (cseMode == StoreElimination)
+                break;
+            Node* candidate = pureCSE(node);
+            if (!candidate)
+                break;
+            if (!subsumes(candidate->arithMode(), node->arithMode())) {
+                if (!subsumes(node->arithMode(), candidate->arithMode()))
+                    break;
+                candidate->setArithMode(node->arithMode());
+            }
+            setReplacement(candidate);
+            break;
+        }
             
         case Int32ToDouble:
             if (cseMode == StoreElimination)
@@ -1376,7 +1435,13 @@ private:
         case GetByOffset:
             if (cseMode == StoreElimination)
                 break;
-            setReplacement(getByOffsetLoadElimination(m_graph.m_storageAccessData[node->storageAccessDataIndex()].identifierNumber, node->child1().node()));
+            setReplacement(getByOffsetLoadElimination(m_graph.m_storageAccessData[node->storageAccessDataIndex()].identifierNumber, node->child2().node()));
+            break;
+            
+        case MultiGetByOffset:
+            if (cseMode == StoreElimination)
+                break;
+            setReplacement(getByOffsetLoadElimination(node->multiGetByOffsetData().identifierNumber, node->child1().node()));
             break;
             
         case PutByOffset:
@@ -1385,9 +1450,16 @@ private:
             eliminate(putByOffsetStoreElimination(m_graph.m_storageAccessData[node->storageAccessDataIndex()].identifierNumber, node->child1().node()));
             break;
             
+        case InvalidationPoint:
+            if (invalidationPointElimination())
+                eliminate();
+            break;
+            
         case Phantom:
             // FIXME: we ought to remove Phantom's that have no children.
-            
+            // NB. It would be incorrect to do this for HardPhantom. In fact, the whole point
+            // of HardPhantom is that we *don't* do this for HardPhantoms, since they signify
+            // a more strict kind of liveness than the Phantom bytecode liveness.
             eliminateIrrelevantPhantomChildren(node);
             break;
             

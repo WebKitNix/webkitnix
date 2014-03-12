@@ -185,9 +185,8 @@ void ResourceRequest::doUpdatePlatformRequest()
     NSArray *oldHeaderFieldNames = [[nsRequest allHTTPHeaderFields] allKeys];
     for (unsigned i = [oldHeaderFieldNames count]; i != 0; --i)
         [nsRequest setValue:nil forHTTPHeaderField:[oldHeaderFieldNames objectAtIndex:i - 1]];
-    HTTPHeaderMap::const_iterator end = httpHeaderFields().end();
-    for (HTTPHeaderMap::const_iterator it = httpHeaderFields().begin(); it != end; ++it)
-        [nsRequest setValue:it->value forHTTPHeaderField:it->key];
+    for (const auto& header : httpHeaderFields())
+        [nsRequest setValue:header.value forHTTPHeaderField:header.key];
 
     NSMutableArray *encodingFallbacks = [NSMutableArray array];
     unsigned count = m_responseContentDispositionEncodingFallbackArray.size();
@@ -251,13 +250,13 @@ void ResourceRequest::updateFromDelegatePreservingOldHTTPBody(const ResourceRequ
     setHTTPBody(oldHTTPBody.release());
 }
 
+#if !PLATFORM(IOS)
 void ResourceRequest::applyWebArchiveHackForMail()
 {
-#if !PLATFORM(IOS)
     // Hack because Mail checks for this property to detect data / archive loads
     [NSURLProtocol setProperty:@"" forKey:@"WebDataRequest" inRequest:(NSMutableURLRequest *)nsURLRequest(DoNotUpdateHTTPBody)];
-#endif
 }
+#endif
 
 void ResourceRequest::setStorageSession(CFURLStorageSessionRef storageSession)
 {

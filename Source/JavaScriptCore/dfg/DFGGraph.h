@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,8 +26,6 @@
 #ifndef DFGGraph_h
 #define DFGGraph_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(DFG_JIT)
 
 #include "AssemblyHelpers.h"
@@ -40,6 +38,7 @@
 #include "DFGNode.h"
 #include "DFGNodeAllocator.h"
 #include "DFGPlan.h"
+#include "DFGScannable.h"
 #include "DFGVariadicFunction.h"
 #include "InlineCallFrameSet.h"
 #include "JSStack.h"
@@ -78,7 +77,7 @@ enum AddSpeculationMode {
 //
 // The order may be significant for nodes with side-effects (property accesses, value conversions).
 // Nodes that are 'dead' remain in the vector with refCount 0.
-class Graph {
+class Graph : public virtual Scannable {
 public:
     Graph(VM&, Plan&, LongLivedState&);
     ~Graph();
@@ -176,7 +175,10 @@ public:
     
     void convertToConstant(Node* node, JSValue value)
     {
-        convertToConstant(node, constantRegisterForConstant(value));
+        if (value.isObject())
+            node->convertToWeakConstant(value.asCell());
+        else
+            convertToConstant(node, constantRegisterForConstant(value));
     }
 
     // CodeBlock is optional, but may allow additional information to be dumped (e.g. Identifier names).
@@ -360,7 +362,13 @@ public:
     }
     int32_t valueOfInt32Constant(Node* node)
     {
-        return valueOfJSConstant(node).asInt32();
+        JSValue value = valueOfJSConstant(node);
+        if (!value.isInt32()) {
+            dataLog("Value isn't int32: ", value, "\n");
+            dump();
+            RELEASE_ASSERT_NOT_REACHED();
+        }
+        return value.asInt32();
     }
     double valueOfNumberConstant(Node* node)
     {
@@ -458,7 +466,7 @@ public:
     
     bool hasExitSite(Node* node, ExitKind exitKind)
     {
-        return hasExitSite(node->codeOrigin, exitKind);
+        return hasExitSite(node->origin.semantic, exitKind);
     }
     
     VirtualRegister argumentsRegisterFor(InlineCallFrame* inlineCallFrame)
@@ -532,7 +540,7 @@ public:
         if (!node)
             return 0;
         
-        CodeBlock* profiledBlock = baselineCodeBlockFor(node->codeOrigin);
+        CodeBlock* profiledBlock = baselineCodeBlockFor(node->origin.semantic);
         
         if (node->op() == GetArgument)
             return profiledBlock->valueProfileForArgument(node->local().toArgument());
@@ -549,7 +557,7 @@ public:
         }
         
         if (node->hasHeapPrediction())
-            return profiledBlock->valueProfileForBytecodeOffset(node->codeOrigin.bytecodeIndex);
+            return profiledBlock->valueProfileForBytecodeOffset(node->origin.semantic.bytecodeIndex);
         
         return 0;
     }
@@ -559,21 +567,16 @@ public:
         if (!node)
             return MethodOfGettingAValueProfile();
         
-        CodeBlock* profiledBlock = baselineCodeBlockFor(node->codeOrigin);
+        CodeBlock* profiledBlock = baselineCodeBlockFor(node->origin.semantic);
         
         if (node->op() == GetLocal) {
             return MethodOfGettingAValueProfile::fromLazyOperand(
                 profiledBlock,
                 LazyOperandValueProfileKey(
-                    node->codeOrigin.bytecodeIndex, node->local()));
+                    node->origin.semantic.bytecodeIndex, node->local()));
         }
         
         return MethodOfGettingAValueProfile(valueProfileFor(node));
-    }
-    
-    bool needsActivation() const
-    {
-        return m_codeBlock->needsFullScopeChain() && m_codeBlock->codeType() != GlobalCode;
     }
     
     bool usesArguments() const
@@ -793,6 +796,7 @@ public:
     bool isLiveInBytecode(VirtualRegister, CodeOrigin);
     
     unsigned frameRegisterCount();
+    unsigned stackPointerOffset();
     unsigned requiredRegisterCountForExit();
     unsigned requiredRegisterCountForExecutionAndExit();
     
@@ -802,6 +806,8 @@ public:
     JSArrayBufferView* tryGetFoldableView(Node*);
     JSArrayBufferView* tryGetFoldableView(Node*, ArrayMode);
     JSArrayBufferView* tryGetFoldableViewForChild1(Node*);
+    
+    virtual void visitChildren(SlotVisitor&) override;
     
     VM& m_vm;
     Plan& m_plan;
@@ -821,7 +827,10 @@ public:
     SegmentedVector<StructureSet, 16> m_structureSet;
     SegmentedVector<StructureTransitionData, 8> m_structureTransitionData;
     SegmentedVector<NewArrayBufferData, 4> m_newArrayBufferData;
-    SegmentedVector<SwitchData, 4> m_switchData;
+    Bag<BranchData> m_branchData;
+    Bag<SwitchData> m_switchData;
+    Bag<MultiGetByOffsetData> m_multiGetByOffsetData;
+    Bag<MultiPutByOffsetData> m_multiPutByOffsetData;
     Vector<InlineVariableData, 4> m_inlineVariableData;
     OwnPtr<InlineCallFrameSet> m_inlineCallFrames;
     HashMap<CodeBlock*, std::unique_ptr<FullBytecodeLiveness>> m_bytecodeLiveness;

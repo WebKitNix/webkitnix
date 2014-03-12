@@ -37,12 +37,9 @@
 #include "GraphicsTypes.h"
 #include "ImageBuffer.h"
 #include "Path.h"
+#include "PlatformLayer.h"
 #include <wtf/Vector.h>
 #include <wtf/text/WTFString.h>
-
-#if USE(ACCELERATED_COMPOSITING)
-#include "PlatformLayer.h"
-#endif
 
 namespace WebCore {
 
@@ -61,10 +58,7 @@ typedef int ExceptionCode;
 
 class CanvasRenderingContext2D : public CanvasRenderingContext, public CanvasPathMethods {
 public:
-    static OwnPtr<CanvasRenderingContext2D> create(HTMLCanvasElement* canvas, bool usesCSSCompatibilityParseMode, bool usesDashboardCompatibilityMode)
-    {
-        return adoptPtr(new CanvasRenderingContext2D(canvas, usesCSSCompatibilityParseMode, usesDashboardCompatibilityMode));
-    }
+    CanvasRenderingContext2D(HTMLCanvasElement*, bool usesCSSCompatibilityParseMode, bool usesDashboardCompatibilityMode);
     virtual ~CanvasRenderingContext2D();
 
     const CanvasStyle& strokeStyle() const { return state().m_strokeStyle; }
@@ -272,8 +266,6 @@ private:
         CanvasDidDrawApplyAll = 0xffffffff
     };
 
-    CanvasRenderingContext2D(HTMLCanvasElement*, bool usesCSSCompatibilityParseMode, bool usesDashboardCompatibilityMode);
-
     State& modifiableState() { ASSERT(!m_unrealizedSaveCount); return m_stateStack.last(); }
     const State& state() const { return m_stateStack.last(); }
 
@@ -330,7 +322,7 @@ private:
 
     virtual bool hasInvertibleTransform() const override { return state().m_hasInvertibleTransform; }
 
-#if ENABLE(ACCELERATED_2D_CANVAS) && USE(ACCELERATED_COMPOSITING)
+#if ENABLE(ACCELERATED_2D_CANVAS)
     virtual PlatformLayer* platformLayer() const override;
 #endif
 

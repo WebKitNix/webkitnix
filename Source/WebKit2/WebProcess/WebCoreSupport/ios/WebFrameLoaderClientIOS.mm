@@ -26,6 +26,8 @@
 #import "config.h"
 #import "WebFrameLoaderClient.h"
 
+#if PLATFORM(IOS)
+
 #import <WebCore/NotImplemented.h>
 
 using namespace WebCore;
@@ -37,9 +39,9 @@ void WebFrameLoaderClient::didRestoreFrameHierarchyForCachedFrame()
     notImplemented();
 }
 
-void WebFrameLoaderClient::forceLayoutWithoutRecalculatingStyles()
+bool WebFrameLoaderClient::forceLayoutOnRestoreFromPageCache()
 {
-    notImplemented();
+    return false;
 }
 
 RetainPtr<CFDictionaryRef> WebFrameLoaderClient::connectionProperties(DocumentLoader*, unsigned long identifier)
@@ -49,3 +51,5 @@ RetainPtr<CFDictionaryRef> WebFrameLoaderClient::connectionProperties(DocumentLo
 }
 
 } // namespace WebKit
+
+#endif // PLATFORM(IOS)

@@ -129,23 +129,6 @@ void WebFrameLoaderClient::makeRepresentation(DocumentLoader*)
     notImplemented();
 }
 
-void WebFrameLoaderClient::forceLayout()
-{
-    Frame* frame = core(m_webFrame);
-    if (!frame)
-        return;
-
-    if (frame->document() && frame->document()->inPageCache())
-        return;
-
-    FrameView* view = frame->view();
-    if (!view)
-        return;
-
-    view->setNeedsLayout();
-    view->forceLayout(true);
-}
-
 void WebFrameLoaderClient::forceLayoutForNonHTML()
 {
     notImplemented();
@@ -814,11 +797,6 @@ bool WebFrameLoaderClient::shouldGoToHistoryItem(HistoryItem*) const
     return true;
 }
 
-bool WebFrameLoaderClient::shouldStopLoadingForHistoryItem(HistoryItem*) const
-{
-    return true;
-}
-
 void WebFrameLoaderClient::updateGlobalHistoryItemForPage()
 {
     HistoryItem* historyItem = 0;
@@ -1189,11 +1167,11 @@ PassRefPtr<Widget> WebFrameLoaderClient::createPlugin(const IntSize& pluginSize,
             COMPtr<IWebEmbeddedView> view;
             HRESULT result = uiPrivate->embeddedViewWithArguments(webView, m_webFrame, argumentsBag.get(), &view);
             if (SUCCEEDED(result)) {
-                HWND parentWindow;
-                HRESULT hr = webView->viewWindow((OLE_HANDLE*)&parentWindow);
+                OLE_HANDLE parentWindow;
+                HRESULT hr = webView->viewWindow(&parentWindow);
                 ASSERT(SUCCEEDED(hr));
 
-                return EmbeddedWidget::create(view.get(), element, parentWindow, pluginSize);
+                return EmbeddedWidget::create(view.get(), element, reinterpret_cast<HWND>(parentWindow), pluginSize);
             }
         }
     }

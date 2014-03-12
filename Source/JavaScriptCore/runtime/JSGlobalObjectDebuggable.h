@@ -32,6 +32,10 @@
 #include "RemoteInspectorDebuggable.h"
 #include <wtf/Noncopyable.h>
 
+namespace Inspector {
+enum class InspectorDisconnectReason;
+}
+
 namespace JSC {
 
 class JSGlobalObject;
@@ -40,7 +44,7 @@ class JSGlobalObjectDebuggable final : public Inspector::RemoteInspectorDebuggab
     WTF_MAKE_NONCOPYABLE(JSGlobalObjectDebuggable);
 public:
     JSGlobalObjectDebuggable(JSGlobalObject&);
-    ~JSGlobalObjectDebuggable();
+    ~JSGlobalObjectDebuggable() { }
 
     virtual Inspector::RemoteInspectorDebuggable::DebuggableType type() const override { return Inspector::RemoteInspectorDebuggable::JavaScript; }
 
@@ -53,7 +57,6 @@ public:
 
 private:
     JSGlobalObject& m_globalObject;
-    std::unique_ptr<Inspector::JSGlobalObjectInspectorController> m_inspectorController;
 };
 
 } // namespace JSC

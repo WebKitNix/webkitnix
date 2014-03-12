@@ -26,8 +26,6 @@
 #ifndef DFGFailedFinalizer_h
 #define DFGFailedFinalizer_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(DFG_JIT)
 
 #include "DFGFinalizer.h"
@@ -39,6 +37,7 @@ public:
     FailedFinalizer(Plan&);
     virtual ~FailedFinalizer();
     
+    virtual size_t codeSize() override;
     virtual bool finalize() override;
     virtual bool finalizeFunction() override;
 };

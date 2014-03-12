@@ -23,6 +23,7 @@
 #define SVGAltGlyphElement_h
 
 #if ENABLE(SVG_FONTS)
+
 #include "SVGTextPositioningElement.h"
 #include "SVGURIReference.h"
 #include <wtf/Vector.h>
@@ -58,5 +59,5 @@ NODE_TYPE_CASTS(SVGAltGlyphElement)
 
 } // namespace WebCore
 
-#endif // ENABLE(SVG)
+#endif
 #endif

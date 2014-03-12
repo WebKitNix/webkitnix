@@ -94,7 +94,7 @@
 #endif
 
 #if ENABLE(NETWORK_PROCESS)
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include "CookieStorageShim.h"
 #endif
 #include "NetworkProcessConnection.h"
@@ -153,14 +153,15 @@ WebProcess& WebProcess::shared()
 
 WebProcess::WebProcess()
     : m_eventDispatcher(EventDispatcher::create())
+#if PLATFORM(IOS)
+    , m_viewUpdateDispatcher(ViewUpdateDispatcher::create())
+#endif // PLATFORM(IOS)
     , m_inDidClose(false)
     , m_shouldTrackVisitedLinks(true)
     , m_hasSetCacheModel(false)
     , m_cacheModel(CacheModelDocumentViewer)
-#if USE(ACCELERATED_COMPOSITING) && PLATFORM(MAC)
+#if PLATFORM(COCOA)
     , m_compositingRenderServerPort(MACH_PORT_NULL)
-#endif
-#if PLATFORM(MAC)
     , m_clearResourceCachesDispatchGroup(0)
 #endif
     , m_fullKeyboardAccessEnabled(false)
@@ -222,6 +223,9 @@ void WebProcess::initializeConnection(IPC::Connection* connection)
     connection->setShouldExitOnSyncMessageSendFailure(true);
 
     m_eventDispatcher->initializeConnection(connection);
+#if PLATFORM(IOS)
+    m_viewUpdateDispatcher->initializeConnection(connection);
+#endif // PLATFORM(IOS)
 
 #if ENABLE(NETSCAPE_PLUGIN_API)
     m_pluginProcessConnectionManager->initializeConnection(connection);
@@ -331,6 +335,11 @@ void WebProcess::initializeWebProcess(const WebProcessCreationParameters& parame
     for (size_t i = 0; i < parameters.urlSchemesRegisteredAsCORSEnabled.size(); ++i)
         registerURLSchemeAsCORSEnabled(parameters.urlSchemesRegisteredAsCORSEnabled[i]);
 
+#if ENABLE(CACHE_PARTITIONING)
+    for (auto& scheme : parameters.urlSchemesRegisteredAsCachePartitioned)
+        registerURLSchemeAsCORSEnabled(scheme);
+#endif
+
     setDefaultRequestTimeoutInterval(parameters.defaultRequestTimeoutInterval);
 
     if (parameters.shouldAlwaysUseComplexTextCodePath)
@@ -339,7 +348,7 @@ void WebProcess::initializeWebProcess(const WebProcessCreationParameters& parame
     if (parameters.shouldUseFontSmoothing)
         setShouldUseFontSmoothing(true);
 
-#if PLATFORM(MAC) || USE(CFNETWORK)
+#if PLATFORM(COCOA) || USE(CFNETWORK)
     SessionTracker::setIdentifierBase(parameters.uiProcessBundleIdentifier);
 #endif
 
@@ -350,7 +359,7 @@ void WebProcess::initializeWebProcess(const WebProcessCreationParameters& parame
     m_usesNetworkProcess = parameters.usesNetworkProcess;
     ensureNetworkProcessConnection();
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (usesNetworkProcess())
         CookieStorageShim::shared().initialize();
 #endif
@@ -360,6 +369,8 @@ void WebProcess::initializeWebProcess(const WebProcessCreationParameters& parame
     resetPlugInAutoStartOriginHashes(parameters.plugInAutoStartOriginHashes);
     for (size_t i = 0; i < parameters.plugInAutoStartOrigins.size(); ++i)
         m_plugInAutoStartOrigins.add(parameters.plugInAutoStartOrigins[i]);
+
+    setMemoryCacheDisabled(parameters.memoryCacheDisabled);
 }
 
 #if ENABLE(NETWORK_PROCESS)
@@ -377,7 +388,7 @@ void WebProcess::ensureNetworkProcessConnection()
         Messages::WebProcessProxy::GetNetworkProcessConnection::Reply(encodedConnectionIdentifier), 0))
         return;
 
-#if PLATFORM(MAC)
+#if OS(DARWIN)
     IPC::Connection::Identifier connectionIdentifier(encodedConnectionIdentifier.port());
 #elif USE(UNIX_DOMAIN_SOCKETS)
     IPC::Connection::Identifier connectionIdentifier = encodedConnectionIdentifier.releaseFileDescriptor();
@@ -431,6 +442,13 @@ void WebProcess::registerURLSchemeAsCORSEnabled(const String& urlScheme) const
     SchemeRegistry::registerURLSchemeAsCORSEnabled(urlScheme);
 }
 
+#if ENABLE(CACHE_PARTITIONING)
+void WebProcess::registerURLSchemeAsCachePartitioned(const String& urlScheme) const
+{
+    SchemeRegistry::registerURLSchemeAsCachePartitioned(urlScheme);
+}
+#endif
+
 void WebProcess::setDefaultRequestTimeoutInterval(double timeoutInterval)
 {
     ResourceRequest::setDefaultTimeoutInterval(timeoutInterval);
@@ -457,16 +475,16 @@ void WebProcess::fullKeyboardAccessModeChanged(bool fullKeyboardAccessEnabled)
     m_fullKeyboardAccessEnabled = fullKeyboardAccessEnabled;
 }
 
-void WebProcess::ensurePrivateBrowsingSession(uint64_t sessionID)
+void WebProcess::ensurePrivateBrowsingSession(SessionID sessionID)
 {
-#if PLATFORM(MAC) || USE(CFNETWORK) || USE(SOUP)
+#if PLATFORM(COCOA) || USE(CFNETWORK) || USE(SOUP)
     WebFrameNetworkingContext::ensurePrivateBrowsingSession(sessionID);
 #endif
 }
 
-void WebProcess::destroyPrivateBrowsingSession(uint64_t sessionID)
+void WebProcess::destroyPrivateBrowsingSession(SessionID sessionID)
 {
-#if PLATFORM(MAC) || USE(CFNETWORK) || USE(SOUP)
+#if PLATFORM(COCOA) || USE(CFNETWORK) || USE(SOUP)
     SessionTracker::destroySession(sessionID);
 #endif
 }
@@ -498,11 +516,11 @@ void WebProcess::setVisitedLinkTable(const SharedMemory::Handle& handle)
 void WebProcess::visitedLinkStateChanged(const Vector<WebCore::LinkHash>& linkHashes)
 {
     // FIXME: We may want to track visited links per WebPageGroup rather than per WebContext.
-    for (size_t i = 0; i < linkHashes.size(); ++i) {
-        HashMap<uint64_t, RefPtr<WebPageGroupProxy>>::const_iterator it = m_pageGroupMap.begin();
-        HashMap<uint64_t, RefPtr<WebPageGroupProxy>>::const_iterator end = m_pageGroupMap.end();
-        for (; it != end; ++it)
-            Page::visitedStateChanged(PageGroup::pageGroup(it->value->identifier()), linkHashes[i]);
+    for (const auto& webPage : m_pageMap.values()) {
+        if (Page* page = webPage->corePage()) {
+            for (auto linkHash : linkHashes)
+                page->invalidateStylesForLink(linkHash);
+        }
     }
 
     pageCache()->markPagesForVistedLinkStyleRecalc();
@@ -510,11 +528,10 @@ void WebProcess::visitedLinkStateChanged(const Vector<WebCore::LinkHash>& linkHa
 
 void WebProcess::allVisitedLinkStateChanged()
 {
-    // FIXME: We may want to track visited links per WebPageGroup rather than per WebContext.
-    HashMap<uint64_t, RefPtr<WebPageGroupProxy>>::const_iterator it = m_pageGroupMap.begin();
-    HashMap<uint64_t, RefPtr<WebPageGroupProxy>>::const_iterator end = m_pageGroupMap.end();
-    for (; it != end; ++it)
-        Page::allVisitedStateChanged(PageGroup::pageGroup(it->value->identifier()));
+    for (const auto& webPage : m_pageMap.values()) {
+        if (Page* page = webPage->corePage())
+            page->invalidateStylesForAllLinks();
+    }
 
     pageCache()->markPagesForVistedLinkStyleRecalc();
 }
@@ -909,20 +926,20 @@ void WebProcess::getWebCoreStatistics(uint64_t callbackID)
     // Gather JavaScript statistics.
     {
         JSLockHolder lock(JSDOMWindow::commonVM());
-        data.statisticsNumbers.set(ASCIILiteral("JavaScriptObjectsCount"), JSDOMWindow::commonVM()->heap.objectCount());
-        data.statisticsNumbers.set(ASCIILiteral("JavaScriptGlobalObjectsCount"), JSDOMWindow::commonVM()->heap.globalObjectCount());
-        data.statisticsNumbers.set(ASCIILiteral("JavaScriptProtectedObjectsCount"), JSDOMWindow::commonVM()->heap.protectedObjectCount());
-        data.statisticsNumbers.set(ASCIILiteral("JavaScriptProtectedGlobalObjectsCount"), JSDOMWindow::commonVM()->heap.protectedGlobalObjectCount());
+        data.statisticsNumbers.set(ASCIILiteral("JavaScriptObjectsCount"), JSDOMWindow::commonVM().heap.objectCount());
+        data.statisticsNumbers.set(ASCIILiteral("JavaScriptGlobalObjectsCount"), JSDOMWindow::commonVM().heap.globalObjectCount());
+        data.statisticsNumbers.set(ASCIILiteral("JavaScriptProtectedObjectsCount"), JSDOMWindow::commonVM().heap.protectedObjectCount());
+        data.statisticsNumbers.set(ASCIILiteral("JavaScriptProtectedGlobalObjectsCount"), JSDOMWindow::commonVM().heap.protectedGlobalObjectCount());
         
-        OwnPtr<TypeCountSet> protectedObjectTypeCounts(JSDOMWindow::commonVM()->heap.protectedObjectTypeCounts());
+        OwnPtr<TypeCountSet> protectedObjectTypeCounts(JSDOMWindow::commonVM().heap.protectedObjectTypeCounts());
         fromCountedSetToHashMap(protectedObjectTypeCounts.get(), data.javaScriptProtectedObjectTypeCounts);
         
-        OwnPtr<TypeCountSet> objectTypeCounts(JSDOMWindow::commonVM()->heap.objectTypeCounts());
+        OwnPtr<TypeCountSet> objectTypeCounts(JSDOMWindow::commonVM().heap.objectTypeCounts());
         fromCountedSetToHashMap(objectTypeCounts.get(), data.javaScriptObjectTypeCounts);
         
-        uint64_t javaScriptHeapSize = JSDOMWindow::commonVM()->heap.size();
+        uint64_t javaScriptHeapSize = JSDOMWindow::commonVM().heap.size();
         data.statisticsNumbers.set(ASCIILiteral("JavaScriptHeapSize"), javaScriptHeapSize);
-        data.statisticsNumbers.set(ASCIILiteral("JavaScriptFreeSize"), JSDOMWindow::commonVM()->heap.capacity() - javaScriptHeapSize);
+        data.statisticsNumbers.set(ASCIILiteral("JavaScriptFreeSize"), JSDOMWindow::commonVM().heap.capacity() - javaScriptHeapSize);
     }
 
     WTF::FastMallocStatistics fastMallocStatistics = WTF::fastMallocStatistics();
@@ -1048,7 +1065,7 @@ void WebProcess::ensureWebToDatabaseProcessConnection()
         Messages::WebProcessProxy::GetDatabaseProcessConnection::Reply(encodedConnectionIdentifier), 0))
         return;
 
-#if PLATFORM(MAC)
+#if OS(DARWIN)
     IPC::Connection::Identifier connectionIdentifier(encodedConnectionIdentifier.port());
     if (IPC::Connection::identifierIsNull(connectionIdentifier))
         return;
@@ -1126,7 +1143,7 @@ void WebProcess::releasePageCache()
     pageCache()->setCapacity(savedPageCacheCapacity);
 }
 
-#if !PLATFORM(MAC)
+#if !PLATFORM(COCOA)
 void WebProcess::initializeProcessName(const ChildProcessInitializationParameters&)
 {
 }
@@ -1176,7 +1193,7 @@ void WebProcess::nonVisibleProcessCleanupTimerFired(Timer<WebProcess>*)
     if (!m_pagesInWindows.isEmpty())
         return;
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     wkDestroyRenderingResources();
 #endif
 }
@@ -1195,6 +1212,12 @@ RefPtr<API::Object> WebProcess::apiObjectByConvertingFromHandles(API::Object* ob
             return nullptr;
         }
     });
+}
+
+void WebProcess::setMemoryCacheDisabled(bool disabled)
+{
+    if (memoryCache()->disabled() != disabled)
+        memoryCache()->setDisabled(disabled);
 }
 
 } // namespace WebKit

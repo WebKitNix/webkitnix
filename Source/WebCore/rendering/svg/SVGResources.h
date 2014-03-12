@@ -20,7 +20,6 @@
 #ifndef SVGResources_h
 #define SVGResources_h
 
-#if ENABLE(SVG)
 #include <wtf/HashSet.h>
 #include <wtf/Noncopyable.h>
 #include <wtf/OwnPtr.h>
@@ -72,7 +71,7 @@ public:
     void buildSetOfResources(HashSet<RenderSVGResourceContainer*>&);
 
     // Methods operating on all cached resources
-    void removeClientFromCache(RenderObject&, bool markForInvalidation = true) const;
+    void removeClientFromCache(RenderElement&, bool markForInvalidation = true) const;
     void resourceDestroyed(RenderSVGResourceContainer&);
 
 #ifndef NDEBUG
@@ -189,5 +188,4 @@ private:
 
 }
 
-#endif
 #endif

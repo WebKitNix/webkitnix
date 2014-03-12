@@ -135,6 +135,8 @@ public:
     void removeStyleFromRulesAndContext(StyledElement*, Node* context);
     void removePropertiesInElementDefaultStyle(Element*);
     void forceInline();
+    bool convertPositionStyle();
+    bool isFloating();
     int legacyFontSize(Document*) const;
 
     float fontSizeDelta() const { return m_fontSizeDelta; }

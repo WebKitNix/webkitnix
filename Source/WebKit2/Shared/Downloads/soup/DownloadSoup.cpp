@@ -32,8 +32,8 @@
 #include <WebCore/NotImplemented.h>
 #include <WebCore/ResourceHandleInternal.h>
 #include <gio/gio.h>
-#include <wtf/gobject/GOwnPtr.h>
 #include <wtf/gobject/GRefPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 #include <wtf/text/CString.h>
 
 #if PLATFORM(GTK)
@@ -94,7 +94,7 @@ public:
         m_destinationURI = m_download->decideDestinationWithSuggestedFilename(suggestedFilename, overwrite);
         if (m_destinationURI.isEmpty()) {
 #if PLATFORM(GTK)
-            GOwnPtr<char> buffer(g_strdup_printf(_("Cannot determine destination URI for download with suggested filename %s"), suggestedFilename.utf8().data()));
+            GUniquePtr<char> buffer(g_strdup_printf(_("Cannot determine destination URI for download with suggested filename %s"), suggestedFilename.utf8().data()));
             String errorMessage = String::fromUTF8(buffer.get());
 #else
             String errorMessage = makeString("Cannot determine destination URI for download with suggested filename ", suggestedFilename);
@@ -105,7 +105,7 @@ public:
 
         String intermediateURI = m_destinationURI + ".wkdownload";
         m_intermediateFile = adoptGRef(g_file_new_for_uri(intermediateURI.utf8().data()));
-        GOwnPtr<GError> error;
+        GUniqueOutPtr<GError> error;
         m_outputStream = adoptGRef(g_file_replace(m_intermediateFile.get(), 0, TRUE, G_FILE_CREATE_NONE, 0, &error.outPtr()));
         if (!m_outputStream) {
             downloadFailed(platformDownloadDestinationError(response, error->message));
@@ -123,7 +123,7 @@ public:
         }
 
         gsize bytesWritten;
-        GOwnPtr<GError> error;
+        GUniqueOutPtr<GError> error;
         g_output_stream_write_all(G_OUTPUT_STREAM(m_outputStream.get()), data, length, &bytesWritten, 0, &error.outPtr());
         if (error) {
             downloadFailed(platformDownloadDestinationError(m_response, error->message));
@@ -138,7 +138,7 @@ public:
 
         ASSERT(m_intermediateFile);
         GRefPtr<GFile> destinationFile = adoptGRef(g_file_new_for_uri(m_destinationURI.utf8().data()));
-        GOwnPtr<GError> error;
+        GUniqueOutPtr<GError> error;
         if (!g_file_move(m_intermediateFile.get(), destinationFile.get(), G_FILE_COPY_NONE, nullptr, nullptr, nullptr, &error.outPtr())) {
             downloadFailed(platformDownloadDestinationError(m_response, error->message));
             return;
@@ -232,8 +232,12 @@ void Download::cancel()
 {
     if (!m_resourceHandle)
         return;
-    static_cast<DownloadClient*>(m_downloadClient.get())->cancel(m_resourceHandle.get());
-    m_resourceHandle = 0;
+
+    // Cancelling the download will delete it and platformInvalidate() will be called by the destructor.
+    // So, we need to set m_resourceHandle to nullptr before actually cancelling the download to make sure
+    // it won't be cancelled again by platformInvalidate. See https://bugs.webkit.org/show_bug.cgi?id=127650.
+    RefPtr<ResourceHandle> resourceHandle = m_resourceHandle.release();
+    static_cast<DownloadClient*>(m_downloadClient.get())->cancel(resourceHandle.get());
 }
 
 void Download::platformInvalidate()

@@ -31,24 +31,16 @@
 #include "JSCSSPrimitiveValue.h"
 #include "JSCSSValueList.h"
 #include "JSNode.h"
+#include "JSSVGColor.h"
+#include "JSSVGPaint.h"
 #include "JSWebKitCSSTransformValue.h"
+#include "SVGColor.h"
+#include "SVGPaint.h"
 #include "WebKitCSSTransformValue.h"
 
 #if ENABLE(CSS_FILTERS)
 #include "JSWebKitCSSFilterValue.h"
 #include "WebKitCSSFilterValue.h"
-#endif
-
-#if ENABLE(CSS_SHADERS)
-#include "JSWebKitCSSMixFunctionValue.h"
-#include "WebKitCSSMixFunctionValue.h"
-#endif
-
-#if ENABLE(SVG)
-#include "JSSVGColor.h"
-#include "JSSVGPaint.h"
-#include "SVGColor.h"
-#include "SVGPaint.h"
 #endif
 
 using namespace JSC;
@@ -99,18 +91,12 @@ JSValue toJS(ExecState* exec, JSDOMGlobalObject* globalObject, CSSValue* value)
     else if (value->isWebKitCSSFilterValue())
         wrapper = CREATE_DOM_WRAPPER(exec, globalObject, WebKitCSSFilterValue, value);
 #endif
-#if ENABLE(CSS_SHADERS)
-    else if (value->isWebKitCSSMixFunctionValue())
-        wrapper = CREATE_DOM_WRAPPER(exec, globalObject, WebKitCSSMixFunctionValue, value);
-#endif
     else if (value->isValueList())
         wrapper = CREATE_DOM_WRAPPER(exec, globalObject, CSSValueList, value);
-#if ENABLE(SVG)
     else if (value->isSVGPaint())
         wrapper = CREATE_DOM_WRAPPER(exec, globalObject, SVGPaint, value);
     else if (value->isSVGColor())
         wrapper = CREATE_DOM_WRAPPER(exec, globalObject, SVGColor, value);
-#endif
     else if (value->isPrimitiveValue())
         wrapper = CREATE_DOM_WRAPPER(exec, globalObject, CSSPrimitiveValue, value);
     else

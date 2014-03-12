@@ -12,7 +12,7 @@
 #include "WKErrorNix.h"
 #include "WKFrame.h"
 #include "WKPageNix.h"
-#include "WKPreferences.h"
+#include "WKPreferencesRef.h"
 #include "WKPreferencesPrivate.h"
 #include "WKProtectionSpace.h"
 #include "WKString.h"

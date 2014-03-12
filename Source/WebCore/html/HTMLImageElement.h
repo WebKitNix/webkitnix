@@ -85,14 +85,14 @@ public:
 
     virtual const AtomicString& imageSourceURL() const override;
 
+    bool hasShadowControls() const { return m_experimentalImageMenuEnabled; }
+
 protected:
     HTMLImageElement(const QualifiedName&, Document&, HTMLFormElement* = 0);
 
     virtual void didMoveToNewDocument(Document* oldDocument) override;
 
 private:
-    virtual bool areAuthorShadowsAllowed() const override { return false; }
-
     virtual void parseAttribute(const QualifiedName&, const AtomicString&) override;
     virtual bool isPresentationAttribute(const QualifiedName&) const override;
     virtual void collectStyleForPresentationAttribute(const QualifiedName&, const AtomicString&, MutableStyleProperties&) override;
@@ -121,6 +121,16 @@ private:
     CompositeOperator m_compositeOperator;
     AtomicString m_bestFitImageURL;
     AtomicString m_lowercasedUsemap;
+    float m_imageDevicePixelRatio;
+    bool m_experimentalImageMenuEnabled;
+
+#if ENABLE(IMAGE_CONTROLS)
+    void updateImageControls();
+    void createImageControls();
+    void destroyImageControls();
+    bool hasImageControls() const;
+    virtual bool childShouldCreateRenderer(const Node&) const override;
+#endif
 };
 
 NODE_TYPE_CASTS(HTMLImageElement)

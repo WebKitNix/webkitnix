@@ -77,7 +77,7 @@ using namespace WebCore;
 
 - (void)continueWillSendRequest:(NSURLRequest *)newRequest
 {
-    m_requestResult = [newRequest retain];
+    m_requestResult = newRequest;
     dispatch_semaphore_signal(m_semaphore);
 }
 
@@ -287,23 +287,6 @@ using namespace WebCore;
         // -1 means we do not provide any data about transfer size to inspector so it would use
         // Content-Length headers or content size to show transfer size.
         m_handle->client()->didReceiveBuffer(m_handle, SharedBuffer::wrapNSData(data), -1);
-    });
-}
-
-- (void)connection:(NSURLConnection *)connection willStopBufferingData:(NSData *)data
-{
-    ASSERT(!isMainThread());
-    UNUSED_PARAM(connection);
-
-    LOG(Network, "Handle %p delegate connection:%p willStopBufferingData:%p", m_handle, connection, data);
-
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (!m_handle || !m_handle->client())
-            return;
-        // FIXME: If we get a resource with more than 2B bytes, this code won't do the right thing.
-        // However, with today's computers and networking speeds, this won't happen in practice.
-        // Could be an issue with a giant local file.
-        m_handle->client()->willStopBufferingData(m_handle, (const char*)[data bytes], static_cast<unsigned>([data length]));
     });
 }
 

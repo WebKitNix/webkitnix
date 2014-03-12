@@ -34,6 +34,7 @@
 #include "RenderMathMLBlock.h"
 #include "RenderMathMLFenced.h"
 #include "RenderMathMLFraction.h"
+#include "RenderMathMLMenclose.h"
 #include "RenderMathMLRoot.h"
 #include "RenderMathMLRow.h"
 #include "RenderMathMLScripts.h"
@@ -52,6 +53,20 @@ MathMLInlineContainerElement::MathMLInlineContainerElement(const QualifiedName& 
 PassRefPtr<MathMLInlineContainerElement> MathMLInlineContainerElement::create(const QualifiedName& tagName, Document& document)
 {
     return adoptRef(new MathMLInlineContainerElement(tagName, document));
+}
+
+void MathMLInlineContainerElement::childrenChanged(const ChildChange& change)
+{
+    if (renderer()) {
+        if (renderer()->isRenderMathMLRow())
+            toRenderMathMLRow(renderer())->updateOperatorProperties();
+        else if (hasLocalName(mathTag) || hasLocalName(msqrtTag)) {
+            auto childRenderer = renderer()->firstChild();
+            if (childRenderer && childRenderer->isRenderMathMLRow())
+                toRenderMathMLRow(childRenderer)->updateOperatorProperties();
+        }
+    }
+    MathMLElement::childrenChanged(change);
 }
 
 RenderPtr<RenderElement> MathMLInlineContainerElement::createElementRenderer(PassRef<RenderStyle> style)

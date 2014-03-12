@@ -47,7 +47,8 @@
 #import "WKNSURLAuthenticationChallenge.h"
 #import "WKNSURLExtras.h"
 #import "WKNSURLProtectionSpace.h"
-#import "WKProcessGroupInternal.h"
+#import "WKPagePolicyClientInternal.h"
+#import "WKProcessGroupPrivate.h"
 #import "WKRemoteObjectRegistryInternal.h"
 #import "WKRenderingProgressEventsInternal.h"
 #import "WKRetainPtr.h"
@@ -57,6 +58,7 @@
 #import "WebCertificateInfo.h"
 #import "WebContext.h"
 #import "WebPageProxy.h"
+#import <wtf/NeverDestroyed.h>
 
 using namespace WebCore;
 using namespace WebKit;
@@ -139,7 +141,7 @@ static NSString * const frameErrorKey = @"WKBrowsingContextFrameErrorKey";
 @end
 
 @implementation WKBrowsingContextController {
-    API::ObjectStorage<WebPageProxy> _page;
+    RefPtr<WebPageProxy> _page;
     std::unique_ptr<PageLoadStateObserver> _pageLoadStateObserver;
 
     WeakObjCPtr<id <WKBrowsingContextLoadDelegate>> _loadDelegate;
@@ -148,30 +150,22 @@ static NSString * const frameErrorKey = @"WKBrowsingContextFrameErrorKey";
     RetainPtr<WKRemoteObjectRegistry> _remoteObjectRegistry;
 }
 
+static HashMap<WebPageProxy*, WKBrowsingContextController *>& browsingContextControllerMap()
+{
+    static NeverDestroyed<HashMap<WebPageProxy*, WKBrowsingContextController *>> browsingContextControllerMap;
+    return browsingContextControllerMap;
+}
+
 - (void)dealloc
 {
+    ASSERT(browsingContextControllerMap().get(_page.get()) == self);
+    browsingContextControllerMap().remove(_page.get());
+
     _page->pageLoadState().removeObserver(*_pageLoadStateObserver);
-    _page->~WebPageProxy();
 
     [_remoteObjectRegistry _invalidate];
 
     [super dealloc];
-}
-
-- (void)_finishInitialization
-{
-    _pageLoadStateObserver = std::make_unique<PageLoadStateObserver>(self);
-    _page->pageLoadState().addObserver(*_pageLoadStateObserver);
-}
-
-- (WKProcessGroup *)processGroup
-{
-    return wrapper(_page->process().context());
-}
-
-- (WKBrowsingContextGroup *)browsingContextGroup
-{
-    return wrapper(_page->pageGroup());
 }
 
 #pragma mark Loading
@@ -193,13 +187,11 @@ static NSString * const frameErrorKey = @"WKBrowsingContextFrameErrorKey";
 
 - (void)loadRequest:(NSURLRequest *)request userData:(id)userData
 {
-    RefPtr<API::URLRequest> wkURLRequest = API::URLRequest::create(request);
-
     RefPtr<ObjCObjectGraph> wkUserData;
     if (userData)
         wkUserData = ObjCObjectGraph::create(userData);
 
-    _page->loadURLRequest(wkURLRequest.get(), wkUserData.get());
+    _page->loadRequest(request, wkUserData.get());
 }
 
 - (void)loadFileURL:(NSURL *)URL restrictToFilesWithin:(NSURL *)allowedDirectory
@@ -310,7 +302,7 @@ static void releaseNSData(unsigned char*, const void* data)
 
 - (BOOL)canGoForward
 {
-    return _page->canGoForward();
+    return !!_page->backForwardList().forwardItem();
 }
 
 - (void)goBack
@@ -320,7 +312,7 @@ static void releaseNSData(unsigned char*, const void* data)
 
 - (BOOL)canGoBack
 {
-    return _page->canGoBack();
+    return !!_page->backForwardList().backItem();
 }
 
 - (void)goToBackForwardListItem:(WKBackForwardListItem *)item
@@ -631,7 +623,7 @@ static void setUpPageLoaderClient(WKBrowsingContextController *browsingContext, 
 
     loaderClient.didLayout = didLayout;
 
-    page.initializeLoaderClient(&loaderClient.base);
+    WKPageSetPageLoaderClient(toAPI(&page), &loaderClient.base);
 }
 
 static WKPolicyDecisionHandler makePolicyDecisionBlock(WKFramePolicyListenerRef listener)
@@ -728,7 +720,7 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
             WKFramePolicyListenerUse(listener);
     };
 
-    page.initializePolicyClient(&policyClient.base);
+    WKPageSetPagePolicyClient(toAPI(&page), &policyClient.base);
 }
 
 - (id <WKBrowsingContextLoadDelegate>)loadDelegate
@@ -743,7 +735,7 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
     if (loadDelegate)
         setUpPageLoaderClient(self, *_page);
     else
-        _page->initializeLoaderClient(nullptr);
+        WKPageSetPageLoaderClient(toAPI(_page.get()), nullptr);
 }
 
 - (id <WKBrowsingContextPolicyDelegate>)policyDelegate
@@ -758,7 +750,7 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
     if (policyDelegate)
         setUpPagePolicyClient(self, *_page);
     else
-        _page->initializePolicyClient(nullptr);
+        WKPageSetPagePolicyClient(toAPI(_page.get()), nullptr);
 }
 
 - (id <WKBrowsingContextHistoryDelegate>)historyDelegate
@@ -800,11 +792,26 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
     return YES;
 }
 
-#pragma mark WKObject protocol implementation
 
-- (API::Object&)_apiObject
+- (instancetype)_initWithPageRef:(WKPageRef)pageRef
 {
-    return *reinterpret_cast<API::Object*>(&_page);
+    if (!(self = [super init]))
+        return nil;
+
+    _page = toImpl(pageRef);
+
+    _pageLoadStateObserver = std::make_unique<PageLoadStateObserver>(self);
+    _page->pageLoadState().addObserver(*_pageLoadStateObserver);
+
+    ASSERT(!browsingContextControllerMap().contains(_page.get()));
+    browsingContextControllerMap().set(_page.get(), self);
+
+    return self;
+}
+
++ (WKBrowsingContextController *)_browsingContextControllerForPageRef:(WKPageRef)pageRef
+{
+    return browsingContextControllerMap().get(toImpl(pageRef));
 }
 
 @end
@@ -909,6 +916,11 @@ static void setUpPagePolicyClient(WKBrowsingContextController *browsingContext, 
     }
 
     return _remoteObjectRegistry.get();
+}
+
+- (pid_t)processIdentifier
+{
+    return _page->processIdentifier();
 }
 
 @end

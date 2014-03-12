@@ -26,6 +26,7 @@
 #include "config.h"
 #include "SchemeRegistry.h"
 #include <wtf/MainThread.h>
+#include <wtf/NeverDestroyed.h>
 
 namespace WebCore {
 
@@ -35,7 +36,7 @@ static URLSchemesMap& localURLSchemes()
 
     if (localSchemes.isEmpty()) {
         localSchemes.add("file");
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
         localSchemes.add("applewebdata");
 #endif
     }
@@ -121,7 +122,7 @@ void SchemeRegistry::removeURLSchemeRegisteredAsLocal(const String& scheme)
 {
     if (scheme == "file")
         return;
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (scheme == "applewebdata")
         return;
 #endif
@@ -163,6 +164,14 @@ static URLSchemesMap& ContentSecurityPolicyBypassingSchemes()
     DEFINE_STATIC_LOCAL(URLSchemesMap, schemes, ());
     return schemes;
 }
+
+#if ENABLE(CACHE_PARTITIONING)
+static URLSchemesMap& cachePartitioningSchemes()
+{
+    static NeverDestroyed<URLSchemesMap> schemes;
+    return schemes;
+}
+#endif
 
 bool SchemeRegistry::shouldTreatURLSchemeAsLocal(const String& scheme)
 {
@@ -316,11 +325,25 @@ bool SchemeRegistry::schemeShouldBypassContentSecurityPolicy(const String& schem
 
 bool SchemeRegistry::shouldCacheResponsesFromURLSchemeIndefinitely(const String& scheme)
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (equalIgnoringCase(scheme, "applewebdata"))
         return true;
 #endif
     return equalIgnoringCase(scheme, "data");
 }
+
+#if ENABLE(CACHE_PARTITIONING)
+void SchemeRegistry::registerURLSchemeAsCachePartitioned(const String& scheme)
+{
+    cachePartitioningSchemes().add(scheme);
+}
+
+bool SchemeRegistry::shouldPartitionCacheForURLScheme(const String& scheme)
+{
+    if (scheme.isEmpty())
+        return false;
+    return cachePartitioningSchemes().contains(scheme);
+}
+#endif
 
 } // namespace WebCore

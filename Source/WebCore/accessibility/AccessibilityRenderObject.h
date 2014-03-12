@@ -180,6 +180,10 @@ public:
     virtual void setSelectedVisiblePositionRange(const VisiblePositionRange&) const override;
     virtual bool supportsARIAFlowTo() const override;
     virtual void ariaFlowToElements(AccessibilityChildrenVector&) const override;
+    virtual bool supportsARIADescribedBy() const override;
+    virtual void ariaDescribedByElements(AccessibilityChildrenVector&) const override;
+    virtual bool supportsARIAControls() const override;
+    virtual void ariaControlsElements(AccessibilityChildrenVector&) const override;
     virtual bool ariaHasPopup() const override;
 
     virtual bool supportsARIADropping() const override;
@@ -223,6 +227,7 @@ protected:
     virtual bool computeAccessibilityIsIgnored() const override;
 
 private:
+    void ariaElementsFromAttribute(AccessibilityChildrenVector&, const QualifiedName&) const;
     void ariaListboxSelectedChildren(AccessibilityChildrenVector&);
     void ariaListboxVisibleChildren(AccessibilityChildrenVector&);
     bool isAllowedChildOfTree() const;
@@ -259,9 +264,11 @@ private:
     void addCanvasChildren();
     void addAttachmentChildren();
     void addRemoteSVGChildren();
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     void updateAttachmentViewParents();
 #endif
+    virtual String expandedTextValue() const;
+    virtual bool supportsExpandedTextValue() const;
 
     void ariaSelectedRows(AccessibilityChildrenVector&);
     

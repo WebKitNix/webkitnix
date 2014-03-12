@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,29 +26,47 @@
 #import "config.h"
 #import "WKViewPrivate.h"
 
+#if PLATFORM(IOS)
+
+#import "RemoteLayerTreeTransaction.h"
+#import "ViewGestureController.h"
+#import "WebPageProxy.h"
 #import "WKBrowsingContextGroupPrivate.h"
 #import "WKContentView.h"
 #import "WKProcessGroupPrivate.h"
 #import "WKScrollView.h"
+#import "WKAPICast.h"
+#import <UIKit/UIImage_Private.h>
+#import <UIKit/UIPeripheralHost_Private.h>
 #import <UIKit/UIScreen.h>
 #import <UIKit/UIScrollView_Private.h>
-#import <UIKit/_UIWebViewportHandler.h>
+#import <UIKit/UIWindow_Private.h>
 #import <wtf/RetainPtr.h>
 
-static const float minWebViewScale = 0.25;
-static const float maxWebViewScale = 5;
-static struct _UIWebViewportConfiguration standardViewportConfiguration = { { UIWebViewportStandardViewportWidth, UIWebViewportGrowsAndShrinksToFitHeight }, UIWebViewportScaleForScalesToFit, minWebViewScale, maxWebViewScale, true };
+using namespace WebKit;
 
-@interface WKView () <UIScrollViewDelegate, WKContentViewDelegate, _UIWebViewportHandlerDelegate>
-- (void)_setDocumentScale:(CGFloat)newScale;
+@interface WKView () <UIScrollViewDelegate>
+@end
+
+@interface UIScrollView (UIScrollViewInternal)
+- (void)_adjustForAutomaticKeyboardInfo:(NSDictionary*)info animated:(BOOL)animated lastAdjustment:(CGFloat*)lastAdjustment;
 @end
 
 @implementation WKView {
     RetainPtr<WKScrollView> _scrollView;
     RetainPtr<WKContentView> _contentView;
 
-    BOOL _userHasChangedPageScale;
-    RetainPtr<_UIWebViewportHandler> _viewportHandler;
+    BOOL _isWaitingForNewLayerTreeAfterDidCommitLoad;
+    std::unique_ptr<ViewGestureController> _gestureController;
+    
+    BOOL _allowsBackForwardNavigationGestures;
+
+    BOOL _hasStaticMinimumLayoutSize;
+    CGSize _minimumLayoutSizeOverride;
+
+    UIEdgeInsets _obscuredInsets;
+    bool _isChangingObscuredInsetsInteractively;
+    CGFloat _lastAdjustmentForScroller;
 }
 
 - (id)initWithCoder:(NSCoder *)coder
@@ -70,6 +88,12 @@ static struct _UIWebViewportConfiguration standardViewportConfiguration = { { UI
 
     [self _commonInitializationWithContextRef:processGroup._contextRef pageGroupRef:browsingContextGroup._pageGroupRef relatedToPage:relatedView ? [relatedView pageRef] : nullptr];
     return self;
+}
+
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [super dealloc];
 }
 
 - (void)setFrame:(CGRect)frame
@@ -100,83 +124,30 @@ static struct _UIWebViewportConfiguration standardViewportConfiguration = { { UI
     return [_contentView browsingContextController];
 }
 
-#pragma mark WKContentViewDelegate
-
-- (void)contentView:(WKContentView *)contentView contentsSizeDidChange:(CGSize)newSize
+- (void)setAllowsBackForwardNavigationGestures:(BOOL)allowsBackForwardNavigationGestures
 {
-    CGFloat zoomScale = [_scrollView zoomScale];
-    CGSize contentsSizeInScrollViewCoordinates = CGSizeMake(newSize.width * zoomScale, newSize.height * zoomScale);
-    [_scrollView setContentSize:contentsSizeInScrollViewCoordinates];
+    if (_allowsBackForwardNavigationGestures == allowsBackForwardNavigationGestures)
+        return;
 
-    [_viewportHandler update:^{
-         [_viewportHandler setDocumentBounds:{CGPointZero, newSize}];
-    }];
+    _allowsBackForwardNavigationGestures = allowsBackForwardNavigationGestures;
+    
+    WebPageProxy *webPageProxy = [_contentView page];
+    
+    if (allowsBackForwardNavigationGestures) {
+        if (!_gestureController) {
+            _gestureController = std::make_unique<ViewGestureController>(*webPageProxy);
+            _gestureController->installSwipeHandler(self, [self scrollView]);
+        }
+    } else
+        _gestureController = nullptr;
+    
+    webPageProxy->setShouldRecordNavigationSnapshots(allowsBackForwardNavigationGestures);
 }
 
-- (void)contentViewDidCommitLoadForMainFrame:(WKContentView *)contentView
+- (BOOL)allowsBackForwardNavigationGestures
 {
-    _userHasChangedPageScale = NO;
-
-    WKContentType contentType = [_contentView contentType];
-    [_viewportHandler update:^{
-        [_viewportHandler clearWebKitViewportConfigurationFlags];
-        struct _UIWebViewportConfiguration configuration = standardViewportConfiguration;
-
-        if (contentType == PlainText) {
-            CGFloat screenWidth = [[UIScreen mainScreen] bounds].size.width;
-            configuration.size.width = screenWidth;
-        } else if (contentType == WKContentType::Image)
-            configuration.minimumScale = 0.01;
-
-        [_viewportHandler resetViewportConfiguration:&configuration];
-    }];
+    return _allowsBackForwardNavigationGestures;
 }
-
-- (void)contentViewDidReceiveMobileDocType:(WKContentView *)contentView
-{
-    [_viewportHandler update:^{
-        struct _UIWebViewportConfiguration configuration = standardViewportConfiguration;
-        configuration.minimumScale = 1;
-        configuration.size = CGSizeMake(320.0, UIWebViewportGrowsAndShrinksToFitHeight);
-        [_viewportHandler resetViewportConfiguration:&configuration];
-    }];
-}
-
-- (void)contentView:(WKContentView *)contentView didChangeViewportArgumentsSize:(CGSize)newSize initialScale:(float)initialScale minimumScale:(float)minimumScale maximumScale:(float)maximumScale allowsUserScaling:(float)allowsUserScaling
-{
-    [_viewportHandler update:^{
-        [_viewportHandler applyWebKitViewportArgumentsSize:newSize
-                                              initialScale:initialScale
-                                              minimumScale:minimumScale
-                                              maximumScale:maximumScale
-                                         allowsUserScaling:allowsUserScaling];
-    }];
-}
-
-#pragma mark - _UIWebViewportHandlerDelegate
-
-- (void)viewportHandlerDidChangeScales:(_UIWebViewportHandler *)viewportHandler
-{
-    ASSERT(viewportHandler == _viewportHandler);
-    [_scrollView setMinimumZoomScale:viewportHandler.minimumScale];
-    [_scrollView setMaximumZoomScale:viewportHandler.maximumScale];
-    [_scrollView setZoomEnabled:viewportHandler.allowsUserScaling];
-
-    if (!_userHasChangedPageScale)
-        [self _setDocumentScale:viewportHandler.initialScale];
-    else {
-        CGFloat currentScale = [_scrollView zoomScale];
-        CGFloat validScale = std::max(std::min(currentScale, static_cast<CGFloat>(viewportHandler.maximumScale)), static_cast<CGFloat>(viewportHandler.minimumScale));
-        [self _setDocumentScale:validScale];
-    }
-}
-
-- (void)viewportHandler:(_UIWebViewportHandler *)viewportHandler didChangeViewportSize:(CGSize)newSize
-{
-    ASSERT(viewportHandler == _viewportHandler);
-    [_contentView setViewportSize:newSize];
-}
-
 
 #pragma mark - UIScrollViewDelegate
 
@@ -189,41 +160,54 @@ static struct _UIWebViewportConfiguration standardViewportConfiguration = { { UI
 - (void)scrollViewWillBeginZooming:(UIScrollView *)scrollView withView:(UIView *)view
 {
     if (scrollView.pinchGestureRecognizer.state == UIGestureRecognizerStateBegan)
-        _userHasChangedPageScale = YES;
+        [_contentView willStartUserTriggeredZoom];
+    [_contentView willStartZoomOrScroll];
 }
 
-- (void)_didFinishScroll
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
-    CGPoint position = [_scrollView convertPoint:[_scrollView contentOffset] toView:_contentView.get()];
-    [_contentView didFinishScrollTo:position];
+    if (scrollView.panGestureRecognizer.state == UIGestureRecognizerStateBegan)
+        [_contentView willStartUserTriggeredScroll];
+    [_contentView willStartZoomOrScroll];
+}
+
+- (void)_didFinishScrolling
+{
+    [self _updateVisibleContentRects];
+    [_contentView didFinishScrolling];
 }
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
 {
     // If we're decelerating, scroll offset will be updated when scrollViewDidFinishDecelerating: is called.
     if (!decelerate)
-        [self _didFinishScroll];
+        [self _didFinishScrolling];
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
-    [self _didFinishScroll];
+    [self _didFinishScrolling];
 }
 
 - (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView
 {
-    [self _didFinishScroll];
+    [self _didFinishScrolling];
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-    CGPoint position = [_scrollView convertPoint:[_scrollView contentOffset] toView:_contentView.get()];
-    [_contentView didScrollTo:position];
+    [self _updateVisibleContentRects];
+}
+
+- (void)scrollViewDidZoom:(UIScrollView *)scrollView
+{
+    [self _updateVisibleContentRects];
 }
 
 - (void)scrollViewDidEndZooming:(UIScrollView *)scrollView withView:(UIView *)view atScale:(CGFloat)scale
 {
     ASSERT(scrollView == _scrollView);
+    [self _updateVisibleContentRects];
     [_contentView didZoomToScale:scale];
 }
 
@@ -242,37 +226,81 @@ static struct _UIWebViewportConfiguration standardViewportConfiguration = { { UI
 
     [self addSubview:_scrollView.get()];
 
-    _contentView = adoptNS([[WKContentView alloc] initWithFrame:bounds contextRef:contextRef pageGroupRef:pageGroupRef relatedToPage:relatedPage]);
-    [_contentView setDelegate:self];
+    WebKit::WebPageConfiguration webPageConfiguration;
+    webPageConfiguration.pageGroup = toImpl(pageGroupRef);
+    webPageConfiguration.relatedPage = toImpl(relatedPage);
+
+    _contentView = adoptNS([[WKContentView alloc] initWithFrame:bounds context:*toImpl(contextRef) configuration:std::move(webPageConfiguration) webView:nil]);
+
     [[_contentView layer] setAnchorPoint:CGPointZero];
     [_contentView setFrame:bounds];
     [_scrollView addSubview:_contentView.get()];
 
-    _viewportHandler = adoptNS([[_UIWebViewportHandler alloc] init]);
-    [_viewportHandler setDelegate:self];
-
     [self _frameOrBoundsChanged];
+
+    NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+    [center addObserver:self selector:@selector(_keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
+    [center addObserver:self selector:@selector(_keyboardDidChangeFrame:) name:UIKeyboardDidChangeFrameNotification object:nil];
+    [center addObserver:self selector:@selector(_keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+    [center addObserver:self selector:@selector(_keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
 }
 
 - (void)_frameOrBoundsChanged
 {
     CGRect bounds = [self bounds];
-    [_viewportHandler update:^{
-        [_viewportHandler setAvailableViewSize:bounds.size];
-    }];
+    if (!_hasStaticMinimumLayoutSize)
+        [_contentView setMinimumLayoutSize:bounds.size];
     [_scrollView setFrame:bounds];
     [_contentView setMinimumSize:bounds.size];
+    [self _updateVisibleContentRects];
 }
 
-- (void)_setDocumentScale:(CGFloat)newScale
+- (void)_updateVisibleContentRects
 {
-    CGPoint contentOffsetInDocumentCoordinates = [_scrollView convertPoint:[_scrollView contentOffset] toView:_contentView.get()];
+    CGRect fullViewRect = self.bounds;
+    CGRect visibleRectInContentCoordinates = [self convertRect:fullViewRect toView:_contentView.get()];
 
-    [_scrollView setZoomScale:newScale];
-    [_contentView didZoomToScale:newScale];
+    CGRect unobscuredRect = UIEdgeInsetsInsetRect(fullViewRect, _obscuredInsets);
+    CGRect unobscuredRectInContentCoordinates = [self convertRect:unobscuredRect toView:_contentView.get()];
 
-    CGPoint contentOffset = [_scrollView convertPoint:contentOffsetInDocumentCoordinates fromView:_contentView.get()];
-    [_scrollView setContentOffset:contentOffset];
+    CGFloat scaleFactor = [_scrollView zoomScale];
+
+    [_contentView didUpdateVisibleRect:visibleRectInContentCoordinates unobscuredRect:unobscuredRectInContentCoordinates scale:scaleFactor inStableState:YES];
+}
+
+- (void)_keyboardChangedWithInfo:(NSDictionary *)keyboardInfo adjustScrollView:(BOOL)adjustScrollView
+{
+    // FIXME: We will also need to adjust the unobscured rect by taking into account the keyboard rect and the obscured insets.
+    if (adjustScrollView)
+        [_scrollView _adjustForAutomaticKeyboardInfo:keyboardInfo animated:YES lastAdjustment:&_lastAdjustmentForScroller];
+}
+
+- (void)_keyboardWillChangeFrame:(NSNotification *)notification
+{
+    if ([_contentView isAssistingNode])
+        [self _keyboardChangedWithInfo:notification.userInfo adjustScrollView:YES];
+}
+
+- (void)_keyboardDidChangeFrame:(NSNotification *)notification
+{
+    [self _keyboardChangedWithInfo:notification.userInfo adjustScrollView:NO];
+}
+
+- (void)_keyboardWillShow:(NSNotification *)notification
+{
+    if ([_contentView isAssistingNode])
+        [self _keyboardChangedWithInfo:notification.userInfo adjustScrollView:YES];
+}
+
+- (void)_keyboardWillHide:(NSNotification *)notification
+{
+    // Ignore keyboard will hide notifications sent during rotation. They're just there for
+    // backwards compatibility reasons and processing the will hide notification would
+    // temporarily screw up the the unobscured view area.
+    if ([[UIPeripheralHost sharedInstance] rotationState])
+        return;
+
+    [self _keyboardChangedWithInfo:notification.userInfo adjustScrollView:YES];
 }
 
 @end
@@ -281,7 +309,7 @@ static struct _UIWebViewportConfiguration standardViewportConfiguration = { { UI
 
 - (WKPageRef)pageRef
 {
-    return [_contentView _pageRef];
+    return toAPI([_contentView page]);
 }
 
 - (id)initWithFrame:(CGRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef
@@ -298,4 +326,62 @@ static struct _UIWebViewportConfiguration standardViewportConfiguration = { { UI
     return self;
 }
 
+- (CGSize)minimumLayoutSizeOverride
+{
+    ASSERT(_hasStaticMinimumLayoutSize);
+    return _minimumLayoutSizeOverride;
+}
+
+- (void)setMinimumLayoutSizeOverride:(CGSize)minimumLayoutSizeOverride
+{
+    _hasStaticMinimumLayoutSize = YES;
+    _minimumLayoutSizeOverride = minimumLayoutSizeOverride;
+    [_contentView setMinimumLayoutSize:minimumLayoutSizeOverride];
+}
+
+- (UIEdgeInsets)_obscuredInsets
+{
+    return _obscuredInsets;
+}
+
+- (void)_setObscuredInsets:(UIEdgeInsets)obscuredInsets
+{
+    ASSERT(obscuredInsets.top >= 0);
+    ASSERT(obscuredInsets.left >= 0);
+    ASSERT(obscuredInsets.bottom >= 0);
+    ASSERT(obscuredInsets.right >= 0);
+    _obscuredInsets = obscuredInsets;
+    [self _updateVisibleContentRects];
+}
+
+- (void)_beginInteractiveObscuredInsetsChange
+{
+    ASSERT(!_isChangingObscuredInsetsInteractively);
+    _isChangingObscuredInsetsInteractively = YES;
+}
+
+- (void)_endInteractiveObscuredInsetsChange
+{
+    ASSERT(_isChangingObscuredInsetsInteractively);
+    _isChangingObscuredInsetsInteractively = NO;
+}
+
+- (UIColor *)_pageExtendedBackgroundColor
+{
+    // This is deprecated. 
+    return nil;
+}
+
+- (void)_setBackgroundExtendsBeyondPage:(BOOL)backgroundExtends
+{
+    [_contentView page]->setBackgroundExtendsBeyondPage(backgroundExtends);
+}
+
+- (BOOL)_backgroundExtendsBeyondPage
+{
+    return [_contentView page]->backgroundExtendsBeyondPage();
+}
+
 @end
+
+#endif // PLATFORM(IOS)

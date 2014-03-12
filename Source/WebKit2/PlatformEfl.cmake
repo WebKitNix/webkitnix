@@ -57,6 +57,7 @@ list(APPEND WebKit2_SOURCES
 
     UIProcess/API/C/cairo/WKIconDatabaseCairo.cpp
 
+    UIProcess/API/C/efl/WKColorPickerResultListener.cpp
     UIProcess/API/C/efl/WKEventEfl.cpp
     UIProcess/API/C/efl/WKPageEfl.cpp
     UIProcess/API/C/efl/WKPopupItem.cpp
@@ -69,8 +70,6 @@ list(APPEND WebKit2_SOURCES
 
     UIProcess/API/cpp/efl/WKEinaSharedString.cpp
 
-    UIProcess/API/efl/EvasGLContext.cpp
-    UIProcess/API/efl/EvasGLSurface.cpp
     UIProcess/API/efl/EwkView.cpp
     UIProcess/API/efl/GestureRecognizer.cpp
     UIProcess/API/efl/SnapshotImageGL.cpp
@@ -144,6 +143,9 @@ list(APPEND WebKit2_SOURCES
     UIProcess/efl/TextCheckerEfl.cpp
     UIProcess/efl/VibrationClientEfl.cpp
     UIProcess/efl/ViewClientEfl.cpp
+    UIProcess/efl/WebColorPickerClient.cpp
+    UIProcess/efl/WebColorPickerEfl.cpp
+    UIProcess/efl/WebColorPickerResultListenerProxy.cpp
     UIProcess/efl/WebContextEfl.cpp
     UIProcess/efl/WebContextMenuProxyEfl.cpp
     UIProcess/efl/WebInspectorProxyEfl.cpp
@@ -199,6 +201,7 @@ list(APPEND WebKit2_MESSAGES_IN_FILES
 list(APPEND WebKit2_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/efl"
     "${WEBCORE_DIR}/platform/graphics/cairo"
+    "${WEBCORE_DIR}/platform/graphics/efl"
     "${WEBCORE_DIR}/platform/graphics/opentype"
     "${WEBCORE_DIR}/platform/network/soup"
     "${WEBCORE_DIR}/platform/text/enchant"

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,7 +28,7 @@
 
 #include "JSGlobalObject.h"
 #include "ObjectConstructor.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include "ProfilerDatabase.h"
 #include <wtf/StringPrintStream.h>
 
@@ -37,6 +37,7 @@ namespace JSC { namespace Profiler {
 Compilation::Compilation(Bytecodes* bytecodes, CompilationKind kind)
     : m_bytecodes(bytecodes)
     , m_kind(kind)
+    , m_jettisonReason(NotJettisoned)
     , m_numInlinedGetByIds(0)
     , m_numInlinedPutByIds(0)
     , m_numInlinedCalls(0)
@@ -65,6 +66,11 @@ void Compilation::addProfiledBytecodes(Database& database, CodeBlock* profiledBl
 void Compilation::addDescription(const CompiledBytecode& compiledBytecode)
 {
     m_descriptions.append(compiledBytecode);
+}
+
+void Compilation::addDescription(const OriginStack& stack, const CString& description)
+{
+    addDescription(CompiledBytecode(stack, description));
 }
 
 ExecutionCounter* Compilation::executionCounterFor(const OriginStack& origin)
@@ -126,6 +132,7 @@ JSValue Compilation::toJS(ExecState* exec) const
     result->putDirect(exec->vm(), exec->propertyNames().numInlinedGetByIds, jsNumber(m_numInlinedGetByIds));
     result->putDirect(exec->vm(), exec->propertyNames().numInlinedPutByIds, jsNumber(m_numInlinedPutByIds));
     result->putDirect(exec->vm(), exec->propertyNames().numInlinedCalls, jsNumber(m_numInlinedCalls));
+    result->putDirect(exec->vm(), exec->propertyNames().jettisonReason, jsString(exec, String::fromUTF8(toCString(m_jettisonReason))));
     
     return result;
 }

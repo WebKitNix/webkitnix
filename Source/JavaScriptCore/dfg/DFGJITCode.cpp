@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,11 +29,16 @@
 #if ENABLE(DFG_JIT)
 
 #include "CodeBlock.h"
+#include "JSCInlines.h"
 
 namespace JSC { namespace DFG {
 
 JITCode::JITCode()
     : DirectJITCode(DFGJIT)
+#if ENABLE(FTL_JIT)
+    , osrEntryRetry(0)
+    , abandonOSREntry(false)
+#endif // ENABLE(FTL_JIT)
 {
 }
 
@@ -80,7 +85,8 @@ void JITCode::reconstruct(
     for (size_t i = result.size(); i--;) {
         int operand = result.operandForIndex(i);
         
-        if (operandIsArgument(operand)
+        if (codeOrigin == CodeOrigin(0)
+            && operandIsArgument(operand)
             && !VirtualRegister(operand).toArgument()
             && codeBlock->codeType() == FunctionCode
             && codeBlock->specializationKind() == CodeForConstruct) {
@@ -156,6 +162,7 @@ void JITCode::setOptimizationThresholdBasedOnCompilationResult(
     switch (result) {
     case CompilationSuccessful:
         optimizeNextInvocation(codeBlock);
+        codeBlock->baselineVersion()->m_hasBeenCompiledWithFTL = true;
         return;
     case CompilationFailed:
         dontOptimizeAnytimeSoon(codeBlock);

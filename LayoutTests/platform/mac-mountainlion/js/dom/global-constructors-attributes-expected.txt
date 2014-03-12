@@ -258,6 +258,11 @@ PASS Object.getOwnPropertyDescriptor(global, 'DOMTokenList').hasOwnProperty('get
 PASS Object.getOwnPropertyDescriptor(global, 'DOMTokenList').hasOwnProperty('set') is false
 PASS Object.getOwnPropertyDescriptor(global, 'DOMTokenList').enumerable is false
 PASS Object.getOwnPropertyDescriptor(global, 'DOMTokenList').configurable is true
+PASS Object.getOwnPropertyDescriptor(global, 'DataCue').value is DataCue
+PASS Object.getOwnPropertyDescriptor(global, 'DataCue').hasOwnProperty('get') is false
+PASS Object.getOwnPropertyDescriptor(global, 'DataCue').hasOwnProperty('set') is false
+PASS Object.getOwnPropertyDescriptor(global, 'DataCue').enumerable is false
+PASS Object.getOwnPropertyDescriptor(global, 'DataCue').configurable is true
 PASS Object.getOwnPropertyDescriptor(global, 'DelayNode').value is DelayNode
 PASS Object.getOwnPropertyDescriptor(global, 'DelayNode').hasOwnProperty('get') is false
 PASS Object.getOwnPropertyDescriptor(global, 'DelayNode').hasOwnProperty('set') is false
@@ -1828,6 +1833,11 @@ PASS Object.getOwnPropertyDescriptor(global, 'URL').hasOwnProperty('get') is fal
 PASS Object.getOwnPropertyDescriptor(global, 'URL').hasOwnProperty('set') is false
 PASS Object.getOwnPropertyDescriptor(global, 'URL').enumerable is false
 PASS Object.getOwnPropertyDescriptor(global, 'URL').configurable is true
+PASS Object.getOwnPropertyDescriptor(global, 'VTTCue').value is VTTCue
+PASS Object.getOwnPropertyDescriptor(global, 'VTTCue').hasOwnProperty('get') is false
+PASS Object.getOwnPropertyDescriptor(global, 'VTTCue').hasOwnProperty('set') is false
+PASS Object.getOwnPropertyDescriptor(global, 'VTTCue').enumerable is false
+PASS Object.getOwnPropertyDescriptor(global, 'VTTCue').configurable is true
 PASS Object.getOwnPropertyDescriptor(global, 'WaveShaperNode').value is WaveShaperNode
 PASS Object.getOwnPropertyDescriptor(global, 'WaveShaperNode').hasOwnProperty('get') is false
 PASS Object.getOwnPropertyDescriptor(global, 'WaveShaperNode').hasOwnProperty('set') is false
@@ -1893,11 +1903,6 @@ PASS Object.getOwnPropertyDescriptor(global, 'WebKitAnimationEvent').hasOwnPrope
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitAnimationEvent').hasOwnProperty('set') is false
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitAnimationEvent').enumerable is false
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitAnimationEvent').configurable is true
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSFilterRule').value is WebKitCSSFilterRule
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSFilterRule').hasOwnProperty('get') is false
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSFilterRule').hasOwnProperty('set') is false
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSFilterRule').enumerable is false
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSFilterRule').configurable is true
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSFilterValue').value is WebKitCSSFilterValue
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSFilterValue').hasOwnProperty('get') is false
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSFilterValue').hasOwnProperty('set') is false
@@ -1918,11 +1923,6 @@ PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSMatrix').hasOwnProperty('
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSMatrix').hasOwnProperty('set') is false
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSMatrix').enumerable is false
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSMatrix').configurable is true
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSMixFunctionValue').value is WebKitCSSMixFunctionValue
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSMixFunctionValue').hasOwnProperty('get') is false
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSMixFunctionValue').hasOwnProperty('set') is false
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSMixFunctionValue').enumerable is false
-PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSMixFunctionValue').configurable is true
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSRegionRule').value is WebKitCSSRegionRule
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSRegionRule').hasOwnProperty('get') is false
 PASS Object.getOwnPropertyDescriptor(global, 'WebKitCSSRegionRule').hasOwnProperty('set') is false

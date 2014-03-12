@@ -28,29 +28,7 @@
 
 #if WK_API_ENABLED
 
-#import <wtf/RetainPtr.h>
-
-@implementation WKProcessClass {
-    RetainPtr<WKProcessClassConfiguration> _configuration;
-}
-
-- (instancetype)initWithConfiguration:(WKProcessClassConfiguration *)configuration
-{
-    if (!(self = [super init]))
-        return nil;
-
-    _configuration = adoptNS([configuration copy]);
-
-    // FIXME: Create a WebContext.
-
-    return self;
-}
-
-- (WKProcessClassConfiguration *)configuration
-{
-    return [[_configuration copy] autorelease];
-}
-
+@implementation WKProcessClass
 @end
 
-#endif // WK_API_ENABLED
+#endif

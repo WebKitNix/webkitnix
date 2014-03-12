@@ -26,8 +26,6 @@
 #ifndef DFGEdge_h
 #define DFGEdge_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(DFG_JIT)
 
 #include "DFGCommon.h"
@@ -153,6 +151,17 @@ public:
     bool doesNotKill() const { return !doesKill(); }
     
     bool isSet() const { return !!node(); }
+
+    Edge sanitized() const
+    {
+        Edge result = *this;
+#if USE(JSVALUE64)
+        result.m_encodedWord = makeWord(node(), useKindUnchecked(), NeedsCheck, DoesNotKill);
+#else
+        result.m_encodedWord = makeWord(useKindUnchecked(), NeedsCheck, DoesNotKill);
+#endif
+        return result;
+    }
     
     typedef void* Edge::*UnspecifiedBoolType;
     operator UnspecifiedBoolType*() const { return reinterpret_cast<UnspecifiedBoolType*>(isSet()); }
@@ -173,6 +182,15 @@ public:
     }
     
     void dump(PrintStream&) const;
+    
+    unsigned hash() const
+    {
+#if USE(JSVALUE64)
+        return IntHash<uintptr_t>::hash(m_encodedWord);
+#else
+        return PtrHash<Node*>::hash(m_node) + m_encodedWord;
+#endif
+    }
 
 private:
     friend class AdjacencyList;

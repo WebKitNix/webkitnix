@@ -53,7 +53,7 @@ class WAKView;
 #endif
 #endif // PLATFORM(IOS)
 
-#if PLATFORM(MAC) && defined __OBJC__
+#if PLATFORM(COCOA) && defined __OBJC__
 @protocol WebCoreFrameScrollView;
 #endif
 
@@ -159,23 +159,35 @@ public:
     // In the situation the client is responsible for the scrolling (ie. with a tiled backing store) it is possible to use
     // the setFixedVisibleContentRect instead for the mainframe, though this must be updated manually, e.g just before resuming the page
     // which usually will happen when panning, pinching and rotation ends, or when scale or position are changed manually.
-    virtual IntRect visibleContentRect(VisibleContentRectIncludesScrollbars = ExcludeScrollbars) const override;
-#if !PLATFORM(IOS)
+    virtual IntSize visibleSize() const override { return visibleContentRect(LegacyIOSDocumentVisibleRect).size(); }
+
+#if USE(TILED_BACKING_STORE)
     virtual void setFixedVisibleContentRect(const IntRect& visibleContentRect) { m_fixedVisibleContentRect = visibleContentRect; }
     IntRect fixedVisibleContentRect() const { return m_fixedVisibleContentRect; }
 #endif
-    IntSize visibleSize() const { return visibleContentRect().size(); }
+
+    // Parts of the document can be visible through transparent or blured UI widgets of the chrome. Those parts
+    // contribute to painting but not to the scrollable area.
+    // The unobscuredContentRect is the area that is not covered by UI elements.
 #if PLATFORM(IOS)
-    // This is the area that is not covered by UI elements.
-    IntRect actualVisibleContentRect() const;
+    IntRect unobscuredContentRect() const;
+    IntRect unobscuredContentRectIncludingScrollbars() const { return unobscuredContentRect(); }
+#else
+    IntRect unobscuredContentRect() const { return visibleContentRect(); }
+    IntRect unobscuredContentRectIncludingScrollbars() const { return visibleContentRectIncludingScrollbars(); }
+#endif
+
+#if PLATFORM(IOS)
     // This is the area that is partially or fully exposed, and may extend under overlapping UI elements.
-    IntRect visibleExtentContentRect() const;
+    IntRect exposedContentRect() const;
+
+    // The given rects are only used if there is no platform widget.
+    void setExposedContentRect(const IntRect&);
+    void setUnobscuredContentRect(const IntRect&);
 
     void setActualScrollPosition(const IntPoint&);
     TileCache* tileCache();
 #endif
-    virtual int visibleWidth() const override { return visibleContentRect().width(); }
-    virtual int visibleHeight() const override { return visibleContentRect().height(); }
 
     // visibleContentRect().size() is computed from unscaledVisibleContentSize() divided by the value of visibleContentScaleFactor.
     // visibleContentScaleFactor is usually 1, except when the setting delegatesPageScaling is true and the
@@ -202,8 +214,8 @@ public:
     virtual void setContentsSize(const IntSize&);
 
     // Functions for querying the current scrolled position (both as a point, a size, or as individual X and Y values).
-    virtual IntPoint scrollPosition() const override { return visibleContentRect().location(); }
-    IntSize scrollOffset() const { return toIntSize(visibleContentRect().location()); } // Gets the scrolled position as an IntSize. Convenient for adding to other sizes.
+    virtual IntPoint scrollPosition() const override { return visibleContentRect(LegacyIOSDocumentVisibleRect).location(); }
+    IntSize scrollOffset() const { return toIntSize(visibleContentRect(LegacyIOSDocumentVisibleRect).location()); } // Gets the scrolled position as an IntSize. Convenient for adding to other sizes.
     virtual IntPoint maximumScrollPosition() const override; // The maximum position we can be scrolled to.
     virtual IntPoint minimumScrollPosition() const override; // The minimum position we can be scrolled to.
     // Adjust the passed in scroll position to keep it between the minimum and maximum positions.
@@ -212,8 +224,10 @@ public:
     int scrollY() const { return scrollPosition().y(); }
 
 #if PLATFORM(IOS)
-    int actualScrollX() const { return actualVisibleContentRect().x(); }
-    int actualScrollY() const { return actualVisibleContentRect().y(); }
+    int actualScrollX() const { return unobscuredContentRect().x(); }
+    int actualScrollY() const { return unobscuredContentRect().y(); }
+    // FIXME: maybe fix scrollPosition() on iOS to return the actual scroll position.
+    IntPoint actualScrollPosition() const { return unobscuredContentRect().location(); }
 #endif
 
     // scrollOffset() anchors its (0,0) point at the top end of the header if this ScrollableArea
@@ -340,7 +354,7 @@ public:
 protected:
     ScrollView();
 
-    virtual void repaintContentRectangle(const IntRect&, bool now = false);
+    virtual void repaintContentRectangle(const IntRect&);
     virtual void paintContents(GraphicsContext*, const IntRect& damageRect) = 0;
 
     virtual void paintOverhangAreas(GraphicsContext*, const IntRect& horizontalOverhangArea, const IntRect& verticalOverhangArea, const IntRect& dirtyRect);
@@ -373,6 +387,8 @@ protected:
     void updateScrollbars(const IntSize& desiredOffset);
 
 private:
+    virtual IntRect visibleContentRectInternal(VisibleContentRectIncludesScrollbars, VisibleContentRectBehavior) const override;
+
     RefPtr<Scrollbar> m_horizontalScrollbar;
     RefPtr<Scrollbar> m_verticalScrollbar;
     ScrollbarMode m_horizontalScrollbarMode;
@@ -389,7 +405,12 @@ private:
     // whether it is safe to blit on scroll.
     bool m_canBlitOnScroll;
 
-#if !PLATFORM(IOS)
+    // FIXME: exposedContentRect is a very similar concept to fixedVisibleContentRect except it does not differentiate
+    // between exposed rect and unobscuredRects. The two attributes should eventually be merged.
+#if PLATFORM(IOS)
+    IntRect m_exposedContentRect;
+    IntRect m_unobscuredContentRect;
+#else
     IntRect m_fixedVisibleContentRect;
 #endif
     IntSize m_scrollOffset; // FIXME: Would rather store this as a position, but we will wait to make this change until more code is shared.
@@ -434,7 +455,7 @@ private:
     void platformSetScrollPosition(const IntPoint&);
     bool platformScroll(ScrollDirection, ScrollGranularity);
     void platformSetScrollbarsSuppressed(bool repaintOnUnsuppress);
-    void platformRepaintContentRectangle(const IntRect&, bool now);
+    void platformRepaintContentRectangle(const IntRect&);
     bool platformIsOffscreen() const;
     void platformSetScrollbarOverlayStyle(ScrollbarOverlayStyle);
    
@@ -443,7 +464,7 @@ private:
     void calculateOverhangAreasForPainting(IntRect& horizontalOverhangRect, IntRect& verticalOverhangRect);
     void updateOverhangAreas();
 
-#if PLATFORM(MAC) && defined __OBJC__
+#if PLATFORM(COCOA) && defined __OBJC__
 public:
     NSView* documentView() const;
 

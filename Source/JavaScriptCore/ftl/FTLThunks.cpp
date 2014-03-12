@@ -39,19 +39,28 @@ namespace JSC { namespace FTL {
 
 using namespace DFG;
 
-MacroAssemblerCodeRef osrExitGenerationThunkGenerator(VM& vm, const Location& location)
+MacroAssemblerCodeRef osrExitGenerationThunkGenerator(VM* vm)
 {
-    AssemblyHelpers jit(&vm, 0);
+    AssemblyHelpers jit(vm, 0);
     
     // Note that the "return address" will be the OSR exit ID.
     
-    // Pretend that we're a C call frame.
-    jit.push(MacroAssembler::framePointerRegister);
-    jit.move(MacroAssembler::stackPointerRegister, MacroAssembler::framePointerRegister);
-    jit.push(GPRInfo::regT0);
-    jit.push(GPRInfo::regT0);
+    ptrdiff_t stackMisalignment = MacroAssembler::pushToSaveByteOffset();
     
-    ScratchBuffer* scratchBuffer = vm.scratchBufferForSize(requiredScratchMemorySizeInBytes());
+    // Pretend that we're a C call frame.
+    jit.pushToSave(MacroAssembler::framePointerRegister);
+    jit.move(MacroAssembler::stackPointerRegister, MacroAssembler::framePointerRegister);
+    stackMisalignment += MacroAssembler::pushToSaveByteOffset();
+    
+    // Now create ourselves enough stack space to give saveAllRegisters() a scratch slot.
+    unsigned numberOfRequiredPops = 0;
+    do {
+        jit.pushToSave(GPRInfo::regT0);
+        stackMisalignment += MacroAssembler::pushToSaveByteOffset();
+        numberOfRequiredPops++;
+    } while (stackMisalignment % stackAlignmentBytes());
+    
+    ScratchBuffer* scratchBuffer = vm->scratchBufferForSize(requiredScratchMemorySizeInBytes());
     char* buffer = static_cast<char*>(scratchBuffer->dataBuffer());
     
     saveAllRegisters(jit, buffer);
@@ -60,8 +69,10 @@ MacroAssemblerCodeRef osrExitGenerationThunkGenerator(VM& vm, const Location& lo
     jit.move(MacroAssembler::TrustedImmPtr(scratchBuffer->activeLengthPtr()), GPRInfo::nonArgGPR1);
     jit.storePtr(MacroAssembler::TrustedImmPtr(requiredScratchMemorySizeInBytes()), GPRInfo::nonArgGPR1);
 
-    location.restoreInto(jit, buffer, GPRInfo::argumentGPR0, 1);
-    jit.peek(GPRInfo::argumentGPR1, 3);
+    jit.loadPtr(GPRInfo::callFrameRegister, GPRInfo::argumentGPR0);
+    jit.peek(
+        GPRInfo::argumentGPR1,
+        (stackMisalignment - MacroAssembler::pushToSaveByteOffset()) / sizeof(void*));
     MacroAssembler::Call functionCall = jit.call();
     
     // At this point we want to make a tail call to what was returned to us in the
@@ -71,24 +82,28 @@ MacroAssemblerCodeRef osrExitGenerationThunkGenerator(VM& vm, const Location& lo
     
     jit.move(GPRInfo::returnValueGPR, GPRInfo::regT0);
     
+    // Make sure we tell the GC that we're not using the scratch buffer anymore.
+    jit.move(MacroAssembler::TrustedImmPtr(scratchBuffer->activeLengthPtr()), GPRInfo::regT1);
+    jit.storePtr(MacroAssembler::TrustedImmPtr(0), GPRInfo::regT1);
+    
     // Prepare for tail call.
-    jit.pop(GPRInfo::regT1);
-    jit.pop(GPRInfo::regT1);
-    jit.pop(MacroAssembler::framePointerRegister);
+    while (numberOfRequiredPops--)
+        jit.popToRestore(GPRInfo::regT1);
+    jit.popToRestore(MacroAssembler::framePointerRegister);
     
     // At this point we're sitting on the return address - so if we did a jump right now, the
     // tail-callee would be happy. Instead we'll stash the callee in the return address and then
     // restore all registers.
     
     jit.restoreReturnAddressBeforeReturn(GPRInfo::regT0);
-    
+
     restoreAllRegisters(jit, buffer);
 
     jit.ret();
     
-    LinkBuffer patchBuffer(vm, &jit, GLOBAL_THUNK_ID);
+    LinkBuffer patchBuffer(*vm, &jit, GLOBAL_THUNK_ID);
     patchBuffer.link(functionCall, compileFTLOSRExit);
-    return FINALIZE_CODE(patchBuffer, ("FTL OSR exit generation thunk for callFrame at %s", toCString(location).data()));
+    return FINALIZE_CODE(patchBuffer, ("FTL OSR exit generation thunk"));
 }
 
 MacroAssemblerCodeRef slowPathCallThunkGenerator(VM& vm, const SlowPathCallKey& key)
@@ -119,11 +134,13 @@ MacroAssemblerCodeRef slowPathCallThunkGenerator(VM& vm, const SlowPathCallKey& 
         currentOffset += sizeof(double);
     }
     
+    // FIXME: CStack - Need to do soemething like jit.emitFunctionPrologue();
     jit.preserveReturnAddressAfterCall(GPRInfo::nonArgGPR0);
     jit.storePtr(GPRInfo::nonArgGPR0, AssemblyHelpers::Address(MacroAssembler::stackPointerRegister, key.offset()));
     
-    JITCompiler::Call call = jit.call();
-    
+    AssemblyHelpers::Call call = jit.call();
+
+    // FIXME: CStack - Need to do something like jit.emitFunctionEpilogue();
     jit.loadPtr(AssemblyHelpers::Address(MacroAssembler::stackPointerRegister, key.offset()), GPRInfo::nonPreservedNonReturnGPR);
     jit.restoreReturnAddressBeforeReturn(GPRInfo::nonPreservedNonReturnGPR);
     

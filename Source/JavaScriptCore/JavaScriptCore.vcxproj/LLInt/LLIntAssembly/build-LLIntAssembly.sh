@@ -20,7 +20,18 @@ export BUILT_PRODUCTS_DIR="$XDSTROOT/obj${4}"
 
 cd "${BUILT_PRODUCTS_DIR}/JavaScriptCore/DerivedSources"
 
-##############################################################################
-# Step 3: Build LLIntOffsetsExtractor
+# Create a dummy asm file in case we are using the C backend
+# This is needed since LowLevelInterpreterWin.asm is part of the project.
 
-/usr/bin/env ruby "${SRCROOT}/offlineasm/asm.rb" "${SRCROOT}/llint/LowLevelInterpreter.asm" "${BUILT_PRODUCTS_DIR}/LLIntOffsetsExtractor/LLIntOffsetsExtractor${3}.exe" "LLIntAssembly.h" || exit 1
+printf "END" > LowLevelInterpreterWin.asm
+
+# Win32 is using the LLINT x86 backend, and should generate an assembler file.
+# Win64 is using the LLINT C backend, and should generate a header file.
+
+if [ "${PLATFORMARCHITECTURE}" == "32" ]; then
+    OUTPUTFILENAME="LowLevelInterpreterWin.asm"
+else
+    OUTPUTFILENAME="LLIntAssembly.h"
+fi
+
+/usr/bin/env ruby "${SRCROOT}/offlineasm/asm.rb" "${SRCROOT}/llint/LowLevelInterpreter.asm" "${BUILT_PRODUCTS_DIR}/LLIntOffsetsExtractor/LLIntOffsetsExtractor${3}.exe" "${OUTPUTFILENAME}" || exit 1

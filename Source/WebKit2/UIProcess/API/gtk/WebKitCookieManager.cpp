@@ -30,6 +30,9 @@
 
 using namespace WebKit;
 
+typedef GenericAPICallback<WKArrayRef> ArrayAPICallback;
+typedef GenericAPICallback<WKHTTPCookieAcceptPolicy, HTTPCookieAcceptPolicy> HTTPCookieAcceptPolicyAPICallback;
+
 /**
  * SECTION: WebKitCookieManager
  * @Short_description: Defines how to handle cookies in a #WebKitWebContext
@@ -65,12 +68,48 @@ static guint signals[LAST_SIGNAL] = { 0, };
 
 WEBKIT_DEFINE_TYPE(WebKitCookieManager, webkit_cookie_manager, G_TYPE_OBJECT)
 
-COMPILE_ASSERT_MATCHING_ENUM(WEBKIT_COOKIE_PERSISTENT_STORAGE_TEXT, SoupCookiePersistentStorageText);
-COMPILE_ASSERT_MATCHING_ENUM(WEBKIT_COOKIE_PERSISTENT_STORAGE_SQLITE, SoupCookiePersistentStorageSQLite);
+static inline SoupCookiePersistentStorageType toSoupCookiePersistentStorageType(WebKitCookiePersistentStorage kitStorage)
+{
+    switch (kitStorage) {
+    case WEBKIT_COOKIE_PERSISTENT_STORAGE_TEXT:
+        return SoupCookiePersistentStorageText;
+    case WEBKIT_COOKIE_PERSISTENT_STORAGE_SQLITE:
+        return SoupCookiePersistentStorageSQLite;
+    default:
+        ASSERT_NOT_REACHED();
+        return SoupCookiePersistentStorageText;
+    }
+}
 
-COMPILE_ASSERT_MATCHING_ENUM(WEBKIT_COOKIE_POLICY_ACCEPT_ALWAYS, HTTPCookieAcceptPolicyAlways);
-COMPILE_ASSERT_MATCHING_ENUM(WEBKIT_COOKIE_POLICY_ACCEPT_NEVER, HTTPCookieAcceptPolicyNever);
-COMPILE_ASSERT_MATCHING_ENUM(WEBKIT_COOKIE_POLICY_ACCEPT_NO_THIRD_PARTY, HTTPCookieAcceptPolicyOnlyFromMainDocumentDomain);
+static inline WebKitCookieAcceptPolicy toWebKitCookieAcceptPolicy(HTTPCookieAcceptPolicy httpPolicy)
+{
+    switch (httpPolicy) {
+    case HTTPCookieAcceptPolicyAlways:
+        return WEBKIT_COOKIE_POLICY_ACCEPT_ALWAYS;
+    case HTTPCookieAcceptPolicyNever:
+        return WEBKIT_COOKIE_POLICY_ACCEPT_NEVER;
+    case HTTPCookieAcceptPolicyOnlyFromMainDocumentDomain:
+        return WEBKIT_COOKIE_POLICY_ACCEPT_NO_THIRD_PARTY;
+    default:
+        ASSERT_NOT_REACHED();
+        return WEBKIT_COOKIE_POLICY_ACCEPT_ALWAYS;
+    }
+}
+
+static inline HTTPCookieAcceptPolicy toHTTPCookieAcceptPolicy(WebKitCookieAcceptPolicy kitPolicy)
+{
+    switch (kitPolicy) {
+    case WEBKIT_COOKIE_POLICY_ACCEPT_ALWAYS:
+        return HTTPCookieAcceptPolicyAlways;
+    case WEBKIT_COOKIE_POLICY_ACCEPT_NEVER:
+        return HTTPCookieAcceptPolicyNever;
+    case WEBKIT_COOKIE_POLICY_ACCEPT_NO_THIRD_PARTY:
+        return HTTPCookieAcceptPolicyOnlyFromMainDocumentDomain;
+    default:
+        ASSERT_NOT_REACHED();
+        return HTTPCookieAcceptPolicyAlways;
+    }
+}
 
 static void webkit_cookie_manager_class_init(WebKitCookieManagerClass* findClass)
 {
@@ -134,7 +173,7 @@ void webkit_cookie_manager_set_persistent_storage(WebKitCookieManager* manager, 
     g_return_if_fail(filename);
 
     manager->priv->webCookieManager->stopObservingCookieChanges();
-    manager->priv->webCookieManager->setCookiePersistentStorage(String::fromUTF8(filename), storage);
+    manager->priv->webCookieManager->setCookiePersistentStorage(String::fromUTF8(filename), toSoupCookiePersistentStorageType(storage));
     manager->priv->webCookieManager->startObservingCookieChanges();
 }
 
@@ -149,13 +188,13 @@ void webkit_cookie_manager_set_accept_policy(WebKitCookieManager* manager, WebKi
 {
     g_return_if_fail(WEBKIT_IS_COOKIE_MANAGER(manager));
 
-    manager->priv->webCookieManager->setHTTPCookieAcceptPolicy(policy);
+    manager->priv->webCookieManager->setHTTPCookieAcceptPolicy(toHTTPCookieAcceptPolicy(policy));
 }
 
 static void webkitCookieManagerGetAcceptPolicyCallback(WKHTTPCookieAcceptPolicy policy, WKErrorRef, void* context)
 {
     GRefPtr<GTask> task = adoptGRef(G_TASK(context));
-    g_task_return_int(task.get(), policy);
+    g_task_return_int(task.get(), toWebKitCookieAcceptPolicy(toHTTPCookieAcceptPolicy(policy)));
 }
 
 /**
@@ -175,7 +214,7 @@ void webkit_cookie_manager_get_accept_policy(WebKitCookieManager* manager, GCanc
     g_return_if_fail(WEBKIT_IS_COOKIE_MANAGER(manager));
 
     GTask* task = g_task_new(manager, cancellable, callback, userData);
-    manager->priv->webCookieManager->getHTTPCookieAcceptPolicy(HTTPCookieAcceptPolicyCallback::create(task, webkitCookieManagerGetAcceptPolicyCallback));
+    manager->priv->webCookieManager->getHTTPCookieAcceptPolicy(HTTPCookieAcceptPolicyAPICallback::create(task, webkitCookieManagerGetAcceptPolicyCallback));
 }
 
 /**
@@ -233,7 +272,7 @@ void webkit_cookie_manager_get_domains_with_cookies(WebKitCookieManager* manager
     g_return_if_fail(WEBKIT_IS_COOKIE_MANAGER(manager));
 
     GTask* task = g_task_new(manager, cancellable, callback, userData);
-    manager->priv->webCookieManager->getHostnamesWithCookies(ArrayCallback::create(task, webkitCookieManagerGetDomainsWithCookiesCallback));
+    manager->priv->webCookieManager->getHostnamesWithCookies(ArrayAPICallback::create(task, webkitCookieManagerGetDomainsWithCookiesCallback));
 }
 
 /**

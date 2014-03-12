@@ -11,7 +11,7 @@
 #include "VM.h"
 #include "JSObject.h"
 #include "JSString.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include <wtf/StackStats.h>
 
 namespace JSC {
@@ -36,8 +36,16 @@ SlotVisitor::~SlotVisitor()
     clearMarkStack();
 }
 
-void SlotVisitor::setup()
+void SlotVisitor::didStartMarking()
 {
+    if (heap()->operationInProgress() == FullCollection) {
+#if ENABLE(PARALLEL_GC)
+        ASSERT(m_opaqueRoots.isEmpty()); // Should have merged by now.
+#else
+        m_opaqueRoots.clear();
+#endif
+    }
+
     m_shared.m_shouldHashCons = m_shared.m_vm->haveEnoughNewStringsToHashCons();
     m_shouldHashCons = m_shared.m_shouldHashCons;
 #if ENABLE(PARALLEL_GC)
@@ -52,11 +60,6 @@ void SlotVisitor::reset()
     m_bytesCopied = 0;
     m_visitCount = 0;
     ASSERT(m_stack.isEmpty());
-#if ENABLE(PARALLEL_GC)
-    ASSERT(m_opaqueRoots.isEmpty()); // Should have merged by now.
-#else
-    m_opaqueRoots.clear();
-#endif
     if (m_shouldHashCons) {
         m_uniqueStrings.clear();
         m_shouldHashCons = false;
@@ -237,11 +240,9 @@ void SlotVisitor::mergeOpaqueRoots()
     StackStats::probe();
     ASSERT(!m_opaqueRoots.isEmpty()); // Should only be called when opaque roots are non-empty.
     {
-        MutexLocker locker(m_shared.m_opaqueRootsLock);
-        HashSet<void*>::iterator begin = m_opaqueRoots.begin();
-        HashSet<void*>::iterator end = m_opaqueRoots.end();
-        for (HashSet<void*>::iterator iter = begin; iter != end; ++iter)
-            m_shared.m_opaqueRoots.add(*iter);
+        std::lock_guard<std::mutex> lock(m_shared.m_opaqueRootsMutex);
+        for (auto* root : m_opaqueRoots)
+            m_shared.m_opaqueRoots.add(root);
     }
     m_opaqueRoots.clear();
 }

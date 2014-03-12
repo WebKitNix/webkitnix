@@ -23,6 +23,7 @@
 #include "GraphicsContext.h"
 
 #include "AffineTransform.h"
+#include "FloatRoundedRect.h"
 #include "Font.h"
 #include "GDIExtras.h"
 #include "GlyphBuffer.h"
@@ -354,10 +355,8 @@ static GDIObject<HPEN> createPen(const Color& col, double fWidth, StrokeStyle st
     int penStyle = PS_NULL;
     switch (style) {
         case SolidStroke:
-#if ENABLE(CSS3_TEXT_DECORATION)
         case DoubleStroke:
         case WavyStroke: // FIXME: https://bugs.webkit.org/show_bug.cgi?id=94114 - Needs platform support.
-#endif // CSS3_TEXT_DECORATION
             penStyle = PS_SOLID;
             break;
         case DottedStroke:  // not supported on Windows CE
@@ -589,7 +588,7 @@ private:
 };
 
 
-void GraphicsContext::platformInit(PlatformGraphicsContext* dc)
+void GraphicsContext::platformInit(PlatformGraphicsContext* dc, bool)
 {
     m_data = new GraphicsContextPlatformPrivate(dc);
 }
@@ -626,7 +625,7 @@ void GraphicsContext::restorePlatformState()
     m_data->restore();
 }
 
-void GraphicsContext::drawRect(const IntRect& rect)
+void GraphicsContext::drawRect(const FloatRect& rect)
 {
     if (!m_data->m_opacity || paintingDisabled() || rect.isEmpty())
         return;
@@ -671,7 +670,7 @@ void GraphicsContext::drawRect(const IntRect& rect)
     SelectObject(dc, oldBrush);
 }
 
-void GraphicsContext::drawLine(const IntPoint& point1, const IntPoint& point2)
+void GraphicsContext::drawLine(const FloatPoint& point1, const FloatPoint& point2)
 {
     if (!m_data->m_opacity || paintingDisabled() || strokeStyle() == NoStroke || !strokeColor().alpha())
         return;
@@ -900,7 +899,7 @@ void GraphicsContext::clip(const FloatRect& rect)
     }
 }
 
-void GraphicsContext::clipOut(const IntRect& rect)
+void GraphicsContext::clipOut(const FloatRect& rect)
 {
     if (paintingDisabled())
         return;
@@ -955,7 +954,7 @@ FloatRect GraphicsContext::computeLineBoundsForText(const FloatPoint& origin, fl
     return FloatRect(origin, FloatSize(width, strokeThickness()));
 }
 
-void GraphicsContext::drawLineForText(const FloatPoint& origin, float width, bool printing)
+void GraphicsContext::drawLineForText(const FloatPoint& origin, float width, bool printing, bool doubleUnderlines)
 {
     if (paintingDisabled())
         return;
@@ -963,13 +962,15 @@ void GraphicsContext::drawLineForText(const FloatPoint& origin, float width, boo
     StrokeStyle oldStyle = strokeStyle();
     setStrokeStyle(SolidStroke);
     drawLine(roundedIntPoint(origin), roundedIntPoint(origin + FloatSize(width, 0)));
+    if (doubleUnderlines)
+        drawLine(roundedIntPoint(origin + FloatSize(0, strokeThickness() * 2)), roundedIntPoint(origin + FloatSize(width, strokeThickness() * 2)));
     setStrokeStyle(oldStyle);
 }
 
-void GraphicsContext::drawLinesForText(const FloatPoint& point, const DashArray& widths, bool printing)
+void GraphicsContext::drawLinesForText(const FloatPoint& point, const DashArray& widths, bool printing, bool doubleUnderlines)
 {
     for (size_t i = 0; i < widths.size(); i += 2)
-        drawLineForText(FloatPoint(point.x() + widths[i], point.y()), widths[i+1] - widths[i], printing);
+        drawLineForText(FloatPoint(point.x() + widths[i], point.y()), widths[i+1] - widths[i], printing, doubleUnderlines);
 }
 
 void GraphicsContext::updateDocumentMarkerResources()
@@ -1152,7 +1153,8 @@ static inline IntPoint rectCenterPoint(const RECT& rect)
 {
     return IntPoint(rect.left + (rect.right - rect.left) / 2, rect.top + (rect.bottom - rect.top) / 2);
 }
-void GraphicsContext::fillRoundedRect(const IntRect& fillRect, const IntSize& topLeft, const IntSize& topRight, const IntSize& bottomLeft, const IntSize& bottomRight, const Color& c, ColorSpace colorSpace)
+
+void GraphicsContext::fillRoundedRect(const FloatRoundedRect& rect, const Color& c, ColorSpace colorSpace)
 {
     ScopeDCProvider dcProvider(m_data);
     if (!m_data->m_dc)
@@ -1165,16 +1167,17 @@ void GraphicsContext::fillRoundedRect(const IntRect& fillRect, const IntSize& to
         
     getShadow(shadowOffset, shadowBlur, shadowColor, shadowColorSpace);
     
+    const FloatRect& fillRect = rect.rect();
     IntRect dstRect = fillRect;
     
     dstRect.move(stableRound(shadowOffset.width()), stableRound(shadowOffset.height()));
     dstRect.inflate(stableRound(shadowBlur));
     dstRect = m_data->mapRect(dstRect);
   
-    FloatSize newTopLeft(m_data->mapSize(topLeft));
-    FloatSize newTopRight(m_data->mapSize(topRight));
-    FloatSize newBottomLeft(m_data->mapSize(bottomLeft));
-    FloatSize newBottomRight(m_data->mapSize(bottomRight));
+    FloatSize newTopLeft(m_data->mapSize(rect.radii().topLeft()));
+    FloatSize newTopRight(m_data->mapSize(rect.radii().topRight()));
+    FloatSize newBottomLeft(m_data->mapSize(rect.radii().bottomLeft()));
+    FloatSize newBottomRight(m_data->mapSize(rect.radii().bottomRight()));
 
     TransparentLayerDC transparentDc(m_data, dstRect, &fillRect);
     HDC dc = transparentDc.hdc();
@@ -1224,7 +1227,6 @@ void GraphicsContext::fillRoundedRect(const IntRect& fillRect, const IntSize& to
 
     SelectObject(dc, oldBrush);
 }
-
 
 void GraphicsContext::drawRoundCorner(bool needsNewClip, RECT clipRect, RECT rectWin, HDC dc, int width, int height)
 {

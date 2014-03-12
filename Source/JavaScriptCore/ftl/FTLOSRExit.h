@@ -26,8 +26,6 @@
 #ifndef FTLOSRExit_h
 #define FTLOSRExit_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(FTL_JIT)
 
 #include "CodeOrigin.h"
@@ -166,6 +164,11 @@ struct OSRExit : public DFG::OSRExitBase {
     uint32_t m_stackmapID;
     
     CodeLocationJump codeLocationForRepatch(CodeBlock* ftlCodeBlock) const;
+    
+    bool considerAddingAsFrequentExitSite(CodeBlock* profiledCodeBlock)
+    {
+        return OSRExitBase::considerAddingAsFrequentExitSite(profiledCodeBlock, ExitFromFTL);
+    }
 };
 
 } } // namespace JSC::FTL

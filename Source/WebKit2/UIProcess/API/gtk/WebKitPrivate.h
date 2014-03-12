@@ -27,7 +27,6 @@
 #define WebKitPrivate_h
 
 #include <WebKit2/WKAPICast.h>
-#include <WebKit2/WKContextSoup.h>
 #include <WebKit2/WKDownload.h>
 #include <WebKit2/WKFindOptions.h>
 #include <WebKit2/WKFullScreenClientGtk.h>
@@ -39,7 +38,7 @@
 #include <WebKit2/WKInspectorClientGtk.h>
 #include <WebKit2/WKRetainPtr.h>
 #include <WebKit2/WKSerializedScriptValue.h>
-#include <WebKit2/WKSoupRequestManager.h>
+#include <WebKit2/WKSoupCustomProtocolRequestManager.h>
 #include <WebKit2/WKString.h>
 #include <WebKit2/WKTextChecker.h>
 #include <WebKit2/WebKit2_C.h>
@@ -49,9 +48,6 @@
 #define WEBKIT_PARAM_READABLE (static_cast<GParamFlags>(G_PARAM_READABLE | G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB))
 #define WEBKIT_PARAM_WRITABLE (static_cast<GParamFlags>(G_PARAM_WRITABLE | G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB))
 #define WEBKIT_PARAM_READWRITE (static_cast<GParamFlags>(G_PARAM_READWRITE | G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB))
-
-#define COMPILE_ASSERT_MATCHING_ENUM(webkitName, webcoreName) \
-        COMPILE_ASSERT(int(webkitName) == int(webcoreName), mismatchingEnums)
 
 #define WEBKIT_DEFINE_ASYNC_DATA_STRUCT(structName) \
 static structName* create##structName() \
@@ -119,6 +115,8 @@ GType type_name##_get_type(void) \
 
 unsigned wkEventModifiersToGdkModifiers(WKEventModifiers);
 unsigned wkEventMouseButtonToWebKitMouseButton(WKEventMouseButton);
+unsigned toWebKitError(unsigned webCoreError);
+unsigned toWebCoreError(unsigned webKitError);
 
 enum SnapshotRegion {
     SnapshotRegionVisible,

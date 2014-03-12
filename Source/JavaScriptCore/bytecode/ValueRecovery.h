@@ -34,7 +34,6 @@
 #include "JSCJSValue.h"
 #include "MacroAssembler.h"
 #include "VirtualRegister.h"
-#include <wtf/Platform.h>
 
 namespace JSC {
 
@@ -228,6 +227,27 @@ public:
     {
         ASSERT(m_technique == DisplacedInJSStack || m_technique == Int32DisplacedInJSStack || m_technique == DoubleDisplacedInJSStack || m_technique == CellDisplacedInJSStack || m_technique == BooleanDisplacedInJSStack || m_technique == Int52DisplacedInJSStack || m_technique == StrictInt52DisplacedInJSStack);
         return VirtualRegister(m_source.virtualReg);
+    }
+    
+    ValueRecovery withLocalsOffset(int offset) const
+    {
+        switch (m_technique) {
+        case DisplacedInJSStack:
+        case Int32DisplacedInJSStack:
+        case DoubleDisplacedInJSStack:
+        case CellDisplacedInJSStack:
+        case BooleanDisplacedInJSStack:
+        case Int52DisplacedInJSStack:
+        case StrictInt52DisplacedInJSStack: {
+            ValueRecovery result;
+            result.m_technique = m_technique;
+            result.m_source.virtualReg = m_source.virtualReg + offset;
+            return result;
+        }
+            
+        default:
+            return *this;
+        }
     }
     
     JSValue constant() const

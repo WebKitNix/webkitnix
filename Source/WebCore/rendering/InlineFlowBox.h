@@ -248,8 +248,8 @@ public:
     { 
         return m_overflow ? m_overflow->visualOverflowRect() : enclosingLayoutRect(frameRectIncludingLineHeight(lineTop, lineBottom));
     }
-    LayoutUnit logicalLeftVisualOverflow() const { return m_overflow ? (isHorizontal() ? m_overflow->visualOverflowRect().x() : m_overflow->visualOverflowRect().y()) : static_cast<LayoutUnit>(logicalLeft()); }
-    LayoutUnit logicalRightVisualOverflow() const { return m_overflow ? (isHorizontal() ? m_overflow->visualOverflowRect().maxX() : m_overflow->visualOverflowRect().maxY()) : static_cast<LayoutUnit>(ceilf(logicalRight())); }
+    LayoutUnit logicalLeftVisualOverflow() const { return m_overflow ? (isHorizontal() ? m_overflow->visualOverflowRect().x() : m_overflow->visualOverflowRect().y()) : LayoutUnit(logicalLeft()); }
+    LayoutUnit logicalRightVisualOverflow() const { return m_overflow ? (isHorizontal() ? m_overflow->visualOverflowRect().maxX() : m_overflow->visualOverflowRect().maxY()) : LayoutUnit(ceilf(logicalRight())); }
     LayoutUnit logicalTopVisualOverflow(LayoutUnit lineTop) const
     {
         if (m_overflow)
@@ -313,11 +313,9 @@ protected:
     InlineFlowBox* m_prevLineBox; // The previous box that also uses our RenderObject
     InlineFlowBox* m_nextLineBox; // The next box that also uses our RenderObject
 
-#if ENABLE(CSS3_TEXT_DECORATION)
     // Maximum logicalTop among all children of an InlineFlowBox. Used to
     // calculate the offset for TextUnderlinePositionUnder.
     void computeMaxLogicalTop(float& maxLogicalTop) const;
-#endif
 private:
     unsigned m_includeLogicalLeftEdge : 1;
     unsigned m_includeLogicalRightEdge : 1;
@@ -354,17 +352,20 @@ private:
 INLINE_BOX_OBJECT_TYPE_CASTS(InlineFlowBox, isInlineFlowBox())
 
 #ifdef NDEBUG
+
 inline void InlineFlowBox::checkConsistency() const
 {
 }
+
 #endif
+
+#if ASSERT_WITH_SECURITY_IMPLICATION_DISABLED
 
 inline void InlineFlowBox::setHasBadChildList()
 {
-#if !ASSERT_WITH_SECURITY_IMPLICATION_DISABLED
-    m_hasBadChildList = true;
-#endif
 }
+
+#endif
 
 } // namespace WebCore
 

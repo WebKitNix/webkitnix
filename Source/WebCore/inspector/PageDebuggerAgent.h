@@ -31,37 +31,42 @@
 #ifndef PageDebuggerAgent_h
 #define PageDebuggerAgent_h
 
-#if ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
+#if ENABLE(INSPECTOR)
 
-#include "InspectorDebuggerAgent.h"
 #include "PageScriptDebugServer.h"
+#include "WebDebuggerAgent.h"
 
 namespace WebCore {
 
 class InspectorOverlay;
 class InspectorPageAgent;
+class InstrumentingAgents;
 class Page;
 class PageScriptDebugServer;
 
-class PageDebuggerAgent : public InspectorDebuggerAgent {
+class PageDebuggerAgent final : public WebDebuggerAgent {
     WTF_MAKE_NONCOPYABLE(PageDebuggerAgent);
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    PageDebuggerAgent(InstrumentingAgents*, InspectorPageAgent*, Inspector::InjectedScriptManager*, InspectorOverlay*);
-    virtual ~PageDebuggerAgent();
+    PageDebuggerAgent(Inspector::InjectedScriptManager*, InstrumentingAgents*, InspectorPageAgent*, InspectorOverlay*);
+    virtual ~PageDebuggerAgent() { }
 
     void didClearMainFrameWindowObject();
 
 protected:
     virtual void enable() override;
-    virtual void disable() override;
+    virtual void disable(bool isBeingDestroyed) override;
+
+    virtual String sourceMapURLForScript(const Script&) override;
 
 private:
     virtual void startListeningScriptDebugServer() override;
-    virtual void stopListeningScriptDebugServer() override;
+    virtual void stopListeningScriptDebugServer(bool isBeingDestroyed) override;
     virtual PageScriptDebugServer& scriptDebugServer() override;
     virtual void muteConsole() override;
     virtual void unmuteConsole() override;
+
+    virtual void breakpointActionLog(JSC::ExecState*, const String&) override;
 
     virtual Inspector::InjectedScript injectedScriptForEval(ErrorString*, const int* executionContextId) override;
     virtual void setOverlayMessage(ErrorString*, const String*) override;
@@ -72,6 +77,6 @@ private:
 
 } // namespace WebCore
 
-#endif // ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
+#endif // ENABLE(INSPECTOR)
 
 #endif // !defined(PageDebuggerAgent_h)

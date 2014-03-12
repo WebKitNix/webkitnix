@@ -26,8 +26,6 @@
  */
 
 #include "config.h"
-
-#if ENABLE(SVG)
 #include "SVGImage.h"
 
 #include "Chrome.h"
@@ -222,6 +220,7 @@ void SVGImage::draw(GraphicsContext* context, const FloatRect& dstRect, const Fl
         return;
 
     FrameView* view = frameView();
+    ASSERT(view);
 
     GraphicsContextStateSaver stateSaver(*context);
     context->setCompositeOperation(compositeOp, blendMode);
@@ -253,6 +252,9 @@ void SVGImage::draw(GraphicsContext* context, const FloatRect& dstRect, const Fl
         context->endTransparencyLayer();
 
     stateSaver.restore();
+
+    if (!m_url.isEmpty())
+        view->scrollToFragment(m_url);
 
     if (imageObserver())
         imageObserver()->didDraw(this);
@@ -402,5 +404,3 @@ bool isInSVGImage(const Element* element)
 }
 
 }
-
-#endif // ENABLE(SVG)

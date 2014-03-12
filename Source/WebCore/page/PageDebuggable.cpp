@@ -34,6 +34,11 @@
 #include "InspectorForwarding.h"
 #include "MainFrame.h"
 #include "Page.h"
+#include <inspector/InspectorAgentBase.h>
+
+#if PLATFORM(IOS)
+#include "Settings.h"
+#endif
 
 using namespace Inspector;
 
@@ -76,6 +81,12 @@ pid_t PageDebuggable::parentProcessIdentifier() const
 
 void PageDebuggable::connect(Inspector::InspectorFrontendChannel* channel)
 {
+#if PLATFORM(IOS)
+    // On iOS there is no way to enable / disable developer extras.
+    // So toggle it on when we have a remote inspector connection.
+    m_page.settings().setDeveloperExtrasEnabled(true);
+#endif
+
     InspectorController& inspectorController = m_page.inspectorController();
     inspectorController.setHasRemoteFrontend(true);
     inspectorController.connectFrontend(reinterpret_cast<WebCore::InspectorFrontendChannel*>(channel));
@@ -84,8 +95,12 @@ void PageDebuggable::connect(Inspector::InspectorFrontendChannel* channel)
 void PageDebuggable::disconnect()
 {
     InspectorController& inspectorController = m_page.inspectorController();
-    inspectorController.disconnectFrontend();
+    inspectorController.disconnectFrontend(InspectorDisconnectReason::InspectorDestroyed);
     inspectorController.setHasRemoteFrontend(false);
+
+#if PLATFORM(IOS)
+    m_page.settings().setDeveloperExtrasEnabled(false);
+#endif
 }
 
 void PageDebuggable::dispatchMessageFromRemoteFrontend(const String& message)

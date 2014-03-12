@@ -1,4 +1,4 @@
-# Copyright (C) 2011, 2012, 2013 Apple Inc. All rights reserved.
+# Copyright (C) 2011, 2012, 2013, 2014 Apple Inc. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -47,14 +47,15 @@ macro dispatchAfterCall()
     loadp CodeBlock::m_instructions[PB], PB
     loadisFromInstruction(1, t1)
     storeq t0, [cfr, t1, 8]
-    valueProfile(t0, 7, t2)
-    dispatch(8)
+    valueProfile(t0, (CallOpCodeSize - 1), t2)
+    dispatch(CallOpCodeSize)
 end
 
 macro cCall2(function, arg1, arg2)
+    checkStackPointerAlignment(t4, 0xbad0c002)
     if X86_64
-        move arg1, t5
-        move arg2, t4
+        move arg1, t4
+        move arg2, t5
         call function
     elsif ARM64
         move arg1, t0
@@ -67,11 +68,20 @@ macro cCall2(function, arg1, arg2)
     end
 end
 
+macro cCall2Void(function, arg1, arg2)
+    if C_LOOP
+        cloopCallSlowPathVoid function, arg1, arg2
+    else
+        cCall2(function, arg1, arg2)
+    end
+end
+
 # This barely works. arg3 and arg4 should probably be immediates.
 macro cCall4(function, arg1, arg2, arg3, arg4)
+    checkStackPointerAlignment(t4, 0xbad0c004)
     if X86_64
-        move arg1, t5
-        move arg2, t4
+        move arg1, t4
+        move arg2, t5
         move arg3, t1
         move arg4, t2
         call function
@@ -88,66 +98,49 @@ macro cCall4(function, arg1, arg2, arg3, arg4)
     end
 end
 
-macro functionPrologue(extraStackSpace)
+macro doCallToJavaScript(makeCall)
     if X86_64
-        push cfr
-        move sp, cfr
-    elsif ARM64
-        pushLRAndFP
-    end
-    pushCalleeSaves
-    if X86_64
-        subp extraStackSpace, sp
-    end
-end
-
-macro functionEpilogue(extraStackSpace)
-    if X86_64
-        addp extraStackSpace, sp
-    end
-    popCalleeSaves
-    if X86_64
-        pop cfr
-    elsif ARM64
-        popLRAndFP
-    end
-end
-
-macro doCallToJavaScript(makeCall, doReturn)
-    if X86_64
-        const entry = t5
-        const vmTopCallFrame = t4
+        const entry = t4
+        const vm = t5
         const protoCallFrame = t1
-        const topOfStack = t2
 
-        const extraStackSpace = 8
         const previousCFR = t0
         const previousPC = t6
         const temp1 = t0
         const temp2 = t3
         const temp3 = t6
-    elsif ARM64
+    elsif ARM64 or C_LOOP
         const entry = a0
-        const vmTopCallFrame = a1
+        const vm = a1
         const protoCallFrame = a2
-        const topOfStack = a3
 
-        const extraStackSpace = 0
-        const previousCFR = t4
+        const previousCFR = t5
         const previousPC = lr
         const temp1 = t3
-        const temp2 = t5
+        const temp2 = t4
         const temp3 = t6
     end
 
-    functionPrologue(extraStackSpace)
+    callToJavaScriptPrologue()
 
-    move topOfStack, cfr
-    subp (CallFrameHeaderSlots-1)*8, cfr
+    if X86_64
+        loadp 7*8[sp], previousPC
+        move 6*8[sp], previousCFR
+    elsif ARM64
+        move cfr, previousCFR
+    end
+
+    checkStackPointerAlignment(temp2, 0xbad0dc01)
+
+    # The stack reserved zone ensures that we have adequate space for the
+    # VMEntrySentinelFrame. Proceed with allocating and initializing the
+    # sentinel frame.
+    move sp, cfr
+    subp CallFrameHeaderSlots * 8, cfr
     storep 0, ArgumentCount[cfr]
-    storep vmTopCallFrame, Callee[cfr]
-    loadp [vmTopCallFrame], temp1
-    storep temp1, ScopeChain[cfr]
+    storep vm, Callee[cfr]
+    loadp VM::topCallFrame[vm], temp2
+    storep temp2, ScopeChain[cfr]
     storep 1, CodeBlock[cfr]
     if X86_64
         loadp 7*8[sp], previousPC
@@ -155,20 +148,45 @@ macro doCallToJavaScript(makeCall, doReturn)
     end
     storep previousPC, ReturnPC[cfr]
     storep previousCFR, CallerFrame[cfr]
-    move cfr, temp1
 
     loadi ProtoCallFrame::paddedArgCount[protoCallFrame], temp2
     addp CallFrameHeaderSlots, temp2, temp2
     lshiftp 3, temp2
-    subp temp2, cfr
-    storep temp1, CallerFrame[cfr]
+    subp cfr, temp2, temp1
 
+    # Ensure that we have enough additional stack capacity for the incoming args,
+    # and the frame for the JS code we're executing. We need to do this check
+    # before we start copying the args from the protoCallFrame below.
+    bpaeq temp1, VM::m_jsStackLimit[vm], .stackHeightOK
+
+    move cfr, sp
+
+    if C_LOOP
+        move entry, temp2
+        move vm, temp3
+        cloopCallSlowPath _llint_stack_check_at_vm_entry, vm, temp1
+        bpeq t0, 0, .stackCheckFailed
+        move temp2, entry
+        move temp3, vm
+        jmp .stackHeightOK
+
+.stackCheckFailed:
+        move temp2, entry
+        move temp3, vm
+    end
+
+    cCall2(_llint_throw_stack_overflow_error, vm, protoCallFrame)
+    callToJavaScriptEpilogue()
+    ret
+
+.stackHeightOK:
+    move temp1, sp
     move 5, temp1
 
 .copyHeaderLoop:
     subi 1, temp1
-    loadp [protoCallFrame, temp1, 8], temp3
-    storep temp3, CodeBlock[cfr, temp1, 8]
+    loadq [protoCallFrame, temp1, 8], temp3
+    storeq temp3, CodeBlock[sp, temp1, 8]
     btinz temp1, .copyHeaderLoop
 
     loadi ProtoCallFrame::argCountAndCodeOriginValue[protoCallFrame], temp2
@@ -180,7 +198,7 @@ macro doCallToJavaScript(makeCall, doReturn)
     move ValueUndefined, temp1
 .fillExtraArgsLoop:
     subi 1, temp3
-    storep temp1, ThisArgumentOffset+8[cfr, temp3, 8]
+    storeq temp1, ThisArgumentOffset + 8[sp, temp3, 8]
     bineq temp2, temp3, .fillExtraArgsLoop
 
 .copyArgs:
@@ -189,53 +207,97 @@ macro doCallToJavaScript(makeCall, doReturn)
 .copyArgsLoop:
     btiz temp2, .copyArgsDone
     subi 1, temp2
-    loadp [temp1, temp2, 8], temp3
-    storep temp3, ThisArgumentOffset+8[cfr, temp2, 8]
+    loadq [temp1, temp2, 8], temp3
+    storeq temp3, ThisArgumentOffset + 8[sp, temp2, 8]
     jmp .copyArgsLoop
 
 .copyArgsDone:
-    storep cfr, [vmTopCallFrame]
+    if ARM64
+        move sp, temp2
+        storep temp2, VM::topCallFrame[vm]
+    else
+        storep sp, VM::topCallFrame[vm]
+    end
 
     move 0xffff000000000000, csr1
     addp 2, csr1, csr2
 
+    checkStackPointerAlignment(temp3, 0xbad0dc02)
+
     makeCall(entry, temp1)
+
+    checkStackPointerAlignment(temp3, 0xbad0dc03)
 
     bpeq CodeBlock[cfr], 1, .calleeFramePopped
     loadp CallerFrame[cfr], cfr
 
 .calleeFramePopped:
-    loadp Callee[cfr], temp2 # VM.topCallFrame
-    loadp ScopeChain[cfr], temp3
-    storep temp3, [temp2]
+    loadp Callee[cfr], temp2 # VM
+    loadp ScopeChain[cfr], temp3 # previous topCallFrame
+    storep temp3, VM::topCallFrame[temp2]
 
-    doReturn(extraStackSpace)
+    checkStackPointerAlignment(temp3, 0xbad0dc04)
+
+    if X86_64
+        pop t5
+    end
+    callToJavaScriptEpilogue()
+
+    ret
 end
+
 
 macro makeJavaScriptCall(entry, temp)
-    call entry
+    addp 16, sp
+    if C_LOOP
+        cloopCallJSFunction entry
+    else
+        call entry
+    end
+    subp 16, sp
 end
+
 
 macro makeHostFunctionCall(entry, temp)
     move entry, temp
     if X86_64
-        move cfr, t5
+        move sp, t4
     elsif ARM64 or C_LOOP
-        move cfr, a0
+        move sp, a0
     end
-    call temp
+    if C_LOOP
+        storep cfr, [sp]
+        storep lr, 8[sp]
+        cloopCallNative temp
+    else
+        addp 16, sp 
+        call temp
+        subp 16, sp
+    end
 end
 
-macro doReturnFromJavaScript(extraStackSpace)
-_returnFromJavaScript:
-    functionEpilogue(extraStackSpace)
-    ret
-end
 
-macro doReturnFromHostFunction(extraStackSpace)
-    functionEpilogue(extraStackSpace)
+_handleUncaughtException:
+    loadp ScopeChain[cfr], t3
+    andp MarkedBlockMask, t3
+    loadp MarkedBlock::m_weakSet + WeakSet::m_vm[t3], t3
+    loadp VM::callFrameForThrow[t3], cfr
+
+    # So far, we've unwound the stack to the frame just below the sentinel frame, except
+    # in the case of stack overflow in the first function called from callToJavaScript.
+    # Check if we need to pop to the sentinel frame and do the necessary clean up for
+    # returning to the caller C frame.
+    bpeq CodeBlock[cfr], 1, .handleUncaughtExceptionAlreadyIsSentinel
+    loadp CallerFrame[cfr], cfr
+.handleUncaughtExceptionAlreadyIsSentinel:
+
+    loadp Callee[cfr], t3 # VM
+    loadp ScopeChain[cfr], t5 # previous topCallFrame
+    storep t5, VM::topCallFrame[t3]
+
+    callToJavaScriptEpilogue()
     ret
-end
+
 
 macro prepareStateForCCall()
     leap [PB, PC, 8], PC
@@ -244,7 +306,6 @@ end
 
 macro restoreStateAfterCCall()
     move t0, PC
-    move t1, cfr
     move t3, PB
     subp PB, PC
     rshiftp 3, PC
@@ -273,7 +334,6 @@ macro callCallSlowPath(slowPath, action)
     storei PC, ArgumentCount + TagOffset[cfr]
     prepareStateForCCall()
     cCall2(slowPath, cfr, PC)
-    move t1, cfr
     action(t0)
 end
 
@@ -281,7 +341,6 @@ macro callWatchdogTimerHandler(throwHandler)
     storei PC, ArgumentCount + TagOffset[cfr]
     prepareStateForCCall()
     cCall2(_llint_slow_path_handle_watchdog_timer, cfr, PC)
-    move t1, cfr
     btpnz t0, throwHandler
     move t3, PB
     loadi ArgumentCount + TagOffset[cfr], PC
@@ -294,8 +353,8 @@ macro checkSwitchToJITForLoop()
             storei PC, ArgumentCount + TagOffset[cfr]
             prepareStateForCCall()
             cCall2(_llint_loop_osr, cfr, PC)
-            move t1, cfr
             btpz t0, .recover
+            move t1, sp
             jmp t0
         .recover:
             move t3, PB
@@ -336,10 +395,10 @@ macro writeBarrierOnOperand(cellOperand)
         loadisFromInstruction(cellOperand, t1)
         loadConstantOrVariableCell(t1, t2, .writeBarrierDone)
         checkMarkByte(t2, t1, t3, 
-            macro(marked)
-                btbz marked, .writeBarrierDone
+            macro(gcData)
+                btbnz gcData, .writeBarrierDone
                 push PB, PC
-                cCall2(_llint_write_barrier_slow, cfr, t2)
+                cCall2Void(_llint_write_barrier_slow, cfr, t2)
                 pop PC, PB
             end
         )
@@ -350,7 +409,7 @@ end
 macro writeBarrierOnOperands(cellOperand, valueOperand)
     if GGC
         loadisFromInstruction(valueOperand, t1)
-        loadConstantOrVariable(t1, t0)
+        loadConstantOrVariableCell(t1, t0, .writeBarrierDone)
         btpz t0, .writeBarrierDone
     
         writeBarrierOnOperand(cellOperand)
@@ -361,16 +420,16 @@ end
 macro writeBarrierOnGlobalObject(valueOperand)
     if GGC
         loadisFromInstruction(valueOperand, t1)
-        loadConstantOrVariable(t1, t0)
+        loadConstantOrVariableCell(t1, t0, .writeBarrierDone)
         btpz t0, .writeBarrierDone
     
         loadp CodeBlock[cfr], t3
         loadp CodeBlock::m_globalObject[t3], t3
         checkMarkByte(t3, t1, t2,
-            macro(marked)
-                btbz marked, .writeBarrierDone
+            macro(gcData)
+                btbnz gcData, .writeBarrierDone
                 push PB, PC
-                cCall2(_llint_write_barrier_slow, cfr, t3)
+                cCall2Void(_llint_write_barrier_slow, cfr, t3)
                 pop PC, PB
             end
         )
@@ -383,23 +442,62 @@ macro valueProfile(value, operand, scratch)
     storeq value, ValueProfile::m_buckets[scratch]
 end
 
+macro loadStructure(cell, structure)
+end
+
+macro loadStructureWithScratch(cell, structure, scratch)
+    loadp CodeBlock[cfr], scratch
+    loadp CodeBlock::m_vm[scratch], scratch
+    loadp VM::heap + Heap::m_structureIDTable + StructureIDTable::m_table[scratch], scratch
+    loadi JSCell::m_structureID[cell], structure
+    loadp [scratch, structure, 8], structure
+end
+
+macro loadStructureAndClobberFirstArg(cell, structure)
+    loadi JSCell::m_structureID[cell], structure
+    loadp CodeBlock[cfr], cell
+    loadp CodeBlock::m_vm[cell], cell
+    loadp VM::heap + Heap::m_structureIDTable + StructureIDTable::m_table[cell], cell
+    loadp [cell, structure, 8], structure
+end
+
+macro storeStructureWithTypeInfo(cell, structure, scratch)
+    loadq Structure::m_blob + StructureIDBlob::u.doubleWord[structure], scratch
+    storeq scratch, JSCell::m_structureID[cell]
+end
 
 # Entrypoints into the interpreter.
 
 # Expects that CodeBlock is in t1, which is what prologue() leaves behind.
-macro functionArityCheck(doneLabel, slow_path)
+macro functionArityCheck(doneLabel, slowPath)
     loadi PayloadOffset + ArgumentCount[cfr], t0
     biaeq t0, CodeBlock::m_numParameters[t1], doneLabel
     prepareStateForCCall()
-    cCall2(slow_path, cfr, PC)   # This slow_path has a simple protocol: t0 = 0 => no error, t0 != 0 => error
-    btiz t0, .isArityFixupNeeded
+    cCall2(slowPath, cfr, PC)   # This slowPath has the protocol: t0 = 0 => no error, t0 != 0 => error
+    btiz t0, .noError
     move t1, cfr   # t1 contains caller frame
     jmp _llint_throw_from_slow_path_trampoline
 
-.isArityFixupNeeded:
+.noError:
+    # t1 points to ArityCheckData.
+    loadp CommonSlowPaths::ArityCheckData::thunkToCall[t1], t2
+    btpz t2, .proceedInline
+    
+    loadp CommonSlowPaths::ArityCheckData::returnPC[t1], t7
+    loadp CommonSlowPaths::ArityCheckData::paddedStackSpace[t1], t0
+    call t2
+    if ASSERT_ENABLED
+        loadp ReturnPC[cfr], t0
+        loadp [t0], t0
+    end
+    jmp .continue
+
+.proceedInline:
+    loadi CommonSlowPaths::ArityCheckData::paddedStackSpace[t1], t1
     btiz t1, .continue
 
-    // Move frame up "t1" slots
+    // Move frame up "t1 * 2" slots
+    lshiftp 1, t1
     negq t1
     move cfr, t3
     loadi PayloadOffset + ArgumentCount[cfr], t2
@@ -420,6 +518,7 @@ macro functionArityCheck(doneLabel, slow_path)
 
     lshiftp 3, t1
     addp t1, cfr
+    addp t1, sp
 
 .continue:
     # Reload CodeBlock and reset PC, since the slow_path clobbered them.
@@ -428,7 +527,6 @@ macro functionArityCheck(doneLabel, slow_path)
     move 0, PC
     jmp doneLabel
 end
-
 
 macro branchIfException(label)
     loadp ScopeChain[cfr], t3
@@ -444,6 +542,7 @@ end
 
 _llint_op_enter:
     traceExecution()
+    checkStackPointerAlignment(t2, 0xdead00e1)
     loadp CodeBlock[cfr], t2                // t2<CodeBlock> = cfr.CodeBlock
     loadi CodeBlock::m_numVars[t2], t2      // t2<size_t> = t2<CodeBlock>.m_numVars
     btiz t2, .opEnterDone
@@ -519,10 +618,10 @@ _llint_op_to_this:
     loadisFromInstruction(1, t0)
     loadq [cfr, t0, 8], t0
     btqnz t0, tagMask, .opToThisSlow
-    loadp JSCell::m_structure[t0], t0
-    bbneq Structure::m_typeInfo + TypeInfo::m_type[t0], FinalObjectType, .opToThisSlow
+    bbneq JSCell::m_type[t0], FinalObjectType, .opToThisSlow
+    loadStructureWithScratch(t0, t1, t2)
     loadpFromInstruction(2, t2)
-    bpneq t0, t2, .opToThisSlow
+    bpneq t1, t2, .opToThisSlow
     dispatch(3)
 
 .opToThisSlow:
@@ -637,11 +736,11 @@ macro equalNullComparison()
     loadisFromInstruction(2, t0)
     loadq [cfr, t0, 8], t0
     btqnz t0, tagMask, .immediate
-    loadp JSCell::m_structure[t0], t2
-    btbnz Structure::m_typeInfo + TypeInfo::m_flags[t2], MasqueradesAsUndefined, .masqueradesAsUndefined
+    btbnz JSCell::m_flags[t0], MasqueradesAsUndefined, .masqueradesAsUndefined
     move 0, t0
     jmp .done
 .masqueradesAsUndefined:
+    loadStructureWithScratch(t0, t2, t1)
     loadp CodeBlock[cfr], t0
     loadp CodeBlock::m_globalObject[t0], t0
     cpeq Structure::m_globalObject[t2], t0, t0
@@ -978,8 +1077,7 @@ _llint_op_check_has_instance:
     traceExecution()
     loadisFromInstruction(3, t1)
     loadConstantOrVariableCell(t1, t0, .opCheckHasInstanceSlow)
-    loadp JSCell::m_structure[t0], t0
-    btbz Structure::m_typeInfo + TypeInfo::m_flags[t0], ImplementsDefaultHasInstance, .opCheckHasInstanceSlow
+    btbz JSCell::m_flags[t0], ImplementsDefaultHasInstance, .opCheckHasInstanceSlow
     dispatch(5)
 
 .opCheckHasInstanceSlow:
@@ -991,24 +1089,23 @@ _llint_op_instanceof:
     traceExecution()
     # Actually do the work.
     loadisFromInstruction(3, t0)
-    loadisFromInstruction(1, t3)
     loadConstantOrVariableCell(t0, t1, .opInstanceofSlow)
-    loadp JSCell::m_structure[t1], t2
-    bbb Structure::m_typeInfo + TypeInfo::m_type[t2], ObjectType, .opInstanceofSlow
+    bbb JSCell::m_type[t1], ObjectType, .opInstanceofSlow
     loadisFromInstruction(2, t0)
     loadConstantOrVariableCell(t0, t2, .opInstanceofSlow)
     
     # Register state: t1 = prototype, t2 = value
     move 1, t0
 .opInstanceofLoop:
-    loadp JSCell::m_structure[t2], t2
-    loadq Structure::m_prototype[t2], t2
+    loadStructureAndClobberFirstArg(t2, t3)
+    loadq Structure::m_prototype[t3], t2
     bqeq t2, t1, .opInstanceofDone
     btqz t2, tagMask, .opInstanceofLoop
 
     move 0, t0
 .opInstanceofDone:
     orq ValueFalse, t0
+    loadisFromInstruction(1, t3)
     storeq t0, [cfr, t3, 8]
     dispatch(4)
 
@@ -1028,17 +1125,17 @@ _llint_op_is_undefined:
     storeq t3, [cfr, t2, 8]
     dispatch(3)
 .opIsUndefinedCell:
-    loadp JSCell::m_structure[t0], t0
-    btbnz Structure::m_typeInfo + TypeInfo::m_flags[t0], MasqueradesAsUndefined, .masqueradesAsUndefined
+    btbnz JSCell::m_flags[t0], MasqueradesAsUndefined, .masqueradesAsUndefined
     move ValueFalse, t1
     storeq t1, [cfr, t2, 8]
     dispatch(3)
 .masqueradesAsUndefined:
+    loadStructureWithScratch(t0, t3, t1)
     loadp CodeBlock[cfr], t1
     loadp CodeBlock::m_globalObject[t1], t1
-    cpeq Structure::m_globalObject[t0], t1, t3
-    orq ValueFalse, t3
-    storeq t3, [cfr, t2, 8]
+    cpeq Structure::m_globalObject[t3], t1, t0
+    orq ValueFalse, t0
+    storeq t0, [cfr, t2, 8]
     dispatch(3)
 
 
@@ -1071,8 +1168,7 @@ _llint_op_is_string:
     loadisFromInstruction(1, t2)
     loadConstantOrVariable(t1, t0)
     btqnz t0, tagMask, .opIsStringNotCell
-    loadp JSCell::m_structure[t0], t0
-    cbeq Structure::m_typeInfo + TypeInfo::m_type[t0], StringType, t1
+    cbeq JSCell::m_type[t0], StringType, t1
     orq ValueFalse, t1
     storeq t1, [cfr, t2, 8]
     dispatch(3)
@@ -1124,14 +1220,15 @@ macro getById(getPropertyStorage)
     # to take fast path on the new cache. At worst we take slow path, which is what
     # we would have been doing anyway.
     loadisFromInstruction(2, t0)
-    loadpFromInstruction(4, t1)
     loadConstantOrVariableCell(t0, t3, .opGetByIdSlow)
-    loadisFromInstruction(5, t2)
+    loadStructureWithScratch(t3, t2, t1)
+    loadpFromInstruction(4, t1)
+    bpneq t2, t1, .opGetByIdSlow
     getPropertyStorage(
         t3,
         t0,
         macro (propertyStorage, scratch)
-            bpneq JSCell::m_structure[t3], t1, .opGetByIdSlow
+            loadisFromInstruction(5, t2)
             loadisFromInstruction(1, t1)
             loadq [propertyStorage, t2], scratch
             storeq scratch, [cfr, t1, 8]
@@ -1157,7 +1254,7 @@ _llint_op_get_array_length:
     loadisFromInstruction(2, t0)
     loadpFromInstruction(4, t1)
     loadConstantOrVariableCell(t0, t3, .opGetArrayLengthSlow)
-    loadp JSCell::m_structure[t3], t2
+    move t3, t2
     arrayProfile(t2, t1, t0)
     btiz t2, IsArray, .opGetArrayLengthSlow
     btiz t2, IndexingShapeMask, .opGetArrayLengthSlow
@@ -1195,15 +1292,16 @@ macro putById(getPropertyStorage)
     traceExecution()
     writeBarrierOnOperands(1, 3)
     loadisFromInstruction(1, t3)
-    loadpFromInstruction(4, t1)
     loadConstantOrVariableCell(t3, t0, .opPutByIdSlow)
-    loadisFromInstruction(3, t2)
+    loadStructureWithScratch(t0, t2, t1)
+    loadpFromInstruction(4, t1)
+    bpneq t2, t1, .opPutByIdSlow
     getPropertyStorage(
         t0,
         t3,
         macro (propertyStorage, scratch)
-            bpneq JSCell::m_structure[t0], t1, .opPutByIdSlow
             loadisFromInstruction(5, t1)
+            loadisFromInstruction(3, t2)
             loadConstantOrVariable(t2, scratch)
             storeq scratch, [propertyStorage, t1]
             dispatch(9)
@@ -1228,9 +1326,10 @@ macro putByIdTransition(additionalChecks, getPropertyStorage)
     loadisFromInstruction(1, t3)
     loadpFromInstruction(4, t1)
     loadConstantOrVariableCell(t3, t0, .opPutByIdSlow)
+    loadStructureWithScratch(t0, t2, t3)
+    bpneq t2, t1, .opPutByIdSlow
+    additionalChecks(t1, t3, t2)
     loadisFromInstruction(3, t2)
-    bpneq JSCell::m_structure[t0], t1, .opPutByIdSlow
-    additionalChecks(t1, t3)
     loadisFromInstruction(5, t1)
     getPropertyStorage(
         t0,
@@ -1240,15 +1339,16 @@ macro putByIdTransition(additionalChecks, getPropertyStorage)
             loadConstantOrVariable(t2, t1)
             storeq t1, [t3]
             loadpFromInstruction(6, t1)
-            storep t1, JSCell::m_structure[t0]
+            loadi Structure::m_blob + StructureIDBlob::u.words.word1[t1], t1
+            storei t1, JSCell::m_structureID[t0]
             dispatch(9)
         end)
 end
 
-macro noAdditionalChecks(oldStructure, scratch)
+macro noAdditionalChecks(oldStructure, scratch, scratch2)
 end
 
-macro structureChainChecks(oldStructure, scratch)
+macro structureChainChecks(oldStructure, scratch, scratch2)
     const protoCell = oldStructure    # Reusing the oldStructure register for the proto
     loadpFromInstruction(7, scratch)
     assert(macro (ok) btpnz scratch, ok end)
@@ -1257,7 +1357,8 @@ macro structureChainChecks(oldStructure, scratch)
     bqeq Structure::m_prototype[oldStructure], ValueNull, .done
 .loop:
     loadq Structure::m_prototype[oldStructure], protoCell
-    loadp JSCell::m_structure[protoCell], oldStructure
+    loadStructureAndClobberFirstArg(protoCell, scratch2)
+    move scratch2, oldStructure
     bpneq oldStructure, [scratch], .opPutByIdSlow
     addp 8, scratch
     bqneq Structure::m_prototype[oldStructure], ValueNull, .loop
@@ -1284,8 +1385,8 @@ _llint_op_get_by_val:
     traceExecution()
     loadisFromInstruction(2, t2)
     loadConstantOrVariableCell(t2, t0, .opGetByValSlow)
-    loadp JSCell::m_structure[t0], t2
     loadpFromInstruction(4, t3)
+    move t0, t2
     arrayProfile(t2, t3, t1)
     loadisFromInstruction(3, t3)
     loadConstantOrVariableInt32(t3, t1, .opGetByValSlow)
@@ -1368,7 +1469,7 @@ _llint_op_get_by_pname:
     loadConstantOrVariableCell(t2, t0, .opGetByPnameSlow)
     assertNotConstant(t3)
     loadq [cfr, t3, 8], t1
-    loadp JSCell::m_structure[t0], t2
+    loadStructureWithScratch(t0, t2, t3)
     bpneq t2, JSPropertyNameIterator::m_cachedStructure[t1], .opGetByPnameSlow
     loadisFromInstruction(6, t3)
     loadi PayloadOffset[cfr, t3, 8], t3
@@ -1409,8 +1510,8 @@ macro putByVal(holeCheck, slowPath)
     writeBarrierOnOperands(1, 3)
     loadisFromInstruction(1, t0)
     loadConstantOrVariableCell(t0, t1, .opPutByValSlow)
-    loadp JSCell::m_structure[t1], t2
     loadpFromInstruction(4, t3)
+    move t1, t2
     arrayProfile(t2, t3, t0)
     loadisFromInstruction(2, t0)
     loadConstantOrVariableInt32(t0, t3, .opPutByValSlow)
@@ -1513,8 +1614,8 @@ macro equalNull(cellHandler, immediateHandler)
     assertNotConstant(t0)
     loadq [cfr, t0, 8], t0
     btqnz t0, tagMask, .immediate
-    loadp JSCell::m_structure[t0], t2
-    cellHandler(t2, Structure::m_typeInfo + TypeInfo::m_flags[t2], .target)
+    loadStructureWithScratch(t0, t2, t1)
+    cellHandler(t2, JSCell::m_flags[t0], .target)
     dispatch(3)
 
 .target:
@@ -1646,8 +1747,7 @@ _llint_op_switch_char:
     loadp CodeBlock::RareData::m_switchJumpTables + VectorBufferOffset[t2], t2
     addp t3, t2
     btqnz t1, tagMask, .opSwitchCharFallThrough
-    loadp JSCell::m_structure[t1], t0
-    bbneq Structure::m_typeInfo + TypeInfo::m_type[t0], StringType, .opSwitchCharFallThrough
+    bbneq JSCell::m_type[t1], StringType, .opSwitchCharFallThrough
     bineq JSString::m_length[t1], 1, .opSwitchCharFallThrough
     loadp JSString::m_value[t1], t0
     btpz  t0, .opSwitchOnRope
@@ -1696,9 +1796,9 @@ macro arrayProfileForCall()
     negp t3
     loadq ThisArgumentOffset[cfr, t3, 8], t0
     btqnz t0, tagMask, .done
-    loadp JSCell::m_structure[t0], t0
-    loadpFromInstruction(6, t1)
-    storep t0, ArrayProfile::m_lastSeenStructure[t1]
+    loadpFromInstruction((CallOpCodeSize - 2), t1)
+    loadi JSCell::m_structureID[t0], t3
+    storei t3, ArrayProfile::m_lastSeenStructureID[t1]
 .done:
 end
 
@@ -1717,10 +1817,9 @@ macro doCall(slowPath)
     storeq t0, ScopeChain[t3]
     loadisFromInstruction(3, t2)
     storei PC, ArgumentCount + TagOffset[cfr]
-    storeq cfr, CallerFrame[t3]
     storei t2, ArgumentCount + PayloadOffset[t3]
-    move t3, cfr
-    callTargetFunction(t1)
+    addp CallerFrameAndPCSize, t3
+    callTargetFunction(t1, t3)
 
 .opCallSlow:
     slowPathForCall(slowPath)
@@ -1760,8 +1859,7 @@ _llint_op_ret_object_or_this:
     loadisFromInstruction(1, t2)
     loadConstantOrVariable(t2, t0)
     btqnz t0, tagMask, .opRetObjectOrThisNotObject
-    loadp JSCell::m_structure[t0], t2
-    bbb Structure::m_typeInfo + TypeInfo::m_type[t2], ObjectType, .opRetObjectOrThisNotObject
+    bbb JSCell::m_type[t0], ObjectType, .opRetObjectOrThisNotObject
     doReturn()
 
 .opRetObjectOrThisNotObject:
@@ -1776,8 +1874,7 @@ _llint_op_to_primitive:
     loadisFromInstruction(1, t3)
     loadConstantOrVariable(t2, t0)
     btqnz t0, tagMask, .opToPrimitiveIsImm
-    loadp JSCell::m_structure[t0], t2
-    bbneq Structure::m_typeInfo + TypeInfo::m_type[t2], StringType, .opToPrimitiveSlowCase
+    bbneq JSCell::m_type[t0], StringType, .opToPrimitiveSlowCase
 .opToPrimitiveIsImm:
     storeq t0, [cfr, t3, 8]
     dispatch(3)
@@ -1807,7 +1904,7 @@ _llint_op_next_pname:
     loadisFromInstruction(2, t3)
     assertNotConstant(t3)
     loadq [cfr, t3, 8], t3
-    loadp JSCell::m_structure[t3], t1
+    loadStructureWithScratch(t3, t1, t0)
     bpneq t1, JSPropertyNameIterator::m_cachedStructure[t2], .opNextPnameSlow
     loadp JSPropertyNameIterator::m_cachedPrototypeChain[t2], t0
     loadp StructureChain::m_vector[t0], t0
@@ -1815,7 +1912,7 @@ _llint_op_next_pname:
 .opNextPnameCheckPrototypeLoop:
     bqeq Structure::m_prototype[t1], ValueNull, .opNextPnameSlow
     loadq Structure::m_prototype[t1], t2
-    loadp JSCell::m_structure[t2], t1
+    loadStructureWithScratch(t2, t1, t3)
     bpneq t1, [t0], .opNextPnameSlow
     addp 8, t0
     btpnz [t0], .opNextPnameCheckPrototypeLoop
@@ -1840,6 +1937,8 @@ _llint_op_catch:
     andp MarkedBlockMask, t3
     loadp MarkedBlock::m_weakSet + WeakSet::m_vm[t3], t3
     loadp VM::callFrameForThrow[t3], cfr
+    restoreStackPointerAfterCall()
+
     loadp CodeBlock[cfr], PB
     loadp CodeBlock::m_instructions[PB], PB
     loadp VM::targetInterpreterPCForThrow[t3], PC
@@ -1879,6 +1978,8 @@ _llint_throw_during_call_trampoline:
 
 
 macro nativeCallTrampoline(executableOffsetToFunction)
+
+    functionPrologue()
     storep 0, CodeBlock[cfr]
     if X86_64
         loadp ScopeChain[cfr], t0
@@ -1888,19 +1989,15 @@ macro nativeCallTrampoline(executableOffsetToFunction)
         loadp CallerFrame[cfr], t0
         loadq ScopeChain[t0], t1
         storeq t1, ScopeChain[cfr]
-        peek 0, t1
-        storep t1, ReturnPC[cfr]
-        move cfr, t5  # t5 = rdi
-        subp 16 - 8, sp
-        loadp Callee[cfr], t4 # t4 = rsi
-        loadp JSFunction::m_executable[t4], t1
-        move t0, cfr # Restore cfr to avoid loading from stack
+        move cfr, t4  # t4 = rdi
+        loadp Callee[cfr], t5 # t5 = rsi
+        loadp JSFunction::m_executable[t5], t1
+        checkStackPointerAlignment(t3, 0xdead0001)
         call executableOffsetToFunction[t1]
-        addp 16 - 8, sp
         loadp ScopeChain[cfr], t3
         andp MarkedBlockMask, t3
         loadp MarkedBlock::m_weakSet + WeakSet::m_vm[t3], t3
-    elsif ARM64
+    elsif ARM64 or C_LOOP
         loadp ScopeChain[cfr], t0
         andp MarkedBlockMask, t0
         loadp MarkedBlock::m_weakSet + WeakSet::m_vm[t0], t0
@@ -1914,30 +2011,11 @@ macro nativeCallTrampoline(executableOffsetToFunction)
         loadp Callee[cfr], t1
         loadp JSFunction::m_executable[t1], t1
         move t2, cfr # Restore cfr to avoid loading from stack
-        call executableOffsetToFunction[t1]
-        restoreReturnAddressBeforeReturn(t3)
-        loadp ScopeChain[cfr], t3
-        andp MarkedBlockMask, t3
-        loadp MarkedBlock::m_weakSet + WeakSet::m_vm[t3], t3
-    elsif C_LOOP
-        loadp CallerFrame[cfr], t0
-        loadp ScopeChain[t0], t1
-        storep t1, ScopeChain[cfr]
-
-        loadp ScopeChain[cfr], t3
-        andp MarkedBlockMask, t3
-        loadp MarkedBlock::m_weakSet + WeakSet::m_vm[t3], t3
-        storep cfr, VM::topCallFrame[t3]
-
-        move t0, t2
-        preserveReturnAddressAfterCall(t3)
-        storep t3, ReturnPC[cfr]
-        move cfr, t0
-        loadp Callee[cfr], t1
-        loadp JSFunction::m_executable[t1], t1
-        move t2, cfr
-        cloopCallNative executableOffsetToFunction[t1]
-
+        if C_LOOP
+            cloopCallNative executableOffsetToFunction[t1]
+        else
+            call executableOffsetToFunction[t1]
+        end
         restoreReturnAddressBeforeReturn(t3)
         loadp ScopeChain[cfr], t3
         andp MarkedBlockMask, t3
@@ -1946,16 +2024,14 @@ macro nativeCallTrampoline(executableOffsetToFunction)
         error
     end
 
-    btqnz VM::m_exception[t3], .exception
+    functionEpilogue()
+
+    btqnz VM::m_exception[t3], .handleException
     ret
-.exception:
-    preserveReturnAddressAfterCall(t1) # This is really only needed on X86_64
-    loadi ArgumentCount + TagOffset[cfr], PC
-    loadp CodeBlock[cfr], PB
-    loadp CodeBlock::m_vm[PB], t0
-    loadp CodeBlock::m_instructions[PB], PB
-    storep cfr, VM::topCallFrame[t0]
-    callSlowPath(_llint_throw_from_native_call)
+
+.handleException:
+    storep cfr, VM::topCallFrame[t3]
+    restoreStackPointerAfterCall()
     jmp _llint_throw_from_slow_path_trampoline
 end
 
@@ -2042,8 +2118,9 @@ _llint_op_resolve_scope:
 macro loadWithStructureCheck(operand, slowPath)
     loadisFromInstruction(operand, t0)
     loadq [cfr, t0, 8], t0
+    loadStructureWithScratch(t0, t2, t1)
     loadpFromInstruction(5, t1)
-    bpneq JSCell::m_structure[t0], t1, slowPath
+    bpneq t2, t1, slowPath
 end
 
 macro getProperty()

@@ -28,6 +28,7 @@
 #include "DashArray.h"
 #include "FontDescription.h"
 #include "FontGlyphs.h"
+#include "Path.h"
 #include "SimpleFontData.h"
 #include "TextDirection.h"
 #include "TypesettingFeatures.h"
@@ -75,6 +76,12 @@ struct GlyphOverflow {
     bool computeBounds;
 };
 
+class GlyphToPathTranslator {
+public:
+    virtual bool containsMorePaths() = 0;
+    virtual Path nextPath() = 0;
+    virtual ~GlyphToPathTranslator() { }
+};
 
 class Font {
 public:
@@ -157,7 +164,7 @@ public:
     {
         return glyphDataAndPageForCharacter(c, mirror, variant).first;
     }
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     const SimpleFontData* fontDataForCombiningCharacterSequence(const UChar*, size_t length, FontDataVariant) const;
 #endif
     std::pair<GlyphData, GlyphPage*> glyphDataAndPageForCharacter(UChar32 c, bool mirror, FontDataVariant variant) const

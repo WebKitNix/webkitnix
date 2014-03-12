@@ -28,7 +28,9 @@
 
 #if WK_API_ENABLED
 
-@class WKProcessClass;
+@class WKPreferences;
+@class WKProcessPool;
+@class WKVisitedLinkProvider;
 
 /*! A @link WKWebViewConfiguration @/link is a collection of properties used to initialize a web
         view.
@@ -45,7 +47,11 @@ WK_API_CLASS
         When this property is set to nil, a unique process class will be created for each
         @link WKWebView @/link initialized with the configuration.
 */
-@property (nonatomic, strong) WKProcessClass *processClass;
+@property (nonatomic, strong) WKProcessPool *processPool;
+
+@property (nonatomic, strong) WKPreferences *preferences;
+
+@property (nonatomic, strong) WKVisitedLinkProvider *visitedLinkProvider;
 
 @end
 

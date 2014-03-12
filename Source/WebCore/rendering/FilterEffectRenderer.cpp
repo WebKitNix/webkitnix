@@ -29,6 +29,8 @@
 
 #include "FilterEffectRenderer.h"
 
+#include "CachedSVGDocument.h"
+#include "CachedSVGDocumentReference.h"
 #include "ColorSpace.h"
 #include "Document.h"
 #include "ElementIterator.h"
@@ -40,29 +42,13 @@
 #include "FloatConversion.h"
 #include "Frame.h"
 #include "RenderLayer.h"
+#include "SVGElement.h"
+#include "SVGFilterPrimitiveStandardAttributes.h"
 #include "Settings.h"
+#include "SourceAlpha.h"
 
 #include <algorithm>
 #include <wtf/MathExtras.h>
-
-#if ENABLE(CSS_SHADERS) && USE(3D_GRAPHICS)
-#include "CustomFilterGlobalContext.h"
-#include "CustomFilterOperation.h"
-#include "CustomFilterProgram.h"
-#include "CustomFilterValidatedProgram.h"
-#include "FECustomFilter.h"
-#include "GraphicsContext3D.h"
-#include "RenderView.h"
-#include "ValidatedCustomFilterOperation.h"
-#endif
-
-#if ENABLE(SVG)
-#include "CachedSVGDocument.h"
-#include "CachedSVGDocumentReference.h"
-#include "SVGElement.h"
-#include "SVGFilterPrimitiveStandardAttributes.h"
-#include "SourceAlpha.h"
-#endif
 
 namespace WebCore {
 
@@ -81,36 +67,9 @@ static inline void lastMatrixRow(Vector<float>& parameters)
     parameters.append(0);
 }
 
-inline bool isFilterSizeValid(FloatRect rect)
-{
-    if (rect.width() < 0 || rect.width() > kMaxFilterSize
-        || rect.height() < 0 || rect.height() > kMaxFilterSize)
-        return false;
-    return true;
-}
-
-#if ENABLE(CSS_SHADERS) && USE(3D_GRAPHICS)
-static PassRefPtr<FECustomFilter> createCustomFilterEffect(Filter* filter, Document* document, ValidatedCustomFilterOperation* operation)
-{
-    if (!document)
-        return 0;
-
-    CustomFilterGlobalContext* globalContext = document->renderView()->customFilterGlobalContext();
-    globalContext->prepareContextIfNeeded(document->view()->hostWindow(), document->frame()->settings().forceSoftwareWebGLRendering());
-    if (!globalContext->context())
-        return 0;
-
-    return FECustomFilter::create(filter, globalContext->context(), operation->validatedProgram(), operation->parameters(),
-        operation->meshRows(), operation->meshColumns(),  operation->meshType());
-}
-#endif
-
 FilterEffectRenderer::FilterEffectRenderer()
     : m_graphicsBufferAttached(false)
     , m_hasFilterThatMovesPixels(false)
-#if ENABLE(CSS_SHADERS)
-    , m_hasCustomShaderFilter(false)
-#endif
 {
     setFilterResolution(FloatSize(1, 1));
     m_sourceGraphic = SourceGraphic::create(this);
@@ -127,7 +86,6 @@ GraphicsContext* FilterEffectRenderer::inputContext()
 
 PassRefPtr<FilterEffect> FilterEffectRenderer::buildReferenceFilter(RenderElement* renderer, PassRefPtr<FilterEffect> previousEffect, ReferenceFilterOperation* filterOperation)
 {
-#if ENABLE(SVG)
     if (!renderer)
         return 0;
 
@@ -171,27 +129,15 @@ PassRefPtr<FilterEffect> FilterEffectRenderer::buildReferenceFilter(RenderElemen
         m_effects.append(effect);
     }
     return effect;
-#else
-    UNUSED_PARAM(renderer);
-    UNUSED_PARAM(previousEffect);
-    UNUSED_PARAM(filterOperation);
-    return 0;
-#endif
 }
 
 bool FilterEffectRenderer::build(RenderElement* renderer, const FilterOperations& operations, FilterConsumer consumer)
 {
-#if ENABLE(CSS_SHADERS)
-    m_hasCustomShaderFilter = false;
-#endif
     m_hasFilterThatMovesPixels = operations.hasFilterThatMovesPixels();
     if (m_hasFilterThatMovesPixels)
         m_outsets = operations.outsets();
-    
-    // Keep the old effects on the stack until we've created the new effects.
-    // New FECustomFilters can reuse cached resources from old FECustomFilters.
-    FilterEffectList oldEffects;
-    m_effects.swap(oldEffects);
+
+    m_effects.clear();
 
     RefPtr<FilterEffect> previousEffect = m_sourceGraphic;
     for (size_t i = 0; i < operations.operations().size(); ++i) {
@@ -335,21 +281,6 @@ bool FilterEffectRenderer::build(RenderElement* renderer, const FilterOperations
                                                 dropShadowOperation->x(), dropShadowOperation->y(), dropShadowOperation->color(), 1);
             break;
         }
-#if ENABLE(CSS_SHADERS) && USE(3D_GRAPHICS)
-        case FilterOperation::CUSTOM:
-            // CUSTOM operations are always converted to VALIDATED_CUSTOM before getting here.
-            // The conversion happens in RenderLayer::computeFilterOperations.
-            ASSERT_NOT_REACHED();
-            break;
-        case FilterOperation::VALIDATED_CUSTOM: {
-            ValidatedCustomFilterOperation* customFilterOperation = static_cast<ValidatedCustomFilterOperation*>(filterOperation);
-            Document* document = renderer ? &renderer->document() : 0;
-            effect = createCustomFilterEffect(this, document, customFilterOperation);
-            if (effect)
-                m_hasCustomShaderFilter = true;
-            break;
-        }
-#endif
         default:
             break;
         }
@@ -379,7 +310,7 @@ bool FilterEffectRenderer::build(RenderElement* renderer, const FilterOperations
 
 bool FilterEffectRenderer::updateBackingStoreRect(const FloatRect& filterRect)
 {
-    if (!filterRect.isZero() && isFilterSizeValid(filterRect)) {
+    if (!filterRect.isZero() && FilterEffect::isFilterSizeValid(filterRect)) {
         FloatRect currentSourceRect = sourceImageRect();
         if (filterRect != currentSourceRect) {
             setSourceImageRect(filterRect);
@@ -418,13 +349,6 @@ void FilterEffectRenderer::apply()
 
 LayoutRect FilterEffectRenderer::computeSourceImageRectForDirtyRect(const LayoutRect& filterBoxRect, const LayoutRect& dirtyRect)
 {
-#if ENABLE(CSS_SHADERS)
-    if (hasCustomShaderFilter()) {
-        // When we have at least a custom shader in the chain, we need to compute the whole source image, because the shader can
-        // reference any pixel and we cannot control that.
-        return filterBoxRect;
-    }
-#endif
     // The result of this function is the area in the "filterBoxRect" that needs to be repainted, so that we fully cover the "dirtyRect".
     LayoutRect rectForRepaint = dirtyRect;
     if (hasFilterThatMovesPixels()) {
@@ -482,7 +406,7 @@ bool FilterEffectRendererHelper::beginFilterEffect()
     filter->allocateBackingStoreIfNeeded();
     // Paint into the context that represents the SourceGraphic of the filter.
     GraphicsContext* sourceGraphicsContext = filter->inputContext();
-    if (!sourceGraphicsContext || !isFilterSizeValid(filter->filterRegion())) {
+    if (!sourceGraphicsContext || !FilterEffect::isFilterSizeValid(filter->filterRegion())) {
         // Disable the filters and continue.
         m_haveFilterEffect = false;
         return false;

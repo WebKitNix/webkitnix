@@ -21,7 +21,7 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "config.h"
@@ -35,7 +35,6 @@
 #include "CSSRuleList.h"
 #include "Chrome.h"
 #include "ChromeClient.h"
-#include "Console.h"
 #include "Crypto.h"
 #include "DOMApplicationCache.h"
 #include "DOMSelection.h"
@@ -69,7 +68,7 @@
 #include "HTMLFrameOwnerElement.h"
 #include "History.h"
 #include "InspectorInstrumentation.h"
-#include "URL.h"
+#include "JSMainThreadExecState.h"
 #include "Location.h"
 #include "MainFrame.h"
 #include "MediaQueryList.h"
@@ -85,8 +84,6 @@
 #include "RuntimeEnabledFeatures.h"
 #include "ScheduledAction.h"
 #include "Screen.h"
-#include "ScriptCallStack.h"
-#include "ScriptCallStackFactory.h"
 #include "ScriptController.h"
 #include "SecurityOrigin.h"
 #include "SecurityPolicy.h"
@@ -98,10 +95,13 @@
 #include "StyleMedia.h"
 #include "StyleResolver.h"
 #include "SuddenTermination.h"
+#include "URL.h"
 #include "WebKitPoint.h"
 #include "WindowFeatures.h"
 #include "WindowFocusAllowedIndicator.h"
 #include <algorithm>
+#include <inspector/ScriptCallStack.h>
+#include <inspector/ScriptCallStackFactory.h>
 #include <wtf/CurrentTime.h>
 #include <wtf/MainThread.h>
 #include <wtf/MathExtras.h>
@@ -124,16 +124,18 @@
 #include "WKContentObservation.h"
 #endif
 
+using namespace Inspector;
+
 namespace WebCore {
 
 class PostMessageTimer : public TimerBase {
 public:
-    PostMessageTimer(DOMWindow* window, PassRefPtr<SerializedScriptValue> message, const String& sourceOrigin, PassRefPtr<DOMWindow> source, PassOwnPtr<MessagePortChannelArray> channels, SecurityOrigin* targetOrigin, PassRefPtr<ScriptCallStack> stackTrace)
+    PostMessageTimer(DOMWindow* window, PassRefPtr<SerializedScriptValue> message, const String& sourceOrigin, PassRefPtr<DOMWindow> source, std::unique_ptr<MessagePortChannelArray> channels, SecurityOrigin* targetOrigin, PassRefPtr<ScriptCallStack> stackTrace)
         : m_window(window)
         , m_message(message)
         , m_origin(sourceOrigin)
         , m_source(source)
-        , m_channels(channels)
+        , m_channels(std::move(channels))
         , m_targetOrigin(targetOrigin)
         , m_stackTrace(stackTrace)
     {
@@ -141,8 +143,8 @@ public:
 
     PassRefPtr<MessageEvent> event(ScriptExecutionContext* context)
     {
-        OwnPtr<MessagePortArray> messagePorts = MessagePort::entanglePorts(*context, m_channels.release());
-        return MessageEvent::create(messagePorts.release(), m_message, m_origin, String(), m_source);
+        std::unique_ptr<MessagePortArray> messagePorts = MessagePort::entanglePorts(*context, std::move(m_channels));
+        return MessageEvent::create(std::move(messagePorts), m_message, m_origin, String(), m_source);
     }
     SecurityOrigin* targetOrigin() const { return m_targetOrigin.get(); }
     ScriptCallStack* stackTrace() const { return m_stackTrace.get(); }
@@ -158,7 +160,7 @@ private:
     RefPtr<SerializedScriptValue> m_message;
     String m_origin;
     RefPtr<DOMWindow> m_source;
-    OwnPtr<MessagePortChannelArray> m_channels;
+    std::unique_ptr<MessagePortChannelArray> m_channels;
     RefPtr<SecurityOrigin> m_targetOrigin;
     RefPtr<ScriptCallStack> m_stackTrace;
 };
@@ -408,7 +410,6 @@ DOMWindow::~DOMWindow()
         ASSERT(!m_scrollbars);
         ASSERT(!m_statusbar);
         ASSERT(!m_toolbar);
-        ASSERT(!m_console);
         ASSERT(!m_navigator);
 #if ENABLE(WEB_TIMING)
         ASSERT(!m_performance);
@@ -555,7 +556,6 @@ void DOMWindow::resetDOMWindowProperties()
     m_scrollbars = 0;
     m_statusbar = 0;
     m_toolbar = 0;
-    m_console = 0;
     m_navigator = 0;
 #if ENABLE(WEB_TIMING)
     m_performance = 0;
@@ -662,15 +662,6 @@ BarProp* DOMWindow::toolbar() const
     if (!m_toolbar)
         m_toolbar = BarProp::create(m_frame, BarProp::Toolbar);
     return m_toolbar.get();
-}
-
-Console* DOMWindow::console() const
-{
-    if (!isCurrentlyDisplayedInFrame())
-        return 0;
-    if (!m_console)
-        m_console = Console::create(m_frame);
-    return m_console.get();
 }
 
 PageConsole* DOMWindow::pageConsole() const
@@ -830,7 +821,7 @@ void DOMWindow::postMessage(PassRefPtr<SerializedScriptValue> message, const Mes
         }
     }
 
-    OwnPtr<MessagePortChannelArray> channels = MessagePort::disentanglePorts(ports, ec);
+    std::unique_ptr<MessagePortChannelArray> channels = MessagePort::disentanglePorts(ports, ec);
     if (ec)
         return;
 
@@ -843,10 +834,10 @@ void DOMWindow::postMessage(PassRefPtr<SerializedScriptValue> message, const Mes
     // Capture stack trace only when inspector front-end is loaded as it may be time consuming.
     RefPtr<ScriptCallStack> stackTrace;
     if (InspectorInstrumentation::consoleAgentEnabled(sourceDocument))
-        stackTrace = createScriptCallStack(ScriptCallStack::maxCallStackSizeToCapture, true);
+        stackTrace = createScriptCallStack(JSMainThreadExecState::currentState(), ScriptCallStack::maxCallStackSizeToCapture);
 
     // Schedule the message.
-    PostMessageTimer* timer = new PostMessageTimer(this, message, sourceOrigin, &source, channels.release(), target.get(), stackTrace.release());
+    PostMessageTimer* timer = new PostMessageTimer(this, message, sourceOrigin, &source, std::move(channels), target.get(), stackTrace.release());
     timer->startOneShot(0);
 }
 
@@ -867,7 +858,7 @@ void DOMWindow::dispatchMessageEventWithOriginCheck(SecurityOrigin* intendedTarg
         if (!intendedTargetOrigin->isSameSchemeHostPort(document()->securityOrigin())) {
             String message = "Unable to post message to " + intendedTargetOrigin->toString() +
                              ". Recipient has origin " + document()->securityOrigin()->toString() + ".\n";
-            pageConsole()->addMessage(SecurityMessageSource, ErrorMessageLevel, message, stackTrace);
+            pageConsole()->addMessage(MessageSource::Security, MessageLevel::Error, message, stackTrace);
             return;
         }
     }
@@ -966,7 +957,7 @@ void DOMWindow::close(ScriptExecutionContext* context)
     bool allowScriptsToCloseWindows = m_frame->settings().allowScriptsToCloseWindows();
 
     if (!(page->openedByDOM() || page->backForward().count() <= 1 || allowScriptsToCloseWindows)) {
-        pageConsole()->addMessage(JSMessageSource, WarningMessageLevel, ASCIILiteral("Can't close the window since it was not opened by JavaScript"));
+        pageConsole()->addMessage(MessageSource::JS, MessageLevel::Warning, ASCIILiteral("Can't close the window since it was not opened by JavaScript"));
         return;
     }
 
@@ -1153,11 +1144,7 @@ int DOMWindow::innerHeight() const
     if (!view)
         return 0;
 
-#if PLATFORM(IOS)
-    return view->mapFromLayoutToCSSUnits(static_cast<int>(view->actualVisibleContentRect().height()));
-#else
-    return view->mapFromLayoutToCSSUnits(static_cast<int>(view->visibleContentRect(ScrollableArea::IncludeScrollbars).height()));
-#endif
+    return view->mapFromLayoutToCSSUnits(static_cast<int>(view->unobscuredContentRectIncludingScrollbars().height()));
 }
 
 int DOMWindow::innerWidth() const
@@ -1169,11 +1156,7 @@ int DOMWindow::innerWidth() const
     if (!view)
         return 0;
 
-#if PLATFORM(IOS)
-    return view->mapFromLayoutToCSSUnits(static_cast<int>(view->actualVisibleContentRect().width()));
-#else
-    return view->mapFromLayoutToCSSUnits(static_cast<int>(view->visibleContentRect(ScrollableArea::IncludeScrollbars).width()));
-#endif
+    return view->mapFromLayoutToCSSUnits(static_cast<int>(view->unobscuredContentRectIncludingScrollbars().width()));
 }
 
 int DOMWindow::screenX() const
@@ -1209,13 +1192,19 @@ int DOMWindow::scrollX() const
     if (!view)
         return 0;
 
-    if (!view->scrollX())
+    int scrollX;
+#if PLATFORM(IOS)
+    scrollX = view->actualScrollX();
+#else
+    scrollX = view->scrollX();
+#endif
+    if (!scrollX)
         return 0;
 
     m_frame->document()->updateLayoutIgnorePendingStylesheets();
 
 #if PLATFORM(IOS)
-    return static_cast<int>(view->actualVisibleContentRect().x() / (m_frame->pageZoomFactor() * m_frame->frameScaleFactor()));
+    return view->mapFromLayoutToCSSUnits(view->actualScrollX());
 #else
     return view->mapFromLayoutToCSSUnits(view->scrollX());
 #endif
@@ -1230,13 +1219,19 @@ int DOMWindow::scrollY() const
     if (!view)
         return 0;
 
-    if (!view->scrollY())
+    int scrollY;
+#if PLATFORM(IOS)
+    scrollY = view->actualScrollY();
+#else
+    scrollY = view->scrollY();
+#endif
+    if (!scrollY)
         return 0;
 
     m_frame->document()->updateLayoutIgnorePendingStylesheets();
 
 #if PLATFORM(IOS)
-    return static_cast<int>(view->actualVisibleContentRect().y() / (m_frame->pageZoomFactor() * m_frame->frameScaleFactor()));
+    return view->mapFromLayoutToCSSUnits(view->actualScrollY());
 #else
     return view->mapFromLayoutToCSSUnits(view->scrollY());
 #endif
@@ -1452,7 +1447,7 @@ void DOMWindow::scrollBy(int x, int y) const
 
     IntSize scaledOffset(view->mapFromCSSToLayoutUnits(x), view->mapFromCSSToLayoutUnits(y));
 #if PLATFORM(IOS)
-    view->setActualScrollPosition(view->actualVisibleContentRect().location() + scaledOffset);
+    view->setActualScrollPosition(view->actualScrollPosition() + scaledOffset);
 #else
     view->scrollBy(scaledOffset);
 #endif
@@ -1703,7 +1698,7 @@ bool DOMWindow::addEventListener(const AtomicString& eventType, PassRefPtr<Event
 void DOMWindow::incrementScrollEventListenersCount()
 {
     Document* document = this->document();
-    if (++m_scrollEventListenerCount == 1 && document == document->topDocument()) {
+    if (++m_scrollEventListenerCount == 1 && document == &document->topDocument()) {
         Frame* frame = this->frame();
         if (frame && frame->page())
             frame->page()->chrome().client().setNeedsScrollNotifications(frame, true);
@@ -1713,7 +1708,7 @@ void DOMWindow::incrementScrollEventListenersCount()
 void DOMWindow::decrementScrollEventListenersCount()
 {
     Document* document = this->document();
-    if (!--m_scrollEventListenerCount && document == document->topDocument()) {
+    if (!--m_scrollEventListenerCount && document == &document->topDocument()) {
         Frame* frame = this->frame();
         if (frame && frame->page() && !document->inPageCache())
             frame->page()->chrome().client().setNeedsScrollNotifications(frame, false);
@@ -1944,7 +1939,7 @@ void DOMWindow::printErrorMessage(const String& message)
     if (message.isEmpty())
         return;
 
-    pageConsole()->addMessage(JSMessageSource, ErrorMessageLevel, message);
+    pageConsole()->addMessage(MessageSource::JS, MessageLevel::Error, message);
 }
 
 String DOMWindow::crossDomainAccessErrorMessage(const DOMWindow& activeWindow)

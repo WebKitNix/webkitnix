@@ -26,8 +26,6 @@
 */
 
 #include "config.h"
-
-#if ENABLE(SVG)
 #include "SVGRenderStyleDefs.h"
 
 #include "RenderStyle.h"
@@ -206,7 +204,7 @@ StyleShadowSVGData::StyleShadowSVGData()
 
 inline StyleShadowSVGData::StyleShadowSVGData(const StyleShadowSVGData& other)
     : RefCounted<StyleShadowSVGData>()
-    , shadow(other.shadow ? adoptPtr(new ShadowData(*other.shadow)) : nullptr)
+    , shadow(other.shadow ? std::make_unique<ShadowData>(*other.shadow) : nullptr)
 {
 }
 
@@ -279,5 +277,3 @@ bool StyleInheritedResourceData::operator==(const StyleInheritedResourceData& ot
 }
 
 }
-
-#endif // ENABLE(SVG)

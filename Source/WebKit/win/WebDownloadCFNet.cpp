@@ -37,7 +37,6 @@
 #include "WebURLCredential.h"
 #include "WebURLResponse.h"
 
-#include <wtf/platform.h>
 #include <wtf/text/CString.h>
 
 #include <io.h>
@@ -483,7 +482,7 @@ void WebDownload::didFinish()
         
         bool reportBundlePathAsFinalPath = true;
 
-        BString destinationBSTR(m_destination.characters(), m_destination.length());
+        BString destinationBSTR(m_destination.deprecatedCharacters(), m_destination.length());
         if (FAILED(m_delegate->decideDestinationWithSuggestedFilename(this, destinationBSTR)))
             LOG_ERROR("delegate->decideDestinationWithSuggestedFilename() failed");
 

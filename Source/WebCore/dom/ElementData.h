@@ -67,6 +67,9 @@ public:
 
     AttributeConstIterator begin() const { return AttributeConstIterator(m_array, 0); }
     AttributeConstIterator end() const { return AttributeConstIterator(m_array, m_size); }
+
+    unsigned attributeCount() const { return m_size; }
+
 private:
     const Attribute* m_array;
     unsigned m_size;
@@ -110,6 +113,13 @@ public:
     bool isEquivalent(const ElementData* other) const;
 
     bool isUnique() const { return m_arraySizeAndFlags & s_flagIsUnique; }
+    static uint32_t isUniqueFlag() { return s_flagIsUnique; }
+
+    static ptrdiff_t arraySizeAndFlagsMemoryOffset() { return OBJECT_OFFSETOF(ElementData, m_arraySizeAndFlags); }
+    static inline uint32_t styleAttributeIsDirtyFlag() { return s_flagStyleAttributeIsDirty; }
+    static uint32_t animatedSVGAttributesAreDirtyFlag() { return s_flagAnimatedSVGAttributesAreDirty; }
+
+    static uint32_t arraySizeOffset() { return s_flagCount; }
 
 private:
     mutable uint32_t m_arraySizeAndFlags;
@@ -120,9 +130,7 @@ private:
     static const uint32_t s_flagHasNameAttribute = 1 << 1;
     static const uint32_t s_flagPresentationAttributeStyleIsDirty = 1 << 2;
     static const uint32_t s_flagStyleAttributeIsDirty = 1 << 3;
-#if ENABLE(SVG)
     static const uint32_t s_flagAnimatedSVGAttributesAreDirty = 1 << 4;
-#endif
     static const uint32_t s_flagsMask = (1 << s_flagCount) - 1;
 
     inline void updateFlag(uint32_t flag, bool set) const
@@ -149,10 +157,8 @@ protected:
     bool presentationAttributeStyleIsDirty() const { return m_arraySizeAndFlags & s_flagPresentationAttributeStyleIsDirty; }
     void setPresentationAttributeStyleIsDirty(bool isDirty) const { updateFlag(s_flagPresentationAttributeStyleIsDirty, isDirty); }
 
-#if ENABLE(SVG)
     bool animatedSVGAttributesAreDirty() const { return m_arraySizeAndFlags & s_flagAnimatedSVGAttributesAreDirty; }
     void setAnimatedSVGAttributesAreDirty(bool dirty) const { updateFlag(s_flagAnimatedSVGAttributesAreDirty, dirty); }
-#endif
 
     mutable RefPtr<StyleProperties> m_inlineStyle;
     mutable SpaceSplitString m_classNames;
@@ -163,9 +169,7 @@ private:
     friend class StyledElement;
     friend class ShareableElementData;
     friend class UniqueElementData;
-#if ENABLE(SVG)
     friend class SVGElement;
-#endif
 
     void destroy();
 
@@ -188,6 +192,8 @@ public:
     explicit ShareableElementData(const Vector<Attribute>&);
     explicit ShareableElementData(const UniqueElementData&);
     ~ShareableElementData();
+
+    static ptrdiff_t attributeArrayMemoryOffset() { return OBJECT_OFFSETOF(ShareableElementData, m_attributeArray); }
 
     Attribute m_attributeArray[0];
 };
@@ -212,8 +218,11 @@ public:
     explicit UniqueElementData(const ShareableElementData&);
     explicit UniqueElementData(const UniqueElementData&);
 
+    static ptrdiff_t attributeVectorMemoryOffset() { return OBJECT_OFFSETOF(UniqueElementData, m_attributeVector); }
+
     mutable RefPtr<StyleProperties> m_presentationAttributeStyle;
-    Vector<Attribute, 4> m_attributeVector;
+    typedef Vector<Attribute, 4> AttributeVector;
+    AttributeVector m_attributeVector;
 };
 
 inline void ElementData::deref()

@@ -135,9 +135,7 @@
 #import <WebCore/PlatformEventFactoryMac.h>
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
 #import <QuartzCore/QuartzCore.h>
-#endif
 
 #if PLATFORM(IOS)
 #import "WebUIKitDelegate.h"
@@ -323,7 +321,6 @@ extern NSString *NSTextInputReplacementRangeAttributeName;
 @end
 
 #if !PLATFORM(IOS)
-#if USE(ACCELERATED_COMPOSITING)
 static IMP oldSetNeedsDisplayInRectIMP;
 
 static void setNeedsDisplayInRect(NSView *self, SEL cmd, NSRect invalidRect)
@@ -357,7 +354,6 @@ static void setNeedsDisplayInRect(NSView *self, SEL cmd, NSRect invalidRect)
 
     frameView->invalidateRect(invalidRectInFrameViewCoordinates);
 }
-#endif // USE(ACCELERATED_COMPOSITING)
 
 @interface NSApplication (WebNSApplicationDetails)
 - (void)speakString:(NSString *)string;
@@ -551,10 +547,8 @@ struct WebHTMLViewInterpretKeyEventsParameters {
     BOOL subviewsSetAside;
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     NSView *layerHostingView;
     BOOL drawingIntoLayer;
-#endif
 
 #if !PLATFORM(IOS)
     NSEvent *mouseDownEvent; // Kept after handling the event.
@@ -600,9 +594,6 @@ struct WebHTMLViewInterpretKeyEventsParameters {
     
     NSArray *pageRects;
 
-    NSMutableDictionary *highlighters;
-
-    
 #if !PLATFORM(IOS)
     WebTextCompletionController *completionController;
 #endif
@@ -664,14 +655,12 @@ static NSCellStateValue kit(TriState state)
         ASSERT(oldSetCursorForMouseLocationIMP);
     }
 
-#if USE(ACCELERATED_COMPOSITING)
     if (!oldSetNeedsDisplayInRectIMP) {
         Method setNeedsDisplayInRectMethod = class_getInstanceMethod([NSView class], @selector(setNeedsDisplayInRect:));
         ASSERT(setNeedsDisplayInRectMethod);
         oldSetNeedsDisplayInRectIMP = method_setImplementation(setNeedsDisplayInRectMethod, (IMP)setNeedsDisplayInRect);
         ASSERT(oldSetNeedsDisplayInRectIMP);
     }
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif
 
@@ -700,7 +689,6 @@ static NSCellStateValue kit(TriState state)
     [completionController release];
 #endif
     [dataSource release];
-    [highlighters release];
 #if !PLATFORM(IOS)
     [trackingAreaForNonKeyWindow release];
     if (promisedDragTIFFDataSource)
@@ -739,7 +727,6 @@ static NSCellStateValue kit(TriState state)
     [completionController release];
 #endif
     [dataSource release];
-    [highlighters release];
 #if !PLATFORM(IOS)
     [trackingAreaForNonKeyWindow release];
     if (promisedDragTIFFDataSource)
@@ -754,15 +741,12 @@ static NSCellStateValue kit(TriState state)
     completionController = nil;
 #endif
     dataSource = nil;
-    highlighters = nil;
 #if !PLATFORM(IOS)
     trackingAreaForNonKeyWindow = nil;
     promisedDragTIFFDataSource = 0;
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     layerHostingView = nil;
-#endif
 }
 
 @end
@@ -1011,7 +995,7 @@ static NSURL* uniqueURLWithRelativePart(NSString *relativePart)
     Frame* coreFrame = core([self _frame]); 
     if (!coreFrame) 
         return NO; 
-    if (coreFrame->selection().isContentRichlyEditable())
+    if (coreFrame->selection().selection().isContentRichlyEditable())
         [self _pasteWithPasteboard:pasteboard allowPlainText:YES]; 
     else 
         [self _pasteAsPlainTextWithPasteboard:pasteboard]; 
@@ -1347,7 +1331,7 @@ static NSURL* uniqueURLWithRelativePart(NSString *relativePart)
         if (Frame* coreFrame = core([self _frame])) {
             if (FrameView* coreView = coreFrame->view()) {
                 _private->inScrollPositionChanged = YES;
-                coreView->scrollPositionChangedViaPlatformWidget();
+                coreView->scrollPositionChangedViaPlatformWidget(IntPoint(_private->lastScrollPosition), IntPoint(origin));
                 _private->inScrollPositionChanged = NO;
             }
         }
@@ -1367,16 +1351,12 @@ static NSURL* uniqueURLWithRelativePart(NSString *relativePart)
     ASSERT(!_private->subviewsSetAside);
     ASSERT(_private->savedSubviews == nil);
     _private->savedSubviews = _subviews;
-#if USE(ACCELERATED_COMPOSITING)
     // We need to keep the layer-hosting view in the subviews, otherwise the layers flash.
     if (_private->layerHostingView) {
         NSArray* newSubviews = [[NSArray alloc] initWithObjects:_private->layerHostingView, nil];
         _subviews = newSubviews;
     } else
         _subviews = nil;
-#else
-    _subviews = nil;
-#endif    
     _private->subviewsSetAside = YES;
 #endif
  }
@@ -1385,7 +1365,6 @@ static NSURL* uniqueURLWithRelativePart(NSString *relativePart)
  {
 #if !PLATFORM(IOS)
     ASSERT(_private->subviewsSetAside);
-#if USE(ACCELERATED_COMPOSITING)
     if (_private->layerHostingView) {
         [_subviews release];
         _subviews = _private->savedSubviews;
@@ -1393,10 +1372,6 @@ static NSURL* uniqueURLWithRelativePart(NSString *relativePart)
         ASSERT(_subviews == nil);
         _subviews = _private->savedSubviews;
     }
-#else
-    ASSERT(_subviews == nil);
-    _subviews = _private->savedSubviews;
-#endif    
     _private->savedSubviews = nil;
     _private->subviewsSetAside = NO;
 #endif
@@ -1419,13 +1394,6 @@ static NSURL* uniqueURLWithRelativePart(NSString *relativePart)
     // once the FIXME in _isTopHTMLView is fixed.
     if (_private->dataSource && [self _isTopHTMLView])
         [self _web_updateLayoutAndStyleIfNeededRecursive];
-
-#if PLATFORM(IOS)
-    if (Frame* coreFrame = core([self _frame])) {
-        if (FrameView* coreView = coreFrame->view())
-            coreView->flushDeferredRepaints();
-    }
-#endif
 
     [super viewWillDraw];
 }
@@ -1613,10 +1581,8 @@ static BOOL isQuickLookEvent(NSEvent *event)
 
     if (!captureHitsOnSubviews) {
         NSView* hitView = [super hitTest:point];
-#if USE(ACCELERATED_COMPOSITING)
         if (_private && hitView == _private->layerHostingView)
             hitView = self;
-#endif
         return hitView;
     }
 #endif // !PLATFORM(IOS)
@@ -2014,25 +1980,25 @@ static bool mouseEventIsPartOfClickOrDrag(NSEvent *event)
 - (BOOL)_hasSelection
 {
     Frame* coreFrame = core([self _frame]);
-    return coreFrame && coreFrame->selection().isRange();
+    return coreFrame && coreFrame->selection().selection().isRange();
 }
 
 - (BOOL)_hasSelectionOrInsertionPoint
 {
     Frame* coreFrame = core([self _frame]);
-    return coreFrame && coreFrame->selection().isCaretOrRange();
+    return coreFrame && coreFrame->selection().selection().isCaretOrRange();
 }
 
 - (BOOL)_hasInsertionPoint
 {
     Frame* coreFrame = core([self _frame]);
-    return coreFrame && coreFrame->selection().isCaret();
+    return coreFrame && coreFrame->selection().selection().isCaret();
 }
 
 - (BOOL)_isEditable
 {
     Frame* coreFrame = core([self _frame]);
-    return coreFrame && coreFrame->selection().isContentEditable();
+    return coreFrame && coreFrame->selection().selection().isContentEditable();
 }
 
 - (BOOL)_transparentBackground
@@ -2114,18 +2080,6 @@ static bool mouseEventIsPartOfClickOrDrag(NSEvent *event)
     Frame* coreFrame = core([self _frame]);
     if (coreFrame)
         coreFrame->editor().decreaseSelectionListLevel();
-}
-
-- (void)_setHighlighter:(id<WebHTMLHighlighter>)highlighter ofType:(NSString*)type
-{
-    if (!_private->highlighters)
-        _private->highlighters = [[NSMutableDictionary alloc] init];
-    [_private->highlighters setObject:highlighter forKey:type];
-}
-
-- (void)_removeHighlighterOfType:(NSString*)type
-{
-    [_private->highlighters removeObjectForKey:type];
 }
 
 #if !PLATFORM(IOS)
@@ -2349,20 +2303,12 @@ static bool mouseEventIsPartOfClickOrDrag(NSEvent *event)
 
 - (BOOL)_isUsingAcceleratedCompositing
 {
-#if USE(ACCELERATED_COMPOSITING)
     return _private->layerHostingView != nil;
-#else
-    return NO;
-#endif
 }
 
 - (NSView *)_compositingLayersHostingView
 {
-#if USE(ACCELERATED_COMPOSITING)
     return _private->layerHostingView;
-#else
-    return 0;
-#endif
 }
 
 - (BOOL)_isInPrintMode
@@ -2935,7 +2881,7 @@ WEBCORE_COMMAND(toggleUnderline)
     
     if (action == @selector(pasteAsRichText:))
         return frame && (frame->editor().canDHTMLPaste()
-            || (frame->editor().canPaste() && frame->selection().isContentRichlyEditable()));
+            || (frame->editor().canPaste() && frame->selection().selection().isContentRichlyEditable()));
     
     if (action == @selector(performFindPanelAction:))
         return NO;
@@ -3062,7 +3008,7 @@ WEBCORE_COMMAND(toggleUnderline)
         return YES;
     
     Frame* coreFrame = core([self _frame]);
-    return coreFrame && coreFrame->selection().isContentEditable();
+    return coreFrame && coreFrame->selection().selection().isContentEditable();
 #else
     // This method helps to determine whether the WebHTMLView should maintain
     // an inactive selection when it's not first responder.
@@ -3093,7 +3039,7 @@ WEBCORE_COMMAND(toggleUnderline)
         return YES;
 
     Frame* coreFrame = core([self _frame]);
-    bool selectionIsEditable = coreFrame && coreFrame->selection().isContentEditable();
+    bool selectionIsEditable = coreFrame && coreFrame->selection().selection().isContentEditable();
     bool nextResponderIsInWebView = [nextResponder isKindOfClass:[NSView class]]
         && [nextResponder isDescendantOf:[[[self _webView] mainFrame] frameView]];
 
@@ -3189,13 +3135,11 @@ WEBCORE_COMMAND(toggleUnderline)
     if ([self superview] != nil)
         [self addSuperviewObservers];
 
-#if USE(ACCELERATED_COMPOSITING)
     if ([self superview] && [self _isUsingAcceleratedCompositing]) {
         WebView *webView = [self _webView];
         if ([webView _postsAcceleratedCompositingNotifications])
             [[NSNotificationCenter defaultCenter] postNotificationName:_WebViewDidStartAcceleratedCompositingNotification object:webView userInfo:nil];
     }
-#endif
 }
 #endif // !PLATFORM(IOS)
 
@@ -3659,7 +3603,7 @@ static void setMenuTargets(NSMenu* menu)
 
     WebView *webView = [self _webView];
 
-#if USE(ACCELERATED_COMPOSITING) && !PLATFORM(IOS)
+#if !PLATFORM(IOS)
     // Only do the synchronization dance if we're drawing into the window, otherwise
     // we risk disabling screen updates when no flush is pending.
     if ([NSGraphicsContext currentContext] == [[self window] graphicsContext] && [webView _needsOneShotDrawingSynchronization]) {
@@ -4175,13 +4119,16 @@ static bool matchesExtensionOrEquivalent(NSString *filename, NSString *extension
 // API when an editable region is not currently focused.
 static BOOL isTextInput(Frame* coreFrame)
 {
-    return coreFrame && !coreFrame->selection().isNone() && coreFrame->selection().isContentEditable();
+    if (!coreFrame)
+        return NO;
+    const VisibleSelection& selection = coreFrame->selection().selection();
+    return !selection.isNone() && selection.isContentEditable();
 }
 
 #if !PLATFORM(IOS)
 static BOOL isInPasswordField(Frame* coreFrame)
 {
-    return coreFrame && coreFrame->selection().isInPasswordField();
+    return coreFrame && coreFrame->selection().selection().isInPasswordField();
 }
 #endif
 
@@ -5572,11 +5519,6 @@ static BOOL writingDirectionKeyBindingsEnabled()
 }
 #endif
 
-- (id<WebHTMLHighlighter>)_highlighterForType:(NSString*)type
-{
-    return [_private->highlighters objectForKey:type];
-}
-
 - (WebFrame *)_frame
 {
     return [_private->dataSource webFrame];
@@ -5740,7 +5682,7 @@ static BOOL writingDirectionKeyBindingsEnabled()
     if (!coreFrame)
         return;
 
-    NSRect rect = coreFrame->selection().bounds();
+    NSRect rect = coreFrame->selection().selectionBounds();
 
     NSDictionary *attributes = [attrString fontAttributesInRange:NSMakeRange(0,1)];
     NSFont *font = [attributes objectForKey:NSFontAttributeName];
@@ -6005,7 +5947,6 @@ static BOOL writingDirectionKeyBindingsEnabled()
     return [[self _frame] _needsLayout];
 }
 
-#if USE(ACCELERATED_COMPOSITING)
 - (void)attachRootLayer:(CALayer*)layer
 {
 #if !PLATFORM(IOS)
@@ -6079,8 +6020,6 @@ static BOOL writingDirectionKeyBindingsEnabled()
     return _private->drawingIntoLayer;
 #endif
 }
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 @end
 
@@ -6589,7 +6528,7 @@ static void extractUnderlines(NSAttributedString *string, Vector<CompositionUnde
 {
     if (![self _hasSelection])
         return NSZeroRect;
-    return core([self _frame])->selection().bounds();
+    return core([self _frame])->selection().selectionBounds();
 }
 
 - (NSArray *)selectionTextRects
@@ -6630,7 +6569,8 @@ static void extractUnderlines(NSAttributedString *string, Vector<CompositionUnde
         return nil;
 
 #if PLATFORM(IOS)
-    return createDragImageForSelection(*coreFrame, forceBlackText).leakRef();
+    CGImageRef dragImage = createDragImageForSelection(*coreFrame, forceBlackText).leakRef();
+    return dragImage ? (CGImageRef)CFAutorelease(dragImage) : nil;
 #else
     return [createDragImageForSelection(*coreFrame, forceBlackText).leakRef() autorelease];
 #endif
@@ -6640,7 +6580,7 @@ static void extractUnderlines(NSAttributedString *string, Vector<CompositionUnde
 {
     if (![self _hasSelection])
         return NSZeroRect;
-    return core([self _frame])->selection().bounds();
+    return core([self _frame])->selection().selectionBounds();
 }
 
 #if !PLATFORM(IOS)

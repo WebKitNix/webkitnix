@@ -37,7 +37,7 @@ typedef JSC::WeakGCMap<StringImpl*, JSC::JSString, PtrHash<StringImpl*>> JSStrin
 
 class DOMWrapperWorld : public RefCounted<DOMWrapperWorld> {
 public:
-    static PassRefPtr<DOMWrapperWorld> create(JSC::VM* vm, bool isNormal = false)
+    static PassRefPtr<DOMWrapperWorld> create(JSC::VM& vm, bool isNormal = false)
     {
         return adoptRef(new DOMWrapperWorld(vm, isNormal));
     }
@@ -56,13 +56,13 @@ public:
 
     bool isNormal() const { return m_isNormal; }
 
-    JSC::VM* vm() const { return m_vm; }
+    JSC::VM& vm() const { return m_vm; }
 
 protected:
-    DOMWrapperWorld(JSC::VM*, bool isNormal);
+    DOMWrapperWorld(JSC::VM&, bool isNormal);
 
 private:
-    JSC::VM* m_vm;
+    JSC::VM& m_vm;
     HashSet<ScriptController*> m_scriptControllersWithWindowShells;
     bool m_isNormal;
 };

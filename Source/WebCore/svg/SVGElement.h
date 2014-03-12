@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2004, 2005, 2006, 2008 Nikolas Zimmermann <zimmermann@kde.org>
  * Copyright (C) 2004, 2005, 2006, 2007 Rob Buis <buis@kde.org>
- * Copyright (C) 2009 Apple Inc. All rights reserved.
+ * Copyright (C) 2009, 2014 Apple Inc. All rights reserved.
  * Copyright (C) 2013 Samsung Electronics. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -23,7 +23,6 @@
 #ifndef SVGElement_h
 #define SVGElement_h
 
-#if ENABLE(SVG)
 #include "CSSPropertyNames.h"
 #include "SVGAnimatedString.h"
 #include "SVGElementTypeHelpers.h"
@@ -111,6 +110,7 @@ public:
     void setCorrespondingElement(SVGElement*);
 
     void synchronizeAnimatedSVGAttribute(const QualifiedName&) const;
+    static void synchronizeAllAnimatedSVGAttribute(SVGElement*);
  
     virtual PassRefPtr<RenderStyle> customStyleForRenderer() override;
 
@@ -122,8 +122,9 @@ public:
     virtual void synchronizeRequiredExtensions() { }
     virtual void synchronizeSystemLanguage() { }
 
+    static QualifiedName animatableAttributeForName(const AtomicString&);
 #ifndef NDEBUG
-    virtual bool isAnimatableAttribute(const QualifiedName&) const;
+    bool isAnimatableAttribute(const QualifiedName&) const;
 #endif
 
     MutableStyleProperties* animatedSMILStyleProperties() const;
@@ -147,7 +148,7 @@ protected:
     virtual void parseAttribute(const QualifiedName&, const AtomicString&) override;
 
     virtual void finishParsingChildren() override;
-    virtual void attributeChanged(const QualifiedName&, const AtomicString&, AttributeModificationReason = ModifiedDirectly) override;
+    virtual void attributeChanged(const QualifiedName&, const AtomicString& oldValue, const AtomicString& newValue, AttributeModificationReason = ModifiedDirectly) override;
     virtual bool childShouldCreateRenderer(const Node&) const override;
 
     SVGElementRareData& ensureSVGRareData();
@@ -167,10 +168,6 @@ protected:
 private:
     friend class SVGElementInstance;
 
-    // FIXME: Author shadows should be allowed
-    // https://bugs.webkit.org/show_bug.cgi?id=77938
-    virtual bool areAuthorShadowsAllowed() const override { return false; }
-
     virtual RenderStyle* computedStyle(PseudoId = NOPSEUDO) override final;
     virtual bool willRecalcStyle(Style::Change) override;
 
@@ -183,6 +180,10 @@ private:
     virtual bool isKeyboardFocusable(KeyboardEvent*) const override;
     virtual bool isMouseFocusable() const override;
     virtual void accessKeyAction(bool sendMouseEvents) override;
+
+#ifndef NDEBUG
+    virtual bool filterOutAnimatableAttribute(const QualifiedName&) const;
+#endif
 
     std::unique_ptr<SVGElementRareData> m_svgRareData;
 
@@ -214,5 +215,4 @@ NODE_TYPE_CASTS(SVGElement)
 
 }
 
-#endif
 #endif

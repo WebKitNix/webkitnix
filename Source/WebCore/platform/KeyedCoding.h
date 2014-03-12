@@ -39,6 +39,8 @@ protected:
     virtual ~KeyedDecoder() { }
 
 public:
+    virtual bool decodeBool(const String& key, bool&) = 0;
+    virtual bool decodeDouble(const String& key, double&) = 0;
     virtual bool decodeInt64(const String& key, int64_t&) = 0;
     virtual bool decodeUInt32(const String& key, uint32_t&) = 0;
     virtual bool decodeString(const String& key, String&) = 0;
@@ -144,9 +146,6 @@ public:
     template<typename T, typename F>
     void encodeObjects(const String& key, T begin, T end, F&& function)
     {
-        if (begin == end)
-            return;
-
         beginArray(key);
         for (T it = begin; it != end; ++it) {
             beginArrayElement();

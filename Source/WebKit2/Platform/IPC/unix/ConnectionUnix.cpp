@@ -321,7 +321,7 @@ static ssize_t readBytesFromSocket(int socketDescriptor, uint8_t* buffer, int co
                 memcpy(fileDescriptors, CMSG_DATA(controlMessage), sizeof(int) * *fileDescriptorsCount);
 
                 for (size_t i = 0; i < *fileDescriptorsCount; ++i) {
-                    while (fcntl(fileDescriptors[i], F_SETFL, FD_CLOEXEC) == -1) {
+                    while (fcntl(fileDescriptors[i], F_SETFD, FD_CLOEXEC) == -1) {
                         if (errno != EINTR) {
                             ASSERT_NOT_REACHED();
                             break;
@@ -357,6 +357,7 @@ void Connection::readyReadHandler()
                 return;
 
             // FIXME: Handle other errors here?
+            WTFLogAlways("Error receiving IPC message: %s", strerror(errno));
             return;
         }
 
@@ -521,8 +522,11 @@ bool Connection::sendOutgoingMessage(std::unique_ptr<MessageEncoder> encoder)
 
     int bytesSent = 0;
     while ((bytesSent = sendmsg(m_socketDescriptor, &message, 0)) == -1) {
-        if (errno != EINTR)
-            return false;
+        if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+            continue;
+
+        WTFLogAlways("Error sending IPC message: %s", strerror(errno));
+        return false;
     }
     return true;
 }

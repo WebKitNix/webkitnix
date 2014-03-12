@@ -26,7 +26,7 @@
 #include "config.h"
 #include "CachedSVGDocumentReference.h"
 
-#if ENABLE(SVG) && ENABLE(CSS_FILTERS)
+#if ENABLE(CSS_FILTERS)
 #include "CachedResourceHandle.h"
 #include "CachedResourceLoader.h"
 #include "CachedResourceRequest.h"
@@ -44,7 +44,7 @@ CachedSVGDocumentReference::CachedSVGDocumentReference(const String& url)
 
 CachedSVGDocumentReference::~CachedSVGDocumentReference()
 {
-    if (m_loadRequested)
+    if (m_document)
         m_document->removeClient(this);
 }
 
@@ -57,7 +57,9 @@ void CachedSVGDocumentReference::load(CachedResourceLoader* loader)
     CachedResourceRequest request(ResourceRequest(loader->document()->completeURL(m_url)));
     request.setInitiator(cachedResourceRequestInitiators().css);
     m_document = loader->requestSVGDocument(request);
-    m_document->addClient(this);
+    if (m_document)
+        m_document->addClient(this);
+
     m_loadRequested = true;
 }
 

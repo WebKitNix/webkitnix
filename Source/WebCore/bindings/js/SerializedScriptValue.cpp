@@ -46,11 +46,11 @@
 #include "JSMessagePort.h"
 #include "JSNavigator.h"
 #include "NotImplemented.h"
+#include "ScriptExecutionContext.h"
 #include "SharedBuffer.h"
 #include "WebCoreJSClientData.h"
 #include <limits>
 #include <JavaScriptCore/APICast.h>
-#include <JavaScriptCore/APIShims.h>
 #include <runtime/ArrayBuffer.h>
 #include <runtime/BooleanObject.h>
 #include <runtime/DateInstance.h>
@@ -58,13 +58,13 @@
 #include <runtime/ExceptionHelpers.h>
 #include <runtime/JSArrayBuffer.h>
 #include <runtime/JSArrayBufferView.h>
+#include <runtime/JSCInlines.h>
 #include <runtime/JSDataView.h>
 #include <runtime/JSMap.h>
 #include <runtime/JSSet.h>
 #include <runtime/JSTypedArrays.h>
 #include <runtime/MapData.h>
 #include <runtime/ObjectConstructor.h>
-#include <runtime/Operations.h>
 #include <runtime/PropertyNameArray.h>
 #include <runtime/RegExp.h>
 #include <runtime/RegExpObject.h>
@@ -165,6 +165,8 @@ static unsigned typedArrayElementSize(ArrayBufferViewSubtag tag)
 }
 
 #if ENABLE(SUBTLE_CRYPTO)
+
+const uint32_t currentKeyFormatVersion = 1;
 
 enum class CryptoKeyClassSubtag {
     HMAC = 0,
@@ -293,7 +295,11 @@ static const unsigned NonIndexPropertiesTag = 0xFFFFFFFD;
  *    | ArrayBuffer
  *    | ArrayBufferViewTag ArrayBufferViewSubtag <byteOffset:uint32_t> <byteLength:uint32_t> (ArrayBuffer | ObjectReference)
  *    | ArrayBufferTransferTag <value:uint32_t>
- *    | CryptoKeyTag <extractable:int32_t> <usagesCount:uint32_t> <usages:byte{usagesCount}> CryptoKeyClassSubtag (CryptoKeyHMAC | CryptoKeyAES | CryptoKeyRSA)
+ *    | CryptoKeyTag <wrappedKeyLength:uint32_t> <factor:byte{wrappedKeyLength}>
+ *
+ * Inside wrapped crypto key, data is serialized in this format:
+ *
+ * <keyFormatVersion:uint32_t> <extractable:int32_t> <usagesCount:uint32_t> <usages:byte{usagesCount}> CryptoKeyClassSubtag (CryptoKeyHMAC | CryptoKeyAES | CryptoKeyRSA)
  *
  * String :-
  *      EmptyStringTag
@@ -374,10 +380,8 @@ protected:
         m_exec->vm().throwException(m_exec, createStackOverflowError(m_exec));
     }
 
-    NO_RETURN_DUE_TO_ASSERT
     void fail()
     {
-        ASSERT_NOT_REACHED();
         m_failed = true;
     }
 
@@ -385,6 +389,24 @@ protected:
     bool m_failed;
     MarkedArgumentBuffer m_gcBuffer;
 };
+
+#if ENABLE(SUBTLE_CRYPTO)
+static bool wrapCryptoKey(ExecState* exec, const Vector<uint8_t>& key, Vector<uint8_t>& wrappedKey)
+{
+    ScriptExecutionContext* scriptExecutionContext = scriptExecutionContextFromExecState(exec);
+    if (!scriptExecutionContext)
+        return false;
+    return scriptExecutionContext->wrapCryptoKey(key, wrappedKey);
+}
+
+static bool unwrapCryptoKey(ExecState* exec, const Vector<uint8_t>& wrappedKey, Vector<uint8_t>& key)
+{
+    ScriptExecutionContext* scriptExecutionContext = scriptExecutionContextFromExecState(exec);
+    if (!scriptExecutionContext)
+        return false;
+    return scriptExecutionContext->unwrapCryptoKey(wrappedKey, key);
+}
+#endif
 
 #if ASSUME_LITTLE_ENDIAN
 template <typename T> static void writeLittleEndian(Vector<uint8_t>& buffer, T value)
@@ -830,7 +852,14 @@ private:
 #if ENABLE(SUBTLE_CRYPTO)
             if (CryptoKey* key = toCryptoKey(obj)) {
                 write(CryptoKeyTag);
-                write(key);
+                Vector<uint8_t> serializedKey;
+                Vector<String> dummyBlobURLs;
+                CloneSerializer rawKeySerializer(m_exec, nullptr, nullptr, dummyBlobURLs, serializedKey);
+                rawKeySerializer.write(key);
+                Vector<uint8_t> wrappedKey;
+                if (!wrapCryptoKey(m_exec, serializedKey, wrappedKey))
+                    return false;
+                write(wrappedKey);
                 return true;
             }
 #endif
@@ -1095,6 +1124,8 @@ private:
 
     void write(const CryptoKey* key)
     {
+        write(currentKeyFormatVersion);
+
         write(key->extractable());
 
         CryptoKeyUsage usages = key->usagesBitmap();
@@ -1182,9 +1213,9 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
                 inputObjectStack.append(inArray);
                 indexStack.append(0);
                 lengthStack.append(length);
-                // fallthrough
             }
             arrayStartVisitMember:
+            FALLTHROUGH;
             case ArrayStartVisitMember: {
                 JSObject* array = inputObjectStack.last();
                 uint32_t index = indexStack.last();
@@ -1244,9 +1275,9 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
                 indexStack.append(0);
                 propertyStack.append(PropertyNameArray(m_exec));
                 inObject->methodTable()->getOwnPropertyNames(inObject, m_exec, propertyStack.last(), ExcludeDontEnumProperties);
-                // fallthrough
             }
             objectStartVisitMember:
+            FALLTHROUGH;
             case ObjectStartVisitMember: {
                 JSObject* object = inputObjectStack.last();
                 uint32_t index = indexStack.last();
@@ -1279,7 +1310,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
                 }
                 if (terminalCode != SuccessfullyCompleted)
                     return terminalCode;
-                // fallthrough
+                FALLTHROUGH;
             }
             case ObjectEndVisitMember: {
                 if (shouldTerminate())
@@ -1381,6 +1412,8 @@ class CloneDeserializer : CloneBase {
 public:
     static String deserializeString(const Vector<uint8_t>& buffer)
     {
+        if (buffer.isEmpty())
+            return String();
         const uint8_t* ptr = buffer.begin();
         const uint8_t* end = buffer.end();
         uint32_t version;
@@ -1989,6 +2022,10 @@ private:
 
     bool readCryptoKey(JSValue& cryptoKey)
     {
+        uint32_t keyFormatVersion;
+        if (!read(keyFormatVersion) || keyFormatVersion > currentKeyFormatVersion)
+            return false;
+
         int32_t extractable;
         if (!read(extractable))
             return false;
@@ -2260,8 +2297,19 @@ private:
         }
 #if ENABLE(SUBTLE_CRYPTO)
         case CryptoKeyTag: {
+            Vector<uint8_t> wrappedKey;
+            if (!read(wrappedKey)) {
+                fail();
+                return JSValue();
+            }
+            Vector<uint8_t> serializedKey;
+            if (!unwrapCryptoKey(m_exec, wrappedKey, serializedKey)) {
+                fail();
+                return JSValue();
+            }
             JSValue cryptoKey;
-            if (!readCryptoKey(cryptoKey)) {
+            CloneDeserializer rawKeyDeserializer(m_exec, m_globalObject, nullptr, nullptr, serializedKey);
+            if (!rawKeyDeserializer.readCryptoKey(cryptoKey)) {
                 fail();
                 return JSValue();
             }
@@ -2317,9 +2365,9 @@ DeserializationResult CloneDeserializer::deserialize()
             JSArray* outArray = constructEmptyArray(m_exec, 0, m_globalObject, length);
             m_gcBuffer.append(outArray);
             outputObjectStack.append(outArray);
-            // fallthrough
         }
         arrayStartVisitMember:
+        FALLTHROUGH;
         case ArrayStartVisitMember: {
             uint32_t index;
             if (!read(index)) {
@@ -2358,9 +2406,9 @@ DeserializationResult CloneDeserializer::deserialize()
             JSObject* outObject = constructEmptyObject(m_exec, m_globalObject->objectPrototype());
             m_gcBuffer.append(outObject);
             outputObjectStack.append(outObject);
-            // fallthrough
         }
         objectStartVisitMember:
+        FALLTHROUGH;
         case ObjectStartVisitMember: {
             CachedStringRef cachedString;
             bool wasTerminator = false;
@@ -2459,7 +2507,14 @@ error:
     return std::make_pair(JSValue(), ValidationError);
 }
 
-
+void SerializedScriptValue::addBlobURL(const String& string)
+{
+    m_blobURLs.append(Vector<uint16_t>());
+    m_blobURLs.last().reserveCapacity(string.length());
+    for (size_t i = 0; i < string.length(); i++)
+        m_blobURLs.last().append(string.characterAt(i));
+    m_blobURLs.last().resize(m_blobURLs.last().size());
+}
 
 SerializedScriptValue::~SerializedScriptValue()
 {
@@ -2478,14 +2533,16 @@ SerializedScriptValue::SerializedScriptValue(Vector<uint8_t>& buffer)
 SerializedScriptValue::SerializedScriptValue(Vector<uint8_t>& buffer, Vector<String>& blobURLs)
 {
     m_data.swap(buffer);
-    m_blobURLs.swap(blobURLs);
+    for (auto& string : blobURLs)
+        addBlobURL(string);
 }
 
 SerializedScriptValue::SerializedScriptValue(Vector<uint8_t>& buffer, Vector<String>& blobURLs, PassOwnPtr<ArrayBufferContentsArray> arrayBufferContentsArray)
     : m_arrayBufferContentsArray(arrayBufferContentsArray)
 {
     m_data.swap(buffer);
-    m_blobURLs.swap(blobURLs);
+    for (auto& string : blobURLs)
+        addBlobURL(string);
 }
 
 PassOwnPtr<SerializedScriptValue::ArrayBufferContentsArray> SerializedScriptValue::transferArrayBuffers(
@@ -2540,12 +2597,6 @@ PassRefPtr<SerializedScriptValue> SerializedScriptValue::create(ExecState* exec,
     return adoptRef(new SerializedScriptValue(buffer, blobURLs, arrayBufferContentsArray.release()));
 }
 
-PassRefPtr<SerializedScriptValue> SerializedScriptValue::create()
-{
-    Vector<uint8_t> buffer;
-    return adoptRef(new SerializedScriptValue(buffer));
-}
-
 PassRefPtr<SerializedScriptValue> SerializedScriptValue::create(const String& string)
 {
     Vector<uint8_t> buffer;
@@ -2555,11 +2606,6 @@ PassRefPtr<SerializedScriptValue> SerializedScriptValue::create(const String& st
 }
 
 #if ENABLE(INDEXED_DATABASE)
-PassRefPtr<SerializedScriptValue> SerializedScriptValue::create(JSC::ExecState* exec, JSC::JSValue value)
-{
-    return SerializedScriptValue::create(exec, value, 0, 0);
-}
-
 PassRefPtr<SerializedScriptValue> SerializedScriptValue::numberValue(double value)
 {
     Vector<uint8_t> buffer;
@@ -2567,20 +2613,20 @@ PassRefPtr<SerializedScriptValue> SerializedScriptValue::numberValue(double valu
     return adoptRef(new SerializedScriptValue(buffer));
 }
 
-JSValue SerializedScriptValue::deserialize(JSC::ExecState* exec, JSC::JSGlobalObject* globalObject)
+PassRefPtr<SerializedScriptValue> SerializedScriptValue::undefinedValue()
 {
-    return deserialize(exec, globalObject, 0);
+    Vector<uint8_t> buffer;
+    CloneSerializer::serializeUndefined(buffer);
+    return adoptRef(new SerializedScriptValue(buffer));
 }
 #endif
 
-PassRefPtr<SerializedScriptValue> SerializedScriptValue::create(JSContextRef originContext, JSValueRef apiValue, 
-                                                                MessagePortArray* messagePorts, ArrayBufferArray* arrayBuffers,
-                                                                JSValueRef* exception)
+PassRefPtr<SerializedScriptValue> SerializedScriptValue::create(JSContextRef originContext, JSValueRef apiValue, JSValueRef* exception)
 {
     ExecState* exec = toJS(originContext);
-    APIEntryShim entryShim(exec);
+    JSLockHolder locker(exec);
     JSValue value = toJS(exec, apiValue);
-    RefPtr<SerializedScriptValue> serializedValue = SerializedScriptValue::create(exec, value, messagePorts, arrayBuffers);
+    RefPtr<SerializedScriptValue> serializedValue = SerializedScriptValue::create(exec, value, nullptr, nullptr);
     if (exec->hadException()) {
         if (exception)
             *exception = toRef(exec, exec->exception());
@@ -2589,12 +2635,6 @@ PassRefPtr<SerializedScriptValue> SerializedScriptValue::create(JSContextRef ori
     }
     ASSERT(serializedValue);
     return serializedValue.release();
-}
-
-PassRefPtr<SerializedScriptValue> SerializedScriptValue::create(JSContextRef originContext, JSValueRef apiValue,
-                                                                JSValueRef* exception)
-{
-    return create(originContext, apiValue, 0, 0, exception);
 }
 
 String SerializedScriptValue::toString()
@@ -2609,72 +2649,28 @@ JSValue SerializedScriptValue::deserialize(ExecState* exec, JSGlobalObject* glob
                                                                   m_arrayBufferContentsArray.get(), m_data);
     if (throwExceptions == Throwing)
         maybeThrowExceptionIfSerializationFailed(exec, result.second);
-    return result.first;
+    return result.first ? result.first : jsNull();
 }
 
-#if ENABLE(INSPECTOR)
-Deprecated::ScriptValue SerializedScriptValue::deserializeForInspector(JSC::ExecState* scriptState)
-{
-    JSValue value = deserialize(scriptState, scriptState->lexicalGlobalObject(), 0);
-    return Deprecated::ScriptValue(scriptState->vm(), value);
-}
-#endif
-
-JSValueRef SerializedScriptValue::deserialize(JSContextRef destinationContext, JSValueRef* exception, MessagePortArray* messagePorts)
+JSValueRef SerializedScriptValue::deserialize(JSContextRef destinationContext, JSValueRef* exception)
 {
     ExecState* exec = toJS(destinationContext);
-    APIEntryShim entryShim(exec);
-    JSValue value = deserialize(exec, exec->lexicalGlobalObject(), messagePorts);
+    JSLockHolder locker(exec);
+    JSValue value = deserialize(exec, exec->lexicalGlobalObject(), nullptr);
     if (exec->hadException()) {
         if (exception)
             *exception = toRef(exec, exec->exception());
         exec->clearException();
-        return 0;
+        return nullptr;
     }
     ASSERT(value);
     return toRef(exec, value);
 }
 
-
-JSValueRef SerializedScriptValue::deserialize(JSContextRef destinationContext, JSValueRef* exception)
-{
-    return deserialize(destinationContext, exception, 0);
-}
-
 PassRefPtr<SerializedScriptValue> SerializedScriptValue::nullValue()
 {
-    return SerializedScriptValue::create();
-}
-
-PassRefPtr<SerializedScriptValue> SerializedScriptValue::undefinedValue()
-{
     Vector<uint8_t> buffer;
-    CloneSerializer::serializeUndefined(buffer);
     return adoptRef(new SerializedScriptValue(buffer));
-}
-
-PassRefPtr<SerializedScriptValue> SerializedScriptValue::booleanValue(bool value)
-{
-    Vector<uint8_t> buffer;
-    CloneSerializer::serializeBoolean(value, buffer);
-    return adoptRef(new SerializedScriptValue(buffer));
-}
-
-PassRefPtr<SerializedScriptValue> SerializedScriptValue::serialize(const Deprecated::ScriptValue& value, JSC::ExecState* scriptState, SerializationErrorMode throwExceptions)
-{
-    return SerializedScriptValue::create(scriptState, value.jsValue(), nullptr, nullptr, throwExceptions);
-}
-
-PassRefPtr<SerializedScriptValue> SerializedScriptValue::serialize(const Deprecated::ScriptValue& value, JSC::ExecState* scriptState, MessagePortArray* messagePorts, ArrayBufferArray* arrayBuffers, bool& didThrow)
-{
-    RefPtr<SerializedScriptValue> serializedValue = SerializedScriptValue::create(scriptState, value.jsValue(), messagePorts, arrayBuffers);
-    didThrow = scriptState->hadException();
-    return serializedValue.release();
-}
-
-Deprecated::ScriptValue SerializedScriptValue::deserialize(JSC::ExecState* scriptState, SerializedScriptValue* value, SerializationErrorMode throwExceptions)
-{
-    return Deprecated::ScriptValue(scriptState->vm(), value->deserialize(scriptState, scriptState->lexicalGlobalObject(), 0, throwExceptions));
 }
 
 void SerializedScriptValue::maybeThrowExceptionIfSerializationFailed(ExecState* exec, SerializationReturnCode code)

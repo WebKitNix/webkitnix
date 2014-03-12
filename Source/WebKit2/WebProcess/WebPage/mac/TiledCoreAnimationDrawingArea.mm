@@ -78,12 +78,10 @@ TiledCoreAnimationDrawingArea::TiledCoreAnimationDrawingArea(WebPage* webPage, c
 {
     m_webPage->corePage()->settings().setForceCompositingMode(true);
 
-    m_rootLayer = [CALayer layer];
-
-    CGRect rootLayerFrame = m_webPage->bounds();
-    m_rootLayer.get().frame = rootLayerFrame;
-    m_rootLayer.get().opaque = YES;
-    m_rootLayer.get().geometryFlipped = YES;
+    m_hostingLayer = [CALayer layer];
+    [m_hostingLayer setFrame:m_webPage->bounds()];
+    [m_hostingLayer setOpaque:YES];
+    [m_hostingLayer setGeometryFlipped:YES];
 
     updateLayerHostingContext();
     setColorSpace(parameters.colorSpace);
@@ -124,14 +122,14 @@ void TiledCoreAnimationDrawingArea::didChangeScrollOffsetForAnyFrame()
 
 void TiledCoreAnimationDrawingArea::setRootCompositingLayer(GraphicsLayer* graphicsLayer)
 {
-    CALayer *rootCompositingLayer = graphicsLayer ? graphicsLayer->platformLayer() : nil;
+    CALayer *rootLayer = graphicsLayer ? graphicsLayer->platformLayer() : nil;
 
     if (m_layerTreeStateIsFrozen) {
-        m_pendingRootCompositingLayer = rootCompositingLayer;
+        m_pendingRootLayer = rootLayer;
         return;
     }
 
-    setRootCompositingLayer(rootCompositingLayer);
+    setRootCompositingLayer(rootLayer);
 }
 
 void TiledCoreAnimationDrawingArea::forceRepaint()
@@ -221,7 +219,7 @@ void TiledCoreAnimationDrawingArea::setPageOverlayNeedsDisplay(PageOverlay* page
 
     if (!layer->drawsContent()) {
         layer->setDrawsContent(true);
-        layer->setSize(expandedIntSize(FloatSize(m_rootLayer.get().frame.size)));
+        layer->setSize(expandedIntSize(FloatSize(m_hostingLayer.get().frame.size)));
     }
 
     layer->setNeedsDisplayInRect(rect);
@@ -236,6 +234,18 @@ void TiledCoreAnimationDrawingArea::setPageOverlayOpacity(PageOverlay* pageOverl
         return;
 
     layer->setOpacity(opacity);
+    scheduleCompositingLayerFlush();
+}
+
+void TiledCoreAnimationDrawingArea::clearPageOverlay(PageOverlay* pageOverlay)
+{
+    GraphicsLayer* layer = m_pageOverlayLayers.get(pageOverlay);
+
+    if (!layer)
+        return;
+
+    layer->setDrawsContent(false);
+    layer->setSize(IntSize());
     scheduleCompositingLayerFlush();
 }
 
@@ -344,11 +354,11 @@ void TiledCoreAnimationDrawingArea::notifyFlushRequired(const GraphicsLayer*)
 {
 }
 
-void TiledCoreAnimationDrawingArea::paintContents(const GraphicsLayer* graphicsLayer, GraphicsContext& graphicsContext, GraphicsLayerPaintingPhase, const IntRect& clipRect)
+void TiledCoreAnimationDrawingArea::paintContents(const GraphicsLayer* graphicsLayer, GraphicsContext& graphicsContext, GraphicsLayerPaintingPhase, const FloatRect& clipRect)
 {
     for (auto it = m_pageOverlayLayers.begin(), end = m_pageOverlayLayers.end(); it != end; ++it) {
         if (it->value.get() == graphicsLayer) {
-            m_webPage->drawPageOverlay(it->key, graphicsContext, clipRect);
+            m_webPage->drawPageOverlay(it->key, graphicsContext, enclosingIntRect(clipRect));
             break;
         }
     }
@@ -368,12 +378,12 @@ bool TiledCoreAnimationDrawingArea::flushLayers()
 
     m_webPage->layoutIfNeeded();
 
-    if (m_pendingRootCompositingLayer) {
-        setRootCompositingLayer(m_pendingRootCompositingLayer.get());
-        m_pendingRootCompositingLayer = nullptr;
+    if (m_pendingRootLayer) {
+        setRootCompositingLayer(m_pendingRootLayer.get());
+        m_pendingRootLayer = nullptr;
     }
 
-    FloatRect visibleRect = [m_rootLayer frame];
+    FloatRect visibleRect = [m_hostingLayer frame];
     visibleRect.intersect(m_scrolledExposedRect);
 
     for (PageOverlayLayerMap::iterator it = m_pageOverlayLayers.begin(), end = m_pageOverlayLayers.end(); it != end; ++it) {
@@ -402,8 +412,8 @@ void TiledCoreAnimationDrawingArea::suspendPainting()
     ASSERT(!m_isPaintingSuspended);
     m_isPaintingSuspended = true;
 
-    [m_rootLayer setValue:(id)kCFBooleanTrue forKey:@"NSCAViewRenderPaused"];
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"NSCAViewRenderDidPauseNotification" object:nil userInfo:[NSDictionary dictionaryWithObject:m_rootLayer.get() forKey:@"layer"]];
+    [m_hostingLayer setValue:@YES forKey:@"NSCAViewRenderPaused"];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"NSCAViewRenderDidPauseNotification" object:nil userInfo:[NSDictionary dictionaryWithObject:m_hostingLayer.get() forKey:@"layer"]];
 }
 
 void TiledCoreAnimationDrawingArea::resumePainting()
@@ -415,8 +425,8 @@ void TiledCoreAnimationDrawingArea::resumePainting()
     }
     m_isPaintingSuspended = false;
 
-    [m_rootLayer setValue:(id)kCFBooleanFalse forKey:@"NSCAViewRenderPaused"];
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"NSCAViewRenderDidResumeNotification" object:nil userInfo:[NSDictionary dictionaryWithObject:m_rootLayer.get() forKey:@"layer"]];
+    [m_hostingLayer setValue:@NO forKey:@"NSCAViewRenderPaused"];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"NSCAViewRenderDidResumeNotification" object:nil userInfo:[NSDictionary dictionaryWithObject:m_hostingLayer.get() forKey:@"layer"]];
 }
 
 void TiledCoreAnimationDrawingArea::setExposedRect(const FloatRect& exposedRect)
@@ -486,7 +496,7 @@ void TiledCoreAnimationDrawingArea::updateGeometry(const IntSize& viewSize, cons
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
 
-    m_rootLayer.get().frame = CGRectMake(layerPosition.width(), layerPosition.height(), viewSize.width(), viewSize.height());
+    [m_hostingLayer setFrame:CGRectMake(layerPosition.width(), layerPosition.height(), viewSize.width(), viewSize.height())];
 
     [CATransaction commit];
     
@@ -537,18 +547,18 @@ void TiledCoreAnimationDrawingArea::updateLayerHostingContext()
 
     // Create a new context and set it up.
     switch (m_webPage->layerHostingMode()) {
-    case LayerHostingModeDefault:
+    case LayerHostingMode::InProcess:
         m_layerHostingContext = LayerHostingContext::createForPort(WebProcess::shared().compositingRenderServerPort());
         break;
-#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
-    case LayerHostingModeInWindowServer:
-        m_layerHostingContext = LayerHostingContext::createForWindowServer();
+#if HAVE(OUT_OF_PROCESS_LAYER_HOSTING)
+    case LayerHostingMode::OutOfProcess:
+        m_layerHostingContext = LayerHostingContext::createForExternalHostingProcess();
         break;
 #endif
     }
 
-    if (m_hasRootCompositingLayer)
-        m_layerHostingContext->setRootLayer(m_rootLayer.get());
+    if (m_rootLayer)
+        m_layerHostingContext->setRootLayer(m_hostingLayer.get());
 
     if (colorSpace)
         m_layerHostingContext->setColorSpace(colorSpace.get());
@@ -558,19 +568,20 @@ void TiledCoreAnimationDrawingArea::setRootCompositingLayer(CALayer *layer)
 {
     ASSERT(!m_layerTreeStateIsFrozen);
 
-    bool hadRootCompositingLayer = m_hasRootCompositingLayer;
-    m_hasRootCompositingLayer = !!layer;
-
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
 
-    m_rootLayer.get().sublayers = m_hasRootCompositingLayer ? [NSArray arrayWithObject:layer] : [NSArray array];
+    [m_hostingLayer setSublayers:layer ? @[ layer ] : @[ ]];
 
-    if (hadRootCompositingLayer != m_hasRootCompositingLayer)
-        m_layerHostingContext->setRootLayer(m_hasRootCompositingLayer ? m_rootLayer.get() : 0);
+    bool hadRootLayer = !!m_rootLayer;
+    m_rootLayer = layer;
+    [m_rootLayer setSublayerTransform:m_transform];
+
+    if (hadRootLayer != !!layer)
+        m_layerHostingContext->setRootLayer(layer ? m_hostingLayer.get() : 0);
 
     for (PageOverlayLayerMap::iterator it = m_pageOverlayLayers.begin(), end = m_pageOverlayLayers.end(); it != end; ++it)
-        [m_rootLayer addSublayer:it->value->platformLayer()];
+        [m_hostingLayer addSublayer:it->value->platformLayer()];
 
     if (TiledBacking* tiledBacking = mainFrameTiledBacking())
         tiledBacking->setAggressivelyRetainsTiles(m_webPage->corePage()->settings().aggressiveTileRetentionEnabled());
@@ -596,7 +607,7 @@ void TiledCoreAnimationDrawingArea::createPageOverlayLayer(PageOverlay* pageOver
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
 
-    [m_rootLayer addSublayer:layer->platformLayer()];
+    [m_hostingLayer addSublayer:layer->platformLayer()];
 
     [CATransaction commit];
 
@@ -631,7 +642,7 @@ void TiledCoreAnimationDrawingArea::didCommitChangesForLayer(const GraphicsLayer
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
 
-    [m_rootLayer insertSublayer:layer->platformLayer() above:oldPlatformLayer.get()];
+    [m_hostingLayer insertSublayer:layer->platformLayer() above:oldPlatformLayer.get()];
     [oldPlatformLayer removeFromSuperlayer];
 
     [CATransaction commit];
@@ -657,7 +668,7 @@ void TiledCoreAnimationDrawingArea::updateDebugInfoLayer(bool showLayer)
 #ifndef NDEBUG
             [m_debugInfoLayer setName:@"Debug Info"];
 #endif
-            [m_rootLayer addSublayer:m_debugInfoLayer.get()];
+            [m_hostingLayer addSublayer:m_debugInfoLayer.get()];
         }
     } else if (m_debugInfoLayer) {
         [m_debugInfoLayer removeFromSuperlayer];
@@ -676,7 +687,7 @@ void TiledCoreAnimationDrawingArea::adjustTransientZoom(double scale, FloatPoint
     // FIXME: Keep around pageScale=1 tiles so we can zoom out without gaps.
     // FIXME: Bring in unparented-but-painted tiles when zooming out, to fill in any gaps.
 
-    if (!m_rootLayer)
+    if (!m_hostingLayer)
         return;
 
     TransformationMatrix transform;
@@ -684,18 +695,21 @@ void TiledCoreAnimationDrawingArea::adjustTransientZoom(double scale, FloatPoint
     transform.scale(scale);
 
     RenderView* renderView = m_webPage->mainFrameView()->renderView();
-    PlatformCALayer* renderViewLayer = static_cast<GraphicsLayerCA*>(renderView->layer()->backing()->graphicsLayer())->platformCALayer();
+    PlatformCALayer* renderViewLayer = toGraphicsLayerCA(renderView->layer()->backing()->graphicsLayer())->platformCALayer();
     renderViewLayer->setTransform(transform);
     renderViewLayer->setAnchorPoint(FloatPoint3D());
     renderViewLayer->setPosition(FloatPoint3D());
 
-    PlatformCALayer* shadowLayer = static_cast<GraphicsLayerCA*>(renderView->compositor().layerForContentShadow())->platformCALayer();
+    GraphicsLayerCA* shadowGraphicsLayer = toGraphicsLayerCA(renderView->compositor().layerForContentShadow());
+    if (shadowGraphicsLayer) {
+        PlatformCALayer* shadowLayer = shadowGraphicsLayer->platformCALayer();
 
-    FloatRect shadowBounds = FloatRect(FloatPoint(), toFloatSize(renderView->layoutOverflowRect().maxXMaxYCorner()));
-    shadowBounds.scale(scale);
+        FloatRect shadowBounds = FloatRect(FloatPoint(), toFloatSize(renderView->layoutOverflowRect().maxXMaxYCorner()));
+        shadowBounds.scale(scale);
 
-    shadowLayer->setBounds(shadowBounds);
-    shadowLayer->setPosition(origin + shadowBounds.center());
+        shadowLayer->setBounds(shadowBounds);
+        shadowLayer->setPosition(origin + shadowBounds.center());
+    }
 
     m_transientZoomScale = scale;
     m_transientZoomOrigin = origin;
@@ -720,7 +734,7 @@ void TiledCoreAnimationDrawingArea::commitTransientZoom(double scale, FloatPoint
     RenderView* renderView = frameView->renderView();
     PlatformCALayer* renderViewLayer = static_cast<GraphicsLayerCA*>(renderView->layer()->backing()->graphicsLayer())->platformCALayer();
 
-    FloatRect visibleContentRect = frameView->visibleContentRect(ScrollableArea::IncludeScrollbars);
+    FloatRect visibleContentRect = frameView->visibleContentRectIncludingScrollbars();
 
     FloatPoint constrainedOrigin = visibleContentRect.location();
     constrainedOrigin.moveBy(-origin);
@@ -749,30 +763,36 @@ void TiledCoreAnimationDrawingArea::commitTransientZoom(double scale, FloatPoint
     RefPtr<PlatformCAAnimation> renderViewAnimation = PlatformCAAnimation::create(renderViewAnimationCA.get());
     renderViewAnimation->setToValue(transform);
 
-    RetainPtr<CALayer> shadowLayer = static_cast<GraphicsLayerCA*>(renderView->compositor().layerForContentShadow())->platformCALayer()->platformLayer();
-
-    FloatRect shadowBounds = FloatRect(FloatPoint(), toFloatSize(renderView->layoutOverflowRect().maxXMaxYCorner()));
-    shadowBounds.scale(scale);
-    RetainPtr<CGPathRef> shadowPath = adoptCF(CGPathCreateWithRect(shadowBounds, NULL)).get();
-
-    RetainPtr<CABasicAnimation> shadowBoundsAnimation = transientZoomSnapAnimationForKeyPath("bounds");
-    [shadowBoundsAnimation setToValue:[NSValue valueWithRect:shadowBounds]];
-    RetainPtr<CABasicAnimation> shadowPositionAnimation = transientZoomSnapAnimationForKeyPath("position");
-    [shadowPositionAnimation setToValue:[NSValue valueWithPoint:constrainedOrigin + shadowBounds.center()]];
-    RetainPtr<CABasicAnimation> shadowPathAnimation = transientZoomSnapAnimationForKeyPath("shadowPath");
-    [shadowPathAnimation setToValue:(id)shadowPath.get()];
+    RetainPtr<CALayer> shadowLayer;
+    if (GraphicsLayerCA* shadowGraphicsLayer = toGraphicsLayerCA(renderView->compositor().layerForContentShadow()))
+        shadowLayer = shadowGraphicsLayer->platformCALayer()->platformLayer();
 
     [CATransaction begin];
     [CATransaction setCompletionBlock:^(void) {
         renderViewLayer->removeAnimationForKey("transientZoomCommit");
-        [shadowLayer removeAllAnimations];
+        if (shadowLayer)
+            [shadowLayer removeAllAnimations];
         applyTransientZoomToPage(scale, origin);
     }];
 
     renderViewLayer->addAnimationForKey("transientZoomCommit", renderViewAnimation.get());
-    [shadowLayer addAnimation:shadowBoundsAnimation.get() forKey:@"transientZoomCommitShadowBounds"];
-    [shadowLayer addAnimation:shadowPositionAnimation.get() forKey:@"transientZoomCommitShadowPosition"];
-    [shadowLayer addAnimation:shadowPathAnimation.get() forKey:@"transientZoomCommitShadowPath"];
+
+    if (shadowLayer) {
+        FloatRect shadowBounds = FloatRect(FloatPoint(), toFloatSize(renderView->layoutOverflowRect().maxXMaxYCorner()));
+        shadowBounds.scale(scale);
+        RetainPtr<CGPathRef> shadowPath = adoptCF(CGPathCreateWithRect(shadowBounds, NULL)).get();
+
+        RetainPtr<CABasicAnimation> shadowBoundsAnimation = transientZoomSnapAnimationForKeyPath("bounds");
+        [shadowBoundsAnimation setToValue:[NSValue valueWithRect:shadowBounds]];
+        RetainPtr<CABasicAnimation> shadowPositionAnimation = transientZoomSnapAnimationForKeyPath("position");
+        [shadowPositionAnimation setToValue:[NSValue valueWithPoint:constrainedOrigin + shadowBounds.center()]];
+        RetainPtr<CABasicAnimation> shadowPathAnimation = transientZoomSnapAnimationForKeyPath("shadowPath");
+        [shadowPathAnimation setToValue:(id)shadowPath.get()];
+
+        [shadowLayer addAnimation:shadowBoundsAnimation.get() forKey:@"transientZoomCommitShadowBounds"];
+        [shadowLayer addAnimation:shadowPositionAnimation.get() forKey:@"transientZoomCommitShadowPosition"];
+        [shadowLayer addAnimation:shadowPathAnimation.get() forKey:@"transientZoomCommitShadowPath"];
+    }
 
     [CATransaction commit];
 }
@@ -780,7 +800,7 @@ void TiledCoreAnimationDrawingArea::commitTransientZoom(double scale, FloatPoint
 void TiledCoreAnimationDrawingArea::applyTransientZoomToPage(double scale, FloatPoint origin)
 {
     RenderView* renderView = m_webPage->mainFrameView()->renderView();
-    PlatformCALayer* renderViewLayer = static_cast<GraphicsLayerCA*>(renderView->layer()->backing()->graphicsLayer())->platformCALayer();
+    PlatformCALayer* renderViewLayer = toGraphicsLayerCA(renderView->layer()->backing()->graphicsLayer())->platformCALayer();
 
     TransformationMatrix finalTransform;
     finalTransform.scale(scale);
@@ -789,18 +809,27 @@ void TiledCoreAnimationDrawingArea::applyTransientZoomToPage(double scale, Float
     // and not apply the transform, so we can't depend on it to do so.
     renderViewLayer->setTransform(finalTransform);
 
-    PlatformCALayer* shadowLayer = static_cast<GraphicsLayerCA*>(renderView->compositor().layerForContentShadow())->platformCALayer();
-    IntRect overflowRect = renderView->pixelSnappedLayoutOverflowRect();
-    shadowLayer->setBounds(IntRect(IntPoint(), toIntSize(overflowRect.maxXMaxYCorner())));
-    shadowLayer->setPosition(shadowLayer->bounds().center());
+    GraphicsLayerCA* shadowGraphicsLayer = toGraphicsLayerCA(renderView->compositor().layerForContentShadow());
+    if (shadowGraphicsLayer) {
+        PlatformCALayer* shadowLayer = shadowGraphicsLayer->platformCALayer();
+        IntRect overflowRect = renderView->pixelSnappedLayoutOverflowRect();
+        shadowLayer->setBounds(IntRect(IntPoint(), toIntSize(overflowRect.maxXMaxYCorner())));
+        shadowLayer->setPosition(shadowLayer->bounds().center());
+    }
 
     FloatPoint unscrolledOrigin(origin);
-    FloatRect visibleContentRect = m_webPage->mainFrameView()->visibleContentRect(ScrollableArea::IncludeScrollbars);
-    unscrolledOrigin.moveBy(-visibleContentRect.location());
+    FloatRect unobscuredContentRect = m_webPage->mainFrameView()->unobscuredContentRectIncludingScrollbars();
+    unscrolledOrigin.moveBy(-unobscuredContentRect.location());
     m_webPage->scalePage(scale, roundedIntPoint(-unscrolledOrigin));
     flushLayers();
 
     m_transientZoomScale = 1;
+}
+
+void TiledCoreAnimationDrawingArea::setTransform(const TransformationMatrix& transform)
+{
+    m_transform = transform;
+    [m_rootLayer setSublayerTransform:transform];
 }
 
 } // namespace WebKit

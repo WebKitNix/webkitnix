@@ -69,7 +69,7 @@ public:
     JSC::JSValue getInternalProperties(JSC::ExecState*);
 
 protected:
-    static const unsigned StructureFlags = JSC::OverridesGetOwnPropertySlot | JSC::InterceptsGetOwnPropertySlotByIndexEvenWhenLengthIsNotZero | Base::StructureFlags;
+    static const unsigned StructureFlags = Base::StructureFlags;
 
     void finishCreation(JSC::VM&);
 

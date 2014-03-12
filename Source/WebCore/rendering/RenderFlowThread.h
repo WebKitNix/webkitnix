@@ -47,10 +47,8 @@ class RenderRegion;
 
 typedef ListHashSet<RenderRegion*> RenderRegionList;
 typedef Vector<RenderLayer*> RenderLayerList;
-#if USE(ACCELERATED_COMPOSITING)
 typedef HashMap<RenderNamedFlowFragment*, RenderLayerList> RegionToLayerListMap;
 typedef HashMap<RenderLayer*, RenderNamedFlowFragment*> LayerToRegionMap;
-#endif
 
 // RenderFlowThread is used to collect all the render objects that participate in a
 // flow thread. It will also help in doing the layout. However, it will not render
@@ -60,17 +58,8 @@ typedef HashMap<RenderLayer*, RenderNamedFlowFragment*> LayerToRegionMap;
 
 class RenderFlowThread: public RenderBlockFlow {
 public:
-    RenderFlowThread(Document&, PassRef<RenderStyle>);
-    virtual ~RenderFlowThread() { };
-    
-    virtual bool isRenderFlowThread() const override final { return true; }
+    virtual ~RenderFlowThread() { }
 
-    virtual void layout() override final;
-
-    // Always create a RenderLayer for the RenderFlowThread so that we 
-    // can easily avoid drawing the children directly.
-    virtual bool requiresLayer() const override final { return true; }
-    
     virtual void removeFlowChildInfo(RenderObject*);
 #ifndef NDEBUG
     bool hasChildInfo(RenderObject* child) const { return child && child->isBox() && m_regionRangeMap.contains(toRenderBox(child)); }
@@ -96,7 +85,7 @@ public:
 
     virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle) override;
 
-    void repaintRectangleInRegions(const LayoutRect&, bool immediate) const;
+    void repaintRectangleInRegions(const LayoutRect&) const;
     
     LayoutPoint adjustedPositionRelativeToOffsetParent(const RenderBoxModelObject&, const LayoutPoint&);
 
@@ -177,7 +166,6 @@ public:
     bool needsTwoPhasesLayout() const { return m_needsTwoPhasesLayout; }
     void clearNeedsTwoPhasesLayout() { m_needsTwoPhasesLayout = false; }
 
-#if USE(ACCELERATED_COMPOSITING)
     // Whether any of the regions has a compositing descendant.
     bool hasCompositingRegionDescendant() const;
 
@@ -188,12 +176,11 @@ public:
             updateAllLayerToRegionMappings();
     }
 
-    const RenderLayerList* getLayerListForRegion(RenderNamedFlowFragment*);
+    const RenderLayerList* getLayerListForRegion(RenderNamedFlowFragment*) const;
 
     RenderNamedFlowFragment* regionForCompositedLayer(RenderLayer&); // By means of getRegionRangeForBox or regionAtBlockOffset.
-    RenderNamedFlowFragment* cachedRegionForCompositedLayer(RenderLayer&);
+    RenderNamedFlowFragment* cachedRegionForCompositedLayer(RenderLayer&) const;
 
-#endif
     virtual bool collectsGraphicsLayersUnderRegions() const;
 
     void pushFlowThreadLayoutState(const RenderObject&);
@@ -210,9 +197,7 @@ public:
 
     LayoutRect mapFromFlowThreadToLocal(const RenderBox*, const LayoutRect&) const;
     LayoutRect mapFromLocalToFlowThread(const RenderBox*, const LayoutRect&) const;
-    
-    LayoutRect decorationsClipRectForBoxInRegion(const RenderBox&, RenderRegion&) const;
-    
+
     void flipForWritingModeLocalCoordinates(LayoutRect&) const;
 
     // Used to estimate the maximum height of the flow thread.
@@ -220,8 +205,18 @@ public:
     
     bool regionInRange(const RenderRegion* targetRegion, const RenderRegion* startRegion, const RenderRegion* endRegion) const;
 
+private:
+    virtual bool isRenderFlowThread() const override final { return true; }
+
+    // Always create a RenderLayer for the RenderFlowThread so that we
+    // can easily avoid drawing the children directly.
+    virtual bool requiresLayer() const override final { return true; }
+
 protected:
+    RenderFlowThread(Document&, PassRef<RenderStyle>);
+
     virtual const char* renderName() const = 0;
+    virtual void layout() override;
 
     // Overridden by columns/pages to set up an initial logical width of the page width even when
     // no regions have been generated yet.
@@ -232,27 +227,11 @@ protected:
     void updateRegionsFlowThreadPortionRect(const RenderRegion* = 0);
     bool shouldRepaint(const LayoutRect&) const;
 
-    LayoutRect computeRegionClippingRect(const LayoutPoint&, const LayoutRect&, const LayoutRect&) const;
-
-#if USE(ACCELERATED_COMPOSITING)
     bool updateAllLayerToRegionMappings();
 
     // Triggers a layers' update if a layer has moved from a region to another since the last update.
     void updateLayerToRegionMappings(RenderLayer&, LayerToRegionMap&, RegionToLayerListMap&, bool& needsLayerUpdate);
-    RenderNamedFlowFragment* regionForCompositedLayer(RenderLayer*);
-    bool updateLayerToRegionMappings();
     void updateRegionForRenderLayer(RenderLayer*, LayerToRegionMap&, RegionToLayerListMap&, bool& needsLayerUpdate);
-#endif
-
-    void setDispatchRegionLayoutUpdateEvent(bool value) { m_dispatchRegionLayoutUpdateEvent = value; }
-    bool shouldDispatchRegionLayoutUpdateEvent() { return m_dispatchRegionLayoutUpdateEvent; }
-    
-    void setDispatchRegionOversetChangeEvent(bool value) { m_dispatchRegionOversetChangeEvent = value; }
-    bool shouldDispatchRegionOversetChangeEvent() const { return m_dispatchRegionOversetChangeEvent; }
-    
-    // Override if the flow thread implementation supports dispatching events when the flow layout is updated (e.g. for named flows)
-    virtual void dispatchRegionLayoutUpdateEvent() { m_dispatchRegionLayoutUpdateEvent = false; }
-    virtual void dispatchRegionOversetChangeEvent() { m_dispatchRegionOversetChangeEvent = false; }
 
     void initializeRegionsComputedAutoHeight(RenderRegion* = 0);
 
@@ -320,13 +299,11 @@ protected:
         RenderRegion* m_result;
     };
 
-#if USE(ACCELERATED_COMPOSITING)
-    // To easily find the region where a layer should be painted.
+    // Map a layer to the region in which the layer is painted.
     OwnPtr<LayerToRegionMap> m_layerToRegionMap;
 
-    // To easily find the list of layers that paint in a region.
+    // Map a region to the list of layers that paint in that region.
     OwnPtr<RegionToLayerListMap> m_regionToLayerListMap;
-#endif
 
     // Map a box to the list of regions in which the box is rendered.
     typedef HashMap<const RenderBox*, RenderRegionRange> RenderRegionRangeMap;
@@ -350,8 +327,6 @@ protected:
     bool m_regionsInvalidated : 1;
     bool m_regionsHaveUniformLogicalWidth : 1;
     bool m_regionsHaveUniformLogicalHeight : 1;
-    bool m_dispatchRegionLayoutUpdateEvent : 1;
-    bool m_dispatchRegionOversetChangeEvent : 1;
     bool m_pageLogicalSizeChanged : 1;
     unsigned m_layoutPhase : 2;
     bool m_needsTwoPhasesLayout : 1;

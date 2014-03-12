@@ -93,6 +93,13 @@ LayoutUnit RenderTextControlSingleLine::computeLogicalHeightLimit() const
     return containerElement() ? contentLogicalHeight() : logicalHeight();
 }
 
+void RenderTextControlSingleLine::centerRenderer(RenderBox& renderer) const
+{
+    LayoutUnit logicalHeightDiff = renderer.logicalHeight() - contentLogicalHeight();
+    float center = logicalHeightDiff / 2;
+    renderer.setLogicalTop(renderer.logicalTop() - LayoutUnit(round(center)));
+}
+
 static void setNeedsLayoutOnAncestors(RenderObject* start, RenderObject* ancestor)
 {
     ASSERT(start != ancestor);
@@ -170,10 +177,9 @@ void RenderTextControlSingleLine::layout()
         RenderBlockFlow::layoutBlock(true);
 
     // Center the child block in the block progression direction (vertical centering for horizontal text fields).
-    if (!container && innerTextRenderer && innerTextRenderer->height() != contentLogicalHeight()) {
-        LayoutUnit logicalHeightDiff = innerTextRenderer->logicalHeight() - contentLogicalHeight();
-        innerTextRenderer->setLogicalTop(innerTextRenderer->logicalTop() - (logicalHeightDiff / 2 + layoutMod(logicalHeightDiff, 2)));
-    } else
+    if (!container && innerTextRenderer && innerTextRenderer->height() != contentLogicalHeight())
+        centerRenderer(*innerTextRenderer);
+    else
         centerContainerIfNeeded(containerRenderer);
 
     // Ignores the paddings for the inner spin button.
@@ -191,8 +197,8 @@ void RenderTextControlSingleLine::layout()
         LayoutSize innerTextSize;
         if (innerTextRenderer)
             innerTextSize = innerTextRenderer->size();
-        placeholderBox->style().setWidth(Length(innerTextSize.width() - placeholderBox->borderAndPaddingWidth(), Fixed));
-        placeholderBox->style().setHeight(Length(innerTextSize.height() - placeholderBox->borderAndPaddingHeight(), Fixed));
+        placeholderBox->style().setWidth(Length(innerTextSize.width() - placeholderBox->horizontalBorderAndPaddingExtent(), Fixed));
+        placeholderBox->style().setHeight(Length(innerTextSize.height() - placeholderBox->verticalBorderAndPaddingExtent(), Fixed));
         bool neededLayout = placeholderBox->needsLayout();
         bool placeholderBoxHadLayout = placeholderBox->everHadLayout();
         placeholderBox->layoutIfNeeded();
@@ -327,7 +333,7 @@ LayoutUnit RenderTextControlSingleLine::preferredContentLogicalWidth(float charW
     if (factor <= 0)
         factor = 20;
 
-    LayoutUnit result = static_cast<LayoutUnit>(ceiledLayoutUnit(charWidth * factor));
+    LayoutUnit result = ceiledLayoutUnit(charWidth * factor);
 
     float maxCharWidth = 0.f;
 
@@ -454,7 +460,7 @@ void RenderTextControlSingleLine::setScrollTop(int newTop)
         innerTextElement()->setScrollTop(newTop);
 }
 
-bool RenderTextControlSingleLine::scroll(ScrollDirection direction, ScrollGranularity granularity, float multiplier, Element** stopElement)
+bool RenderTextControlSingleLine::scroll(ScrollDirection direction, ScrollGranularity granularity, float multiplier, Element** stopElement, RenderBox* startBox, const IntPoint& wheelEventAbsolutePoint)
 {
     RenderTextControlInnerBlock* renderer = innerTextElement()->renderer();
     if (!renderer)
@@ -462,7 +468,7 @@ bool RenderTextControlSingleLine::scroll(ScrollDirection direction, ScrollGranul
     RenderLayer* layer = renderer->layer();
     if (layer && layer->scroll(direction, granularity, multiplier))
         return true;
-    return RenderBlockFlow::scroll(direction, granularity, multiplier, stopElement);
+    return RenderBlockFlow::scroll(direction, granularity, multiplier, stopElement, startBox, wheelEventAbsolutePoint);
 }
 
 bool RenderTextControlSingleLine::logicalScroll(ScrollLogicalDirection direction, ScrollGranularity granularity, float multiplier, Element** stopElement)

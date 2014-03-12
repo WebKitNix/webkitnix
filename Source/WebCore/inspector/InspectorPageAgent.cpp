@@ -29,10 +29,9 @@
  */
 
 #include "config.h"
+#include "InspectorPageAgent.h"
 
 #if ENABLE(INSPECTOR)
-
-#include "InspectorPageAgent.h"
 
 #include "CachedCSSStyleSheet.h"
 #include "CachedFont.h"
@@ -40,7 +39,6 @@
 #include "CachedResource.h"
 #include "CachedResourceLoader.h"
 #include "CachedScript.h"
-#include "ContentSearchUtils.h"
 #include "Cookie.h"
 #include "CookieJar.h"
 #include "DOMImplementation.h"
@@ -54,7 +52,6 @@
 #include "FrameView.h"
 #include "HTMLFrameOwnerElement.h"
 #include "HTMLNames.h"
-#include "IdentifiersFactory.h"
 #include "ImageBuffer.h"
 #include "InspectorClient.h"
 #include "InspectorDOMAgent.h"
@@ -65,7 +62,6 @@
 #include "MainFrame.h"
 #include "MemoryCache.h"
 #include "Page.h"
-#include "RegularExpression.h"
 #include "ResourceBuffer.h"
 #include "ScriptController.h"
 #include "SecurityOrigin.h"
@@ -74,12 +70,15 @@
 #include "TextResourceDecoder.h"
 #include "UserGestureIndicator.h"
 #include <bindings/ScriptValue.h>
+#include <inspector/ContentSearchUtilities.h>
+#include <inspector/IdentifiersFactory.h>
 #include <inspector/InspectorValues.h>
 #include <wtf/CurrentTime.h>
 #include <wtf/ListHashSet.h>
 #include <wtf/Vector.h>
 #include <wtf/text/Base64.h>
 #include <wtf/text/StringBuilder.h>
+#include <yarr/RegularExpression.h>
 
 #if ENABLE(WEB_ARCHIVE) && USE(CF)
 #include "LegacyWebArchive.h"
@@ -174,10 +173,10 @@ bool InspectorPageAgent::cachedResourceContent(CachedResource* cachedResource, S
     if (cachedResource) {
         switch (cachedResource->type()) {
         case CachedResource::CSSStyleSheet:
-            *result = static_cast<CachedCSSStyleSheet*>(cachedResource)->sheetText(false);
+            *result = toCachedCSSStyleSheet(cachedResource)->sheetText(false);
             return true;
         case CachedResource::Script:
-            *result = static_cast<CachedScript*>(cachedResource)->script();
+            *result = toCachedScript(cachedResource)->script();
             return true;
         case CachedResource::RawResource: {
             ResourceBuffer* buffer = cachedResource->resourceBuffer();
@@ -270,7 +269,7 @@ String InspectorPageAgent::sourceMapURLForResource(CachedResource* cachedResourc
     String content;
     bool base64Encoded;
     if (InspectorPageAgent::cachedResourceContent(cachedResource, &content, &base64Encoded) && !base64Encoded)
-        return ContentSearchUtils::findStylesheetSourceMapURL(content);
+        return ContentSearchUtilities::findStylesheetSourceMapURL(content);
 
     return String();
 }
@@ -283,7 +282,7 @@ CachedResource* InspectorPageAgent::cachedResource(Frame* frame, const URL& url)
 #if ENABLE(CACHE_PARTITIONING)
         request.setCachePartition(frame->document()->topOrigin()->cachePartition());
 #endif
-        cachedResource = memoryCache()->resourceForRequest(request);
+        cachedResource = memoryCache()->resourceForRequest(request, frame->page()->sessionID());
     }
 
     return cachedResource;
@@ -362,7 +361,7 @@ void InspectorPageAgent::didCreateFrontendAndBackend(Inspector::InspectorFronten
     m_backendDispatcher = InspectorPageBackendDispatcher::create(backendDispatcher, this);
 }
 
-void InspectorPageAgent::willDestroyFrontendAndBackend()
+void InspectorPageAgent::willDestroyFrontendAndBackend(InspectorDisconnectReason)
 {
     m_frontendDispatcher = nullptr;
     m_backendDispatcher.clear();
@@ -609,7 +608,7 @@ void InspectorPageAgent::searchInResource(ErrorString*, const String& frameId, c
     if (!success)
         return;
 
-    results = ContentSearchUtils::searchInTextByLines(content, query, caseSensitive, isRegex);
+    results = ContentSearchUtilities::searchInTextByLines(content, query, caseSensitive, isRegex);
 }
 
 static PassRefPtr<Inspector::TypeBuilder::Page::SearchResult> buildObjectForSearchResult(const String& frameId, const String& url, int matchesCount)
@@ -627,7 +626,7 @@ void InspectorPageAgent::searchInResources(ErrorString*, const String& text, con
 
     bool isRegex = optionalIsRegex ? *optionalIsRegex : false;
     bool caseSensitive = optionalCaseSensitive ? *optionalCaseSensitive : false;
-    RegularExpression regex = ContentSearchUtils::createSearchRegex(text, caseSensitive, isRegex);
+    JSC::Yarr::RegularExpression regex = ContentSearchUtilities::createSearchRegex(text, caseSensitive, isRegex);
 
     for (Frame* frame = &m_page->mainFrame(); frame; frame = frame->tree().traverseNext(&m_page->mainFrame())) {
         String content;
@@ -635,13 +634,13 @@ void InspectorPageAgent::searchInResources(ErrorString*, const String& text, con
         for (Vector<CachedResource*>::const_iterator it = allResources.begin(); it != allResources.end(); ++it) {
             CachedResource* cachedResource = *it;
             if (textContentForCachedResource(cachedResource, &content)) {
-                int matchesCount = ContentSearchUtils::countRegularExpressionMatches(regex, content);
+                int matchesCount = ContentSearchUtilities::countRegularExpressionMatches(regex, content);
                 if (matchesCount)
                     searchResults->addItem(buildObjectForSearchResult(frameId(frame), cachedResource->url(), matchesCount));
             }
         }
         if (mainResourceContent(frame, false, &content)) {
-            int matchesCount = ContentSearchUtils::countRegularExpressionMatches(regex, content);
+            int matchesCount = ContentSearchUtilities::countRegularExpressionMatches(regex, content);
             if (matchesCount)
                 searchResults->addItem(buildObjectForSearchResult(frameId(frame), frame->document()->url(), matchesCount));
         }
@@ -979,6 +978,9 @@ PassRefPtr<Inspector::TypeBuilder::Page::FrameResourceTree> InspectorPageAgent::
     Vector<CachedResource*> allResources = cachedResourcesForFrame(frame);
     for (Vector<CachedResource*>::const_iterator it = allResources.begin(); it != allResources.end(); ++it) {
         CachedResource* cachedResource = *it;
+
+        if (cachedResource->resourceRequest().hiddenFromInspector())
+            continue;
 
         RefPtr<Inspector::TypeBuilder::Page::FrameResourceTree::Resources> resourceObject = Inspector::TypeBuilder::Page::FrameResourceTree::Resources::create()
             .setUrl(cachedResource->url())

@@ -71,8 +71,9 @@ protected:
 
     // PageClient.
     virtual void didFindZoomableArea(const WebCore::IntPoint& target, const WebCore::IntRect& area) override;
-    virtual void didCommitLoadForMainFrame() override;
+    virtual void didCommitLoadForMainFrame(const String& mimeType, bool useCustomContentProvider) override;
     virtual void pageScaleFactorDidChange() override;
+    virtual void didFinishLoadingDataForCustomContentProvider(const String& suggestedFilename, const IPC::DataReference&) { UNUSED_PARAM(suggestedFilename); }
 
 #if ENABLE(TOUCH_EVENTS)
     virtual void doneWithTouchEvent(const NativeWebTouchEvent&, bool wasEventHandled) override;

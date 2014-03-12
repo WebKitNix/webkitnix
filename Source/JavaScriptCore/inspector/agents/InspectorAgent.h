@@ -30,6 +30,8 @@
 #ifndef InspectorAgent_h
 #define InspectorAgent_h
 
+#if ENABLE(INSPECTOR)
+
 #include "InspectorJSBackendDispatchers.h"
 #include "InspectorJSFrontendDispatchers.h"
 #include "inspector/InspectorAgentBase.h"
@@ -41,6 +43,8 @@ namespace Inspector {
 
 class InspectorObject;
 class InstrumentingAgents;
+class InspectorInspectorBackendDispatcher;
+class InspectorInspectorFrontendDispatchers;
 
 typedef String ErrorString;
 
@@ -51,7 +55,7 @@ public:
     virtual ~InspectorAgent();
 
     virtual void didCreateFrontendAndBackend(InspectorFrontendChannel*, InspectorBackendDispatcher*) override;
-    virtual void willDestroyFrontendAndBackend() override;
+    virtual void willDestroyFrontendAndBackend(InspectorDisconnectReason reason) override;
 
     virtual void enable(ErrorString*) override;
     virtual void disable(ErrorString*) override;
@@ -68,5 +72,7 @@ private:
 };
 
 } // namespace Inspector
+
+#endif // ENABLE(INSPECTOR)
 
 #endif // !defined(InspectorAgent_h)

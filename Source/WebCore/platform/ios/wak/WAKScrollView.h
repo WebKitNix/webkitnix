@@ -60,10 +60,11 @@
 - (void)setDelegate:(id)delegate;
 - (id)delegate;
 
-- (CGRect)actualDocumentVisibleRect;
+- (CGRect)unobscuredContentRect;
 - (void)setActualScrollPosition:(CGPoint)point;
 
-- (CGRect)documentVisibleExtent; // Like actualDocumentVisibleRect, but includes areas possibly covered by translucent UI.
+// Like unobscuredContentRect, but includes areas possibly covered by translucent UI.
+- (CGRect)exposedContentRect;
 
 - (BOOL)inProgrammaticScroll;
 @end

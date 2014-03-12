@@ -35,7 +35,7 @@ namespace WebCore {
 
 class CachedTextTrack final : public CachedResource {
 public:
-    CachedTextTrack(const ResourceRequest&);
+    CachedTextTrack(const ResourceRequest&, SessionID);
     virtual ~CachedTextTrack();
 
 private:
@@ -43,6 +43,8 @@ private:
     virtual void addDataBuffer(ResourceBuffer*) override;
     virtual void finishLoading(ResourceBuffer*) override;
 };
+
+CACHED_RESOURCE_TYPE_CASTS(CachedTextTrack, CachedResource, CachedResource::TextTrackResource)
 
 }
 

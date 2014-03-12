@@ -29,8 +29,6 @@
 #ifndef SVGImageChromeClient_h
 #define SVGImageChromeClient_h
 
-#if ENABLE(SVG)
-
 #include "EmptyClients.h"
 
 namespace WebCore {
@@ -52,7 +50,7 @@ private:
         m_image = 0;
     }
     
-    virtual void invalidateContentsAndRootView(const IntRect& r, bool) override
+    virtual void invalidateContentsAndRootView(const IntRect& r) override
     {
         // If m_image->m_page is null, we're being destructed, don't fire changedInRect() in that case.
         if (m_image && m_image->imageObserver() && m_image->m_page)
@@ -70,5 +68,4 @@ inline SVGImageChromeClient* toSVGImageChromeClient(ChromeClient* client)
     
 } 
 
-#endif // ENABLE(SVG)
 #endif // SVGImageChromeClient_h

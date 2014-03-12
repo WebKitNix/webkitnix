@@ -21,7 +21,7 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #ifndef DOMWindow_h
@@ -34,12 +34,15 @@
 #include "Supplementable.h"
 #include <functional>
 
+namespace Inspector {
+class ScriptCallStack;
+}
+
 namespace WebCore {
 
     class BarProp;
     class CSSRuleList;
     class CSSStyleDeclaration;
-    class Console;
     class Crypto;
     class DOMApplicationCache;
     class DOMSelection;
@@ -65,7 +68,6 @@ namespace WebCore {
     class PostMessageTimer;
     class ScheduledAction;
     class Screen;
-    class ScriptCallStack;
     class SecurityOrigin;
     class SerializedScriptValue;
     class Storage;
@@ -227,9 +229,8 @@ namespace WebCore {
         double devicePixelRatio() const;
 
         PassRefPtr<WebKitPoint> webkitConvertPointFromPageToNode(Node*, const WebKitPoint*) const;
-        PassRefPtr<WebKitPoint> webkitConvertPointFromNodeToPage(Node*, const WebKitPoint*) const;        
+        PassRefPtr<WebKitPoint> webkitConvertPointFromNodeToPage(Node*, const WebKitPoint*) const;
 
-        Console* console() const;
         PageConsole* pageConsole() const;
 
         void printErrorMessage(const String&);
@@ -239,7 +240,7 @@ namespace WebCore {
         // Needed for Objective-C bindings (see bug 28774).
         void postMessage(PassRefPtr<SerializedScriptValue> message, MessagePort*, const String& targetOrigin, DOMWindow& source, ExceptionCode&);
         void postMessageTimerFired(PassOwnPtr<PostMessageTimer>);
-        void dispatchMessageEventWithOriginCheck(SecurityOrigin* intendedTargetOrigin, PassRefPtr<Event>, PassRefPtr<ScriptCallStack>);
+        void dispatchMessageEventWithOriginCheck(SecurityOrigin* intendedTargetOrigin, PassRefPtr<Event>, PassRefPtr<Inspector::ScriptCallStack>);
 
         void scrollBy(int x, int y) const;
         void scrollTo(int x, int y) const;
@@ -346,6 +347,12 @@ namespace WebCore {
         DEFINE_ATTRIBUTE_EVENT_LISTENER(waiting);
         DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitbeginfullscreen);
         DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitendfullscreen);
+#if ENABLE(WILL_REVEAL_EDGE_EVENTS)
+        DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitwillrevealbottom);
+        DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitwillrevealleft);
+        DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitwillrevealright);
+        DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitwillrevealtop);
+#endif
         DEFINE_ATTRIBUTE_EVENT_LISTENER(wheel);
 
         DEFINE_MAPPED_ATTRIBUTE_EVENT_LISTENER(webkitanimationstart, webkitAnimationStart);
@@ -464,7 +471,6 @@ namespace WebCore {
         mutable RefPtr<BarProp> m_scrollbars;
         mutable RefPtr<BarProp> m_statusbar;
         mutable RefPtr<BarProp> m_toolbar;
-        mutable RefPtr<Console> m_console;
         mutable RefPtr<Navigator> m_navigator;
         mutable RefPtr<Location> m_location;
         mutable RefPtr<StyleMedia> m_media;
@@ -504,7 +510,7 @@ namespace WebCore {
     inline String DOMWindow::defaultStatus() const
     {
         return m_defaultStatus;
-    } 
+    }
 
 } // namespace WebCore
 

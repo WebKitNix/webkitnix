@@ -30,7 +30,6 @@
 
 #import "APICallbackFunction.h"
 #import "APICast.h"
-#import "APIShims.h"
 #import "DelayedReleaseScope.h"
 #import "Error.h"
 #import "JSCJSValueInlines.h"
@@ -129,7 +128,7 @@ private:
             return;
         }
 
-        *exception = toRef(JSC::createTypeError(toJS(contextRef), "Argument does not match Objective-C Class"));
+        *exception = toRef(JSC::createTypeError(toJS(contextRef), ASCIILiteral("Argument does not match Objective-C Class")));
     }
 
     Class m_class;
@@ -455,7 +454,7 @@ static JSValueRef objCCallbackFunctionCallAsFunction(JSContextRef callerContext,
     // (1) We don't want to support the C-API's confusing drops-locks-once policy - should only drop locks if we can do so recursively.
     // (2) We're calling some JSC internals that require us to be on the 'inside' - e.g. createTypeError.
     // (3) We need to be locked (per context would be fine) against conflicting usage of the ObjCCallbackFunction's NSInvocation.
-    JSC::APIEntryShim entryShim(toJS(callerContext));
+    JSC::JSLockHolder locker(toJS(callerContext));
 
     ObjCCallbackFunction* callback = static_cast<ObjCCallbackFunction*>(toJS(function));
     ObjCCallbackFunctionImpl* impl = callback->impl();
@@ -464,7 +463,7 @@ static JSValueRef objCCallbackFunctionCallAsFunction(JSContextRef callerContext,
     CallbackData callbackData;
     JSValueRef result;
     @autoreleasepool {
-        [context beginCallbackWithData:&callbackData thisValue:thisObject argumentCount:argumentCount arguments:arguments];
+        [context beginCallbackWithData:&callbackData calleeValue:function thisValue:thisObject argumentCount:argumentCount arguments:arguments];
         result = impl->call(context, thisObject, argumentCount, arguments, exception);
         if (context.exception)
             *exception = valueInternalValue(context.exception);
@@ -475,7 +474,7 @@ static JSValueRef objCCallbackFunctionCallAsFunction(JSContextRef callerContext,
 
 static JSObjectRef objCCallbackFunctionCallAsConstructor(JSContextRef callerContext, JSObjectRef constructor, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
 {
-    JSC::APIEntryShim entryShim(toJS(callerContext));
+    JSC::JSLockHolder locker(toJS(callerContext));
 
     ObjCCallbackFunction* callback = static_cast<ObjCCallbackFunction*>(toJS(constructor));
     ObjCCallbackFunctionImpl* impl = callback->impl();
@@ -484,7 +483,7 @@ static JSObjectRef objCCallbackFunctionCallAsConstructor(JSContextRef callerCont
     CallbackData callbackData;
     JSValueRef result;
     @autoreleasepool {
-        [context beginCallbackWithData:&callbackData thisValue:nil argumentCount:argumentCount arguments:arguments];
+        [context beginCallbackWithData:&callbackData calleeValue:constructor thisValue:nil argumentCount:argumentCount arguments:arguments];
         result = impl->call(context, NULL, argumentCount, arguments, exception);
         if (context.exception)
             *exception = valueInternalValue(context.exception);
@@ -496,7 +495,7 @@ static JSObjectRef objCCallbackFunctionCallAsConstructor(JSContextRef callerCont
         return 0;
 
     if (!JSValueIsObject(contextRef, result)) {
-        *exception = toRef(JSC::createTypeError(toJS(contextRef), "Objective-C blocks called as constructors must return an object."));
+        *exception = toRef(JSC::createTypeError(toJS(contextRef), ASCIILiteral("Objective-C blocks called as constructors must return an object.")));
         return 0;
     }
     return (JSObjectRef)result;
@@ -562,7 +561,7 @@ JSValueRef ObjCCallbackFunctionImpl::call(JSContext *context, JSObjectRef thisOb
         RELEASE_ASSERT(!thisObject);
         target = [m_instanceClass alloc];
         if (!target || ![target isKindOfClass:m_instanceClass]) {
-            *exception = toRef(JSC::createTypeError(toJS(contextRef), "self type check failed for Objective-C instance method"));
+            *exception = toRef(JSC::createTypeError(toJS(contextRef), ASCIILiteral("self type check failed for Objective-C instance method")));
             return JSValueMakeUndefined(contextRef);
         }
         [m_invocation setTarget:target];
@@ -572,7 +571,7 @@ JSValueRef ObjCCallbackFunctionImpl::call(JSContext *context, JSObjectRef thisOb
     case CallbackInstanceMethod: {
         target = tryUnwrapObjcObject(contextRef, thisObject);
         if (!target || ![target isKindOfClass:m_instanceClass]) {
-            *exception = toRef(JSC::createTypeError(toJS(contextRef), "self type check failed for Objective-C instance method"));
+            *exception = toRef(JSC::createTypeError(toJS(contextRef), ASCIILiteral("self type check failed for Objective-C instance method")));
             return JSValueMakeUndefined(contextRef);
         }
         [m_invocation setTarget:target];
@@ -632,6 +631,9 @@ inline bool skipNumber(const char*& position)
 
 static JSObjectRef objCCallbackFunctionForInvocation(JSContext *context, NSInvocation *invocation, CallbackType type, Class instanceClass, const char* signatureWithObjcClasses)
 {
+    if (!signatureWithObjcClasses)
+        return nil;
+
     const char* position = signatureWithObjcClasses;
 
     OwnPtr<CallbackResult> result = adoptPtr(parseObjCType<ResultTypeDelegate>(position));
@@ -670,7 +672,7 @@ static JSObjectRef objCCallbackFunctionForInvocation(JSContext *context, NSInvoc
     }
 
     JSC::ExecState* exec = toJS([context JSGlobalContextRef]);
-    JSC::APIEntryShim shim(exec);
+    JSC::JSLockHolder locker(exec);
     OwnPtr<JSC::ObjCCallbackFunctionImpl> impl = adoptPtr(new JSC::ObjCCallbackFunctionImpl(invocation, type, instanceClass, arguments.release(), result.release()));
     return toRef(JSC::ObjCCallbackFunction::create(exec->vm(), exec->lexicalGlobalObject(), impl->name(), impl.release()));
 }

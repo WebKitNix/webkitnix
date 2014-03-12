@@ -42,7 +42,8 @@ class RenderObject;
 class ShapeInsideInfo;
 
 class LayoutState {
-    WTF_MAKE_NONCOPYABLE(LayoutState);
+    WTF_MAKE_NONCOPYABLE(LayoutState); WTF_MAKE_FAST_ALLOCATED;
+
 public:
     LayoutState()
         : m_clipped(false)
@@ -54,7 +55,7 @@ public:
 #endif
         , m_columnInfo(nullptr)
         , m_lineGrid(nullptr)
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
         , m_shapeInsideInfo(nullptr)
 #endif
         , m_pageLogicalHeight(0)
@@ -86,9 +87,12 @@ public:
 
     LayoutSize layoutOffset() const { return m_layoutOffset; }
 
+    LayoutSize pageOffset() const { return m_pageOffset; }
+    void setLineGridPaginationOrigin(const LayoutSize& origin) { m_lineGridPaginationOrigin = origin; }
+    
     bool needsBlockDirectionLocationSetBeforeLayout() const { return m_lineGrid || (m_isPaginated && m_pageLogicalHeight); }
 
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
     ShapeInsideInfo* shapeInsideInfo() const { return m_shapeInsideInfo; }
 #endif
 private:
@@ -113,7 +117,7 @@ public:
     // The current line grid that we're snapping to and the offset of the start of the grid.
     RenderBlockFlow* m_lineGrid;
     std::unique_ptr<LayoutState> m_next;
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
     ShapeInsideInfo* m_shapeInsideInfo;
 #endif
 

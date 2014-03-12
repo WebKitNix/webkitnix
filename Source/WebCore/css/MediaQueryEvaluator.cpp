@@ -55,7 +55,7 @@
 #include "StyleResolver.h"
 #include <wtf/HashMap.h>
 
-#if ENABLE(3D_RENDERING) && USE(ACCELERATED_COMPOSITING)
+#if ENABLE(3D_RENDERING)
 #include "RenderLayerCompositor.h"
 #endif
 
@@ -134,7 +134,7 @@ bool MediaQueryEvaluator::eval(const MediaQuerySet* querySet, StyleResolver* sty
     if (!querySet)
         return true;
 
-    const Vector<OwnPtr<MediaQuery>>& queries = querySet->queryVector();
+    auto& queries = querySet->queryVector();
     if (!queries.size())
         return true; // empty query list evaluates to true
 
@@ -147,7 +147,7 @@ bool MediaQueryEvaluator::eval(const MediaQuerySet* querySet, StyleResolver* sty
             continue;
 
         if (mediaTypeMatch(query->mediaType())) {
-            const Vector<OwnPtr<MediaQueryExp>>& expressions = query->expressions();
+            auto& expressions = query->expressions();
             // iterate through expressions, stop if any of them eval to false
             // (AND semantics)
             size_t j = 0;
@@ -571,10 +571,8 @@ static bool transform_3dMediaFeatureEval(CSSValue* value, RenderStyle*, Frame* f
 
 #if ENABLE(3D_RENDERING)
     bool threeDEnabled = false;
-#if USE(ACCELERATED_COMPOSITING)
     if (RenderView* view = frame->contentRenderer())
         threeDEnabled = view->compositor().canRender3DTransforms();
-#endif
 
     returnValueIfNoParameter = threeDEnabled;
     have3dRendering = threeDEnabled ? 1 : 0;

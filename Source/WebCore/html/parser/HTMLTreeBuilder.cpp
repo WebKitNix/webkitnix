@@ -44,28 +44,8 @@
 #include <wtf/MainThread.h>
 #include <wtf/unicode/CharacterNames.h>
 
-// FIXME: Extract the following iOS-specific code into a separate file.
-#if PLATFORM(IOS)
-#include "SoftLinking.h"
-
-#ifdef __has_include
-#if __has_include(<DataDetectorsCore/DDDFACache.h>)
-#include <DataDetectorsCore/DDDFACache.h>
-#else
-typedef void* DDDFACacheRef;
-#endif
-
-#if __has_include(<DataDetectorsCore/DDDFAScanner.h>)
-#include <DataDetectorsCore/DDDFAScanner.h>
-#else
-typedef void* DDDFAScannerRef;
-#endif
-#endif
-
-SOFT_LINK_PRIVATE_FRAMEWORK_OPTIONAL(DataDetectorsCore)
-SOFT_LINK(DataDetectorsCore, DDDFACacheCreateFromFramework, DDDFACacheRef, (), ())
-SOFT_LINK(DataDetectorsCore, DDDFAScannerCreateFromCache, DDDFAScannerRef, (DDDFACacheRef cache), (cache))
-SOFT_LINK(DataDetectorsCore, DDDFAScannerFirstResultInUnicharArray, Boolean, (DDDFAScannerRef scanner, const UniChar* str, unsigned length, int* startPos, int* endPos), (scanner, str, length, startPos, endPos))
+#if ENABLE(TELEPHONE_NUMBER_DETECTION)
+#include "TelephoneNumberDetector.h"
 #endif
 
 namespace WebCore {
@@ -1099,7 +1079,7 @@ void HTMLTreeBuilder::processStartTag(AtomicHTMLToken* token)
     case InsertionMode::Initial:
         ASSERT(insertionMode() == InsertionMode::Initial);
         defaultForInitial();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::BeforeHTML:
         ASSERT(insertionMode() == InsertionMode::BeforeHTML);
         if (token->name() == htmlTag) {
@@ -1108,7 +1088,7 @@ void HTMLTreeBuilder::processStartTag(AtomicHTMLToken* token)
             return;
         }
         defaultForBeforeHTML();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::BeforeHead:
         ASSERT(insertionMode() == InsertionMode::BeforeHead);
         if (token->name() == htmlTag) {
@@ -1121,13 +1101,13 @@ void HTMLTreeBuilder::processStartTag(AtomicHTMLToken* token)
             return;
         }
         defaultForBeforeHead();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::InHead:
         ASSERT(insertionMode() == InsertionMode::InHead);
         if (processStartTagForInHead(token))
             return;
         defaultForInHead();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::AfterHead:
         ASSERT(insertionMode() == InsertionMode::AfterHead);
         if (token->name() == htmlTag) {
@@ -1169,7 +1149,7 @@ void HTMLTreeBuilder::processStartTag(AtomicHTMLToken* token)
             return;
         }
         defaultForAfterHead();
-        // Fall through
+        FALLTHROUGH;
     case InsertionMode::InBody:
         ASSERT(insertionMode() == InsertionMode::InBody);
         processStartTagForInBody(token);
@@ -1371,7 +1351,7 @@ void HTMLTreeBuilder::processStartTag(AtomicHTMLToken* token)
             processStartTag(token);
             return;
         }
-        // Fall through
+        FALLTHROUGH;
     case InsertionMode::InSelect:
         ASSERT(insertionMode() == InsertionMode::InSelect || insertionMode() == InsertionMode::InSelectInTable);
         if (token->name() == htmlTag) {
@@ -1600,39 +1580,18 @@ void HTMLTreeBuilder::callTheAdoptionAgency(AtomicHTMLToken* token)
             if (lastNode == furthestBlock)
                 bookmark.moveToAfter(nodeEntry);
             // 9.9
-            if (ContainerNode* parent = lastNode->element()->parentNode())
-                parent->parserRemoveChild(*lastNode->element());
-            node->element()->parserAppendChild(lastNode->element());
+            m_tree.reparent(*node, *lastNode);
             // 9.10
             lastNode = node;
         }
         // 10.
-        if (ContainerNode* parent = lastNode->element()->parentNode())
-            parent->parserRemoveChild(*lastNode->element());
-        if (commonAncestor->causesFosterParenting())
-            m_tree.fosterParent(lastNode->element());
-        else {
-#if ENABLE(TEMPLATE_ELEMENT)
-            if (commonAncestor->hasTagName(templateTag))
-                toHTMLTemplateElement(commonAncestor->node())->content()->parserAppendChild(lastNode->element());
-            else
-                commonAncestor->node()->parserAppendChild(lastNode->element());
-#else
-            commonAncestor->node()->parserAppendChild(lastNode->element());
-#endif
-            ASSERT(lastNode->stackItem()->isElementNode());
-            ASSERT(lastNode->element()->parentNode());
-        }
+        m_tree.insertAlreadyParsedChild(*commonAncestor, *lastNode);
         // 11.
         RefPtr<HTMLStackItem> newItem = m_tree.createElementFromSavedToken(formattingElementRecord->stackItem().get());
         // 12.
-        newItem->element()->takeAllChildrenFrom(furthestBlock->element());
+        m_tree.takeAllChildren(*newItem, *furthestBlock);
         // 13.
-        Element* furthestBlockElement = furthestBlock->element();
-        // FIXME: All this creation / parserAppendChild / attach business should
-        //        be in HTMLConstructionSite. My guess is that steps 11--15
-        //        should all be in some HTMLConstructionSite function.
-        furthestBlockElement->parserAppendChild(newItem->element());
+        m_tree.reparent(*furthestBlock, *newItem);
         // 14.
         m_tree.activeFormattingElements()->swapTo(formattingElement, newItem, bookmark);
         // 15.
@@ -2049,7 +2008,7 @@ void HTMLTreeBuilder::processEndTag(AtomicHTMLToken* token)
     case InsertionMode::Initial:
         ASSERT(insertionMode() == InsertionMode::Initial);
         defaultForInitial();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::BeforeHTML:
         ASSERT(insertionMode() == InsertionMode::BeforeHTML);
         if (token->name() != headTag && token->name() != bodyTag && token->name() != htmlTag && token->name() != brTag) {
@@ -2057,7 +2016,7 @@ void HTMLTreeBuilder::processEndTag(AtomicHTMLToken* token)
             return;
         }
         defaultForBeforeHTML();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::BeforeHead:
         ASSERT(insertionMode() == InsertionMode::BeforeHead);
         if (token->name() != headTag && token->name() != bodyTag && token->name() != htmlTag && token->name() != brTag) {
@@ -2065,7 +2024,7 @@ void HTMLTreeBuilder::processEndTag(AtomicHTMLToken* token)
             return;
         }
         defaultForBeforeHead();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::InHead:
         ASSERT(insertionMode() == InsertionMode::InHead);
         // FIXME: This case should be broken out into processEndTagForInHead,
@@ -2087,7 +2046,7 @@ void HTMLTreeBuilder::processEndTag(AtomicHTMLToken* token)
             return;
         }
         defaultForInHead();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::AfterHead:
         ASSERT(insertionMode() == InsertionMode::AfterHead);
         if (token->name() != bodyTag && token->name() != htmlTag && token->name() != brTag) {
@@ -2095,7 +2054,7 @@ void HTMLTreeBuilder::processEndTag(AtomicHTMLToken* token)
             return;
         }
         defaultForAfterHead();
-        // Fall through
+        FALLTHROUGH;
     case InsertionMode::InBody:
         ASSERT(insertionMode() == InsertionMode::InBody);
         processEndTagForInBody(token);
@@ -2175,7 +2134,7 @@ void HTMLTreeBuilder::processEndTag(AtomicHTMLToken* token)
             setInsertionMode(InsertionMode::AfterAfterBody);
             return;
         }
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::AfterAfterBody:
         ASSERT(insertionMode() == InsertionMode::AfterBody || insertionMode() == InsertionMode::AfterAfterBody);
         parseError(token);
@@ -2250,7 +2209,7 @@ void HTMLTreeBuilder::processEndTag(AtomicHTMLToken* token)
             setInsertionMode(InsertionMode::AfterAfterFrameset);
             return;
         }
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::AfterAfterFrameset:
         ASSERT(insertionMode() == InsertionMode::AfterFrameset || insertionMode() == InsertionMode::AfterAfterFrameset);
         parseError(token);
@@ -2270,7 +2229,7 @@ void HTMLTreeBuilder::processEndTag(AtomicHTMLToken* token)
             }
             return;
         }
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::InSelect:
         ASSERT(insertionMode() == InsertionMode::InSelect || insertionMode() == InsertionMode::InSelectInTable);
         if (token->name() == optgroupTag) {
@@ -2318,8 +2277,6 @@ void HTMLTreeBuilder::processEndTag(AtomicHTMLToken* token)
             processTemplateEndTag(token);
             return;
         }
-
-        break;
 #else
         ASSERT_NOT_REACHED();
 #endif
@@ -2357,7 +2314,7 @@ void HTMLTreeBuilder::processCharacter(AtomicHTMLToken* token)
 }
 
 // FIXME: Extract the following iOS-specific code into a separate file.
-#if PLATFORM(IOS)
+#if ENABLE(TELEPHONE_NUMBER_DETECTION)
 // From the string 4089961010, creates a link of the form <a href="tel:4089961010">4089961010</a> and inserts it.
 void HTMLTreeBuilder::insertPhoneNumberLink(const String& string)
 {
@@ -2381,13 +2338,7 @@ void HTMLTreeBuilder::insertPhoneNumberLink(const String& string)
 // 4. Appends the rest of the string as a text node.
 void HTMLTreeBuilder::linkifyPhoneNumbers(const String& string)
 {
-    static DDDFACacheRef phoneNumbersCache = DDDFACacheCreateFromFramework();
-    if (!phoneNumbersCache) {
-        m_tree.insertTextNode(string);
-        return;
-    }
-
-    static DDDFAScannerRef phoneNumbersScanner = DDDFAScannerCreateFromCache(phoneNumbersCache);
+    ASSERT(TelephoneNumberDetector::isSupported());
 
     // relativeStartPosition and relativeEndPosition are the endpoints of the phone number range,
     // relative to the scannerPosition
@@ -2397,7 +2348,7 @@ void HTMLTreeBuilder::linkifyPhoneNumbers(const String& string)
     int relativeEndPosition = 0;
 
     // While there's a phone number in the rest of the string...
-    while ((scannerPosition < length) && DDDFAScannerFirstResultInUnicharArray(phoneNumbersScanner, &string.characters()[scannerPosition], length - scannerPosition, &relativeStartPosition, &relativeEndPosition)) {
+    while ((scannerPosition < length) && TelephoneNumberDetector::find(&string.deprecatedCharacters()[scannerPosition], length - scannerPosition, &relativeStartPosition, &relativeEndPosition)) {
         // The convention in the Data Detectors framework is that the end position is the first character NOT in the phone number
         // (that is, the length of the range is relativeEndPosition - relativeStartPosition). So substract 1 to get the same
         // convention as the old WebCore phone number parser (so that the rest of the code is still valid if we want to go back
@@ -2445,7 +2396,7 @@ static inline bool shouldParseTelephoneNumbersInNode(const ContainerNode& node)
     } while (currentNode);
     return true;
 }
-#endif // PLATFORM(IOS)
+#endif
 
 void HTMLTreeBuilder::processCharacterBuffer(ExternalCharacterTokenBuffer& buffer)
 {
@@ -2475,7 +2426,7 @@ ReprocessBuffer:
         if (buffer.isEmpty())
             return;
         defaultForInitial();
-        // Fall through.
+        FALLTHROUGH;
     }
     case InsertionMode::BeforeHTML: {
         ASSERT(insertionMode() == InsertionMode::BeforeHTML);
@@ -2483,7 +2434,7 @@ ReprocessBuffer:
         if (buffer.isEmpty())
             return;
         defaultForBeforeHTML();
-        // Fall through.
+        FALLTHROUGH;
     }
     case InsertionMode::BeforeHead: {
         ASSERT(insertionMode() == InsertionMode::BeforeHead);
@@ -2491,7 +2442,7 @@ ReprocessBuffer:
         if (buffer.isEmpty())
             return;
         defaultForBeforeHead();
-        // Fall through.
+        FALLTHROUGH;
     }
     case InsertionMode::InHead: {
         ASSERT(insertionMode() == InsertionMode::InHead);
@@ -2501,7 +2452,7 @@ ReprocessBuffer:
         if (buffer.isEmpty())
             return;
         defaultForInHead();
-        // Fall through.
+        FALLTHROUGH;
     }
     case InsertionMode::AfterHead: {
         ASSERT(insertionMode() == InsertionMode::AfterHead);
@@ -2511,7 +2462,7 @@ ReprocessBuffer:
         if (buffer.isEmpty())
             return;
         defaultForAfterHead();
-        // Fall through.
+        FALLTHROUGH;
     }
     case InsertionMode::InBody:
     case InsertionMode::InCaption:
@@ -2545,7 +2496,7 @@ ReprocessBuffer:
             processCharacterBufferForInBody(buffer);
             break;
         }
-        // Fall through.
+        FALLTHROUGH;
     }
     case InsertionMode::InTableText: {
         buffer.giveRemainingTo(m_pendingTableCharacters);
@@ -2573,7 +2524,6 @@ ReprocessBuffer:
         // FIXME: parse error
         setInsertionMode(InsertionMode::InBody);
         goto ReprocessBuffer;
-        break;
     }
     case InsertionMode::Text: {
         ASSERT(insertionMode() == InsertionMode::Text);
@@ -2589,7 +2539,6 @@ ReprocessBuffer:
             return;
         defaultForInHeadNoscript();
         goto ReprocessBuffer;
-        break;
     }
     case InsertionMode::InFrameset:
     case InsertionMode::AfterFrameset: {
@@ -2624,8 +2573,8 @@ void HTMLTreeBuilder::processCharacterBufferForInBody(ExternalCharacterTokenBuff
 {
     m_tree.reconstructTheActiveFormattingElements();
     String characters = buffer.takeRemaining();
-#if PLATFORM(IOS)
-    if (!isParsingFragment() && m_tree.isTelephoneNumberParsingEnabled() && shouldParseTelephoneNumbersInNode(*m_tree.currentNode()) && DataDetectorsCoreLibrary())
+#if ENABLE(TELEPHONE_NUMBER_DETECTION)
+    if (!isParsingFragment() && m_tree.isTelephoneNumberParsingEnabled() && shouldParseTelephoneNumbersInNode(*m_tree.currentNode()) && TelephoneNumberDetector::isSupported())
         linkifyPhoneNumbers(characters);
     else
         m_tree.insertTextNode(characters);
@@ -2644,23 +2593,23 @@ void HTMLTreeBuilder::processEndOfFile(AtomicHTMLToken* token)
     case InsertionMode::Initial:
         ASSERT(insertionMode() == InsertionMode::Initial);
         defaultForInitial();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::BeforeHTML:
         ASSERT(insertionMode() == InsertionMode::BeforeHTML);
         defaultForBeforeHTML();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::BeforeHead:
         ASSERT(insertionMode() == InsertionMode::BeforeHead);
         defaultForBeforeHead();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::InHead:
         ASSERT(insertionMode() == InsertionMode::InHead);
         defaultForInHead();
-        // Fall through.
+        FALLTHROUGH;
     case InsertionMode::AfterHead:
         ASSERT(insertionMode() == InsertionMode::AfterHead);
         defaultForAfterHead();
-        // Fall through
+        FALLTHROUGH;
     case InsertionMode::InBody:
     case InsertionMode::InCell:
     case InsertionMode::InCaption:
@@ -2702,7 +2651,7 @@ void HTMLTreeBuilder::processEndOfFile(AtomicHTMLToken* token)
         ASSERT(m_tree.currentNode()->hasTagName(colgroupTag));
 #endif
         processColgroupEndTagForInColumnGroup();
-        // Fall through
+        FALLTHROUGH;
     case InsertionMode::InFrameset:
     case InsertionMode::InTable:
     case InsertionMode::InTableBody:

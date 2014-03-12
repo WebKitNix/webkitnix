@@ -46,7 +46,6 @@ class CachedFont;
 class CachedImage;
 class CachedRawResource;
 class CachedScript;
-class CachedShader;
 class CachedTextTrack;
 class CachedXSLStyleSheet;
 class Document;
@@ -79,10 +78,7 @@ public:
     CachedResourceHandle<CachedFont> requestFont(CachedResourceRequest&);
     CachedResourceHandle<CachedRawResource> requestRawResource(CachedResourceRequest&);
     CachedResourceHandle<CachedRawResource> requestMainResource(CachedResourceRequest&);
-
-#if ENABLE(SVG)
     CachedResourceHandle<CachedSVGDocument> requestSVGDocument(CachedResourceRequest&);
-#endif
 #if ENABLE(XSLT)
     CachedResourceHandle<CachedXSLStyleSheet> requestXSLStyleSheet(CachedResourceRequest&);
 #endif
@@ -91,9 +87,6 @@ public:
 #endif
 #if ENABLE(VIDEO_TRACK)
     CachedResourceHandle<CachedTextTrack> requestTextTrack(CachedResourceRequest&);
-#endif
-#if ENABLE(CSS_SHADERS)
-    CachedResourceHandle<CachedShader> requestShader(CachedResourceRequest&);
 #endif
 
     // Logs an access denied message to the console for the specified URL.
@@ -118,6 +111,7 @@ public:
     Document* document() const { return m_document; } // Can be null
     void setDocument(Document* document) { m_document = document; }
     void clearDocumentLoader() { m_documentLoader = 0; }
+    SessionID sessionID() const;
 
     void removeCachedResource(CachedResource*) const;
 
@@ -153,7 +147,7 @@ private:
     enum RevalidationPolicy { Use, Revalidate, Reload, Load };
     RevalidationPolicy determineRevalidationPolicy(CachedResource::Type, ResourceRequest&, bool forPreload, CachedResource* existingResource, CachedResourceRequest::DeferOption) const;
     
-    bool shouldContinueAfterNotifyingLoadedFromMemoryCache(CachedResource*);
+    bool shouldContinueAfterNotifyingLoadedFromMemoryCache(const CachedResourceRequest&, CachedResource*);
     bool checkInsecureContent(CachedResource::Type, const URL&) const;
 
     void garbageCollectDocumentResourcesTimerFired(Timer<CachedResourceLoader>&);

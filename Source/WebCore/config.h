@@ -100,13 +100,13 @@
 #endif
 #endif
 
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+#if PLATFORM(MAC)
 #define WTF_USE_NEW_THEME 1
 #endif
 
 #if USE(CG)
 #ifndef CGFLOAT_DEFINED
-#ifdef __LP64__
+#if (defined(__LP64__) && __LP64__) || (defined(__x86_64__) && __x86_64__) || defined(_M_X64) || defined(__amd64__)
 typedef double CGFloat;
 #else
 typedef float CGFloat;

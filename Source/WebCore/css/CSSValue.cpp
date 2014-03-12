@@ -40,7 +40,6 @@
 #include "CSSFontValue.h"
 #include "CSSFunctionValue.h"
 #include "CSSGradientValue.h"
-#include "CSSGridTemplateValue.h"
 #include "CSSImageSetValue.h"
 #include "CSSImageValue.h"
 #include "CSSInheritedValue.h"
@@ -54,12 +53,12 @@
 #include "CSSValueList.h"
 #include "SVGColor.h"
 #include "SVGPaint.h"
-#include "WebKitCSSArrayFunctionValue.h"
 #include "WebKitCSSFilterValue.h"
-#include "WebKitCSSMatFunctionValue.h"
-#include "WebKitCSSMixFunctionValue.h"
-#include "WebKitCSSShaderValue.h"
 #include "WebKitCSSTransformValue.h"
+
+#if ENABLE(CSS_GRID_LAYOUT)
+#include "CSSGridTemplateAreasValue.h"
+#endif
 
 namespace WebCore {
 
@@ -193,8 +192,10 @@ bool CSSValue::equals(const CSSValue& other) const
             return compareCSSValues<CSSInheritedValue>(*this, other);
         case InitialClass:
             return compareCSSValues<CSSInitialValue>(*this, other);
-        case GridTemplateClass:
-            return compareCSSValues<CSSGridTemplateValue>(*this, other);
+#if ENABLE(CSS_GRID_LAYOUT)
+        case GridTemplateAreasClass:
+            return compareCSSValues<CSSGridTemplateAreasValue>(*this, other);
+#endif
         case PrimitiveClass:
             return compareCSSValues<CSSPrimitiveValue>(*this, other);
         case ReflectClass:
@@ -222,23 +223,11 @@ bool CSSValue::equals(const CSSValue& other) const
 #if ENABLE(CSS_FILTERS)
         case WebKitCSSFilterClass:
             return compareCSSValues<WebKitCSSFilterValue>(*this, other);
-#if ENABLE(CSS_SHADERS)
-        case WebKitCSSArrayFunctionValueClass:
-            return compareCSSValues<WebKitCSSArrayFunctionValue>(*this, other);
-        case WebKitCSSMatFunctionValueClass:
-            return compareCSSValues<WebKitCSSMatFunctionValue>(*this, other);
-        case WebKitCSSMixFunctionValueClass:
-            return compareCSSValues<WebKitCSSMixFunctionValue>(*this, other);
-        case WebKitCSSShaderClass:
-            return compareCSSValues<WebKitCSSShaderValue>(*this, other);
 #endif
-#endif
-#if ENABLE(SVG)
         case SVGColorClass:
             return compareCSSValues<SVGColor>(*this, other);
         case SVGPaintClass:
             return compareCSSValues<SVGPaint>(*this, other);
-#endif
         default:
             ASSERT_NOT_REACHED();
             return false;
@@ -291,8 +280,10 @@ String CSSValue::cssText() const
         return toCSSInheritedValue(this)->customCSSText();
     case InitialClass:
         return toCSSInitialValue(this)->customCSSText();
-    case GridTemplateClass:
-        return toCSSGridTemplateValue(this)->customCSSText();
+#if ENABLE(CSS_GRID_LAYOUT)
+    case GridTemplateAreasClass:
+        return toCSSGridTemplateAreasValue(this)->customCSSText();
+#endif
     case PrimitiveClass:
         return toCSSPrimitiveValue(this)->customCSSText();
     case ReflectClass:
@@ -320,23 +311,11 @@ String CSSValue::cssText() const
 #if ENABLE(CSS_FILTERS)
     case WebKitCSSFilterClass:
         return toWebKitCSSFilterValue(this)->customCSSText();
-#if ENABLE(CSS_SHADERS)
-    case WebKitCSSArrayFunctionValueClass:
-        return toWebKitCSSArrayFunctionValue(this)->customCSSText();
-    case WebKitCSSMatFunctionValueClass:
-        return toWebKitCSSMatFunctionValue(this)->customCSSText();
-    case WebKitCSSMixFunctionValueClass:
-        return toWebKitCSSMixFunctionValue(this)->customCSSText();
-    case WebKitCSSShaderClass:
-        return toWebKitCSSShaderValue(this)->customCSSText();
 #endif
-#endif
-#if ENABLE(SVG)
     case SVGColorClass:
         return toSVGColor(this)->customCSSText();
     case SVGPaintClass:
         return toSVGPaint(this)->customCSSText();
-#endif
     }
     ASSERT_NOT_REACHED();
     return String();
@@ -394,9 +373,11 @@ void CSSValue::destroy()
     case InitialClass:
         delete toCSSInitialValue(this);
         return;
-    case GridTemplateClass:
-        delete toCSSGridTemplateValue(this);
+#if ENABLE(CSS_GRID_LAYOUT)
+    case GridTemplateAreasClass:
+        delete toCSSGridTemplateAreasValue(this);
         return;
+#endif
     case PrimitiveClass:
         delete toCSSPrimitiveValue(this);
         return;
@@ -439,29 +420,13 @@ void CSSValue::destroy()
     case WebKitCSSFilterClass:
         delete toWebKitCSSFilterValue(this);
         return;
-#if ENABLE(CSS_SHADERS)
-    case WebKitCSSArrayFunctionValueClass:
-        delete toWebKitCSSArrayFunctionValue(this);
-        return;
-    case WebKitCSSMatFunctionValueClass:
-        delete toWebKitCSSMatFunctionValue(this);
-        return;
-    case WebKitCSSMixFunctionValueClass:
-        delete toWebKitCSSMixFunctionValue(this);
-        return;
-    case WebKitCSSShaderClass:
-        delete toWebKitCSSShaderValue(this);
-        return;
 #endif
-#endif
-#if ENABLE(SVG)
     case SVGColorClass:
         delete toSVGColor(this);
         return;
     case SVGPaintClass:
         delete toSVGPaint(this);
         return;
-#endif
     }
     ASSERT_NOT_REACHED();
 }
@@ -479,14 +444,6 @@ PassRefPtr<CSSValue> CSSValue::cloneForCSSOM() const
 #if ENABLE(CSS_FILTERS)
     case WebKitCSSFilterClass:
         return toWebKitCSSFilterValue(this)->cloneForCSSOM();
-#if ENABLE(CSS_SHADERS)
-    case WebKitCSSArrayFunctionValueClass:
-        return toWebKitCSSArrayFunctionValue(this)->cloneForCSSOM();
-    case WebKitCSSMatFunctionValueClass:
-        return toWebKitCSSMatFunctionValue(this)->cloneForCSSOM();
-    case WebKitCSSMixFunctionValueClass:
-        return toWebKitCSSMixFunctionValue(this)->cloneForCSSOM();
-#endif
 #endif
     case WebKitCSSTransformClass:
         return toWebKitCSSTransformValue(this)->cloneForCSSOM();
@@ -494,12 +451,10 @@ PassRefPtr<CSSValue> CSSValue::cloneForCSSOM() const
     case ImageSetClass:
         return toCSSImageSetValue(this)->cloneForCSSOM();
 #endif
-#if ENABLE(SVG)
     case SVGColorClass:
         return toSVGColor(this)->cloneForCSSOM();
     case SVGPaintClass:
         return toSVGPaint(this)->cloneForCSSOM();
-#endif
     default:
         ASSERT(!isSubtypeExposedToCSSOM());
         return TextCloneCSSValue::create(classType(), cssText());

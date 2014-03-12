@@ -52,7 +52,8 @@ BaseObject.addConstructorFunctions(BuildbotQueue);
 BuildbotQueue.MaximumQueuesToLoad = 10;
 
 BuildbotQueue.Event = {
-    IterationsAdded: "iterations-added"
+    IterationsAdded: "iterations-added",
+    UnauthorizedAccess: "unauthorized-access"
 };
 
 BuildbotQueue.prototype = {
@@ -69,24 +70,11 @@ BuildbotQueue.prototype = {
         return this.buildbot.baseURL + "builders/" + encodeURIComponent(this.id) + "?numbuilds=50";
     },
 
-    get pendingIterationsCount()
-    {
-        var firstFinishedIteration = this.mostRecentFinishedIteration;
-        if (!firstFinishedIteration)
-            return this.iterations.length;
-        return this.iterations.indexOf(firstFinishedIteration);
-    },
-
     get recentFailedIterationCount()
     {
         var firstFinishedIteration = this.mostRecentFinishedIteration;
         var mostRecentSuccessfulIteration = this.mostRecentSuccessfulIteration;
         return this.iterations.indexOf(mostRecentSuccessfulIteration) - this.iterations.indexOf(firstFinishedIteration);
-    },
-
-    get mostRecentIteration()
-    {
-        return this.iterations[0];
     },
 
     get firstRecentUnsuccessfulIteration()
@@ -132,7 +120,11 @@ BuildbotQueue.prototype = {
 
     update: function(iterationsToLoad)
     {
+        if (this.buildbot.needsAuthentication && this.buildbot.authenticationStatus === Buildbot.AuthenticationStatus.InvalidCredentials)
+            return;
+
         JSON.load(this.baseURL, function(data) {
+            this.buildbot.isAuthenticated = true;
             if (!(data.cachedBuilds instanceof Array))
                 return;
 
@@ -167,7 +159,22 @@ BuildbotQueue.prototype = {
             this.sortIterations();
 
             this.dispatchEventToListeners(BuildbotQueue.Event.IterationsAdded, {addedIterations: newIterations});
-        }.bind(this));
+        }.bind(this),
+        function(data) {
+            if (this.buildbot.isAuthenticated) {
+                // FIXME (128006): Safari/WebKit should coallesce authentication requests with the same origin and authentication realm.
+                // In absence of the fix, Safari presents additional authentication dialogs regardless of whether an earlier authentication
+                // dialog was dismissed. As a way to ameliorate the user experience where a person authenticated successfully using an
+                // earlier authentication dialog and cancelled the authentication dialog associated with the load for this queue, we call
+                // ourself so that we can schedule another load, which should complete successfully now that we have credentials.
+                this.update();
+                return;
+            }
+            if (data.errorType === JSON.LoadError && data.errorHTTPCode === 401) {
+                this.buildbot.isAuthenticated = false;
+                this.dispatchEventToListeners(BuildbotQueue.Event.UnauthorizedAccess, { });
+            }
+        }.bind(this), {withCredentials: this.buildbot.needsAuthentication});
     },
 
     sortIterations: function()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,7 +33,7 @@
 #include "DFGInsertionSet.h"
 #include "DFGPhase.h"
 #include "DFGValidate.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC { namespace DFG {
 
@@ -79,6 +79,8 @@ public:
                     // suboptimal, because if my successor has multiple predecessors then we'll
                     // be keeping alive things on other predecessor edges unnecessarily.
                     // What we really need is the notion of end-of-block ghosties!
+                    // FIXME: Allow putting phantoms after terminals.
+                    // https://bugs.webkit.org/show_bug.cgi?id=126778
                     break;
                 }
                 
@@ -99,14 +101,14 @@ public:
                             m_graph.dethread();
                         
                             ASSERT(block->last()->isTerminal());
-                            CodeOrigin boundaryCodeOrigin = block->last()->codeOrigin;
+                            NodeOrigin boundaryNodeOrigin = block->last()->origin;
                             block->last()->convertToPhantom();
                             ASSERT(block->last()->refCount() == 1);
                         
-                            jettisonBlock(block, jettisonedBlock, boundaryCodeOrigin);
+                            jettisonBlock(block, jettisonedBlock, boundaryNodeOrigin);
                         
                             block->appendNode(
-                                m_graph, SpecNone, Jump, boundaryCodeOrigin,
+                                m_graph, SpecNone, Jump, boundaryNodeOrigin,
                                 OpInfo(targetBlock));
                         }
                         innerChanged = outerChanged = true;
@@ -131,14 +133,17 @@ public:
                     
                     // Prune out cases that end up jumping to default.
                     for (unsigned i = 0; i < data->cases.size(); ++i) {
-                        if (data->cases[i].target == data->fallThrough)
-                            data->cases[i--] = data->cases.takeLast();
+                        if (data->cases[i].target.block == data->fallThrough.block) {
+                            data->fallThrough.count += data->cases[i].target.count;
+                            data->cases[i--] = data->cases.last();
+                            data->cases.removeLast();
+                        }
                     }
                     
                     // If there are no cases other than default then this turns
                     // into a jump.
                     if (data->cases.isEmpty()) {
-                        convertToJump(block, data->fallThrough);
+                        convertToJump(block, data->fallThrough.block);
                         innerChanged = outerChanged = true;
                         break;
                     }
@@ -151,13 +156,13 @@ public:
                         for (unsigned i = data->cases.size(); found == FalseTriState && i--;) {
                             found = data->cases[i].value.strictEqual(value);
                             if (found == TrueTriState)
-                                targetBlock = data->cases[i].target;
+                                targetBlock = data->cases[i].target.block;
                         }
                         
                         if (found == MixedTriState)
                             break;
                         if (found == FalseTriState)
-                            targetBlock = data->fallThrough;
+                            targetBlock = data->fallThrough.block;
                         ASSERT(targetBlock);
                         
                         Vector<BasicBlock*, 1> jettisonedBlocks;
@@ -178,16 +183,17 @@ public:
                                 m_graph.dump();
                             m_graph.dethread();
                             
-                            CodeOrigin boundaryCodeOrigin = block->last()->codeOrigin;
+                            NodeOrigin boundaryNodeOrigin = block->last()->origin;
                             block->last()->convertToPhantom();
                             for (unsigned i = jettisonedBlocks.size(); i--;)
-                                jettisonBlock(block, jettisonedBlocks[i], boundaryCodeOrigin);
+                                jettisonBlock(block, jettisonedBlocks[i], boundaryNodeOrigin);
                             block->appendNode(
-                                m_graph, SpecNone, Jump, boundaryCodeOrigin, OpInfo(targetBlock));
+                                m_graph, SpecNone, Jump, boundaryNodeOrigin, OpInfo(targetBlock));
                         }
                         innerChanged = outerChanged = true;
                         break;
                     }
+                    break;
                 }
                     
                 default:
@@ -254,12 +260,11 @@ private:
             ASSERT(branch->refCount() == 1);
             
             block->appendNode(
-                m_graph, SpecNone, Jump, branch->codeOrigin,
-                OpInfo(targetBlock));
+                m_graph, SpecNone, Jump, branch->origin, OpInfo(targetBlock));
         }
     }
 
-    void keepOperandAlive(BasicBlock* block, BasicBlock* jettisonedBlock, CodeOrigin codeOrigin, VirtualRegister operand)
+    void keepOperandAlive(BasicBlock* block, BasicBlock* jettisonedBlock, NodeOrigin nodeOrigin, VirtualRegister operand)
     {
         Node* livenessNode = jettisonedBlock->variablesAtHead.operand(operand);
         if (!livenessNode)
@@ -267,16 +272,16 @@ private:
         if (livenessNode->variableAccessData()->isCaptured())
             return;
         block->appendNode(
-            m_graph, SpecNone, PhantomLocal, codeOrigin, 
+            m_graph, SpecNone, PhantomLocal, nodeOrigin, 
             OpInfo(livenessNode->variableAccessData()));
     }
     
-    void jettisonBlock(BasicBlock* block, BasicBlock* jettisonedBlock, CodeOrigin boundaryCodeOrigin)
+    void jettisonBlock(BasicBlock* block, BasicBlock* jettisonedBlock, NodeOrigin boundaryNodeOrigin)
     {
         for (size_t i = 0; i < jettisonedBlock->variablesAtHead.numberOfArguments(); ++i)
-            keepOperandAlive(block, jettisonedBlock, boundaryCodeOrigin, virtualRegisterForArgument(i));
+            keepOperandAlive(block, jettisonedBlock, boundaryNodeOrigin, virtualRegisterForArgument(i));
         for (size_t i = 0; i < jettisonedBlock->variablesAtHead.numberOfLocals(); ++i)
-            keepOperandAlive(block, jettisonedBlock, boundaryCodeOrigin, virtualRegisterForLocal(i));
+            keepOperandAlive(block, jettisonedBlock, boundaryNodeOrigin, virtualRegisterForLocal(i));
         
         fixJettisonedPredecessors(block, jettisonedBlock);
     }
@@ -311,7 +316,7 @@ private:
         // Remove the terminal of firstBlock since we don't need it anymore. Well, we don't
         // really remove it; we actually turn it into a Phantom.
         ASSERT(firstBlock->last()->isTerminal());
-        CodeOrigin boundaryCodeOrigin = firstBlock->last()->codeOrigin;
+        NodeOrigin boundaryNodeOrigin = firstBlock->last()->origin;
         firstBlock->last()->convertToPhantom();
         ASSERT(firstBlock->last()->refCount() == 1);
         
@@ -323,9 +328,9 @@ private:
             // different path than secondBlock.
             
             for (size_t i = 0; i < jettisonedBlock->variablesAtHead.numberOfArguments(); ++i)
-                keepOperandAlive(firstBlock, jettisonedBlock, boundaryCodeOrigin, virtualRegisterForArgument(i));
+                keepOperandAlive(firstBlock, jettisonedBlock, boundaryNodeOrigin, virtualRegisterForArgument(i));
             for (size_t i = 0; i < jettisonedBlock->variablesAtHead.numberOfLocals(); ++i)
-                keepOperandAlive(firstBlock, jettisonedBlock, boundaryCodeOrigin, virtualRegisterForLocal(i));
+                keepOperandAlive(firstBlock, jettisonedBlock, boundaryNodeOrigin, virtualRegisterForLocal(i));
         }
         
         for (size_t i = 0; i < secondBlock->phis.size(); ++i)

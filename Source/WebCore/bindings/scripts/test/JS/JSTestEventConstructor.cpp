@@ -22,6 +22,7 @@
 #include "JSTestEventConstructor.h"
 
 #include "JSDictionary.h"
+#include "ScriptExecutionContext.h"
 #include "TestEventConstructor.h"
 #include "URL.h"
 #include <runtime/Error.h>
@@ -34,23 +35,16 @@ namespace WebCore {
 
 /* Hash table for constructor */
 
-static const HashTableValue JSTestEventConstructorTableValues[] =
-{
-    { "attr1", DontDelete | ReadOnly, NoIntrinsic, (intptr_t)static_cast<PropertySlot::GetValueFunc>(jsTestEventConstructorAttr1), (intptr_t)0 },
-    { "attr2", DontDelete | ReadOnly, NoIntrinsic, (intptr_t)static_cast<PropertySlot::GetValueFunc>(jsTestEventConstructorAttr2), (intptr_t)0 },
-    { "constructor", DontEnum | ReadOnly, NoIntrinsic, (intptr_t)static_cast<PropertySlot::GetValueFunc>(jsTestEventConstructorConstructor), (intptr_t)0 },
-    { 0, 0, NoIntrinsic, 0, 0 }
+static const struct CompactHashIndex JSTestEventConstructorConstructorTableIndex[1] = {
+    { -1, -1 },
 };
 
-static const HashTable JSTestEventConstructorTable = { 9, 7, JSTestEventConstructorTableValues, 0 };
-/* Hash table for constructor */
 
-static const HashTableValue JSTestEventConstructorConstructorTableValues[] =
+static const HashTableValue JSTestEventConstructorConstructorTableValues[0] =
 {
-    { 0, 0, NoIntrinsic, 0, 0 }
 };
 
-static const HashTable JSTestEventConstructorConstructorTable = { 1, 0, JSTestEventConstructorConstructorTableValues, 0 };
+static const HashTable JSTestEventConstructorConstructorTable = { 0, 0, false, JSTestEventConstructorConstructorTableValues, 0, JSTestEventConstructorConstructorTableIndex };
 EncodedJSValue JSC_HOST_CALL JSTestEventConstructorConstructor::constructJSTestEventConstructor(ExecState* exec)
 {
     JSTestEventConstructorConstructor* jsConstructor = jsCast<JSTestEventConstructorConstructor*>(exec->callee());
@@ -60,7 +54,7 @@ EncodedJSValue JSC_HOST_CALL JSTestEventConstructorConstructor::constructJSTestE
         return throwVMError(exec, createReferenceError(exec, "Constructor associated execution context is unavailable"));
 
     AtomicString eventType = exec->argument(0).toString(exec)->value(exec);
-    if (exec->hadException())
+    if (UNLIKELY(exec->hadException()))
         return JSValue::encode(jsUndefined());
 
     TestEventConstructorInit eventInit;
@@ -117,12 +111,27 @@ ConstructType JSTestEventConstructorConstructor::getConstructData(JSCell*, Const
 
 /* Hash table for prototype */
 
-static const HashTableValue JSTestEventConstructorPrototypeTableValues[] =
-{
-    { 0, 0, NoIntrinsic, 0, 0 }
+static const struct CompactHashIndex JSTestEventConstructorPrototypeTableIndex[9] = {
+    { -1, -1 },
+    { 0, 8 },
+    { -1, -1 },
+    { -1, -1 },
+    { -1, -1 },
+    { 1, -1 },
+    { -1, -1 },
+    { -1, -1 },
+    { 2, -1 },
 };
 
-static const HashTable JSTestEventConstructorPrototypeTable = { 1, 0, JSTestEventConstructorPrototypeTableValues, 0 };
+
+static const HashTableValue JSTestEventConstructorPrototypeTableValues[3] =
+{
+    { "constructor", DontEnum | ReadOnly, NoIntrinsic, (intptr_t)static_cast<PropertySlot::GetValueFunc>(jsTestEventConstructorConstructor), (intptr_t) static_cast<PutPropertySlot::PutValueFunc>(0) },
+    { "attr1", DontDelete | ReadOnly | CustomAccessor, NoIntrinsic, (intptr_t)static_cast<PropertySlot::GetValueFunc>(jsTestEventConstructorAttr1), (intptr_t) static_cast<PutPropertySlot::PutValueFunc>(0) },
+    { "attr2", DontDelete | ReadOnly | CustomAccessor, NoIntrinsic, (intptr_t)static_cast<PropertySlot::GetValueFunc>(jsTestEventConstructorAttr2), (intptr_t) static_cast<PutPropertySlot::PutValueFunc>(0) },
+};
+
+static const HashTable JSTestEventConstructorPrototypeTable = { 3, 7, true, JSTestEventConstructorPrototypeTableValues, 0, JSTestEventConstructorPrototypeTableIndex };
 const ClassInfo JSTestEventConstructorPrototype::s_info = { "TestEventConstructorPrototype", &Base::s_info, &JSTestEventConstructorPrototypeTable, 0, CREATE_METHOD_TABLE(JSTestEventConstructorPrototype) };
 
 JSObject* JSTestEventConstructorPrototype::self(VM& vm, JSGlobalObject* globalObject)
@@ -130,7 +139,13 @@ JSObject* JSTestEventConstructorPrototype::self(VM& vm, JSGlobalObject* globalOb
     return getDOMPrototype<JSTestEventConstructor>(vm, globalObject);
 }
 
-const ClassInfo JSTestEventConstructor::s_info = { "TestEventConstructor", &Base::s_info, &JSTestEventConstructorTable, 0 , CREATE_METHOD_TABLE(JSTestEventConstructor) };
+bool JSTestEventConstructorPrototype::getOwnPropertySlot(JSObject* object, ExecState* exec, PropertyName propertyName, PropertySlot& slot)
+{
+    JSTestEventConstructorPrototype* thisObject = jsCast<JSTestEventConstructorPrototype*>(object);
+    return getStaticPropertySlot<JSTestEventConstructorPrototype, JSObject>(exec, JSTestEventConstructorPrototypeTable, thisObject, propertyName, slot);
+}
+
+const ClassInfo JSTestEventConstructor::s_info = { "TestEventConstructor", &Base::s_info, 0, 0 , CREATE_METHOD_TABLE(JSTestEventConstructor) };
 
 JSTestEventConstructor::JSTestEventConstructor(Structure* structure, JSDOMGlobalObject* globalObject, PassRefPtr<TestEventConstructor> impl)
     : JSDOMWrapper(structure, globalObject)
@@ -164,15 +179,21 @@ bool JSTestEventConstructor::getOwnPropertySlot(JSObject* object, ExecState* exe
 {
     JSTestEventConstructor* thisObject = jsCast<JSTestEventConstructor*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
-    return getStaticValueSlot<JSTestEventConstructor, Base>(exec, JSTestEventConstructorTable, thisObject, propertyName, slot);
+    return Base::getOwnPropertySlot(thisObject, exec, propertyName, slot);
 }
 
-EncodedJSValue jsTestEventConstructorAttr1(ExecState* exec, EncodedJSValue slotBase, EncodedJSValue thisValue, PropertyName)
+EncodedJSValue jsTestEventConstructorAttr1(ExecState* exec, JSObject* slotBase, EncodedJSValue thisValue, PropertyName)
 {
     JSTestEventConstructor* castedThis = jsDynamicCast<JSTestEventConstructor*>(JSValue::decode(thisValue));
     UNUSED_PARAM(slotBase);
-    if (!castedThis)
+    if (UNLIKELY(!castedThis)) {
+        if (jsDynamicCast<JSTestEventConstructorPrototype*>(slotBase)) {
+            ScriptExecutionContext* scriptExecutionContext = jsCast<JSDOMGlobalObject*>(exec->lexicalGlobalObject())->scriptExecutionContext();
+            scriptExecutionContext->addConsoleMessage(MessageSource::JS, MessageLevel::Error, String("Deprecated attempt to access property 'attr1' on a non-TestEventConstructor object."));
+            return JSValue::encode(jsUndefined());
+        }
         return throwVMTypeError(exec);
+    }
     UNUSED_PARAM(exec);
     TestEventConstructor& impl = castedThis->impl();
     JSValue result = jsStringWithCache(exec, impl.attr1());
@@ -180,12 +201,18 @@ EncodedJSValue jsTestEventConstructorAttr1(ExecState* exec, EncodedJSValue slotB
 }
 
 
-EncodedJSValue jsTestEventConstructorAttr2(ExecState* exec, EncodedJSValue slotBase, EncodedJSValue thisValue, PropertyName)
+EncodedJSValue jsTestEventConstructorAttr2(ExecState* exec, JSObject* slotBase, EncodedJSValue thisValue, PropertyName)
 {
     JSTestEventConstructor* castedThis = jsDynamicCast<JSTestEventConstructor*>(JSValue::decode(thisValue));
     UNUSED_PARAM(slotBase);
-    if (!castedThis)
+    if (UNLIKELY(!castedThis)) {
+        if (jsDynamicCast<JSTestEventConstructorPrototype*>(slotBase)) {
+            ScriptExecutionContext* scriptExecutionContext = jsCast<JSDOMGlobalObject*>(exec->lexicalGlobalObject())->scriptExecutionContext();
+            scriptExecutionContext->addConsoleMessage(MessageSource::JS, MessageLevel::Error, String("Deprecated attempt to access property 'attr2' on a non-TestEventConstructor object."));
+            return JSValue::encode(jsUndefined());
+        }
         return throwVMTypeError(exec);
+    }
     UNUSED_PARAM(exec);
     TestEventConstructor& impl = castedThis->impl();
     JSValue result = jsStringWithCache(exec, impl.attr2());
@@ -193,11 +220,11 @@ EncodedJSValue jsTestEventConstructorAttr2(ExecState* exec, EncodedJSValue slotB
 }
 
 
-EncodedJSValue jsTestEventConstructorConstructor(ExecState* exec, EncodedJSValue thisValue, EncodedJSValue, PropertyName)
+EncodedJSValue jsTestEventConstructorConstructor(ExecState* exec, JSObject* baseValue, EncodedJSValue thisValue, PropertyName)
 {
-    JSTestEventConstructor* domObject = jsDynamicCast<JSTestEventConstructor*>(JSValue::decode(thisValue));
-    if (!domObject)
-        return throwVMTypeError(exec);
+    UNUSED_PARAM(baseValue);
+    UNUSED_PARAM(thisValue);
+    JSTestEventConstructorPrototype* domObject = jsDynamicCast<JSTestEventConstructorPrototype*>(baseValue);
     if (!domObject)
         return throwVMTypeError(exec);
     return JSValue::encode(JSTestEventConstructor::getConstructor(exec->vm(), domObject->globalObject()));
@@ -256,7 +283,6 @@ JSC::JSValue toJS(JSC::ExecState* exec, JSDOMGlobalObject* globalObject, TestEve
     // by adding the SkipVTableValidation attribute to the interface IDL definition
     RELEASE_ASSERT(actualVTablePointer == expectedVTablePointer);
 #endif
-    ReportMemoryCost<TestEventConstructor>::reportMemoryCost(exec, impl);
     return createNewWrapper<JSTestEventConstructor>(exec, globalObject, impl);
 }
 

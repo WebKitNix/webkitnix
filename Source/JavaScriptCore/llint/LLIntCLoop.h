@@ -31,16 +31,15 @@
 #include "CallFrame.h"
 #include "JSCJSValue.h"
 #include "Opcode.h"
+#include "ProtoCallFrame.h"
 
 namespace JSC {
 namespace LLInt {
 
-const OpcodeID llint_unused = llint_end;
-
 class CLoop {
 public:
     static void initialize();
-    static JSValue execute(CallFrame*, Opcode entryOpcode, bool isInitializationPass = false);
+    static JSValue execute(OpcodeID entryOpcodeID, void* executableAddress, VM*, ProtoCallFrame*, bool isInitializationPass = false);
 };
 
 } } // namespace JSC::LLInt

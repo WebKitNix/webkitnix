@@ -93,7 +93,6 @@ std::unique_ptr<FloatingObject> FloatingObject::unsafeClone() const
 {
     // FIXME: Use make_unique here, once we can get it to compile on all platforms we support.
     std::unique_ptr<FloatingObject> cloneObject(new FloatingObject(renderer(), type(), m_frameRect, m_shouldPaint, m_isDescendant));
-    cloneObject->m_originatingLine = m_originatingLine;
     cloneObject->m_paginationStrut = m_paginationStrut;
     cloneObject->m_isPlaced = m_isPlaced;
     return cloneObject;
@@ -450,7 +449,7 @@ inline bool ComputeFloatOffsetForFloatLayoutAdapter<FloatingObject::FloatRight>:
 template <FloatingObject::Type FloatTypeValue>
 LayoutUnit ComputeFloatOffsetForFloatLayoutAdapter<FloatTypeValue>::heightRemaining() const
 {
-    return this->m_outermostFloat ? this->m_renderer.logicalBottomForFloat(this->m_outermostFloat) - this->m_lineTop : LayoutUnit(1);
+    return this->m_outermostFloat ? this->m_renderer.logicalBottomForFloat(this->m_outermostFloat) - this->m_lineTop : LayoutUnit::fromPixel(1);
 }
 
 template <FloatingObject::Type FloatTypeValue>

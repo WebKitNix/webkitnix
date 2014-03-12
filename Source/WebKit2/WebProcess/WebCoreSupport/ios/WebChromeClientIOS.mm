@@ -26,6 +26,8 @@
 #import "config.h"
 #import "WebChromeClient.h"
 
+#if PLATFORM(IOS)
+
 #import <WebCore/NotImplemented.h>
 #import "WebCoreArgumentCoders.h"
 #import "WebFrame.h"
@@ -51,9 +53,9 @@ void WebChromeClient::elementDidBlur(const WebCore::Node* node)
     m_page->elementDidBlur(const_cast<WebCore::Node*>(node));
 }
 
-void WebChromeClient::didReceiveMobileDocType()
+void WebChromeClient::didReceiveMobileDocType(bool isMobileDoctype)
 {
-    m_page->send(Messages::WebPageProxy::MainDocumentDidReceiveMobileDocType());
+    m_page->didReceiveMobileDocType(isMobileDoctype);
 }
 
 void WebChromeClient::setNeedsScrollNotifications(WebCore::Frame*, bool)
@@ -121,4 +123,7 @@ void WebChromeClient::webAppOrientationsUpdated()
 {
     notImplemented();
 }
+
 } // namespace WebKit
+
+#endif // PLATFORM(IOS)

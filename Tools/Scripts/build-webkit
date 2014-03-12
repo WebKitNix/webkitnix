@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013 Apple Inc. All rights reserved.
+# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014 Apple Inc. All rights reserved.
 # Copyright (C) 2009 Google Inc. All rights reserved.
 # Copyright (C) 2010 moiji-mobile.com All rights reserved.
 # Copyright (C) 2011 Research In Motion Limited. All rights reserved.
@@ -217,7 +217,6 @@ if (!isIOSWebKit() && !-d "WebKitLibraries") {
 
 my @options = ();
 my $hasFTLJIT = 0;
-my $forceCLoop = 0;
 
 if (isAppleMacWebKit()) {
     push @options, XcodeOptions();
@@ -231,11 +230,8 @@ if (isAppleMacWebKit()) {
     foreach (@features) {
         my $option = option($_->{define}, ${$_->{value}}, $_->{default});
         $hasFTLJIT = 1 if ($_->{define} eq "ENABLE_FTL_JIT") and (${$_->{value}});
-        $forceCLoop = 1 if ($_->{define} eq "ENABLE_LLINT_C_LOOP") and (${$_->{value}});
         push @options, $option unless $option eq "";
     }
-    $ENV{ENABLE_FTL_JIT} = 1 if $hasFTLJIT;
-    $ENV{ENABLE_LLINT_C_LOOP} = 1 if $forceCLoop;
 
     if (isIOSWebKit()) {
         # FIXME: Remove the inclusion of both WebKit System Interface and WebKit Additions projects
@@ -247,30 +243,46 @@ if (isAppleMacWebKit()) {
 
         # WebKitAdditions must come before WebCore
         splice(@projects, 0, 0, "../Internal/WebKitAdditions");
+    } else {
+        # WebKit2 should always be built just before WebKit.
+        my $webKitIndex = first { $projects[$_] eq "Source/WebKit" } 0..$#projects;
+        splice(@projects, $webKitIndex, 0, "Source/WebKit2");
     }
 
     # ANGLE must come before WebCore
     splice @projects, 0, 0, "Source/ThirdParty/ANGLE";
 
     if (!isIOSWebKit()) {
-        # WebKit2 is only supported in SnowLeopard and later at present.
-        push @projects, ("Source/WebKit2", "Tools/MiniBrowser") if osXVersion()->{"minor"} >= 6 and !$noWebKit2;
+        push @projects, ("Tools/MiniBrowser");
 
         # WebInspectorUI must come before WebKit and WebKit2
         unshift @projects, ("Source/WebInspectorUI");
 
-        # Build Tools needed for Apple ports
-        push @projects, ("Tools/DumpRenderTree", "Tools/WebKitTestRunner", "Source/ThirdParty/gtest", "Tools/TestWebKitAPI");
-
         # Copy library and header from WebKitLibraries to a findable place in the product directory.
-        (system("perl", "Tools/Scripts/copy-webkitlibraries-to-product-directory", $productDir) == 0) or die;
+        my @copyLibrariesArgs = ("perl", "Tools/Scripts/copy-webkitlibraries-to-product-directory", "--wksi");
+        if ($hasFTLJIT) {
+            push @copyLibrariesArgs, "--llvm";
+        }
+        push @copyLibrariesArgs, productDir();
+        print(join(" ", @copyLibrariesArgs) . "\n");
+        (system(@copyLibrariesArgs) == 0) or die;
     } else {
-        push @projects, ("Source/WebKit2") if !$noWebKit2;
-
-        # Build Tools needed for Apple ports
-        # FIXME: <rdar://problem/11784024> WebKitTestRunner should build for iOS
-        # FIXME: Build projects Tools/DumpRenderTree, Source/ThirdParty/gtest, and Tools/TestWebKitAPI
+        push @projects, ("Source/WebKit2");
+        
+        if ($hasFTLJIT) {
+            my @copyLibrariesArgs = (
+                "perl", "Tools/Scripts/copy-webkitlibraries-to-product-directory",
+                "--llvm", "--prefer-system-llvm", "--llvm-subdirectory", "internal-llvm",
+                productDir()
+            );
+            print(join(" ", @copyLibrariesArgs) . "\n");
+            (system(@copyLibrariesArgs) == 0) or die;
+        }
     }
+
+    # Build Tools needed for Apple ports
+    push @projects, ("Tools/DumpRenderTree", "Tools/WebKitTestRunner", "Source/ThirdParty/gtest", "Tools/TestWebKitAPI");
+
 } elsif (isWinCairo()) {
     (system("perl Tools/Scripts/update-webkit-wincairo-libs") == 0) or die;
 } elsif (isAppleWinWebKit()) {
@@ -346,6 +358,9 @@ for my $dir (@projects) {
         my @local_options = @options;
         push @local_options, XcodeCoverageSupportOptions() if $coverageSupport;
         my $projectPath = $project =~ /gtest/ ? "xcode/gtest" : $project;
+        if (isIOSWebKit()){
+            push @local_options, qw(-target WebKitTestRunnerApp) if ($project eq "WebKitTestRunner") && !$clean;
+        }
         $result = buildXCodeProject($projectPath, $clean, @local_options, @ARGV);
     } elsif (isAppleWinWebKit() || isWinCairo()) {
         if ($project eq "WebKit") {
@@ -426,7 +441,9 @@ sub writeCongrats()
     print "\n";
     print "====================================================================\n";
     print " WebKit is now built ($buildTime). \n";
-    print " To run $launcherName with this newly-built code, use the\n";
-    print " \"$launcherPath\" script.\n";
+    if ($launcherPath && $launcherName) {
+        print " To run $launcherName with this newly-built code, use the\n";
+        print " \"$launcherPath\" script.\n";
+    }
     print "====================================================================\n";
 }

@@ -28,7 +28,10 @@
 #import "PluginComplexTextInputState.h"
 #import "WebFindOptions.h"
 #import <wtf/Forward.h>
+#import <wtf/RetainPtr.h>
 #import <wtf/Vector.h>
+
+@class WKWebViewConfiguration;
 
 namespace IPC {
     class DataReference;
@@ -41,19 +44,28 @@ namespace WebCore {
 }
 
 namespace WebKit {
-    class DrawingAreaProxy;
-    class FindIndicator;
-    class LayerTreeContext;
-    struct ColorSpaceData;
-    struct EditorState;
+class DrawingAreaProxy;
+class FindIndicator;
+class LayerTreeContext;
+class WebContext;
+struct ColorSpaceData;
+struct EditorState;
+struct WebPageConfiguration;
 }
 
 @class WKFullScreenWindowController;
+#if WK_API_ENABLED
+@class WKThumbnailView;
+#endif
 
-@interface WKView (Internal)
+@interface WKView ()
+#if WK_API_ENABLED
+- (instancetype)initWithFrame:(CGRect)frame context:(WebKit::WebContext&)context configuration:(WebKit::WebPageConfiguration)webPageConfiguration;
+#endif
+
 - (std::unique_ptr<WebKit::DrawingAreaProxy>)_createDrawingAreaProxy;
 - (BOOL)_isFocused;
-- (void)_processDidCrash;
+- (void)_processDidExit;
 - (void)_pageClosed;
 - (void)_didRelaunchProcess;
 - (void)_preferencesDidChange;
@@ -69,6 +81,10 @@ namespace WebKit {
 - (void)_setFindIndicator:(PassRefPtr<WebKit::FindIndicator>)findIndicator fadeOut:(BOOL)fadeOut animate:(BOOL)animate;
 
 - (void)_setAcceleratedCompositingModeRootLayer:(CALayer *)rootLayer;
+- (CALayer *)_acceleratedCompositingModeRootLayer;
+
+- (RetainPtr<CGImageRef>)_takeViewSnapshot;
+- (void)_wheelEventWasNotHandledByWebCore:(NSEvent *)event;
 
 - (void)_setAccessibilityWebProcessToken:(NSData *)data;
 
@@ -90,6 +106,10 @@ namespace WebKit {
 
 - (void)_setSuppressVisibilityUpdates:(BOOL)suppressVisibilityUpdates;
 - (BOOL)_suppressVisibilityUpdates;
+
+#if WK_API_ENABLED
+@property (nonatomic, setter=_setThumbnailView:) WKThumbnailView *_thumbnailView;
+#endif
 
 // FullScreen
 

@@ -77,7 +77,7 @@ public:
 
     virtual void setResizable(bool);
 
-    virtual void addMessageToConsole(WebCore::MessageSource, WebCore::MessageLevel, const WTF::String& message, unsigned lineNumber, unsigned columnNumber, const WTF::String& url);
+    virtual void addMessageToConsole(JSC::MessageSource, JSC::MessageLevel, const WTF::String& message, unsigned lineNumber, unsigned columnNumber, const WTF::String& url);
 
     virtual bool canRunBeforeUnloadConfirmPanel();
     virtual bool runBeforeUnloadConfirmPanel(const WTF::String& message, WebCore::Frame* frame);
@@ -93,9 +93,9 @@ public:
     virtual WebCore::KeyboardUIMode keyboardUIMode();
     virtual WebCore::IntRect windowResizerRect() const;
 
-    virtual void invalidateRootView(const WebCore::IntRect&, bool);
-    virtual void invalidateContentsAndRootView(const WebCore::IntRect&, bool);
-    virtual void invalidateContentsForSlowScroll(const WebCore::IntRect&, bool);
+    virtual void invalidateRootView(const WebCore::IntRect&);
+    virtual void invalidateContentsAndRootView(const WebCore::IntRect&);
+    virtual void invalidateContentsForSlowScroll(const WebCore::IntRect&);
     virtual void scroll(const WebCore::IntSize& scrollDelta, const WebCore::IntRect& rectToScroll, const WebCore::IntRect& clipRect);
 
     virtual WebCore::IntPoint screenToRootView(const WebCore::IntPoint&) const;
@@ -128,18 +128,14 @@ public:
     virtual void setCursorHiddenUntilMouseMoves(bool);
     virtual void setLastSetCursorToCurrentCursor();
 
-    virtual void formStateDidChange(const WebCore::Node*) { }
-
-#if USE(ACCELERATED_COMPOSITING)
-        // Pass 0 as the GraphicsLayer to detatch the root layer.
-        virtual void attachRootGraphicsLayer(WebCore::Frame*, WebCore::GraphicsLayer*);
-        // Sets a flag to specify that the next time content is drawn to the window,
-        // the changes appear on the screen in synchrony with updates to GraphicsLayers.
-        virtual void setNeedsOneShotDrawingSynchronization() { }
-        // Sets a flag to specify that the view needs to be updated, so we need
-        // to do an eager layout before the drawing.
-        virtual void scheduleCompositingLayerFlush();
-#endif
+    // Pass 0 as the GraphicsLayer to detatch the root layer.
+    virtual void attachRootGraphicsLayer(WebCore::Frame*, WebCore::GraphicsLayer*);
+    // Sets a flag to specify that the next time content is drawn to the window,
+    // the changes appear on the screen in synchrony with updates to GraphicsLayers.
+    virtual void setNeedsOneShotDrawingSynchronization() { }
+    // Sets a flag to specify that the view needs to be updated, so we need
+    // to do an eager layout before the drawing.
+    virtual void scheduleCompositingLayerFlush();
 
 #if USE(TILED_BACKING_STORE)
     virtual void delegatedScrollRequested(const WebCore::IntPoint&) { }

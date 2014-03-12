@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, 2012 Apple Inc. All rights reserved.
+ * Copyright (C) 2011-2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,11 +38,12 @@
 #include "URL.h"
 #include "Logging.h"
 #include "PlatformLayer.h"
+#include "PlatformTimeRanges.h"
 #include "Settings.h"
 #include "SoftLinking.h"
-#include "TimeRanges.h"
 #include <CoreMedia/CoreMedia.h>
 #include <wtf/MainThread.h>
+#include <wtf/text/CString.h>
 
 namespace WebCore {
 
@@ -91,10 +92,8 @@ MediaPlayerPrivateAVFoundation::~MediaPlayerPrivateAVFoundation()
 
 MediaPlayerPrivateAVFoundation::MediaRenderingMode MediaPlayerPrivateAVFoundation::currentRenderingMode() const
 {
-#if USE(ACCELERATED_COMPOSITING)
     if (platformLayer())
         return MediaRenderingToLayer;
-#endif
 
     if (hasContextRenderer())
         return MediaRenderingToContext;
@@ -107,10 +106,8 @@ MediaPlayerPrivateAVFoundation::MediaRenderingMode MediaPlayerPrivateAVFoundatio
     if (!m_player->visible() || !m_player->frameView() || assetStatus() == MediaPlayerAVAssetStatusUnknown)
         return MediaRenderingNone;
 
-#if USE(ACCELERATED_COMPOSITING)
     if (supportsAcceleratedRendering() && m_player->mediaPlayerClient()->mediaPlayerRenderingCanBeAccelerated(m_player))
         return MediaRenderingToLayer;
-#endif
 
     return MediaRenderingToContext;
 }
@@ -140,21 +137,17 @@ void MediaPlayerPrivateAVFoundation::setUpVideoRendering()
     case MediaRenderingToContext:
         createContextVideoRenderer();
         break;
-        
-#if USE(ACCELERATED_COMPOSITING)
+
     case MediaRenderingToLayer:
         createVideoLayer();
         break;
-#endif
     }
 
-#if USE(ACCELERATED_COMPOSITING)
     // If using a movie layer, inform the client so the compositing tree is updated.
     if (currentMode == MediaRenderingToLayer || preferredMode == MediaRenderingToLayer) {
         LOG(Media, "MediaPlayerPrivateAVFoundation::setUpVideoRendering(%p) - calling mediaPlayerRenderingModeChanged()", this);
         m_player->mediaPlayerClient()->mediaPlayerRenderingModeChanged(m_player);
     }
-#endif
 }
 
 void MediaPlayerPrivateAVFoundation::tearDownVideoRendering()
@@ -163,10 +156,8 @@ void MediaPlayerPrivateAVFoundation::tearDownVideoRendering()
 
     destroyContextVideoRenderer();
 
-#if USE(ACCELERATED_COMPOSITING)
     if (platformLayer())
         destroyVideoLayer();
-#endif
 }
 
 bool MediaPlayerPrivateAVFoundation::hasSetUpVideoRendering() const
@@ -197,7 +188,7 @@ void MediaPlayerPrivateAVFoundation::load(const String& url)
 }
 
 #if ENABLE(MEDIA_SOURCE)
-void MediaPlayerPrivateAVFoundation::load(const String&, PassRefPtr<HTMLMediaSource>)
+void MediaPlayerPrivateAVFoundation::load(const String&, MediaSourcePrivateClient*)
 {
     m_networkState = MediaPlayer::FormatError;
     m_player->networkStateChanged();
@@ -395,12 +386,12 @@ void MediaPlayerPrivateAVFoundation::setDelayCharacteristicsChangedNotification(
         characteristicsChanged();
 }
 
-PassRefPtr<TimeRanges> MediaPlayerPrivateAVFoundation::buffered() const
+std::unique_ptr<PlatformTimeRanges> MediaPlayerPrivateAVFoundation::buffered() const
 {
     if (!m_cachedLoadedTimeRanges)
         m_cachedLoadedTimeRanges = platformBufferedTimeRanges();
 
-    return m_cachedLoadedTimeRanges->copy();
+    return PlatformTimeRanges::create(*m_cachedLoadedTimeRanges);
 }
 
 double MediaPlayerPrivateAVFoundation::maxTimeSeekableDouble() const
@@ -538,6 +529,7 @@ void MediaPlayerPrivateAVFoundation::updateStates()
                 // If the readyState is already HaveEnoughData, don't go lower because of this state change.
                 if (m_readyState == MediaPlayer::HaveEnoughData)
                     break;
+                FALLTHROUGH;
 
             case MediaPlayerAVPlayerItemStatusPlaybackBufferEmpty:
                 if (maxTimeLoaded() > currentTime())
@@ -629,7 +621,7 @@ void MediaPlayerPrivateAVFoundation::rateChanged()
 
 void MediaPlayerPrivateAVFoundation::loadedTimeRangesChanged()
 {
-    m_cachedLoadedTimeRanges = 0;
+    m_cachedLoadedTimeRanges = nullptr;
     m_cachedMaxTimeLoaded = 0;
     invalidateCachedDuration();
 }
@@ -777,8 +769,9 @@ static const char* notificationName(MediaPlayerPrivateAVFoundation::Notification
 {
 #define DEFINE_TYPE_STRING_CASE(type) case MediaPlayerPrivateAVFoundation::Notification::type: return #type;
     switch (notification.type()) {
-        FOR_EACH_MEDIAPLAYERPRIVATEAVFOUNDATION_NOTIFICATION_TYPE(DEFINE_TYPE_STRING_CASE)
-        default: return "";
+    FOR_EACH_MEDIAPLAYERPRIVATEAVFOUNDATION_NOTIFICATION_TYPE(DEFINE_TYPE_STRING_CASE)
+    case MediaPlayerPrivateAVFoundation::Notification::FunctionType: return "FunctionType";
+    default: ASSERT_NOT_REACHED(); return "";
     }
 #undef DEFINE_TYPE_STRING_CASE
 }
@@ -899,6 +892,11 @@ void MediaPlayerPrivateAVFoundation::dispatchNotification()
     case Notification::FunctionType:
         notification.function()();
         break;
+    case Notification::TargetIsWirelessChanged:
+#if ENABLE(IOS_AIRPLAY)
+        playbackTargetIsWirelessChanged();
+#endif
+        break;
 
     case Notification::None:
         ASSERT_NOT_REACHED();
@@ -909,6 +907,10 @@ void MediaPlayerPrivateAVFoundation::dispatchNotification()
 void MediaPlayerPrivateAVFoundation::configureInbandTracks()
 {
     RefPtr<InbandTextTrackPrivateAVF> trackToEnable;
+    
+#if ENABLE(AVF_CAPTIONS)
+    synchronizeTextTrackState();
+#endif
 
     // AVFoundation can only emit cues for one track at a time, so enable the first track that is showing, or the first that
     // is hidden if none are showing. Otherwise disable all tracks.
@@ -978,6 +980,13 @@ void MediaPlayerPrivateAVFoundation::processNewAndRemovedTextTracks(const Vector
     LOG(Media, "MediaPlayerPrivateAVFoundation::processNewAndRemovedTextTracks(%p) - found %lu text tracks", this, m_textTracks.size());
 }
 
+#if ENABLE(IOS_AIRPLAY)
+void MediaPlayerPrivateAVFoundation::playbackTargetIsWirelessChanged()
+{
+    if (m_player)
+        m_player->currentPlaybackTargetIsWirelessChanged();
+}
+#endif
 } // namespace WebCore
 
 #endif

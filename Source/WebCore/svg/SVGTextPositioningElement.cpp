@@ -19,8 +19,6 @@
  */
 
 #include "config.h"
-
-#if ENABLE(SVG)
 #include "SVGTextPositioningElement.h"
 
 #include "Attribute.h"
@@ -140,8 +138,8 @@ void SVGTextPositioningElement::svgAttributeChanged(const QualifiedName& attrNam
         return;
 
     if (updateRelativeLengths || attrName == SVGNames::rotateAttr) {
-        if (RenderSVGText* textRenderer = RenderSVGText::locateRenderSVGTextAncestor(renderer))
-            textRenderer->setNeedsPositioningValuesUpdate();
+        if (auto* textAncestor = RenderSVGText::locateRenderSVGTextAncestor(*renderer))
+            textAncestor->setNeedsPositioningValuesUpdate();
         RenderSVGResource::markForLayoutAndParentResourceInvalidation(*renderer);
         return;
     }
@@ -173,5 +171,3 @@ SVGTextPositioningElement* SVGTextPositioningElement::elementFromRenderer(Render
 }
 
 }
-
-#endif // ENABLE(SVG)

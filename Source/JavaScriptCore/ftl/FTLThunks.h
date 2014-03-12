@@ -26,8 +26,6 @@
 #ifndef FTLThunks_h
 #define FTLThunks_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(FTL_JIT)
 
 #include "FTLLocation.h"
@@ -41,7 +39,7 @@ class VM;
 
 namespace FTL {
 
-MacroAssemblerCodeRef osrExitGenerationThunkGenerator(VM&, const Location&);
+MacroAssemblerCodeRef osrExitGenerationThunkGenerator(VM*);
 MacroAssemblerCodeRef slowPathCallThunkGenerator(VM&, const SlowPathCallKey&);
 
 template<typename KeyTypeArgument>
@@ -78,12 +76,6 @@ typename MapType::KeyType keyForThunk(MapType& map, MacroAssemblerCodePtr ptr)
 
 class Thunks {
 public:
-    MacroAssemblerCodeRef getOSRExitGenerationThunk(VM& vm, const Location& location)
-    {
-        return generateIfNecessary(
-            vm, m_osrExitThunks, location, osrExitGenerationThunkGenerator);
-    }
-    
     MacroAssemblerCodeRef getSlowPathCallThunk(VM& vm, const SlowPathCallKey& key)
     {
         return generateIfNecessary(
@@ -96,7 +88,6 @@ public:
     }
     
 private:
-    ThunkMap<Location> m_osrExitThunks;
     ThunkMap<SlowPathCallKey> m_slowPathCallThunks;
 };
 

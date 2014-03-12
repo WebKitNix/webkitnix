@@ -26,7 +26,7 @@
 #ifndef DFGCommon_h
 #define DFGCommon_h
 
-#include <wtf/Platform.h>
+#include "DFGCompilationMode.h"
 
 #if ENABLE(DFG_JIT)
 
@@ -63,14 +63,14 @@ enum RefNodeMode {
     DontRefNode
 };
 
-inline bool verboseCompilationEnabled()
+inline bool verboseCompilationEnabled(CompilationMode mode = DFGMode)
 {
-    return Options::verboseCompilation() || Options::dumpGraphAtEachPhase();
+    return Options::verboseCompilation() || Options::dumpGraphAtEachPhase() || (isFTL(mode) && Options::verboseFTLCompilation());
 }
 
-inline bool logCompilationChanges()
+inline bool logCompilationChanges(CompilationMode mode = DFGMode)
 {
-    return verboseCompilationEnabled() || Options::logCompilationChanges();
+    return verboseCompilationEnabled(mode) || Options::logCompilationChanges();
 }
 
 inline bool shouldDumpGraphAtEachPhase()
@@ -87,15 +87,6 @@ inline bool validationEnabled()
 #endif
 }
 
-inline bool enableConcurrentJIT()
-{
-#if ENABLE(CONCURRENT_JIT)
-    return Options::enableConcurrentJIT() && Options::numberOfCompilerThreads();
-#else
-    return false;
-#endif
-}
-
 inline bool enableInt52()
 {
 #if USE(JSVALUE64)
@@ -104,8 +95,6 @@ inline bool enableInt52()
     return false;
 #endif
 }
-
-enum SpillRegistersMode { NeedToSpill, DontSpill };
 
 enum NoResultTag { NoResult };
 
@@ -235,7 +224,13 @@ namespace JSC { namespace DFG {
 
 // Put things here that must be defined even if ENABLE(DFG_JIT) is false.
 
-enum CapabilityLevel { CannotCompile, CanInline, CanCompile, CanCompileAndInline, CapabilityLevelNotSet };
+enum CapabilityLevel {
+    CannotCompile,
+    CanInline,
+    CanCompile,
+    CanCompileAndInline,
+    CapabilityLevelNotSet
+};
 
 inline bool canCompile(CapabilityLevel level)
 {
@@ -291,11 +286,12 @@ inline CapabilityLevel leastUpperBound(CapabilityLevel a, CapabilityLevel b)
 }
 
 // Unconditionally disable DFG disassembly support if the DFG is not compiled in.
-inline bool shouldShowDisassembly()
+inline bool shouldShowDisassembly(CompilationMode mode = DFGMode)
 {
 #if ENABLE(DFG_JIT)
-    return Options::showDisassembly() || Options::showDFGDisassembly();
+    return Options::showDisassembly() || Options::showDFGDisassembly() || (isFTL(mode) && Options::showFTLDisassembly());
 #else
+    UNUSED_PARAM(mode);
     return false;
 #endif
 }

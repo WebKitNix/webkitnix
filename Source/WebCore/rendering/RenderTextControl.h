@@ -67,7 +67,6 @@ protected:
     virtual LayoutUnit preferredContentLogicalWidth(float charWidth) const = 0;
     virtual LayoutUnit computeControlLogicalHeight(LayoutUnit lineHeight, LayoutUnit nonContentHeight) const = 0;
 
-    virtual void updateFromElement() override;
     virtual void computeLogicalHeight(LayoutUnit logicalHeight, LayoutUnit logicalTop, LogicalExtentComputedValues&) const override;
     virtual RenderObject* layoutSpecialExcludedChild(bool relayoutChildren) override;
 
@@ -81,7 +80,6 @@ private:
     virtual void removeLeftoverAnonymousBlock(RenderBlock*) override { }
     virtual bool avoidsFloats() const override { return true; }
     virtual bool canHaveGeneratedChildren() const override { return false; }
-    virtual bool canBeReplacedWithInlineRunIn() const override;
     
     virtual void addFocusRingRects(Vector<IntRect>&, const LayoutPoint& additionalOffset, const RenderLayerModelObject* paintContainer = 0) override;
 

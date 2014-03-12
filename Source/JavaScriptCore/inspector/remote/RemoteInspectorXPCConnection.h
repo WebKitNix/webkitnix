@@ -29,7 +29,8 @@
 #define RemoteInspectorXPCConnection_h
 
 #import <dispatch/dispatch.h>
-#import <wtf/Noncopyable.h>
+#import <mutex>
+#import <wtf/ThreadSafeRefCounted.h>
 #import <xpc/xpc.h>
 
 OBJC_CLASS NSDictionary;
@@ -37,9 +38,7 @@ OBJC_CLASS NSString;
 
 namespace Inspector {
 
-class RemoteInspectorXPCConnection {
-    WTF_MAKE_NONCOPYABLE(RemoteInspectorXPCConnection);
-
+class RemoteInspectorXPCConnection : public ThreadSafeRefCounted<RemoteInspectorXPCConnection> {
 public:
     class Client {
     public:
@@ -49,7 +48,7 @@ public:
         virtual void xpcConnectionUnhandledMessage(RemoteInspectorXPCConnection*, xpc_object_t) = 0;
     };
 
-    RemoteInspectorXPCConnection(xpc_connection_t, Client*);
+    RemoteInspectorXPCConnection(xpc_connection_t, dispatch_queue_t, Client*);
     virtual ~RemoteInspectorXPCConnection();
 
     void close();
@@ -58,10 +57,16 @@ public:
 private:
     NSDictionary *deserializeMessage(xpc_object_t);
     void handleEvent(xpc_object_t);
+    void closeOnQueue();
+
+    // We handle XPC events on the queue, but a client may call close() on any queue.
+    // We make sure that m_client is thread safe and immediately cleared in close().
+    std::mutex m_mutex;
 
     xpc_connection_t m_connection;
     dispatch_queue_t m_queue;
     Client* m_client;
+    bool m_closed;
 };
 
 } // namespace Inspector

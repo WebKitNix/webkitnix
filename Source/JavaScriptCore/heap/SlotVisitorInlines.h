@@ -51,6 +51,12 @@ inline void SlotVisitor::appendUnbarrieredPointer(T** slot)
     internalAppend(slot, cell);
 }
 
+template<typename T>
+inline void SlotVisitor::appendUnbarrieredReadOnlyPointer(T* cell)
+{
+    internalAppend(0, cell);
+}
+
 ALWAYS_INLINE void SlotVisitor::append(JSValue* slot)
 {
     ASSERT(slot);
@@ -61,6 +67,11 @@ ALWAYS_INLINE void SlotVisitor::appendUnbarrieredValue(JSValue* slot)
 {
     ASSERT(slot);
     internalAppend(slot, *slot);
+}
+
+ALWAYS_INLINE void SlotVisitor::appendUnbarrieredReadOnlyValue(JSValue value)
+{
+    internalAppend(0, value);
 }
 
 ALWAYS_INLINE void SlotVisitor::append(JSCell** slot)
@@ -97,9 +108,12 @@ ALWAYS_INLINE void SlotVisitor::internalAppend(void* from, JSCell* cell)
 #if ENABLE(GC_VALIDATION)
     validate(cell);
 #endif
-    if (Heap::testAndSetMarked(cell) || !cell->structure())
+    if (Heap::testAndSetMarked(cell) || !cell->structure()) {
+        ASSERT(cell->structure());
         return;
+    }
 
+    cell->setMarked();
     m_bytesVisited += MarkedBlock::blockFor(cell)->cellSize();
         
     MARK_LOG_CHILD(*this, cell);
@@ -176,7 +190,7 @@ inline TriState SlotVisitor::containsOpaqueRootTriState(void* root)
 {
     if (m_opaqueRoots.contains(root))
         return TrueTriState;
-    MutexLocker locker(m_shared.m_opaqueRootsLock);
+    std::lock_guard<std::mutex> lock(m_shared.m_opaqueRootsMutex);
     if (m_shared.m_opaqueRoots.contains(root))
         return TrueTriState;
     return MixedTriState;
@@ -231,6 +245,8 @@ inline void SlotVisitor::copyLater(JSCell* owner, CopyToken token, void* ptr, si
         return;
     }
 
+    ASSERT(heap()->m_storageSpace.contains(block));
+
     SpinLockHolder locker(&block->workListLock());
     if (heap()->operationInProgress() == FullCollection || block->shouldReportLiveBytes(locker, owner)) {
         m_bytesCopied += bytes;
@@ -264,6 +280,16 @@ inline void SlotVisitor::reportExtraMemoryUsage(JSCell* owner, size_t size)
 inline Heap* SlotVisitor::heap() const
 {
     return &sharedData().m_vm->heap;
+}
+
+inline VM& SlotVisitor::vm()
+{
+    return *sharedData().m_vm;
+}
+
+inline const VM& SlotVisitor::vm() const
+{
+    return *sharedData().m_vm;
 }
 
 } // namespace JSC

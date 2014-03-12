@@ -19,6 +19,7 @@
 #ifndef AcceleratedCompositingContext_h
 #define AcceleratedCompositingContext_h
 
+#include "FloatRect.h"
 #include "GraphicsLayer.h"
 #include "GraphicsLayerClient.h"
 #include "IntRect.h"
@@ -37,19 +38,14 @@
 #include "TextureMapperFPSCounter.h"
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
-
 namespace WebKit {
 
 class AcceleratedCompositingContext : public WebCore::GraphicsLayerClient {
     WTF_MAKE_NONCOPYABLE(AcceleratedCompositingContext);
 public:
-    static PassOwnPtr<AcceleratedCompositingContext> create(WebKitWebView* webView)
-    {
-        return adoptPtr(new AcceleratedCompositingContext(webView));
-    }
-
+    explicit AcceleratedCompositingContext(WebKitWebView*);
     virtual ~AcceleratedCompositingContext();
+
     void setRootCompositingLayer(WebCore::GraphicsLayer*);
     void setNonCompositedContentsNeedDisplay(const WebCore::IntRect&);
     void scheduleLayerFlush();
@@ -60,7 +56,7 @@ public:
     // GraphicsLayerClient
     virtual void notifyAnimationStarted(const WebCore::GraphicsLayer*, double time);
     virtual void notifyFlushRequired(const WebCore::GraphicsLayer*);
-    virtual void paintContents(const WebCore::GraphicsLayer*, WebCore::GraphicsContext&, WebCore::GraphicsLayerPaintingPhase, const WebCore::IntRect& rectToPaint);
+    virtual void paintContents(const WebCore::GraphicsLayer*, WebCore::GraphicsContext&, WebCore::GraphicsLayerPaintingPhase, const WebCore::FloatRect& rectToPaint);
 
     void initialize();
 
@@ -95,11 +91,8 @@ private:
     std::unique_ptr<WebCore::GraphicsLayer> m_rootGraphicsLayer;
     OwnPtr<WebCore::TextureMapper> m_textureMapper;
 #endif
-
-    AcceleratedCompositingContext(WebKitWebView*);
 };
 
 } // namespace WebKit
 
-#endif // USE(ACCELERATED_COMPOSITING)
 #endif // AcceleratedCompositingContext_h

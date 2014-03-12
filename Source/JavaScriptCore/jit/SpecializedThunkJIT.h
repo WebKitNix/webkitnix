@@ -29,6 +29,8 @@
 #if ENABLE(JIT)
 
 #include "Executable.h"
+#include "JIT.h"
+#include "JITInlines.h"
 #include "JSInterfaceJIT.h"
 #include "JSStack.h"
 #include "LinkBuffer.h"
@@ -41,6 +43,7 @@ namespace JSC {
         SpecializedThunkJIT(VM* vm, int expectedArgCount)
             : JSInterfaceJIT(vm)
         {
+            emitFunctionPrologue();
             // Check that we have the expected number of arguments
             m_failures.append(branch32(NotEqual, payloadFor(JSStack::ArgumentCount), TrustedImm32(expectedArgCount + 1)));
         }
@@ -48,6 +51,7 @@ namespace JSC {
         explicit SpecializedThunkJIT(VM* vm)
             : JSInterfaceJIT(vm)
         {
+            emitFunctionPrologue();
         }
         
         void loadDoubleArgument(int argument, FPRegisterID dst, RegisterID scratch)
@@ -65,14 +69,18 @@ namespace JSC {
         void loadJSStringArgument(VM& vm, int argument, RegisterID dst)
         {
             loadCellArgument(argument, dst);
-            m_failures.append(branchPtr(NotEqual, Address(dst, JSCell::structureOffset()), TrustedImmPtr(vm.stringStructure.get())));
+            m_failures.append(branchStructure(*this, NotEqual, 
+                Address(dst, JSCell::structureIDOffset()), 
+                vm.stringStructure.get()));
         }
         
         void loadArgumentWithSpecificClass(const ClassInfo* classInfo, int argument, RegisterID dst, RegisterID scratch)
         {
             loadCellArgument(argument, dst);
-            loadPtr(Address(dst, JSCell::structureOffset()), scratch);
+            emitLoadStructure(dst, scratch, dst);
             appendFailure(branchPtr(NotEqual, Address(scratch, Structure::classInfoOffset()), TrustedImmPtr(classInfo)));
+            // We have to reload the argument since emitLoadStructure clobbered it.
+            loadCellArgument(argument, dst);
         }
         
         void loadInt32Argument(int argument, RegisterID dst, Jump& failTarget)
@@ -97,7 +105,7 @@ namespace JSC {
         {
             if (src != regT0)
                 move(src, regT0);
-            loadPtr(Address(callFrameRegister, CallFrame::callerFrameOffset()), callFrameRegister);
+            emitFunctionEpilogue();
             ret();
         }
 #else
@@ -105,7 +113,7 @@ namespace JSC {
         {
             ASSERT_UNUSED(payload, payload == regT0);
             ASSERT_UNUSED(tag, tag == regT1);
-            loadPtr(Address(callFrameRegister, CallFrame::callerFrameOffset()), callFrameRegister);
+            emitFunctionEpilogue();
             ret();
         }
 #endif
@@ -136,7 +144,7 @@ namespace JSC {
             lowNonZero.link(this);
             highNonZero.link(this);
 #endif
-            loadPtr(Address(callFrameRegister, CallFrame::callerFrameOffset()), callFrameRegister);
+            emitFunctionEpilogue();
             ret();
         }
 
@@ -145,7 +153,7 @@ namespace JSC {
             if (src != regT0)
                 move(src, regT0);
             tagReturnAsInt32();
-            loadPtr(Address(callFrameRegister, CallFrame::callerFrameOffset()), callFrameRegister);
+            emitFunctionEpilogue();
             ret();
         }
 
@@ -154,7 +162,7 @@ namespace JSC {
             if (src != regT0)
                 move(src, regT0);
             tagReturnAsJSCell();
-            loadPtr(Address(callFrameRegister, CallFrame::callerFrameOffset()), callFrameRegister);
+            emitFunctionEpilogue();
             ret();
         }
         

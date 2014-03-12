@@ -32,7 +32,7 @@
 #include "CookieJarSoup.h"
 #include "CredentialStorage.h"
 #include "FileSystem.h"
-#include "GOwnPtrSoup.h"
+#include "GUniquePtrSoup.h"
 #include "HTTPParsers.h"
 #include "LocalizedStrings.h"
 #include "MIMETypeRegistry.h"
@@ -44,7 +44,6 @@
 #include "ResourceResponse.h"
 #include "SharedBuffer.h"
 #include "SoupNetworkSession.h"
-#include "SoupURIUtils.h"
 #include "TextEncoding.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -286,9 +285,9 @@ void ResourceHandle::ensureReadBuffer()
     size_t bufferSize;
     char* bufferFromClient = client()->getOrCreateReadBuffer(gDefaultReadBufferSize, bufferSize);
     if (bufferFromClient)
-        d->m_soupBuffer.set(soup_buffer_new(SOUP_MEMORY_TEMPORARY, bufferFromClient, bufferSize));
+        d->m_soupBuffer.reset(soup_buffer_new(SOUP_MEMORY_TEMPORARY, bufferFromClient, bufferSize));
     else
-        d->m_soupBuffer.set(soup_buffer_new(SOUP_MEMORY_TAKE, static_cast<char*>(g_malloc(gDefaultReadBufferSize)), gDefaultReadBufferSize));
+        d->m_soupBuffer.reset(soup_buffer_new(SOUP_MEMORY_TAKE, static_cast<char*>(g_malloc(gDefaultReadBufferSize)), gDefaultReadBufferSize));
 
     ASSERT(d->m_soupBuffer);
 }
@@ -452,7 +451,7 @@ static void doRedirect(ResourceHandle* handle)
     ResourceRequest newRequest = handle->firstRequest();
     SoupMessage* message = d->m_soupMessage.get();
     const char* location = soup_message_headers_get_one(message->response_headers, "Location");
-    URL newURL = URL(soupURIToKURL(soup_message_get_uri(message)), location);
+    URL newURL = URL(URL(soup_message_get_uri(message)), location);
     bool crossOrigin = !protocolHostAndPortAreEqual(handle->firstRequest().url(), newURL);
     newRequest.setURL(newURL);
     newRequest.setFirstPartyForCookies(newURL);
@@ -504,7 +503,7 @@ static void redirectSkipCallback(GObject*, GAsyncResult* asyncResult, gpointer d
         return;
     }
 
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     ResourceHandleInternal* d = handle->getInternal();
     gssize bytesSkipped = g_input_stream_skip_finish(d->m_inputStream.get(), asyncResult, &error.outPtr());
     if (error) {
@@ -547,7 +546,7 @@ static void cleanupSoupRequestOperation(ResourceHandle* handle, bool isDestroyin
     d->m_inputStream.clear();
     d->m_multipartInputStream.clear();
     d->m_cancellable.clear();
-    d->m_soupBuffer.clear();
+    d->m_soupBuffer.reset();
 
     if (d->m_soupMessage) {
         g_signal_handlers_disconnect_matched(d->m_soupMessage.get(), G_SIGNAL_MATCH_DATA,
@@ -610,7 +609,7 @@ static void nextMultipartResponsePartCallback(GObject* /*source*/, GAsyncResult*
     ResourceHandleInternal* d = handle->getInternal();
     ASSERT(!d->m_inputStream);
 
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     d->m_inputStream = adoptGRef(soup_multipart_input_stream_next_part_finish(d->m_multipartInputStream.get(), result, &error.outPtr()));
 
     if (error) {
@@ -657,7 +656,7 @@ static void sendRequestCallback(GObject*, GAsyncResult* result, gpointer data)
         return;
     }
 
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     GRefPtr<GInputStream> inputStream = adoptGRef(soup_request_send_finish(d->m_soupRequest.get(), result, &error.outPtr()));
     if (error) {
         handle->client()->didFail(handle.get(), ResourceError::httpError(soupMessage, error.get(), d->m_soupRequest.get()));
@@ -727,7 +726,7 @@ static void continueAfterDidReceiveResponse(ResourceHandle* handle)
 
 static bool addFileToSoupMessageBody(SoupMessage* message, const String& fileNameString, size_t offset, size_t lengthToSend, unsigned long& totalBodySize)
 {
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     CString fileName = fileSystemRepresentation(fileNameString);
     GMappedFile* fileMapping = g_mapped_file_new(fileName.data(), false, &error.outPtr());
     if (error)
@@ -916,18 +915,6 @@ static void networkEventCallback(SoupMessage*, GSocketClientEvent event, GIOStre
 }
 #endif
 
-static const char* gSoupRequestInitiatingPageIDKey = "wk-soup-request-initiating-page-id";
-
-static void setSoupRequestInitiatingPageIDFromNetworkingContext(SoupRequest* request, NetworkingContext* context)
-{
-    if (!context || !context->isValid())
-        return;
-
-    uint64_t* initiatingPageIDPtr = static_cast<uint64_t*>(fastMalloc(sizeof(uint64_t)));
-    *initiatingPageIDPtr = context->initiatingPageID();
-    g_object_set_data_full(G_OBJECT(request), g_intern_static_string(gSoupRequestInitiatingPageIDKey), initiatingPageIDPtr, fastFree);
-}
-
 static bool createSoupMessageForHandleAndRequest(ResourceHandle* handle, const ResourceRequest& request)
 {
     ASSERT(handle);
@@ -990,12 +977,11 @@ static bool createSoupRequestAndMessageForHandle(ResourceHandle* handle, const R
 {
     ResourceHandleInternal* d = handle->getInternal();
 
-    GOwnPtr<GError> error;
-
-    GOwnPtr<SoupURI> soupURI(request.soupURI());
+    GUniquePtr<SoupURI> soupURI = request.createSoupURI();
     if (!soupURI)
         return false;
 
+    GUniqueOutPtr<GError> error;
     d->m_soupRequest = adoptGRef(soup_session_request_uri(d->soupSession(), soupURI.get(), &error.outPtr()));
     if (error) {
         d->m_soupRequest.clear();
@@ -1008,7 +994,7 @@ static bool createSoupRequestAndMessageForHandle(ResourceHandle* handle, const R
         return false;
     }
 
-    setSoupRequestInitiatingPageIDFromNetworkingContext(d->m_soupRequest.get(), d->m_context.get());
+    request.updateSoupRequest(d->m_soupRequest.get());
 
     return true;
 }
@@ -1313,7 +1299,7 @@ static void readCallback(GObject*, GAsyncResult* asyncResult, gpointer data)
         return;
     }
 
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     gssize bytesRead = g_input_stream_read_finish(d->m_inputStream.get(), asyncResult, &error.outPtr());
 
     if (error) {
@@ -1389,12 +1375,6 @@ static gboolean requestTimeoutCallback(gpointer data)
     handle->cancel();
 
     return FALSE;
-}
-
-uint64_t ResourceHandle::getSoupRequestInitiatingPageID(SoupRequest* request)
-{
-    uint64_t* initiatingPageIDPtr = static_cast<uint64_t*>(g_object_get_data(G_OBJECT(request), gSoupRequestInitiatingPageIDKey));
-    return initiatingPageIDPtr ? *initiatingPageIDPtr : 0;
 }
 
 }

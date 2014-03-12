@@ -80,6 +80,7 @@
 #import <WebCore/AuthenticationCF.h>
 #import <WebCore/AuthenticationMac.h>
 #import <WebCore/BackForwardController.h>
+#import <WebCore/BackForwardList.h>
 #import <WebCore/BlockExceptions.h>
 #import <WebCore/CachedFrame.h>
 #import <WebCore/Chrome.h>
@@ -253,28 +254,8 @@ bool WebFrameLoaderClient::hasHTMLView() const
     return [view isKindOfClass:[WebHTMLView class]];
 }
 
-void WebFrameLoaderClient::forceLayout()
-{
-    NSView <WebDocumentView> *view = [m_webFrame->_private->webFrameView documentView];
 #if PLATFORM(IOS)
-    // This gets called to lay out a page restored from the page cache.
-    // To work around timing problems with UIKit, restore fixed 
-    // layout settings here.
-    WebView* webView = getWebView(m_webFrame.get());
-    bool isMainFrame = [webView mainFrame] == m_webFrame.get();
-    Frame* coreFrame = core(m_webFrame.get());
-    if (isMainFrame && coreFrame->view()) {
-        IntSize newSize([webView _fixedLayoutSize]);
-        coreFrame->view()->setFixedLayoutSize(newSize);
-        coreFrame->view()->setUseFixedLayout(!newSize.isEmpty()); 
-    }
-#endif
-    [view setNeedsLayout:YES];
-    [view layout];
-}
-
-#if PLATFORM(IOS)
-void WebFrameLoaderClient::forceLayoutWithoutRecalculatingStyles()
+bool WebFrameLoaderClient::forceLayoutOnRestoreFromPageCache()
 {
     NSView <WebDocumentView> *view = [m_webFrame->_private->webFrameView documentView];
     // This gets called to lay out a page restored from the page cache.
@@ -290,6 +271,7 @@ void WebFrameLoaderClient::forceLayoutWithoutRecalculatingStyles()
     }
     [view setNeedsLayout:YES];
     [view layout];
+    return true;
 }
 #endif
 
@@ -1133,11 +1115,6 @@ bool WebFrameLoaderClient::shouldGoToHistoryItem(HistoryItem* item) const
     return [[view _policyDelegateForwarder] webView:view shouldGoToHistoryItem:webItem];
 }
 
-bool WebFrameLoaderClient::shouldStopLoadingForHistoryItem(HistoryItem* item) const
-{
-    return true;
-}
-
 void WebFrameLoaderClient::updateGlobalHistoryItemForPage()
 {
     HistoryItem* historyItem = 0;
@@ -1462,7 +1439,7 @@ void WebFrameLoaderClient::transitionToCommittedForNewPage()
     // FIXME (Viewless): I assume we want the equivalent of this optimization for viewless mode too.
     bool willProduceHTMLView = [m_webFrame->_private->webFrameView _viewClassForMIMEType:[dataSource _responseMIMEType]] == [WebHTMLView class];
 #endif
-    bool canSkipCreation = core(m_webFrame.get())->loader().stateMachine()->committingFirstRealLoad() && willProduceHTMLView;
+    bool canSkipCreation = core(m_webFrame.get())->loader().stateMachine().committingFirstRealLoad() && willProduceHTMLView;
     if (canSkipCreation) {
         [[m_webFrame->_private->webFrameView documentView] setDataSource:dataSource];
         return;
@@ -1632,7 +1609,22 @@ NSDictionary *WebFrameLoaderClient::actionDictionary(const NavigationAction& act
 bool WebFrameLoaderClient::canCachePage() const
 {
     // We can only cache HTML pages right now
-    return [[[m_webFrame.get() _dataSource] representation] isKindOfClass:[WebHTMLRepresentation class]];
+    if (![[[m_webFrame _dataSource] representation] isKindOfClass:[WebHTMLRepresentation class]])
+        return false;
+    
+    // We only cache pages if the back forward list is enabled and has a non-zero capacity.
+    Page* page = core(m_webFrame.get())->page();
+    if (!page)
+        return false;
+    
+    BackForwardList *backForwardList = static_cast<BackForwardList*>(page->backForward().client());
+    if (!backForwardList->enabled())
+        return false;
+    
+    if (!backForwardList->capacity())
+        return false;
+    
+    return true;
 }
 
 PassRefPtr<Frame> WebFrameLoaderClient::createFrame(const URL& url, const String& name, HTMLFrameOwnerElement* ownerElement,
@@ -1818,12 +1810,10 @@ private:
 
 #if PLATFORM(IOS)
 @interface WAKView (UIKitSecretsWebKitKnowsAboutSeeUIWebPlugInView)
-#if USE(ACCELERATED_COMPOSITING)
 - (PlatformLayer *)pluginLayer;
 - (BOOL)willProvidePluginLayer;
 - (void)attachPluginLayer;
 - (void)detachPluginLayer;
-#endif
 @end
 
 class PluginWidgetIOS : public PluginWidget {
@@ -1833,7 +1823,6 @@ public:
     {
     }
 
-#if USE(ACCELERATED_COMPOSITING)
     virtual PlatformLayer* platformLayer() const
     {
         if (![platformWidget() respondsToSelector:@selector(pluginLayer)])
@@ -1859,7 +1848,6 @@ public:
         if ([platformWidget() respondsToSelector:@selector(detachPluginLayer)])
             [platformWidget() detachPluginLayer];
     }
-#endif
 };
 #endif // PLATFORM(IOS)
 
@@ -1871,13 +1859,11 @@ public:
         : PluginWidget(view)
     {
     }
-    
-#if USE(ACCELERATED_COMPOSITING)
+
     virtual PlatformLayer* platformLayer() const
     {
         return [(WebBaseNetscapePluginView *)platformWidget() pluginLayer];
     }
-#endif
 
     virtual bool getFormValue(String& value)
     {

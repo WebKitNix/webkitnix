@@ -29,7 +29,7 @@
 #include "ArrayBufferView.h"
 #include "DataView.h"
 #include "Error.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC {
 
@@ -113,7 +113,7 @@ Structure* JSDataView::createStructure(
     VM& vm, JSGlobalObject* globalObject, JSValue prototype)
 {
     return Structure::create(
-        vm, globalObject, prototype, TypeInfo(ObjectType, StructureFlags), info(),
+        vm, globalObject, prototype, TypeInfo(DataViewType, StructureFlags), info(),
         NonArray);
 }
 

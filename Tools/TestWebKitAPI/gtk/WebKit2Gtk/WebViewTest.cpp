@@ -22,7 +22,7 @@
 #include "WebViewTest.h"
 
 #include <JavaScriptCore/JSRetainPtr.h>
-#include <WebCore/GOwnPtrGtk.h>
+#include <WebCore/GUniquePtrGtk.h>
 
 WebViewTest::WebViewTest()
     : m_webView(WEBKIT_WEB_VIEW(g_object_ref_sink(webkit_web_view_new())))
@@ -218,12 +218,12 @@ void WebViewTest::selectAll()
 static void resourceGetDataCallback(GObject* object, GAsyncResult* result, gpointer userData)
 {
     size_t dataSize;
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     unsigned char* data = webkit_web_resource_get_data_finish(WEBKIT_WEB_RESOURCE(object), result, &dataSize, &error.outPtr());
     g_assert(data);
 
     WebViewTest* test = static_cast<WebViewTest*>(userData);
-    test->m_resourceData.set(reinterpret_cast<char*>(data));
+    test->m_resourceData.reset(reinterpret_cast<char*>(data));
     test->m_resourceDataSize = dataSize;
     g_main_loop_quit(test->m_mainLoop);
 }
@@ -231,7 +231,7 @@ static void resourceGetDataCallback(GObject* object, GAsyncResult* result, gpoin
 const char* WebViewTest::mainResourceData(size_t& mainResourceDataSize)
 {
     m_resourceDataSize = 0;
-    m_resourceData.clear();
+    m_resourceData.reset();
     WebKitWebResource* resource = webkit_web_view_get_main_resource(m_webView);
     g_assert(resource);
 
@@ -248,7 +248,7 @@ void WebViewTest::mouseMoveTo(int x, int y, unsigned mouseModifiers)
     GtkWidget* viewWidget = GTK_WIDGET(m_webView);
     g_assert(gtk_widget_get_realized(viewWidget));
 
-    GOwnPtr<GdkEvent> event(gdk_event_new(GDK_MOTION_NOTIFY));
+    GUniquePtr<GdkEvent> event(gdk_event_new(GDK_MOTION_NOTIFY));
     event->motion.x = x;
     event->motion.y = y;
 
@@ -278,7 +278,7 @@ void WebViewTest::keyStroke(unsigned keyVal, unsigned keyModifiers)
     GtkWidget* viewWidget = GTK_WIDGET(m_webView);
     g_assert(gtk_widget_get_realized(viewWidget));
 
-    GOwnPtr<GdkEvent> event(gdk_event_new(GDK_KEY_PRESS));
+    GUniquePtr<GdkEvent> event(gdk_event_new(GDK_KEY_PRESS));
     event->key.keyval = keyVal;
 
     event->key.time = GDK_CURRENT_TIME;
@@ -288,7 +288,7 @@ void WebViewTest::keyStroke(unsigned keyVal, unsigned keyModifiers)
     event->key.state = keyModifiers;
 
     // When synthesizing an event, an invalid hardware_keycode value can cause it to be badly processed by GTK+.
-    GOwnPtr<GdkKeymapKey> keys;
+    GUniqueOutPtr<GdkKeymapKey> keys;
     int keysCount;
     if (gdk_keymap_get_entries_for_keyval(gdk_keymap_get_default(), keyVal, &keys.outPtr(), &keysCount))
         event->key.hardware_keycode = keys.get()[0].keycode;
@@ -304,7 +304,7 @@ void WebViewTest::doMouseButtonEvent(GdkEventType eventType, int x, int y, unsig
     GtkWidget* viewWidget = GTK_WIDGET(m_webView);
     g_assert(gtk_widget_get_realized(viewWidget));
 
-    GOwnPtr<GdkEvent> event(gdk_event_new(eventType));
+    GUniquePtr<GdkEvent> event(gdk_event_new(eventType));
     event->button.window = gtk_widget_get_window(viewWidget);
     g_object_ref(event->button.window);
 
@@ -425,7 +425,7 @@ bool WebViewTest::javascriptResultIsUndefined(WebKitJavascriptResult* javascript
 
 static void onSnapshotReady(WebKitWebView* web_view, GAsyncResult* res, WebViewTest* test)
 {
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     test->m_surface = webkit_web_view_get_snapshot_finish(web_view, res, &error.outPtr());
     g_assert(!test->m_surface || !error.get());
     if (error)

@@ -34,7 +34,7 @@ function test()
     ];
 
     // FIXME: <https://webkit.org/b/121108> Web Inspector gets paused twice when there is an exception in host function
-    var extraPauses = 1;
+    var extraPauses = 0;
 
     function evaluateStatements(list, callback)
     {
@@ -79,15 +79,12 @@ function test()
 
 
     InspectorTest.sendCommand("Debugger.enable", {});
-    InspectorTest.sendCommand("Debugger.setBreakpointsActive", {active: true}, function() {
-        InspectorTest.log("Breakpoints Enabled");
-        InspectorTest.sendCommand("Debugger.setPauseOnExceptions", {state: "uncaught"}, function(responseObject) {
-            InspectorTest.checkForError(responseObject);
-            InspectorTest.log("Debugger.setPauseOnExceptions - uncaught");
-            evaluateExpectedNoPauses(function() {
-                expectPause = true;
-                triggerNextUncaughtException();
-            });
+    InspectorTest.sendCommand("Debugger.setPauseOnExceptions", {state: "uncaught"}, function(responseObject) {
+        InspectorTest.checkForError(responseObject);
+        InspectorTest.log("Debugger.setPauseOnExceptions - uncaught");
+        evaluateExpectedNoPauses(function() {
+            expectPause = true;
+            triggerNextUncaughtException();
         });
     });
 

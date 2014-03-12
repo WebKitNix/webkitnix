@@ -26,32 +26,40 @@
 #include "config.h"
 #include "SessionTracker.h"
 
-#include <wtf/MainThread.h>
 #include <wtf/NeverDestroyed.h>
+#include <wtf/RunLoop.h>
 
 using namespace WebCore;
 
 namespace WebKit {
 
-static HashMap<uint64_t, std::unique_ptr<NetworkStorageSession>>& sessionMap()
+static HashMap<SessionID, std::unique_ptr<NetworkStorageSession>>& staticSessionMap()
 {
-    ASSERT(isMainThread());
+    ASSERT(RunLoop::isMain());
 
-    static NeverDestroyed<HashMap<uint64_t, std::unique_ptr<NetworkStorageSession>>> map;
+    static NeverDestroyed<HashMap<SessionID, std::unique_ptr<NetworkStorageSession>>> map;
+    return map.get();
+}
+
+static HashMap<const NetworkStorageSession*, SessionID>& storageSessionToID()
+{
+    ASSERT(RunLoop::isMain());
+
+    static NeverDestroyed<HashMap<const NetworkStorageSession*, SessionID>> map;
     return map.get();
 }
 
 static String& identifierBase()
 {
-    ASSERT(isMainThread());
+    ASSERT(RunLoop::isMain());
 
     static NeverDestroyed<String> base;
     return base;
 }
 
-const HashMap<uint64_t, std::unique_ptr<NetworkStorageSession>>& SessionTracker::getSessionMap()
+const HashMap<SessionID, std::unique_ptr<NetworkStorageSession>>& SessionTracker::sessionMap()
 {
-    return sessionMap();
+    return staticSessionMap();
 }
 
 const String& SessionTracker::getIdentifierBase()
@@ -59,21 +67,39 @@ const String& SessionTracker::getIdentifierBase()
     return identifierBase();
 }
 
-std::unique_ptr<NetworkStorageSession>& SessionTracker::session(uint64_t sessionID)
+NetworkStorageSession* SessionTracker::session(SessionID sessionID)
 {
-    return sessionMap().add(sessionID, nullptr).iterator->value;
+    if (sessionID == SessionID::defaultSessionID())
+        return &NetworkStorageSession::defaultStorageSession();
+    return staticSessionMap().get(sessionID);
 }
 
-void SessionTracker::destroySession(uint64_t sessionID)
+SessionID SessionTracker::sessionID(const NetworkStorageSession& session)
 {
-    ASSERT(isMainThread());
+    if (&session == &NetworkStorageSession::defaultStorageSession())
+        return SessionID::defaultSessionID();
+    return storageSessionToID().get(&session);
+}
 
-    sessionMap().remove(sessionID);
+void SessionTracker::setSession(SessionID sessionID, std::unique_ptr<NetworkStorageSession> session)
+{
+    ASSERT(sessionID != SessionID::defaultSessionID());
+    storageSessionToID().set(session.get(), sessionID);
+    staticSessionMap().set(sessionID, std::move(session));
+}
+
+void SessionTracker::destroySession(SessionID sessionID)
+{
+    ASSERT(RunLoop::isMain());
+    if (staticSessionMap().contains(sessionID)) {
+        storageSessionToID().remove(session(sessionID));
+        staticSessionMap().remove(sessionID);
+    }
 }
 
 void SessionTracker::setIdentifierBase(const String& identifier)
 {
-    ASSERT(isMainThread());
+    ASSERT(RunLoop::isMain());
 
     identifierBase() = identifier;
 }

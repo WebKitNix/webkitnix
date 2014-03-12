@@ -31,6 +31,7 @@
 #include "JSGlobalObject.h"
 #include "Interpreter.h"
 #include "ObjectConstructor.h"
+#include "WriteBarrierInlines.h"
 #include <wtf/StdLibExtras.h>
 
 namespace JSC {
@@ -77,7 +78,7 @@ public:
         return m_numArguments; 
     }
         
-    void copyToArguments(ExecState*, CallFrame*, uint32_t length);
+    void copyToArguments(ExecState*, CallFrame*, uint32_t copyLength, int32_t firstArgumentOffset);
     void tearOff(CallFrame*);
     void tearOff(CallFrame*, InlineCallFrame*);
     bool isTornOff() const { return m_registerArray.get(); }
@@ -85,7 +86,7 @@ public:
 
     static Structure* createStructure(VM& vm, JSGlobalObject* globalObject, JSValue prototype) 
     { 
-        return Structure::create(vm, globalObject, prototype, TypeInfo(ObjectType, StructureFlags), info()); 
+        return Structure::create(vm, globalObject, prototype, TypeInfo(ArgumentsType, StructureFlags), info()); 
     }
     
     static ptrdiff_t offsetOfNumArguments() { return OBJECT_OFFSETOF(Arguments, m_numArguments); }
@@ -137,11 +138,16 @@ private:
     WriteBarrierBase<Unknown>* m_registers;
     std::unique_ptr<WriteBarrier<Unknown>[]> m_registerArray;
 
+public:
     struct SlowArgumentData {
+        WTF_MAKE_FAST_ALLOCATED;
+    public:
+
         std::unique_ptr<SlowArgument[]> slowArguments;
         int bytecodeToMachineCaptureOffset; // Add this if you have a bytecode offset into captured registers and you want the machine offset instead. Subtract if you want to do the opposite.
     };
     
+private:
     std::unique_ptr<SlowArgumentData> m_slowArgumentData;
 
     WriteBarrier<JSFunction> m_callee;

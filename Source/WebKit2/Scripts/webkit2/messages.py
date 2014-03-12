@@ -177,6 +177,10 @@ def struct_or_class(namespace, type):
         'WebCore::FileChooserSettings',
         'WebCore::GrammarDetail',
         'WebCore::IDBDatabaseMetadata',
+        'WebCore::IDBGetResult',
+        'WebCore::IDBIndexMetadata',
+        'WebCore::IDBKeyData',
+        'WebCore::IDBKeyRangeData',
         'WebCore::IDBObjectStoreMetadata',
         'WebCore::IdentityTransformOperation',
         'WebCore::KeypressCommand',
@@ -200,6 +204,7 @@ def struct_or_class(namespace, type):
         'WebCore::ViewportArguments',
         'WebCore::ViewportAttributes',
         'WebCore::WindowFeatures',
+        'WebKit::AssistedNodeInformation',
         'WebKit::AttributedString',
         'WebKit::ColorSpaceData',
         'WebKit::ContextMenuState',
@@ -208,6 +213,7 @@ def struct_or_class(namespace, type):
         'WebKit::DrawingAreaInfo',
         'WebKit::EditorState',
         'WebKit::InteractionInformationAtPosition',
+        'WebKit::NavigationActionData',
         'WebKit::NetworkProcessCreationParameters',
         'WebKit::PlatformPopupMenuData',
         'WebKit::PluginCreationParameters',
@@ -216,6 +222,7 @@ def struct_or_class(namespace, type):
         'WebKit::SecurityOriginData',
         'WebKit::StatisticsData',
         'WebKit::TextCheckerState',
+        'WebKit::WKOptionItem',
         'WebKit::WebNavigationDataStore',
         'WebKit::WebPageCreationParameters',
         'WebKit::WebPreferencesStore',
@@ -466,7 +473,7 @@ def headers_for_type(type):
         if split[0] == 'WebKit' or split[0] == 'IPC':
             headers.append('"%s.h"' % split[1])
         else:
-            headers.append('<%s/%s.h>' % tuple(split))
+            headers.append('<%s/%s.h>' % tuple(split[0:2]))
 
     return headers
 
@@ -569,9 +576,9 @@ def generate_message_handler(file):
             result.append('{\n')
             result.append('    ASSERT(m_encoder);\n')
             result += ['    *m_encoder << %s;\n' % x.name for x in message.reply_parameters]
-            result.append('    bool result = m_connection->sendSyncReply(std::move(m_encoder));\n')
+            result.append('    bool _result = m_connection->sendSyncReply(std::move(m_encoder));\n')
             result.append('    m_connection = nullptr;\n')
-            result.append('    return result;\n')
+            result.append('    return _result;\n')
             result.append('}\n')
             result.append('\n')
 

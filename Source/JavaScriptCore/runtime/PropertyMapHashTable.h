@@ -138,7 +138,7 @@ public:
 
     static Structure* createStructure(VM& vm, JSGlobalObject* globalObject, JSValue prototype)
     {
-        return Structure::create(vm, globalObject, prototype, TypeInfo(CompoundType, OverridesVisitChildren), info());
+        return Structure::create(vm, globalObject, prototype, TypeInfo(CompoundType, StructureFlags), info());
     }
 
     static void visitChildren(JSCell*, SlotVisitor&);
@@ -170,6 +170,7 @@ public:
     // Find a value in the table.
     find_iterator find(const KeyType&);
     find_iterator findWithString(const KeyType&);
+    ValueType* get(const KeyType&);
     // Add a value to the table
     enum EffectOnPropertyOffset { PropertyOffsetMayChange, PropertyOffsetMustNotChange };
     std::pair<find_iterator, bool> add(const ValueType& entry, PropertyOffset&, EffectOnPropertyOffset);
@@ -201,6 +202,9 @@ public:
     size_t sizeInMemory();
     void checkConsistency();
 #endif
+
+protected:
+    static const unsigned StructureFlags = OverridesVisitChildren | StructureIsImmortal;
 
 private:
     PropertyTable(VM&, unsigned initialCapacity);
@@ -253,7 +257,7 @@ private:
     unsigned m_deletedCount;
     OwnPtr< Vector<PropertyOffset>> m_deletedOffsets;
 
-    static const unsigned MinimumTableSize = 8;
+    static const unsigned MinimumTableSize = 16;
     static const unsigned EmptyEntryIndex = 0;
 };
 
@@ -294,6 +298,42 @@ inline PropertyTable::find_iterator PropertyTable::find(const KeyType& key)
             return std::make_pair((ValueType*)0, hash & m_indexMask);
         if (key == table()[entryIndex - 1].key)
             return std::make_pair(&table()[entryIndex - 1], hash & m_indexMask);
+
+#if DUMP_PROPERTYMAP_STATS
+        ++numCollisions;
+#endif
+
+        if (!step)
+            step = WTF::doubleHash(key->existingHash()) | 1;
+        hash += step;
+
+#if DUMP_PROPERTYMAP_STATS
+        ++numRehashes;
+#endif
+    }
+}
+
+inline PropertyTable::ValueType* PropertyTable::get(const KeyType& key)
+{
+    ASSERT(key);
+    ASSERT(key->isIdentifier() || key->isEmptyUnique());
+
+    if (!m_keyCount)
+        return nullptr;
+
+    unsigned hash = key->existingHash();
+    unsigned step = 0;
+
+#if DUMP_PROPERTYMAP_STATS
+    ++numProbes;
+#endif
+
+    while (true) {
+        unsigned entryIndex = m_index[hash & m_indexMask];
+        if (entryIndex == EmptyEntryIndex)
+            return nullptr;
+        if (key == table()[entryIndex - 1].key)
+            return &table()[entryIndex - 1];
 
 #if DUMP_PROPERTYMAP_STATS
         ++numCollisions;

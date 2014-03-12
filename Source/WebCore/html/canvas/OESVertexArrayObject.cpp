@@ -47,11 +47,6 @@ WebGLExtension::ExtensionName OESVertexArrayObject::getName() const
     return OESVertexArrayObjectName;
 }
 
-OwnPtr<OESVertexArrayObject> OESVertexArrayObject::create(WebGLRenderingContext* context)
-{
-    return adoptPtr(new OESVertexArrayObject(context));
-}
-
 PassRefPtr<WebGLVertexArrayObjectOES> OESVertexArrayObject::createVertexArrayOES()
 {
     if (m_context->isContextLost())
@@ -106,8 +101,6 @@ void OESVertexArrayObject::bindVertexArrayOES(WebGLVertexArrayObjectOES* arrayOb
         extensions->bindVertexArrayOES(0);
         m_context->setBoundVertexArrayObject(0);
     }
-    
-    m_context->cleanupAfterGraphicsCall(false);
 }
 
 } // namespace WebCore

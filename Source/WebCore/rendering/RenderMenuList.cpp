@@ -93,11 +93,6 @@ RenderMenuList::~RenderMenuList()
 #endif
 }
 
-bool RenderMenuList::canBeReplacedWithInlineRunIn() const
-{
-    return false;
-}
-
 void RenderMenuList::createInnerBlock()
 {
     if (m_innerBlock) {
@@ -349,7 +344,7 @@ void RenderMenuList::computePreferredLogicalWidths()
         m_minPreferredLogicalWidth = std::min(m_minPreferredLogicalWidth, adjustContentBoxLogicalWidthForBoxSizing(style().maxWidth().value()));
     }
 
-    LayoutUnit toAdd = borderAndPaddingWidth();
+    LayoutUnit toAdd = horizontalBorderAndPaddingExtent();
     m_minPreferredLogicalWidth += toAdd;
     m_maxPreferredLogicalWidth += toAdd;
 

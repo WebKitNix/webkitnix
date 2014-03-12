@@ -20,7 +20,6 @@
 #ifndef RenderSVGResourceClipper_h
 #define RenderSVGResourceClipper_h
 
-#if ENABLE(SVG)
 #include "GraphicsContext.h"
 #include "ImageBuffer.h"
 #include "IntSize.h"
@@ -45,8 +44,8 @@ public:
 
     SVGClipPathElement& clipPathElement() const { return toSVGClipPathElement(nodeForNonAnonymous()); }
 
-    virtual void removeAllClientsFromCache(bool markForInvalidation = true);
-    virtual void removeClientFromCache(RenderObject&, bool markForInvalidation = true);
+    virtual void removeAllClientsFromCache(bool markForInvalidation = true) override;
+    virtual void removeClientFromCache(RenderElement&, bool markForInvalidation = true) override;
 
     virtual bool applyResource(RenderElement&, const RenderStyle&, GraphicsContext*&, unsigned short resourceMode) override;
     // clipPath can be clipped too, but don't have a boundingBox or repaintRect. So we can't call
@@ -77,5 +76,4 @@ private:
 
 }
 
-#endif
 #endif

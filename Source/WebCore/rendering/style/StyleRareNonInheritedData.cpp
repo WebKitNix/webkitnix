@@ -41,9 +41,6 @@ StyleRareNonInheritedData::StyleRareNonInheritedData()
     , m_perspectiveOriginX(RenderStyle::initialPerspectiveOriginX())
     , m_perspectiveOriginY(RenderStyle::initialPerspectiveOriginY())
     , lineClamp(RenderStyle::initialLineClamp())
-#if ENABLE(DRAGGABLE_REGION)
-    , m_draggableRegionMode(DraggableRegionNone)
-#endif
     , m_deprecatedFlexibleBox(StyleDeprecatedFlexibleBoxData::create())
     , m_flexibleBox(StyleFlexibleBoxData::create())
     , m_marquee(StyleMarqueeData::create())
@@ -52,12 +49,16 @@ StyleRareNonInheritedData::StyleRareNonInheritedData()
 #if ENABLE(CSS_FILTERS)
     , m_filter(StyleFilterData::create())
 #endif
+#if ENABLE(CSS_GRID_LAYOUT)
     , m_grid(StyleGridData::create())
     , m_gridItem(StyleGridItemData::create())
+#endif
     , m_mask(FillLayer(MaskFillLayer))
     , m_pageSize()
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
     , m_shapeInside(RenderStyle::initialShapeInside())
+#endif
+#if ENABLE(CSS_SHAPES)
     , m_shapeOutside(RenderStyle::initialShapeOutside())
     , m_shapeMargin(RenderStyle::initialShapeMargin())
     , m_shapePadding(RenderStyle::initialShapePadding())
@@ -86,17 +87,14 @@ StyleRareNonInheritedData::StyleRareNonInheritedData()
     , m_appearance(RenderStyle::initialAppearance())
     , m_borderFit(RenderStyle::initialBorderFit())
     , m_textCombine(RenderStyle::initialTextCombine())
-#if ENABLE(CSS3_TEXT_DECORATION)
     , m_textDecorationStyle(RenderStyle::initialTextDecorationStyle())
-#endif
     , m_wrapFlow(RenderStyle::initialWrapFlow())
     , m_wrapThrough(RenderStyle::initialWrapThrough())
-#if USE(ACCELERATED_COMPOSITING)
     , m_runningAcceleratedAnimation(false)
-#endif
-    , m_hasAspectRatio(false)
+    , m_aspectRatioType(RenderStyle::initialAspectRatioType())
 #if ENABLE(CSS_COMPOSITING)
     , m_effectiveBlendMode(RenderStyle::initialBlendMode())
+    , m_isolation(RenderStyle::initialIsolation())
 #endif
     , m_objectFit(RenderStyle::initialObjectFit())
 {
@@ -112,9 +110,6 @@ inline StyleRareNonInheritedData::StyleRareNonInheritedData(const StyleRareNonIn
     , m_perspectiveOriginX(o.m_perspectiveOriginX)
     , m_perspectiveOriginY(o.m_perspectiveOriginY)
     , lineClamp(o.lineClamp)
-#if ENABLE(DRAGGABLE_REGION)
-    , m_draggableRegionMode(o.m_draggableRegionMode)
-#endif
     , m_deprecatedFlexibleBox(o.m_deprecatedFlexibleBox)
     , m_flexibleBox(o.m_flexibleBox)
     , m_marquee(o.m_marquee)
@@ -123,29 +118,31 @@ inline StyleRareNonInheritedData::StyleRareNonInheritedData(const StyleRareNonIn
 #if ENABLE(CSS_FILTERS)
     , m_filter(o.m_filter)
 #endif
+#if ENABLE(CSS_GRID_LAYOUT)
     , m_grid(o.m_grid)
     , m_gridItem(o.m_gridItem)
+#endif
     , m_content(o.m_content ? o.m_content->clone() : nullptr)
     , m_counterDirectives(o.m_counterDirectives ? clone(*o.m_counterDirectives) : nullptr)
-    , m_boxShadow(o.m_boxShadow ? adoptPtr(new ShadowData(*o.m_boxShadow)) : nullptr)
+    , m_boxShadow(o.m_boxShadow ? std::make_unique<ShadowData>(*o.m_boxShadow) : nullptr)
     , m_boxReflect(o.m_boxReflect)
     , m_animations(o.m_animations ? adoptPtr(new AnimationList(*o.m_animations)) : nullptr)
     , m_transitions(o.m_transitions ? adoptPtr(new AnimationList(*o.m_transitions)) : nullptr)
     , m_mask(o.m_mask)
     , m_maskBoxImage(o.m_maskBoxImage)
     , m_pageSize(o.m_pageSize)
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
     , m_shapeInside(o.m_shapeInside)
+#endif
+#if ENABLE(CSS_SHAPES)
     , m_shapeOutside(o.m_shapeOutside)
     , m_shapeMargin(o.m_shapeMargin)
     , m_shapePadding(o.m_shapePadding)
     , m_shapeImageThreshold(o.m_shapeImageThreshold)
 #endif
     , m_clipPath(o.m_clipPath)
-#if ENABLE(CSS3_TEXT_DECORATION)
     , m_textDecorationColor(o.m_textDecorationColor)
     , m_visitedLinkTextDecorationColor(o.m_visitedLinkTextDecorationColor)
-#endif
     , m_visitedLinkBackgroundColor(o.m_visitedLinkBackgroundColor)
     , m_visitedLinkOutlineColor(o.m_visitedLinkOutlineColor)
     , m_visitedLinkBorderLeftColor(o.m_visitedLinkBorderLeftColor)
@@ -173,17 +170,14 @@ inline StyleRareNonInheritedData::StyleRareNonInheritedData(const StyleRareNonIn
     , m_appearance(o.m_appearance)
     , m_borderFit(o.m_borderFit)
     , m_textCombine(o.m_textCombine)
-#if ENABLE(CSS3_TEXT_DECORATION)
     , m_textDecorationStyle(o.m_textDecorationStyle)
-#endif
     , m_wrapFlow(o.m_wrapFlow)
     , m_wrapThrough(o.m_wrapThrough)
-#if USE(ACCELERATED_COMPOSITING)
     , m_runningAcceleratedAnimation(o.m_runningAcceleratedAnimation)
-#endif
-    , m_hasAspectRatio(o.m_hasAspectRatio)
+    , m_aspectRatioType(o.m_aspectRatioType)
 #if ENABLE(CSS_COMPOSITING)
     , m_effectiveBlendMode(o.m_effectiveBlendMode)
+    , m_isolation(o.m_isolation)
 #endif
     , m_objectFit(o.m_objectFit)
 {
@@ -210,9 +204,6 @@ bool StyleRareNonInheritedData::operator==(const StyleRareNonInheritedData& o) c
 #if ENABLE(DASHBOARD_SUPPORT)
         && m_dashboardRegions == o.m_dashboardRegions
 #endif
-#if ENABLE(DRAGGABLE_REGION)
-        && m_draggableRegionMode == o.m_draggableRegionMode
-#endif
         && m_deprecatedFlexibleBox == o.m_deprecatedFlexibleBox
         && m_flexibleBox == o.m_flexibleBox
         && m_marquee == o.m_marquee
@@ -221,8 +212,10 @@ bool StyleRareNonInheritedData::operator==(const StyleRareNonInheritedData& o) c
 #if ENABLE(CSS_FILTERS)
         && m_filter == o.m_filter
 #endif
+#if ENABLE(CSS_GRID_LAYOUT)
         && m_grid == o.m_grid
         && m_gridItem == o.m_gridItem
+#endif
         && contentDataEquivalent(o)
         && counterDataEquivalent(o)
         && shadowDataEquivalent(o)
@@ -232,18 +225,18 @@ bool StyleRareNonInheritedData::operator==(const StyleRareNonInheritedData& o) c
         && m_mask == o.m_mask
         && m_maskBoxImage == o.m_maskBoxImage
         && m_pageSize == o.m_pageSize
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
+    && m_shapeInside == o.m_shapeInside
+#endif
 #if ENABLE(CSS_SHAPES)
-        && m_shapeInside == o.m_shapeInside
         && m_shapeOutside == o.m_shapeOutside
         && m_shapeMargin == o.m_shapeMargin
         && m_shapePadding == o.m_shapePadding
         && m_shapeImageThreshold == o.m_shapeImageThreshold
 #endif
         && m_clipPath == o.m_clipPath
-#if ENABLE(CSS3_TEXT_DECORATION)
         && m_textDecorationColor == o.m_textDecorationColor
         && m_visitedLinkTextDecorationColor == o.m_visitedLinkTextDecorationColor
-#endif
         && m_visitedLinkBackgroundColor == o.m_visitedLinkBackgroundColor
         && m_visitedLinkOutlineColor == o.m_visitedLinkOutlineColor
         && m_visitedLinkBorderLeftColor == o.m_visitedLinkBorderLeftColor
@@ -271,18 +264,15 @@ bool StyleRareNonInheritedData::operator==(const StyleRareNonInheritedData& o) c
         && m_appearance == o.m_appearance
         && m_borderFit == o.m_borderFit
         && m_textCombine == o.m_textCombine
-#if ENABLE(CSS3_TEXT_DECORATION)
         && m_textDecorationStyle == o.m_textDecorationStyle
-#endif
         && m_wrapFlow == o.m_wrapFlow
         && m_wrapThrough == o.m_wrapThrough
-#if USE(ACCELERATED_COMPOSITING)
         && !m_runningAcceleratedAnimation && !o.m_runningAcceleratedAnimation
-#endif
 #if ENABLE(CSS_COMPOSITING)
         && m_effectiveBlendMode == o.m_effectiveBlendMode
+        && m_isolation == o.m_isolation
 #endif
-        && m_hasAspectRatio == o.m_hasAspectRatio
+        && m_aspectRatioType == o.m_aspectRatioType
         && m_objectFit == o.m_objectFit;
 }
 

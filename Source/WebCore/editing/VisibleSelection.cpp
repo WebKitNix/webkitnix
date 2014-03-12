@@ -28,6 +28,7 @@
 
 #include "Document.h"
 #include "Element.h"
+#include "HTMLInputElement.h"
 #include "TextIterator.h"
 #include "VisibleUnits.h"
 #include "htmlediting.h"
@@ -233,10 +234,10 @@ void VisibleSelection::appendTrailingWhitespace()
     if (!searchRange)
         return;
 
-    CharacterIterator charIt(searchRange.get(), TextIteratorEmitsCharactersBetweenAllVisiblePositions);
+    CharacterIterator charIt(*searchRange, TextIteratorEmitsCharactersBetweenAllVisiblePositions);
 
-    for (; charIt.length(); charIt.advance(1)) {
-        UChar c = charIt.characters()[0];
+    for (; !charIt.atEnd() && charIt.text().length(); charIt.advance(1)) {
+        UChar c = charIt.text()[0];
         if ((!isSpaceOrNewline(c) && c != noBreakSpace) || c == '\n')
             break;
         m_end = charIt.range()->endPosition();
@@ -484,7 +485,7 @@ static Position adjustPositionForEnd(const Position& currentPosition, Node* star
         return positionBeforeNode(ancestor);
     }
 
-    if (Node* lastChild = treeScope.rootNode()->lastChild())
+    if (Node* lastChild = treeScope.rootNode().lastChild())
         return positionAfterNode(lastChild);
 
     return Position();
@@ -502,7 +503,7 @@ static Position adjustPositionForStart(const Position& currentPosition, Node* en
         return positionAfterNode(ancestor);
     }
 
-    if (Node* firstChild = treeScope.rootNode()->firstChild())
+    if (Node* firstChild = treeScope.rootNode().firstChild())
         return positionBeforeNode(firstChild);
 
     return Position();
@@ -664,6 +665,12 @@ Element* VisibleSelection::rootEditableElement() const
 Node* VisibleSelection::nonBoundaryShadowTreeRootNode() const
 {
     return start().deprecatedNode() ? start().deprecatedNode()->nonBoundaryShadowTreeRootNode() : 0;
+}
+
+bool VisibleSelection::isInPasswordField() const
+{
+    HTMLTextFormControlElement* textControl = enclosingTextFormControl(start());
+    return textControl && isHTMLInputElement(textControl) && toHTMLInputElement(textControl)->isPasswordField();
 }
 
 #ifndef NDEBUG

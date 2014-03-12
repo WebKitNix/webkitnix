@@ -30,6 +30,7 @@
 #include "webkitwebinspectorprivate.h"
 #include "webkitwebview.h"
 #include "webkitwebviewprivate.h"
+#include <inspector/InspectorAgentBase.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
@@ -156,7 +157,7 @@ bool InspectorClient::sendMessageToFrontend(const String& message)
 }
 
 InspectorFrontendClient::InspectorFrontendClient(WebKitWebView* inspectedWebView, WebKitWebView* inspectorWebView, WebKitWebInspector* webInspector, Page* inspectorPage, InspectorClient* inspectorClient)
-    : InspectorFrontendClientLocal(&core(inspectedWebView)->inspectorController(), inspectorPage, adoptPtr(new InspectorFrontendSettingsGtk()))
+    : InspectorFrontendClientLocal(&core(inspectedWebView)->inspectorController(), inspectorPage, std::make_unique<InspectorFrontendSettingsGtk>())
     , m_inspectorWebView(inspectorWebView)
     , m_inspectedWebView(inspectedWebView)
     , m_webInspector(webInspector)
@@ -189,7 +190,7 @@ void InspectorFrontendClient::destroyInspectorWindow(bool notifyInspectorControl
     }
 
     if (notifyInspectorController)
-        core(m_inspectedWebView)->inspectorController().disconnectFrontend();
+        core(m_inspectedWebView)->inspectorController().disconnectFrontend(Inspector::InspectorDisconnectReason::InspectorDestroyed);
 
     if (m_inspectorClient)
         m_inspectorClient->releaseFrontendPage();

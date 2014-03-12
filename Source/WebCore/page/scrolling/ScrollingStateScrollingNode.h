@@ -50,8 +50,9 @@ public:
     virtual ~ScrollingStateScrollingNode();
 
     enum ChangedProperty {
-        ViewportRect = NumStateNodeBits,
+        ViewportSize = NumStateNodeBits,
         TotalContentsSize,
+        ScrollPosition,
         ScrollOrigin,
         ScrollableAreaParams,
         FrameScaleFactor,
@@ -59,6 +60,7 @@ public:
         WheelEventHandlerCount,
         ReasonsForSynchronousScrolling,
         RequestedScrollPosition,
+        ScrolledContentsLayer,
         CounterScrollingLayer,
         HeaderHeight,
         FooterHeight,
@@ -68,11 +70,14 @@ public:
         BehaviorForFixedElements
     };
 
-    const IntRect& viewportRect() const { return m_viewportRect; }
-    void setViewportRect(const IntRect&);
+    const FloatSize& viewportSize() const { return m_viewportSize; }
+    void setViewportSize(const FloatSize&);
 
     const IntSize& totalContentsSize() const { return m_totalContentsSize; }
     void setTotalContentsSize(const IntSize&);
+
+    const FloatPoint& scrollPosition() const { return m_scrollPosition; }
+    void setScrollPosition(const FloatPoint&);
 
     const IntPoint& scrollOrigin() const { return m_scrollOrigin; }
     void setScrollOrigin(const IntPoint&);
@@ -95,14 +100,19 @@ public:
     ScrollBehaviorForFixedElements scrollBehaviorForFixedElements() const { return m_behaviorForFixed; }
     void setScrollBehaviorForFixedElements(ScrollBehaviorForFixedElements);
 
-    const IntPoint& requestedScrollPosition() const { return m_requestedScrollPosition; }
-    void setRequestedScrollPosition(const IntPoint&, bool representsProgrammaticScroll);
-
+    const FloatPoint& requestedScrollPosition() const { return m_requestedScrollPosition; }
+    bool requestedScrollPositionRepresentsProgrammaticScroll() const { return m_requestedScrollPositionRepresentsProgrammaticScroll; }
+    void setRequestedScrollPosition(const FloatPoint&, bool representsProgrammaticScroll);
+    
     int headerHeight() const { return m_headerHeight; }
     void setHeaderHeight(int);
 
     int footerHeight() const { return m_footerHeight; }
     void setFooterHeight(int);
+
+    // This is a layer with the contents that move (only used for overflow:scroll).
+    const LayerRepresentation& scrolledContentsLayer() const { return m_scrolledContentsLayer; }
+    void setScrolledContentsLayer(const LayerRepresentation&);
 
     // This is a layer moved in the opposite direction to scrolling, for example for background-attachment:fixed
     const LayerRepresentation& counterScrollingLayer() const { return m_counterScrollingLayer; }
@@ -116,13 +126,11 @@ public:
     const LayerRepresentation& footerLayer() const { return m_footerLayer; }
     void setFooterLayer(const LayerRepresentation&);
 
-#if PLATFORM(MAC) && !PLATFORM(IOS)
-    ScrollbarPainter verticalScrollbarPainter() const { return m_verticalScrollbarPainter; }
-    ScrollbarPainter horizontalScrollbarPainter() const { return m_horizontalScrollbarPainter; }
+#if PLATFORM(MAC)
+    ScrollbarPainter verticalScrollbarPainter() const { return m_verticalScrollbarPainter.get(); }
+    ScrollbarPainter horizontalScrollbarPainter() const { return m_horizontalScrollbarPainter.get(); }
 #endif
     void setScrollbarPaintersFromScrollbars(Scrollbar* verticalScrollbar, Scrollbar* horizontalScrollbar);
-
-    bool requestedScrollPositionRepresentsProgrammaticScroll() const { return m_requestedScrollPositionRepresentsProgrammaticScroll; }
 
     virtual void dumpProperties(TextStream&, int indent) const override;
 
@@ -130,17 +138,19 @@ private:
     ScrollingStateScrollingNode(ScrollingStateTree&, ScrollingNodeID);
     ScrollingStateScrollingNode(const ScrollingStateScrollingNode&, ScrollingStateTree&);
 
+    LayerRepresentation m_scrolledContentsLayer;
     LayerRepresentation m_counterScrollingLayer;
     LayerRepresentation m_headerLayer;
     LayerRepresentation m_footerLayer;
 
-#if PLATFORM(MAC) && !PLATFORM(IOS)
-    ScrollbarPainter m_verticalScrollbarPainter;
-    ScrollbarPainter m_horizontalScrollbarPainter;
+#if PLATFORM(MAC)
+    RetainPtr<ScrollbarPainter> m_verticalScrollbarPainter;
+    RetainPtr<ScrollbarPainter> m_horizontalScrollbarPainter;
 #endif
 
-    IntRect m_viewportRect;
+    FloatSize m_viewportSize;
     IntSize m_totalContentsSize;
+    FloatPoint m_scrollPosition;
     IntPoint m_scrollOrigin;
     
     ScrollableAreaParameters m_scrollableAreaParameters;
@@ -151,7 +161,7 @@ private:
     ScrollBehaviorForFixedElements m_behaviorForFixed;
     int m_headerHeight;
     int m_footerHeight;
-    IntPoint m_requestedScrollPosition;
+    FloatPoint m_requestedScrollPosition;
     bool m_requestedScrollPositionRepresentsProgrammaticScroll;
 };
 

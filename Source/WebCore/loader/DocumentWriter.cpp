@@ -104,7 +104,7 @@ void DocumentWriter::begin()
 
 PassRefPtr<Document> DocumentWriter::createDocument(const URL& url)
 {
-    if (!m_frame->loader().stateMachine()->isDisplayingInitialEmptyDocument() && m_frame->loader().client().shouldAlwaysUsePluginDocument(m_mimeType))
+    if (!m_frame->loader().stateMachine().isDisplayingInitialEmptyDocument() && m_frame->loader().client().shouldAlwaysUsePluginDocument(m_mimeType))
         return PluginDocument::create(m_frame, url);
 #if PLATFORM(IOS)
     if (equalIgnoringCase(m_mimeType, "application/pdf"))
@@ -112,7 +112,7 @@ PassRefPtr<Document> DocumentWriter::createDocument(const URL& url)
 #endif
     if (!m_frame->loader().client().hasHTMLView())
         return Document::createNonRenderedPlaceholder(m_frame, url);
-    return DOMImplementation::createDocument(m_mimeType, m_frame, url, m_frame->inViewSourceMode());
+    return DOMImplementation::createDocument(m_mimeType, m_frame, url);
 }
 
 void DocumentWriter::begin(const URL& urlReference, bool dispatch, Document* ownerDocument)
@@ -133,7 +133,7 @@ void DocumentWriter::begin(const URL& urlReference, bool dispatch, Document* own
 
     // FIXME: Do we need to consult the content security policy here about blocked plug-ins?
 
-    bool shouldReuseDefaultView = m_frame->loader().stateMachine()->isDisplayingInitialEmptyDocument() && m_frame->document()->isSecureTransitionTo(url);
+    bool shouldReuseDefaultView = m_frame->loader().stateMachine().isDisplayingInitialEmptyDocument() && m_frame->document()->isSecureTransitionTo(url);
     if (shouldReuseDefaultView)
         document->takeDOMWindowFrom(m_frame->document());
     else

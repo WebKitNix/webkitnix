@@ -87,6 +87,7 @@ my $configurationProductDir;
 my $sourceDir;
 my $currentSVNRevision;
 my $debugger;
+my $iPhoneSimulatorVersion;
 my $nmPath;
 my $osXVersion;
 my $generateDsym;
@@ -374,8 +375,8 @@ sub argumentsForConfiguration()
     push(@args, '--release') if ($configuration =~ "^Release");
     push(@args, '--32-bit') if ($architecture ne "x86_64" and !isWin64());
     push(@args, '--64-bit') if (isWin64());
-    push(@args, '--gtk') if isGtkAutotools();
-    push(@args, '--gtkcmake') if isGtkCMake();
+    push(@args, '--gtkautotools') if isGtkAutotools();
+    push(@args, '--gtk') if isGtkCMake();
     push(@args, '--efl') if isEfl();
     push(@args, '--nix') if isNix();
     push(@args, '--wincairo') if isWinCairo();
@@ -864,13 +865,30 @@ sub checkForArgumentAndRemoveFromARGV($)
     return checkForArgumentAndRemoveFromArrayRef($argToCheck, \@ARGV);
 }
 
+sub checkForArgumentAndRemoveFromArrayRefGettingValue($$$)
+{
+    my ($argToCheck, $valueRef, $arrayRef) = @_;
+    my $argumentStartRegEx = qr#^$argToCheck(?:=\S|$)#;
+    my $i = 0;
+    for (; $i < @$arrayRef; ++$i) {
+        last if $arrayRef->[$i] =~ $argumentStartRegEx;
+    }
+    if ($i >= @$arrayRef) {
+        return $$valueRef = undef;
+    }
+    my ($key, $value) = split("=", $arrayRef->[$i]);
+    splice(@$arrayRef, $i, 1);
+    if (defined($value)) {
+        # e.g. --sdk=iphonesimulator
+        return $$valueRef = $value;
+    }
+    return $$valueRef = splice(@$arrayRef, $i, 1); # e.g. --sdk iphonesimulator
+}
+
 sub checkForArgumentAndRemoveFromARGVGettingValue($$)
 {
     my ($argToCheck, $valueRef) = @_;
-    my @matchingIndices = findMatchingArguments($argToCheck, \@ARGV);
-    return 0 if ($#matchingIndices != 1);
-    splice(@ARGV, $matchingIndices[0], 1);
-    return $$valueRef = splice(@ARGV, $matchingIndices[0], 1);
+    return checkForArgumentAndRemoveFromArrayRefGettingValue($argToCheck, $valueRef, \@ARGV);
 }
 
 sub findMatchingArguments($$)
@@ -932,7 +950,7 @@ sub isEfl()
 sub determineIsGtkCMake()
 {
     return if defined($isGtkCMake);
-    $isGtkCMake = checkForArgumentAndRemoveFromARGV("--gtkcmake");
+    $isGtkCMake = checkForArgumentAndRemoveFromARGV("--gtk");
 }
 
 sub isGtkCMake()
@@ -967,7 +985,7 @@ sub isGtk()
 sub determineIsGtkAutotools()
 {
     return if defined($isGtkAutotools);
-    $isGtkAutotools = checkForArgumentAndRemoveFromARGV("--gtk");
+    $isGtkAutotools = checkForArgumentAndRemoveFromARGV("--gtkautotools");
 }
 
 sub isWinCE()
@@ -1108,17 +1126,17 @@ sub isCrossCompilation()
 
 sub isAppleWebKit()
 {
-    return !(isGtk() or isEfl() or isWinCE() or isNix());
+    return isAppleMacWebKit() || isAppleWinWebKit();
 }
 
 sub isAppleMacWebKit()
 {
-    return isAppleWebKit() && isDarwin();
+    return isDarwin() && !isGtk();
 }
 
 sub isAppleWinWebKit()
 {
-    return isAppleWebKit() && (isCygwin() || isWindows()) && !isWinCairo();
+    return (isCygwin() || isWindows()) && !isWinCairo() && !isGtk() && !isWinCE();
 }
 
 sub willUseIOSDeviceSDKWhenBuilding()
@@ -1152,6 +1170,31 @@ sub isPerianInstalled()
     }
 
     return 0;
+}
+
+sub determineIPhoneSimulatorVersion()
+{
+    return if $iPhoneSimulatorVersion;
+
+    if (!isIOSWebKit()) {
+        $iPhoneSimulatorVersion = -1;
+        return;
+    }
+
+    my $version = `/usr/local/bin/psw_vers -productVersion`;
+    my @splitVersion = split(/\./, $version);
+    @splitVersion >= 2 or die "Invalid version $version";
+    $iPhoneSimulatorVersion = {
+            "major" => $splitVersion[0],
+            "minor" => $splitVersion[1],
+            "subminor" => defined($splitVersion[2] ? $splitVersion[2] : 0),
+    };
+}
+
+sub iPhoneSimulatorVersion()
+{
+    determineIPhoneSimulatorVersion();
+    return $iPhoneSimulatorVersion;
 }
 
 sub determineNmPath()
@@ -1310,8 +1353,10 @@ sub launcherName()
 {
     if (isGtk()) {
         return "GtkLauncher";
-    } elsif (isAppleWebKit()) {
+    } elsif (isAppleMacWebKit()) {
         return "Safari";
+    } elsif (isAppleWinWebKit()) {
+        return "WinLauncher";
     } elsif (isEfl()) {
         return "EWebLauncher/MiniBrowser";
     } elsif (isWinCE()) {
@@ -1861,14 +1906,14 @@ sub buildAutotoolsProject($@)
 
     chdir ".." or die;
 
-    if ($project eq 'WebKit' && !isCrossCompilation() && !($noWebKit1 && $noWebKit2)) {
-        my @docGenerationOptions = ("$sourceDir/Tools/gtk/generate-gtkdoc", "--skip-html");
-        push(@docGenerationOptions, productDir());
+    if (!checkForArgumentAndRemoveFromARGV("--disable-gtk-doc")) {
+        if ($project eq 'WebKit' && !isCrossCompilation() && !($noWebKit1 && $noWebKit2)) {
+            my @docGenerationOptions = ("$sourceDir/Tools/gtk/generate-gtkdoc", "--skip-html");
+            unshift(@docGenerationOptions, jhbuildWrapperPrefixIfNeeded());
 
-        unshift(@docGenerationOptions, jhbuildWrapperPrefixIfNeeded());
-
-        if (system(@docGenerationOptions)) {
-            die "\n gtkdoc did not build without warnings\n";
+            if (system(@docGenerationOptions)) {
+                die "\n gtkdoc did not build without warnings\n";
+            }
         }
     }
 
@@ -1949,6 +1994,22 @@ sub removeCMakeCache(@)
     }
 }
 
+sub canUseNinja(@)
+{
+    system('ninja --version > /dev/null');
+    return $? == 0;
+}
+
+sub cmakeGeneratedBuildfile(@)
+{
+    my ($willUseNinja) = @_;
+    if ($willUseNinja) {
+        return File::Spec->catfile(baseProductDir(), configuration(), "build.ninja")
+    } else {
+        return File::Spec->catfile(baseProductDir(), configuration(), "Makefile")
+    }
+}
+
 sub generateBuildSystemFromCMakeProject
 {
     my ($port, $prefixPath, @cmakeArgs, $additionalCMakeArgs) = @_;
@@ -1959,7 +2020,8 @@ sub generateBuildSystemFromCMakeProject
     chdir($buildPath) or die;
 
     # For GTK+ we try to be smart about when to rerun cmake, so that we can have faster incremental builds.
-    if (isGtk() && -e cmakeCachePath()) {
+    my $willUseNinja = isGtk() && canUseNinja();
+    if (isGtk() && -e cmakeCachePath() && -e cmakeGeneratedBuildfile($willUseNinja)) {
         return 0;
     }
 
@@ -1972,6 +2034,12 @@ sub generateBuildSystemFromCMakeProject
     } elsif ($config =~ /debug/i) {
         push @args, "-DCMAKE_BUILD_TYPE=Debug";
     }
+
+    if ($willUseNinja) {
+        push @args, "-G";
+        push @args, "Ninja";
+    }
+
     # Don't warn variables which aren't used by cmake ports.
     push @args, "--no-warn-unused-cli";
     push @args, @cmakeArgs if @cmakeArgs;
@@ -2003,13 +2071,23 @@ sub buildCMakeGeneratedProject($)
     if (! -d $buildPath) {
         die "Must call generateBuildSystemFromCMakeProject() before building CMake project.";
     }
+
+    my $command = "cmake";
     my @args = ("--build", $buildPath, "--config", $config);
     push @args, ("--", $makeArgs) if $makeArgs;
+
+    # GTK uses a build script to preserve colors and pretty-printing.
+    if (isGtk()) {
+        chdir "$buildPath" or die;
+        $command = "$buildPath/build.sh";
+        @args = ($makeArgs);
+    }
 
     # We call system("cmake @args") instead of system("cmake", @args) so that @args is
     # parsed for shell metacharacters. In particular, $makeArgs may contain such metacharacters.
     my $wrapper = join(" ", jhbuildWrapperPrefixIfNeeded()) . " ";
-    return system($wrapper . "cmake @args");
+    return system($wrapper . "$command @args");
+
 }
 
 sub cleanCMakeGeneratedProject()
@@ -2035,6 +2113,10 @@ sub buildCMakeProjectOrExit($$$$@)
 
     if (isNix() && checkForArgumentAndRemoveFromARGV("--update-nix")) {
         system("perl", "$sourceDir/Tools/Scripts/update-webkitnix-libs") == 0 or die $!;
+    }
+
+    if (isGtk() && checkForArgumentAndRemoveFromARGV("--update-gtk")) {
+        system("perl", "$sourceDir/Tools/Scripts/update-webkitgtk-libs") == 0 or die $!;
     }
 
     $returnCode = exitStatus(generateBuildSystemFromCMakeProject($port, $prefixPath, @cmakeArgs));
@@ -2110,7 +2192,8 @@ sub setPathForRunningWebKitApp
         $env->{PATH} = join(':', productDir(), dirname(installedSafariPath()), appleApplicationSupportPath(), $env->{PATH} || "");
     } elsif (isWinCairo()) {
         my $winCairoBin = sourceDir() . "/WebKitLibraries/win/" . (isWin64() ? "bin64/" : "bin32/");
-        $env->{PATH} = join(':', productDir(), $winCairoBin , $env->{PATH} || "");
+        my $gstreamerBin = isWin64() ? $ENV{"GSTREAMER_1_0_ROOT_X86_64"} . "bin" : $ENV{"GSTREAMER_1_0_ROOT_X86"} . "bin";
+        $env->{PATH} = join(':', productDir(), $winCairoBin, $gstreamerBin, $env->{PATH} || "");
     }
 }
 
@@ -2142,7 +2225,11 @@ EOF
 sub argumentsForRunAndDebugMacWebKitApp()
 {
     my @args = ();
-    push @args, ("-ApplePersistenceIgnoreState", "YES") if checkForArgumentAndRemoveFromARGV("--no-saved-state");
+    if (checkForArgumentAndRemoveFromARGV("--no-saved-state")) {
+        push @args, ("-ApplePersistenceIgnoreStateQuietly", "YES");
+        # FIXME: Don't set ApplePersistenceIgnoreState once all supported OS versions respect ApplePersistenceIgnoreStateQuietly (rdar://15032886).
+        push @args, ("-ApplePersistenceIgnoreState", "YES");
+    }
     push @args, ("-WebKit2UseXPCServiceForWebProcess", "YES") if shouldUseXPCServiceForWebProcess();
     unshift @args, @ARGV;
 
@@ -2279,15 +2366,6 @@ sub debugWebKitTestRunner
 {
     if (isAppleMacWebKit()) {
         execMacWebKitAppForDebugging(File::Spec->catfile(productDir(), "WebKitTestRunner"));
-    }
-
-    return 1;
-}
-
-sub runTestWebKitAPI
-{
-    if (isAppleMacWebKit()) {
-        return runMacWebKitApp(File::Spec->catfile(productDir(), "TestWebKitAPI"));
     }
 
     return 1;

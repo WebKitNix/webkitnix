@@ -26,6 +26,8 @@
 #import "config.h"
 #import "WKView.h"
 
+#if PLATFORM(MAC)
+
 #if USE(DICTATION_ALTERNATIVES)
 #import <AppKit/NSTextAlternatives.h>
 #import <AppKit/NSAttributedString.h>
@@ -50,13 +52,18 @@
 #import "TextCheckerState.h"
 #import "TiledCoreAnimationDrawingAreaProxy.h"
 #import "ViewGestureController.h"
+#import "ViewSnapshotStore.h"
 #import "WKAPICast.h"
 #import "WKFullScreenWindowController.h"
 #import "WKPrintingView.h"
+#import "WKProcessPoolInternal.h"
 #import "WKStringCF.h"
 #import "WKTextInputWindowController.h"
+#import "WKThumbnailView.h"
+#import "WKThumbnailViewInternal.h"
 #import "WKViewInternal.h"
 #import "WKViewPrivate.h"
+#import "WebBackForwardList.h"
 #import "WebContext.h"
 #import "WebEventFactory.h"
 #import "WebKit2Initialize.h"
@@ -103,15 +110,23 @@
 - (void)_setCurrentEvent:(NSEvent *)event;
 @end
 
-@interface NSObject (WKNSTextInputContextDetails)
-- (BOOL)wantsToHandleMouseEvents;
-- (BOOL)handleMouseEvent:(NSEvent *)event;
-@end
-
 @interface NSWindow (WKNSWindowDetails)
 - (NSRect)_intersectBottomCornersWithRect:(NSRect)viewRect;
 - (void)_maskRoundedBottomCorners:(NSRect)clipRect;
 @end
+
+#if defined(__has_include) && __has_include(<CoreGraphics/CoreGraphicsPrivate.h>)
+#import <CoreGraphics/CoreGraphicsPrivate.h>
+#import <CoreGraphics/CGSCapture.h>
+#endif
+
+extern "C" {
+typedef uint32_t CGSConnectionID;
+typedef uint32_t CGSWindowID;
+CGSConnectionID CGSMainConnectionID(void);
+CGError CGSGetScreenRectForWindow(CGSConnectionID cid, CGSWindowID wid, CGRect *rect);
+CGError CGSCaptureWindowsContentsToRect(CGSConnectionID cid, const CGSWindowID windows[], uint32_t windowCount, CGRect rect, CGImageRef *outImage);
+};
 
 using namespace WebKit;
 using namespace WebCore;
@@ -131,19 +146,14 @@ struct WKViewInterpretKeyEventsParameters {
     Vector<KeypressCommand>* commands;
 };
 
-@interface WKView ()
-- (void)_accessibilityRegisterUIProcessTokens;
-- (void)_disableComplexTextInputIfNecessary;
-- (float)_intrinsicDeviceScaleFactor;
-- (void)_postFakeMouseMovedEventForFlagsChangedEvent:(NSEvent *)flagsChangedEvent;
-- (void)_setDrawingAreaSize:(NSSize)size;
-- (void)_setPluginComplexTextInputState:(PluginComplexTextInputState)pluginComplexTextInputState;
-@end
-
 @interface WKViewData : NSObject {
 @public
     std::unique_ptr<PageClientImpl> _pageClient;
     RefPtr<WebPageProxy> _page;
+
+#if WK_API_ENABLED
+    RetainPtr<WKBrowsingContextController> _browsingContextController;
+#endif
 
     // For ToolTips.
     NSToolTipTag _lastToolTipTag;
@@ -199,12 +209,6 @@ struct WKViewInterpretKeyEventsParameters {
     BOOL _needsViewFrameInWindowCoordinates;
     BOOL _didScheduleWindowAndViewFrameUpdate;
 
-    // Whether the containing window of the WKView has a valid backing store.
-    // The window server invalidates the backing store whenever the window is resized or minimized.
-    // We use this flag to determine when we need to paint the background (white or clear)
-    // when the web process is unresponsive or takes too long to paint.
-    BOOL _windowHasValidBackingStore;
-
     RetainPtr<NSColorSpace> _colorSpace;
 
     RefPtr<WebCore::Image> _promisedImage;
@@ -219,6 +223,11 @@ struct WKViewInterpretKeyEventsParameters {
 
     std::unique_ptr<ViewGestureController> _gestureController;
     BOOL _allowsMagnification;
+    BOOL _allowsBackForwardNavigationGestures;
+
+#if WK_API_ENABLED
+    WKThumbnailView *_thumbnailView;
+#endif
 }
 
 @end
@@ -267,6 +276,9 @@ struct WKViewInterpretKeyEventsParameters {
 {
     _data->_page->close();
 
+#if WK_API_ENABLED
+    ASSERT(!_data->_thumbnailView);
+#endif
     ASSERT(!_data->_inSecureInputState);
 
     [_data release];
@@ -284,7 +296,10 @@ struct WKViewInterpretKeyEventsParameters {
 
 - (WKBrowsingContextController *)browsingContextController
 {
-    return wrapper(*_data->_page);
+    if (!_data->_browsingContextController)
+        _data->_browsingContextController = [[WKBrowsingContextController alloc] _initWithPageRef:toAPI(_data->_page.get())];
+
+    return _data->_browsingContextController.get();
 }
 
 #endif // WK_API_ENABLED
@@ -330,7 +345,7 @@ struct WKViewInterpretKeyEventsParameters {
         NSEvent *keyboardEvent = nil;
         if ([event type] == NSKeyDown || [event type] == NSKeyUp)
             keyboardEvent = event;
-        _data->_page->setInitialFocus(direction == NSSelectingNext, keyboardEvent != nil, NativeWebKeyboardEvent(keyboardEvent, self));
+        _data->_page->setInitialFocus(direction == NSSelectingNext, keyboardEvent != nil, NativeWebKeyboardEvent(keyboardEvent, false, Vector<KeypressCommand>()));
     }
     return YES;
 }
@@ -391,14 +406,12 @@ struct WKViewInterpretKeyEventsParameters {
     if (_data->_useContentPreparationRectForVisibleRect)
         exposedRect = NSUnionRect(_data->_contentPreparationRect, exposedRect);
 
-    _data->_page->drawingArea()->setExposedRect(_data->_clipsToVisibleRect ? FloatRect(exposedRect) : FloatRect::infiniteRect());
+    if (auto drawingArea = _data->_page->drawingArea())
+        drawingArea->setExposedRect(_data->_clipsToVisibleRect ? FloatRect(exposedRect) : FloatRect::infiniteRect());
 }
 
 - (void)setFrameSize:(NSSize)size
 {
-    if (!NSEqualSizes(size, [self frame].size))
-        _data->_windowHasValidBackingStore = NO;
-
     [super setFrameSize:size];
 
     if (![self frameSizeUpdatesDisabled]) {
@@ -427,8 +440,11 @@ struct WKViewInterpretKeyEventsParameters {
         if (_data->_needsViewFrameInWindowCoordinates)
             viewFrameInWindowCoordinates = [self convertRect:self.frame toView:nil];
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         if (WebCore::AXObjectCache::accessibilityEnabled())
             accessibilityPosition = [[self accessibilityAttributeValue:NSAccessibilityPositionAttribute] pointValue];
+#pragma clang diagnostic pop
 
         _data->_page->windowAndViewFramesChanged(viewFrameInWindowCoordinates, accessibilityPosition);
     });
@@ -709,18 +725,6 @@ static NSToolbarItem *toolbarItem(id <NSValidatedUserInterfaceItem> item)
     return (NSToolbarItem *)item;
 }
 
-static void validateCommandCallback(WKStringRef commandName, bool isEnabled, int32_t state, WKErrorRef error, void* context)
-{
-    // If the process exits before the command can be validated, we'll be called back with an error.
-    if (error)
-        return;
-    
-    WKView* wkView = static_cast<WKView*>(context);
-    ASSERT(wkView);
-    
-    [wkView _setUserInterfaceItemState:nsStringFromWebCoreString(toImpl(commandName)->string()) enabled:isEnabled state:state];
-}
-
 - (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)item
 {
     SEL action = [item action];
@@ -812,7 +816,13 @@ static void validateCommandCallback(WKStringRef commandName, bool isEnabled, int
         // If we are not already awaiting validation for this command, start the asynchronous validation process.
         // FIXME: Theoretically, there is a race here; when we get the answer it might be old, from a previous time
         // we asked for the same command; there is no guarantee the answer is still valid.
-        _data->_page->validateCommand(commandName, ValidateCommandCallback::create(self, validateCommandCallback));
+        _data->_page->validateCommand(commandName, ValidateCommandCallback::create([self](bool error, StringImpl* commandName, bool isEnabled, int32_t state) {
+            // If the process exits before the command can be validated, we'll be called back with an error.
+            if (error)
+                return;
+            
+            [self _setUserInterfaceItemState:nsStringFromWebCoreString(commandName) enabled:isEnabled state:state];
+        }));
     }
 
     // Treat as enabled until we get the result back from the web process and _setUserInterfaceItemState is called.
@@ -821,20 +831,16 @@ static void validateCommandCallback(WKStringRef commandName, bool isEnabled, int
     return YES;
 }
 
-static void speakString(WKStringRef string, WKErrorRef error, void*)
-{
-    if (error)
-        return;
-    if (!string)
-        return;
-
-    NSString *convertedString = toImpl(string)->string();
-    [NSApp speakString:convertedString];
-}
-
 - (IBAction)startSpeaking:(id)sender
 {
-    _data->_page->getSelectionOrContentsAsString(StringCallback::create(0, speakString));
+    _data->_page->getSelectionOrContentsAsString(StringCallback::create([self](bool error, StringImpl* string) {
+        if (error)
+            return;
+        if (!string)
+            return;
+
+        [NSApp speakString:*string];
+    }));
 }
 
 - (IBAction)stopSpeaking:(id)sender
@@ -1046,6 +1052,17 @@ static void speakString(WKStringRef string, WKErrorRef error, void*)
 
 // Events
 
+-(BOOL)shouldIgnoreMouseEvents
+{
+    // FIXME: This check is surprisingly specific. Are there any other cases where we need to block mouse events?
+    // Do we actually need to in thumbnail view? And if we do, what about non-mouse events?
+#if WK_API_ENABLED
+    if (_data->_thumbnailView)
+        return YES;
+#endif
+    return NO;
+}
+
 // Override this so that AppKit will send us arrow keys as key down events so we can
 // support them via the key bindings mechanism.
 - (BOOL)_wantsKeyDownForEvent:(NSEvent *)event
@@ -1067,6 +1084,8 @@ static void speakString(WKStringRef string, WKErrorRef error, void*)
 #define NATIVE_MOUSE_EVENT_HANDLER(Selector) \
     - (void)Selector:(NSEvent *)theEvent \
     { \
+        if ([self shouldIgnoreMouseEvents]) \
+            return; \
         if ([[self inputContext] handleEvent:theEvent]) { \
             LOG(TextInput, "%s was handled by text input context", String(#Selector).substring(0, String(#Selector).find("Internal")).ascii().data()); \
             return; \
@@ -1091,19 +1110,34 @@ NATIVE_MOUSE_EVENT_HANDLER(rightMouseUp)
 
 #undef NATIVE_MOUSE_EVENT_HANDLER
 
-#define NATIVE_EVENT_HANDLER(Selector, Type) \
-    - (void)Selector:(NSEvent *)theEvent \
-    { \
-        NativeWeb##Type##Event webEvent = NativeWeb##Type##Event(theEvent, self); \
-        _data->_page->handle##Type##Event(webEvent); \
+- (void)_ensureGestureController
+{
+    if (_data->_gestureController)
+        return;
+
+    _data->_gestureController = std::make_unique<ViewGestureController>(*_data->_page);
+}
+
+- (void)scrollWheel:(NSEvent *)event
+{
+    if ([self shouldIgnoreMouseEvents])
+        return;
+
+    if (_data->_allowsBackForwardNavigationGestures) {
+        [self _ensureGestureController];
+        if (_data->_gestureController->handleScrollWheelEvent(event))
+            return;
     }
 
-NATIVE_EVENT_HANDLER(scrollWheel, Wheel)
-
-#undef NATIVE_EVENT_HANDLER
+    NativeWebWheelEvent webEvent = NativeWebWheelEvent(event, self);
+    _data->_page->handleWheelEvent(webEvent);
+}
 
 - (void)mouseMoved:(NSEvent *)event
 {
+    if ([self shouldIgnoreMouseEvents])
+        return;
+
     // When a view is first responder, it gets mouse moved events even when the mouse is outside its visible rect.
     if (self == [[self window] firstResponder] && !NSPointInRect([self convertPoint:[event locationInWindow] fromView:nil], [self visibleRect]))
         return;
@@ -1113,6 +1147,9 @@ NATIVE_EVENT_HANDLER(scrollWheel, Wheel)
 
 - (void)mouseDown:(NSEvent *)event
 {
+    if ([self shouldIgnoreMouseEvents])
+        return;
+
     [self _setMouseDownEvent:event];
     _data->_ignoringMouseDraggedEvents = NO;
     [self mouseDownInternal:event];
@@ -1120,12 +1157,18 @@ NATIVE_EVENT_HANDLER(scrollWheel, Wheel)
 
 - (void)mouseUp:(NSEvent *)event
 {
+    if ([self shouldIgnoreMouseEvents])
+        return;
+
     [self _setMouseDownEvent:nil];
     [self mouseUpInternal:event];
 }
 
 - (void)mouseDragged:(NSEvent *)event
 {
+    if ([self shouldIgnoreMouseEvents])
+        return;
+
     if (_data->_ignoringMouseDraggedEvents)
         return;
     [self mouseDraggedInternal:event];
@@ -1182,6 +1225,7 @@ NATIVE_EVENT_HANDLER(scrollWheel, Wheel)
     if (parameters && !isFromInputMethod) {
         KeypressCommand command(NSStringFromSelector(selector));
         parameters->commands->append(command);
+        LOG(TextInput, "...stored");
         _data->_page->registerKeypressCommandName(command.commandName);
     } else {
         // FIXME: Send the command to Editor synchronously and only send it along the
@@ -1252,60 +1296,46 @@ NATIVE_EVENT_HANDLER(scrollWheel, Wheel)
         parameters->eventInterpretationHadSideEffects |= eventHandled;
 }
 
-- (BOOL)_handleStyleKeyEquivalent:(NSEvent *)event
-{
-    if (!_data->_page->editorState().isContentEditable)
-        return NO;
-
-    if (([event modifierFlags] & NSDeviceIndependentModifierFlagsMask) != NSCommandKeyMask)
-        return NO;
-    
-    // Here we special case cmd+b and cmd+i but not cmd+u, for historic reason.
-    // This should not be changed, since it could break some Mac applications that
-    // rely on this inherent behavior.
-    // See https://bugs.webkit.org/show_bug.cgi?id=24943
-    
-    NSString *string = [event characters];
-    if ([string caseInsensitiveCompare:@"b"] == NSOrderedSame) {
-        _data->_page->executeEditCommand("ToggleBold");
-        return YES;
-    }
-    if ([string caseInsensitiveCompare:@"i"] == NSOrderedSame) {
-        _data->_page->executeEditCommand("ToggleItalic");
-        return YES;
-    }
-    
-    return NO;
-}
-
 - (BOOL)performKeyEquivalent:(NSEvent *)event
 {
     // There's a chance that responding to this event will run a nested event loop, and
     // fetching a new event might release the old one. Retaining and then autoreleasing
     // the current event prevents that from causing a problem inside WebKit or AppKit code.
     [[event retain] autorelease];
-    
-    BOOL eventWasSentToWebCore = (_data->_keyDownEventBeingResent == event);
 
-    if (!eventWasSentToWebCore)
-        [self _disableComplexTextInputIfNecessary];
+    // We get Esc key here after processing either Esc or Cmd+period. The former starts as a keyDown, and the latter starts as a key equivalent,
+    // but both get transformed to a cancelOperation: command, executing which passes an Esc key event to -performKeyEquivalent:.
+    // Don't interpret this event again, avoiding re-entrancy and infinite loops.
+    if ([[event charactersIgnoringModifiers] isEqualToString:@"\e"] && !([event modifierFlags] & NSDeviceIndependentModifierFlagsMask))
+        return [super performKeyEquivalent:event];
+
+    // If we are already re-sending the event, then WebCore has already seen it, no need for custom processing.
+    BOOL eventWasSentToWebCore = (_data->_keyDownEventBeingResent == event);
+    if (eventWasSentToWebCore)
+        return [super performKeyEquivalent:event];
+
+    ASSERT(event == [NSApp currentEvent]);
+
+    [self _disableComplexTextInputIfNecessary];
 
     // Pass key combos through WebCore if there is a key binding available for
     // this event. This lets web pages have a crack at intercepting key-modified keypresses.
-    // But don't do it if we have already handled the event.
-    // Pressing Esc results in a fake event being sent - don't pass it to WebCore.
-    if (!eventWasSentToWebCore && event == [NSApp currentEvent] && self == [[self window] firstResponder]) {
-        _data->_page->handleKeyboardEvent(NativeWebKeyboardEvent(event, self));
+    // FIXME: Why is the firstResponder check needed?
+    if (self == [[self window] firstResponder]) {
+        Vector<KeypressCommand> commands;
+        BOOL handledByInputMethod = [self _interpretKeyEvent:event savingCommandsTo:commands];
+        _data->_page->handleKeyboardEvent(NativeWebKeyboardEvent(event, handledByInputMethod, commands));
         return YES;
     }
     
-    return [self _handleStyleKeyEquivalent:event] || [super performKeyEquivalent:event];
+    return [super performKeyEquivalent:event];
 }
 
 - (void)keyUp:(NSEvent *)theEvent
 {
     LOG(TextInput, "keyUp:%p %@", theEvent, theEvent);
-    _data->_page->handleKeyboardEvent(NativeWebKeyboardEvent(theEvent, self));
+    // We don't interpret the keyUp event, as this breaks key bindings (see <https://bugs.webkit.org/show_bug.cgi?id=130100>).
+    _data->_page->handleKeyboardEvent(NativeWebKeyboardEvent(theEvent, false, Vector<KeypressCommand>()));
 }
 
 - (void)_disableComplexTextInputIfNecessary
@@ -1379,7 +1409,17 @@ NATIVE_EVENT_HANDLER(scrollWheel, Wheel)
         [super keyDown:theEvent];
         return;
     }
-    _data->_page->handleKeyboardEvent(NativeWebKeyboardEvent(theEvent, self));
+
+    Vector<KeypressCommand> commands;
+    BOOL handledByInputMethod = [self _interpretKeyEvent:theEvent savingCommandsTo:commands];
+    if (!commands.isEmpty()) {
+        // An input method may make several actions per keypress. For example, pressing Return with Korean IM both confirms it and sends a newline.
+        // IM-like actions are handled immediately (so the return value from UI process is true), but there are saved commands that
+        // should be handled like normal text input after DOM event dispatch.
+        handledByInputMethod = NO;
+    }
+
+    _data->_page->handleKeyboardEvent(NativeWebKeyboardEvent(theEvent, handledByInputMethod, commands));
 }
 
 - (void)flagsChanged:(NSEvent *)theEvent
@@ -1397,7 +1437,7 @@ NATIVE_EVENT_HANDLER(scrollWheel, Wheel)
     if (!keyCode || keyCode == 10 || keyCode == 63)
         return;
 
-    _data->_page->handleKeyboardEvent(NativeWebKeyboardEvent(theEvent, self));
+    _data->_page->handleKeyboardEvent(NativeWebKeyboardEvent(theEvent, false, Vector<KeypressCommand>()));
 }
 
 - (void)_executeSavedKeypressCommands
@@ -1642,13 +1682,7 @@ static void extractUnderlines(NSAttributedString *string, Vector<CompositionUnde
     
     NSRect resultRect = _data->_page->firstRectForCharacterRange(theRange.location, theRange.length);
     resultRect = [self convertRect:resultRect toView:nil];
-    
-    NSWindow *window = [self window];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    if (window)
-        resultRect.origin = [window convertBaseToScreen:resultRect.origin];
-#pragma clang diagnostic pop
+    resultRect = [self.window convertRectToScreen:resultRect];
 
     if (actualRange) {
         // FIXME: Update actualRange to match the range of first rect.
@@ -1809,10 +1843,6 @@ static void createSandboxExtensionsForFileUpload(NSPasteboard *pasteboard, Sandb
     return NSMouseInRect(localPoint, visibleThumbRect, [self isFlipped]);
 }
 
-// FIXME: Use AppKit constants for these when they are available.
-static NSString * const windowDidChangeBackingPropertiesNotification = @"NSWindowDidChangeBackingPropertiesNotification";
-static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOldScaleFactorKey";
-
 - (void)addWindowObserversForWindow:(NSWindow *)window
 {
     if (window) {
@@ -1833,7 +1863,7 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_windowDidOrderOnScreen:) 
                                                      name:@"_NSWindowDidBecomeVisible" object:window];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_windowDidChangeBackingProperties:)
-                                                     name:windowDidChangeBackingPropertiesNotification object:window];
+                                                     name:NSWindowDidChangeBackingPropertiesNotification object:window];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_windowDidChangeScreen:)
                                                      name:NSWindowDidChangeScreenNotification object:window];
 #if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
@@ -1858,7 +1888,7 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"NSWindowWillOrderOffScreenNotification" object:window];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"NSWindowDidOrderOffScreenNotification" object:window];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"_NSWindowDidBecomeVisible" object:window];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:windowDidChangeBackingPropertiesNotification object:window];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:NSWindowDidChangeBackingPropertiesNotification object:window];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:NSWindowDidChangeScreenNotification object:window];
 #if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
     [[NSNotificationCenter defaultCenter] removeObserver:self name:NSWindowDidChangeOcclusionStateNotification object:window];
@@ -1880,7 +1910,6 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 - (void)viewDidMoveToWindow
 {
     if ([self window]) {
-        _data->_windowHasValidBackingStore = NO;
         [self doWindowDidChangeScreen];
 
         ViewState::Flags viewStateChanges = ViewState::WindowIsActive | ViewState::IsVisible;
@@ -1947,7 +1976,6 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 
 - (void)_windowDidMiniaturize:(NSNotification *)notification
 {
-    _data->_windowHasValidBackingStore = NO;
     _data->_page->viewStateDidChange(ViewState::IsVisible);
 }
 
@@ -1963,8 +1991,6 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 
 - (void)_windowDidResize:(NSNotification *)notification
 {
-    _data->_windowHasValidBackingStore = NO;
-
     [self _updateWindowAndViewFrames];
 }
 
@@ -1980,12 +2006,11 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 
 - (void)_windowDidChangeBackingProperties:(NSNotification *)notification
 {
-    CGFloat oldBackingScaleFactor = [[notification.userInfo objectForKey:backingPropertyOldScaleFactorKey] doubleValue];
+    CGFloat oldBackingScaleFactor = [[notification.userInfo objectForKey:NSBackingPropertyOldScaleFactorKey] doubleValue];
     CGFloat newBackingScaleFactor = [self _intrinsicDeviceScaleFactor]; 
     if (oldBackingScaleFactor == newBackingScaleFactor)
         return; 
 
-    _data->_windowHasValidBackingStore = NO;
     _data->_page->setIntrinsicDeviceScaleFactor(newBackingScaleFactor);
 }
 
@@ -2131,12 +2156,9 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 
 - (void)_postFakeMouseMovedEventForFlagsChangedEvent:(NSEvent *)flagsChangedEvent
 {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    NSEvent *fakeEvent = [NSEvent mouseEventWithType:NSMouseMoved location:[[flagsChangedEvent window] convertScreenToBase:[NSEvent mouseLocation]]
+    NSEvent *fakeEvent = [NSEvent mouseEventWithType:NSMouseMoved location:[[flagsChangedEvent window] mouseLocationOutsideOfEventStream]
         modifierFlags:[flagsChangedEvent modifierFlags] timestamp:[flagsChangedEvent timestamp] windowNumber:[flagsChangedEvent windowNumber]
         context:[flagsChangedEvent context] eventNumber:0 clickCount:0 pressure:0];
-#pragma clang diagnostic pop
     NativeWebMouseEvent webEvent(fakeEvent, self);
     _data->_page->handleMouseEvent(webEvent);
 }
@@ -2171,10 +2193,6 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 }
 #endif
 
-@end
-
-@implementation WKView (Internal)
-
 - (std::unique_ptr<WebKit::DrawingAreaProxy>)_createDrawingAreaProxy
 {
     if ([[[NSUserDefaults standardUserDefaults] objectForKey:@"WebKit2UseRemoteLayerTreeDrawingArea"] boolValue])
@@ -2207,12 +2225,14 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
     return colorSpaceData;    
 }
 
-- (void)_processDidCrash
+- (void)_processDidExit
 {
     if (_data->_layerHostingView)
         [self _setAcceleratedCompositingModeRootLayer:nil];
 
     [self _updateRemoteAccessibilityRegistration:NO];
+
+    _data->_gestureController = nullptr;
 }
 
 - (void)_pageClosed
@@ -2227,7 +2247,7 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 
 - (void)_preferencesDidChange
 {
-    BOOL needsViewFrameInWindowCoordinates = _data->_page->pageGroup().preferences()->pluginsEnabled();
+    BOOL needsViewFrameInWindowCoordinates = _data->_page->preferences().pluginsEnabled();
 
     if (!!needsViewFrameInWindowCoordinates == !!_data->_needsViewFrameInWindowCoordinates)
         return;
@@ -2313,11 +2333,12 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
     LOG(TextInput, "-> interpretKeyEvents:%p %@", event, event);
     [self interpretKeyEvents:[NSArray arrayWithObject:event]];
 
-    _data->_interpretKeyEventsParameters = 0;
+    _data->_interpretKeyEventsParameters = nullptr;
 
     // An input method may consume an event and not tell us (e.g. when displaying a candidate window),
     // in which case we should not bubble the event up the DOM.
     if (parameters.consumedByIM) {
+        ASSERT(commands.isEmpty());
         LOG(TextInput, "...event %p was consumed by an input method", event);
         return YES;
     }
@@ -2468,8 +2489,22 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
     _data->_findIndicatorWindow->setFindIndicator(findIndicator, fadeOut, animate);
 }
 
+- (CALayer *)_rootLayer
+{
+    return [_data->_layerHostingView layer];
+}
+
 - (void)_setAcceleratedCompositingModeRootLayer:(CALayer *)rootLayer
 {
+    [rootLayer web_disableAllActions];
+
+#if WK_API_ENABLED
+    if (_data->_thumbnailView) {
+        _data->_thumbnailView.thumbnailLayer = rootLayer;
+        return;
+    }
+#endif
+
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
 
@@ -2505,6 +2540,57 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
     }
 
     [CATransaction commit];
+}
+
+- (CALayer *)_acceleratedCompositingModeRootLayer
+{
+    NSView *hostView = _data->_layerHostingView.get();
+
+    if (!hostView)
+        return nullptr;
+
+    if (!hostView.layer.sublayers.count)
+        return nullptr;
+
+    return [hostView.layer.sublayers objectAtIndex:0];
+}
+
+- (RetainPtr<CGImageRef>)_takeViewSnapshot
+{
+    NSWindow *window = self.window;
+
+    if (![window windowNumber])
+        return nullptr;
+
+    // FIXME: This should use CGWindowListCreateImage once <rdar://problem/15709646> is resolved.
+    CGSWindowID windowID = [window windowNumber];
+    CGImageRef cgWindowImage = nullptr;
+    CGSCaptureWindowsContentsToRect(CGSMainConnectionID(), &windowID, 1, CGRectNull, &cgWindowImage);
+    RetainPtr<CGImageRef> windowSnapshotImage = adoptCF(cgWindowImage);
+
+    [self _ensureGestureController];
+
+    NSRect windowCaptureRect;
+    FloatRect boundsForCustomSwipeViews = _data->_gestureController->windowRelativeBoundsForCustomSwipeViews();
+    if (!boundsForCustomSwipeViews.isEmpty())
+        windowCaptureRect = boundsForCustomSwipeViews;
+    else
+        windowCaptureRect = [self convertRect:self.bounds toView:nil];
+
+    NSRect windowCaptureScreenRect = [window convertRectToScreen:windowCaptureRect];
+    CGRect windowScreenRect;
+    CGSGetScreenRectForWindow(CGSMainConnectionID(), (CGSWindowID)[window windowNumber], &windowScreenRect);
+
+    NSRect croppedImageRect = windowCaptureRect;
+    croppedImageRect.origin.y = windowScreenRect.size.height - windowCaptureScreenRect.size.height - NSMinY(windowCaptureRect);
+
+    return adoptCF(CGImageCreateWithImageInRect(windowSnapshotImage.get(), NSRectToCGRect([window convertRectToBacking:croppedImageRect])));
+}
+
+- (void)_wheelEventWasNotHandledByWebCore:(NSEvent *)event
+{
+    if (_data->_gestureController)
+        _data->_gestureController->wheelEventWasNotHandledByWebCore(event);
 }
 
 - (void)_setAccessibilityWebProcessToken:(NSData *)data
@@ -2761,6 +2847,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
 
 - (bool)_executeSavedCommandBySelector:(SEL)selector
 {
+    LOG(TextInput, "Executing previously saved command %s", sel_getName(selector));
     // The sink does two things: 1) Tells us if the responder went unhandled, and
     // 2) prevents any NSBeep; we don't ever want to beep here.
     RetainPtr<WKResponderChainSink> sink = adoptNS([[WKResponderChainSink alloc] initWithResponderChain:self]);
@@ -2819,24 +2906,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     return _data->_page->suppressVisibilityUpdates();
 }
 
-@end
-
-@implementation WKView (Private)
-
-- (void)_registerDraggedTypes
-{
-    NSMutableSet *types = [[NSMutableSet alloc] initWithArray:PasteboardTypes::forEditing()];
-    [types addObjectsFromArray:PasteboardTypes::forURL()];
-    [self registerForDraggedTypes:[types allObjects]];
-    [types release];
-}
-
-- (id)initWithFrame:(NSRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef
-{
-    return [self initWithFrame:frame contextRef:contextRef pageGroupRef:pageGroupRef relatedToPage:nil];
-}
-
-- (id)initWithFrame:(NSRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef relatedToPage:(WKPageRef)relatedPage
+- (instancetype)initWithFrame:(NSRect)frame context:(WebContext&)context configuration:(WebPageConfiguration)webPageConfiguration
 {
     self = [super initWithFrame:frame];
     if (!self)
@@ -2861,9 +2931,8 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     [trackingArea release];
 
     _data = [[WKViewData alloc] init];
-
     _data->_pageClient = std::make_unique<PageClientImpl>(self);
-    _data->_page = toImpl(contextRef)->createWebPage(*_data->_pageClient, toImpl(pageGroupRef), toImpl(relatedPage));
+    _data->_page = context.createWebPage(*_data->_pageClient, std::move(webPageConfiguration));
     _data->_page->setIntrinsicDeviceScaleFactor([self _intrinsicDeviceScaleFactor]);
     _data->_page->initializeWebPage();
 
@@ -2875,7 +2944,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
 
     _data->_intrinsicContentSize = NSMakeSize(NSViewNoInstrinsicMetric, NSViewNoInstrinsicMetric);
 
-    _data->_needsViewFrameInWindowCoordinates = _data->_page->pageGroup().preferences()->pluginsEnabled();
+    _data->_needsViewFrameInWindowCoordinates = _data->_page->preferences().pluginsEnabled();
     
     [self _registerDraggedTypes];
 
@@ -2890,6 +2959,60 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     [workspaceNotificationCenter addObserver:self selector:@selector(_activeSpaceDidChange:) name:NSWorkspaceActiveSpaceDidChangeNotification object:nil];
 
     return self;
+}
+
+- (void)_registerDraggedTypes
+{
+    NSMutableSet *types = [[NSMutableSet alloc] initWithArray:PasteboardTypes::forEditing()];
+    [types addObjectsFromArray:PasteboardTypes::forURL()];
+    [self registerForDraggedTypes:[types allObjects]];
+    [types release];
+}
+
+#if WK_API_ENABLED
+- (void)_setThumbnailView:(WKThumbnailView *)thumbnailView
+{
+    ASSERT(!_data->_thumbnailView || !thumbnailView);
+
+    RetainPtr<CALayer> thumbnailLayer = _data->_thumbnailView.thumbnailLayer;
+
+    _data->_thumbnailView = thumbnailView;
+
+    if (thumbnailView)
+        thumbnailView.thumbnailLayer = [self _acceleratedCompositingModeRootLayer];
+    else
+        [self _setAcceleratedCompositingModeRootLayer:thumbnailLayer.get()];
+
+    _data->_page->viewStateDidChange(ViewState::WindowIsActive | ViewState::IsInWindow | ViewState::IsVisible);
+}
+
+- (WKThumbnailView *)_thumbnailView
+{
+    return _data->_thumbnailView;
+}
+#endif // WK_API_ENABLED
+
+@end
+
+@implementation WKView (Private)
+
+- (void)saveBackForwardSnapshotForCurrentItem
+{
+    _data->_page->recordNavigationSnapshot();
+}
+
+- (id)initWithFrame:(NSRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef
+{
+    return [self initWithFrame:frame contextRef:contextRef pageGroupRef:pageGroupRef relatedToPage:nil];
+}
+
+- (id)initWithFrame:(NSRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef relatedToPage:(WKPageRef)relatedPage
+{
+    WebPageConfiguration webPageConfiguration;
+    webPageConfiguration.pageGroup = toImpl(pageGroupRef);
+    webPageConfiguration.relatedPage = toImpl(relatedPage);
+
+    return [self initWithFrame:frame context:*toImpl(contextRef) configuration:webPageConfiguration];
 }
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
@@ -2970,18 +3093,6 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
 - (BOOL)frameSizeUpdatesDisabled
 {
     return _data->_frameSizeUpdatesDisabledCount > 0;
-}
-
-- (void)performDictionaryLookupAtCurrentMouseLocation
-{
-    NSPoint thePoint = [NSEvent mouseLocation];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    thePoint = [[self window] convertScreenToBase:thePoint];
-#pragma clang diagnostic pop
-    thePoint = [self convertPoint:thePoint fromView:nil];
-
-    _data->_page->performDictionaryLookupAtLocation(FloatPoint(thePoint.x, thePoint.y));
 }
 
 + (void)hideWordDefinitionWindow
@@ -3157,6 +3268,27 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     _data->_windowOcclusionDetectionEnabled = flag;
 }
 
+- (void)setAllowsBackForwardNavigationGestures:(BOOL)allowsBackForwardNavigationGestures
+{
+    _data->_allowsBackForwardNavigationGestures = allowsBackForwardNavigationGestures;
+    _data->_page->setShouldRecordNavigationSnapshots(allowsBackForwardNavigationGestures);
+    _data->_page->setShouldUseImplicitRubberBandControl(allowsBackForwardNavigationGestures);
+}
+
+- (BOOL)allowsBackForwardNavigationGestures
+{
+    return _data->_allowsBackForwardNavigationGestures;
+}
+
+- (NSColor *)_pageExtendedBackgroundColor
+{
+    WebCore::Color color = _data->_page->pageExtendedBackgroundColor();
+    if (!color.isValid())
+        return nil;
+
+    return nsColor(color);
+}
+
 // This method forces a drawing area geometry update, even if frame size updates are disabled.
 // The updated is performed asynchronously; we don't wait for the geometry update before returning.
 // The area drawn need not match the current frame size - if it differs it will be anchored to the
@@ -3191,14 +3323,6 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
         return drawingArea->type() == DrawingAreaTypeRemoteLayerTree;
 
     return NO;
-}
-
-- (void)_ensureGestureController
-{
-    if (_data->_gestureController)
-        return;
-
-    _data->_gestureController = std::make_unique<ViewGestureController>(*_data->_page);
 }
 
 - (void)setAllowsMagnification:(BOOL)allowsMagnification
@@ -3264,6 +3388,20 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     return _data->_page->pageScaleFactor();
 }
 
+- (void)_setCustomSwipeViews:(NSArray *)customSwipeViews
+{
+    if (!customSwipeViews.count && !_data->_gestureController)
+        return;
+
+    [self _ensureGestureController];
+
+    Vector<RetainPtr<NSView>> views;
+    for (NSView *view in customSwipeViews)
+        views.append(view);
+
+    _data->_gestureController->setCustomSwipeViews(views);
+}
+
 @end
 
 @implementation WKResponderChainSink
@@ -3321,3 +3459,5 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
 }
 
 @end
+
+#endif // PLATFORM(MAC)

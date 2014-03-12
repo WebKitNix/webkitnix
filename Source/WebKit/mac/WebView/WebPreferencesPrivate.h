@@ -199,9 +199,6 @@ extern NSString *WebPreferencesCacheModelChangedInternalNotification;
 - (BOOL)acceleratedCompositingEnabled;
 - (void)setAcceleratedCompositingEnabled:(BOOL)enabled;
 
-- (BOOL)cssCustomFilterEnabled;
-- (void)setCSSCustomFilterEnabled:(BOOL)enabled;
-
 - (BOOL)cssRegionsEnabled;
 - (void)setCSSRegionsEnabled:(BOOL)enabled;
 
@@ -289,10 +286,6 @@ extern NSString *WebPreferencesCacheModelChangedInternalNotification;
 - (void)setMediaPlaybackAllowsAirPlay:(BOOL)flag;
 - (BOOL)mediaPlaybackAllowsAirPlay;
 #endif
-
-// This is a global setting.
-- (BOOL)seamlessIFramesEnabled;
-- (void)setSeamlessIFramesEnabled:(BOOL)enabled;
 
 // Other private methods
 #if TARGET_OS_IPHONE
@@ -438,5 +431,11 @@ extern NSString *WebPreferencesCacheModelChangedInternalNotification;
 
 - (void)setMediaSourceEnabled:(BOOL)flag;
 - (BOOL)mediaSourceEnabled;
+
+- (void)setShouldConvertPositionStyleOnCopy:(BOOL)flag;
+- (BOOL)shouldConvertPositionStyleOnCopy;
+
+- (void)setImageControlsEnabled:(BOOL)flag;
+- (BOOL)imageControlsEnabled;
 
 @end

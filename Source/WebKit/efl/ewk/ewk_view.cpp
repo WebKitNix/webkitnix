@@ -24,6 +24,8 @@
 #include "config.h"
 #include "ewk_view.h"
 
+#include "AcceleratedCompositingContextEfl.h"
+#include "BackForwardController.h"
 #include "BackForwardList.h"
 #include "Bridge.h"
 #include "Chrome.h"
@@ -54,7 +56,6 @@
 #include "MainFrame.h"
 #include "NetworkStorageSession.h"
 #include "Operations.h"
-#include "PageClientEfl.h"
 #include "PageGroup.h"
 #include "PlatformMouseEvent.h"
 #include "PopupMenuClient.h"
@@ -86,7 +87,6 @@
 #include <Evas.h>
 #include <eina_safety_checks.h>
 #include <inttypes.h>
-#include <libsoup/soup.h>
 #include <limits>
 #include <math.h>
 #include <sys/time.h>
@@ -107,10 +107,6 @@
 
 #if ENABLE(BATTERY_STATUS)
 #include "BatteryClientEfl.h"
-#endif
-
-#if USE(ACCELERATED_COMPOSITING)
-#include "AcceleratedCompositingContextEfl.h"
 #endif
 
 #if ENABLE(NETWORK_INFO)
@@ -258,12 +254,9 @@ struct _Ewk_View_Private_Data {
     OwnPtr<WebCore::Page> page;
     WebCore::ViewportArguments viewportArguments;
     Ewk_History* history;
-    OwnPtr<PageClientEfl> pageClient;
-#if USE(ACCELERATED_COMPOSITING)
     OwnPtr<WebCore::AcceleratedCompositingContext> acceleratedCompositingContext;
     bool isCompositingActive;
     RefPtr<Evas_Object> compositingObject;
-#endif
 #if ENABLE(INPUT_TYPE_COLOR)
     WebCore::ColorChooserClient* colorChooserClient;
 #endif
@@ -738,9 +731,6 @@ static Ewk_View_Private_Data* _ewk_view_priv_new(Ewk_View_Smart_Data* smartData)
     pageSettings.setStandardFontFamily("sans");
     pageSettings.setHyperlinkAuditingEnabled(false);
     WebCore::RuntimeEnabledFeatures::sharedFeatures().setCSSRegionsEnabled(true);
-#if ENABLE(IFRAME_SEAMLESS)
-    WebCore::RuntimeEnabledFeatures::sharedFeatures().setSeamlessIFramesEnabled(true);
-#endif
     pageSettings.setScriptEnabled(true);
     pageSettings.setPluginsEnabled(true);
     pageSettings.setLocalStorageEnabled(true);
@@ -756,13 +746,11 @@ static Ewk_View_Private_Data* _ewk_view_priv_new(Ewk_View_Smart_Data* smartData)
     pageSettings.setFullScreenEnabled(true);
 #endif
     pageSettings.setInteractiveFormValidationEnabled(true);
-#if USE(ACCELERATED_COMPOSITING)
     pageSettings.setAcceleratedCompositingEnabled(false);
     char* debugVisualsEnvironment = getenv("WEBKIT_SHOW_COMPOSITING_DEBUG_VISUALS");
     bool showDebugVisuals = debugVisualsEnvironment && !strcmp(debugVisualsEnvironment, "1");
     pageSettings.setShowDebugBorders(showDebugVisuals);
     pageSettings.setShowRepaintCounter(showDebugVisuals);
-#endif
 
     url = pageSettings.userStyleSheetLocation();
     priv->settings.userStylesheet = eina_stringshare_add(url.string().utf8().data());
@@ -836,9 +824,7 @@ static Ewk_View_Private_Data* _ewk_view_priv_new(Ewk_View_Smart_Data* smartData)
     priv->settings.allowUniversalAccessFromFileURLs = pageSettings.allowUniversalAccessFromFileURLs();
     priv->settings.allowFileAccessFromFileURLs = pageSettings.allowFileAccessFromFileURLs();
 
-    priv->history = ewk_history_new(static_cast<WebCore::BackForwardList*>(priv->page->backForwardClient()));
-
-    priv->pageClient = adoptPtr(new PageClientEfl(smartData->self));
+    priv->history = ewk_history_new(static_cast<WebCore::BackForwardList*>(priv->page->backForward().client()));
 
 #ifdef HAVE_ECORE_X
     priv->isUsingEcoreX = WebCore::isUsingEcoreX(smartData->base.evas);
@@ -848,9 +834,7 @@ static Ewk_View_Private_Data* _ewk_view_priv_new(Ewk_View_Smart_Data* smartData)
     priv->contextMenu = 0;
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     priv->isCompositingActive = false;
-#endif
 
     return priv;
 }
@@ -889,9 +873,7 @@ static void _ewk_view_priv_del(Ewk_View_Private_Data* priv)
         ewk_context_menu_free(priv->contextMenu);
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     priv->acceleratedCompositingContext = nullptr;
-#endif
 
     delete priv;
 }
@@ -993,13 +975,23 @@ static void _ewk_view_smart_del(Evas_Object* ewkView)
     _ewk_view_priv_del(priv);
 }
 
-static void _ewk_view_smart_resize(Evas_Object* ewkView, Evas_Coord w, Evas_Coord h)
+static void _ewk_view_smart_resize(Evas_Object* ewkView, Evas_Coord width, Evas_Coord height)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
+    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
 
     // these should be queued and processed in calculate as well!
-    evas_object_resize(smartData->backing_store, w, h);
-    evas_object_image_size_set(smartData->backing_store, w, h);
+    evas_object_resize(smartData->backing_store, width, height);
+    evas_object_image_size_set(smartData->backing_store, width, height);
+
+    if (priv->compositingObject) {
+        evas_object_resize(priv->compositingObject.get(), width, height);
+        evas_object_image_size_set(priv->compositingObject.get(), width, height);
+        evas_object_image_fill_set(priv->compositingObject.get(), 0, 0, width, height);
+
+        if (priv->acceleratedCompositingContext)
+            priv->acceleratedCompositingContext->resize(WebCore::IntSize(width, height));
+    }
 
     smartData->changed.size = true;
     _ewk_view_smart_changed(smartData);
@@ -1007,15 +999,15 @@ static void _ewk_view_smart_resize(Evas_Object* ewkView, Evas_Coord w, Evas_Coor
     if (smartData->animated_zoom.zoom.current < std::numeric_limits<float>::epsilon()) {
         Evas_Object* clip = evas_object_clip_get(smartData->backing_store);
         Evas_Coord x, y, contentWidth, contentHeight;
-        evas_object_image_fill_set(smartData->backing_store, 0, 0, w, h);
+        evas_object_image_fill_set(smartData->backing_store, 0, 0, width, height);
         evas_object_geometry_get(smartData->backing_store, &x, &y, 0, 0);
         evas_object_move(clip, x, y);
         ewk_frame_contents_size_get(smartData->main_frame, &contentWidth, &contentHeight);
-        if (w > contentWidth)
-            w = contentWidth;
-        if (h > contentHeight)
-            h = contentHeight;
-        evas_object_resize(clip, w, h);
+        if (width > contentWidth)
+            width = contentWidth;
+        if (height > contentHeight)
+            height = contentHeight;
+        evas_object_resize(clip, width, height);
     }
 }
 
@@ -1147,7 +1139,7 @@ static void _ewk_view_smart_scrolls_process(Ewk_View_Smart_Data* smartData)
     return;
 }
 
-static Eina_Bool _ewk_view_smart_repaints_process(Ewk_View_Smart_Data* smartData)
+static bool _ewk_view_smart_repaints_process(Ewk_View_Smart_Data* smartData)
 {
     EWK_VIEW_PRIV_GET(smartData, priv);
 
@@ -1232,8 +1224,6 @@ static void _ewk_view_smart_calculate(Evas_Object* ewkView)
 {
     EWK_VIEW_SD_GET(ewkView, smartData);
     EWK_VIEW_PRIV_GET(smartData, priv);
-    EINA_SAFETY_ON_NULL_RETURN(smartData->api->contents_resize);
-    EINA_SAFETY_ON_NULL_RETURN(smartData->api->repaints_process);
     Evas_Coord x, y, width, height;
 
     smartData->changed.any = false;
@@ -1276,10 +1266,10 @@ static void _ewk_view_smart_calculate(Evas_Object* ewkView)
     }
     smartData->changed.position = false;
 
-    smartData->api->scrolls_process(smartData);
+    _ewk_view_smart_scrolls_process(smartData);
     _ewk_view_scrolls_flush(priv);
 
-    if (!smartData->api->repaints_process(smartData))
+    if (!_ewk_view_smart_repaints_process(smartData))
         ERR("failed to process repaints.");
 
     if (smartData->changed.frame_rect) {
@@ -1291,18 +1281,26 @@ static void _ewk_view_smart_calculate(Evas_Object* ewkView)
 static void _ewk_view_smart_show(Evas_Object* ewkView)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
+    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
 
     if (evas_object_clipees_get(smartData->base.clipper))
         evas_object_show(smartData->base.clipper);
     evas_object_show(smartData->backing_store);
+
+    if (priv->isCompositingActive)
+        evas_object_show(priv->compositingObject.get());
 }
 
 static void _ewk_view_smart_hide(Evas_Object* ewkView)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
+    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
 
     evas_object_hide(smartData->base.clipper);
     evas_object_hide(smartData->backing_store);
+
+    if (priv->isCompositingActive)
+        evas_object_hide(priv->compositingObject.get());
 }
 
 static Eina_Bool _ewk_view_smart_contents_resize(Ewk_View_Smart_Data*, int /*width*/, int /*height*/)
@@ -1343,31 +1341,6 @@ static void _ewk_view_smart_flush(Ewk_View_Smart_Data* smartData)
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
     _ewk_view_repaints_flush(priv);
     _ewk_view_scrolls_flush(priv);
-}
-
-static Eina_Bool _ewk_view_smart_pre_render_region(Ewk_View_Smart_Data* smartData, Evas_Coord x, Evas_Coord y, Evas_Coord width, Evas_Coord height, float zoom)
-{
-    WARN("not supported by engine. smartData=%p area=%d,%d+%dx%d, zoom=%f",
-        smartData, x, y, width, height, zoom);
-    return false;
-}
-
-static Eina_Bool _ewk_view_smart_pre_render_relative_radius(Ewk_View_Smart_Data* smartData, unsigned int number, float zoom)
-{
-    WARN("not supported by engine. smartData=%p, n=%u zoom=%f",
-        smartData, number, zoom);
-    return false;
-}
-
-static Eina_Bool _ewk_view_smart_pre_render_start(Ewk_View_Smart_Data* smartData)
-{
-    WARN("not supported by engine. smartData=%p", smartData);
-    return false;
-}
-
-static void _ewk_view_smart_pre_render_cancel(Ewk_View_Smart_Data* smartData)
-{
-    WARN("not supported by engine. smartData=%p", smartData);
 }
 
 static void _ewk_view_zoom_animated_mark_stop(Ewk_View_Smart_Data* smartData)
@@ -1545,16 +1518,10 @@ Eina_Bool ewk_view_smart_set(Ewk_View_Smart_Class* api)
     api->sc.callbacks = _ewk_view_callback_names;
 
     api->contents_resize = _ewk_view_smart_contents_resize;
-    api->scrolls_process = _ewk_view_smart_scrolls_process;
-    api->repaints_process = _ewk_view_smart_repaints_process;
     api->zoom_set = _ewk_view_smart_zoom_set;
     api->zoom_weak_set = _ewk_view_smart_zoom_weak_set;
     api->zoom_weak_smooth_scale_set = _ewk_view_smart_zoom_weak_smooth_scale_set;
     api->flush = _ewk_view_smart_flush;
-    api->pre_render_region = _ewk_view_smart_pre_render_region;
-    api->pre_render_relative_radius = _ewk_view_smart_pre_render_relative_radius;
-    api->pre_render_start = _ewk_view_smart_pre_render_start;
-    api->pre_render_cancel = _ewk_view_smart_pre_render_cancel;
     api->disable_render = _ewk_view_smart_disable_render;
     api->enable_render = _ewk_view_smart_enable_render;
 
@@ -1965,14 +1932,14 @@ Eina_Bool ewk_view_history_enable_get(const Evas_Object* ewkView)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
-    return static_cast<WebCore::BackForwardList*>(priv->page->backForwardClient())->enabled();
+    return static_cast<WebCore::BackForwardList*>(priv->page->backForward().client())->enabled();
 }
 
 Eina_Bool ewk_view_history_enable_set(Evas_Object* ewkView, Eina_Bool enable)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
-    static_cast<WebCore::BackForwardList*>(priv->page->backForwardClient())->setEnabled(enable);
+    static_cast<WebCore::BackForwardList*>(priv->page->backForward().client())->setEnabled(enable);
     return true;
 }
 
@@ -1980,7 +1947,7 @@ Ewk_History* ewk_view_history_get(const Evas_Object* ewkView)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, 0);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, 0);
-    if (!static_cast<WebCore::BackForwardList*>(priv->page->backForwardClient())->enabled()) {
+    if (!static_cast<WebCore::BackForwardList*>(priv->page->backForward().client())->enabled()) {
         ERR("asked history, but it's disabled! Returning 0!");
         return 0;
     }
@@ -2199,82 +2166,11 @@ Eina_Bool ewk_view_zoom_animated_set(Evas_Object* ewkView, float zoom, float dur
     return true;
 }
 
-Eina_Bool ewk_view_pre_render_region(Evas_Object* ewkView, Evas_Coord x, Evas_Coord y, Evas_Coord width, Evas_Coord height, float zoom)
-{
-    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
-    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
-    EINA_SAFETY_ON_NULL_RETURN_VAL(smartData->api->pre_render_region, false);
-    Evas_Coord contentsWidth, contentsHeight;
-
-    /* When doing animated zoom it's not possible to call pre-render since it
-     * would screw up parameters that animation is currently using
-     */
-    if (priv->animatedZoom.animator)
-        return false;
-
-    float currentZoom = ewk_frame_page_zoom_get(smartData->main_frame);
-    if (currentZoom < std::numeric_limits<float>::epsilon())
-        return false;
-
-    if (!ewk_frame_contents_size_get(smartData->main_frame, &contentsWidth, &contentsHeight))
-        return false;
-
-    contentsWidth *= zoom / currentZoom;
-    contentsHeight *= zoom / currentZoom;
-    DBG("region %d,%d+%dx%d @ %f contents=%dx%d", x, y, width, height, zoom, contentsWidth, contentsHeight);
-
-    if (x + width > contentsWidth)
-        width = contentsWidth - x;
-
-    if (y + height > contentsHeight)
-        height = contentsHeight - y;
-
-    if (x < 0) {
-        width += x;
-        x = 0;
-    }
-    if (y < 0) {
-        height += y;
-        y = 0;
-    }
-
-    return smartData->api->pre_render_region(smartData, x, y, width, height, zoom);
-}
-
-Eina_Bool ewk_view_pre_render_relative_radius(Evas_Object* ewkView, unsigned int number)
-{
-    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
-    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
-    EINA_SAFETY_ON_NULL_RETURN_VAL(smartData->api->pre_render_relative_radius, false);
-    float currentZoom;
-
-    if (priv->animatedZoom.animator)
-        return false;
-
-    currentZoom = ewk_frame_page_zoom_get(smartData->main_frame);
-    return smartData->api->pre_render_relative_radius(smartData, number, currentZoom);
-}
-
-Eina_Bool ewk_view_pre_render_start(Evas_Object* ewkView)
-{
-    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
-    EINA_SAFETY_ON_NULL_RETURN_VAL(smartData->api->pre_render_start, false);
-
-    return smartData->api->pre_render_start(smartData);
-}
-
 unsigned int ewk_view_imh_get(const Evas_Object* ewkView)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, 0);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, 0);
     return priv->imh;
-}
-
-void ewk_view_pre_render_cancel(Evas_Object* ewkView)
-{
-    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
-    EINA_SAFETY_ON_NULL_RETURN(smartData->api->pre_render_cancel);
-    smartData->api->pre_render_cancel(smartData);
 }
 
 Eina_Bool ewk_view_enable_render(const Evas_Object* ewkView)
@@ -3048,37 +2944,8 @@ void ewk_view_scrolls_process(Ewk_View_Smart_Data* smartData)
     EINA_SAFETY_ON_NULL_RETURN(smartData);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
 
-    smartData->api->scrolls_process(smartData);
+    _ewk_view_smart_scrolls_process(smartData);
     _ewk_view_scrolls_flush(priv);
-}
-
-Eina_Bool ewk_view_paint(Ewk_View_Private_Data* priv, cairo_t* cr, const Eina_Rectangle* area)
-{
-    EINA_SAFETY_ON_NULL_RETURN_VAL(priv, false);
-    EINA_SAFETY_ON_NULL_RETURN_VAL(cr, false);
-    EINA_SAFETY_ON_NULL_RETURN_VAL(area, false);
-
-    WebCore::FrameView* view = priv->page->mainFrame().view();
-    EINA_SAFETY_ON_NULL_RETURN_VAL(view, false);
-
-    view->updateLayoutAndStyleIfNeededRecursive();
-
-    Ewk_Paint_Context* context = ewk_paint_context_new(cr);
-    bool result = ewk_view_paint(priv, context, area);
-    ewk_paint_context_free(context);
-
-    return result;
-}
-
-Eina_Bool ewk_view_paint_contents(Ewk_View_Private_Data* priv, cairo_t* cr, const Eina_Rectangle* area)
-{
-    EINA_SAFETY_ON_NULL_RETURN_VAL(cr, false);
-
-    Ewk_Paint_Context* context = ewk_paint_context_new(cr);
-    bool result = ewk_view_paint_contents(priv, context, area);
-    ewk_paint_context_free(context);
-
-    return result;
 }
 
 /* internal methods ****************************************************/
@@ -3880,8 +3747,8 @@ void ewk_view_scroll(Evas_Object* ewkView, const WebCore::IntSize& delta, const 
     priv->m_scrollOffsets.append(delta);
 
     for (size_t i = 0; i < priv->repaints.count; ++i) {
-        priv->repaints.array[i].x = delta.width();
-        priv->repaints.array[i].y = delta.height();
+        priv->repaints.array[i].x += delta.width();
+        priv->repaints.array[i].y += delta.height();
     }
 
     _ewk_view_smart_changed(smartData);
@@ -4226,7 +4093,16 @@ void ewk_view_text_direction_set(Evas_Object* ewkView, Ewk_Text_Direction direct
     if (!editor.canEdit())
         return;
 
-    editor.setBaseWritingDirection(static_cast<WritingDirection>(direction));
+    switch (direction) {
+    case EWK_TEXT_DIRECTION_DEFAULT:
+        editor.setBaseWritingDirection(NaturalWritingDirection);
+    case EWK_TEXT_DIRECTION_LEFT_TO_RIGHT:
+        editor.setBaseWritingDirection(LeftToRightWritingDirection);
+    case EWK_TEXT_DIRECTION_RIGHT_TO_LEFT:
+        editor.setBaseWritingDirection(RightToLeftWritingDirection);
+    }
+
+    ASSERT_NOT_REACHED();
 }
 
 void ewk_view_did_first_visually_nonempty_layout(Evas_Object* ewkView)
@@ -4279,7 +4155,7 @@ void ewk_view_transition_to_commited_for_newpage(Evas_Object* ewkView)
  * client did not make a decision, we return true by default since the default policy
  * is to accept.
  */
-bool ewk_view_navigation_policy_decision(Evas_Object* ewkView, Ewk_Frame_Resource_Request* request, Ewk_Navigation_Type navigationType)
+bool ewk_view_navigation_policy_decision(Evas_Object* ewkView, Ewk_Frame_Resource_Request* request, WebCore::NavigationType navigationType)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EINA_SAFETY_ON_NULL_RETURN_VAL(smartData->api, false);
@@ -4287,7 +4163,23 @@ bool ewk_view_navigation_policy_decision(Evas_Object* ewkView, Ewk_Frame_Resourc
     if (!smartData->api->navigation_policy_decision)
         return true;
 
-    return smartData->api->navigation_policy_decision(smartData, request, navigationType);
+    Ewk_Navigation_Type type;
+    switch (navigationType) {
+    case WebCore::NavigationTypeLinkClicked:
+        type = EWK_NAVIGATION_TYPE_LINK_CLICKED;
+    case WebCore::NavigationTypeFormSubmitted:
+        type = EWK_NAVIGATION_TYPE_FORM_SUBMITTED;
+    case WebCore::NavigationTypeBackForward:
+        type = EWK_NAVIGATION_TYPE_BACK_FORWARD;
+    case WebCore::NavigationTypeReload:
+        type = EWK_NAVIGATION_TYPE_RELOAD;
+    case WebCore::NavigationTypeFormResubmitted:
+        type = EWK_NAVIGATION_TYPE_FORM_RESUBMITTED;
+    case WebCore::NavigationTypeOther:
+        type = EWK_NAVIGATION_TYPE_OTHER;
+    }
+
+    return smartData->api->navigation_policy_decision(smartData, request, type);
 }
 
 Eina_Bool ewk_view_js_object_add(Evas_Object* ewkView, Ewk_JS_Object* object, const char* objectName)
@@ -4378,13 +4270,55 @@ bool ewk_view_need_touch_events_get(const Evas_Object* ewkView)
 }
 #endif
 
+inline static WebCore::Page::ViewMode toViewMode(Ewk_View_Mode viewMode)
+{
+    switch (viewMode) {
+    case EWK_VIEW_MODE_INVALID:
+        return WebCore::Page::ViewModeInvalid;
+    case EWK_VIEW_MODE_WINDOWED:
+        return WebCore::Page::ViewModeWindowed;
+    case EWK_VIEW_MODE_FLOATING:
+        return WebCore::Page::ViewModeFloating;
+    case EWK_VIEW_MODE_FULLSCREEN:
+        return WebCore::Page::ViewModeFullscreen;
+    case EWK_VIEW_MODE_MAXIMIZED:
+        return WebCore::Page::ViewModeMaximized;
+    case EWK_VIEW_MODE_MINIMIZED:
+        return WebCore::Page::ViewModeMinimized;
+    }
+    ASSERT_NOT_REACHED();
+
+    return WebCore::Page::ViewModeInvalid;
+}
+
+inline static Ewk_View_Mode toEwkViewMode(WebCore::Page::ViewMode viewMode)
+{
+    switch (viewMode) {
+    case WebCore::Page::ViewModeInvalid:
+        return EWK_VIEW_MODE_INVALID;
+    case WebCore::Page::ViewModeWindowed:
+        return EWK_VIEW_MODE_WINDOWED;
+    case WebCore::Page::ViewModeFloating:
+        return EWK_VIEW_MODE_FLOATING;
+    case WebCore::Page::ViewModeFullscreen:
+        return EWK_VIEW_MODE_FULLSCREEN;
+    case WebCore::Page::ViewModeMaximized:
+        return EWK_VIEW_MODE_MAXIMIZED;
+    case WebCore::Page::ViewModeMinimized:
+        return EWK_VIEW_MODE_MINIMIZED;
+    }
+    ASSERT_NOT_REACHED();
+
+    return EWK_VIEW_MODE_INVALID;
+}
+
 Eina_Bool ewk_view_mode_set(Evas_Object* ewkView, Ewk_View_Mode viewMode)
 {
 #if ENABLE(VIEW_MODE_CSS_MEDIA)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
 
-    priv->page->setViewMode(static_cast<WebCore::Page::ViewMode>(viewMode));
+    priv->page->setViewMode(toViewMode(viewMode));
     return true;
 #else
     UNUSED_PARAM(ewkView);
@@ -4399,7 +4333,7 @@ Ewk_View_Mode ewk_view_mode_get(const Evas_Object* ewkView)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, EWK_VIEW_MODE_INVALID);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, EWK_VIEW_MODE_INVALID);
 
-    return static_cast<Ewk_View_Mode>(priv->page->viewMode());
+    return toEwkViewMode(priv->page->viewMode());
 #else
     UNUSED_PARAM(ewkView);
     return EWK_VIEW_MODE_INVALID;
@@ -4492,7 +4426,7 @@ void ewk_view_mixed_content_run_set(Evas_Object* ewkView, bool hasRun)
         evas_object_smart_callback_call(ewkView, "mixedcontent,run", 0);
 }
 
-Eina_Bool ewk_view_visibility_state_set(Evas_Object* ewkView, Ewk_Page_Visibility_State pageVisibilityState, Eina_Bool initialState)
+Eina_Bool ewk_view_visibility_state_set(Evas_Object* ewkView, Ewk_Page_Visibility_State pageVisibilityState, Eina_Bool)
 {
 #if ENABLE(PAGE_VISIBILITY_API)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
@@ -4502,7 +4436,7 @@ Eina_Bool ewk_view_visibility_state_set(Evas_Object* ewkView, Ewk_Page_Visibilit
     if (pageVisibilityState == EWK_PAGE_VISIBILITY_STATE_UNLOADED)
         return false;
 
-    priv->page->setIsVisible(pageVisibilityState == EWK_PAGE_VISIBILITY_STATE_VISIBLE, initialState);
+    priv->page->setIsVisible(pageVisibilityState == EWK_PAGE_VISIBILITY_STATE_VISIBLE);
     if (pageVisibilityState == EWK_PAGE_VISIBILITY_STATE_PRERENDER)
         priv->page->setIsPrerender();
 
@@ -4511,7 +4445,6 @@ Eina_Bool ewk_view_visibility_state_set(Evas_Object* ewkView, Ewk_Page_Visibilit
     DBG("PAGE_VISIBILITY_API is disabled.");
     UNUSED_PARAM(ewkView);
     UNUSED_PARAM(pageVisibilityState);
-    UNUSED_PARAM(initialState);
     return false;
 #endif
 }
@@ -4522,31 +4455,23 @@ Ewk_Page_Visibility_State ewk_view_visibility_state_get(const Evas_Object* ewkVi
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, EWK_PAGE_VISIBILITY_STATE_VISIBLE);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, EWK_PAGE_VISIBILITY_STATE_VISIBLE);
 
-    return static_cast<Ewk_Page_Visibility_State>(priv->page->visibilityState());
+
+    switch (priv->page->visibilityState()) {
+    case WebCore::PageVisibilityStateVisible:
+        return EWK_PAGE_VISIBILITY_STATE_VISIBLE;
+    case WebCore::PageVisibilityStateHidden:
+        return EWK_PAGE_VISIBILITY_STATE_HIDDEN;
+    case WebCore::PageVisibilityStatePrerender:
+        return EWK_PAGE_VISIBILITY_STATE_PRERENDER;
+    default:
+        ASSERT_NOT_REACHED();
+    }
 #else
     DBG("PAGE_VISIBILITY_API is disabled.");
     UNUSED_PARAM(ewkView);
-    return EWK_PAGE_VISIBILITY_STATE_VISIBLE;
 #endif
-}
 
-SoupSession* ewk_view_soup_session_get(const Evas_Object* ewkView)
-{
-    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, 0);
-    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, 0);
-    return WebCore::NetworkStorageSession::defaultStorageSession().soupNetworkSession().soupSession();
-}
-
-void ewk_view_soup_session_set(Evas_Object* ewkView, SoupSession* session)
-{
-    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
-    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
-    if (!SOUP_IS_SESSION_ASYNC(session)) {
-        ERR("WebKit requires an SoupSessionAsync to work properly, but "
-            "a SoupSessionSync was provided.");
-        return;
-    }
-    WebCore::NetworkStorageSession::defaultStorageSession().setSoupNetworkSession(WebCore::SoupNetworkSession::createForSoupSession(session));
+    return EWK_PAGE_VISIBILITY_STATE_VISIBLE;
 }
 
 Eina_Bool ewk_view_setting_enable_xss_auditor_get(const Evas_Object* ewkView)
@@ -4701,7 +4626,6 @@ void ewk_view_inspector_view_set(Evas_Object* ewkView, Evas_Object* inspectorVie
 #endif
 }
 
-#if USE(ACCELERATED_COMPOSITING)
 void _ewk_view_accelerated_compositing_cb(void* data, Evas_Object*)
 {
     Ewk_View_Private_Data* priv = static_cast<Ewk_View_Private_Data*>(data);
@@ -4712,22 +4636,26 @@ void _ewk_view_accelerated_compositing_cb(void* data, Evas_Object*)
     }
 }
 
-void _ewk_view_accelerated_compositing_context_create_if_needed(Evas_Object* ewkView)
-{
-    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
-    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
-
-    if (!priv->acceleratedCompositingContext)
-        priv->acceleratedCompositingContext = WebCore::AcceleratedCompositingContext::create(&priv->page->chrome());
-}
-
-bool ewk_view_accelerated_compositing_object_create(Evas_Object* ewkView, Evas_Native_Surface* nativeSurface, const WebCore::IntRect& rect)
+bool _ewk_view_accelerated_compositing_context_create_if_needed(Evas_Object* ewkView)
 {
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, false);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, false);
 
+    if (!priv->acceleratedCompositingContext) {
+        priv->acceleratedCompositingContext = WebCore::AcceleratedCompositingContext::create(&priv->page->chrome());
+        if (!priv->acceleratedCompositingContext)
+            return false;
+    }
+    return true;
+}
+
+void _ewk_view_accelerated_compositing_object_create_if_needed(Evas_Object* ewkView)
+{
+    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData);
+    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv);
+
     if (!priv->compositingObject) {
-        priv->compositingObject = evas_object_image_add(smartData->base.evas);
+        priv->compositingObject = adoptRef(evas_object_image_add(smartData->base.evas));
 
         evas_object_pass_events_set(priv->compositingObject.get(), true); // Just for rendering, ignore events.
         evas_object_image_alpha_set(priv->compositingObject.get(), true);
@@ -4739,25 +4667,12 @@ bool ewk_view_accelerated_compositing_object_create(Evas_Object* ewkView, Evas_N
         evas_object_smart_member_add(priv->compositingObject.get(), ewkView);
     }
 
-    evas_object_image_size_set(priv->compositingObject.get(), rect.width(), rect.height());
-    evas_object_image_fill_set(priv->compositingObject.get(), 0, 0, rect.width(), rect.height());
+    evas_object_image_size_set(priv->compositingObject.get(), smartData->view.w, smartData->view.h);
+    evas_object_image_fill_set(priv->compositingObject.get(), 0, 0, smartData->view.w, smartData->view.h);
 
-    evas_object_move(priv->compositingObject.get(), rect.x(), rect.y());
-    evas_object_resize(priv->compositingObject.get(), rect.width(), rect.height());
+    evas_object_move(priv->compositingObject.get(), smartData->view.x, smartData->view.y);
+    evas_object_resize(priv->compositingObject.get(), smartData->view.w, smartData->view.h);
     evas_object_hide(priv->compositingObject.get());
-
-    // Set up the native surface info to use the context and surface created in GC3DPrivate.
-    evas_object_image_native_surface_set(priv->compositingObject.get(), nativeSurface);
-    return true;
-}
-
-WebCore::GraphicsContext3D* ewk_view_accelerated_compositing_context_get(Evas_Object* ewkView)
-{
-    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, 0);
-    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, 0);
-
-    _ewk_view_accelerated_compositing_context_create_if_needed(ewkView);
-    return priv->acceleratedCompositingContext->context();
 }
 
 void ewk_view_root_graphics_layer_set(Evas_Object* ewkView, WebCore::GraphicsLayer* rootLayer)
@@ -4772,12 +4687,18 @@ void ewk_view_root_graphics_layer_set(Evas_Object* ewkView, WebCore::GraphicsLay
     priv->isCompositingActive = active;
 
     if (priv->isCompositingActive) {
-        _ewk_view_accelerated_compositing_context_create_if_needed(ewkView);
-        evas_object_show(priv->compositingObject.get());
-    } else
+        _ewk_view_accelerated_compositing_object_create_if_needed(ewkView);
+        if (_ewk_view_accelerated_compositing_context_create_if_needed(ewkView))
+            evas_object_show(priv->compositingObject.get());
+        else
+            priv->isCompositingActive = false;
+    }
+
+    if (!priv->isCompositingActive)
         evas_object_hide(priv->compositingObject.get());
 
-    priv->acceleratedCompositingContext->attachRootGraphicsLayer(rootLayer);
+    if (priv->acceleratedCompositingContext)
+        priv->acceleratedCompositingContext->attachRootGraphicsLayer(rootLayer);
 }
 
 void ewk_view_mark_for_sync(Evas_Object* ewkView)
@@ -4789,7 +4710,6 @@ void ewk_view_mark_for_sync(Evas_Object* ewkView)
     // It will call the pixel get callback then.
     evas_object_image_pixels_dirty_set(priv->compositingObject.get(), true);
 }
-#endif
 
 void ewk_view_cursor_set(Evas_Object* ewkView, const WebCore::Cursor& cursor)
 {
@@ -4915,6 +4835,46 @@ Ewk_Context_Menu* ewk_view_context_menu_get(const Evas_Object* ewkView)
 #endif
 }
 
+Evas_Object* ewk_view_screenshot_contents_get(const Evas_Object* ewkView, const Eina_Rectangle* area, float scale)
+{
+    if (!area || !area->w || !area->h) {
+        ERR("empty area is not allowed");
+        return 0;
+    }
+
+    if (scale < std::numeric_limits<float>::epsilon()) {
+        ERR("scale factor should be bigger than zero");
+        return 0;
+    }
+
+    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, 0);
+    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, 0);
+
+    Evas* canvas = evas_object_evas_get(ewkView);
+    EINA_SAFETY_ON_NULL_RETURN_VAL(canvas, 0);
+
+    Evas_Object* screenshotImage = evas_object_image_add(canvas);
+    int surfaceWidth = area->w * scale;
+    int surfaceHeight = area->h * scale;
+    evas_object_image_size_set(screenshotImage, surfaceWidth, surfaceHeight);
+    evas_object_image_fill_set(screenshotImage, 0, 0, surfaceWidth, surfaceHeight);
+    evas_object_resize(screenshotImage, surfaceWidth, surfaceHeight);
+    evas_object_image_colorspace_set(screenshotImage, EVAS_COLORSPACE_ARGB8888);
+    evas_object_image_smooth_scale_set(screenshotImage, true);
+
+    Ewk_Paint_Context* context = ewk_paint_context_from_image_new(screenshotImage);
+    ewk_paint_context_save(context);
+    ewk_paint_context_scale(context, scale, scale);
+    ewk_paint_context_translate(context, -1 * area->x, -1 * area->y);
+
+    ewk_view_paint(priv, context, area);
+
+    ewk_paint_context_restore(context);
+    ewk_paint_context_free(context);
+
+    return screenshotImage;
+}
+
 Eina_Bool ewk_view_setting_tiled_backing_store_enabled_set(Evas_Object* ewkView, Eina_Bool enable)
 {
 #if USE(TILED_BACKING_STORE)
@@ -4971,13 +4931,6 @@ WebCore::Page* corePage(const Evas_Object* ewkView)
     EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, 0);
     EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, 0);
     return priv->page.get();
-}
-
-PlatformPageClient corePageClient(Evas_Object* ewkView)
-{
-    EWK_VIEW_SD_GET_OR_RETURN(ewkView, smartData, 0);
-    EWK_VIEW_PRIV_GET_OR_RETURN(smartData, priv, 0);
-    return priv->pageClient.get();
 }
 
 WebCore::NetworkStorageSession* storageSession(const Evas_Object* ewkView)

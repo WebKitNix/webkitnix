@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -62,6 +62,8 @@ public:
 
     virtual EventResult tryToHandleWheelEvent(const PlatformWheelEvent&) = 0;
     bool shouldHandleWheelEventSynchronously(const PlatformWheelEvent&);
+    
+    virtual void scrollPositionChangedViaDelegatedScrolling(ScrollingNodeID, const FloatPoint&);
 
     void setMainFrameIsRubberBanding(bool);
     bool isRubberBandInProgress();
@@ -71,9 +73,11 @@ public:
 
     void setMainFramePinState(bool pinnedToTheLeft, bool pinnedToTheRight, bool pinnedToTheTop, bool pinnedToTheBottom);
 
-    virtual void updateMainFrameScrollPosition(const IntPoint& scrollPosition, SetOrSyncScrollingLayerPosition = SyncScrollingLayerPosition) = 0;
-    IntPoint mainFrameScrollPosition();
+    virtual void scrollingTreeNodeDidScroll(ScrollingNodeID, const FloatPoint& scrollPosition, SetOrSyncScrollingLayerPosition = SyncScrollingLayerPosition) = 0;
+    FloatPoint mainFrameScrollPosition();
 
+    bool isPointInNonFastScrollableRegion(IntPoint);
+    
 #if PLATFORM(MAC)
     virtual void handleWheelEventPhase(PlatformWheelEventPhase) = 0;
 #endif
@@ -97,8 +101,15 @@ public:
 
     ScrollingTreeScrollingNode* rootNode() const { return m_rootNode.get(); }
 
+    ScrollingNodeID latchedNode();
+    void setLatchedNode(ScrollingNodeID);
+    void clearLatchedNode();
+
+    bool hasLatchedNode() const { return m_latchedNode; }
+    void setOrClearLatchedNode(const PlatformWheelEvent&, ScrollingNodeID);
+    
 protected:
-    void setMainFrameScrollPosition(IntPoint);
+    void setMainFrameScrollPosition(FloatPoint);
     virtual void handleWheelEvent(const PlatformWheelEvent&);
 
 private:
@@ -107,6 +118,8 @@ private:
 
     virtual PassOwnPtr<ScrollingTreeNode> createNode(ScrollingNodeType, ScrollingNodeID) = 0;
 
+    ScrollingTreeNode* nodeForID(ScrollingNodeID) const;
+
     OwnPtr<ScrollingTreeScrollingNode> m_rootNode;
 
     typedef HashMap<ScrollingNodeID, ScrollingTreeNode*> ScrollingTreeNodeMap;
@@ -114,7 +127,7 @@ private:
 
     Mutex m_mutex;
     Region m_nonFastScrollableRegion;
-    IntPoint m_mainFrameScrollPosition;
+    FloatPoint m_mainFrameScrollPosition;
     bool m_hasWheelEventHandlers;
 
     Mutex m_swipeStateMutex;
@@ -128,6 +141,7 @@ private:
     bool m_mainFramePinnedToTheBottom;
     bool m_mainFrameIsRubberBanding;
     ScrollPinningBehavior m_scrollPinningBehavior;
+    ScrollingNodeID m_latchedNode;
 
     bool m_scrollingPerformanceLoggingEnabled;
     

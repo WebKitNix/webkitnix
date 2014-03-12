@@ -24,22 +24,11 @@
  */
 
 #import "config.h"
-#import "WKProcessClassConfigurationPrivate.h"
+#import "WKProcessClassConfiguration.h"
 
 #if WK_API_ENABLED
 
 @implementation WKProcessClassConfiguration
-
-- (id)copyWithZone:(NSZone *)zone
-{
-    WKProcessClassConfiguration *configuration = [[[self class] allocWithZone:zone] init];
-
-    configuration.maximumProcessCount = self.maximumProcessCount;
-    configuration._injectedBundleURL = self._injectedBundleURL;
-
-    return configuration;
-}
-
 @end
 
 #endif

@@ -26,13 +26,12 @@
 #ifndef RenderLayerBacking_h
 #define RenderLayerBacking_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #include "FloatPoint.h"
 #include "FloatPoint3D.h"
 #include "GraphicsLayer.h"
 #include "GraphicsLayerClient.h"
 #include "RenderLayer.h"
+#include "ScrollingCoordinator.h"
 
 namespace WebCore {
 
@@ -103,10 +102,16 @@ public:
     GraphicsLayer* scrollingLayer() const { return m_scrollingLayer.get(); }
     GraphicsLayer* scrollingContentsLayer() const { return m_scrollingContentsLayer.get(); }
 
-    void attachToScrollingCoordinatorWithParent(RenderLayerBacking* parent);
     void detachFromScrollingCoordinator();
-    uint64_t scrollLayerID() const { return m_scrollLayerID; }
+
+    ScrollingNodeID viewportConstrainedNodeID() const { return m_viewportConstrainedNodeID; }
+    void setViewportConstrainedNodeID(ScrollingNodeID nodeID) { m_viewportConstrainedNodeID = nodeID; }
+
+    ScrollingNodeID scrollingNodeID() const { return m_scrollingNodeID; }
+    void setScrollingNodeID(ScrollingNodeID nodeID) { m_scrollingNodeID = nodeID; }
     
+    ScrollingNodeID scrollingNodeIDForChildren() const { return m_scrollingNodeID ? m_scrollingNodeID : m_viewportConstrainedNodeID; }
+
     bool hasMaskLayer() const { return m_maskLayer != 0; }
 
     GraphicsLayer* parentForSublayers() const;
@@ -128,7 +133,7 @@ public:
 
     void setContentsNeedDisplay(GraphicsLayer::ShouldClipToLayer = GraphicsLayer::ClipToLayer);
     // r is in the coordinate space of the layer's render object
-    void setContentsNeedDisplayInRect(const IntRect&, GraphicsLayer::ShouldClipToLayer = GraphicsLayer::ClipToLayer);
+    void setContentsNeedDisplayInRect(const LayoutRect&, GraphicsLayer::ShouldClipToLayer = GraphicsLayer::ClipToLayer);
 
     // Notification from the renderer that its content changed.
     void contentChanged(ContentChangeType);
@@ -154,7 +159,6 @@ public:
     bool hasUnpositionedOverflowControlsLayers() const;
 
     bool usingTiledBacking() const { return m_usingTiledCacheLayer; }
-    bool tiledBackingHasMargin() const;
     TiledBacking* tiledBacking() const;
     void adjustTiledBackingCoverage();
     void setTiledBackingHasMargins(bool);
@@ -168,7 +172,7 @@ public:
     virtual void notifyFlushRequired(const GraphicsLayer*) override;
     virtual void notifyFlushBeforeDisplayRefresh(const GraphicsLayer*) override;
 
-    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const IntRect& clip) override;
+    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const FloatRect& clip) override;
 
     virtual float deviceScaleFactor() const override;
     virtual float contentsScaleMultiplierForNewTiles(const GraphicsLayer*) const override;
@@ -181,12 +185,15 @@ public:
     virtual bool shouldSkipLayerInDump(const GraphicsLayer*) const override;
     virtual bool shouldDumpPropertyForLayer(const GraphicsLayer*, const char* propertyName) const override;
 
+#if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
+    virtual bool mediaLayerMustBeUpdatedOnMainThread() const override;
+#endif
+
 #ifndef NDEBUG
     virtual void verifyNotPainting();
 #endif
 
     LayoutRect contentsBox() const;
-    IntRect backgroundBox() const;
     
     // For informative purposes only.
     CompositingLayerType compositingLayerType() const;
@@ -202,14 +209,13 @@ public:
     // Return an estimate of the backing store area (in pixels) allocated by this object's GraphicsLayers.
     double backingStoreMemoryEstimate() const;
 
-    bool didSwitchToFullTileCoverageDuringLoading() const { return m_didSwitchToFullTileCoverageDuringLoading; }
-    void setDidSwitchToFullTileCoverageDuringLoading() { m_didSwitchToFullTileCoverageDuringLoading = true; }
-
 #if ENABLE(CSS_COMPOSITING)
     void setBlendMode(BlendMode);
 #endif
 
 private:
+    FloatRect backgroundBoxForPainting() const;
+
     void createPrimaryGraphicsLayer();
     void destroyGraphicsLayers();
     
@@ -234,7 +240,6 @@ private:
     bool requiresScrollCornerLayer() const;
     bool updateScrollingLayers(bool scrollingLayers);
     void updateDrawsContent(bool isSimpleContainer);
-    void registerScrollingLayers();
     
     void updateRootLayerConfiguration();
 
@@ -244,9 +249,9 @@ private:
     
     LayoutSize contentOffsetInCompostingLayer() const;
     // Result is transform origin in pixels.
-    FloatPoint3D computeTransformOrigin(const IntRect& borderBox) const;
+    FloatPoint3D computeTransformOrigin(const LayoutRect& borderBox) const;
     // Result is perspective origin in pixels.
-    FloatPoint computePerspectiveOrigin(const IntRect& borderBox) const;
+    FloatPoint computePerspectiveOrigin(const LayoutRect& borderBox) const;
 
     void updateOpacity(const RenderStyle*);
     void updateTransform(const RenderStyle*);
@@ -289,7 +294,7 @@ private:
     void paintIntoLayer(const GraphicsLayer*, GraphicsContext*, const IntRect& paintDirtyRect, PaintBehavior, GraphicsLayerPaintingPhase);
 
     // Helper function for updateGraphicsLayerGeometry.
-    void adjustAncestorCompositingBoundsForFlowThread(IntRect& ancestorCompositingBounds, const RenderLayer* compositingAncestor) const;
+    void adjustAncestorCompositingBoundsForFlowThread(LayoutRect& ancestorCompositingBounds, const RenderLayer* compositingAncestor) const;
 
     static CSSPropertyID graphicsLayerToCSSProperty(AnimatedPropertyID);
     static AnimatedPropertyID cssToGraphicsLayerProperty(CSSPropertyID);
@@ -311,10 +316,11 @@ private:
     std::unique_ptr<GraphicsLayer> m_scrollingLayer; // Only used if the layer is using composited scrolling.
     std::unique_ptr<GraphicsLayer> m_scrollingContentsLayer; // Only used if the layer is using composited scrolling.
 
-    uint64_t m_scrollLayerID;
+    ScrollingNodeID m_viewportConstrainedNodeID;
+    ScrollingNodeID m_scrollingNodeID;
 
     LayoutRect m_compositedBounds;
-    LayoutSize m_subpixelAccumulation; // The accumulated subpixel offset of the compositedBounds compared to absolute coordinates.
+    LayoutSize m_devicePixelFractionFromRenderer;
 
     bool m_artificiallyInflatedBounds; // bounds had to be made non-zero to make transform-origin work
     bool m_isMainFrameRenderViewLayer;
@@ -324,7 +330,6 @@ private:
     bool m_canCompositeFilters;
 #endif
     bool m_backgroundLayerPaintsFixedRootBackground;
-    bool m_didSwitchToFullTileCoverageDuringLoading;
 
     static bool m_creatingPrimaryGraphicsLayer;
 };
@@ -337,7 +342,5 @@ enum CanvasCompositingStrategy {
 CanvasCompositingStrategy canvasCompositingStrategy(const RenderObject&);
 
 } // namespace WebCore
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // RenderLayerBacking_h

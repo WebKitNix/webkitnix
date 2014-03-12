@@ -51,8 +51,13 @@ public:
     explicit RemoteScrollingCoordinatorProxy(WebPageProxy&);
     virtual ~RemoteScrollingCoordinatorProxy();
     
-    // Inform the web process that the scroll position changed.
+    // Inform the web process that the scroll position changed (called from the scrolling tree)
     void scrollPositionChanged(WebCore::ScrollingNodeID, const WebCore::FloatPoint& newScrollPosition);
+
+    bool isPointInNonFastScrollableRegion(const WebCore::IntPoint&) const;
+
+    // Called externally when native views move around.
+    void scrollPositionChangedViaDelegatedScrolling(WebCore::ScrollingNodeID, const WebCore::FloatPoint&);
 
     // FIXME: expose the tree and pass this to that?
     bool handleWheelEvent(const WebCore::PlatformWheelEvent&);

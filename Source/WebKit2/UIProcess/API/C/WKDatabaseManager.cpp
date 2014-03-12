@@ -31,6 +31,8 @@
 
 using namespace WebKit;
 
+typedef GenericAPICallback<WKArrayRef> ArrayAPICallback;
+
 WKTypeID WKDatabaseManagerGetTypeID()
 {
 #if ENABLE(SQL_DATABASE)
@@ -120,6 +122,26 @@ WKStringRef WKDatabaseManagerGetDatabaseDetailsCurrentUsageKey()
 #endif
 }
 
+WKStringRef WKDatabaseManagerGetDatabaseDetailsCreationTimeKey()
+{
+#if ENABLE(SQL_DATABASE)
+    static API::String* key = API::String::create(WebDatabaseManagerProxy::databaseDetailsCreationTimeKey()).leakRef();
+    return toAPI(key);
+#else
+    return 0;
+#endif
+}
+
+WKStringRef WKDatabaseManagerGetDatabaseDetailsModificationTimeKey()
+{
+#if ENABLE(SQL_DATABASE)
+    static API::String* key = API::String::create(WebDatabaseManagerProxy::databaseDetailsModificationTimeKey()).leakRef();
+    return toAPI(key);
+#else
+    return 0;
+#endif
+}
+
 void WKDatabaseManagerSetClient(WKDatabaseManagerRef databaseManagerRef, const WKDatabaseManagerClientBase* wkClient)
 {
 #if ENABLE(SQL_DATABASE)
@@ -135,7 +157,7 @@ void WKDatabaseManagerSetClient(WKDatabaseManagerRef databaseManagerRef, const W
 void WKDatabaseManagerGetDatabasesByOrigin(WKDatabaseManagerRef databaseManagerRef, void* context, WKDatabaseManagerGetDatabasesByOriginFunction callback)
 {
 #if ENABLE(SQL_DATABASE)
-    toImpl(databaseManagerRef)->getDatabasesByOrigin(ArrayCallback::create(context, callback));
+    toImpl(databaseManagerRef)->getDatabasesByOrigin(ArrayAPICallback::create(context, callback));
 #else
     UNUSED_PARAM(databaseManagerRef);
     UNUSED_PARAM(context);
@@ -146,7 +168,7 @@ void WKDatabaseManagerGetDatabasesByOrigin(WKDatabaseManagerRef databaseManagerR
 void WKDatabaseManagerGetDatabaseOrigins(WKDatabaseManagerRef databaseManagerRef, void* context, WKDatabaseManagerGetDatabaseOriginsFunction callback)
 {
 #if ENABLE(SQL_DATABASE)
-    toImpl(databaseManagerRef)->getDatabaseOrigins(ArrayCallback::create(context, callback));
+    toImpl(databaseManagerRef)->getDatabaseOrigins(ArrayAPICallback::create(context, callback));
 #else
     UNUSED_PARAM(databaseManagerRef);
     UNUSED_PARAM(context);

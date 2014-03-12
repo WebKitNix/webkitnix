@@ -30,6 +30,7 @@
 
 #include "CodeBlock.h"
 #include "Executable.h"
+#include "JSCInlines.h"
 
 namespace JSC {
 
@@ -64,6 +65,8 @@ void JITToDFGDeferredCompilationCallback::compilationDidComplete(
         codeBlock->install();
     
     codeBlock->alternative()->setOptimizationThresholdBasedOnCompilationResult(result);
+
+    DeferredCompilationCallback::compilationDidComplete(codeBlock, result);
 }
 
 } // JSC

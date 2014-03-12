@@ -31,13 +31,14 @@
 
 #include "CodeBlock.h"
 #include "CallFrame.h"
+#include "ErrorHandlingScope.h"
 #include "ErrorInstance.h"
 #include "JSGlobalObjectFunctions.h"
 #include "JSObject.h"
 #include "JSNotAnObject.h"
 #include "Interpreter.h"
 #include "Nodes.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC {
 
@@ -80,6 +81,11 @@ JSObject* createStackOverflowError(JSGlobalObject* globalObject)
 
 JSObject* createUndefinedVariableError(ExecState* exec, const Identifier& ident)
 {
+    
+    if (ident.impl()->isEmptyUnique()) {
+        String message(makeString("Can't find private variable: @", exec->propertyNames().getPublicName(ident).string()));
+        return createReferenceError(exec, message);
+    }
     String message(makeString("Can't find variable: ", ident.string()));
     return createReferenceError(exec, message);
 }
@@ -160,14 +166,16 @@ JSObject* throwOutOfMemoryError(ExecState* exec)
 
 JSObject* throwStackOverflowError(ExecState* exec)
 {
-    Interpreter::ErrorHandlingMode mode(exec);
-    return exec->vm().throwException(exec, createStackOverflowError(exec));
+    VM& vm = exec->vm();
+    ErrorHandlingScope errorScope(vm);
+    return vm.throwException(exec, createStackOverflowError(exec));
 }
 
 JSObject* throwTerminatedExecutionException(ExecState* exec)
 {
-    Interpreter::ErrorHandlingMode mode(exec);
-    return exec->vm().throwException(exec, createTerminatedExecutionException(&exec->vm()));
+    VM& vm = exec->vm();
+    ErrorHandlingScope errorScope(vm);
+    return vm.throwException(exec, createTerminatedExecutionException(&vm));
 }
 
 } // namespace JSC

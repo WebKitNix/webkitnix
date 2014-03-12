@@ -34,7 +34,7 @@
 #include "DFGOSRExitPreparation.h"
 #include "LinkBuffer.h"
 #include "OperandsInlines.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include "RepatchBuffer.h"
 #include <wtf/StringPrintStream.h>
 
@@ -96,7 +96,7 @@ void compileOSRExit(ExecState* exec)
         
         LinkBuffer patchBuffer(*vm, &jit, codeBlock);
         exit.m_code = FINALIZE_CODE_IF(
-            shouldShowDisassembly(),
+            shouldShowDisassembly() || Options::verboseOSR(),
             patchBuffer,
             ("DFG OSR exit #%u (%s, %s) from %s, with operands = %s",
                 exitIndex, toCString(exit.m_codeOrigin).data(),

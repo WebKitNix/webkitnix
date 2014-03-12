@@ -23,6 +23,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <wtf/Platform.h>
+
 #include "JavaScriptCore.h"
 #include "JSBasePrivate.h"
 #include "JSContextRefPrivate.h"
@@ -33,7 +35,7 @@
 #define ASSERT_DISABLED 0
 #include <wtf/Assertions.h>
 
-#if PLATFORM(MAC) || PLATFORM(IOS)
+#if OS(DARWIN)
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 #include <sys/time.h>
@@ -568,7 +570,6 @@ static JSValueRef EvilExceptionObject_convertToType(JSContextRef context, JSObje
         break;
     default:
         return JSValueMakeNull(context);
-        break;
     }
     
     JSValueRef func = JSObjectGetProperty(context, object, funcName, exception);
@@ -1103,7 +1104,7 @@ static void checkConstnessInJSObjectNames()
     val.name = "something";
 }
 
-#if PLATFORM(MAC) || PLATFORM(IOS)
+#if OS(DARWIN)
 static double currentCPUTime()
 {
     mach_msg_type_number_t infoCount = THREAD_BASIC_INFO_COUNT;
@@ -1162,7 +1163,7 @@ static bool extendTerminateCallback(JSContextRef ctx, void* context)
     }
     return true;
 }
-#endif /* PLATFORM(MAC) || PLATFORM(IOS) */
+#endif /* OS(DARWIN) */
 
 
 int main(int argc, char* argv[])
@@ -1629,6 +1630,26 @@ int main(int argc, char* argv[])
     JSStringRelease(line);
 
     exception = NULL;
+    functionBody = JSStringCreateWithUTF8CString("rreturn Array;");
+    line = JSStringCreateWithUTF8CString("line");
+    ASSERT(!JSObjectMakeFunction(context, NULL, 0, NULL, functionBody, NULL, -42, &exception));
+    ASSERT(JSValueIsObject(context, exception));
+    v = JSObjectGetProperty(context, JSValueToObject(context, exception, NULL), line, NULL);
+    assertEqualsAsNumber(v, 1);
+    JSStringRelease(functionBody);
+    JSStringRelease(line);
+
+    exception = NULL;
+    functionBody = JSStringCreateWithUTF8CString("// Line one.\nrreturn Array;");
+    line = JSStringCreateWithUTF8CString("line");
+    ASSERT(!JSObjectMakeFunction(context, NULL, 0, NULL, functionBody, NULL, 1, &exception));
+    ASSERT(JSValueIsObject(context, exception));
+    v = JSObjectGetProperty(context, JSValueToObject(context, exception, NULL), line, NULL);
+    assertEqualsAsNumber(v, 2);
+    JSStringRelease(functionBody);
+    JSStringRelease(line);
+
+    exception = NULL;
     functionBody = JSStringCreateWithUTF8CString("return Array;");
     function = JSObjectMakeFunction(context, NULL, 0, NULL, functionBody, NULL, 1, &exception);
     JSStringRelease(functionBody);
@@ -1789,6 +1810,18 @@ int main(int argc, char* argv[])
     ASSERT(JSValueIsEqual(context, v, o, NULL));
     JSStringRelease(script);
 
+    exception = NULL;
+    script = JSStringCreateWithUTF8CString("rreturn Array;");
+    JSStringRef sourceURL = JSStringCreateWithUTF8CString("file:///foo/bar.js");
+    JSStringRef sourceURLKey = JSStringCreateWithUTF8CString("sourceURL");
+    JSEvaluateScript(context, script, NULL, sourceURL, 1, &exception);
+    ASSERT(exception);
+    v = JSObjectGetProperty(context, JSValueToObject(context, exception, NULL), sourceURLKey, NULL);
+    assertEqualsAsUTF8String(v, "file:///foo/bar.js");
+    JSStringRelease(script);
+    JSStringRelease(sourceURL);
+    JSStringRelease(sourceURLKey);
+
     // Verify that creating a constructor for a class with no static functions does not trigger
     // an assert inside putDirect or lead to a crash during GC. <https://bugs.webkit.org/show_bug.cgi?id=25785>
     nullDefinition = kJSClassDefinitionEmpty;
@@ -1817,6 +1850,7 @@ int main(int argc, char* argv[])
         }
 
         JSStringRelease(script);
+        exception = NULL;
         result = scriptObject ? JSScriptEvaluate(context, scriptObject, 0, &exception) : 0;
         if (result && JSValueIsUndefined(context, result))
             printf("PASS: Test script executed successfully.\n");
@@ -1833,7 +1867,7 @@ int main(int argc, char* argv[])
         free(scriptUTF8);
     }
 
-#if PLATFORM(MAC) || PLATFORM(IOS)
+#if OS(DARWIN)
     JSStringRef currentCPUTimeStr = JSStringCreateWithUTF8CString("currentCPUTime");
     JSObjectRef currentCPUTimeFunction = JSObjectMakeFunctionWithCallback(context, currentCPUTimeStr, currentCPUTime_callAsFunction);
     JSObjectSetProperty(context, globalObject, currentCPUTimeStr, currentCPUTimeFunction, kJSPropertyAttributeNone, NULL); 
@@ -1984,7 +2018,7 @@ int main(int argc, char* argv[])
             failed = true;
         }
     }
-#endif /* PLATFORM(MAC) || PLATFORM(IOS) */
+#endif /* OS(DARWIN) */
 
     // Clear out local variables pointing at JSObjectRefs to allow their values to be collected
     function = NULL;

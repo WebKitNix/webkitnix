@@ -21,7 +21,6 @@
 #ifndef SVGSVGElement_h
 #define SVGSVGElement_h
 
-#if ENABLE(SVG)
 #include "SVGAnimatedBoolean.h"
 #include "SVGAnimatedLength.h"
 #include "SVGAnimatedPreserveAspectRatio.h"
@@ -123,7 +122,7 @@ public:
 
     void setupInitialView(const String& fragmentIdentifier, Element* anchorNode);
 
-    Element* getElementById(const AtomicString&);
+    Element* getElementById(const String&);
 
     bool widthAttributeEstablishesViewport() const;
     bool heightAttributeEstablishesViewport() const;
@@ -186,5 +185,4 @@ NODE_TYPE_CASTS(SVGSVGElement)
 
 } // namespace WebCore
 
-#endif // ENABLE(SVG)
 #endif

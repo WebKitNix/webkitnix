@@ -67,6 +67,7 @@
 #include "SecurityPolicy.h"
 #include "Settings.h"
 #include "TextIterator.h"
+#include "VisibleSelection.h"
 #include "WebKitAccessibleWrapperAtk.h"
 #include "webkitglobalsprivate.h"
 #include "webkitwebframe.h"
@@ -84,6 +85,16 @@ bool DumpRenderTreeSupportGtk::s_drtRun = false;
 bool DumpRenderTreeSupportGtk::s_linksIncludedInTabChain = true;
 DumpRenderTreeSupportGtk::FrameLoadEventCallback DumpRenderTreeSupportGtk::s_frameLoadEventCallback = 0;
 DumpRenderTreeSupportGtk::AuthenticationCallback DumpRenderTreeSupportGtk::s_authenticationCallback = 0;
+
+static inline WebCore::FindOptions toWebCoreFindOptions(WebKitFindOptions type)
+{
+    return static_cast<WebCore::FindOptions>((type & WebFindOptionsCaseInsensitive ? CaseInsensitive : 0)
+        | (type & WebFindOptionsAtWordStarts ? AtWordStarts : 0)
+        | (type & WebFindOptionsTreatMedialCapitalAsWordStart ? TreatMedialCapitalAsWordStart : 0)
+        | (type & WebFindOptionsBackwards ? Backwards : 0)
+        | (type & WebFindOptionsWrapAround ? WrapAround : 0)
+        | (type & WebFindOptionsStartInSelection ? StartInSelection : 0));
+}
 
 DumpRenderTreeSupportGtk::DumpRenderTreeSupportGtk()
 {
@@ -389,11 +400,12 @@ bool DumpRenderTreeSupportGtk::selectedRange(WebKitWebView* webView, int* start,
 
     Frame& frame = core(webView)->focusController().focusedOrMainFrame();
 
-    RefPtr<Range> range = frame.selection().toNormalizedRange().get();
+    const VisibleSelection& selection = frame.selection().selection();
+    RefPtr<Range> range = selection.toNormalizedRange().get();
     if (!range)
         return false;
 
-    Element* selectionRoot = frame.selection().rootEditableElement();
+    Element* selectionRoot = selection.rootEditableElement();
     Element* scope = selectionRoot ? selectionRoot : frame.document()->documentElement();
 
     RefPtr<Range> testRange = Range::create(scope->document(), scope, 0, range->startContainer(), range->startOffset());
@@ -448,7 +460,7 @@ void DumpRenderTreeSupportGtk::gcCollectJavascriptObjectsOnAlternateThread(bool 
 unsigned long DumpRenderTreeSupportGtk::gcCountJavascriptObjects()
 {
     JSC::JSLockHolder lock(JSDOMWindow::commonVM());
-    return JSDOMWindow::commonVM()->heap.objectCount();
+    return JSDOMWindow::commonVM().heap.objectCount();
 }
 
 void DumpRenderTreeSupportGtk::layoutFrame(WebKitWebFrame* frame)
@@ -473,7 +485,7 @@ void DumpRenderTreeSupportGtk::clearOpener(WebKitWebFrame* frame)
 
 bool DumpRenderTreeSupportGtk::findString(WebKitWebView* webView, const gchar* targetString, WebKitFindOptions findOptions)
 {
-    return core(webView)->findString(String::fromUTF8(targetString), findOptions);
+    return core(webView)->findString(String::fromUTF8(targetString), toWebCoreFindOptions(findOptions));
 }
 
 void DumpRenderTreeSupportGtk::setValueForUser(JSContextRef context, JSValueRef nodeObject, JSStringRef value)
@@ -487,7 +499,7 @@ void DumpRenderTreeSupportGtk::setValueForUser(JSContextRef context, JSValueRef 
         return;
 
     size_t bufferSize = JSStringGetMaximumUTF8CStringSize(value);
-    GOwnPtr<gchar> valueBuffer(static_cast<gchar*>(g_malloc(bufferSize)));
+    GUniquePtr<gchar> valueBuffer(static_cast<gchar*>(g_malloc(bufferSize)));
     JSStringGetUTF8CString(value, valueBuffer.get(), bufferSize);
     inputElement->setValueForUser(String::fromUTF8(valueBuffer.get()));
 }
@@ -498,7 +510,7 @@ void DumpRenderTreeSupportGtk::rectangleForSelection(WebKitWebFrame* frame, cair
     if (!coreFrame)
         return;
 
-    IntRect bounds = enclosingIntRect(coreFrame->selection().bounds());
+    IntRect bounds = enclosingIntRect(coreFrame->selection().selectionBounds());
     rectangle->x = bounds.x();
     rectangle->y = bounds.y();
     rectangle->width = bounds.width();
@@ -577,31 +589,10 @@ void DumpRenderTreeSupportGtk::setCSSRegionsEnabled(WebKitWebView* webView, bool
     RuntimeEnabledFeatures::sharedFeatures().setCSSRegionsEnabled(enabled);
 }
 
-void DumpRenderTreeSupportGtk::setCSSCustomFilterEnabled(WebKitWebView* webView, bool enabled)
-{
-#if ENABLE(CSS_SHADERS)
-    core(webView)->settings().setCSSCustomFilterEnabled(enabled);
-#endif
-}
-
 void DumpRenderTreeSupportGtk::setExperimentalContentSecurityPolicyFeaturesEnabled(bool enabled)
 {
 #if ENABLE(CSP_NEXT)
     RuntimeEnabledFeatures::sharedFeatures().setExperimentalContentSecurityPolicyFeaturesEnabled(enabled);
-#endif
-}
-
-void DumpRenderTreeSupportGtk::setSeamlessIFramesEnabled(bool enabled)
-{
-#if ENABLE(IFRAME_SEAMLESS)
-    RuntimeEnabledFeatures::sharedFeatures().setSeamlessIFramesEnabled(enabled);
-#endif
-}
-
-void DumpRenderTreeSupportGtk::setShadowDOMEnabled(bool enabled)
-{
-#if ENABLE(SHADOW_DOM)
-    RuntimeEnabledFeatures::sharedFeatures().setShadowDOMEnabled(enabled);
 #endif
 }
 
@@ -649,7 +640,7 @@ GSList* DumpRenderTreeSupportGtk::trackedRepaintRects(WebKitWebFrame* frame)
         return 0;
 
     GSList* rects = 0;
-    const Vector<IntRect>& repaintRects = coreFrame->view()->trackedRepaintRects();
+    const Vector<FloatRect>& repaintRects = coreFrame->view()->trackedRepaintRects();
     for (unsigned i = 0; i < repaintRects.size(); i++) {
         GdkRectangle* rect = g_new0(GdkRectangle, 1);
         rect->x = repaintRects[i].x();
@@ -692,14 +683,14 @@ void DumpRenderTreeSupportGtk::setAuthenticationCallback(AuthenticationCallback 
     s_authenticationCallback = authenticationCallback;
 }
 
-void DumpRenderTreeSupportGtk::setPageVisibility(WebKitWebView* webView, WebCore::PageVisibilityState visibilityState, bool isInitialState)
+void DumpRenderTreeSupportGtk::setPageVisibility(WebKitWebView* webView, WebCore::PageVisibilityState visibilityState, bool)
 {
 #if ENABLE(PAGE_VISIBILITY_API)
     Page* page = core(webView);
     if (!page)
         return;
 
-    page->setIsVisible(visibilityState == PageVisibilityStateVisible, isInitialState);
+    page->setIsVisible(visibilityState == PageVisibilityStateVisible);
     if (visibilityState == PageVisibilityStatePrerender)
         page->setIsPrerender();
 #endif

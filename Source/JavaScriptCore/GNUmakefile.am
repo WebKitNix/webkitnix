@@ -51,11 +51,13 @@ javascriptcore_cppflags += \
 	-I$(srcdir)/Source/JavaScriptCore/ForwardingHeaders \
 	-I$(srcdir)/Source/JavaScriptCore/assembler \
 	-I$(srcdir)/Source/JavaScriptCore/bindings \
+	-I$(srcdir)/Source/JavaScriptCore/builtins \
 	-I$(srcdir)/Source/JavaScriptCore/bytecode \
 	-I$(srcdir)/Source/JavaScriptCore/bytecompiler \
 	-I$(srcdir)/Source/JavaScriptCore/debugger \
 	-I$(srcdir)/Source/JavaScriptCore/dfg \
 	-I$(srcdir)/Source/JavaScriptCore/disassembler \
+	-I$(srcdir)/Source/JavaScriptCore/disassembler/udis86 \
 	-I$(srcdir)/Source/JavaScriptCore/ftl \
 	-I$(srcdir)/Source/JavaScriptCore/heap \
 	-I$(srcdir)/Source/JavaScriptCore/inspector \
@@ -72,6 +74,18 @@ javascriptcore_cppflags += \
 	-I$(srcdir)/Source/WTF \
 	$(LLVM_CFLAGS)
 
+# FIXME: the -fomit-frame-pointer and -ftree-dce optimizations are disabled after they've been causing
+# trouble with the merged jsCStack code. The former is required due to otherwise incorrectly compiled
+# operationCallEval function, while the latter is required when using GCC 4.8. See bugs #127777 and
+# #127909 for more information.
+javascriptcore_cppflags += \
+	-fno-omit-frame-pointer
+
+if COMPILER_GCC
+javascriptcore_cppflags += \
+	-fno-tree-dce
+endif
+
 javascriptcore_cflags += \
 	$(global_cflags) \
 	$(GLIB_CFLAGS) \
@@ -81,6 +95,12 @@ javascriptcore_cflags += \
 pkgconfig_DATA += Source/JavaScriptCore/javascriptcoregtk-@WEBKITGTK_API_VERSION@.pc
 
 $(shell mkdir -p DerivedSources/JavaScriptCore)
+
+DerivedSources/JavaScriptCore/Bytecodes.h: $(srcdir)/Source/JavaScriptCore/generate-bytecode-files $(srcdir)/Source/JavaScriptCore/bytecode/BytecodeList.json
+	$(AM_V_GEN)$(PYTHON) $(srcdir)/Source/JavaScriptCore/generate-bytecode-files --bytecodes_h $@ $(srcdir)/Source/JavaScriptCore/bytecode/BytecodeList.json
+
+DerivedSources/JavaScriptCore/InitBytecodes.asm: $(srcdir)/Source/JavaScriptCore/generate-bytecode-files $(srcdir)/Source/JavaScriptCore/bytecode/BytecodeList.json
+	$(AM_V_GEN)$(PYTHON) $(srcdir)/Source/JavaScriptCore/generate-bytecode-files --init_bytecodes_asm $@ $(srcdir)/Source/JavaScriptCore/bytecode/BytecodeList.json
 
 DerivedSources/JavaScriptCore/Lexer.lut.h: $(srcdir)/Source/JavaScriptCore/create_hash_table $(srcdir)/Source/JavaScriptCore/parser/Keywords.table
 	$(AM_V_GEN)$(PERL) $^ > $@
@@ -98,11 +118,19 @@ DerivedSources/JavaScriptCore/LLIntDesiredOffsets.h: $(javascriptcore_sources) $
 	$(AM_V_GEN)$(RUBY) $(srcdir)/Source/JavaScriptCore/offlineasm/generate_offset_extractor.rb $(srcdir)/Source/JavaScriptCore/llint/LowLevelInterpreter.asm $@
 	$(AM_V_at)touch $@
 
-$(Programs_LLIntOffsetsExtractor_OBJECTS): DerivedSources/JavaScriptCore/LLIntDesiredOffsets.h
+$(Programs_LLIntOffsetsExtractor_OBJECTS): DerivedSources/JavaScriptCore/LLIntDesiredOffsets.h DerivedSources/JavaScriptCore/Bytecodes.h
 
-DerivedSources/JavaScriptCore/LLIntAssembly.h: Programs/LLIntOffsetsExtractor$(EXEEXT)
+DerivedSources/JavaScriptCore/LLIntAssembly.h: Programs/LLIntOffsetsExtractor$(EXEEXT) DerivedSources/JavaScriptCore/InitBytecodes.asm
 	$(AM_V_GEN)$(RUBY) $(srcdir)/Source/JavaScriptCore/offlineasm/asm.rb $(srcdir)/Source/JavaScriptCore/llint/LowLevelInterpreter.asm Programs/LLIntOffsetsExtractor$(EXEEXT) $@
 	$(AM_V_at)touch $@
+
+DerivedSources/JavaScriptCore/JSCBuiltins.h: DerivedSources/JavaScriptCore/JSCBuiltins.cpp
+DerivedSources/JavaScriptCore/JSCBuiltins.cpp: $(srcdir)/Source/JavaScriptCore/generate-js-builtins $(javascriptcore_builtins_js_nosources)
+	$(AM_V_GEN)$(PYTHON) $^ $@
+
+DerivedSources/JavaScriptCore/udis86_itab.h: DerivedSources/JavaScriptCore/udis86_itab.c
+DerivedSources/JavaScriptCore/udis86_itab.c: $(udis86_nosources)
+	$(AM_V_GEN)$(PYTHON) $(srcdir)/Source/JavaScriptCore/disassembler/udis86/itab.py --outputDir DerivedSources/JavaScriptCore $(srcdir)/Source/JavaScriptCore/disassembler/udis86/optable.xml
 
 $(libjavascriptcoregtk_@WEBKITGTK_API_MAJOR_VERSION@_@WEBKITGTK_API_MINOR_VERSION@_la_OBJECTS): DerivedSources/JavaScriptCore/LLIntAssembly.h
 
@@ -190,6 +218,7 @@ EXTRA_DIST += \
 	Source/JavaScriptCore/icu/LICENSE \
 	Source/JavaScriptCore/icu/README \
 	Source/JavaScriptCore/inspector/InjectedScriptSource.js \
+	Source/JavaScriptCore/inspector/protocol/Console.json \
 	Source/JavaScriptCore/inspector/protocol/Debugger.json \
 	Source/JavaScriptCore/inspector/protocol/GenericTypes.json \
 	Source/JavaScriptCore/inspector/protocol/InspectorDomain.json \
@@ -204,8 +233,10 @@ EXTRA_DIST += \
 	Source/JavaScriptCore/KeywordLookupGenerator.py \
 	Source/JavaScriptCore/parser/Keywords.table \
 	Source/JavaScriptCore/THANKS \
+	$(javascriptcore_builtins_js_nosources) \
 	$(llint_nosources) \
-	$(offlineasm_nosources)
+	$(offlineasm_nosources) \
+	$(udis86_nosources)
 
 CLEANFILES += \
 	$(javascriptcore_built_nosources) \
@@ -231,6 +262,7 @@ endif
 # Inspector Interfaces
 
 JavaScriptCore_INSPECTOR_DOMAINS := \
+    $(JavaScriptCore)/inspector/protocol/Console.json \
     $(JavaScriptCore)/inspector/protocol/Debugger.json \
     $(JavaScriptCore)/inspector/protocol/GenericTypes.json \
     $(JavaScriptCore)/inspector/protocol/InspectorDomain.json \

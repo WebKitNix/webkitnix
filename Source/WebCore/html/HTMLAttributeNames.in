@@ -269,6 +269,10 @@ onwebkitsourceclose
 onwebkitsourceended
 onwebkitsourceopen
 onwebkittransitionend
+onwebkitwillrevealbottom
+onwebkitwillrevealleft
+onwebkitwillrevealright
+onwebkitwillrevealtop
 open
 optimum
 pattern
@@ -301,7 +305,6 @@ scoped
 scrollamount
 scrolldelay
 scrolling
-seamless
 select
 selected
 shape
@@ -338,11 +341,9 @@ valign
 value
 valuetype
 version
-viewsource
 vlink
 vspace
 webkitallowfullscreen
-webkitdirectory
 width
 wrap
 
@@ -351,6 +352,7 @@ autocapitalize
 data-youtube-id
 onwebkitcurrentplaybacktargetiswirelesschanged
 onwebkitplaybacktargetavailabilitychanged
+x-webkit-imagemenu
 webkit-playsinline
 x-webkit-airplay
 x-webkit-wirelessvideoplaybackdisabled

@@ -28,6 +28,7 @@
 #include "Nodes.h"
 #include "NodeConstructors.h"
 
+#include "BuiltinNames.h"
 #include "BytecodeGenerator.h"
 #include "CallFrame.h"
 #include "Debugger.h"
@@ -38,7 +39,7 @@
 #include "JSONObject.h"
 #include "LabelScope.h"
 #include "Lexer.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include "Parser.h"
 #include "PropertyNameArray.h"
 #include "RegExpCache.h"
@@ -529,17 +530,48 @@ RegisterID* FunctionCallDotNode::emitBytecode(BytecodeGenerator& generator, Regi
     return generator.emitCall(returnValue.get(), function.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
 }
 
+static RegisterID* getArgumentByVal(BytecodeGenerator& generator, ExpressionNode* base, RegisterID* property, RegisterID* dst, JSTextPosition divot, JSTextPosition divotStart, JSTextPosition divotEnd)
+{
+    if (base->isResolveNode()
+        && generator.willResolveToArguments(static_cast<ResolveNode*>(base)->identifier())
+        && !generator.symbolTable().slowArguments()) {
+        generator.emitExpressionInfo(divot, divotStart, divotEnd);
+        return generator.emitGetArgumentByVal(generator.finalDestination(dst), generator.uncheckedRegisterForArguments(), property);
+    }
+    return nullptr;
+}
+
 RegisterID* CallFunctionCallDotNode::emitBytecode(BytecodeGenerator& generator, RegisterID* dst)
 {
     RefPtr<Label> realCall = generator.newLabel();
     RefPtr<Label> end = generator.newLabel();
     RefPtr<RegisterID> base = generator.emitNode(m_base);
     generator.emitExpressionInfo(subexpressionDivot(), subexpressionStart(), subexpressionEnd());
-    RefPtr<RegisterID> function = generator.emitGetById(generator.tempDestination(dst), base.get(), m_ident);
-    RefPtr<RegisterID> returnValue = generator.finalDestination(dst, function.get());
-    generator.emitJumpIfNotFunctionCall(function.get(), realCall.get());
+    RefPtr<RegisterID> function;
+    bool emitCallCheck = !generator.isBuiltinFunction();
+    if (emitCallCheck) {
+        function = generator.emitGetById(generator.tempDestination(dst), base.get(), generator.propertyNames().builtinNames().callPublicName());
+        generator.emitJumpIfNotFunctionCall(function.get(), realCall.get());
+    }
+    RefPtr<RegisterID> returnValue = generator.finalDestination(dst);
     {
-        if (m_args->m_listNode && m_args->m_listNode->m_expr) {
+        if (m_args->m_listNode && m_args->m_listNode->m_expr && m_args->m_listNode->m_expr->isSpreadExpression()) {
+            RefPtr<RegisterID> profileHookRegister;
+            if (generator.shouldEmitProfileHooks())
+                profileHookRegister = generator.newTemporary();
+            SpreadExpressionNode* spread = static_cast<SpreadExpressionNode*>(m_args->m_listNode->m_expr);
+            ExpressionNode* subject = spread->expression();
+            RefPtr<RegisterID> thisRegister = getArgumentByVal(generator, subject, generator.emitLoad(0, jsNumber(0)), 0, spread->divot(), spread->divotStart(), spread->divotEnd());
+            RefPtr<RegisterID> argumentsRegister;
+            if (thisRegister)
+                argumentsRegister = generator.uncheckedRegisterForArguments();
+            else {
+                argumentsRegister = generator.emitNode(subject);
+                generator.emitExpressionInfo(spread->divot(), spread->divotStart(), spread->divotEnd());
+                thisRegister = generator.emitGetByVal(generator.newTemporary(), argumentsRegister.get(), generator.emitLoad(0, jsNumber(0)));
+            }
+            generator.emitCallVarargs(returnValue.get(), base.get(), thisRegister.get(), argumentsRegister.get(), generator.newTemporary(), 1, profileHookRegister.get(), divot(), divotStart(), divotEnd());
+        } else if (m_args->m_listNode && m_args->m_listNode->m_expr) {
             ArgumentListNode* oldList = m_args->m_listNode;
             m_args->m_listNode = m_args->m_listNode->m_next;
 
@@ -547,24 +579,24 @@ RegisterID* CallFunctionCallDotNode::emitBytecode(BytecodeGenerator& generator, 
             CallArguments callArguments(generator, m_args);
             generator.emitNode(callArguments.thisRegister(), oldList->m_expr);
             generator.emitCall(returnValue.get(), realFunction.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
-            generator.emitJump(end.get());
-
             m_args->m_listNode = oldList;
         } else {
             RefPtr<RegisterID> realFunction = generator.emitMove(generator.tempDestination(dst), base.get());
             CallArguments callArguments(generator, m_args);
             generator.emitLoad(callArguments.thisRegister(), jsUndefined());
             generator.emitCall(returnValue.get(), realFunction.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
-            generator.emitJump(end.get());
         }
     }
-    generator.emitLabel(realCall.get());
-    {
-        CallArguments callArguments(generator, m_args);
-        generator.emitMove(callArguments.thisRegister(), base.get());
-        generator.emitCall(returnValue.get(), function.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
+    if (emitCallCheck) {
+        generator.emitJump(end.get());
+        generator.emitLabel(realCall.get());
+        {
+            CallArguments callArguments(generator, m_args);
+            generator.emitMove(callArguments.thisRegister(), base.get());
+            generator.emitCall(returnValue.get(), function.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
+        }
+        generator.emitLabel(end.get());
     }
-    generator.emitLabel(end.get());
     return returnValue.get();
 }
 
@@ -585,65 +617,96 @@ RegisterID* ApplyFunctionCallDotNode::emitBytecode(BytecodeGenerator& generator,
     RefPtr<Label> end = generator.newLabel();
     RefPtr<RegisterID> base = generator.emitNode(m_base);
     generator.emitExpressionInfo(subexpressionDivot(), subexpressionStart(), subexpressionEnd());
-    RefPtr<RegisterID> function = generator.emitGetById(generator.tempDestination(dst), base.get(), m_ident);
+    RefPtr<RegisterID> function;
     RefPtr<RegisterID> returnValue = generator.finalDestination(dst, function.get());
-    generator.emitJumpIfNotFunctionApply(function.get(), realCall.get());
-    {
-        if (mayBeCall) {
-            if (m_args->m_listNode && m_args->m_listNode->m_expr) {
-                ArgumentListNode* oldList = m_args->m_listNode;
-                if (m_args->m_listNode->m_next) {
-                    ASSERT(m_args->m_listNode->m_next->m_expr->isSimpleArray());
-                    ASSERT(!m_args->m_listNode->m_next->m_next);
-                    m_args->m_listNode = static_cast<ArrayNode*>(m_args->m_listNode->m_next->m_expr)->toArgumentList(generator.vm(), 0, 0);
-                    RefPtr<RegisterID> realFunction = generator.emitMove(generator.tempDestination(dst), base.get());
-                    CallArguments callArguments(generator, m_args);
-                    generator.emitNode(callArguments.thisRegister(), oldList->m_expr);
-                    generator.emitCall(returnValue.get(), realFunction.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
-                } else {
-                    m_args->m_listNode = m_args->m_listNode->m_next;
-                    RefPtr<RegisterID> realFunction = generator.emitMove(generator.tempDestination(dst), base.get());
-                    CallArguments callArguments(generator, m_args);
-                    generator.emitNode(callArguments.thisRegister(), oldList->m_expr);
-                    generator.emitCall(returnValue.get(), realFunction.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
-                }
-                m_args->m_listNode = oldList;
-            } else {
+    bool emitCallCheck = !generator.isBuiltinFunction();
+    if (emitCallCheck) {
+        function = generator.emitGetById(generator.tempDestination(dst), base.get(), generator.propertyNames().builtinNames().applyPublicName());
+        generator.emitJumpIfNotFunctionApply(function.get(), realCall.get());
+    }
+    if (mayBeCall) {
+        if (m_args->m_listNode && m_args->m_listNode->m_expr) {
+            ArgumentListNode* oldList = m_args->m_listNode;
+            if (m_args->m_listNode->m_expr->isSpreadExpression()) {
+                SpreadExpressionNode* spread = static_cast<SpreadExpressionNode*>(m_args->m_listNode->m_expr);
+                RefPtr<RegisterID> profileHookRegister;
+                if (generator.shouldEmitProfileHooks())
+                    profileHookRegister = generator.newTemporary();
+                RefPtr<RegisterID> realFunction = generator.emitMove(generator.newTemporary(), base.get());
+                RefPtr<RegisterID> index = generator.emitLoad(generator.newTemporary(), jsNumber(0));
+                RefPtr<RegisterID> thisRegister = generator.emitLoad(generator.newTemporary(), jsUndefined());
+                RefPtr<RegisterID> argumentsRegister = generator.emitLoad(generator.newTemporary(), jsUndefined());
+                
+                auto extractor = [&thisRegister, &argumentsRegister, &index](BytecodeGenerator& generator, RegisterID* value)
+                {
+                    RefPtr<Label> haveThis = generator.newLabel();
+                    RefPtr<Label> end = generator.newLabel();
+                    RefPtr<RegisterID> compareResult = generator.newTemporary();
+                    RefPtr<RegisterID> indexZeroCompareResult = generator.emitBinaryOp(op_eq, compareResult.get(), index.get(), generator.emitLoad(0, jsNumber(0)), OperandTypes(ResultType::numberTypeIsInt32(), ResultType::numberTypeIsInt32()));
+                    generator.emitJumpIfFalse(indexZeroCompareResult.get(), haveThis.get());
+                    generator.emitMove(thisRegister.get(), value);
+                    generator.emitLoad(index.get(), jsNumber(1));
+                    generator.emitJump(end.get());
+                    generator.emitLabel(haveThis.get());
+                    RefPtr<RegisterID> indexOneCompareResult = generator.emitBinaryOp(op_eq, compareResult.get(), index.get(), generator.emitLoad(0, jsNumber(1)), OperandTypes(ResultType::numberTypeIsInt32(), ResultType::numberTypeIsInt32()));
+                    generator.emitJumpIfFalse(indexOneCompareResult.get(), end.get());
+                    generator.emitMove(argumentsRegister.get(), value);
+                    generator.emitLoad(index.get(), jsNumber(2));
+                    generator.emitLabel(end.get());
+                };
+                generator.emitEnumeration(this, spread->expression(), extractor);
+                generator.emitCallVarargs(returnValue.get(), realFunction.get(), thisRegister.get(), argumentsRegister.get(), generator.newTemporary(), 0, profileHookRegister.get(), divot(), divotStart(), divotEnd());
+            } else if (m_args->m_listNode->m_next) {
+                ASSERT(m_args->m_listNode->m_next->m_expr->isSimpleArray());
+                ASSERT(!m_args->m_listNode->m_next->m_next);
+                m_args->m_listNode = static_cast<ArrayNode*>(m_args->m_listNode->m_next->m_expr)->toArgumentList(generator.vm(), 0, 0);
                 RefPtr<RegisterID> realFunction = generator.emitMove(generator.tempDestination(dst), base.get());
                 CallArguments callArguments(generator, m_args);
-                generator.emitLoad(callArguments.thisRegister(), jsUndefined());
+                generator.emitNode(callArguments.thisRegister(), oldList->m_expr);
+                generator.emitCall(returnValue.get(), realFunction.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
+            } else {
+                m_args->m_listNode = m_args->m_listNode->m_next;
+                RefPtr<RegisterID> realFunction = generator.emitMove(generator.tempDestination(dst), base.get());
+                CallArguments callArguments(generator, m_args);
+                generator.emitNode(callArguments.thisRegister(), oldList->m_expr);
                 generator.emitCall(returnValue.get(), realFunction.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
             }
+            m_args->m_listNode = oldList;
         } else {
-            ASSERT(m_args->m_listNode && m_args->m_listNode->m_next);
-            RefPtr<RegisterID> profileHookRegister;
-            if (generator.shouldEmitProfileHooks())
-                profileHookRegister = generator.newTemporary();
             RefPtr<RegisterID> realFunction = generator.emitMove(generator.tempDestination(dst), base.get());
-            RefPtr<RegisterID> thisRegister = generator.emitNode(m_args->m_listNode->m_expr);
-            RefPtr<RegisterID> argsRegister;
-            ArgumentListNode* args = m_args->m_listNode->m_next;
-            if (args->m_expr->isResolveNode() && generator.willResolveToArguments(static_cast<ResolveNode*>(args->m_expr)->identifier()))
-                argsRegister = generator.uncheckedRegisterForArguments();
-            else
-                argsRegister = generator.emitNode(args->m_expr);
-
-            // Function.prototype.apply ignores extra arguments, but we still
-            // need to evaluate them for side effects.
-            while ((args = args->m_next))
-                generator.emitNode(args->m_expr);
-
-            generator.emitCallVarargs(returnValue.get(), realFunction.get(), thisRegister.get(), argsRegister.get(), generator.newTemporary(), profileHookRegister.get(), divot(), divotStart(), divotEnd());
+            CallArguments callArguments(generator, m_args);
+            generator.emitLoad(callArguments.thisRegister(), jsUndefined());
+            generator.emitCall(returnValue.get(), realFunction.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
         }
-        generator.emitJump(end.get());
+    } else {
+        ASSERT(m_args->m_listNode && m_args->m_listNode->m_next);
+        RefPtr<RegisterID> profileHookRegister;
+        if (generator.shouldEmitProfileHooks())
+            profileHookRegister = generator.newTemporary();
+        RefPtr<RegisterID> realFunction = generator.emitMove(generator.tempDestination(dst), base.get());
+        RefPtr<RegisterID> thisRegister = generator.emitNode(m_args->m_listNode->m_expr);
+        RefPtr<RegisterID> argsRegister;
+        ArgumentListNode* args = m_args->m_listNode->m_next;
+        if (args->m_expr->isResolveNode() && generator.willResolveToArguments(static_cast<ResolveNode*>(args->m_expr)->identifier()) && !generator.symbolTable().slowArguments())
+            argsRegister = generator.uncheckedRegisterForArguments();
+        else
+            argsRegister = generator.emitNode(args->m_expr);
+
+        // Function.prototype.apply ignores extra arguments, but we still
+        // need to evaluate them for side effects.
+        while ((args = args->m_next))
+            generator.emitNode(args->m_expr);
+
+        generator.emitCallVarargs(returnValue.get(), realFunction.get(), thisRegister.get(), argsRegister.get(), generator.newTemporary(), 0, profileHookRegister.get(), divot(), divotStart(), divotEnd());
     }
-    generator.emitLabel(realCall.get());
-    {
+    if (emitCallCheck) {
+        generator.emitJump(end.get());
+        generator.emitLabel(realCall.get());
         CallArguments callArguments(generator, m_args);
         generator.emitMove(callArguments.thisRegister(), base.get());
         generator.emitCall(returnValue.get(), function.get(), NoExpectedFunction, callArguments, divot(), divotStart(), divotEnd());
+        generator.emitLabel(end.get());
     }
-    generator.emitLabel(end.get());
     return returnValue.get();
 }
 
@@ -2210,7 +2273,7 @@ void TryNode::emitBytecode(BytecodeGenerator& generator, RegisterID* dst)
             tryData = generator.pushTry(here.get());
         }
         
-        generator.emitPushNameScope(m_exceptionIdent, exceptionRegister.get(), DontDelete);
+        generator.emitPushCatchScope(m_exceptionIdent, exceptionRegister.get(), DontDelete);
         generator.emitNode(dst, m_catchBlock);
         generator.emitPopScope();
         generator.emitLabel(catchEndLabel.get());

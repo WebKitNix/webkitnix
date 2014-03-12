@@ -28,8 +28,8 @@
 #include "HTMLParserIdioms.h"
 #include "InputTypeNames.h"
 #include "LocalizedStrings.h"
-#include "RegularExpression.h"
 #include <wtf/text/StringBuilder.h>
+#include <yarr/RegularExpression.h>
 
 namespace WebCore {
 
@@ -44,18 +44,12 @@ static bool isValidEmailAddress(const String& address)
     if (!addressLength)
         return false;
 
-    DEFINE_STATIC_LOCAL(const RegularExpression, regExp, (emailPattern, TextCaseInsensitive));
+    DEFINE_STATIC_LOCAL(const JSC::Yarr::RegularExpression, regExp, (emailPattern, TextCaseInsensitive));
 
     int matchLength;
     int matchOffset = regExp.match(address, 0, &matchLength);
 
     return !matchOffset && matchLength == addressLength;
-}
-
-void EmailInputType::attach()
-{
-    TextFieldInputType::attach();
-    observeFeatureIfVisible(FeatureObserver::InputTypeEmail);
 }
 
 const AtomicString& EmailInputType::formControlType() const

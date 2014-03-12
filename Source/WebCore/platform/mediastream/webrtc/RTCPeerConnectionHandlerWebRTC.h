@@ -41,16 +41,16 @@ namespace WebCore {
 
 class RTCPeerConnectionHandlerWebRTC : public RTCPeerConnectionHandler {
 public:
-    virtual bool initialize(PassRefPtr<RTCConfiguration>, PassRefPtr<MediaConstraints>) OVERRIDE;
-    virtual void createOffer(PassRefPtr<RTCSessionDescriptionRequest>, PassRefPtr<MediaConstraints>) OVERRIDE;
-    virtual void createAnswer(PassRefPtr<RTCSessionDescriptionRequest>, PassRefPtr<MediaConstraints>) OVERRIDE;
+    virtual bool initialize(PassRefPtr<RTCConfiguration>) OVERRIDE;
+    virtual void createOffer(PassRefPtr<RTCSessionDescriptionRequest>, PassRefPtr<RTCOfferOptions>) OVERRIDE;
+    virtual void createAnswer(PassRefPtr<RTCSessionDescriptionRequest>, PassRefPtr<RTCOfferAnswerOptions>) OVERRIDE;
     virtual void setLocalDescription(PassRefPtr<RTCVoidRequest>, PassRefPtr<RTCSessionDescriptionDescriptor>) OVERRIDE;
     virtual void setRemoteDescription(PassRefPtr<RTCVoidRequest>, PassRefPtr<RTCSessionDescriptionDescriptor>) OVERRIDE;
     virtual PassRefPtr<RTCSessionDescriptionDescriptor> localDescription() OVERRIDE;
     virtual PassRefPtr<RTCSessionDescriptionDescriptor> remoteDescription() OVERRIDE;
-    virtual bool updateIce(PassRefPtr<RTCConfiguration>, PassRefPtr<MediaConstraints>) OVERRIDE;
+    virtual bool updateIce(PassRefPtr<RTCConfiguration>) OVERRIDE;
     virtual bool addIceCandidate(PassRefPtr<RTCVoidRequest>, PassRefPtr<RTCIceCandidateDescriptor>) OVERRIDE;
-    virtual bool addStream(PassRefPtr<MediaStreamPrivate>, PassRefPtr<MediaConstraints>) OVERRIDE;
+    virtual bool addStream(PassRefPtr<MediaStreamPrivate>) OVERRIDE;
     virtual void removeStream(PassRefPtr<MediaStreamPrivate>) OVERRIDE;
     virtual void getStats(PassRefPtr<RTCStatsRequest>) OVERRIDE;
     virtual std::unique_ptr<RTCDataChannelHandler> createDataChannel(const String&, const RTCDataChannelInit&) OVERRIDE;

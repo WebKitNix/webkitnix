@@ -80,16 +80,16 @@ enum XMLHttpRequestResponseType {
     readonly attribute XMLHttpRequestUpload upload;
 
     // response
-    [TreatReturnedNullStringAs=Undefined, RaisesException] DOMString getAllResponseHeaders();
-    [TreatReturnedNullStringAs=Null, RaisesException] DOMString getResponseHeader(DOMString header);
+    [TreatReturnedNullStringAs=Undefined] DOMString getAllResponseHeaders();
+    [TreatReturnedNullStringAs=Null] DOMString getResponseHeader(DOMString header);
     [GetterRaisesException, CustomGetter] readonly attribute DOMString responseText; // The custom getter implements TreatReturnedNullStringAs=Null
     [GetterRaisesException] readonly attribute Document responseXML;
 
     [SetterRaisesException] attribute XMLHttpRequestResponseType responseType;
     [GetterRaisesException, CachedAttribute, CustomGetter] readonly attribute Object response;
 
-    [GetterRaisesException] readonly attribute unsigned short status;
-    [GetterRaisesException] readonly attribute DOMString statusText;
+    readonly attribute unsigned short status;
+    readonly attribute DOMString statusText;
 
     // Extension
     void overrideMimeType(DOMString override);

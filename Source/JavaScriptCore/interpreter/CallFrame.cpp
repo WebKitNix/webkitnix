@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2013 Apple Inc. All Rights Reserved.
+ * Copyright (C) 2008, 2013, 2014 Apple Inc. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,7 +29,8 @@
 #include "CallFrameInlines.h"
 #include "CodeBlock.h"
 #include "Interpreter.h"
-#include "Operations.h"
+#include "JSActivation.h"
+#include "JSCInlines.h"
 #include "VMEntryScope.h"
 
 namespace JSC {
@@ -116,11 +117,11 @@ CodeOrigin CallFrame::codeOrigin()
     return CodeOrigin(locationAsBytecodeOffset());
 }
 
-Register* CallFrame::frameExtentInternal()
+Register* CallFrame::topOfFrameInternal()
 {
     CodeBlock* codeBlock = this->codeBlock();
     ASSERT(codeBlock);
-    return registers() + virtualRegisterForLocal(codeBlock->frameRegisterCount()).offset();
+    return registers() + codeBlock->stackPointerOffset();
 }
 
 JSGlobalObject* CallFrame::vmEntryGlobalObject()
@@ -132,6 +133,22 @@ JSGlobalObject* CallFrame::vmEntryGlobalObject()
     // dynamic global object must be set since code is running
     ASSERT(vm().entryScope);
     return vm().entryScope->globalObject();
+}
+
+JSActivation* CallFrame::activation() const
+{
+    CodeBlock* codeBlock = this->codeBlock();
+    RELEASE_ASSERT(codeBlock->needsActivation());
+    VirtualRegister activationRegister = codeBlock->activationRegister();
+    return registers()[activationRegister.offset()].Register::activation();
+}
+
+void CallFrame::setActivation(JSActivation* activation)
+{
+    CodeBlock* codeBlock = this->codeBlock();
+    RELEASE_ASSERT(codeBlock->needsActivation());
+    VirtualRegister activationRegister = codeBlock->activationRegister();
+    registers()[activationRegister.offset()] = activation;
 }
 
 } // namespace JSC

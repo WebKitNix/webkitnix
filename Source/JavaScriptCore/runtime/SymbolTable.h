@@ -39,6 +39,9 @@
 namespace JSC {
 
 struct SlowArgument {
+    WTF_MAKE_FAST_ALLOCATED;
+public:
+
     enum Status {
         Normal = 0,
         Captured = 1,
@@ -467,11 +470,14 @@ public:
     const SlowArgument* slowArguments() { return m_slowArguments.get(); }
     void setSlowArguments(std::unique_ptr<SlowArgument[]> slowArguments) { m_slowArguments = std::move(slowArguments); }
     
-    SymbolTable* clone(VM&);
+    SymbolTable* cloneCapturedNames(VM&);
 
     static void visitChildren(JSCell*, SlotVisitor&);
 
     DECLARE_EXPORT_INFO;
+
+protected:
+    static const unsigned StructureFlags = StructureIsImmortal | Base::StructureFlags;
 
 private:
     class WatchpointCleanup : public UnconditionalFinalizer {

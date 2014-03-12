@@ -34,8 +34,10 @@
 #include "SandboxExtension.h"
 #include "SharedMemory.h"
 #include "TextCheckerState.h"
+#include "ViewUpdateDispatcher.h"
 #include "VisitedLinkTable.h"
 #include <WebCore/LinkHash.h>
+#include <WebCore/SessionID.h>
 #include <WebCore/Timer.h>
 #include <wtf/Forward.h>
 #include <wtf/HashMap.h>
@@ -44,7 +46,7 @@
 #include <wtf/text/AtomicString.h>
 #include <wtf/text/AtomicStringHash.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include <dispatch/dispatch.h>
 #endif
 
@@ -110,10 +112,8 @@ public:
 
     InjectedBundle* injectedBundle() const { return m_injectedBundle.get(); }
 
-#if PLATFORM(MAC)
-#if USE(ACCELERATED_COMPOSITING)
+#if PLATFORM(COCOA)
     mach_port_t compositingRenderServerPort() const { return m_compositingRenderServerPort; }
-#endif
 #endif
     
     void setShouldTrackVisitedLinks(bool);
@@ -134,7 +134,7 @@ public:
     WebPageGroupProxy* webPageGroup(uint64_t pageGroupID);
     WebPageGroupProxy* webPageGroup(const WebPageGroupData&);
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     pid_t presenterApplicationPid() const { return m_presenterApplicationPid; }
     bool shouldForceScreenFontSubstitution() const { return m_shouldForceScreenFontSubstitution; }
 #endif
@@ -165,8 +165,8 @@ public:
 
     void setCacheModel(uint32_t);
 
-    void ensurePrivateBrowsingSession(uint64_t sessionID);
-    void destroyPrivateBrowsingSession(uint64_t sessionID);
+    void ensurePrivateBrowsingSession(WebCore::SessionID);
+    void destroyPrivateBrowsingSession(WebCore::SessionID);
 
     void pageDidEnterWindow(uint64_t pageID);
     void pageWillLeaveWindow(uint64_t pageID);
@@ -205,6 +205,9 @@ private:
     void registerURLSchemeAsNoAccess(const String&) const;
     void registerURLSchemeAsDisplayIsolated(const String&) const;
     void registerURLSchemeAsCORSEnabled(const String&) const;
+#if ENABLE(CACHE_PARTITIONING)
+    void registerURLSchemeAsCachePartitioned(const String&) const;
+#endif
     void setDefaultRequestTimeoutInterval(double);
     void setAlwaysUsesComplexTextCodePath(bool);
     void setShouldUseFontSmoothing(bool);
@@ -243,6 +246,8 @@ private:
     void setIgnoreTLSErrors(bool);
 #endif
 
+    void setMemoryCacheDisabled(bool);
+
     void postInjectedBundleMessage(const IPC::DataReference& messageData);
 
     // ChildProcess
@@ -253,7 +258,7 @@ private:
     virtual bool shouldTerminate() override;
     virtual void terminate() override;
 
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+#if USE(APPKIT)
     virtual void stopRunLoop() override;
 #endif
 
@@ -276,6 +281,9 @@ private:
     RefPtr<InjectedBundle> m_injectedBundle;
 
     RefPtr<EventDispatcher> m_eventDispatcher;
+#if PLATFORM(IOS)
+    RefPtr<ViewUpdateDispatcher> m_viewUpdateDispatcher;
+#endif
 
     bool m_inDidClose;
 
@@ -289,10 +297,8 @@ private:
     bool m_hasSetCacheModel;
     CacheModel m_cacheModel;
 
-#if USE(ACCELERATED_COMPOSITING) && PLATFORM(MAC)
+#if PLATFORM(COCOA)
     mach_port_t m_compositingRenderServerPort;
-#endif
-#if PLATFORM(MAC)
     pid_t m_presenterApplicationPid;
     dispatch_group_t m_clearResourceCachesDispatchGroup;
     bool m_shouldForceScreenFontSubstitution;

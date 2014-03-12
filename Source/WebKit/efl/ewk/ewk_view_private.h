@@ -36,10 +36,8 @@ class ColorChooserClient;
 #endif
 
 class Cursor;
-#if USE(ACCELERATED_COMPOSITING)
 class GraphicsContext3D;
 class GraphicsLayer;
-#endif
 class HTMLPlugInElement;
 class IntRect;
 class IntSize;
@@ -142,7 +140,7 @@ void ewk_view_repaint_add(Ewk_View_Private_Data* priv, Evas_Coord x, Evas_Coord 
 
 void ewk_view_layout_if_needed_recursive(Ewk_View_Private_Data* priv);
 
-bool ewk_view_navigation_policy_decision(Evas_Object* ewkView, Ewk_Frame_Resource_Request* request, Ewk_Navigation_Type navigationType);
+bool ewk_view_navigation_policy_decision(Evas_Object* ewkView, Ewk_Frame_Resource_Request* request, WebCore::NavigationType);
 
 void ewk_view_contents_size_changed(Evas_Object* ewkView, Evas_Coord width, Evas_Coord height);
 
@@ -151,12 +149,8 @@ WebCore::FloatRect ewk_view_page_rect_get(const Evas_Object* ewkView);
 void ewk_view_mixed_content_displayed_set(Evas_Object* ewkView, bool hasDisplayed);
 void ewk_view_mixed_content_run_set(Evas_Object* ewkView, bool hasRun);
 
-#if USE(ACCELERATED_COMPOSITING)
-bool ewk_view_accelerated_compositing_object_create(Evas_Object* ewkView, Evas_Native_Surface* nativeSurface, const WebCore::IntRect& rect);
-WebCore::GraphicsContext3D* ewk_view_accelerated_compositing_context_get(Evas_Object* ewkView);
 void ewk_view_root_graphics_layer_set(Evas_Object* ewkView, WebCore::GraphicsLayer* rootLayer);
 void ewk_view_mark_for_sync(Evas_Object* ewkView);
-#endif
 
 #if ENABLE(FULLSCREEN_API)
 void ewk_view_fullscreen_enter(const Evas_Object* ewkView);

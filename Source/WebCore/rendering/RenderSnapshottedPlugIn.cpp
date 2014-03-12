@@ -31,6 +31,7 @@
 #include "ChromeClient.h"
 #include "Cursor.h"
 #include "Filter.h"
+#include "Frame.h"
 #include "FrameLoaderClient.h"
 #include "FrameView.h"
 #include "Gradient.h"
@@ -85,7 +86,7 @@ void RenderSnapshottedPlugIn::updateSnapshot(PassRefPtr<Image> image)
     if (!image)
         return;
 
-    m_snapshotResource->setCachedImage(new CachedImage(image.get()));
+    m_snapshotResource->setCachedImage(new CachedImage(image.get(), view().frameView().frame().page()->sessionID()));
     repaint();
 }
 
@@ -123,10 +124,6 @@ void RenderSnapshottedPlugIn::paintSnapshot(PaintInfo& paintInfo, const LayoutPo
         return;
 
     GraphicsContext* context = paintInfo.context;
-#if PLATFORM(MAC)
-    if (style().highlight() != nullAtom && !context->paintingDisabled())
-        paintCustomHighlight(toPoint(paintOffset - location()), style().highlight(), true);
-#endif
 
     LayoutSize contentSize(cWidth, cHeight);
     LayoutPoint contentLocation = location() + paintOffset;
@@ -160,7 +157,7 @@ void RenderSnapshottedPlugIn::handleEvent(Event* event)
     if (!event->isMouseEvent())
         return;
 
-    MouseEvent* mouseEvent = static_cast<MouseEvent*>(event);
+    MouseEvent* mouseEvent = toMouseEvent(event);
 
     // If we're a snapshotted plugin, we want to make sure we activate on
     // clicks even if the page is preventing our default behaviour. Otherwise

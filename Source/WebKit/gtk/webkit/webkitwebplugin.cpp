@@ -24,6 +24,7 @@
 #include "webkitglobalsprivate.h"
 #include "webkitwebpluginprivate.h"
 #include <glib/gi18n-lib.h>
+#include <wtf/gobject/GUniquePtr.h>
 
 /**
  * SECTION:webkitwebplugin
@@ -191,15 +192,15 @@ const char* webkit_web_plugin_get_path(WebKitWebPlugin* plugin)
     if (priv->path)
         return priv->path.get();
 
-    GOwnPtr<GError> error;
-    priv->path.set(g_filename_from_utf8(priv->corePlugin->path().utf8().data(), -1, 0, 0, &error.outPtr()));
+    GUniqueOutPtr<GError> error;
+    priv->path.reset(g_filename_from_utf8(priv->corePlugin->path().utf8().data(), -1, 0, 0, &error.outPtr()));
 
     if (!error)
         return priv->path.get();
 
     // In the unlikely case the convertion fails, report the error and make sure we free
     // any partial convertion that ended up in the variable.
-    priv->path.clear();
+    priv->path.reset();
 
     g_warning("Failed to convert '%s' to system filename encoding: %s", priv->corePlugin->path().utf8().data(), error->message);
 

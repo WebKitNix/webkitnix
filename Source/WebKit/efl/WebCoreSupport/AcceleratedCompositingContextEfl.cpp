@@ -19,16 +19,13 @@
 
 #include "config.h"
 
-#if USE(ACCELERATED_COMPOSITING) && USE(TEXTURE_MAPPER_GL)
+#if USE(TEXTURE_MAPPER_GL)
 
 #include "AcceleratedCompositingContextEfl.h"
-
 #include "FrameView.h"
-#include "GraphicsContext3D.h"
 #include "GraphicsLayerTextureMapper.h"
 #include "HostWindow.h"
 #include "MainFrame.h"
-#include "PageClientEfl.h"
 #include "TextureMapperGL.h"
 #include "TextureMapperLayer.h"
 #include "ewk_view_private.h"
@@ -56,12 +53,41 @@ AcceleratedCompositingContext::~AcceleratedCompositingContext()
 
 bool AcceleratedCompositingContext::initialize(HostWindow* hostWindow)
 {
-    m_view = hostWindow->platformPageClient()->view();
+    m_view = hostWindow->platformPageClient();
     if (!m_view)
         return false;
 
-    m_context3D = GraphicsContext3D::create(GraphicsContext3D::Attributes(), hostWindow, WebCore::GraphicsContext3D::RenderDirectlyToHostWindow);
-    if (!m_context3D)
+    m_evasGL = adoptPtr(evas_gl_new(evas_object_evas_get(m_view)));
+    if (!m_evasGL)
+        return false;
+
+    m_evasGLContext = EvasGLContext::create(m_evasGL.get());
+    if (!m_evasGLContext)
+        return false;
+
+    Evas_Coord width = 0;
+    Evas_Coord height = 0;
+    evas_object_geometry_get(m_view, 0, 0, &width, &height);
+
+    IntSize webViewSize(width, height);
+    if (webViewSize.isEmpty())
+        return false;
+
+    return resize(webViewSize);
+}
+
+bool AcceleratedCompositingContext::resize(const IntSize& size)
+{
+    static Evas_GL_Config evasGLConfig = {
+        EVAS_GL_RGBA_8888,
+        EVAS_GL_DEPTH_BIT_8,
+        EVAS_GL_STENCIL_NONE,
+        EVAS_GL_OPTIONS_NONE,
+        EVAS_GL_MULTISAMPLE_NONE
+    };
+
+    m_evasGLSurface = EvasGLSurface::create(m_evasGL.get(), &evasGLConfig, size);
+    if (!m_evasGLSurface)
         return false;
 
     return true;
@@ -80,13 +106,13 @@ void AcceleratedCompositingContext::renderLayers()
     if (!m_rootGraphicsLayer)
         return;
 
-    if (!m_context3D->makeContextCurrent())
+    if (!evas_gl_make_current(m_evasGL.get(), m_evasGLSurface->surface(), m_evasGLContext->context()))
         return;
 
-    int width = 0;
-    int height = 0;
+    Evas_Coord width = 0;
+    Evas_Coord height = 0;
     evas_object_geometry_get(m_view, 0, 0, &width, &height);
-    m_context3D->viewport(0, 0, width, height);
+    evas_gl_api_get(m_evasGL.get())->glViewport(0, 0, width, height);
 
     m_textureMapper->beginPainting();
     m_rootTextureMapperLayer->paint();
@@ -115,11 +141,6 @@ void AcceleratedCompositingContext::attachRootGraphicsLayer(GraphicsLayer* rootL
     m_rootGraphicsLayer->flushCompositingStateForThisLayerOnly();
 }
 
-GraphicsContext3D* AcceleratedCompositingContext::context()
-{
-    return m_context3D.get();
-}
-
 } // namespace WebCore
 
-#endif // USE(ACCELERATED_COMPOSITING) && USE(TEXTURE_MAPPER_GL)
+#endif // USE(TEXTURE_MAPPER_GL)

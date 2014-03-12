@@ -32,11 +32,12 @@
 
 namespace WebCore {
 
+class LayoutState;
 class LineLayoutState;
 class LogicalSelectionOffsetCaches;
 class RenderInline;
 class RenderText;
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
 class ShapeInsideInfo;
 class ShapeValue;
 #endif
@@ -246,10 +247,8 @@ public:
     static TextRun constructTextRun(RenderObject* context, const Font&, const RenderText*, unsigned offset, const RenderStyle&,
         TextRun::ExpansionBehavior = TextRun::AllowTrailingExpansion | TextRun::ForbidLeadingExpansion);
 
-#if ENABLE(8BIT_TEXTRUN)
     static TextRun constructTextRun(RenderObject* context, const Font&, const LChar* characters, int length, const RenderStyle&,
         TextRun::ExpansionBehavior = TextRun::AllowTrailingExpansion | TextRun::ForbidLeadingExpansion);
-#endif
 
     static TextRun constructTextRun(RenderObject* context, const Font&, const UChar* characters, int length, const RenderStyle&,
         TextRun::ExpansionBehavior = TextRun::AllowTrailingExpansion | TextRun::ForbidLeadingExpansion);
@@ -257,7 +256,8 @@ public:
     ColumnInfo* columnInfo() const;
     int columnGap() const;
 
-    void updateColumnInfoFromStyle(RenderStyle*);
+    // FIXME: Can devirtualize this and only have the RenderBlockFlow version once the old multi-column code is gone.
+    virtual void updateColumnProgressionFromStyle(RenderStyle*);
     
     LayoutUnit initialBlockOffsetForPainting() const;
     LayoutUnit blockDeltaForPaintingNextColumn() const;
@@ -278,6 +278,7 @@ public:
     enum ApplyLayoutDeltaMode { ApplyLayoutDelta, DoNotApplyLayoutDelta };
     LayoutUnit logicalWidthForChild(const RenderBox& child) const { return isHorizontalWritingMode() ? child.width() : child.height(); }
     LayoutUnit logicalHeightForChild(const RenderBox& child) const { return isHorizontalWritingMode() ? child.height() : child.width(); }
+    LayoutSize logicalSizeForChild(const RenderBox& child) const { return isHorizontalWritingMode() ? child.size() : child.size().transposedSize(); }
     LayoutUnit logicalTopForChild(const RenderBox& child) const { return isHorizontalWritingMode() ? child.y() : child.x(); }
     void setLogicalLeftForChild(RenderBox& child, LayoutUnit logicalLeft, ApplyLayoutDeltaMode = DoNotApplyLayoutDelta);
     void setLogicalTopForChild(RenderBox& child, LayoutUnit logicalTop, ApplyLayoutDeltaMode = DoNotApplyLayoutDelta);
@@ -340,15 +341,17 @@ public:
 
     LayoutUnit computeStartPositionDeltaForChildAvoidingFloats(const RenderBox& child, LayoutUnit childMarginStart, RenderRegion* = 0);
 
-    void placeRunInIfNeeded(RenderObject& newChild);
-    bool runInIsPlacedIntoSiblingBlock(RenderObject& runIn);
-
 #ifndef NDEBUG
     void checkPositionedObjectsNeedLayout();
     virtual void showLineTreeAndMark(const InlineBox* = nullptr, const char* = nullptr, const InlineBox* = nullptr, const char* = nullptr, const RenderObject* = nullptr) const;
 #endif
 
+
 #if ENABLE(CSS_SHAPES)
+    virtual void imageChanged(WrappedImagePtr, const IntRect* = 0) override;
+#endif
+
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
     ShapeInsideInfo& ensureShapeInsideInfo();
     ShapeInsideInfo* shapeInsideInfo() const;
     void setShapeInsideInfo(std::unique_ptr<ShapeInsideInfo>);
@@ -357,7 +360,6 @@ public:
     ShapeInsideInfo* layoutShapeInsideInfo() const;
     bool allowsShapeInsideInfoSharing() const { return !isInline() && !isFloating(); }
     LayoutSize logicalOffsetFromShapeAncestorContainer(const RenderBlock* container) const;
-    virtual void imageChanged(WrappedImagePtr, const IntRect* = 0) override;
 #endif
 
     virtual void updateHitTestResult(HitTestResult&, const LayoutPoint&) override;
@@ -416,14 +418,22 @@ protected:
     bool simplifiedLayout();
     virtual void simplifiedNormalFlowLayout();
 
-    void setDesiredColumnCountAndWidth(int, LayoutUnit);
+    // FIXME: Can de-virtualize this once old columns go away.
+    virtual void setComputedColumnCountAndWidth(int, LayoutUnit);
 
 public:
     virtual void computeOverflow(LayoutUnit oldClientAfterEdge, bool recomputeFloats = false);
     void clearLayoutOverflow();
+    
+    bool isTopLayoutOverflowAllowed() const override;
+    bool isLeftLayoutOverflowAllowed() const override;
+
+    // FIXME: Can devirtualize once old column code is gone.
+    virtual void computeLineGridPaginationOrigin(LayoutState&) const;
+
 protected:
     virtual void addOverflowFromChildren();
-    // FIXME-BLOCKFLOW: Remove virtualizaion when all callers have moved to RenderBlockFlow
+    // FIXME-BLOCKFLOW: Remove virtualization when all callers have moved to RenderBlockFlow
     virtual void addOverflowFromInlineChildren() { }
     void addOverflowFromBlockChildren();
     void addOverflowFromPositionedObjects();
@@ -441,7 +451,6 @@ protected:
 
     void updateBlockChildDirtyBitsBeforeLayout(bool relayoutChildren, RenderBox&);
 
-    virtual void checkForPaginationLogicalHeightChange(LayoutUnit& pageLogicalHeight, bool& pageLogicalHeightChanged, bool& hasSpecifiedPageLogicalHeight);
     void prepareShapesAndPaginationBeforeBlockLayout(bool&);
 
 private:
@@ -452,7 +461,7 @@ private:
     LayoutUnit adjustLogicalRightOffsetForLine(LayoutUnit offsetFromFloats, bool applyTextIndent) const;
     LayoutUnit adjustLogicalLeftOffsetForLine(LayoutUnit offsetFromFloats, bool applyTextIndent) const;
 
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
     void computeShapeSize();
     void updateShapeInsideInfoAfterStyleChange(const ShapeValue*, const ShapeValue* oldShape);
     void relayoutShapeDescendantIfMoved(RenderBlock* child, LayoutSize offset);
@@ -480,9 +489,6 @@ private:
 
     void insertIntoTrackedRendererMaps(RenderBox& descendant, TrackedDescendantsMap*&, TrackedContainerMap*&);
     static void removeFromTrackedRendererMaps(RenderBox& descendant, TrackedDescendantsMap*&, TrackedContainerMap*&);
-
-    // Called to lay out the legend for a fieldset or the ruby text of a ruby run.
-    virtual RenderObject* layoutSpecialExcludedChild(bool /*relayoutChildren*/) { return 0; }
 
     void createFirstLetterRenderer(RenderObject* firstLetterBlock, RenderText* currentTextChild);
     void updateFirstLetterStyle(RenderObject* firstLetterBlock, RenderObject* firstLetterContainer);
@@ -546,8 +552,9 @@ private:
     virtual void absoluteRects(Vector<IntRect>&, const LayoutPoint& accumulatedOffset) const override;
     virtual void absoluteQuads(Vector<FloatQuad>&, bool* wasFixed) const override;
 
-    LayoutUnit desiredColumnWidth() const;
-    unsigned desiredColumnCount() const;
+    // FIXME: Can de-virtualize once old columns go away.
+    virtual LayoutUnit computedColumnWidth() const;
+    virtual unsigned computedColumnCount() const;
 
     void paintContinuationOutlines(PaintInfo&, const LayoutPoint&);
 
@@ -558,7 +565,7 @@ private:
     // FIXME-BLOCKFLOW: Remove virtualizaion when all callers have moved to RenderBlockFlow
     virtual VisiblePosition positionForPointWithInlineChildren(const LayoutPoint&);
 
-    virtual void calcColumnWidth();
+    virtual void computeColumnCountAndWidth();
     void makeChildrenAnonymousColumnBlocks(RenderObject* beforeChild, RenderBlock* newBlockBox, RenderObject* newChild);
 
     bool expandsToEncloseOverhangingFloats() const;
@@ -572,17 +579,11 @@ private:
     RenderBlock* containingColumnsBlock(bool allowAnonymousColumnBlock = true);
     RenderBlock* columnsBlockForSpanningElement(RenderObject* newChild);
 
-    RenderBoxModelObject& createReplacementRunIn(RenderBoxModelObject& runIn);
-    void moveRunInUnderSiblingBlockIfNeeded(RenderObject& runIn);
-    void moveRunInToOriginalPosition(RenderObject& runIn);
-
 private:
     bool hasRareData() const;
     
 protected:
     void dirtyForLayoutFromPercentageHeightDescendants();
-    
-    void determineLogicalLeftPositionForChild(RenderBox& child, ApplyLayoutDeltaMode = DoNotApplyLayoutDelta);
     
     virtual ColumnInfo::PaginationUnit paginationUnit() const;
 
@@ -590,9 +591,9 @@ protected:
     // Adjust from painting offsets to the local coords of this renderer
     void offsetForContents(LayoutPoint&) const;
 
-    virtual bool requiresColumns(int desiredColumnCount) const;
+    virtual bool requiresColumns(int computedColumnCount) const;
 
-    virtual bool updateLogicalWidthAndColumnWidth();
+    bool updateLogicalWidthAndColumnWidth();
 
     virtual bool canCollapseAnonymousBlockChild() const { return true; }
 
@@ -624,7 +625,6 @@ private:
     static bool s_canPropagateFloatIntoSibling;
 };
 
-template<> inline bool isRendererOfType<const RenderBlock>(const RenderObject& renderer) { return renderer.isRenderBlock(); }
 RENDER_OBJECT_TYPE_CASTS(RenderBlock, isRenderBlock())
 
 LayoutUnit blockDirectionOffset(RenderBlock& rootBlock, const LayoutSize& offsetFromRootBlock);

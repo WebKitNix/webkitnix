@@ -376,7 +376,7 @@ set(WebKitNix_WebKit2_HEADERS
     UIProcess/API/C/WKPagePrivate.h
     UIProcess/API/C/WKPageUIClient.h
     UIProcess/API/C/WKPluginSiteDataManager.h
-    UIProcess/API/C/WKPreferences.h
+    UIProcess/API/C/WKPreferencesRef.h
     UIProcess/API/C/WKPreferencesPrivate.h
     UIProcess/API/C/WKProtectionSpace.h
     UIProcess/API/C/WKProtectionSpaceTypes.h
@@ -427,7 +427,6 @@ set(WebKitNix_WebKit2_HEADERS
 
 set(WebKitNix_JavaScriptCore_HEADERS
     "${JAVASCRIPTCORE_DIR}/API/APICast.h"
-    "${JAVASCRIPTCORE_DIR}/API/APIShims.h"
     "${JAVASCRIPTCORE_DIR}/API/JSBase.h"
     "${JAVASCRIPTCORE_DIR}/API/JSBasePrivate.h"
     "${JAVASCRIPTCORE_DIR}/API/JSCallbackConstructor.h"

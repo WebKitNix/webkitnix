@@ -106,6 +106,26 @@ public:
     }
 #endif
 
+    void* savedStackPointerAtVMEntry()
+    {
+        return m_savedStackPointerAtVMEntry;
+    }
+
+    void setSavedStackPointerAtVMEntry(void* stackPointerAtVMEntry)
+    {
+        m_savedStackPointerAtVMEntry = stackPointerAtVMEntry;
+    }
+
+    void* savedLastStackTop()
+    {
+        return m_savedLastStackTop;
+    }
+
+    void setSavedLastStackTop(void* lastStackTop)
+    {
+        m_savedLastStackTop = lastStackTop;
+    }
+
     void* m_apiData;
 
 private:
@@ -118,6 +138,8 @@ private:
 #if ENABLE(STACK_STATS)
     StackStats::PerThreadStats m_stackStats;
 #endif
+    void* m_savedStackPointerAtVMEntry;
+    void* m_savedLastStackTop;
 
     static WTF_EXPORTDATA ThreadSpecific<WTFThreadData>* staticData;
     friend WTFThreadData& wtfThreadData();

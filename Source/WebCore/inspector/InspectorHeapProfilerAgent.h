@@ -31,7 +31,7 @@
 #ifndef InspectorHeapProfilerAgent_h
 #define InspectorHeapProfilerAgent_h
 
-#if ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
+#if ENABLE(INSPECTOR)
 
 #include "InspectorWebAgentBase.h"
 #include "InspectorWebBackendDispatchers.h"
@@ -39,21 +39,19 @@
 #include <wtf/Forward.h>
 #include <wtf/HashMap.h>
 #include <wtf/Noncopyable.h>
-#include <wtf/PassOwnPtr.h>
 #include <wtf/text/WTFString.h>
 
 namespace WebCore {
 
-class PageInjectedScriptManager;
 class ScriptHeapSnapshot;
-class ScriptProfile;
+class WebInjectedScriptManager;
 
 typedef String ErrorString;
 
 class InspectorHeapProfilerAgent : public InspectorAgentBase, public Inspector::InspectorHeapProfilerBackendDispatcherHandler {
     WTF_MAKE_NONCOPYABLE(InspectorHeapProfilerAgent); WTF_MAKE_FAST_ALLOCATED;
 public:
-    InspectorHeapProfilerAgent(InstrumentingAgents*, PageInjectedScriptManager*);
+    InspectorHeapProfilerAgent(InstrumentingAgents*, WebInjectedScriptManager*);
     virtual ~InspectorHeapProfilerAgent();
 
     virtual void collectGarbage(ErrorString*) override;
@@ -67,7 +65,7 @@ public:
     virtual void removeProfile(ErrorString*, int uid) override;
 
     virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
-    virtual void willDestroyFrontendAndBackend() override;
+    virtual void willDestroyFrontendAndBackend(Inspector::InspectorDisconnectReason) override;
 
     virtual void takeHeapSnapshot(ErrorString*, const bool* reportProgress) override;
 
@@ -81,7 +79,7 @@ private:
 
     PassRefPtr<Inspector::TypeBuilder::HeapProfiler::ProfileHeader> createSnapshotHeader(const ScriptHeapSnapshot&);
 
-    PageInjectedScriptManager* m_injectedScriptManager;
+    WebInjectedScriptManager* m_injectedScriptManager;
     std::unique_ptr<Inspector::InspectorHeapProfilerFrontendDispatcher> m_frontendDispatcher;
     RefPtr<Inspector::InspectorHeapProfilerBackendDispatcher> m_backendDispatcher;
     unsigned m_nextUserInitiatedHeapSnapshotNumber;
@@ -91,6 +89,6 @@ private:
 
 } // namespace WebCore
 
-#endif // ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
+#endif // ENABLE(INSPECTOR)
 
 #endif // !defined(InspectorHeapProfilerAgent_h)

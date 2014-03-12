@@ -32,7 +32,7 @@
 #include "Pasteboard.h"
 #include "TextResourceDecoder.h"
 #include <gtk/gtk.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 
 namespace WebCore {
 
@@ -117,7 +117,7 @@ GtkTargetList* PasteboardHelper::targetList() const
 static String selectionDataToUTF8String(GtkSelectionData* data)
 {
     // g_strndup guards against selection data that is not null-terminated.
-    GOwnPtr<gchar> markupString(g_strndup(reinterpret_cast<const char*>(gtk_selection_data_get_data(data)), gtk_selection_data_get_length(data)));
+    GUniquePtr<gchar> markupString(g_strndup(reinterpret_cast<const char*>(gtk_selection_data_get_data(data)), gtk_selection_data_get_length(data)));
     return String::fromUTF8(markupString.get());
 }
 
@@ -127,7 +127,7 @@ void PasteboardHelper::getClipboardContents(GtkClipboard* clipboard)
     ASSERT(dataObject);
 
     if (gtk_clipboard_wait_is_text_available(clipboard)) {
-        GOwnPtr<gchar> textData(gtk_clipboard_wait_for_text(clipboard));
+        GUniquePtr<gchar> textData(gtk_clipboard_wait_for_text(clipboard));
         if (textData)
             dataObject->setText(String::fromUTF8(textData.get()));
     }
@@ -176,7 +176,7 @@ void PasteboardHelper::fillSelectionData(GtkSelectionData* selectionData, guint 
         else
             result.append(url);
 
-        GOwnPtr<gchar> resultData(g_strdup(result.utf8().data()));
+        GUniquePtr<gchar> resultData(g_strdup(result.utf8().data()));
         gtk_selection_data_set(selectionData, netscapeURLAtom, 8,
             reinterpret_cast<const guchar*>(resultData.get()), strlen(resultData.get()));
 
@@ -193,12 +193,12 @@ void PasteboardHelper::fillSelectionData(GtkSelectionData* selectionData, guint 
         auto types = dataObject->unknownTypes();
         auto end = types.end();
         for (auto it = types.begin(); it != end; ++it) {
-            GOwnPtr<gchar> dictItem(g_strdup_printf("{'%s', '%s'}", it->key.utf8().data(), it->value.utf8().data()));
+            GUniquePtr<gchar> dictItem(g_strdup_printf("{'%s', '%s'}", it->key.utf8().data(), it->value.utf8().data()));
             g_variant_builder_add_parsed(&builder, dictItem.get());
         }
 
         GRefPtr<GVariant> variant = g_variant_builder_end(&builder);
-        GOwnPtr<gchar> serializedVariant(g_variant_print(variant.get(), TRUE));
+        GUniquePtr<gchar> serializedVariant(g_variant_print(variant.get(), TRUE));
         gtk_selection_data_set(selectionData, unknownAtom, 1, reinterpret_cast<const guchar*>(serializedVariant.get()), strlen(serializedVariant.get()));
     }
 }
@@ -258,18 +258,13 @@ void PasteboardHelper::fillDataObjectFromDropData(GtkSelectionData* data, guint 
     } else if (target == unknownAtom) {
         GRefPtr<GVariant> variant = g_variant_new_parsed(reinterpret_cast<const char*>(gtk_selection_data_get_data(data)));
 
-        GOwnPtr<gchar> key;
-        GOwnPtr<gchar> value;
+        GUniqueOutPtr<gchar> key;
+        GUniqueOutPtr<gchar> value;
         GVariantIter iter;
 
         g_variant_iter_init(&iter, variant.get());
-        while (g_variant_iter_next(&iter, "{ss}", &key.outPtr(), &value.outPtr())) {
+        while (g_variant_iter_next(&iter, "{ss}", &key.outPtr(), &value.outPtr()))
             dataObject->setUnknownTypeData(key.get(), value.get());
-
-            // FIXME: should GOwnPtr be smarter about this and replace the existing ptr when outPtr() is used?
-            key.clear();
-            value.clear();
-        }
     }
 }
 

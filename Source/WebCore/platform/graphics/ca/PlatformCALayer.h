@@ -26,8 +26,6 @@
 #ifndef PlatformCALayer_h
 #define PlatformCALayer_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #include "GraphicsContext.h"
 #include "GraphicsLayer.h"
 #include "PlatformCAAnimation.h"
@@ -51,7 +49,7 @@ class PlatformCALayer;
 typedef Vector<RefPtr<PlatformCALayer>> PlatformCALayerList;
 
 class PlatformCALayer : public RefCounted<PlatformCALayer> {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     friend class PlatformCALayerMac;
 #elif PLATFORM(WIN)
     friend class PlatformCALayerWin;
@@ -220,7 +218,7 @@ public:
 
     virtual PassRefPtr<PlatformCALayer> createCompatibleLayer(LayerType, PlatformCALayerClient*) const = 0;
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     virtual void enumerateRectsBeingDrawn(CGContextRef, void (^block)(CGRect)) = 0;
 #endif
 
@@ -237,7 +235,5 @@ protected:
     TYPE_CASTS_BASE(ToValueTypeName, WebCore::PlatformCALayer, object, object->predicate, object.predicate)
 
 } // namespace WebCore
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // PlatformCALayer_h

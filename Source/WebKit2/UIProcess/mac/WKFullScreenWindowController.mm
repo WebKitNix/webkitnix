@@ -43,7 +43,6 @@
 #import <WebCore/WebCoreFullScreenPlaceholderView.h>
 #import <WebCore/WebCoreFullScreenWindow.h>
 #import <WebCore/WebWindowAnimation.h>
-#import <WebKit/WebNSWindowExtras.h>
 #import <WebKitSystemInterface.h>
 
 using namespace WebKit;
@@ -80,9 +79,11 @@ static NSRect convertRectToScreen(NSWindow *window, NSRect rect)
     return [window convertRectToScreen:rect];
 }
 
-@interface NSWindow(IsOnActiveSpaceAdditionForTigerAndLeopard)
-- (BOOL)isOnActiveSpace;
-@end
+static void makeResponderFirstResponderIfDescendantOfView(NSWindow *window, NSResponder *responder, NSView *view)
+{
+    if ([responder isKindOfClass:[NSView class]] && [(NSView *)responder isDescendantOf:view])
+        [window makeFirstResponder:responder];
+}
 
 @implementation WKFullScreenWindowController
 
@@ -246,7 +247,7 @@ static RetainPtr<CGImageRef> createImageWithCopiedData(CGImageRef sourceImage)
     [contentView addSubview:_webView positioned:NSWindowBelow relativeTo:nil];
     [_webView setFrame:[contentView bounds]];
 
-    [[self window] makeResponder:webWindowFirstResponder firstResponderIfDescendantOfView:_webView];
+    makeResponderFirstResponderIfDescendantOfView(self.window, webWindowFirstResponder, _webView);
 
     [self _manager]->setAnimatingFullScreen(true);
     [self _manager]->willEnterFullScreen();
@@ -309,7 +310,7 @@ static RetainPtr<CGImageRef> createImageWithCopiedData(CGImageRef sourceImage)
 
         NSResponder *firstResponder = [[self window] firstResponder];
         [self _replaceView:_webViewPlaceholder.get() with:_webView];
-        [[_webView window] makeResponder:firstResponder firstResponderIfDescendantOfView:_webView];
+        makeResponderFirstResponderIfDescendantOfView(_webView.window, firstResponder, _webView);
         [[_webView window] makeKeyAndOrderFront:self];
 
         [self _manager]->didExitFullScreen();
@@ -367,8 +368,6 @@ static RetainPtr<CGImageRef> createImageWithCopiedData(CGImageRef sourceImage)
     [[self window] exitFullScreenMode:self];
 }
 
-static void completeFinishExitFullScreenAnimationAfterRepaint(WKErrorRef, void*);
-
 - (void)finishedExitFullScreenAnimation:(bool)completed
 {
     if (_fullScreenState != ExitingFullScreen)
@@ -381,7 +380,7 @@ static void completeFinishExitFullScreenAnimationAfterRepaint(WKErrorRef, void*)
 
     NSResponder *firstResponder = [[self window] firstResponder];
     [self _replaceView:_webViewPlaceholder.get() with:_webView];
-    [[_webView window] makeResponder:firstResponder firstResponderIfDescendantOfView:_webView];
+    makeResponderFirstResponderIfDescendantOfView(_webView.window, firstResponder, _webView);
 
     NSRect windowBounds = [[self window] frame];
     windowBounds.origin = NSZeroPoint;
@@ -411,7 +410,9 @@ static void completeFinishExitFullScreenAnimationAfterRepaint(WKErrorRef, void*)
         // clears _repaintCallback.
         ASSERT(!_repaintCallback);
     }
-    _repaintCallback = VoidCallback::create(self, completeFinishExitFullScreenAnimationAfterRepaint);
+    _repaintCallback = VoidCallback::create([self](bool) {
+        [self completeFinishExitFullScreenAnimationAfterRepaint];
+    });
     [self _page]->forceRepaint(_repaintCallback);
 }
 
@@ -421,11 +422,6 @@ static void completeFinishExitFullScreenAnimationAfterRepaint(WKErrorRef, void*)
     [[_webView window] setAutodisplay:YES];
     [[_webView window] displayIfNeeded];
     NSEnableScreenUpdates();
-}
-
-static void completeFinishExitFullScreenAnimationAfterRepaint(WKErrorRef, void* _self)
-{
-    [(WKFullScreenWindowController*)_self completeFinishExitFullScreenAnimationAfterRepaint];
 }
 
 - (void)performClose:(id)sender

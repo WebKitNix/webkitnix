@@ -20,7 +20,7 @@
 #ifndef TextureMapperLayer_h
 #define TextureMapperLayer_h
 
-#if USE(ACCELERATED_COMPOSITING) && USE(TEXTURE_MAPPER)
+#if USE(TEXTURE_MAPPER)
 
 #include "FilterOperations.h"
 #include "FloatRect.h"
@@ -87,7 +87,7 @@ public:
     void setPreserves3D(bool);
     void setTransform(const TransformationMatrix&);
     void setChildrenTransform(const TransformationMatrix&);
-    void setContentsRect(const IntRect&);
+    void setContentsRect(const FloatRect&);
     void setMasksToBounds(bool);
     void setDrawsContent(bool);
     bool drawsContent() const { return m_state.drawsContent; }

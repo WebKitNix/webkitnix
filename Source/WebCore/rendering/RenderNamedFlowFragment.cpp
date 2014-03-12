@@ -62,9 +62,7 @@ PassRef<RenderStyle> RenderNamedFlowFragment::createStyle(const RenderStyle& par
     style.get().setFlowThread(parentStyle.flowThread());
     style.get().setRegionThread(parentStyle.regionThread());
     style.get().setRegionFragment(parentStyle.regionFragment());
-    style.get().setOverflowX(parentStyle.overflowX());
-    style.get().setOverflowY(parentStyle.overflowY());
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
     style.get().setShapeInside(parentStyle.shapeInside());
 #endif
 
@@ -89,6 +87,12 @@ void RenderNamedFlowFragment::styleDidChange(StyleDifference diff, const RenderS
 
     if (parent() && parent()->needsLayout())
         setNeedsLayout(MarkOnlyThis);
+}
+
+void RenderNamedFlowFragment::getRanges(Vector<RefPtr<Range>>& rangeObjects) const
+{
+    const RenderNamedFlowThread& namedFlow = view().flowThreadController().ensureRenderFlowThreadWithName(style().regionThread());
+    namedFlow.getRanges(rangeObjects, this);
 }
 
 bool RenderNamedFlowFragment::shouldHaveAutoLogicalHeight() const
@@ -188,6 +192,75 @@ LayoutUnit RenderNamedFlowFragment::maxPageLogicalHeight() const
     return styleToUse.logicalMaxHeight().isUndefined() ? RenderFlowThread::maxLogicalHeight() : toRenderBlock(parent())->computeReplacedLogicalHeightUsing(styleToUse.logicalMaxHeight());
 }
 
+LayoutRect RenderNamedFlowFragment::flowThreadPortionRectForClipping(bool isFirstRegionInRange, bool isLastRegionInRange) const
+{
+    // Elements flowed into a region should not be painted past the region's content box
+    // if they continue to flow into another region in that direction.
+    // If they do not continue into another region in that direction, they should be
+    // painted all the way to the region's border box.
+    // Regions with overflow:hidden will apply clip at the border box, not the content box.
+    
+    LayoutRect clippingRect = flowThreadPortionRect();
+    RenderBlockFlow& container = fragmentContainer();
+    if (container.style().hasPadding()) {
+        if (isFirstRegionInRange) {
+            if (flowThread()->isHorizontalWritingMode()) {
+                clippingRect.move(0, -container.paddingBefore());
+                clippingRect.expand(0, container.paddingBefore());
+            } else {
+                clippingRect.move(-container.paddingBefore(), 0);
+                clippingRect.expand(container.paddingBefore(), 0);
+            }
+        }
+        
+        if (isLastRegionInRange) {
+            if (flowThread()->isHorizontalWritingMode())
+                clippingRect.expand(0, container.paddingAfter());
+            else
+                clippingRect.expand(container.paddingAfter(), 0);
+        }
+        
+        if (flowThread()->isHorizontalWritingMode()) {
+            clippingRect.move(-container.paddingStart(), 0);
+            clippingRect.expand(container.paddingStart() + container.paddingEnd(), 0);
+        } else {
+            clippingRect.move(0, -container.paddingStart());
+            clippingRect.expand(0, container.paddingStart() + container.paddingEnd());
+        }
+    }
+    
+    return clippingRect;
+}
+
+RenderBlockFlow& RenderNamedFlowFragment::fragmentContainer() const
+{
+    ASSERT(parent());
+    ASSERT(parent()->isRenderNamedFlowFragmentContainer());
+    return *toRenderBlockFlow(parent());
+}
+
+RenderLayer& RenderNamedFlowFragment::fragmentContainerLayer() const
+{
+    ASSERT(fragmentContainer().layer());
+    return *fragmentContainer().layer();
+}
+
+bool RenderNamedFlowFragment::shouldClipFlowThreadContent() const
+{
+    if (fragmentContainer().hasOverflowClip())
+        return true;
+    
+    return isLastRegion() && (style().regionFragment() == BreakRegionFragment);
+}
+    
+LayoutSize RenderNamedFlowFragment::offsetFromContainer(RenderObject* o, const LayoutPoint&, bool*) const
+{
+    ASSERT(&fragmentContainer() == o);
+    ASSERT(container() == o);
+    UNUSED_PARAM(o);
+    return topLeftLocationOffset();
+}
+
 void RenderNamedFlowFragment::layoutBlock(bool relayoutChildren, LayoutUnit)
 {
     StackStats::LayoutCheckPoint layoutCheckPoint;
@@ -198,8 +271,10 @@ void RenderNamedFlowFragment::layoutBlock(bool relayoutChildren, LayoutUnit)
         if (!isHorizontalWritingMode())
             oldRegionRect = oldRegionRect.transposedRect();
 
-        if (m_flowThread->inOverflowLayoutPhase() || m_flowThread->inFinalLayoutPhase())
+        if (m_flowThread->inOverflowLayoutPhase() || m_flowThread->inFinalLayoutPhase()) {
             computeOverflowFromFlowThread();
+            updateOversetState();
+        }
 
         if (hasAutoLogicalHeight() && m_flowThread->inMeasureContentLayoutPhase()) {
             m_flowThread->invalidateRegions();
@@ -211,6 +286,55 @@ void RenderNamedFlowFragment::layoutBlock(bool relayoutChildren, LayoutUnit)
             // This can happen even if we are in the inConstrainedLayoutPhase and it will trigger a pathological layout of the flow thread.
             m_flowThread->invalidateRegions();
     }
+}
+
+void RenderNamedFlowFragment::setRegionOversetState(RegionOversetState state)
+{
+    ASSERT(generatingElement());
+
+    generatingElement()->setRegionOversetState(state);
+}
+
+RegionOversetState RenderNamedFlowFragment::regionOversetState() const
+{
+    ASSERT(generatingElement());
+
+    if (!isValid())
+        return RegionUndefined;
+
+    return generatingElement()->regionOversetState();
+}
+
+void RenderNamedFlowFragment::updateOversetState()
+{
+    ASSERT(isValid());
+
+    RenderNamedFlowThread* flowThread = namedFlowThread();
+    ASSERT(flowThread && (flowThread->inOverflowLayoutPhase() || flowThread->inFinalLayoutPhase()));
+
+    LayoutUnit flowContentBottom = flowThread->flowContentBottom();
+    bool isHorizontalWritingMode = flowThread->isHorizontalWritingMode();
+
+    LayoutUnit flowMin = flowContentBottom - (isHorizontalWritingMode ? flowThreadPortionRect().y() : flowThreadPortionRect().x());
+    LayoutUnit flowMax = flowContentBottom - (isHorizontalWritingMode ? flowThreadPortionRect().maxY() : flowThreadPortionRect().maxX());
+
+    RegionOversetState previousState = regionOversetState();
+    RegionOversetState state = RegionFit;
+    if (flowMin <= 0)
+        state = RegionEmpty;
+    if (flowMax > 0 && isLastRegion())
+        state = RegionOverset;
+    
+    setRegionOversetState(state);
+
+    // Determine whether the NamedFlow object should dispatch a regionLayoutUpdate event
+    if (previousState != state
+        || state == RegionFit
+        || state == RegionOverset)
+        flowThread->setDispatchRegionLayoutUpdateEvent(true);
+    
+    if (previousState != state)
+        flowThread->setDispatchRegionOversetChangeEvent(true);
 }
 
 void RenderNamedFlowFragment::checkRegionStyle()
@@ -308,8 +432,7 @@ void RenderNamedFlowFragment::setRegionObjectsRegionStyle()
     const RenderNamedFlowThread& namedFlow = view().flowThreadController().ensureRenderFlowThreadWithName(style().regionThread());
     const NamedFlowContentElements& contentElements = namedFlow.contentElements();
 
-    for (auto iter = contentElements.begin(), end = contentElements.end(); iter != end; ++iter) {
-        const Element* element = *iter;
+    for (const auto& element : contentElements) {
         // The list of content nodes contains also the nodes with display:none.
         if (!element->renderer())
             continue;
@@ -343,14 +466,14 @@ void RenderNamedFlowFragment::restoreRegionObjectsOriginalStyle()
         return;
 
     RenderObjectRegionStyleMap temp;
-    for (auto iter = m_renderObjectRegionStyle.begin(), end = m_renderObjectRegionStyle.end(); iter != end; ++iter) {
-        RenderObject* object = const_cast<RenderObject*>(iter->key);
+    for (auto& objectPair : m_renderObjectRegionStyle) {
+        RenderObject* object = const_cast<RenderObject*>(objectPair.key);
         RefPtr<RenderStyle> objectRegionStyle = &object->style();
-        RefPtr<RenderStyle> objectOriginalStyle = iter->value.style;
+        RefPtr<RenderStyle> objectOriginalStyle = objectPair.value.style;
         if (object->isRenderElement())
             toRenderElement(object)->setStyleInternal(*objectOriginalStyle);
 
-        bool shouldCacheRegionStyle = iter->value.cached;
+        bool shouldCacheRegionStyle = objectPair.value.cached;
         if (!shouldCacheRegionStyle) {
             // Check whether we should cache the computed style in region.
             unsigned changedContextSensitiveProperties = ContextSensitivePropertyNone;

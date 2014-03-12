@@ -57,8 +57,19 @@ public:
     virtual bool isRenderNamedFlowFragment() const override final { return true; }
     virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle) override;
 
+    void getRanges(Vector<RefPtr<Range>>&) const;
+
     virtual LayoutUnit pageLogicalHeight() const;
     LayoutUnit maxPageLogicalHeight() const;
+    
+    LayoutRect flowThreadPortionRectForClipping(bool isFirstRegionInRange, bool isLastRegionInRange) const;
+
+    RenderBlockFlow& fragmentContainer() const;
+    RenderLayer& fragmentContainerLayer() const;
+    
+    virtual bool shouldClipFlowThreadContent() const override;
+    
+    virtual LayoutSize offsetFromContainer(RenderObject*, const LayoutPoint&, bool* offsetDependsOnPoint = 0) const override;
 
     bool isPseudoElementRegion() const { return parent() && parent()->isPseudoElement(); }
 
@@ -97,6 +108,8 @@ public:
 
     bool hasComputedAutoHeight() const { return m_hasComputedAutoHeight; }
 
+    RegionOversetState regionOversetState() const;
+
     virtual void attachRegion() override;
     virtual void detachRegion() override;
 
@@ -119,6 +132,9 @@ private:
     void decrementAutoLogicalHeightCount();
 
     bool shouldHaveAutoLogicalHeight() const;
+
+    void updateOversetState();
+    void setRegionOversetState(RegionOversetState);
 
     virtual void layoutBlock(bool relayoutChildren, LayoutUnit pageLogicalHeight = 0) override;
 

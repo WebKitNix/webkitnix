@@ -33,10 +33,10 @@
 #include "ErrorEvent.h"
 #include "MessagePort.h"
 #include "PublicURLManager.h"
-#include "ScriptCallStack.h"
 #include "Settings.h"
 #include "WorkerGlobalScope.h"
 #include "WorkerThread.h"
+#include <inspector/ScriptCallStack.h>
 #include <wtf/MainThread.h>
 #include <wtf/Ref.h>
 
@@ -50,6 +50,8 @@
 #if ENABLE(SQL_DATABASE)
 #include "DatabaseContext.h"
 #endif
+
+using namespace Inspector;
 
 namespace WebCore {
 
@@ -115,10 +117,6 @@ ScriptExecutionContext::~ScriptExecutionContext()
         ASSERT((*iter)->scriptExecutionContext() == this);
         (*iter)->contextDestroyed();
     }
-#if ENABLE(BLOB)
-    if (m_publicURLManager)
-        m_publicURLManager->contextDestroyed();
-#endif
 }
 
 void ScriptExecutionContext::processMessagePortMessagesSoon()
@@ -148,7 +146,7 @@ void ScriptExecutionContext::createdMessagePort(MessagePort* port)
 {
     ASSERT(port);
     ASSERT((isDocument() && isMainThread())
-        || (isWorkerGlobalScope() && currentThread() == static_cast<WorkerGlobalScope*>(this)->thread()->threadID()));
+        || (isWorkerGlobalScope() && currentThread() == toWorkerGlobalScope(this)->thread().threadID()));
 
     m_messagePorts.add(port);
 }
@@ -157,7 +155,7 @@ void ScriptExecutionContext::destroyedMessagePort(MessagePort* port)
 {
     ASSERT(port);
     ASSERT((isDocument() && isMainThread())
-        || (isWorkerGlobalScope() && currentThread() == static_cast<WorkerGlobalScope*>(this)->thread()->threadID()));
+        || (isWorkerGlobalScope() && currentThread() == toWorkerGlobalScope(this)->thread().threadID()));
 
     m_messagePorts.remove(port);
 }
@@ -301,8 +299,8 @@ void ScriptExecutionContext::reportException(const String& errorMessage, int lin
 {
     if (m_inDispatchErrorEvent) {
         if (!m_pendingExceptions)
-            m_pendingExceptions = adoptPtr(new Vector<OwnPtr<PendingException>>());
-        m_pendingExceptions->append(adoptPtr(new PendingException(errorMessage, lineNumber, columnNumber, sourceURL, callStack)));
+            m_pendingExceptions = std::make_unique<Vector<std::unique_ptr<PendingException>>>();
+        m_pendingExceptions->append(std::make_unique<PendingException>(errorMessage, lineNumber, columnNumber, sourceURL, callStack));
         return;
     }
 
@@ -313,11 +311,9 @@ void ScriptExecutionContext::reportException(const String& errorMessage, int lin
     if (!m_pendingExceptions)
         return;
 
-    for (size_t i = 0; i < m_pendingExceptions->size(); i++) {
-        PendingException* e = m_pendingExceptions->at(i).get();
-        logExceptionToConsole(e->m_errorMessage, e->m_sourceURL, e->m_lineNumber, e->m_columnNumber, e->m_callStack);
-    }
-    m_pendingExceptions.clear();
+    std::unique_ptr<Vector<std::unique_ptr<PendingException>>> pendingExceptions = std::move(m_pendingExceptions);
+    for (auto& exception : *pendingExceptions)
+        logExceptionToConsole(exception->m_errorMessage, exception->m_sourceURL, exception->m_lineNumber, exception->m_columnNumber, exception->m_callStack);
 }
 
 void ScriptExecutionContext::addConsoleMessage(MessageSource source, MessageLevel level, const String& message, const String& sourceURL, unsigned lineNumber, unsigned columnNumber, JSC::ExecState* state, unsigned long requestIdentifier)
@@ -365,7 +361,7 @@ int ScriptExecutionContext::circularSequentialID()
 PublicURLManager& ScriptExecutionContext::publicURLManager()
 {
     if (!m_publicURLManager)
-        m_publicURLManager = PublicURLManager::create();
+        m_publicURLManager = PublicURLManager::create(this);
     return *m_publicURLManager;
 }
 #endif
@@ -410,10 +406,10 @@ ScriptExecutionContext::Task::~Task()
 JSC::VM* ScriptExecutionContext::vm()
 {
      if (isDocument())
-        return JSDOMWindow::commonVM();
+        return &JSDOMWindow::commonVM();
 
     if (isWorkerGlobalScope())
-        return static_cast<WorkerGlobalScope*>(this)->script()->vm();
+        return toWorkerGlobalScope(this)->script()->vm();
 
     ASSERT_NOT_REACHED();
     return 0;

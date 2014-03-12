@@ -86,4 +86,9 @@ void deleteAllCookies(const NetworkStorageSession&)
     CookieManager::getInstance().removeAllCookies(InMemoryAndBackingStore);
 }
 
+void deleteAllCookiesModifiedAfterDate(const NetworkStorageSession&, double)
+{
+    // FIXME: Not yet implemented
+}
+
 }

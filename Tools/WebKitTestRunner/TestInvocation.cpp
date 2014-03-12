@@ -41,8 +41,11 @@
 #include <wtf/StdLibExtras.h>
 #include <wtf/text/CString.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
 #include <Carbon/Carbon.h>
+#endif
+
+#if PLATFORM(COCOA)
 #include <WebKit2/WKPagePrivateMac.h>
 #endif
 
@@ -124,19 +127,19 @@ static void sizeWebViewForCurrentTest(const char* pathOrURL)
         TestController::shared().mainWebView()->resizeTo(TestController::viewWidth, TestController::viewHeight);
 }
 
+static void changeWindowScaleIfNeeded(const char* pathOrURL)
+{
+    WTF::String localPathOrUrl = String(pathOrURL);
+    bool needsHighDPIWindow = localPathOrUrl.findIgnoringCase("hidpi-") != notFound;
+    TestController::shared().mainWebView()->changeWindowScaleIfNeeded(needsHighDPIWindow ? 2 : 1);
+}
+
 static bool shouldLogFrameLoadDelegates(const char* pathOrURL)
 {
     return strstr(pathOrURL, "loading/");
 }
 
-#if ENABLE(INSPECTOR)
-static bool shouldOpenWebInspector(const char* pathOrURL)
-{
-    return strstr(pathOrURL, "inspector/") || strstr(pathOrURL, "inspector\\");
-}
-#endif
-
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 static bool shouldUseThreadedScrolling(const char* pathOrURL)
 {
     return strstr(pathOrURL, "tiled-drawing/") || strstr(pathOrURL, "tiled-drawing\\");
@@ -145,7 +148,7 @@ static bool shouldUseThreadedScrolling(const char* pathOrURL)
 
 static void updateThreadedScrollingForCurrentTest(const char* pathOrURL)
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     WKRetainPtr<WKMutableDictionaryRef> viewOptions = adoptWK(WKMutableDictionaryCreate());
     WKRetainPtr<WKStringRef> useThreadedScrollingKey = adoptWK(WKStringCreateWithUTF8CString("ThreadedScrolling"));
     WKRetainPtr<WKBooleanRef> useThreadedScrollingValue = adoptWK(WKBooleanCreate(shouldUseThreadedScrolling(pathOrURL)));
@@ -190,6 +193,7 @@ static void updateLayoutType(const char* pathOrURL)
 void TestInvocation::invoke()
 {
     TestController::TimeoutDuration timeoutToUse = TestController::LongTimeout;
+    changeWindowScaleIfNeeded(m_pathOrURL.c_str());
     sizeWebViewForCurrentTest(m_pathOrURL.c_str());
     updateLayoutType(m_pathOrURL.c_str());
     updateThreadedScrollingForCurrentTest(m_pathOrURL.c_str());
@@ -226,11 +230,6 @@ void TestInvocation::invoke()
     if (m_error)
         goto end;
 
-#if ENABLE(INSPECTOR)
-    if (shouldOpenWebInspector(m_pathOrURL.c_str()))
-        WKInspectorShow(WKPageGetInspector(TestController::shared().mainWebView()->page()));
-#endif // ENABLE(INSPECTOR)        
-
     WKPageLoadURL(TestController::shared().mainWebView()->page(), m_url.get());
 
     if (TestController::shared().useWaitToDumpWatchdogTimer()) {
@@ -251,7 +250,7 @@ void TestInvocation::invoke()
     dumpResults();
 
 end:
-#if ENABLE(INSPECTOR)
+#if ENABLE(INSPECTOR) && !PLATFORM(IOS)
     if (m_gotInitialResponse)
         WKInspectorClose(WKPageGetInspector(TestController::shared().mainWebView()->page()));
 #endif // ENABLE(INSPECTOR)
@@ -272,7 +271,7 @@ void TestInvocation::dumpWebProcessUnresponsiveness()
 void TestInvocation::dumpWebProcessUnresponsiveness(const char* errorMessage)
 {
     const char* errorMessageToStderr = 0;
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     char buffer[64];
     pid_t pid = WKPageGetProcessIdentifier(TestController::shared().mainWebView()->page());
     sprintf(buffer, "#PROCESS UNRESPONSIVE - WebProcess (pid %ld)\n", static_cast<long>(pid));
@@ -541,19 +540,15 @@ void TestInvocation::didReceiveMessageFromInjectedBundle(WKStringRef messageName
         return;
     }
 
-    if (WKStringIsEqualToUTF8CString(messageName, "SetVisibilityState")) {
+    if (WKStringIsEqualToUTF8CString(messageName, "SetHidden")) {
         ASSERT(WKGetTypeID(messageBody) == WKDictionaryGetTypeID());
         WKDictionaryRef messageBodyDictionary = static_cast<WKDictionaryRef>(messageBody);
 
-        WKRetainPtr<WKStringRef> visibilityStateKeyWK(AdoptWK, WKStringCreateWithUTF8CString("visibilityState"));
-        WKUInt64Ref visibilityStateWK = static_cast<WKUInt64Ref>(WKDictionaryGetItemForKey(messageBodyDictionary, visibilityStateKeyWK.get()));
-        WKPageVisibilityState visibilityState = static_cast<WKPageVisibilityState>(WKUInt64GetValue(visibilityStateWK));
+        WKRetainPtr<WKStringRef> isInitialKeyWK(AdoptWK, WKStringCreateWithUTF8CString("hidden"));
+        WKBooleanRef hiddenWK = static_cast<WKBooleanRef>(WKDictionaryGetItemForKey(messageBodyDictionary, isInitialKeyWK.get()));
+        bool hidden = WKBooleanGetValue(hiddenWK);
 
-        WKRetainPtr<WKStringRef> isInitialKeyWK(AdoptWK, WKStringCreateWithUTF8CString("isInitialState"));
-        WKBooleanRef isInitialWK = static_cast<WKBooleanRef>(WKDictionaryGetItemForKey(messageBodyDictionary, isInitialKeyWK.get()));
-        bool isInitialState = WKBooleanGetValue(isInitialWK);
-
-        TestController::shared().setVisibilityState(visibilityState, isInitialState);
+        TestController::shared().setHidden(hidden);
         return;
     }
 
@@ -676,7 +671,7 @@ WKRetainPtr<WKTypeRef> TestInvocation::didReceiveSynchronousMessageFromInjectedB
     }
 
     if (WKStringIsEqualToUTF8CString(messageName, "SecureEventInputIsEnabled")) {
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
         WKRetainPtr<WKBooleanRef> result(AdoptWK, WKBooleanCreate(IsSecureEventInputEnabled()));
 #else
         WKRetainPtr<WKBooleanRef> result(AdoptWK, WKBooleanCreate(false));

@@ -43,7 +43,6 @@
 #include "ParsedContentType.h"
 #include "ResourceError.h"
 #include "ResourceRequest.h"
-#include "ScriptCallStack.h"
 #include "ScriptController.h"
 #include "ScriptProfile.h"
 #include "Settings.h"
@@ -58,8 +57,8 @@
 #include <mutex>
 #include <runtime/ArrayBuffer.h>
 #include <runtime/ArrayBufferView.h>
+#include <runtime/JSCInlines.h>
 #include <runtime/JSLock.h>
-#include <runtime/Operations.h>
 #include <wtf/Ref.h>
 #include <wtf/RefCountedLeakCounter.h>
 #include <wtf/StdLibExtras.h>
@@ -103,6 +102,7 @@ XMLHttpRequestStaticData::XMLHttpRequestStaticData()
         "cookie",
         "cookie2",
         "date",
+        "dnt",
         "expect",
         "host",
         "keep-alive",
@@ -120,7 +120,7 @@ XMLHttpRequestStaticData::XMLHttpRequestStaticData()
 
 static const XMLHttpRequestStaticData& staticData()
 {
-    std::once_flag onceFlag;
+    static std::once_flag onceFlag;
     static const XMLHttpRequestStaticData* staticData;
 
     std::call_once(onceFlag, [] {
@@ -160,7 +160,7 @@ static void logConsoleError(ScriptExecutionContext* context, const String& messa
         return;
     // FIXME: It's not good to report the bad usage without indicating what source line it came from.
     // We should pass additional parameters so we can tell the console where the mistake occurred.
-    context->addConsoleMessage(JSMessageSource, ErrorMessageLevel, message);
+    context->addConsoleMessage(MessageSource::JS, MessageLevel::Error, message);
 }
 
 PassRefPtr<XMLHttpRequest> XMLHttpRequest::create(ScriptExecutionContext& context)
@@ -184,6 +184,7 @@ XMLHttpRequest::XMLHttpRequest(ScriptExecutionContext& context)
     , m_uploadEventsAllowed(true)
     , m_uploadComplete(false)
     , m_sameOriginRequest(true)
+    , m_sendingForInspector(false)
     , m_receivedLength(0)
     , m_lastSendLineNumber(0)
     , m_lastSendColumnNumber(0)
@@ -241,7 +242,8 @@ String XMLHttpRequest::responseText(ExceptionCode& ec)
 
 void XMLHttpRequest::didCacheResponseJSON()
 {
-    ASSERT(m_responseTypeCode == ResponseTypeJSON && doneWithoutErrors());
+    ASSERT(m_responseTypeCode == ResponseTypeJSON);
+    ASSERT(doneWithoutErrors());
     m_responseCacheIsValid = true;
     m_responseBuilder.clear();
 }
@@ -250,11 +252,11 @@ Document* XMLHttpRequest::responseXML(ExceptionCode& ec)
 {
     if (m_responseTypeCode != ResponseTypeDefault && m_responseTypeCode != ResponseTypeDocument) {
         ec = INVALID_STATE_ERR;
-        return 0;
+        return nullptr;
     }
 
     if (!doneWithoutErrors())
-        return 0;
+        return nullptr;
 
     if (!m_createdDocument) {
         bool isHTML = equalIgnoringCase(responseMIMEType(), "text/html");
@@ -285,10 +287,7 @@ Document* XMLHttpRequest::responseXML(ExceptionCode& ec)
 Blob* XMLHttpRequest::responseBlob()
 {
     ASSERT(m_responseTypeCode == ResponseTypeBlob);
-
-    // We always return null before DONE.
-    if (m_state != DONE)
-        return 0;
+    ASSERT(doneWithoutErrors());
 
     if (!m_responseBlob) {
         // FIXME: This causes two (or more) unnecessary copies of the data.
@@ -319,13 +318,11 @@ Blob* XMLHttpRequest::responseBlob()
 ArrayBuffer* XMLHttpRequest::responseArrayBuffer()
 {
     ASSERT(m_responseTypeCode == ResponseTypeArrayBuffer);
-
-    if (m_state != DONE)
-        return 0;
+    ASSERT(doneWithoutErrors());
 
     if (!m_responseArrayBuffer) {
         if (m_binaryResponseBuilder)
-            m_responseArrayBuffer = ArrayBuffer::create(const_cast<char*>(m_binaryResponseBuilder->data()), static_cast<unsigned>(m_binaryResponseBuilder->size()));
+            m_responseArrayBuffer = m_binaryResponseBuilder->createArrayBuffer();
         else
             m_responseArrayBuffer = ArrayBuffer::create(nullptr, 0);
         m_binaryResponseBuilder.clear();
@@ -713,7 +710,7 @@ void XMLHttpRequest::send(DOMFormData* body, ExceptionCode& ec)
 void XMLHttpRequest::send(ArrayBuffer* body, ExceptionCode& ec)
 {
     String consoleMessage("ArrayBuffer is deprecated in XMLHttpRequest.send(). Use ArrayBufferView instead.");
-    scriptExecutionContext()->addConsoleMessage(JSMessageSource, WarningMessageLevel, consoleMessage);
+    scriptExecutionContext()->addConsoleMessage(MessageSource::JS, MessageLevel::Warning, consoleMessage);
 
     HistogramSupport::histogramEnumeration("WebCore.XHR.send.ArrayBufferOrView", XMLHttpRequestSendArrayBuffer, XMLHttpRequestSendArrayBufferOrViewMax);
 
@@ -741,7 +738,13 @@ void XMLHttpRequest::sendBytesData(const void* data, size_t length, ExceptionCod
     createRequest(ec);
 }
 
-void XMLHttpRequest::sendFromInspector(PassRefPtr<FormData> formData, ExceptionCode& ec)
+void XMLHttpRequest::sendForInspector(ExceptionCode& ec)
+{
+    m_sendingForInspector = true;
+    send(ec);
+}
+
+void XMLHttpRequest::sendForInspectorXHRReplay(PassRefPtr<FormData> formData, ExceptionCode& ec)
 {
     m_requestEntityBody = formData ? formData->deepCopy() : 0;
     createRequest(ec);
@@ -778,6 +781,9 @@ void XMLHttpRequest::createRequest(ExceptionCode& ec)
 
     ResourceRequest request(m_url);
     request.setHTTPMethod(m_method);
+#if ENABLE(INSPECTOR)
+    request.setHiddenFromInspector(m_sendingForInspector);
+#endif
 
     InspectorInstrumentation::willLoadXHR(scriptExecutionContext(), this, m_method, m_url, m_async, m_requestEntityBody ? m_requestEntityBody->deepCopy() : 0, m_requestHeaders, m_includeCredentials);
 
@@ -795,7 +801,7 @@ void XMLHttpRequest::createRequest(ExceptionCode& ec)
     options.sniffContent = DoNotSniffContent;
     options.preflightPolicy = uploadEvents ? ForcePreflight : ConsiderPreflight;
     options.allowCredentials = (m_sameOriginRequest || m_includeCredentials) ? AllowStoredCredentials : DoNotAllowStoredCredentials;
-    options.crossOriginRequestPolicy = UseAccessControl;
+    options.crossOriginRequestPolicy = m_sendingForInspector ? AllowCrossOriginRequests : UseAccessControl;
     options.securityOrigin = securityOrigin();
 #if ENABLE(RESOURCE_TIMING)
     options.initiator = cachedResourceRequestInitiators().xmlhttprequest;
@@ -986,35 +992,33 @@ String XMLHttpRequest::getRequestHeader(const AtomicString& name) const
     return m_requestHeaders.get(name);
 }
 
-String XMLHttpRequest::getAllResponseHeaders(ExceptionCode& ec) const
+String XMLHttpRequest::getAllResponseHeaders() const
 {
-    if (m_state < HEADERS_RECEIVED) {
-        ec = INVALID_STATE_ERR;
+    if (m_state < HEADERS_RECEIVED || m_error)
         return "";
-    }
 
     StringBuilder stringBuilder;
 
     HTTPHeaderSet accessControlExposeHeaderSet;
     parseAccessControlExposeHeadersAllowList(m_response.httpHeaderField("Access-Control-Expose-Headers"), accessControlExposeHeaderSet);
-    HTTPHeaderMap::const_iterator end = m_response.httpHeaderFields().end();
-    for (HTTPHeaderMap::const_iterator it = m_response.httpHeaderFields().begin(); it!= end; ++it) {
+    
+    for (const auto& header : m_response.httpHeaderFields()) {
         // Hide Set-Cookie header fields from the XMLHttpRequest client for these reasons:
         //     1) If the client did have access to the fields, then it could read HTTP-only
         //        cookies; those cookies are supposed to be hidden from scripts.
         //     2) There's no known harm in hiding Set-Cookie header fields entirely; we don't
         //        know any widely used technique that requires access to them.
         //     3) Firefox has implemented this policy.
-        if (isSetCookieHeader(it->key) && !securityOrigin()->canLoadLocalResources())
+        if (isSetCookieHeader(header.key) && !securityOrigin()->canLoadLocalResources())
             continue;
 
-        if (!m_sameOriginRequest && !isOnAccessControlResponseHeaderWhitelist(it->key) && !accessControlExposeHeaderSet.contains(it->key))
+        if (!m_sameOriginRequest && !isOnAccessControlResponseHeaderWhitelist(header.key) && !accessControlExposeHeaderSet.contains(header.key))
             continue;
 
-        stringBuilder.append(it->key);
+        stringBuilder.append(header.key);
         stringBuilder.append(':');
         stringBuilder.append(' ');
-        stringBuilder.append(it->value);
+        stringBuilder.append(header.value);
         stringBuilder.append('\r');
         stringBuilder.append('\n');
     }
@@ -1022,12 +1026,10 @@ String XMLHttpRequest::getAllResponseHeaders(ExceptionCode& ec) const
     return stringBuilder.toString();
 }
 
-String XMLHttpRequest::getResponseHeader(const AtomicString& name, ExceptionCode& ec) const
+String XMLHttpRequest::getResponseHeader(const AtomicString& name) const
 {
-    if (m_state < HEADERS_RECEIVED) {
-        ec = INVALID_STATE_ERR;
+    if (m_state < HEADERS_RECEIVED || m_error)
         return String();
-    }
 
     // See comment in getAllResponseHeaders above.
     if (isSetCookieHeader(name) && !securityOrigin()->canLoadLocalResources()) {
@@ -1067,29 +1069,24 @@ bool XMLHttpRequest::responseIsXML() const
     return DOMImplementation::isXMLMIMEType(responseMIMEType().lower());
 }
 
-int XMLHttpRequest::status(ExceptionCode& ec) const
+int XMLHttpRequest::status() const
 {
+    if (m_state == UNSENT || m_state == OPENED || m_error)
+        return 0;
+
     if (m_response.httpStatusCode())
         return m_response.httpStatusCode();
-
-    if (m_state == OPENED) {
-        // Firefox only raises an exception in this state; we match it.
-        // Note the case of local file requests, where we have no HTTP response code! Firefox never raises an exception for those, but we match HTTP case for consistency.
-        ec = INVALID_STATE_ERR;
-    }
 
     return 0;
 }
 
-String XMLHttpRequest::statusText(ExceptionCode& ec) const
+String XMLHttpRequest::statusText() const
 {
+    if (m_state == UNSENT || m_state == OPENED || m_error)
+        return String();
+
     if (!m_response.httpStatusText().isNull())
         return m_response.httpStatusText();
-
-    if (m_state == OPENED) {
-        // See comments in status() above.
-        ec = INVALID_STATE_ERR;
-    }
 
     return String();
 }

@@ -146,9 +146,27 @@ static void encodeInvocation(WKRemoteObjectEncoder *encoder, NSInvocation *invoc
             break;
         }
 
+        // char
+        case 'c': {
+            char value;
+            [invocation getArgument:&value atIndex:i];
+
+            encodeToObjectStream(encoder, @(value));
+            break;
+        }
+
         // bool
         case 'B': {
             BOOL value;
+            [invocation getArgument:&value atIndex:i];;
+
+            encodeToObjectStream(encoder, @(value));
+            break;
+        }
+
+        // NSInteger
+        case 'q': {
+            NSInteger value;
             [invocation getArgument:&value atIndex:i];;
 
             encodeToObjectStream(encoder, @(value));
@@ -394,9 +412,23 @@ static void decodeInvocationArguments(WKRemoteObjectDecoder *decoder, NSInvocati
             break;
         }
 
+        // char
+        case 'c': {
+            char value = [decodeObjectFromObjectStream(decoder, [NSSet setWithObject:[NSNumber class]]) charValue];
+            [invocation setArgument:&value atIndex:i];
+            break;
+        }
+
         // bool
         case 'B': {
             bool value = [decodeObjectFromObjectStream(decoder, [NSSet setWithObject:[NSNumber class]]) boolValue];
+            [invocation setArgument:&value atIndex:i];
+            break;
+        }
+
+        // NSInteger
+        case 'q': {
+            NSInteger value = [decodeObjectFromObjectStream(decoder, [NSSet setWithObject:[NSNumber class]]) integerValue];
             [invocation setArgument:&value atIndex:i];
             break;
         }
@@ -465,7 +497,7 @@ static id decodeObject(WKRemoteObjectDecoder *decoder)
     if (objectClass == [NSInvocation class])
         return decodeInvocation(decoder);
 
-    RetainPtr<id> result = [objectClass allocWithZone:decoder.zone];
+    id result = [objectClass allocWithZone:decoder.zone];
     if (!result)
         [NSException raise:NSInvalidUnarchiveOperationException format:@"Class \"%s\" returned nil from +alloc while being decoded", className.data()];
 
@@ -477,7 +509,7 @@ static id decodeObject(WKRemoteObjectDecoder *decoder)
     if (!result)
         [NSException raise:NSInvalidUnarchiveOperationException format:@"Object of class \"%s\" returned nil from -awakeAfterUsingCoder: while being decoded", className.data()];
 
-    return [result.leakRef() autorelease];
+    return [result autorelease];
 }
 
 static id decodeObject(WKRemoteObjectDecoder *decoder, const ImmutableDictionary* dictionary, NSSet *allowedClasses)
@@ -522,8 +554,10 @@ static id decodeObject(WKRemoteObjectDecoder *decoder, const ImmutableDictionary
 - (const uint8_t *)decodeBytesForKey:(NSString *)key returnedLength:(NSUInteger *)length
 {
     auto* data = _currentDictionary->get<API::Data>(escapeKey(key));
-    if (!data || !data->size())
+    if (!data || !data->size()) {
+        *length = 0;
         return nullptr;
+    }
 
     *length = data->size();
     return data->bytes();

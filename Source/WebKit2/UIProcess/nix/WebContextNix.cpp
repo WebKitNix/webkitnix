@@ -31,7 +31,7 @@
 
 #include <WebCore/FileSystem.h>
 #include <WebCore/NotImplemented.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 
 #include <glib.h>
 
@@ -72,7 +72,7 @@ static void initInspectorServer()
 
 String WebContext::platformDefaultApplicationCacheDirectory() const
 {
-    GOwnPtr<gchar> cacheDirectory(g_build_filename(g_get_user_cache_dir(), "webkitnix", "applications", NULL));
+    std::unique_ptr<gchar> cacheDirectory(g_build_filename(g_get_user_cache_dir(), "webkitnix", "applications", NULL));
     return WebCore::filenameToString(cacheDirectory.get());
 }
 
@@ -94,7 +94,7 @@ void WebContext::platformInvalidateContext()
 
 String WebContext::platformDefaultDatabaseDirectory() const
 {
-    GOwnPtr<gchar> databaseDirectory(g_build_filename(g_get_user_data_dir(), "webkitnix", "databases", NULL));
+    std::unique_ptr<gchar> databaseDirectory(g_build_filename(g_get_user_data_dir(), "webkitnix", "databases", NULL));
     return WebCore::filenameToString(databaseDirectory.get());
 }
 
@@ -106,19 +106,19 @@ String WebContext::platformDefaultIconDatabasePath() const
 
 String WebContext::platformDefaultLocalStorageDirectory() const
 {
-    GOwnPtr<gchar> storageDirectory(g_build_filename(g_get_user_data_dir(), "webkitnix", "localstorage", NULL));
+    std::unique_ptr<gchar> storageDirectory(g_build_filename(g_get_user_data_dir(), "webkitnix", "localstorage", NULL));
     return WebCore::filenameToString(storageDirectory.get());
 }
 
 String WebContext::platformDefaultDiskCacheDirectory() const
 {
-    GOwnPtr<gchar> diskCacheDirectory(g_build_filename(g_get_user_cache_dir(), "webkitnix", "cache", NULL));
+    std::unique_ptr<gchar> diskCacheDirectory(g_build_filename(g_get_user_cache_dir(), "webkitnix", "cache", NULL));
     return WebCore::filenameToString(diskCacheDirectory.get());
 }
 
 String WebContext::platformDefaultCookieStorageDirectory() const
 {
-    GOwnPtr<gchar> cookieStorageDirectory(g_build_filename(g_get_user_data_dir(), "webkitnix", "cookies", NULL));
+    std::unique_ptr<gchar> cookieStorageDirectory(g_build_filename(g_get_user_data_dir(), "webkitnix", "cookies", NULL));
     return WebCore::filenameToString(cookieStorageDirectory.get());
 }
 

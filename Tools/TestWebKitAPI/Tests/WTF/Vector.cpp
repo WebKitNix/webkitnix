@@ -83,7 +83,6 @@ TEST(WTF_Vector, AppendLast)
         vector.append(const_cast<const unsigned&>(vector.last()));
 }
 
-#if COMPILER_SUPPORTS(CXX_GENERALIZED_INITIALIZERS)
 TEST(WTF_Vector, InitializerList)
 {
     Vector<int> vector = { 1, 2, 3, 4 };
@@ -94,7 +93,6 @@ TEST(WTF_Vector, InitializerList)
     EXPECT_EQ(3, vector[2]);
     EXPECT_EQ(4, vector[3]);
 }
-#endif
 
 TEST(WTF_Vector, Reverse)
 {
@@ -216,6 +214,96 @@ TEST(WTF_Vector, MoveOnly_Insert)
         else
             EXPECT_EQ(1000 + i, vector[i].value());
     }
+}
+
+TEST(WTF_Vector, VectorOfVectorsOfVectorsInlineCapacitySwap)
+{
+    Vector<Vector<Vector<int, 1>, 1>, 1> a;
+    Vector<Vector<Vector<int, 1>, 1>, 1> b;
+    Vector<Vector<Vector<int, 1>, 1>, 1> c;
+    
+    EXPECT_EQ(a.size(), 0U);
+    EXPECT_EQ(b.size(), 0U);
+    EXPECT_EQ(c.size(), 0U);
+    
+    Vector<int, 1> x;
+    x.append(42);
+    
+    EXPECT_EQ(x.size(), 1U);
+    EXPECT_EQ(x[0], 42);
+    
+    Vector<Vector<int, 1>, 1> y;
+    y.append(x);
+    
+    EXPECT_EQ(x.size(), 1U);
+    EXPECT_EQ(x[0], 42);
+    EXPECT_EQ(y.size(), 1U);
+    EXPECT_EQ(y[0].size(), 1U);
+    EXPECT_EQ(y[0][0], 42);
+    
+    a.append(y);
+
+    EXPECT_EQ(x.size(), 1U);
+    EXPECT_EQ(x[0], 42);
+    EXPECT_EQ(y.size(), 1U);
+    EXPECT_EQ(y[0].size(), 1U);
+    EXPECT_EQ(y[0][0], 42);
+    EXPECT_EQ(a.size(), 1U);
+    EXPECT_EQ(a[0].size(), 1U);
+    EXPECT_EQ(a[0][0].size(), 1U);
+    EXPECT_EQ(a[0][0][0], 42);
+    
+    a.swap(b);
+
+    EXPECT_EQ(a.size(), 0U);
+    EXPECT_EQ(x.size(), 1U);
+    EXPECT_EQ(x[0], 42);
+    EXPECT_EQ(y.size(), 1U);
+    EXPECT_EQ(y[0].size(), 1U);
+    EXPECT_EQ(y[0][0], 42);
+    EXPECT_EQ(b.size(), 1U);
+    EXPECT_EQ(b[0].size(), 1U);
+    EXPECT_EQ(b[0][0].size(), 1U);
+    EXPECT_EQ(b[0][0][0], 42);
+    
+    b.swap(c);
+
+    EXPECT_EQ(a.size(), 0U);
+    EXPECT_EQ(b.size(), 0U);
+    EXPECT_EQ(x.size(), 1U);
+    EXPECT_EQ(x[0], 42);
+    EXPECT_EQ(y.size(), 1U);
+    EXPECT_EQ(y[0].size(), 1U);
+    EXPECT_EQ(y[0][0], 42);
+    EXPECT_EQ(c.size(), 1U);
+    EXPECT_EQ(c[0].size(), 1U);
+    EXPECT_EQ(c[0][0].size(), 1U);
+    EXPECT_EQ(c[0][0][0], 42);
+    
+    y[0][0] = 24;
+
+    EXPECT_EQ(x.size(), 1U);
+    EXPECT_EQ(x[0], 42);
+    EXPECT_EQ(y.size(), 1U);
+    EXPECT_EQ(y[0].size(), 1U);
+    EXPECT_EQ(y[0][0], 24);
+    
+    a.append(y);
+
+    EXPECT_EQ(x.size(), 1U);
+    EXPECT_EQ(x[0], 42);
+    EXPECT_EQ(y.size(), 1U);
+    EXPECT_EQ(y[0].size(), 1U);
+    EXPECT_EQ(y[0][0], 24);
+    EXPECT_EQ(a.size(), 1U);
+    EXPECT_EQ(a[0].size(), 1U);
+    EXPECT_EQ(a[0][0].size(), 1U);
+    EXPECT_EQ(a[0][0][0], 24);
+    EXPECT_EQ(c.size(), 1U);
+    EXPECT_EQ(c[0].size(), 1U);
+    EXPECT_EQ(c[0][0].size(), 1U);
+    EXPECT_EQ(c[0][0][0], 42);
+    EXPECT_EQ(b.size(), 0U);
 }
 
 } // namespace TestWebKitAPI

@@ -7,13 +7,13 @@ if (window.testRunner)
 <link href="resources/grid.css" rel="stylesheet">
 <style>
 .gridMinMinContent {
-    -webkit-grid-definition-columns: 30px;
-    -webkit-grid-definition-rows: minmax(-webkit-min-content, 40px);
+    -webkit-grid-template-columns: 30px;
+    -webkit-grid-template-rows: minmax(-webkit-min-content, 40px);
 }
 
 .gridMaxMinContent {
-    -webkit-grid-definition-columns: 30px;
-    -webkit-grid-definition-rows: minmax(30px, -webkit-min-content);
+    -webkit-grid-template-columns: 30px;
+    -webkit-grid-template-rows: minmax(30px, -webkit-min-content);
 }
 
 .firstRowFirstColumn {
@@ -29,8 +29,14 @@ if (window.testRunner)
 <p>Test that resolving minmax function with min-content on grid items works properly.</p>
 
 <div class="constrainedContainer">
-    <div class="grid gridMinMinContent">
+    <div class="grid gridMinMinContent" style="height: 100%">
         <div class="firstRowFirstColumn" data-expected-width="30" data-expected-height="20">XXX XXX</div>
+    </div>
+</div>
+
+<div class="constrainedContainer">
+    <div class="grid gridMinMinContent">
+        <div class="firstRowFirstColumn" data-expected-width="30" data-expected-height="40">XXX XXX</div>
     </div>
 </div>
 
@@ -41,8 +47,14 @@ if (window.testRunner)
 </div>
 
 <div class="constrainedContainer">
-    <div class="grid gridMinMinContent">
+    <div class="grid gridMinMinContent" style="height: 100%">
         <div class="firstRowFirstColumn" data-expected-width="30" data-expected-height="60">XX XX XX XX XX XX</div>
+    </div>
+</div>
+
+<div class="constrainedContainer">
+    <div class="grid gridMinMinContent">
+        <div class="firstRowFirstColumn" data-expected-width="30" data-expected-height="40">XX XX XX XX XX XX</div>
     </div>
 </div>
 
@@ -54,8 +66,14 @@ if (window.testRunner)
 </div>
 
 <div style="width: 30px; height: 100px">
-    <div class="grid gridMinMinContent">
+    <div class="grid gridMinMinContent" style="height: 100%">
         <div class="firstRowFirstColumn" data-expected-width="30" data-expected-height="60">XX XX XX XX XX XX</div>
+    </div>
+</div>
+
+<div style="width: 30px; height: 100px">
+    <div class="grid gridMinMinContent">
+        <div class="firstRowFirstColumn" data-expected-width="30" data-expected-height="40">XX XX XX XX XX XX</div>
     </div>
 </div>
 

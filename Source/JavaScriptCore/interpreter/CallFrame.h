@@ -1,7 +1,7 @@
 /*
  *  Copyright (C) 1999-2001 Harri Porten (porten@kde.org)
  *  Copyright (C) 2001 Peter Kelly (pmk@post.com)
- *  Copyright (C) 2003, 2007, 2008, 2011, 2013 Apple Inc. All rights reserved.
+ *  Copyright (C) 2003, 2007, 2008, 2011, 2013, 2014 Apple Inc. All rights reserved.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -50,6 +50,10 @@ namespace JSC  {
             return this[JSStack::ScopeChain].Register::scope();
         }
 
+        bool hasActivation() const { return !!uncheckedActivation(); }
+        JSActivation* activation() const;
+        JSValue uncheckedActivation() const;
+
         // Global object in which execution began.
         JS_EXPORT_PRIVATE JSGlobalObject* vmEntryGlobalObject();
 
@@ -84,30 +88,31 @@ namespace JSC  {
 #ifndef NDEBUG
         void dumpCaller();
 #endif
-        static const HashTable& arrayConstructorTable(CallFrame* callFrame) { return *callFrame->vm().arrayConstructorTable; }
-        static const HashTable& arrayPrototypeTable(CallFrame* callFrame) { return *callFrame->vm().arrayPrototypeTable; }
-        static const HashTable& booleanPrototypeTable(CallFrame* callFrame) { return *callFrame->vm().booleanPrototypeTable; }
-        static const HashTable& dataViewTable(CallFrame* callFrame) { return *callFrame->vm().dataViewTable; }
-        static const HashTable& dateTable(CallFrame* callFrame) { return *callFrame->vm().dateTable; }
-        static const HashTable& dateConstructorTable(CallFrame* callFrame) { return *callFrame->vm().dateConstructorTable; }
-        static const HashTable& errorPrototypeTable(CallFrame* callFrame) { return *callFrame->vm().errorPrototypeTable; }
-        static const HashTable& globalObjectTable(CallFrame* callFrame) { return *callFrame->vm().globalObjectTable; }
-        static const HashTable& jsonTable(CallFrame* callFrame) { return *callFrame->vm().jsonTable; }
-        static const HashTable& numberConstructorTable(CallFrame* callFrame) { return *callFrame->vm().numberConstructorTable; }
-        static const HashTable& numberPrototypeTable(CallFrame* callFrame) { return *callFrame->vm().numberPrototypeTable; }
-        static const HashTable& objectConstructorTable(CallFrame* callFrame) { return *callFrame->vm().objectConstructorTable; }
-        static const HashTable& privateNamePrototypeTable(CallFrame* callFrame) { return *callFrame->vm().privateNamePrototypeTable; }
-        static const HashTable& regExpTable(CallFrame* callFrame) { return *callFrame->vm().regExpTable; }
-        static const HashTable& regExpConstructorTable(CallFrame* callFrame) { return *callFrame->vm().regExpConstructorTable; }
-        static const HashTable& regExpPrototypeTable(CallFrame* callFrame) { return *callFrame->vm().regExpPrototypeTable; }
-        static const HashTable& stringConstructorTable(CallFrame* callFrame) { return *callFrame->vm().stringConstructorTable; }
+        static const HashTable& arrayConstructorTable(VM& vm) { return *vm.arrayConstructorTable; }
+        static const HashTable& arrayPrototypeTable(VM& vm) { return *vm.arrayPrototypeTable; }
+        static const HashTable& booleanPrototypeTable(VM& vm) { return *vm.booleanPrototypeTable; }
+        static const HashTable& dataViewTable(VM& vm) { return *vm.dataViewTable; }
+        static const HashTable& dateTable(VM& vm) { return *vm.dateTable; }
+        static const HashTable& dateConstructorTable(VM& vm) { return *vm.dateConstructorTable; }
+        static const HashTable& errorPrototypeTable(VM& vm) { return *vm.errorPrototypeTable; }
+        static const HashTable& globalObjectTable(VM& vm) { return *vm.globalObjectTable; }
+        static const HashTable& jsonTable(VM& vm) { return *vm.jsonTable; }
+        static const HashTable& numberConstructorTable(VM& vm) { return *vm.numberConstructorTable; }
+        static const HashTable& numberPrototypeTable(VM& vm) { return *vm.numberPrototypeTable; }
+        static const HashTable& objectConstructorTable(VM& vm) { return *vm.objectConstructorTable; }
+        static const HashTable& privateNamePrototypeTable(VM& vm) { return *vm.privateNamePrototypeTable; }
+        static const HashTable& regExpTable(VM& vm) { return *vm.regExpTable; }
+        static const HashTable& regExpConstructorTable(VM& vm) { return *vm.regExpConstructorTable; }
+        static const HashTable& regExpPrototypeTable(VM& vm) { return *vm.regExpPrototypeTable; }
+        static const HashTable& stringConstructorTable(VM& vm) { return *vm.stringConstructorTable; }
 #if ENABLE(PROMISES)
-        static const HashTable& promisePrototypeTable(CallFrame* callFrame) { return *callFrame->vm().promisePrototypeTable; }
-        static const HashTable& promiseConstructorTable(CallFrame* callFrame) { return *callFrame->vm().promiseConstructorTable; }
+        static const HashTable& promisePrototypeTable(VM& vm) { return *vm.promisePrototypeTable; }
+        static const HashTable& promiseConstructorTable(VM& vm) { return *vm.promiseConstructorTable; }
 #endif
 
         static CallFrame* create(Register* callFrameBase) { return static_cast<CallFrame*>(callFrameBase); }
         Register* registers() { return this; }
+        const Register* registers() const { return this; }
 
         CallFrame& operator=(const Register& r) { *static_cast<Register*>(this) = r; return *this; }
 
@@ -176,15 +181,13 @@ namespace JSC  {
         // CodeOrigin(0) if we're in native code.
         CodeOrigin codeOrigin();
 
-        Register* frameExtent()
+        Register* topOfFrame()
         {
             if (isVMEntrySentinel() || !codeBlock())
-                return registers() - 1;
-            return frameExtentInternal();
+                return registers();
+            return topOfFrameInternal();
         }
     
-        Register* frameExtentInternal();
-
 #if USE(JSVALUE32_64)
         Instruction* currentVPC() const
         {
@@ -203,6 +206,7 @@ namespace JSC  {
 
         void setCallerFrame(CallFrame* frame) { callerFrameAndPC().callerFrame = frame; }
         void setScope(JSScope* scope) { static_cast<Register*>(this)[JSStack::ScopeChain] = scope; }
+        void setActivation(JSActivation*);
 
         ALWAYS_INLINE void init(CodeBlock* codeBlock, Instruction* vPC, JSScope* scope,
             CallFrame* callerFrame, int argc, JSObject* callee)
@@ -317,6 +321,8 @@ namespace JSC  {
 #endif
         ExecState();
         ~ExecState();
+
+        Register* topOfFrameInternal();
 
         // The following are for internal use in debugging and verification
         // code only and not meant as an API for general usage:

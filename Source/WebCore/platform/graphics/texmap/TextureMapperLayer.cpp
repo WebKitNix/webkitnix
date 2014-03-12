@@ -24,7 +24,7 @@
 #include "Region.h"
 #include <wtf/MathExtras.h>
 
-#if USE(ACCELERATED_COMPOSITING) && USE(TEXTURE_MAPPER)
+#if USE(TEXTURE_MAPPER)
 
 namespace WebCore {
 
@@ -565,7 +565,7 @@ void TextureMapperLayer::setChildrenTransform(const TransformationMatrix& childr
     m_currentTransform.setChildrenTransform(childrenTransform);
 }
 
-void TextureMapperLayer::setContentsRect(const IntRect& contentsRect)
+void TextureMapperLayer::setContentsRect(const FloatRect& contentsRect)
 {
     if (contentsRect == m_state.contentsRect)
         return;

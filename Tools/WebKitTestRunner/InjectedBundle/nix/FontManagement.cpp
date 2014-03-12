@@ -33,7 +33,7 @@
 #include <wtf/Vector.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 
 static Vector<String> getFontFiles()
 {
@@ -67,11 +67,11 @@ CString getCustomBuildDir()
 static CString getFontsPath()
 {
     CString webkitOutputDir = getCustomBuildDir();
-    GOwnPtr<char> fontsPath(g_build_filename(webkitOutputDir.data(), "Dependencies", "Root", "webkitgtk-test-fonts", NULL));
+    std::unique_ptr<char> fontsPath(g_build_filename(webkitOutputDir.data(), "Dependencies", "Root", "webkitgtk-test-fonts", NULL));
     if (g_file_test(fontsPath.get(), static_cast<GFileTest>(G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
         return fontsPath.get();
 
-    fontsPath.set(g_strdup(DOWNLOADED_FONTS_DIR));
+    fontsPath.reset(g_strdup(DOWNLOADED_FONTS_DIR));
     if (g_file_test(fontsPath.get(), static_cast<GFileTest>(G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
         return fontsPath.get();
 

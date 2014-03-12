@@ -65,9 +65,7 @@ public:
     void sizeChanged();
     void timeChanged();
     void didEnd();
-#if USE(ACCELERATED_COMPOSITING)
     void layerHostChanged(PlatformLayer* rootLayer);
-#endif
 
 private:
     MediaPlayerPrivateQTKit(MediaPlayer*);
@@ -83,9 +81,7 @@ private:
     static bool isAvailable();
 
     PlatformMedia platformMedia() const;
-#if USE(ACCELERATED_COMPOSITING)
     PlatformLayer* platformLayer() const;
-#endif
 
     IntSize naturalSize() const;
     bool hasVideo() const;
@@ -95,7 +91,7 @@ private:
     
     void load(const String& url);
 #if ENABLE(MEDIA_SOURCE)
-    virtual void load(const String&, PassRefPtr<HTMLMediaSource>);
+    virtual void load(const String&, MediaSourcePrivateClient*);
 #endif
     void cancelLoad();
     void loadInternal(const String& url);
@@ -124,7 +120,7 @@ private:
     MediaPlayer::NetworkState networkState() const { return m_networkState; }
     MediaPlayer::ReadyState readyState() const { return m_readyState; }
     
-    PassRefPtr<TimeRanges> buffered() const;
+    std::unique_ptr<PlatformTimeRanges> buffered() const;
     float maxTimeSeekable() const;
     bool didLoadingProgress() const;
     unsigned totalBytes() const;
@@ -138,11 +134,8 @@ private:
     void paintCurrentFrameInContext(GraphicsContext*, const IntRect&);
     virtual void prepareForRendering();
 
-
-#if USE(ACCELERATED_COMPOSITING)
     bool supportsAcceleratedRendering() const;
     void acceleratedRenderingStateChanged();
-#endif
 
     bool hasSingleSecurityOrigin() const;
     MediaPlayer::MovieLoadType movieLoadType() const;

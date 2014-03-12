@@ -38,9 +38,6 @@
 #include "FontDescription.h"
 #include "FontSmoothingMode.h"
 #include "GraphicsTypes.h"
-#if ENABLE(CSS_IMAGE_ORIENTATION)
-#include "ImageOrientation.h"
-#endif
 #include "Length.h"
 #include "LineClampValue.h"
 #include "Path.h"
@@ -51,8 +48,11 @@
 #include "ThemeTypes.h"
 #include "UnicodeBidi.h"
 #include "WritingMode.h"
-
 #include <wtf/MathExtras.h>
+
+#if ENABLE(CSS_IMAGE_ORIENTATION)
+#include "ImageOrientation.h"
+#endif
 
 namespace WebCore {
 
@@ -604,6 +604,11 @@ template<> inline CSSPrimitiveValue::CSSPrimitiveValue(ControlPart e)
     case CapsLockIndicatorPart:
         m_value.valueID = CSSValueCapsLockIndicator;
         break;
+#if ENABLE(IMAGE_CONTROLS)
+    case ImageControlsButtonPart:
+        m_value.valueID = CSSValueImageControlsButton;
+        break;
+#endif
     case InputSpeechButtonPart:
 #if ENABLE(INPUT_SPEECH)
         m_value.valueID = CSSValueWebkitInputSpeechButton;
@@ -1315,9 +1320,6 @@ template<> inline CSSPrimitiveValue::CSSPrimitiveValue(EDisplay e)
     case LIST_ITEM:
         m_value.valueID = CSSValueListItem;
         break;
-    case RUN_IN:
-        m_value.valueID = CSSValueRunIn;
-        break;
     case COMPACT:
         m_value.valueID = CSSValueCompact;
         break;
@@ -1366,12 +1368,14 @@ template<> inline CSSPrimitiveValue::CSSPrimitiveValue(EDisplay e)
     case INLINE_FLEX:
         m_value.valueID = CSSValueWebkitInlineFlex;
         break;
+#if ENABLE(CSS_GRID_LAYOUT)
     case GRID:
         m_value.valueID = CSSValueWebkitGrid;
         break;
     case INLINE_GRID:
         m_value.valueID = CSSValueWebkitInlineGrid;
         break;
+#endif
     case NONE:
         m_value.valueID = CSSValueNone;
         break;
@@ -2635,7 +2639,6 @@ template<> inline CSSPrimitiveValue::operator TextDecoration() const
     return TextDecorationNone;
 }
 
-#if ENABLE(CSS3_TEXT_DECORATION)
 template<> inline CSSPrimitiveValue::operator TextDecorationStyle() const
 {
     ASSERT(isValueID());
@@ -2698,7 +2701,6 @@ template<> inline CSSPrimitiveValue::operator TextUnderlinePosition() const
     ASSERT_NOT_REACHED();
     return TextUnderlinePositionAuto;
 }
-#endif // CSS3_TEXT_DECORATION
 
 template<> inline CSSPrimitiveValue::CSSPrimitiveValue(ETextSecurity e)
     : CSSValue(PrimitiveClass)
@@ -4160,7 +4162,37 @@ template<> inline CSSPrimitiveValue::operator BlendMode() const
     return BlendModeNormal;
 }
 
-#if ENABLE(SVG)
+template<> inline CSSPrimitiveValue::CSSPrimitiveValue(Isolation isolation)
+    : CSSValue(PrimitiveClass)
+{
+    m_primitiveUnitType = CSS_VALUE_ID;
+    switch (isolation) {
+    case IsolationAuto:
+        m_value.valueID = CSSValueAuto;
+        break;
+    case IsolationIsolate:
+        m_value.valueID = CSSValueIsolate;
+        break;
+    default:
+        ASSERT_NOT_REACHED();
+    }
+}
+
+template<> inline CSSPrimitiveValue::operator Isolation() const
+{
+    ASSERT(isValueID());
+    switch (m_value.valueID) {
+    case CSSValueAuto:
+        return IsolationAuto;
+    case CSSValueIsolate:
+        return IsolationIsolate;
+    default:
+        break;
+    }
+
+    ASSERT_NOT_REACHED();
+    return IsolationAuto;
+}
 
 template<> inline CSSPrimitiveValue::CSSPrimitiveValue(LineCap e)
     : CSSValue(PrimitiveClass)
@@ -4346,8 +4378,6 @@ template<> inline CSSPrimitiveValue::operator EAlignmentBaseline() const
     ASSERT_NOT_REACHED();
     return AB_AUTO;
 }
-
-#endif
 
 template<> inline CSSPrimitiveValue::CSSPrimitiveValue(EBorderCollapse e)
     : CSSValue(PrimitiveClass)
@@ -4633,6 +4663,7 @@ template<> inline CSSPrimitiveValue::operator WrapThrough() const
     return WrapThroughWrap;
 }
 
+#if ENABLE(CSS_GRID_LAYOUT)
 template<> inline CSSPrimitiveValue::operator GridAutoFlow() const
 {
     ASSERT(isValueID());
@@ -4669,6 +4700,7 @@ template<> inline CSSPrimitiveValue::CSSPrimitiveValue(GridAutoFlow flow)
         break;
     }
 }
+#endif /* ENABLE_(CSS_GRID_LAYOUT) */
 
 enum LengthConversion {
     AnyConversion = ~0,
@@ -4701,8 +4733,6 @@ template<int supported> Length CSSPrimitiveValue::convertToLength(const RenderSt
         return viewportPercentageLength();
     return Length(Undefined);
 }
-
-#if ENABLE(SVG)
 
 template<> inline CSSPrimitiveValue::CSSPrimitiveValue(EBufferedRendering e)
     : CSSValue(PrimitiveClass)
@@ -5083,8 +5113,6 @@ template<> inline CSSPrimitiveValue::operator EMaskType() const
     return MT_LUMINANCE;
 }
 
-#endif // ENABLE(SVG)
-
 #if ENABLE(CSS_IMAGE_ORIENTATION)
 
 template<> inline CSSPrimitiveValue::CSSPrimitiveValue(ImageOrientationEnum e)
@@ -5139,9 +5167,6 @@ template<> inline CSSPrimitiveValue::CSSPrimitiveValue(LayoutBox layoutBox)
 {
     m_primitiveUnitType = CSS_VALUE_ID;
     switch (layoutBox) {
-    case BoundingBox:
-        m_value.valueID = CSSValueBoundingBox;
-        break;
     case MarginBox:
         m_value.valueID = CSSValueMarginBox;
         break;
@@ -5154,6 +5179,15 @@ template<> inline CSSPrimitiveValue::CSSPrimitiveValue(LayoutBox layoutBox)
     case ContentBox:
         m_value.valueID = CSSValueContentBox;
         break;
+    case Fill:
+        m_value.valueID = CSSValueFill;
+        break;
+    case Stroke:
+        m_value.valueID = CSSValueStroke;
+        break;
+    case ViewBox:
+        m_value.valueID = CSSValueViewBox;
+        break;
     case BoxMissing:
         ASSERT_NOT_REACHED();
         m_value.valueID = CSSValueNone;
@@ -5164,8 +5198,6 @@ template<> inline CSSPrimitiveValue::CSSPrimitiveValue(LayoutBox layoutBox)
 template<> inline CSSPrimitiveValue::operator LayoutBox() const
 {
     switch (getValueID()) {
-    case CSSValueBoundingBox:
-        return BoundingBox;
     case CSSValueMarginBox:
         return MarginBox;
     case CSSValueBorderBox:
@@ -5174,6 +5206,13 @@ template<> inline CSSPrimitiveValue::operator LayoutBox() const
         return PaddingBox;
     case CSSValueContentBox:
         return ContentBox;
+    // The following are used in an SVG context.
+    case CSSValueFill:
+        return Fill;
+    case CSSValueStroke:
+        return Stroke;
+    case CSSValueViewBox:
+        return ViewBox;
     default:
         break;
     }

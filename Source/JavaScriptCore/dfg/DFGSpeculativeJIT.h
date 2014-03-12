@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,8 +25,6 @@
 
 #ifndef DFGSpeculativeJIT_h
 #define DFGSpeculativeJIT_h
-
-#include <wtf/Platform.h>
 
 #if ENABLE(DFG_JIT)
 
@@ -77,6 +75,8 @@ inline NoResultTag extractResult(NoResultTag) { return NoResult; }
 // to propagate type information (including information that has
 // only speculatively been asserted) through the dataflow.
 class SpeculativeJIT {
+    WTF_MAKE_FAST_ALLOCATED;
+
     friend struct OSRExit;
 private:
     typedef JITCompiler::TrustedImm32 TrustedImm32;
@@ -119,6 +119,9 @@ public:
     ~SpeculativeJIT();
 
     bool compile();
+    
+    void prepareJITCodeForTierUp();
+    
     void createOSREntries();
     void linkOSREntries(LinkBuffer&);
 
@@ -286,16 +289,13 @@ public:
     }
     bool masqueradesAsUndefinedWatchpointIsStillValid()
     {
-        return masqueradesAsUndefinedWatchpointIsStillValid(m_currentNode->codeOrigin);
+        return masqueradesAsUndefinedWatchpointIsStillValid(m_currentNode->origin.semantic);
     }
 
 #if ENABLE(GGC)
     void storeToWriteBarrierBuffer(GPRReg cell, GPRReg scratch1, GPRReg scratch2);
     void storeToWriteBarrierBuffer(JSCell*, GPRReg scratch1, GPRReg scratch2);
 
-    static JITCompiler::Jump genericWriteBarrier(CCallHelpers& jit, GPRReg owner, GPRReg scratch1, GPRReg scratch2);
-    static JITCompiler::Jump genericWriteBarrier(CCallHelpers& jit, JSCell* owner);
-    static void osrWriteBarrier(CCallHelpers&, GPRReg owner, GPRReg scratch1, GPRReg scratch2);
     void writeBarrier(GPRReg owner, GPRReg scratch1, GPRReg scratch2);
     void writeBarrier(GPRReg owner, JSCell* value, GPRReg scratch1, GPRReg scratch2);
 
@@ -715,10 +715,10 @@ public:
 
 #if USE(JSVALUE64)
     void cachedGetById(CodeOrigin, GPRReg baseGPR, GPRReg resultGPR, unsigned identifierNumber, JITCompiler::Jump slowPathTarget = JITCompiler::Jump(), SpillRegistersMode = NeedToSpill);
-    void cachedPutById(CodeOrigin, GPRReg base, GPRReg value, GPRReg scratchGPR, unsigned identifierNumber, PutKind, JITCompiler::Jump slowPathTarget = JITCompiler::Jump());
+    void cachedPutById(CodeOrigin, GPRReg base, GPRReg value, GPRReg scratchGPR, unsigned identifierNumber, PutKind, JITCompiler::Jump slowPathTarget = JITCompiler::Jump(), SpillRegistersMode = NeedToSpill);
 #elif USE(JSVALUE32_64)
     void cachedGetById(CodeOrigin, GPRReg baseTagGPROrNone, GPRReg basePayloadGPR, GPRReg resultTagGPR, GPRReg resultPayloadGPR, unsigned identifierNumber, JITCompiler::Jump slowPathTarget = JITCompiler::Jump(), SpillRegistersMode = NeedToSpill);
-    void cachedPutById(CodeOrigin, GPRReg basePayloadGPR, GPRReg valueTagGPR, GPRReg valuePayloadGPR, GPRReg scratchGPR, unsigned identifierNumber, PutKind, JITCompiler::Jump slowPathTarget = JITCompiler::Jump());
+    void cachedPutById(CodeOrigin, GPRReg basePayloadGPR, GPRReg valueTagGPR, GPRReg valuePayloadGPR, GPRReg scratchGPR, unsigned identifierNumber, PutKind, JITCompiler::Jump slowPathTarget = JITCompiler::Jump(), SpillRegistersMode = NeedToSpill);
 #endif
     
     void compileIn(Node*);
@@ -737,49 +737,50 @@ public:
     void nonSpeculativeNonPeepholeStrictEq(Node*, bool invert = false);
     bool nonSpeculativeStrictEq(Node*, bool invert = false);
     
-    void compileInstanceOfForObject(Node*, GPRReg valueReg, GPRReg prototypeReg, GPRReg scratchAndResultReg);
+    void compileInstanceOfForObject(Node*, GPRReg valueReg, GPRReg prototypeReg, GPRReg scratchAndResultReg, GPRReg scratch2Reg);
     void compileInstanceOf(Node*);
     
     ptrdiff_t calleeFrameOffset(int numArgs)
     {
-        return virtualRegisterForLocal(m_jit.graph().m_nextMachineLocal + JSStack::CallFrameHeaderSize + numArgs).offset() * sizeof(Register);
+        return virtualRegisterForLocal(m_jit.graph().m_nextMachineLocal - 1 + JSStack::CallFrameHeaderSize + numArgs).offset() * sizeof(Register);
     }
     
     // Access to our fixed callee CallFrame.
-    MacroAssembler::Address calleeFrameSlot(int numArgs, int slot)
+    MacroAssembler::Address calleeFrameSlot(int slot)
     {
-        return MacroAssembler::Address(GPRInfo::callFrameRegister, calleeFrameOffset(numArgs) + sizeof(Register) * slot);
+        ASSERT(slot >= JSStack::CallerFrameAndPCSize);
+        return MacroAssembler::Address(MacroAssembler::stackPointerRegister, sizeof(Register) * (slot - JSStack::CallerFrameAndPCSize));
     }
 
     // Access to our fixed callee CallFrame.
-    MacroAssembler::Address calleeArgumentSlot(int numArgs, int argument)
+    MacroAssembler::Address calleeArgumentSlot(int argument)
     {
-        return calleeFrameSlot(numArgs, virtualRegisterForArgument(argument).offset());
+        return calleeFrameSlot(virtualRegisterForArgument(argument).offset());
     }
 
-    MacroAssembler::Address calleeFrameTagSlot(int numArgs, int slot)
+    MacroAssembler::Address calleeFrameTagSlot(int slot)
     {
-        return calleeFrameSlot(numArgs, slot).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag));
+        return calleeFrameSlot(slot).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag));
     }
 
-    MacroAssembler::Address calleeFramePayloadSlot(int numArgs, int slot)
+    MacroAssembler::Address calleeFramePayloadSlot(int slot)
     {
-        return calleeFrameSlot(numArgs, slot).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload));
+        return calleeFrameSlot(slot).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload));
     }
 
-    MacroAssembler::Address calleeArgumentTagSlot(int numArgs, int argument)
+    MacroAssembler::Address calleeArgumentTagSlot(int argument)
     {
-        return calleeArgumentSlot(numArgs, argument).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag));
+        return calleeArgumentSlot(argument).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag));
     }
 
-    MacroAssembler::Address calleeArgumentPayloadSlot(int numArgs, int argument)
+    MacroAssembler::Address calleeArgumentPayloadSlot(int argument)
     {
-        return calleeArgumentSlot(numArgs, argument).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload));
+        return calleeArgumentSlot(argument).withOffset(OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.payload));
     }
 
-    MacroAssembler::Address calleeFrameCallerFrame(int numArgs)
+    MacroAssembler::Address calleeFrameCallerFrame()
     {
-        return calleeFrameSlot(numArgs, 0).withOffset(CallFrame::callerFrameOffset());
+        return calleeFrameSlot(0).withOffset(CallFrame::callerFrameOffset());
     }
 
     void emitCall(Node*);
@@ -1372,6 +1373,11 @@ public:
         m_jit.setupArgumentsWithExecState(arg1, arg2, arg3);
         return appendCallWithExceptionCheck(operation);
     }
+    JITCompiler::Call callOperation(V_JITOperation_EJ operation, GPRReg arg1)
+    {
+        m_jit.setupArgumentsWithExecState(arg1);
+        return appendCallWithExceptionCheck(operation);
+    }
     JITCompiler::Call callOperation(V_JITOperation_EJPP operation, GPRReg arg1, GPRReg arg2, void* pointer)
     {
         m_jit.setupArgumentsWithExecState(arg1, arg2, TrustedImmPtr(pointer));
@@ -1630,6 +1636,12 @@ public:
         return appendCallWithExceptionCheck(operation);
     }
 
+    JITCompiler::Call callOperation(V_JITOperation_EJ operation, GPRReg arg1Tag, GPRReg arg1Payload)
+    {
+        m_jit.setupArgumentsWithExecState(EABI_32BIT_DUMMY_ARG arg1Payload, arg1Tag);
+        return appendCallWithExceptionCheck(operation);
+    }
+
     JITCompiler::Call callOperation(V_JITOperation_EJPP operation, GPRReg arg1Tag, GPRReg arg1Payload, GPRReg arg2, void* pointer)
     {
         m_jit.setupArgumentsWithExecState(EABI_32BIT_DUMMY_ARG arg1Payload, arg1Tag, arg2, TrustedImmPtr(pointer));
@@ -1743,7 +1755,7 @@ public:
     JITCompiler::Call appendCallWithExceptionCheck(const FunctionPtr& function)
     {
         prepareForExternalCall();
-        m_jit.emitStoreCodeOrigin(m_currentNode->codeOrigin);
+        m_jit.emitStoreCodeOrigin(m_currentNode->origin.semantic);
         JITCompiler::Call call = m_jit.appendCall(function);
         m_jit.exceptionCheck();
         return call;
@@ -1751,7 +1763,7 @@ public:
     JITCompiler::Call appendCallWithCallFrameRollbackOnException(const FunctionPtr& function)
     {
         prepareForExternalCall();
-        m_jit.emitStoreCodeOrigin(m_currentNode->codeOrigin);
+        m_jit.emitStoreCodeOrigin(m_currentNode->origin.semantic);
         JITCompiler::Call call = m_jit.appendCall(function);
         m_jit.exceptionCheckWithCallFrameRollback();
         return call;
@@ -1773,7 +1785,7 @@ public:
     JITCompiler::Call appendCallSetResult(const FunctionPtr& function, GPRReg result)
     {
         prepareForExternalCall();
-        m_jit.emitStoreCodeOrigin(m_currentNode->codeOrigin);
+        m_jit.emitStoreCodeOrigin(m_currentNode->origin.semantic);
         JITCompiler::Call call = m_jit.appendCall(function);
         if (result != InvalidGPRReg)
             m_jit.move(GPRInfo::returnValueGPR, result);
@@ -1782,7 +1794,7 @@ public:
     JITCompiler::Call appendCall(const FunctionPtr& function)
     {
         prepareForExternalCall();
-        m_jit.emitStoreCodeOrigin(m_currentNode->codeOrigin);
+        m_jit.emitStoreCodeOrigin(m_currentNode->origin.semantic);
         return m_jit.appendCall(function);
     }
     JITCompiler::Call appendCallWithExceptionCheckSetResult(const FunctionPtr& function, GPRReg result1, GPRReg result2)
@@ -1971,6 +1983,7 @@ public:
     void compileStringEquality(Node*);
     void compileStringIdentEquality(Node*);
     void compileStringZeroLength(Node*);
+    void compileMiscStrictEq(Node*);
 
     void emitObjectOrOtherBranch(Edge value, BasicBlock* taken, BasicBlock* notTaken);
     void emitBranch(Node*);
@@ -2011,8 +2024,6 @@ public:
     void compileInt52Compare(Node*, MacroAssembler::RelationalCondition);
     void compileBooleanCompare(Node*, MacroAssembler::RelationalCondition);
     void compileDoubleCompare(Node*, MacroAssembler::DoubleCondition);
-    
-    bool compileStrictEqForConstant(Node*, Edge value, JSValue constant);
     
     bool compileStrictEq(Node*);
     
@@ -2091,7 +2102,7 @@ public:
         
         return slowPath;
     }
-    
+
     // Allocator for a cell of a specific size.
     template <typename StructureType> // StructureType can be GPR or ImmPtr.
     void emitAllocateJSCell(GPRReg resultGPR, GPRReg allocatorGPR, StructureType structure,
@@ -2106,7 +2117,7 @@ public:
         m_jit.storePtr(scratchGPR, MacroAssembler::Address(allocatorGPR, MarkedAllocator::offsetOfFreeListHead()));
 
         // Initialize the object's Structure.
-        m_jit.storePtr(structure, MacroAssembler::Address(resultGPR, JSCell::structureOffset()));
+        m_jit.emitStoreStructureWithTypeInfo(structure, resultGPR, scratchGPR);
     }
 
     // Allocator for an object of a specific size.
@@ -2189,6 +2200,8 @@ public:
     void speculateStringOrStringObject(Edge);
     void speculateNotCell(Edge);
     void speculateOther(Edge);
+    void speculateMisc(Edge, JSValueRegs);
+    void speculateMisc(Edge);
     void speculate(Node*, Edge);
     
     JITCompiler::Jump jumpSlowForUnwantedArrayMode(GPRReg tempWithIndexingTypeReg, ArrayMode, IndexingType);
@@ -3026,13 +3039,13 @@ template<typename StructureLocationType>
 void SpeculativeJIT::speculateStringObjectForStructure(Edge edge, StructureLocationType structureLocation)
 {
     Structure* stringObjectStructure =
-        m_jit.globalObjectFor(m_currentNode->codeOrigin)->stringObjectStructure();
+        m_jit.globalObjectFor(m_currentNode->origin.semantic)->stringObjectStructure();
     
     if (!m_state.forNode(edge).m_currentKnownStructure.isSubsetOf(StructureSet(stringObjectStructure))) {
         speculationCheck(
             NotStringObject, JSValueRegs(), 0,
-            m_jit.branchPtr(
-                JITCompiler::NotEqual, structureLocation, TrustedImmPtr(stringObjectStructure)));
+            m_jit.branchStructurePtr(
+                JITCompiler::NotEqual, structureLocation, stringObjectStructure));
     }
 }
 

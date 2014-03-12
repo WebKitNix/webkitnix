@@ -21,8 +21,6 @@
 */
 
 #include "config.h"
-
-#if ENABLE(SVG)
 #include "CachedSVGDocument.h"
 
 #include "CachedResourceClient.h"
@@ -32,8 +30,8 @@
 
 namespace WebCore {
 
-CachedSVGDocument::CachedSVGDocument(const ResourceRequest& request)
-    : CachedResource(request, SVGDocumentResource)
+CachedSVGDocument::CachedSVGDocument(const ResourceRequest& request, SessionID sessionID)
+    : CachedResource(request, SVGDocumentResource, sessionID)
     , m_decoder(TextResourceDecoder::create("application/xml"))
 {
     setAccept("image/svg+xml");
@@ -67,6 +65,3 @@ void CachedSVGDocument::finishLoading(ResourceBuffer* data)
 }
 
 }
-
-#endif
-

@@ -25,7 +25,7 @@
 #include "JITCode.h"
 #include "JSFunction.h"
 #include "JSGlobalObject.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include "StringPrototype.h"
 
 namespace JSC {
@@ -62,7 +62,7 @@ void StringConstructor::finishCreation(VM& vm, StringPrototype* stringPrototype)
 
 bool StringConstructor::getOwnPropertySlot(JSObject* object, ExecState* exec, PropertyName propertyName, PropertySlot &slot)
 {
-    return getStaticFunctionSlot<InternalFunction>(exec, ExecState::stringConstructorTable(exec), jsCast<StringConstructor*>(object), propertyName, slot);
+    return getStaticFunctionSlot<InternalFunction>(exec, ExecState::stringConstructorTable(exec->vm()), jsCast<StringConstructor*>(object), propertyName, slot);
 }
 
 // ------------------------------ Functions --------------------------------

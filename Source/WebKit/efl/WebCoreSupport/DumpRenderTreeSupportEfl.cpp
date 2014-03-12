@@ -61,6 +61,7 @@
 #include <ScriptController.h>
 #include <Settings.h>
 #include <TextIterator.h>
+#include <VisibleSelection.h>
 #include <bindings/ScriptValue.h>
 #include <bindings/js/GCController.h>
 #include <history/HistoryItem.h>
@@ -198,7 +199,7 @@ WebCore::IntRect DumpRenderTreeSupportEfl::selectionRectangle(const Evas_Object*
 {
     DRT_SUPPORT_FRAME_GET_OR_RETURN(ewkFrame, frame, WebCore::IntRect());
 
-    return enclosingIntRect(frame->selection().bounds());
+    return enclosingIntRect(frame->selection().selectionBounds());
 }
 
 // Compare with "WebKit/Tools/DumpRenderTree/mac/FrameLoadDelegate.mm
@@ -324,15 +325,6 @@ void DumpRenderTreeSupportEfl::setCSSRegionsEnabled(const Evas_Object* ewkView, 
     WebCore::RuntimeEnabledFeatures::sharedFeatures().setCSSRegionsEnabled(enabled);
 }
 
-void DumpRenderTreeSupportEfl::setSeamlessIFramesEnabled(bool enabled)
-{
-#if ENABLE(IFRAME_SEAMLESS)
-    WebCore::RuntimeEnabledFeatures::sharedFeatures().setSeamlessIFramesEnabled(enabled);
-#else
-    UNUSED_PARAM(enabled);
-#endif
-}
-
 void DumpRenderTreeSupportEfl::setWebAudioEnabled(Evas_Object* ewkView, bool enabled)
 {
 #if ENABLE(WEB_AUDIO)
@@ -390,7 +382,7 @@ Eina_List* DumpRenderTreeSupportEfl::trackedRepaintRects(const Evas_Object* ewkF
     if (!frame->view())
         return 0;
 
-    const Vector<WebCore::IntRect>& repaintRects = frame->view()->trackedRepaintRects();
+    const Vector<WebCore::FloatRect>& repaintRects = frame->view()->trackedRepaintRects();
     size_t count = repaintRects.size();
     Eina_List* rectList = 0;
 
@@ -414,7 +406,7 @@ void DumpRenderTreeSupportEfl::garbageCollectorCollectOnAlternateThread(bool wai
 
 size_t DumpRenderTreeSupportEfl::javaScriptObjectsCount()
 {
-    return WebCore::JSDOMWindow::commonVM()->heap.objectCount();
+    return WebCore::JSDOMWindow::commonVM().heap.objectCount();
 }
 
 void DumpRenderTreeSupportEfl::setDeadDecodedDataDeletionInterval(double interval)
@@ -639,11 +631,12 @@ bool DumpRenderTreeSupportEfl::selectedRange(Evas_Object* ewkView, int* start, i
     DRT_SUPPRT_PAGE_GET_OR_RETURN(ewkView, page, false);
 
     WebCore::Frame& frame = page->focusController().focusedOrMainFrame();
-    RefPtr<WebCore::Range> range = frame.selection().toNormalizedRange().get();
+    const WebCore::VisibleSelection& selection = frame.selection().selection();
+    RefPtr<WebCore::Range> range = selection.toNormalizedRange().get();
     if (!range)
         return false;
 
-    WebCore::Element* selectionRoot = frame.selection().rootEditableElement();
+    WebCore::Element* selectionRoot = selection.rootEditableElement();
     WebCore::Element* scope = selectionRoot ? selectionRoot : frame.document()->documentElement();
 
     RefPtr<WebCore::Range> testRange = WebCore::Range::create(scope->document(), scope, 0, range->startContainer(), range->startOffset());

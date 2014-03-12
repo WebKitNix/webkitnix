@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,7 +32,7 @@
 #include "DFGInsertionSet.h"
 #include "DFGPhase.h"
 #include "FTLCapabilities.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC { namespace DFG {
 
@@ -47,13 +47,19 @@ public:
     {
         RELEASE_ASSERT(m_graph.m_plan.mode == DFGMode);
         
-        if (!Options::useExperimentalFTL())
+        if (!Options::useFTLJIT())
             return false;
-
+        
+        if (m_graph.m_profiledBlock->m_didFailFTLCompilation)
+            return false;
+        
 #if ENABLE(FTL_JIT)
         FTL::CapabilityLevel level = FTL::canCompile(m_graph);
         if (level == FTL::CannotCompile)
             return false;
+        
+        if (!Options::enableOSREntryToFTL())
+            level = FTL::CanCompile;
         
         InsertionSet insertionSet(m_graph);
         for (BlockIndex blockIndex = m_graph.numBlocks(); blockIndex--;) {
@@ -61,25 +67,51 @@ public:
             if (!block)
                 continue;
             
-            if (block->at(0)->op() == LoopHint) {
-                CodeOrigin codeOrigin = block->at(0)->codeOrigin;
-                NodeType nodeType;
-                if (level == FTL::CanCompileAndOSREnter && !codeOrigin.inlineCallFrame) {
-                    nodeType = CheckTierUpAndOSREnter;
-                    RELEASE_ASSERT(block->bytecodeBegin == codeOrigin.bytecodeIndex);
-                } else
-                    nodeType = CheckTierUpInLoop;
-                insertionSet.insertNode(1, SpecNone, nodeType, codeOrigin);
+            for (unsigned nodeIndex = 0; nodeIndex < block->size(); ++nodeIndex) {
+                Node* node = block->at(nodeIndex);
+                if (node->op() != LoopHint)
+                    continue;
+                
+                // We only put OSR checks for the first LoopHint in the block. Note that
+                // more than one LoopHint could happen in cases where we did a lot of CFG
+                // simplification in the bytecode parser, but it should be very rare.
+                
+                NodeOrigin origin = node->origin;
+                
+                if (level != FTL::CanCompileAndOSREnter || origin.semantic.inlineCallFrame) {
+                    insertionSet.insertNode(
+                        nodeIndex + 1, SpecNone, CheckTierUpInLoop, origin);
+                    break;
+                }
+                
+                bool isAtTop = true;
+                for (unsigned subNodeIndex = nodeIndex; subNodeIndex--;) {
+                    if (!block->at(subNodeIndex)->isSemanticallySkippable()) {
+                        isAtTop = false;
+                        break;
+                    }
+                }
+                
+                if (!isAtTop) {
+                    insertionSet.insertNode(
+                        nodeIndex + 1, SpecNone, CheckTierUpInLoop, origin);
+                    break;
+                }
+                
+                insertionSet.insertNode(
+                    nodeIndex + 1, SpecNone, CheckTierUpAndOSREnter, origin);
+                break;
             }
             
             if (block->last()->op() == Return) {
                 insertionSet.insertNode(
-                    block->size() - 1, SpecNone, CheckTierUpAtReturn, block->last()->codeOrigin);
+                    block->size() - 1, SpecNone, CheckTierUpAtReturn, block->last()->origin);
             }
             
             insertionSet.execute(block);
         }
         
+        m_graph.m_plan.willTryToTierUp = true;
         return true;
 #else // ENABLE(FTL_JIT)
         RELEASE_ASSERT_NOT_REACHED();

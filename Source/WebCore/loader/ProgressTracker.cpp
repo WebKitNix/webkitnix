@@ -33,6 +33,7 @@
 #include "FrameLoaderClient.h"
 #include "InspectorInstrumentation.h"
 #include "Logging.h"
+#include "MainFrame.h"
 #include "ProgressTrackerClient.h"
 #include "ResourceResponse.h"
 #include <wtf/text/CString.h>
@@ -79,15 +80,15 @@ ProgressTracker::ProgressTracker(ProgressTrackerClient& client)
     , m_totalPageAndResourceBytesToLoad(0)
     , m_totalBytesReceived(0)
     , m_lastNotifiedProgressValue(0)
-    , m_lastNotifiedProgressTime(0)
     , m_progressNotificationInterval(0.02)
-    , m_progressNotificationTimeInterval(0.1)
+    , m_progressNotificationTimeInterval(std::chrono::milliseconds(100))
     , m_finalProgressChangedSent(false)
     , m_progressValue(0)
     , m_numProgressTrackedFrames(0)
     , m_progressHeartbeatTimer(this, &ProgressTracker::progressHeartbeatTimerFired)
     , m_heartbeatsWithNoProgress(0)
     , m_totalBytesReceivedBeforePreviousHeartbeat(0)
+    , m_isMainLoad(false)
 {
 }
 
@@ -109,7 +110,7 @@ void ProgressTracker::reset()
     m_totalBytesReceived = 0;
     m_progressValue = 0;
     m_lastNotifiedProgressValue = 0;
-    m_lastNotifiedProgressTime = 0;
+    m_lastNotifiedProgressTime = std::chrono::steady_clock::time_point();
     m_finalProgressChangedSent = false;
     m_numProgressTrackedFrames = 0;
     m_originatingProgressFrame = 0;
@@ -132,6 +133,12 @@ void ProgressTracker::progressStarted(Frame& frame)
 
         m_progressHeartbeatTimer.startRepeating(progressHeartbeatInterval);
         m_originatingProgressFrame->loader().loadProgressingStatusChanged();
+
+        bool isMainFrame = !m_originatingProgressFrame->tree().parent();
+        auto elapsedTimeSinceMainLoadComplete = std::chrono::steady_clock::now() - m_mainLoadCompletionTime;
+
+        static const auto subframePartOfMainLoadThreshold = std::chrono::seconds(1);
+        m_isMainLoad = isMainFrame || elapsedTimeSinceMainLoadComplete < subframePartOfMainLoadThreshold;
 
         m_client.progressStarted(*m_originatingProgressFrame);
     }
@@ -171,6 +178,9 @@ void ProgressTracker::finalProgressComplete()
     }
 
     reset();
+
+    if (m_isMainLoad)
+        m_mainLoadCompletionTime = std::chrono::steady_clock::now();
 
     frame->loader().client().setMainFrameDocumentReady(true);
     m_client.progressFinished(*frame);
@@ -234,7 +244,7 @@ void ProgressTracker::incrementProgress(unsigned long identifier, unsigned bytes
     // For documents that use WebCore's layout system, treat first layout as the half-way point.
     // FIXME: The hasHTMLView function is a sort of roundabout way of asking "do you use WebCore's layout system".
     bool useClampedMaxProgress = frame->loader().client().hasHTMLView()
-        && !frame->loader().stateMachine()->firstLayoutDone();
+        && !frame->loader().stateMachine().firstLayoutDone();
     double maxProgressValue = useClampedMaxProgress ? 0.5 : finalProgressValue;
     increment = (maxProgressValue - m_progressValue) * percentOfRemainingBytes;
     m_progressValue += increment;
@@ -243,8 +253,8 @@ void ProgressTracker::incrementProgress(unsigned long identifier, unsigned bytes
     
     m_totalBytesReceived += bytesReceived;
     
-    double now = monotonicallyIncreasingTime();
-    double notifiedProgressTimeDelta = now - m_lastNotifiedProgressTime;
+    auto now = std::chrono::steady_clock::now();
+    auto notifiedProgressTimeDelta = now - m_lastNotifiedProgressTime;
     
     LOG(Progress, "Progress incremented (%p) - value %f, tracked frames %d", this, m_progressValue, m_numProgressTrackedFrames);
     double notificationProgressDelta = m_progressValue - m_lastNotifiedProgressValue;
@@ -291,9 +301,10 @@ bool ProgressTracker::isMainLoadProgressing() const
 {
     if (!m_originatingProgressFrame)
         return false;
-    // See if the load originated from a subframe.
-    if (m_originatingProgressFrame->tree().parent())
+
+    if (!m_isMainLoad)
         return false;
+
     return m_progressValue && m_progressValue < finalProgressValue && m_heartbeatsWithNoProgress < loadStalledHeartbeatCount;
 }
 

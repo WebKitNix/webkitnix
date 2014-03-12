@@ -52,19 +52,20 @@ my (
     $cspNextSupport,
     $css3ConditionalRulesSupport,
     $css3TextSupport,
-    $css3TextDecorationSupport,
     $css3TextLineBreakSupport,
     $css4ImagesSupport,
     $cssBoxDecorationBreakSupport,
     $cssDeviceAdaptation,
     $cssExclusionsSupport,
     $cssFiltersSupport,
+    $cssGridLayoutSupport,
     $cssImageOrientationSupport,
     $cssImageResolutionSupport,
     $cssImageSetSupport,
     $cssRegionsSupport,
     $cssShadersSupport,
     $cssShapesSupport,
+    $cssShapeInsideSupport,
     $cssStickyPositionSupport,
     $cssCompositingSupport,
     $cssAnimationsTransformsUnprefixedSupport,
@@ -84,7 +85,6 @@ my (
     $geolocationSupport,
     $highDPICanvasSupport,
     $icondatabaseSupport,
-    $iframeSeamlessSupport,
     $indexedDatabaseSupport,
     $inputSpeechSupport,
     $inputTypeColorSupport,
@@ -95,7 +95,6 @@ my (
     $inputTypeTimeSupport,
     $inputTypeWeekSupport,
     $inspectorSupport,
-    $javascriptDebuggerSupport,
     $legacyNotificationsSupport,
     $legacyVendorPrefixSupport,
     $legacyWebAudioSupport,
@@ -127,7 +126,6 @@ my (
     $resourceTimingSupport,
     $scriptedSpeechSupport,
     $seccompFiltersSupport,
-    $shadowDOMSupport,
     $sharedWorkersSupport,
     $sqlDatabaseSupport,
     $styleScopedSupport,
@@ -193,17 +191,20 @@ my @features = (
     { option => "css-shapes", desc => "Toggle CSS Shapes support",
       define => "ENABLE_CSS_SHAPES", default => 1, value => \$cssShapesSupport },
 
+    { option => "css-shape-inside", desc => "Toggle CSS Shapes shape-inside support",
+      define => "ENABLE_CSS_SHAPE_INSIDE", default => 1, value => \$cssShapeInsideSupport },
+
     { option => "css-filters", desc => "Toggle CSS Filters support",
       define => "ENABLE_CSS_FILTERS", default => (isAppleMacWebKit() || isIOSWebKit()), value => \$cssFiltersSupport },
+
+    { option => "css-grid-layout", desc => "Toggle CSS Grid Layout support",
+      define => "ENABLE_CSS_GRID_LAYOUT", default => 1, value => \$cssGridLayoutSupport },
 
     { option => "css3-conditional-rules", desc => "Toggle CSS3 Conditional Rules support (i.e. \@supports)",
       define => "ENABLE_CSS3_CONDITIONAL_RULES", default => 0, value => \$css3ConditionalRulesSupport },
 
     { option => "css3-text", desc => "Toggle CSS3 Text support",
       define => "ENABLE_CSS3_TEXT", default => (isEfl() || isGtk()), value => \$css3TextSupport },
-
-    { option => "css3-text-decoration", desc => "Toggle CSS3 Text Decoration support",
-      define => "ENABLE_CSS3_TEXT_DECORATION", default => 1, value => \$css3TextDecorationSupport },
 
     { option => "css3-text-line-break", desc => "Toggle CSS3 Text Line Break support",
       define => "ENABLE_CSS3_TEXT_LINE_BREAK", default => 0, value => \$css3TextLineBreakSupport },
@@ -250,9 +251,6 @@ my @features = (
     { option => "device-orientation", desc => "Toggle Device Orientation support",
       define => "ENABLE_DEVICE_ORIENTATION", default => isIOSWebKit(), value => \$deviceOrientationSupport },
 
-    { option => "directory-upload", desc => "Toggle Directory Upload support",
-      define => "ENABLE_DIRECTORY_UPLOAD", default => 0, value => \$directoryUploadSupport },
-
     { option => "dom4-events-constructor", desc => "Expose DOM4 Events constructors",
       define => "ENABLE_DOM4_EVENTS_CONSTRUCTOR", default => (isAppleWebKit() || isGtk() || isEfl()), value => \$dom4EventsConstructor },
 
@@ -283,9 +281,6 @@ my @features = (
     { option => "icon-database", desc => "Toggle Icondatabase support",
       define => "ENABLE_ICONDATABASE", default => !isIOSWebKit(), value => \$icondatabaseSupport },
 
-    { option => "iframe-seamless", desc => "Toggle iframe seamless attribute support",
-      define => "ENABLE_IFRAME_SEAMLESS", default => 1, value => \$iframeSeamlessSupport },
-
     { option => "indexed-database", desc => "Toggle Indexed Database support",
       define => "ENABLE_INDEXED_DATABASE", default => (isGtk() || isEfl()), value => \$indexedDatabaseSupport },
 
@@ -315,9 +310,6 @@ my @features = (
 
     { option => "inspector", desc => "Toggle Inspector support",
       define => "ENABLE_INSPECTOR", default => !isWinCE(), value => \$inspectorSupport },
-
-    { option => "javascript-debugger", desc => "Toggle JavaScript Debugger support",
-      define => "ENABLE_JAVASCRIPT_DEBUGGER", default => 1, value => \$javascriptDebuggerSupport },
 
     { option => "legacy-notifications", desc => "Toggle Legacy Notifications support",
       define => "ENABLE_LEGACY_NOTIFICATIONS", default => 0, value => \$legacyNotificationsSupport },
@@ -386,7 +378,7 @@ my @features = (
       define => "ENABLE_PROGRESS_ELEMENT", default => 1, value => \$progressElementSupport },
 
     { option => "promises", desc => "Toggle Promise support",
-      define => "ENABLE_PROMISE", default => 1, value => \$promiseSupport },
+      define => "ENABLE_PROMISES", default => 1, value => \$promiseSupport },
 
     { option => "proximity-events", desc => "Toggle Proximity Events support",
       define => "ENABLE_PROXIMITY_EVENTS", default => 0, value => \$proximityEventsSupport },
@@ -409,9 +401,6 @@ my @features = (
     { option => "scripted-speech", desc => "Toggle Scripted Speech support",
       define => "ENABLE_SCRIPTED_SPEECH", default => 0, value => \$scriptedSpeechSupport },
 
-    { option => "shadow-dom", desc => "Toggle Shadow DOM support",
-      define => "ENABLE_SHADOW_DOM", default => 0, value => \$shadowDOMSupport },
-
     { option => "shared-workers", desc => "Toggle Shared Workers support",
       define => "ENABLE_SHARED_WORKERS", default => (isAppleWebKit() || isGtk() || isEfl()), value => \$sharedWorkersSupport },
 
@@ -420,9 +409,6 @@ my @features = (
 
     { option => "suid-linux-sandbox", desc => "Toggle suid sandbox for linux",
       define => "ENABLE_SUID_SANDBOX_LINUX", default => 0, value => \$suidLinuxSandbox },
-
-    { option => "svg", desc => "Toggle SVG support",
-      define => "ENABLE_SVG", default => 1, value => \$svgSupport },
 
     { option => "svg-fonts", desc => "Toggle SVG Fonts support",
       define => "ENABLE_SVG_FONTS", default => 1, value => \$svgFontsSupport },
@@ -440,7 +426,7 @@ my @features = (
       define => "WTF_USE_TILED_BACKING_STORE", default => isEfl(), value => \$tiledBackingStoreSupport },
 
     { option => "touch-events", desc => "Toggle Touch Events support",
-      define => "ENABLE_TOUCH_EVENTS", default => (isIOSWebKit() || isEfl()), value => \$touchEventsSupport },
+      define => "ENABLE_TOUCH_EVENTS", default => (isIOSWebKit() || isEfl() || isGtk()), value => \$touchEventsSupport },
 
     { option => "touch-slider", desc => "Toggle Touch Slider support",
       define => "ENABLE_TOUCH_SLIDER", default => 0, value => \$touchSliderSupport },

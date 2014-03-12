@@ -722,7 +722,7 @@ void RenderText::computePreferredLogicalWidths(float leadWidth, HashSet<const Si
     bool breakAll = (style.wordBreak() == BreakAllWordBreak || style.wordBreak() == BreakWordBreak) && style.autoWrap();
 
     for (int i = 0; i < len; i++) {
-        UChar c = characterAt(i);
+        UChar c = uncheckedCharacterAt(i);
 
         bool previousCharacterIsSpace = isSpace;
 
@@ -774,7 +774,7 @@ void RenderText::computePreferredLogicalWidths(float leadWidth, HashSet<const Si
             j++;
             if (j == len)
                 break;
-            c = characterAt(j);
+            c = uncheckedCharacterAt(j);
             if (isBreakable(breakIterator, j, nextBreakable, breakNBSP) && characterAt(j - 1) != softHyphen)
                 break;
             if (breakAll) {
@@ -1352,7 +1352,7 @@ int RenderText::previousOffset(int current) const
     return result;
 }
 
-#if PLATFORM(MAC) || PLATFORM(EFL)
+#if PLATFORM(COCOA) || PLATFORM(EFL)
 
 #define HANGUL_CHOSEONG_START (0x1100)
 #define HANGUL_CHOSEONG_END (0x115F)
@@ -1394,7 +1394,7 @@ inline bool isRegionalIndicator(UChar32 c)
 
 int RenderText::previousOffsetForBackwardDeletion(int current) const
 {
-#if PLATFORM(MAC) || PLATFORM(EFL)
+#if PLATFORM(COCOA) || PLATFORM(EFL)
     ASSERT(m_text);
     StringImpl& text = *m_text.impl();
     UChar32 character;

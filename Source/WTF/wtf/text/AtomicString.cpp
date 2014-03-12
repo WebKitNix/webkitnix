@@ -293,7 +293,7 @@ struct SubstringTranslator {
 
     static void translate(StringImpl*& location, const SubstringLocation& buffer, unsigned hash)
     {
-        location = &StringImpl::create(buffer.baseString, buffer.start, buffer.length).leakRef();
+        location = &StringImpl::createSubstringSharingImpl(buffer.baseString, buffer.start, buffer.length).leakRef();
         location->setHash(hash);
         location->setIsAtomic(true);
     }
@@ -400,24 +400,23 @@ PassRefPtr<StringImpl> AtomicString::addSlowCase(StringImpl* string)
 template<typename CharacterType>
 static inline HashSet<StringImpl*>::iterator findString(const StringImpl* stringImpl)
 {
-    HashAndCharacters<CharacterType> buffer = { stringImpl->existingHash(), stringImpl->getCharacters<CharacterType>(), stringImpl->length() };
+    HashAndCharacters<CharacterType> buffer = { stringImpl->existingHash(), stringImpl->characters<CharacterType>(), stringImpl->length() };
     return stringTable().find<HashAndCharactersTranslator<CharacterType>>(buffer);
 }
 
-AtomicStringImpl* AtomicString::find(const StringImpl* stringImpl)
+AtomicStringImpl* AtomicString::findStringWithHash(const StringImpl& stringImpl)
 {
-    ASSERT(stringImpl);
-    ASSERT(stringImpl->existingHash());
+    ASSERT(stringImpl.existingHash());
 
-    if (!stringImpl->length())
+    if (!stringImpl.length())
         return static_cast<AtomicStringImpl*>(StringImpl::empty());
 
     AtomicStringTableLocker locker;
     HashSet<StringImpl*>::iterator iterator;
-    if (stringImpl->is8Bit())
-        iterator = findString<LChar>(stringImpl);
+    if (stringImpl.is8Bit())
+        iterator = findString<LChar>(&stringImpl);
     else
-        iterator = findString<UChar>(stringImpl);
+        iterator = findString<UChar>(&stringImpl);
     if (iterator == stringTable().end())
         return 0;
     return static_cast<AtomicStringImpl*>(*iterator);
@@ -447,6 +446,18 @@ AtomicString AtomicString::lower() const
     else
         returnValue.m_string = addSlowCase(lowerImpl.get());
     return returnValue;
+}
+
+AtomicStringImpl* AtomicString::findSlowCase(StringImpl& string)
+{
+    ASSERT_WITH_MESSAGE(!string.isAtomic(), "AtomicStringImpls should return from the fast case.");
+
+    AtomicStringTableLocker locker;
+    HashSet<StringImpl*>& atomicStringTable = stringTable();
+    auto iterator = atomicStringTable.find(&string);
+    if (iterator != atomicStringTable.end())
+        return static_cast<AtomicStringImpl*>(*iterator);
+    return nullptr;
 }
 
 AtomicString AtomicString::fromUTF8Internal(const char* charactersStart, const char* charactersEnd)

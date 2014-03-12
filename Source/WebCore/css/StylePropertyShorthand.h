@@ -113,13 +113,9 @@ StylePropertyShorthand webkitTransitionShorthand();
 StylePropertyShorthand webkitTransformOriginShorthand();
 StylePropertyShorthand widthShorthand();
 
-#if ENABLE(CSS3_TEXT_DECORATION)
 StylePropertyShorthand webkitTextDecorationShorthand();
-#endif
 
-#if ENABLE(SVG)
 StylePropertyShorthand markerShorthand();
-#endif
 
 // Returns empty value if the property is not a shorthand.
 StylePropertyShorthand shorthandForProperty(CSSPropertyID);

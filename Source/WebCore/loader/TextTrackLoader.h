@@ -32,6 +32,7 @@
 #include "CachedResourceHandle.h"
 #include "Timer.h"
 #include "WebVTTParser.h"
+#include <memory>
 #include <wtf/OwnPtr.h>
 
 namespace WebCore {
@@ -45,9 +46,7 @@ class TextTrackLoaderClient {
 public:
     virtual ~TextTrackLoaderClient() { }
     
-    virtual bool shouldLoadCues(TextTrackLoader*) = 0;
     virtual void newCuesAvailable(TextTrackLoader*) = 0;
-    virtual void cueLoadingStarted(TextTrackLoader*) = 0;
     virtual void cueLoadingCompleted(TextTrackLoader*, bool loadingFailed) = 0;
 #if ENABLE(WEBVTT_REGIONS)
     virtual void newRegionsAvailable(TextTrackLoader*) = 0;
@@ -58,10 +57,7 @@ class TextTrackLoader : public CachedResourceClient, private WebVTTParserClient 
     WTF_MAKE_NONCOPYABLE(TextTrackLoader); 
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    static PassOwnPtr<TextTrackLoader> create(TextTrackLoaderClient* client, ScriptExecutionContext* context)
-    {
-        return adoptPtr(new TextTrackLoader(client, context));
-    }
+    TextTrackLoader(TextTrackLoaderClient&, ScriptExecutionContext*);
     virtual ~TextTrackLoader();
     
     bool load(const URL&, const String& crossOriginMode);
@@ -73,17 +69,15 @@ public:
 private:
 
     // CachedResourceClient
-    virtual void notifyFinished(CachedResource*);
-    virtual void deprecatedDidReceiveCachedResource(CachedResource*);
+    virtual void notifyFinished(CachedResource*) override;
+    virtual void deprecatedDidReceiveCachedResource(CachedResource*) override;
     
     // WebVTTParserClient
-    virtual void newCuesParsed();
+    virtual void newCuesParsed() override;
 #if ENABLE(WEBVTT_REGIONS)
-    virtual void newRegionsParsed();
+    virtual void newRegionsParsed() override;
 #endif
-    virtual void fileFailedToParse();
-    
-    TextTrackLoader(TextTrackLoaderClient*, ScriptExecutionContext*);
+    virtual void fileFailedToParse() override;
     
     void processNewCueData(CachedResource*);
     void cueLoadTimerFired(Timer<TextTrackLoader>*);
@@ -91,9 +85,9 @@ private:
 
     enum State { Idle, Loading, Finished, Failed };
     
-    TextTrackLoaderClient* m_client;
-    OwnPtr<WebVTTParser> m_cueParser;
-    CachedResourceHandle<CachedTextTrack> m_cachedCueData;
+    TextTrackLoaderClient& m_client;
+    std::unique_ptr<WebVTTParser> m_cueParser;
+    CachedResourceHandle<CachedTextTrack> m_resource;
     ScriptExecutionContext* m_scriptExecutionContext;
     Timer<TextTrackLoader> m_cueLoadTimer;
     String m_crossOriginMode;

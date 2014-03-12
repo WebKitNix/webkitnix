@@ -26,9 +26,9 @@
 #ifndef TestController_h
 #define TestController_h
 
+#include "GeolocationProviderMock.h"
 #include "WebNotificationProvider.h"
 #include "WorkQueueManager.h"
-#include <GeolocationProviderMock.h>
 #include <WebKit2/WKRetainPtr.h>
 #include <string>
 #include <vector>
@@ -91,7 +91,7 @@ public:
     void setCustomPolicyDelegate(bool enabled, bool permissive);
 
     // Page Visibility.
-    void setVisibilityState(WKPageVisibilityState, bool isInitialState);
+    void setHidden(bool);
 
     bool resetStateToConsistentValues();
     void resetPreferencesToConsistentValues();
@@ -163,8 +163,6 @@ private:
 
     static void runModal(WKPageRef, const void* clientInfo);
     static void runModal(PlatformWebView*);
-
-    void setHidden(bool);
 
     static const char* libraryPathForTesting();
     static const char* platformLibraryPathForTesting();

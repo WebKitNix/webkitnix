@@ -29,9 +29,12 @@
  */
 
 #include "config.h"
+#include "JITStubs.h"
 
 #if ENABLE(JIT)
-#include "JITStubs.h"
+
+#include "JSCInlines.h"
+#include <wtf/InlineASM.h>
 
 #if CPU(ARM_TRADITIONAL)
 #include "JITStubsARM.h"

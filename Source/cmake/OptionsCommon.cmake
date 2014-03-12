@@ -26,6 +26,13 @@ else ()
     set(CODE_GENERATOR_PREPROCESSOR_WITH_LINEMARKERS "${CMAKE_CXX_COMPILER} -E -x c++")
 endif ()
 
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> cruT <TARGET> <LINK_FLAGS> <OBJECTS>")
+    set(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> cruT <TARGET> <LINK_FLAGS> <OBJECTS>")
+    set(CMAKE_CXX_ARCHIVE_APPEND "<CMAKE_AR> ruT <TARGET> <LINK_FLAGS> <OBJECTS>")
+    set(CMAKE_C_ARCHIVE_APPEND "<CMAKE_AR> ruT <TARGET> <LINK_FLAGS> <OBJECTS>")
+endif ()
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -50,3 +57,8 @@ if (NOT PORT STREQUAL "GTK")
     set(EXEC_INSTALL_DIR "bin" CACHE PATH "Where to install executables")
     set(LIBEXEC_INSTALL_DIR "bin" CACHE PATH "Where to install executables executed by the library")
 endif ()
+
+# The Ninja generator does not yet know how to build archives in pieces, and so response
+# files must be used to deal with very long linker command lines.
+# See https://bugs.webkit.org/show_bug.cgi?id=129771
+set(CMAKE_NINJA_FORCE_RESPONSE_FILE 1)

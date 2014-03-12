@@ -37,13 +37,10 @@
 #include "PseudoElement.h"
 #include "ScopedEventQueue.h"
 #include "ShadowRoot.h"
-#include "TouchEvent.h"
-
-#if ENABLE(SVG)
 #include "SVGElementInstance.h"
 #include "SVGNames.h"
 #include "SVGUseElement.h"
-#endif
+#include "TouchEvent.h"
 
 namespace WebCore {
 
@@ -146,8 +143,8 @@ public:
             return m_relatedNodeInCurrentTreeScope;
 
         if (m_currentTreeScope) {
-            ASSERT(m_currentTreeScope->rootNode()->isShadowRoot());
-            ASSERT(&newTarget == toShadowRoot(m_currentTreeScope->rootNode())->hostElement());
+            ASSERT(m_currentTreeScope->rootNode().isShadowRoot());
+            ASSERT(&newTarget == toShadowRoot(m_currentTreeScope->rootNode()).hostElement());
             ASSERT(m_currentTreeScope->parentTreeScope() == &newTreeScope);
         }
 
@@ -182,21 +179,19 @@ inline EventTarget& eventTargetRespectingTargetRules(Node& referenceNode)
         return *hostElement;
     }
 
-#if ENABLE(SVG)
     if (!referenceNode.isSVGElement() || !referenceNode.isInShadowTree())
         return referenceNode;
 
     // Spec: The event handling for the non-exposed tree works as if the referenced element had been textually included
     // as a deeply cloned child of the 'use' element, except that events are dispatched to the SVGElementInstance objects
-    Node* rootNode = referenceNode.treeScope().rootNode();
-    Element* shadowHostElement = rootNode->isShadowRoot() ? toShadowRoot(rootNode)->hostElement() : 0;
+    auto& rootNode = referenceNode.treeScope().rootNode();
+    Element* shadowHostElement = rootNode.isShadowRoot() ? toShadowRoot(rootNode).hostElement() : nullptr;
     // At this time, SVG nodes are not supported in non-<use> shadow trees.
     if (!shadowHostElement || !shadowHostElement->hasTagName(SVGNames::useTag))
         return referenceNode;
     SVGUseElement* useElement = toSVGUseElement(shadowHostElement);
     if (SVGElementInstance* instance = useElement->instanceForShadowTreeElement(&referenceNode))
         return *instance;
-#endif
 
     return referenceNode;
 }
@@ -371,7 +366,7 @@ static inline bool shouldEventCrossShadowBoundary(Event& event, ShadowRoot& shad
     // Changing this breaks existing sites.
     // See https://bugs.webkit.org/show_bug.cgi?id=52195 for details.
     const AtomicString& eventType = event.type();
-    bool targetIsInShadowRoot = targetNode && targetNode->treeScope().rootNode() == &shadowRoot;
+    bool targetIsInShadowRoot = targetNode && &targetNode->treeScope().rootNode() == &shadowRoot;
     return !targetIsInShadowRoot
         || !(eventType == eventNames().abortEvent
             || eventType == eventNames().changeEvent

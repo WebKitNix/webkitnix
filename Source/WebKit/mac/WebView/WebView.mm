@@ -104,6 +104,7 @@
 #import "WebUIDelegate.h"
 #import "WebUIDelegatePrivate.h"
 #import "WebUserMediaClient.h"
+#import "WebViewGroup.h"
 #import <CoreFoundation/CFSet.h>
 #import <Foundation/NSURLConnection.h>
 #import <JavaScriptCore/APICast.h>
@@ -229,6 +230,7 @@
 #import <MobileGestalt.h>
 #import <WebCore/EventNames.h>
 #import <WebCore/FontCache.h>
+#import <WebCore/GraphicsLayer.h>
 #import <WebCore/IconController.h>
 #import <WebCore/NetworkStateNotifier.h>
 #import <WebCore/RuntimeApplicationChecksIOS.h>
@@ -245,10 +247,6 @@
 #import <WebCore/WebVideoFullscreenControllerAVKit.h>
 #import <dispatch/private.h>
 #import <wtf/FastMalloc.h>
-
-#if USE(ACCELERATED_COMPOSITING)
-#import <WebCore/GraphicsLayer.h>
-#endif
 #endif // !PLATFORM(IOS)
 
 #if ENABLE(DASHBOARD_SUPPORT)
@@ -293,6 +291,7 @@
 - (NSView *)_hitTest:(NSPoint *)aPoint dragTypes:(NSSet *)types;
 - (void)_autoscrollForDraggingInfo:(id)dragInfo timeDelta:(NSTimeInterval)repeatDelta;
 - (BOOL)_shouldAutoscrollForDraggingInfo:(id)dragInfo;
+- (void)_windowChangedKeyState;
 @end
 
 @interface NSWindow (WebNSWindowDetails)
@@ -997,7 +996,7 @@ static bool shouldUseLegacyBackgroundSizeShorthandBehavior()
     [self _registerDraggedTypes];
 #endif
 
-    [self _setIsVisible:[self _isViewVisible] isInitialState:YES];
+    [self _setIsVisible:[self _isViewVisible]];
 
     WebPreferences *prefs = [self preferences];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_preferencesChangedNotification:)
@@ -1139,17 +1138,6 @@ static bool shouldUseLegacyBackgroundSizeShorthandBehavior()
     _private->mainFrameDocumentReady = NO;
     _private->drawsBackground = YES;
     _private->backgroundColor = CGColorRetain(cachedCGColor(Color::white, ColorSpaceDeviceRGB));
-
-#if ENABLE(REMOTE_INSPECTOR)
-    // Production installs always disallow debugging simple HTML documents.
-    // Internal installs allow debugging simple HTML documents (TextFields) if the Internal Setting is enabled.
-    if (!isInternalInstall())
-        _private->page->setRemoteInspectionAllowed(false);
-    else {
-        static BOOL textFieldInspectionEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:WebKitTextFieldRemoteInspectionEnabledPreferenceKey];
-        _private->page->setRemoteInspectionAllowed(textFieldInspectionEnabled);
-    }
-#endif
     
     WebFrameView *frameView = nil;
     frameView = [[WebFrameView alloc] initWithFrame: CGRectMake(0,0,frame.size.width,frame.size.height)];
@@ -1194,7 +1182,18 @@ static bool shouldUseLegacyBackgroundSizeShorthandBehavior()
     // FIXME: this is a workaround for <rdar://problem/11820090> Quoted text changes in size when replying to certain email
     _private->page->settings().setMinimumFontSize([_private->preferences minimumFontSize]);
 
-    _private->page->setGroupName(groupName);
+    [self setGroupName:groupName];
+
+#if ENABLE(REMOTE_INSPECTOR)
+    // Production installs always disallow debugging simple HTML documents.
+    // Internal installs allow debugging simple HTML documents (TextFields) if the Internal Setting is enabled.
+    if (!isInternalInstall())
+        _private->page->setRemoteInspectionAllowed(false);
+    else {
+        static BOOL textFieldInspectionEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:WebKitTextFieldRemoteInspectionEnabledPreferenceKey];
+        _private->page->setRemoteInspectionAllowed(textFieldInspectionEnabled);
+    }
+#endif
 
     [WebFrame _createMainFrameWithSimpleHTMLDocumentWithPage:_private->page frameView:frameView style:style];
     
@@ -1241,7 +1240,11 @@ static bool shouldUseLegacyBackgroundSizeShorthandBehavior()
         [WebView _handleMemoryWarning];
     }, shouldAutoClearPressureOnMemoryRelease);
 
+#if PLATFORM(IOS) || __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+    static dispatch_source_t memoryNotificationEventSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_MEMORYSTATUS, 0, DISPATCH_MEMORYSTATUS_PRESSURE_WARN, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+#else
     static dispatch_source_t memoryNotificationEventSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_VM, 0, DISPATCH_VM_PRESSURE, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+#endif
     dispatch_source_set_event_handler(memoryNotificationEventSource, ^{
         // Set memory pressure flag and schedule releasing memory in web thread runloop exit.
         memoryPressureHandler().setReceivedMemoryPressure(WebCore::MemoryPressureReasonVMPressure);
@@ -1730,7 +1733,9 @@ static bool fastDocumentTeardownEnabled()
     [self removeDragCaret];
 #endif
 
-    // Deleteing the WebCore::Page will clear the page cache so we call destroy on 
+    _private->group->removeWebView(self);
+
+    // Deleteing the WebCore::Page will clear the page cache so we call destroy on
     // all the plug-ins in the page cache to break any retain cycles.
     // See comment in HistoryItem::releaseAllPendingPageCaches() for more information.
     Page* page = _private->page;
@@ -1744,12 +1749,10 @@ static bool fastDocumentTeardownEnabled()
     }
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     if (_private->layerFlushController) {
         _private->layerFlushController->invalidate();
         _private->layerFlushController = nullptr;
     }
-#endif
     
 #if USE(GLIB)
     [self _clearGlibLoopObserver];
@@ -1993,10 +1996,10 @@ static bool fastDocumentTeardownEnabled()
     // type.  (See behavior matrix at the top of WebFramePrivate.)  So we copy all the items
     // in the back forward list, and go to the current one.
 
-    BackForwardClient* backForwardClient = _private->page->backForwardClient();
+    BackForwardClient* backForwardClient = _private->page->backForward().client();
     ASSERT(!backForwardClient->currentItem()); // destination list should be empty
 
-    BackForwardClient* otherBackForwardClient = otherView->_private->page->backForwardClient();
+    BackForwardClient* otherBackForwardClient = otherView->_private->page->backForward().client();
     if (!otherBackForwardClient->currentItem())
         return; // empty back forward list, bail
     
@@ -2289,7 +2292,7 @@ static bool needsSelfRetainWhileLoadingQuirk()
     settings.setTelephoneNumberParsingEnabled([preferences _telephoneNumberParsingEnabled]);
     settings.setAlwaysUseBaselineOfPrimaryFont([preferences _alwaysUseBaselineOfPrimaryFont]);
     settings.setAllowMultiElementImplicitSubmission([preferences _allowMultiElementImplicitFormSubmission]);
-    settings.setLayoutInterval([preferences _layoutInterval]);
+    settings.setLayoutInterval(std::chrono::milliseconds([preferences _layoutInterval]));
     settings.setMaxParseDuration([preferences _maxParseDuration]);
     settings.setAlwaysUseAcceleratedOverflowScroll([preferences _alwaysUseAcceleratedOverflowScroll]);
 #endif
@@ -2323,16 +2326,10 @@ static bool needsSelfRetainWhileLoadingQuirk()
     settings.setFrameFlatteningEnabled([preferences isFrameFlatteningEnabled]);
     settings.setSpatialNavigationEnabled([preferences isSpatialNavigationEnabled]);
     settings.setPaginateDuringLayoutEnabled([preferences paginateDuringLayoutEnabled]);
-#if ENABLE(CSS_SHADERS)
-    settings.setCSSCustomFilterEnabled([preferences cssCustomFilterEnabled]);
-#endif
     RuntimeEnabledFeatures::sharedFeatures().setCSSRegionsEnabled([preferences cssRegionsEnabled]);
     RuntimeEnabledFeatures::sharedFeatures().setCSSCompositingEnabled([preferences cssCompositingEnabled]);
 #if ENABLE(WEB_AUDIO)
     settings.setWebAudioEnabled([preferences webAudioEnabled]);
-#endif
-#if ENABLE(IFRAME_SEAMLESS)
-    RuntimeEnabledFeatures::sharedFeatures().setSeamlessIFramesEnabled([preferences seamlessIFramesEnabled]);
 #endif
     settings.setCSSGridLayoutEnabled([preferences cssGridLayoutEnabled]);
 #if ENABLE(FULLSCREEN_API)
@@ -2388,6 +2385,12 @@ static bool needsSelfRetainWhileLoadingQuirk()
 #if ENABLE(MEDIA_SOURCE)
     settings.setMediaSourceEnabled([preferences mediaSourceEnabled]);
 #endif
+
+#if ENABLE(IMAGE_CONTROLS)
+    settings.setImageControlsEnabled([preferences imageControlsEnabled]);
+#endif
+
+    settings.setShouldConvertPositionStyleOnCopy([preferences shouldConvertPositionStyleOnCopy]);
 
     switch ([preferences storageBlockingPolicy]) {
     case WebAllowAllStorage:
@@ -3335,18 +3338,6 @@ static inline IMP getMethod(id o, SEL s)
 }
 #endif // !PLATFORM(IOS)
 
-- (void)_setInViewSourceMode:(BOOL)flag
-{
-    if (Frame* mainFrame = [self _mainCoreFrame])
-        mainFrame->setInViewSourceMode(flag);
-}
-
-- (BOOL)_inViewSourceMode
-{
-    Frame* mainFrame = [self _mainCoreFrame];
-    return mainFrame && mainFrame->inViewSourceMode();
-}
-
 - (void)_setUseFastImageScalingMode:(BOOL)flag
 {
     if (_private->page && _private->page->inLowQualityImageInterpolationMode() != flag) {
@@ -3476,7 +3467,6 @@ static inline IMP getMethod(id o, SEL s)
 
 - (BOOL)_setMediaLayer:(CALayer*)layer forPluginView:(NSView*)pluginView
 {
-#if USE(ACCELERATED_COMPOSITING)
     WebThreadLock();
 
     Frame* mainCoreFrame = [self _mainCoreFrame];
@@ -3498,7 +3488,7 @@ static inline IMP getMethod(id o, SEL s)
             return YES;
         }
     }
-#endif
+
     return NO;
 }
 
@@ -3617,11 +3607,9 @@ static inline IMP getMethod(id o, SEL s)
     return _private->allowsMessaging;
 }
 
+// FIXME: Remove once this is no longer necessary for UIKit binary compatibility.
 - (void)_setNetworkStateIsOnline:(BOOL)isOnLine
 {
-    WebThreadRun(^{
-        networkStateNotifier().setIsOnLine(isOnLine);
-    });
 }
 
 - (void)_setFixedLayoutSize:(CGSize)size
@@ -3709,6 +3697,11 @@ static inline IMP getMethod(id o, SEL s)
         return;
 
     frame->overflowScrollPositionChangedForNode(roundedIntPoint(offset), node, userScroll);
+}
+
++ (void)_doNotStartObservingNetworkReachability
+{
+    Settings::setShouldOptOutOfNetworkStateObservation(true);
 }
 #endif // PLATFORM(IOS)
 
@@ -3825,20 +3818,6 @@ static inline IMP getMethod(id o, SEL s)
     coreFrame->editor().command(name).execute(value);
 }
 
-- (void)_setCustomHTMLTokenizerTimeDelay:(double)timeDelay
-{
-    if (!_private->page)
-        return;
-    return _private->page->setCustomHTMLTokenizerTimeDelay(timeDelay);
-}
-
-- (void)_setCustomHTMLTokenizerChunkSize:(int)chunkSize
-{
-    if (!_private->page)
-        return;
-    return _private->page->setCustomHTMLTokenizerChunkSize(chunkSize);
-}
-
 - (void)_clearMainFrameName
 {
     _private->page->mainFrame().tree().clearName();
@@ -3876,30 +3855,22 @@ static inline IMP getMethod(id o, SEL s)
 
 - (BOOL)_postsAcceleratedCompositingNotifications
 {
-#if USE(ACCELERATED_COMPOSITING)
     return _private->postsAcceleratedCompositingNotifications;
-#else
-    return NO;
-#endif
-
 }
 - (void)_setPostsAcceleratedCompositingNotifications:(BOOL)flag
 {
-#if USE(ACCELERATED_COMPOSITING)
     _private->postsAcceleratedCompositingNotifications = flag;
-#endif
 }
 
 - (BOOL)_isUsingAcceleratedCompositing
 {
-#if USE(ACCELERATED_COMPOSITING)
     Frame* coreFrame = [self _mainCoreFrame];
     for (Frame* frame = coreFrame; frame; frame = frame->tree().traverseNext(coreFrame)) {
         NSView *documentView = [[kit(frame) frameView] documentView];
         if ([documentView isKindOfClass:[WebHTMLView class]] && [(WebHTMLView *)documentView _isUsingAcceleratedCompositing])
             return YES;
     }
-#endif
+
     return NO;
 }
 
@@ -3930,7 +3901,6 @@ static inline IMP getMethod(id o, SEL s)
 
 - (BOOL)_isSoftwareRenderable
 {
-#if USE(ACCELERATED_COMPOSITING)
     Frame* coreFrame = [self _mainCoreFrame];
     for (Frame* frame = coreFrame; frame; frame = frame->tree().traverseNext(coreFrame)) {
         if (FrameView* view = frame->view()) {
@@ -3938,7 +3908,7 @@ static inline IMP getMethod(id o, SEL s)
                 return NO;
         }
     }
-#endif
+
     return YES;
 }
 
@@ -3982,11 +3952,11 @@ static inline IMP getMethod(id o, SEL s)
     if (!view || !view->isTrackingRepaints())
         return nil;
 
-    const Vector<IntRect>& repaintRects = view->trackedRepaintRects();
+    const Vector<FloatRect>& repaintRects = view->trackedRepaintRects();
     NSMutableArray* rectsArray = [[NSMutableArray alloc] initWithCapacity:repaintRects.size()];
     
     for (unsigned i = 0; i < repaintRects.size(); ++i)
-        [rectsArray addObject:[NSValue valueWithRect:pixelSnappedIntRect(repaintRects[i])]];
+        [rectsArray addObject:[NSValue valueWithRect:pixelSnappedIntRect(LayoutRect(repaintRects[i]))]];
 
     return [rectsArray autorelease];
 }
@@ -4030,7 +4000,7 @@ static inline IMP getMethod(id o, SEL s)
 - (void)_updateVisibilityState
 {
     if (_private && _private->page)
-        [self _setIsVisible:[self _isViewVisible] isInitialState:NO];
+        [self _setIsVisible:[self _isViewVisible]];
 }
 
 - (void)_updateActiveState
@@ -4395,16 +4365,18 @@ static Vector<String> toStringVector(NSArray* patterns)
     return WebPageVisibilityStateVisible;
 }
 
-- (void)_setIsVisible:(BOOL)isVisible isInitialState:(BOOL)isInitialState
+- (void)_setIsVisible:(BOOL)isVisible
 {
     if (_private->page)
-        _private->page->setIsVisible(isVisible, isInitialState);
+        _private->page->setIsVisible(isVisible);
 }
 
 - (void)_setVisibilityState:(WebPageVisibilityState)visibilityState isInitialState:(BOOL)isInitialState
 {
+    UNUSED_PARAM(isInitialState);
+
     if (_private->page) {
-        _private->page->setIsVisible(visibilityState == WebPageVisibilityStateVisible, isInitialState);
+        _private->page->setIsVisible(visibilityState == WebPageVisibilityStateVisible);
         if (visibilityState == WebPageVisibilityStatePrerender)
             _private->page->setIsPrerender();
     }
@@ -5134,7 +5106,7 @@ static bool needsWebViewInitThreadWorkaround()
 
         LOG(Encoding, "FrameName = %@, GroupName = %@, useBackForwardList = %d\n", frameName, groupName, (int)useBackForwardList);
         [result _commonInitializationWithFrameName:frameName groupName:groupName];
-        static_cast<BackForwardList*>([result page]->backForwardClient())->setEnabled(useBackForwardList);
+        static_cast<BackForwardList*>([result page]->backForward().client())->setEnabled(useBackForwardList);
         result->_private->allowsUndo = allowsUndo;
         if (preferences)
             [result setPreferences:preferences];
@@ -5158,7 +5130,7 @@ static bool needsWebViewInitThreadWorkaround()
     // Restore the subviews we set aside.
     _subviews = originalSubviews;
 
-    BOOL useBackForwardList = _private->page && static_cast<BackForwardList*>(_private->page->backForwardClient())->enabled();
+    BOOL useBackForwardList = _private->page && static_cast<BackForwardList*>(_private->page->backForward().client())->enabled();
     if ([encoder allowsKeyedCoding]) {
         [encoder encodeObject:[[self mainFrame] name] forKey:@"FrameName"];
         [encoder encodeObject:[self groupName] forKey:@"GroupName"];
@@ -5222,7 +5194,7 @@ static bool needsWebViewInitThreadWorkaround()
     // _close existed first, and some clients might be calling or overriding it, so call through.
     [self _close];
 
-#if PLATFORM(IOS) && USE(ACCELERATED_COMPOSITING)
+#if PLATFORM(IOS)
     if (_private->layerFlushController) {
         _private->layerFlushController->invalidate();
         _private->layerFlushController = nullptr;
@@ -5361,6 +5333,8 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 - (void)_windowChangedKeyState
 {
     [self _updateActiveState];
+
+    [super _windowChangedKeyState];
 }
 
 - (void)_windowWillOrderOnScreen:(NSNotification *)notification
@@ -5373,7 +5347,7 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 
     if (_private && _private->page) {
         _private->page->resumeScriptedAnimations();
-        _private->page->focusController().setContentIsVisible(true);
+        _private->page->setIsVisible(true);
     }
 }
 
@@ -5386,7 +5360,7 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 {
     if (_private && _private->page) {
         _private->page->suspendScriptedAnimations();
-        _private->page->focusController().setContentIsVisible(false);
+        _private->page->setIsVisible(false);
     }
 }
 
@@ -5620,7 +5594,7 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 {
     if (!_private->page)
         return nil;
-    BackForwardList* list = static_cast<BackForwardList*>(_private->page->backForwardClient());
+    BackForwardList* list = static_cast<BackForwardList*>(_private->page->backForward().client());
     if (!list->enabled())
         return nil;
     return kit(list);
@@ -5630,7 +5604,7 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 {
     if (!_private->page)
         return;
-    static_cast<BackForwardList*>(_private->page->backForwardClient())->setEnabled(flag);
+    static_cast<BackForwardList*>(_private->page->backForward().client())->setEnabled(flag);
 }
 
 - (BOOL)goBack
@@ -5641,10 +5615,10 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 #if PLATFORM(IOS)
     if (WebThreadIsCurrent() || !WebThreadIsEnabled())
 #endif
-    return _private->page->goBack();
+    return _private->page->backForward().goBack();
 #if PLATFORM(IOS)
     WebThreadRun(^{
-        _private->page->goBack();
+        _private->page->backForward().goBack();
     });
     // FIXME: <rdar://problem/9157572> -[WebView goBack] and -goForward always return YES when called from the main thread
     return YES;
@@ -5659,10 +5633,10 @@ static NSString * const backingPropertyOldScaleFactorKey = @"NSBackingPropertyOl
 #if PLATFORM(IOS)
     if (WebThreadIsCurrent() || !WebThreadIsEnabled())
 #endif
-    return _private->page->goForward();
+    return _private->page->backForward().goForward();
 #if PLATFORM(IOS)
     WebThreadRun(^{
-        _private->page->goForward();
+        _private->page->backForward().goForward();
     });
     // FIXME: <rdar://problem/9157572> -[WebView goBack] and -goForward always return YES when called from the main thread
     return YES;
@@ -6155,6 +6129,12 @@ static WebFrame *incrementFrame(WebFrame *frame, WebFindOptions options = 0)
 
 - (void)setGroupName:(NSString *)groupName
 {
+    if (_private->group)
+        _private->group->removeWebView(self);
+
+    _private->group = WebViewGroup::getOrCreate(groupName);
+    _private->group->addWebView(self);
+
     if (!_private->page)
         return;
     _private->page->setGroupName(groupName);
@@ -6384,7 +6364,7 @@ static WebFrame *incrementFrame(WebFrame *frame, WebFindOptions options = 0)
 #endif
         return NO;
 
-    return !!_private->page->backForwardClient()->backItem();
+    return _private->page->backForward().canGoBackOrForward(-1);
 }
 
 - (BOOL)canGoForward
@@ -6397,7 +6377,7 @@ static WebFrame *incrementFrame(WebFrame *frame, WebFindOptions options = 0)
 #endif
         return NO;
 
-    return !!_private->page->backForwardClient()->forwardItem();
+    return !!_private->page->backForward().canGoBackOrForward(1);
 }
 
 - (IBAction)goBack:(id)sender
@@ -7262,7 +7242,7 @@ static NSAppleEventDescriptor* aeDescFromJSValue(ExecState* exec, JSC::JSValue j
     Frame* coreFrame = core([self _selectedOrMainFrame]);
     if (!coreFrame)
         return NSSelectionAffinityDownstream;
-    return kit(coreFrame->selection().affinity());
+    return kit(coreFrame->selection().selection().affinity());
 }
 
 - (void)setEditable:(BOOL)flag
@@ -8344,8 +8324,6 @@ static inline uint64_t roundUpToPowerOf2(uint64_t num)
     return result;
 }
 
-#if USE(ACCELERATED_COMPOSITING)
-
 - (BOOL)_needsOneShotDrawingSynchronization
 {
     return _private->needsOneShotDrawingSynchronization;
@@ -8465,8 +8443,6 @@ bool LayerFlushController::flushLayers()
     if (FrameView* view = coreFrame->view())
         view->scheduleLayerFlushAllowingThrottling();
 }
-#endif
-
 #endif
 
 #if ENABLE(VIDEO)

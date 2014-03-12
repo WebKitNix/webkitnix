@@ -63,7 +63,6 @@
 #import "RenderText.h"
 #import "ResourceBuffer.h"
 #import "SharedBuffer.h"
-#import "TextIterator.h"
 #import "VisiblePosition.h"
 #import "VisibleUnits.h"
 
@@ -87,7 +86,6 @@ using WebCore::RenderObject;
 using WebCore::RenderStyle;
 using WebCore::RenderText;
 using WebCore::RootInlineBox;
-using WebCore::TextIterator;
 using WebCore::VisiblePosition;
 
 @implementation DOMRange (UIKitExtensions)
@@ -96,7 +94,7 @@ using WebCore::VisiblePosition;
 {
     Range *range = core(self);
     FrameSelection frameSelection;
-    frameSelection.moveTo(range, DOWNSTREAM);
+    frameSelection.moveTo(range);
     
     TextGranularity granularity = CharacterGranularity;
     // Until WebKit supports vertical layout, "down" is equivalent to "forward by a line" and
@@ -113,22 +111,26 @@ using WebCore::VisiblePosition;
         frameSelection.modify(FrameSelection::AlterationMove, (SelectionDirection)direction, granularity);
     
     ExceptionCode ignored;
-    range->setStart(frameSelection.start().anchorNode(), frameSelection.start().deprecatedEditingOffset(), ignored);
-    range->setEnd(frameSelection.end().anchorNode(), frameSelection.end().deprecatedEditingOffset(), ignored);
+    Position start = frameSelection.selection().start().parentAnchoredEquivalent();
+    Position end = frameSelection.selection().end().parentAnchoredEquivalent();
+    range->setStart(start.containerNode(), start.offsetInContainerNode(), ignored);
+    range->setEnd(end.containerNode(), end.offsetInContainerNode(), ignored);
 }
 
 - (void)extend:(UInt32)amount inDirection:(WebTextAdjustmentDirection)direction
 {
     Range *range = core(self);
     FrameSelection frameSelection;
-    frameSelection.moveTo(range, DOWNSTREAM);
+    frameSelection.moveTo(range);
     
     for (UInt32 i = 0; i < amount; i++)
         frameSelection.modify(FrameSelection::AlterationExtend, (SelectionDirection)direction, CharacterGranularity);    
     
     ExceptionCode ignored;
-    range->setStart(frameSelection.start().anchorNode(), frameSelection.start().deprecatedEditingOffset(), ignored);
-    range->setEnd(frameSelection.end().anchorNode(), frameSelection.end().deprecatedEditingOffset(), ignored);    
+    Position start = frameSelection.selection().start().parentAnchoredEquivalent();
+    Position end = frameSelection.selection().end().parentAnchoredEquivalent();
+    range->setStart(start.containerNode(), start.offsetInContainerNode(), ignored);
+    range->setEnd(end.containerNode(), end.offsetInContainerNode(), ignored);
 }
 
 - (DOMNode *)firstNode
@@ -153,11 +155,7 @@ using WebCore::VisiblePosition;
             DOMCSSStyleDeclaration *style = [document getComputedStyle:(DOMElement *)self pseudoElement:@""];
             if ([[style getPropertyValue:@"display"] isEqualToString:@"inline"])
                 rects = [self lineBoxRects];
-        } else if ([self isKindOfClass:[DOMText class]]
-#if ENABLE(SVG_DOM_OBJC_BINDINGS)
-                   && ![[self parentNode] isKindOfClass:NSClassFromString(@"DOMSVGElement")]
-#endif
-                  )
+        } else if ([self isKindOfClass:[DOMText class]])
             rects = [self lineBoxRects];
     }
 
@@ -177,11 +175,7 @@ using WebCore::VisiblePosition;
             DOMCSSStyleDeclaration *style = [document getComputedStyle:(DOMElement *)self pseudoElement:@""];
             if ([[style getPropertyValue:@"display"] isEqualToString:@"inline"])
                 quads = [self lineBoxQuads];
-        } else if ([self isKindOfClass:[DOMText class]]
-#if ENABLE(SVG_DOM_OBJC_BINDINGS)
-                   && ![[self parentNode] isKindOfClass:NSClassFromString(@"DOMSVGElement")]
-#endif
-                   )
+        } else if ([self isKindOfClass:[DOMText class]])
             quads = [self lineBoxQuads];
     }
 
@@ -201,10 +195,10 @@ using WebCore::VisiblePosition;
 
     if (renderer && renderer->isBox()) {
         RoundedRect::Radii radii = toRenderBox(renderer)->borderRadii();
-        return @[[NSValue valueWithSize:(CGSize)radii.topLeft()],
-                 [NSValue valueWithSize:(CGSize)radii.topRight()],
-                 [NSValue valueWithSize:(CGSize)radii.bottomLeft()],
-                 [NSValue valueWithSize:(CGSize)radii.bottomRight()]];
+        return @[[NSValue valueWithSize:(FloatSize)radii.topLeft()],
+                 [NSValue valueWithSize:(FloatSize)radii.topRight()],
+                 [NSValue valueWithSize:(FloatSize)radii.bottomLeft()],
+                 [NSValue valueWithSize:(FloatSize)radii.bottomRight()]];
     }
     NSValue *emptyValue = [NSValue valueWithSize:CGSizeZero];
     return @[emptyValue, emptyValue, emptyValue, emptyValue];

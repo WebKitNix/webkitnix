@@ -28,6 +28,8 @@
 
 #if ENABLE(DFG_JIT)
 
+#include "JSCInlines.h"
+
 namespace JSC { namespace DFG {
 
 FailedFinalizer::FailedFinalizer(Plan& plan)
@@ -37,6 +39,11 @@ FailedFinalizer::FailedFinalizer(Plan& plan)
 
 FailedFinalizer::~FailedFinalizer()
 {
+}
+
+size_t FailedFinalizer::codeSize()
+{
+    return 0;
 }
 
 bool FailedFinalizer::finalize()

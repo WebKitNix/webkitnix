@@ -29,10 +29,9 @@
  */
 
 #include "config.h"
+#include "InspectorResourceAgent.h"
 
 #if ENABLE(INSPECTOR)
-
-#include "InspectorResourceAgent.h"
 
 #include "CachedRawResource.h"
 #include "CachedResource.h"
@@ -44,11 +43,11 @@
 #include "FrameLoader.h"
 #include "HTTPHeaderMap.h"
 #include "IconController.h"
-#include "IdentifiersFactory.h"
 #include "InspectorClient.h"
 #include "InspectorPageAgent.h"
 #include "InspectorWebFrontendDispatchers.h"
 #include "InstrumentingAgents.h"
+#include "JSMainThreadExecState.h"
 #include "MemoryCache.h"
 #include "NetworkResourcesData.h"
 #include "Page.h"
@@ -58,15 +57,16 @@
 #include "ResourceLoader.h"
 #include "ResourceRequest.h"
 #include "ResourceResponse.h"
-#include "ScriptCallStack.h"
-#include "ScriptCallStackFactory.h"
 #include "ScriptableDocumentParser.h"
 #include "Settings.h"
 #include "SubresourceLoader.h"
 #include "URL.h"
 #include "WebSocketFrame.h"
 #include "XMLHttpRequest.h"
+#include <inspector/IdentifiersFactory.h>
 #include <inspector/InspectorValues.h>
+#include <inspector/ScriptCallStack.h>
+#include <inspector/ScriptCallStackFactory.h>
 #include <wtf/CurrentTime.h>
 #include <wtf/HexNumber.h>
 #include <wtf/ListHashSet.h>
@@ -74,6 +74,8 @@
 #include <wtf/text/StringBuilder.h>
 
 using namespace Inspector;
+
+typedef Inspector::InspectorNetworkBackendDispatcherHandler::LoadResourceCallback LoadResourceCallback;
 
 namespace WebCore {
 
@@ -83,7 +85,7 @@ void InspectorResourceAgent::didCreateFrontendAndBackend(Inspector::InspectorFro
     m_backendDispatcher = InspectorNetworkBackendDispatcher::create(backendDispatcher, this);
 }
 
-void InspectorResourceAgent::willDestroyFrontendAndBackend()
+void InspectorResourceAgent::willDestroyFrontendAndBackend(InspectorDisconnectReason)
 {
     m_frontendDispatcher = nullptr;
     m_backendDispatcher.clear();
@@ -95,9 +97,9 @@ void InspectorResourceAgent::willDestroyFrontendAndBackend()
 static PassRefPtr<InspectorObject> buildObjectForHeaders(const HTTPHeaderMap& headers)
 {
     RefPtr<InspectorObject> headersObject = InspectorObject::create();
-    HTTPHeaderMap::const_iterator end = headers.end();
-    for (HTTPHeaderMap::const_iterator it = headers.begin(); it != end; ++it)
-        headersObject->setString(it->key.string(), it->value);
+    
+    for (const auto& header : headers)
+        headersObject->setString(header.key.string(), header.value);
     return headersObject;
 }
 
@@ -183,6 +185,11 @@ InspectorResourceAgent::~InspectorResourceAgent()
 
 void InspectorResourceAgent::willSendRequest(unsigned long identifier, DocumentLoader* loader, ResourceRequest& request, const ResourceResponse& redirectResponse)
 {
+    if (request.hiddenFromInspector()) {
+        m_hiddenRequestIdentifiers.add(identifier);
+        return;
+    }
+
     String requestId = IdentifiersFactory::requestId(identifier);
     m_resourcesData->resourceCreated(requestId, m_pageAgent->loaderId(loader));
 
@@ -225,11 +232,17 @@ void InspectorResourceAgent::willSendRequest(unsigned long identifier, DocumentL
 
 void InspectorResourceAgent::markResourceAsCached(unsigned long identifier)
 {
+    if (m_hiddenRequestIdentifiers.contains(identifier))
+        return;
+
     m_frontendDispatcher->requestServedFromCache(IdentifiersFactory::requestId(identifier));
 }
 
 void InspectorResourceAgent::didReceiveResponse(unsigned long identifier, DocumentLoader* loader, const ResourceResponse& response, ResourceLoader* resourceLoader)
 {
+    if (m_hiddenRequestIdentifiers.contains(identifier))
+        return;
+
     String requestId = IdentifiersFactory::requestId(identifier);
     RefPtr<Inspector::TypeBuilder::Network::Response> resourceResponse = buildObjectForResourceResponse(response, loader);
 
@@ -274,6 +287,9 @@ static bool isErrorStatusCode(int statusCode)
 
 void InspectorResourceAgent::didReceiveData(unsigned long identifier, const char* data, int dataLength, int encodedDataLength)
 {
+    if (m_hiddenRequestIdentifiers.contains(identifier))
+        return;
+
     String requestId = IdentifiersFactory::requestId(identifier);
 
     if (data) {
@@ -287,6 +303,9 @@ void InspectorResourceAgent::didReceiveData(unsigned long identifier, const char
 
 void InspectorResourceAgent::didFinishLoading(unsigned long identifier, DocumentLoader* loader, double finishTime)
 {
+    if (m_hiddenRequestIdentifiers.remove(identifier))
+        return;
+
     String requestId = IdentifiersFactory::requestId(identifier);
     if (m_resourcesData->resourceType(requestId) == InspectorPageAgent::DocumentResource) {
         RefPtr<ResourceBuffer> buffer = loader->frameLoader()->documentLoader()->mainResourceData();
@@ -311,6 +330,9 @@ void InspectorResourceAgent::didFinishLoading(unsigned long identifier, Document
 
 void InspectorResourceAgent::didFailLoading(unsigned long identifier, DocumentLoader* loader, const ResourceError& error)
 {
+    if (m_hiddenRequestIdentifiers.remove(identifier))
+        return;
+
     String requestId = IdentifiersFactory::requestId(identifier);
 
     if (m_resourcesData->resourceType(requestId) == InspectorPageAgent::DocumentResource) {
@@ -334,7 +356,7 @@ void InspectorResourceAgent::didLoadResourceFromMemoryCache(DocumentLoader* load
     m_resourcesData->resourceCreated(requestId, loaderId);
     m_resourcesData->addCachedResource(requestId, resource);
     if (resource->type() == CachedResource::RawResource) {
-        CachedRawResource* rawResource = static_cast<CachedRawResource*>(resource);
+        CachedRawResource* rawResource = toCachedRawResource(resource);
         String rawRequestId = IdentifiersFactory::requestId(rawResource->identifier());
         m_resourcesData->reuseXHRReplayData(requestId, rawRequestId);
     }
@@ -371,9 +393,8 @@ void InspectorResourceAgent::documentThreadableLoaderStartedLoadingForClient(uns
 void InspectorResourceAgent::willLoadXHR(ThreadableLoaderClient* client, const String& method, const URL& url, bool async, PassRefPtr<FormData> formData, const HTTPHeaderMap& headers, bool includeCredentials)
 {
     RefPtr<XHRReplayData> xhrReplayData = XHRReplayData::create(method, url, async, formData, includeCredentials);
-    HTTPHeaderMap::const_iterator end = headers.end();
-    for (HTTPHeaderMap::const_iterator it = headers.begin(); it!= end; ++it)
-        xhrReplayData->addHeader(it->key, it->value);
+    for (const auto& header : headers)
+        xhrReplayData->addHeader(header.key, header.value);
     m_pendingXHRReplayData.set(client, xhrReplayData);
 }
 
@@ -440,7 +461,7 @@ void InspectorResourceAgent::didScheduleStyleRecalculation(Document* document)
 
 PassRefPtr<Inspector::TypeBuilder::Network::Initiator> InspectorResourceAgent::buildInitiatorObject(Document* document)
 {
-    RefPtr<ScriptCallStack> stackTrace = createScriptCallStack(ScriptCallStack::maxCallStackSizeToCapture, true);
+    RefPtr<ScriptCallStack> stackTrace = createScriptCallStack(JSMainThreadExecState::currentState(), ScriptCallStack::maxCallStackSizeToCapture);
     if (stackTrace && stackTrace->size() > 0) {
         RefPtr<Inspector::TypeBuilder::Network::Initiator> initiatorObject = Inspector::TypeBuilder::Network::Initiator::create()
             .setType(Inspector::TypeBuilder::Network::Initiator::Type::Script);
@@ -595,15 +616,97 @@ void InspectorResourceAgent::replayXHR(ErrorString*, const String& requestId)
 #if ENABLE(CACHE_PARTITIONING)
     request.setCachePartition(m_pageAgent->mainFrame()->document()->topOrigin()->cachePartition());
 #endif
-    CachedResource* cachedResource = memoryCache()->resourceForRequest(request);
+
+    CachedResource* cachedResource = memoryCache()->resourceForRequest(request, m_pageAgent->page()->sessionID());
     if (cachedResource)
         memoryCache()->remove(cachedResource);
 
     xhr->open(xhrReplayData->method(), xhrReplayData->url(), xhrReplayData->async(), IGNORE_EXCEPTION);
-    HTTPHeaderMap::const_iterator end = xhrReplayData->headers().end();
-    for (HTTPHeaderMap::const_iterator it = xhrReplayData->headers().begin(); it!= end; ++it)
-        xhr->setRequestHeader(it->key, it->value, IGNORE_EXCEPTION);
-    xhr->sendFromInspector(xhrReplayData->formData(), IGNORE_EXCEPTION);
+    for (const auto& header : xhrReplayData->headers())
+        xhr->setRequestHeader(header.key, header.value, IGNORE_EXCEPTION);
+    xhr->sendForInspectorXHRReplay(xhrReplayData->formData(), IGNORE_EXCEPTION);
+}
+
+namespace {
+
+class LoadResourceListener final : public EventListener {
+    WTF_MAKE_NONCOPYABLE(LoadResourceListener);
+public:
+    static PassRefPtr<LoadResourceListener> create(PassRefPtr<LoadResourceCallback> callback)
+    {
+        return adoptRef(new LoadResourceListener(callback));
+    }
+
+    virtual ~LoadResourceListener() { }
+
+    virtual bool operator==(const EventListener& other) override
+    {
+        return this == &other;
+    }
+
+    virtual void handleEvent(ScriptExecutionContext*, Event* event) override
+    {
+        if (!m_callback->isActive())
+            return;
+
+        if (event->type() == eventNames().errorEvent) {
+            m_callback->sendFailure(ASCIILiteral("Error loading resource"));
+            return;
+        }
+
+        if (event->type() != eventNames().readystatechangeEvent) {
+            m_callback->sendFailure(ASCIILiteral("Unexpected event type"));
+            return;
+        }
+
+        XMLHttpRequest* xhr = static_cast<XMLHttpRequest*>(event->target());
+        if (xhr->readyState() != XMLHttpRequest::DONE)
+            return;
+
+        m_callback->sendSuccess(xhr->responseTextIgnoringResponseType(), xhr->responseMIMEType());
+    }
+
+private:
+    LoadResourceListener(PassRefPtr<LoadResourceCallback> callback)
+        : EventListener(EventListener::CPPEventListenerType)
+        , m_callback(callback) { }
+
+    RefPtr<LoadResourceCallback> m_callback;
+};
+
+} // namespace
+
+void InspectorResourceAgent::loadResource(ErrorString* errorString, const String& frameId, const String& urlString, PassRefPtr<LoadResourceCallback> callback)
+{
+    Frame* frame = m_pageAgent->assertFrame(errorString, frameId);
+    if (!frame)
+        return;
+
+    Document* document = frame->document();
+    if (!document) {
+        *errorString = ASCIILiteral("No Document instance for the specified frame");
+        return;
+    }
+
+    RefPtr<XMLHttpRequest> xhr = XMLHttpRequest::create(*document);
+
+    ExceptionCode ec = 0;
+    xhr->open(ASCIILiteral("GET"), document->completeURL(urlString), ec);
+    if (ec) {
+        *errorString = ASCIILiteral("Error creating request");
+        return;
+    }
+
+    RefPtr<LoadResourceListener> loadResourceListener = LoadResourceListener::create(callback);
+    xhr->addEventListener(eventNames().abortEvent, loadResourceListener, false);
+    xhr->addEventListener(eventNames().errorEvent, loadResourceListener, false);
+    xhr->addEventListener(eventNames().readystatechangeEvent, loadResourceListener, false);
+    xhr->sendForInspector(ec);
+
+    if (ec) {
+        *errorString = ASCIILiteral("Error sending request");
+        return;
+    }
 }
 
 void InspectorResourceAgent::canClearBrowserCache(ErrorString*, bool* result)
@@ -645,7 +748,7 @@ InspectorResourceAgent::InspectorResourceAgent(InstrumentingAgents* instrumentin
     : InspectorAgentBase(ASCIILiteral("Network"), instrumentingAgents)
     , m_pageAgent(pageAgent)
     , m_client(client)
-    , m_resourcesData(adoptPtr(new NetworkResourcesData()))
+    , m_resourcesData(std::make_unique<NetworkResourcesData>())
     , m_enabled(false)
     , m_cacheDisabled(false)
     , m_loadingXHRSynchronously(false)

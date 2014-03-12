@@ -72,12 +72,12 @@ public:
         switch (storage) {
         case WEBKIT_COOKIE_PERSISTENT_STORAGE_TEXT:
             if (!m_cookiesTextFile)
-                m_cookiesTextFile.set(g_build_filename(kTempDirectory, "cookies.txt", NULL));
+                m_cookiesTextFile.reset(g_build_filename(kTempDirectory, "cookies.txt", NULL));
             filename = m_cookiesTextFile.get();
             break;
         case WEBKIT_COOKIE_PERSISTENT_STORAGE_SQLITE:
             if (!m_cookiesSQLiteFile)
-                m_cookiesSQLiteFile.set(g_build_filename(kTempDirectory, "cookies.db", NULL));
+                m_cookiesSQLiteFile.reset(g_build_filename(kTempDirectory, "cookies.db", NULL));
             filename = m_cookiesSQLiteFile.get();
             break;
         default:
@@ -88,7 +88,7 @@ public:
 
     static void getAcceptPolicyReadyCallback(GObject* object, GAsyncResult* result, gpointer userData)
     {
-        GOwnPtr<GError> error;
+        GUniqueOutPtr<GError> error;
         WebKitCookieAcceptPolicy policy = webkit_cookie_manager_get_accept_policy_finish(WEBKIT_COOKIE_MANAGER(object), result, &error.outPtr());
         g_assert(!error.get());
 
@@ -113,7 +113,7 @@ public:
 
     static void getDomainsReadyCallback(GObject* object, GAsyncResult* result, gpointer userData)
     {
-        GOwnPtr<GError> error;
+        GUniqueOutPtr<GError> error;
         char** domains = webkit_cookie_manager_get_domains_with_cookies_finish(WEBKIT_COOKIE_MANAGER(object), result, &error.outPtr());
         g_assert(!error.get());
 
@@ -166,8 +166,8 @@ public:
     char** m_domains;
     bool m_cookiesChanged;
     bool m_finishLoopWhenCookiesChange;
-    GOwnPtr<char> m_cookiesTextFile;
-    GOwnPtr<char> m_cookiesSQLiteFile;
+    GUniquePtr<char> m_cookiesTextFile;
+    GUniquePtr<char> m_cookiesSQLiteFile;
 };
 
 static void testCookieManagerAcceptPolicy(CookieManagerTest* test, gconstpointer)

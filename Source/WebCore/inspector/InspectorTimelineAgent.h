@@ -38,7 +38,6 @@
 #include "InspectorWebFrontendDispatchers.h"
 #include "LayoutRect.h"
 #include <inspector/InspectorValues.h>
-#include <wtf/PassOwnPtr.h>
 #include <wtf/Vector.h>
 #include <wtf/WeakPtr.h>
 
@@ -48,7 +47,6 @@ class Event;
 class FloatQuad;
 class Frame;
 class InspectorClient;
-class InspectorMemoryAgent;
 class InspectorPageAgent;
 class InstrumentingAgents;
 class IntRect;
@@ -128,13 +126,13 @@ class InspectorTimelineAgent
 public:
     enum InspectorType { PageInspector, WorkerInspector };
 
-    InspectorTimelineAgent(InstrumentingAgents*, InspectorPageAgent*, InspectorMemoryAgent*, InspectorType, InspectorClient*);
+    InspectorTimelineAgent(InstrumentingAgents*, InspectorPageAgent*, InspectorType, InspectorClient*);
     ~InspectorTimelineAgent();
 
     virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
-    virtual void willDestroyFrontendAndBackend() override;
+    virtual void willDestroyFrontendAndBackend(Inspector::InspectorDisconnectReason) override;
 
-    virtual void start(ErrorString*, const int* maxCallStackDepth, const bool* includeDomCounters) override;
+    virtual void start(ErrorString*, const int* maxCallStackDepth) override;
     virtual void stop(ErrorString*) override;
     virtual void canMonitorMainThread(ErrorString*, bool*) override;
     virtual void supportsFrameInstrumentation(ErrorString*, bool*) override;
@@ -145,7 +143,7 @@ public:
 
     // Methods called from WebCore.
     void willCallFunction(const String& scriptName, int scriptLine, Frame*);
-    void didCallFunction();
+    void didCallFunction(Frame*);
 
     void willDispatchEvent(const Event&, Frame*);
     void didDispatchEvent();
@@ -184,7 +182,7 @@ public:
     void didDispatchXHRLoadEvent();
 
     void willEvaluateScript(const String&, int, Frame*);
-    void didEvaluateScript();
+    void didEvaluateScript(Frame*);
 
     void didTimeStamp(Frame*, const String&);
     void didMarkDOMContentEvent(Frame*);
@@ -232,7 +230,6 @@ private:
     void appendRecord(PassRefPtr<Inspector::InspectorObject> data, TimelineRecordType, bool captureCallStack, Frame*);
     void pushCurrentRecord(PassRefPtr<Inspector::InspectorObject>, TimelineRecordType, bool captureCallStack, Frame*);
 
-    void setDOMCounters(Inspector::TypeBuilder::Timeline::TimelineEvent* record);
     void setFrameIdentifier(Inspector::InspectorObject* record, Frame*);
 
     void didCompleteCurrentRecord(TimelineRecordType);
@@ -250,7 +247,6 @@ private:
     Page* page();
 
     InspectorPageAgent* m_pageAgent;
-    InspectorMemoryAgent* m_memoryAgent;
     TimelineTimeConverter m_timeConverter;
 
     std::unique_ptr<Inspector::InspectorTimelineFrontendDispatcher> m_frontendDispatcher;
@@ -267,7 +263,7 @@ private:
     WeakPtrFactory<InspectorTimelineAgent> m_weakFactory;
 
     bool m_enabled;
-    bool m_includeDOMCounters;
+    bool m_recordingProfile;
 };
 
 } // namespace WebCore

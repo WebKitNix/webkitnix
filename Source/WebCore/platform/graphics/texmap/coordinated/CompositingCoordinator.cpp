@@ -159,11 +159,6 @@ void CompositingCoordinator::clearPendingStateChanges()
 
     m_state.updateAtlasesToCreate.clear();
     m_state.updateAtlasesToRemove.clear();
-
-#if ENABLE(CSS_SHADERS)
-    m_state.customFiltersToCreate.clear();
-    m_state.customFiltersToRemove.clear();
-#endif
 }
 
 void CompositingCoordinator::initializeRootCompositingLayerIfNeeded()
@@ -191,7 +186,6 @@ void CompositingCoordinator::createRootLayer(const IntSize& size)
 void CompositingCoordinator::syncLayerState(CoordinatedLayerID id, CoordinatedGraphicsLayerState& state)
 {
     m_shouldSyncFrame = true;
-    m_client->willSyncLayerState(state);
     m_state.layersToUpdate.append(std::make_pair(id, state));
 }
 
@@ -259,9 +253,9 @@ void CompositingCoordinator::notifyFlushRequired(const GraphicsLayer*)
 }
 
 
-void CompositingCoordinator::paintContents(const GraphicsLayer* graphicsLayer, GraphicsContext& graphicsContext, GraphicsLayerPaintingPhase, const IntRect& clipRect)
+void CompositingCoordinator::paintContents(const GraphicsLayer* graphicsLayer, GraphicsContext& graphicsContext, GraphicsLayerPaintingPhase, const FloatRect& clipRect)
 {
-    m_client->paintLayerContents(graphicsLayer, graphicsContext, clipRect);
+    m_client->paintLayerContents(graphicsLayer, graphicsContext, enclosingIntRect(clipRect));
 }
 
 std::unique_ptr<GraphicsLayer> CompositingCoordinator::createGraphicsLayer(GraphicsLayerClient* client)

@@ -27,6 +27,7 @@
 #include "WebProcessProxy.h"
 
 #include "APIFrameHandle.h"
+#include "APIHistoryClient.h"
 #include "CustomProtocolManagerProxyMessages.h"
 #include "DataReference.h"
 #include "DownloadProxyMap.h"
@@ -39,6 +40,7 @@
 #include "WebContext.h"
 #include "WebNavigationDataStore.h"
 #include "WebNotificationManagerProxy.h"
+#include "WebPageGroup.h"
 #include "WebPageProxy.h"
 #include "WebPluginSiteDataManager.h"
 #include "WebProcessMessages.h"
@@ -51,7 +53,7 @@
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include "PDFPlugin.h"
 #endif
 
@@ -91,7 +93,7 @@ WebProcessProxy::WebProcessProxy(WebContext& context)
 #if ENABLE(CUSTOM_PROTOCOLS)
     , m_customProtocolManagerProxy(this, context)
 #endif
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     , m_processSuppressionEnabled(false)
 #endif
     , m_numberOfTimesSuddenTerminationWasDisabled(0)
@@ -167,13 +169,13 @@ WebPageProxy* WebProcessProxy::webPage(uint64_t pageID)
     return globalPageMap().get(pageID);
 }
 
-PassRefPtr<WebPageProxy> WebProcessProxy::createWebPage(PageClient& pageClient, WebPageGroup& pageGroup, API::Session& session)
+PassRefPtr<WebPageProxy> WebProcessProxy::createWebPage(PageClient& pageClient, const WebPageConfiguration& configuration)
 {
     uint64_t pageID = generatePageID();
-    RefPtr<WebPageProxy> webPage = WebPageProxy::create(pageClient, *this, pageGroup, session, pageID);
+    RefPtr<WebPageProxy> webPage = WebPageProxy::create(pageClient, *this, pageID, configuration);
     m_pageMap.set(pageID, webPage.get());
     globalPageMap().set(pageID, webPage.get());
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (webPage->isProcessSuppressible())
         m_processSuppressiblePages.add(pageID);
     updateProcessSuppressionState();
@@ -185,7 +187,7 @@ void WebProcessProxy::addExistingWebPage(WebPageProxy* webPage, uint64_t pageID)
 {
     m_pageMap.set(pageID, webPage);
     globalPageMap().set(pageID, webPage);
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (webPage->isProcessSuppressible())
         m_processSuppressiblePages.add(pageID);
     updateProcessSuppressionState();
@@ -196,7 +198,7 @@ void WebProcessProxy::removeWebPage(uint64_t pageID)
 {
     m_pageMap.remove(pageID);
     globalPageMap().remove(pageID);
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     m_processSuppressiblePages.remove(pageID);
     updateProcessSuppressionState();
 #endif
@@ -207,13 +209,6 @@ void WebProcessProxy::removeWebPage(uint64_t pageID)
         abortProcessLaunchIfNeeded();
         disconnect();
     }
-}
-
-Vector<WebPageProxy*> WebProcessProxy::pages() const
-{
-    Vector<WebPageProxy*> result;
-    copyValuesToVector(m_pageMap, result);
-    return result;
 }
 
 WebBackForwardListItem* WebProcessProxy::webBackForwardItem(uint64_t itemID) const
@@ -284,7 +279,7 @@ bool WebProcessProxy::checkURLReceivedFromWebProcess(const URL& url)
     return false;
 }
 
-#if !PLATFORM(MAC)
+#if !PLATFORM(COCOA)
 bool WebProcessProxy::fullKeyboardAccessEnabled()
 {
     return false;
@@ -448,9 +443,10 @@ void WebProcessProxy::didFinishLaunching(ProcessLauncher* launcher, IPC::Connect
 
     m_context->processDidFinishLaunching(this);
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     updateProcessSuppressionState();
 #endif
+    updateProcessState();
 }
 
 WebFrameProxy* WebProcessProxy::webFrame(uint64_t frameID) const
@@ -607,7 +603,7 @@ void WebProcessProxy::didUpdateHistoryTitle(uint64_t pageID, const String& title
 
 void WebProcessProxy::pageSuppressibilityChanged(WebKit::WebPageProxy *page)
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (page->isProcessSuppressible())
         m_processSuppressiblePages.add(page->pageID());
     else
@@ -620,7 +616,7 @@ void WebProcessProxy::pageSuppressibilityChanged(WebKit::WebPageProxy *page)
 
 void WebProcessProxy::pagePreferencesChanged(WebKit::WebPageProxy *page)
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (page->isProcessSuppressible())
         m_processSuppressiblePages.add(page->pageID());
     else
@@ -650,7 +646,7 @@ void WebProcessProxy::windowServerConnectionStateChanged()
 
 void WebProcessProxy::requestTermination()
 {
-    if (!isValid())
+    if (state() != State::Running)
         return;
 
     ChildProcessProxy::terminate();
@@ -663,7 +659,7 @@ void WebProcessProxy::requestTermination()
 
 void WebProcessProxy::enableSuddenTermination()
 {
-    if (!isValid())
+    if (state() != State::Running)
         return;
 
     ASSERT(m_numberOfTimesSuddenTerminationWasDisabled);
@@ -673,7 +669,7 @@ void WebProcessProxy::enableSuddenTermination()
 
 void WebProcessProxy::disableSuddenTermination()
 {
-    if (!isValid())
+    if (state() != State::Running)
         return;
 
     WebCore::disableSuddenTermination();

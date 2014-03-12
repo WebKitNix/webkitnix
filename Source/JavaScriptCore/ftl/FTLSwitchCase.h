@@ -26,28 +26,30 @@
 #ifndef FTLSwitchCase_h
 #define FTLSwitchCase_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(FTL_JIT)
 
 #include "FTLAbbreviatedTypes.h"
+#include "FTLWeight.h"
 
 namespace JSC { namespace FTL {
 
 class SwitchCase {
 public:
-    SwitchCase(LValue value, LBasicBlock target)
+    SwitchCase(LValue value, LBasicBlock target, Weight weight)
         : m_value(value)
         , m_target(target)
+        , m_weight(weight)
     {
     }
 
     LValue value() const { return m_value; }
     LBasicBlock target() const { return m_target; }
+    Weight weight() const { return m_weight; }
 
 private:
     LValue m_value;
     LBasicBlock m_target;
+    Weight m_weight;
 };
 
 } } // namespace JSC::FTL

@@ -142,13 +142,14 @@ PassRefPtr<HTMLInputElement> HTMLInputElement::create(const QualifiedName& tagNa
 HTMLImageLoader* HTMLInputElement::imageLoader()
 {
     if (!m_imageLoader)
-        m_imageLoader = adoptPtr(new HTMLImageLoader(this));
+        m_imageLoader = adoptPtr(new HTMLImageLoader(*this));
     return m_imageLoader.get();
 }
 
 void HTMLInputElement::didAddUserAgentShadowRoot(ShadowRoot*)
 {
     m_inputType->createShadowSubtree();
+    updateInnerTextElementEditability();
 }
 
 HTMLInputElement::~HTMLInputElement()
@@ -473,6 +474,7 @@ void HTMLInputElement::updateType()
 
     m_inputType = std::move(newType);
     m_inputType->createShadowSubtree();
+    updateInnerTextElementEditability();
 
 #if ENABLE(TOUCH_EVENTS)
     bool hasTouchEventHandler = m_inputType->hasTouchEventHandler();
@@ -511,12 +513,13 @@ void HTMLInputElement::updateType()
 
     if (didRespectHeightAndWidth != m_inputType->shouldRespectHeightAndWidthAttributes()) {
         ASSERT(elementData());
+        // FIXME: We don't have the old attribute values so we pretend that we didn't have the old values.
         if (const Attribute* height = findAttributeByName(heightAttr))
-            attributeChanged(heightAttr, height->value());
+            attributeChanged(heightAttr, nullAtom, height->value());
         if (const Attribute* width = findAttributeByName(widthAttr))
-            attributeChanged(widthAttr, width->value());
+            attributeChanged(widthAttr, nullAtom, width->value());
         if (const Attribute* align = findAttributeByName(alignAttr))
-            attributeChanged(alignAttr, align->value());
+            attributeChanged(alignAttr, nullAtom, align->value());
     }
 
     if (renderer())
@@ -533,7 +536,6 @@ void HTMLInputElement::updateType()
     addToRadioButtonGroup();
 
     setNeedsValidityCheck();
-    notifyFormStateChanged();
 }
 
 void HTMLInputElement::subtreeHasChanged()
@@ -687,34 +689,26 @@ void HTMLInputElement::parseAttribute(const QualifiedName& name, const AtomicStr
             setNeedsStyleRecalc(ReconstructRenderTree);
         else
             setNeedsStyleRecalc();
-        FeatureObserver::observe(&document(), FeatureObserver::ResultsAttribute);
     } else if (name == autosaveAttr) {
         setNeedsStyleRecalc();
-        FeatureObserver::observe(&document(), FeatureObserver::AutoSaveAttribute);
     } else if (name == incrementalAttr) {
         setNeedsStyleRecalc();
-        FeatureObserver::observe(&document(), FeatureObserver::IncrementalAttribute);
     } else if (name == minAttr) {
         m_inputType->minOrMaxAttributeChanged();
         setNeedsValidityCheck();
-        FeatureObserver::observe(&document(), FeatureObserver::MinAttribute);
     } else if (name == maxAttr) {
         m_inputType->minOrMaxAttributeChanged();
         setNeedsValidityCheck();
-        FeatureObserver::observe(&document(), FeatureObserver::MaxAttribute);
     } else if (name == multipleAttr) {
         m_inputType->multipleAttributeChanged();
         setNeedsValidityCheck();
     } else if (name == stepAttr) {
         m_inputType->stepAttributeChanged();
         setNeedsValidityCheck();
-        FeatureObserver::observe(&document(), FeatureObserver::StepAttribute);
     } else if (name == patternAttr) {
         setNeedsValidityCheck();
-        FeatureObserver::observe(&document(), FeatureObserver::PatternAttribute);
     } else if (name == precisionAttr) {
         setNeedsValidityCheck();
-        FeatureObserver::observe(&document(), FeatureObserver::PrecisionAttribute);
     } else if (name == disabledAttr) {
         HTMLTextFormControlElement::parseAttribute(name, value);
         m_inputType->disabledAttributeChanged();
@@ -729,13 +723,13 @@ void HTMLInputElement::parseAttribute(const QualifiedName& name, const AtomicStr
             resetListAttributeTargetObserver();
             listAttributeTargetChanged();
         }
-        FeatureObserver::observe(&document(), FeatureObserver::ListAttribute);
     }
 #endif
 #if ENABLE(INPUT_SPEECH)
     else if (name == webkitspeechAttr) {
         m_inputType->destroyShadowSubtree();
         m_inputType->createShadowSubtree();
+        updateInnerTextElementEditability();
 
         // This renderer and its children have quite different layouts and styles depending on
         // whether the speech button is visible or not. So we reset the whole thing and recreate
@@ -743,15 +737,8 @@ void HTMLInputElement::parseAttribute(const QualifiedName& name, const AtomicStr
         setNeedsStyleRecalc(ReconstructRenderTree);
 
         setFormControlValueMatchesRenderer(false);
-        FeatureObserver::observe(&document(), FeatureObserver::PrefixedSpeechAttribute);
     } else if (name == onwebkitspeechchangeAttr)
         setAttributeEventListener(eventNames().webkitspeechchangeEvent, name, value);
-#endif
-#if ENABLE(DIRECTORY_UPLOAD)
-    else if (name == webkitdirectoryAttr) {
-        HTMLTextFormControlElement::parseAttribute(name, value);
-        FeatureObserver::observe(&document(), FeatureObserver::PrefixedDirectoryAttribute);
-    }
 #endif
     else
         HTMLTextFormControlElement::parseAttribute(name, value);
@@ -1030,8 +1017,6 @@ void HTMLInputElement::setValue(const String& value, TextFieldEventBehavior even
 
     if (!valueChanged)
         return;
-
-    notifyFormStateChanged();
 }
 
 void HTMLInputElement::setValueInternal(const String& sanitizedValue, TextFieldEventBehavior eventBehavior)
@@ -1086,7 +1071,6 @@ void HTMLInputElement::setValueFromRenderer(const String& value)
     // Input event is fired by the Node::defaultEventHandler for editable controls.
     if (!isTextField())
         dispatchInputEvent();
-    notifyFormStateChanged();
 
     setNeedsValidityCheck();
 
@@ -1111,22 +1095,22 @@ void HTMLInputElement::didDispatchClickEvent(Event& event, const InputElementCli
 
 void HTMLInputElement::defaultEventHandler(Event* evt)
 {
-    if (evt->isMouseEvent() && evt->type() == eventNames().clickEvent && static_cast<MouseEvent*>(evt)->button() == LeftButton) {
-        m_inputType->handleClickEvent(static_cast<MouseEvent*>(evt));
+    if (evt->isMouseEvent() && evt->type() == eventNames().clickEvent && toMouseEvent(evt)->button() == LeftButton) {
+        m_inputType->handleClickEvent(toMouseEvent(evt));
         if (evt->defaultHandled())
             return;
     }
 
 #if ENABLE(TOUCH_EVENTS)
     if (evt->isTouchEvent()) {
-        m_inputType->handleTouchEvent(static_cast<TouchEvent*>(evt));
+        m_inputType->handleTouchEvent(toTouchEvent(evt));
         if (evt->defaultHandled())
             return;
     }
 #endif
 
     if (evt->isKeyboardEvent() && evt->type() == eventNames().keydownEvent) {
-        m_inputType->handleKeydownEvent(static_cast<KeyboardEvent*>(evt));
+        m_inputType->handleKeydownEvent(toKeyboardEvent(evt));
         if (evt->defaultHandled())
             return;
     }
@@ -1153,13 +1137,13 @@ void HTMLInputElement::defaultEventHandler(Event* evt)
     // Use key press event here since sending simulated mouse events
     // on key down blocks the proper sending of the key press event.
     if (evt->isKeyboardEvent() && evt->type() == eventNames().keypressEvent) {
-        m_inputType->handleKeypressEvent(static_cast<KeyboardEvent*>(evt));
+        m_inputType->handleKeypressEvent(toKeyboardEvent(evt));
         if (evt->defaultHandled())
             return;
     }
 
     if (evt->isKeyboardEvent() && evt->type() == eventNames().keyupEvent) {
-        m_inputType->handleKeyupEvent(static_cast<KeyboardEvent*>(evt));
+        m_inputType->handleKeyupEvent(toKeyboardEvent(evt));
         if (evt->defaultHandled())
             return;
     }
@@ -1184,15 +1168,15 @@ void HTMLInputElement::defaultEventHandler(Event* evt)
     }
 
     if (evt->isBeforeTextInsertedEvent())
-        m_inputType->handleBeforeTextInsertedEvent(static_cast<BeforeTextInsertedEvent*>(evt));
+        m_inputType->handleBeforeTextInsertedEvent(toBeforeTextInsertedEvent(evt));
 
     if (evt->isMouseEvent() && evt->type() == eventNames().mousedownEvent) {
-        m_inputType->handleMouseDownEvent(static_cast<MouseEvent*>(evt));
+        m_inputType->handleMouseDownEvent(toMouseEvent(evt));
         if (evt->defaultHandled())
             return;
     }
 
-    document().updateStyleIfNeeded();
+    document().updateStyleIfNeededForNode(*this);
     m_inputType->forwardEvent(evt);
 
     if (!callBaseClassEarly && !evt->defaultHandled())
@@ -1808,26 +1792,10 @@ bool HTMLInputElement::shouldAppearIndeterminate() const
 }
 
 #if ENABLE(MEDIA_CAPTURE)
-String HTMLInputElement::capture() const
+bool HTMLInputElement::shouldUseMediaCapture() const
 {
-    if (!isFileUpload())
-        return String();
-
-    String capture = fastGetAttribute(captureAttr).lower();
-    if (capture == "camera"
-        || capture == "camcorder"
-        || capture == "microphone"
-        || capture == "filesystem")
-        return capture;
-
-    return "filesystem";
+    return isFileUpload() && fastHasAttribute(captureAttr);
 }
-
-void HTMLInputElement::setCapture(const String& value)
-{
-    setAttribute(captureAttr, value);
-}
-
 #endif
 
 bool HTMLInputElement::isInRequiredRadioButtonGroup()

@@ -112,6 +112,7 @@ public:
     WTF_EXPORT_STRING_API String(const char* characters);
 
     // Construct a string referencing an existing StringImpl.
+    String(StringImpl& impl) : m_impl(&impl) { }
     String(StringImpl* impl) : m_impl(impl) { }
     String(PassRefPtr<StringImpl> impl) : m_impl(impl) { }
     String(PassRef<StringImpl> impl) : m_impl(std::move(impl)) { }
@@ -156,7 +157,6 @@ public:
         return m_impl->length();
     }
 
-    const UChar* characters() const { return deprecatedCharacters(); } // FIXME: Delete this.
     const UChar* deprecatedCharacters() const
     {
         if (!m_impl)
@@ -182,9 +182,9 @@ public:
 
     // Return characters8() or characters16() depending on CharacterType.
     template <typename CharacterType>
-    inline const CharacterType* getCharacters() const;
+    inline const CharacterType* characters() const;
 
-    // Like getCharacters() and upconvert if CharacterType is UChar on a 8bit string.
+    // Like characters() and upconvert if CharacterType is UChar on a 8bit string.
     template <typename CharacterType>
     inline const CharacterType* getCharactersWithUpconvert() const;
 
@@ -284,6 +284,7 @@ public:
         { return m_impl ? m_impl->endsWith(s.impl(), caseSensitive) : s.isEmpty(); }
     bool endsWith(UChar character) const
         { return m_impl ? m_impl->endsWith(character) : false; }
+    bool endsWith(char character) const { return endsWith(static_cast<UChar>(character)); }
     template<unsigned matchLength>
     bool endsWith(const char (&prefix)[matchLength], bool caseSensitive = true) const
         { return m_impl ? m_impl->endsWith<matchLength>(prefix, caseSensitive) : !matchLength; }
@@ -518,14 +519,14 @@ String::String(const Vector<UChar, inlineCapacity, OverflowHandler>& vector)
 }
 
 template<>
-inline const LChar* String::getCharacters<LChar>() const
+inline const LChar* String::characters<LChar>() const
 {
     ASSERT(is8Bit());
     return characters8();
 }
 
 template<>
-inline const UChar* String::getCharacters<UChar>() const
+inline const UChar* String::characters<UChar>() const
 {
     ASSERT(!is8Bit());
     return characters16();
@@ -602,10 +603,12 @@ inline void appendNumber(Vector<CharacterType>& vector, unsigned char number)
     case 3:
         vector[vectorSize + 2] = number % 10 + '0';
         number /= 10;
+        FALLTHROUGH;
 
     case 2:
         vector[vectorSize + 1] = number % 10 + '0';
         number /= 10;
+        FALLTHROUGH;
 
     case 1:
         vector[vectorSize] = number % 10 + '0';
@@ -632,7 +635,7 @@ inline bool String::isAllSpecialCharacters() const
 
     if (is8Bit())
         return WTF::isAllSpecialCharacters<isSpecialCharacter, LChar>(characters8(), len);
-    return WTF::isAllSpecialCharacters<isSpecialCharacter, UChar>(characters(), len);
+    return WTF::isAllSpecialCharacters<isSpecialCharacter, UChar>(characters16(), len);
 }
 
 // StringHash is the default hash for String

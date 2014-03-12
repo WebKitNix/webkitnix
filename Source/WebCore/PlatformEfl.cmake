@@ -29,12 +29,13 @@ list(APPEND WebCore_SOURCES
     accessibility/atk/WebKitAccessibleInterfaceImage.cpp
     accessibility/atk/WebKitAccessibleInterfaceSelection.cpp
     accessibility/atk/WebKitAccessibleInterfaceTable.cpp
+    accessibility/atk/WebKitAccessibleInterfaceTableCell.cpp
     accessibility/atk/WebKitAccessibleInterfaceText.cpp
     accessibility/atk/WebKitAccessibleInterfaceValue.cpp
     accessibility/atk/WebKitAccessibleUtil.cpp
     accessibility/atk/WebKitAccessibleWrapperAtk.cpp
 
-    editing/SmartReplaceICU.cpp
+    editing/SmartReplace.cpp
 
     editing/atk/FrameSelectionAtk.cpp
 
@@ -157,7 +158,6 @@ list(APPEND WebCore_SOURCES
     platform/network/soup/CookieStorageSoup.cpp
     platform/network/soup/CredentialStorageSoup.cpp
     platform/network/soup/DNSSoup.cpp
-    platform/network/soup/GOwnPtrSoup.cpp
     platform/network/soup/NetworkStorageSessionSoup.cpp
     platform/network/soup/ProxyResolverSoup.cpp
     platform/network/soup/ProxyServerSoup.cpp
@@ -167,13 +167,13 @@ list(APPEND WebCore_SOURCES
     platform/network/soup/ResourceResponseSoup.cpp
     platform/network/soup/SocketStreamHandleSoup.cpp
     platform/network/soup/SoupNetworkSession.cpp
-    platform/network/soup/SoupURIUtils.cpp
     platform/network/soup/SynchronousLoaderClientSoup.cpp
 
     platform/posix/FileSystemPOSIX.cpp
     platform/posix/SharedBufferPOSIX.cpp
 
     platform/soup/SharedBufferSoup.cpp
+    platform/soup/URLSoup.cpp
 
     platform/text/LocaleICU.cpp
 
@@ -191,6 +191,8 @@ if (ENABLE_NETSCAPE_PLUGIN_API)
     list(APPEND WebCore_SOURCES
         plugins/efl/PluginPackageEfl.cpp
         plugins/efl/PluginViewEfl.cpp
+
+        plugins/x11/PluginViewX11.cpp
     )
 endif ()
 
@@ -304,6 +306,8 @@ if (WTF_USE_3D_GRAPHICS)
     list(APPEND WebCore_SOURCES
         platform/graphics/cairo/DrawingBufferCairo.cpp
 
+        platform/graphics/efl/EvasGLContext.cpp
+        platform/graphics/efl/EvasGLSurface.cpp
         platform/graphics/efl/GraphicsContext3DEfl.cpp
         platform/graphics/efl/GraphicsContext3DPrivate.cpp
 

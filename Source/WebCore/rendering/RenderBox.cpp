@@ -30,6 +30,7 @@
 #include "Document.h"
 #include "EventHandler.h"
 #include "FloatQuad.h"
+#include "FloatRoundedRect.h"
 #include "Frame.h"
 #include "FrameView.h"
 #include "GraphicsContext.h"
@@ -44,12 +45,13 @@
 #include "PaintInfo.h"
 #include "RenderBoxRegionInfo.h"
 #include "RenderFlexibleBox.h"
-#include "RenderFlowThread.h"
 #include "RenderGeometryMap.h"
 #include "RenderInline.h"
 #include "RenderIterator.h"
 #include "RenderLayer.h"
-#include "RenderRegion.h"
+#include "RenderLayerCompositor.h"
+#include "RenderNamedFlowFragment.h"
+#include "RenderNamedFlowThread.h"
 #include "RenderTableCell.h"
 #include "RenderTheme.h"
 #include "RenderView.h"
@@ -58,10 +60,6 @@
 #include <algorithm>
 #include <math.h>
 #include <wtf/StackStats.h>
-
-#if USE(ACCELERATED_COMPOSITING)
-#include "RenderLayerCompositor.h"
-#endif
 
 #if PLATFORM(IOS)
 #include "Settings.h"
@@ -275,10 +273,8 @@ void RenderBox::styleWillChange(StyleDifference diff, const RenderStyle& newStyl
         // the canvas. Issue full repaint, when our style changes substantially.
         if (diff >= StyleDifferenceRepaint && (isRoot() || isBody())) {
             view().repaintRootContents();
-#if USE(ACCELERATED_COMPOSITING)
             if (oldStyle->hasEntirelyFixedBackground() != newStyle.hasEntirelyFixedBackground())
                 view().compositor().rootFixedBackgroundsChanged();
-#endif
         }
         
         // When a layout hint happens and an object's position style changes, we have to do a layout
@@ -380,13 +376,14 @@ void RenderBox::styleDidChange(StyleDifference diff, const RenderStyle* oldStyle
         const Pagination& pagination = view().frameView().pagination();
         if (viewChangedWritingMode && pagination.mode != Pagination::Unpaginated) {
             viewStyle.setColumnStylesFromPaginationMode(pagination.mode);
-            if (view().hasColumns())
-                view().updateColumnInfoFromStyle(&viewStyle);
+            if (view().hasColumns() || view().multiColumnFlowThread())
+                view().updateColumnProgressionFromStyle(&viewStyle);
         }
     }
 
 #if ENABLE(CSS_SHAPES)
-    updateShapeOutsideInfoAfterStyleChange(style(), oldStyle);
+    if ((oldStyle && oldStyle->shapeOutside()) || style().shapeOutside())
+        updateShapeOutsideInfoAfterStyleChange(style(), oldStyle);
 #endif
 }
 
@@ -409,7 +406,7 @@ void RenderBox::updateShapeOutsideInfoAfterStyleChange(const RenderStyle& style,
     if (!shapeOutside)
         ShapeOutsideInfo::removeInfo(*this);
     else
-        ShapeOutsideInfo::ensureInfo(*this).dirtyShapeSize();
+        ShapeOutsideInfo::ensureInfo(*this).markShapeAsDirty();
 
     if (shapeOutside || shapeOutside != oldShapeOutside)
         markShapeOutsideDependentsForLayout();
@@ -642,14 +639,14 @@ LayoutRect RenderBox::outlineBoundsForRepaint(const RenderLayerModelObject* repa
         else
             containerRelativeQuad = localToContainerQuad(FloatRect(box), repaintContainer);
 
-        box = containerRelativeQuad.enclosingBoundingBox();
+        box = LayoutRect(containerRelativeQuad.boundingBox());
     }
     
     // FIXME: layoutDelta needs to be applied in parts before/after transforms and
     // repaint containers. https://bugs.webkit.org/show_bug.cgi?id=23308
     box.move(view().layoutDelta());
 
-    return box;
+    return LayoutRect(pixelSnappedForPainting(box, document().deviceScaleFactor()));
 }
 
 void RenderBox::addFocusRingRects(Vector<IntRect>& rects, const LayoutPoint& additionalOffset, const RenderLayerModelObject*)
@@ -760,21 +757,36 @@ int RenderBox::instrinsicScrollbarLogicalWidth() const
     return 0;
 }
 
-bool RenderBox::scroll(ScrollDirection direction, ScrollGranularity granularity, float multiplier, Element** stopElement)
+bool RenderBox::scrollLayer(ScrollDirection direction, ScrollGranularity granularity, float multiplier, Element** stopElement)
 {
-    RenderLayer* l = layer();
-    if (l && l->scroll(direction, granularity, multiplier)) {
+    RenderLayer* boxLayer = layer();
+    if (boxLayer && boxLayer->scroll(direction, granularity, multiplier)) {
         if (stopElement)
             *stopElement = element();
+
         return true;
     }
+
+    return false;
+}
+
+bool RenderBox::scroll(ScrollDirection direction, ScrollGranularity granularity, float multiplier, Element** stopElement, RenderBox* startBox, const IntPoint& wheelEventAbsolutePoint)
+{
+    if (scrollLayer(direction, granularity, multiplier, stopElement))
+        return true;
 
     if (stopElement && *stopElement && *stopElement == element())
         return true;
 
-    RenderBlock* b = containingBlock();
-    if (b && !b->isRenderView())
-        return b->scroll(direction, granularity, multiplier, stopElement);
+    RenderBlock* nextScrollBlock = containingBlock();
+    if (nextScrollBlock && nextScrollBlock->isRenderNamedFlowThread()) {
+        ASSERT(startBox);
+        nextScrollBlock = toRenderNamedFlowThread(nextScrollBlock)->fragmentFromAbsolutePointAndBox(wheelEventAbsolutePoint, *startBox);
+    }
+
+    if (nextScrollBlock && !nextScrollBlock->isRenderView())
+        return nextScrollBlock->scroll(direction, granularity, multiplier, stopElement, startBox, wheelEventAbsolutePoint);
+
     return false;
 }
 
@@ -784,7 +796,7 @@ bool RenderBox::logicalScroll(ScrollLogicalDirection direction, ScrollGranularit
     
     RenderLayer* l = layer();
     if (l) {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
         // On Mac only we reset the inline direction position when doing a document scroll (e.g., hitting Home/End).
         if (granularity == ScrollByDocument)
             scrolled = l->scroll(logicalToPhysical(ScrollInlineDirectionBackward, isHorizontalWritingMode(), style().isFlippedBlocksWritingMode()), ScrollByDocument, multiplier);
@@ -1175,7 +1187,7 @@ void RenderBox::paintBoxDecorations(PaintInfo& paintInfo, const LayoutPoint& pai
     if (!paintInfo.shouldPaintWithinRoot(*this))
         return;
 
-    LayoutRect paintRect = borderBoxRectInRegion(paintInfo.renderRegion);
+    LayoutRect paintRect = borderBoxRectInRegion(paintInfo.renderNamedFlowFragment);
     paintRect.moveBy(paintOffset);
 
 #if PLATFORM(IOS)
@@ -1200,7 +1212,7 @@ void RenderBox::paintBoxDecorations(PaintInfo& paintInfo, const LayoutPoint& pai
         // beginning the layer).
         RoundedRect border = style().getRoundedBorderFor(paintRect, &view());
         stateSaver.save();
-        paintInfo.context->clipRoundedRect(border);
+        paintInfo.context->clipRoundedRect(FloatRoundedRect(border));
         paintInfo.context->beginTransparencyLayer(1);
     }
 
@@ -1279,9 +1291,13 @@ bool RenderBox::backgroundIsKnownToBeOpaqueInRect(const LayoutRect& localRect) c
         return false;
     // FIXME: Check the opaqueness of background images.
 
+    if (hasClipPath())
+        return false;
+
     // FIXME: Use rounded rect if border radius is present.
     if (style().hasBorderRadius())
         return false;
+    
     // FIXME: The background color clip is defined by the last layer.
     if (style().backgroundLayers()->next())
         return false;
@@ -1316,10 +1332,8 @@ static bool isCandidateForOpaquenessTest(const RenderBox& childBox)
     if (!childBox.width() || !childBox.height())
         return false;
     if (RenderLayer* childLayer = childBox.layer()) {
-#if USE(ACCELERATED_COMPOSITING)
         if (childLayer->isComposited())
             return false;
-#endif
         // FIXME: Deal with z-index.
         if (!childStyle.hasAutoZIndex())
             return false;
@@ -1510,7 +1524,6 @@ void RenderBox::paintFillLayer(const PaintInfo& paintInfo, const Color& c, const
     paintFillLayerExtended(paintInfo, c, fillLayer, rect, bleedAvoidance, 0, LayoutSize(), op, backgroundObject);
 }
 
-#if USE(ACCELERATED_COMPOSITING)
 static bool layersUseImage(WrappedImagePtr image, const FillLayer* layers)
 {
     for (const FillLayer* curLayer = layers; curLayer; curLayer = curLayer->next()) {
@@ -1520,7 +1533,6 @@ static bool layersUseImage(WrappedImagePtr image, const FillLayer* layers)
 
     return false;
 }
-#endif
 
 void RenderBox::imageChanged(WrappedImagePtr image, const IntRect*)
 {
@@ -1533,12 +1545,18 @@ void RenderBox::imageChanged(WrappedImagePtr image, const IntRect*)
         return;
     }
 
+#if ENABLE(CSS_SHAPES)
+    ShapeValue* shapeOutsideValue = style().shapeOutside();
+    if (!view().frameView().isInLayout() && isFloating() && shapeOutsideValue && shapeOutsideValue->image() && shapeOutsideValue->image()->data() == image) {
+        ShapeOutsideInfo::ensureInfo(*this).markShapeAsDirty();
+        markShapeOutsideDependentsForLayout();
+    }
+#endif
+
     bool didFullRepaint = repaintLayerRectsForImage(image, style().backgroundLayers(), true);
     if (!didFullRepaint)
         repaintLayerRectsForImage(image, style().maskLayers(), false);
 
-
-#if USE(ACCELERATED_COMPOSITING)
     if (!isComposited())
         return;
 
@@ -1546,7 +1564,6 @@ void RenderBox::imageChanged(WrappedImagePtr image, const IntRect*)
         layer()->contentChanged(MaskImageChanged);
     if (layersUseImage(image, style().backgroundLayers()))
         layer()->contentChanged(BackgroundImageChanged);
-#endif
 }
 
 bool RenderBox::repaintLayerRectsForImage(WrappedImagePtr image, const FillLayer* layers, bool drawingBackground)
@@ -1567,8 +1584,8 @@ bool RenderBox::repaintLayerRectsForImage(WrappedImagePtr image, const FillLayer
 
                     rendererRect = LayoutRect(-layerRenderer->marginLeft(),
                         -layerRenderer->marginTop(),
-                        std::max(layerRenderer->width() + layerRenderer->marginWidth() + layerRenderer->borderLeft() + layerRenderer->borderRight(), rw),
-                        std::max(layerRenderer->height() + layerRenderer->marginHeight() + layerRenderer->borderTop() + layerRenderer->borderBottom(), rh));
+                        std::max(layerRenderer->width() + layerRenderer->horizontalMarginExtent() + layerRenderer->borderLeft() + layerRenderer->borderRight(), rw),
+                        std::max(layerRenderer->height() + layerRenderer->verticalMarginExtent() + layerRenderer->borderTop() + layerRenderer->borderBottom(), rh));
                 } else {
                     layerRenderer = this;
                     rendererRect = borderBoxRect();
@@ -1590,9 +1607,9 @@ bool RenderBox::repaintLayerRectsForImage(WrappedImagePtr image, const FillLayer
             // If this is the root background layer, we may need to extend the repaintRect if the FrameView has an
             // extendedBackground. We should only extend the rect if it is already extending the full width or height
             // of the rendererRect.
-            if (drawingRootBackground && view().frameView().hasExtendedBackground()) {
+            if (drawingRootBackground && view().frameView().hasExtendedBackgroundRectForPainting()) {
                 shouldClipToLayer = false;
-                IntRect extendedBackgroundRect = view().frameView().extendedBackgroundRect();
+                IntRect extendedBackgroundRect = view().frameView().extendedBackgroundRectForPainting();
                 if (rectToRepaint.width() == rendererRect.width()) {
                     rectToRepaint.move(extendedBackgroundRect.x(), 0);
                     rectToRepaint.setWidth(extendedBackgroundRect.width());
@@ -1603,35 +1620,13 @@ bool RenderBox::repaintLayerRectsForImage(WrappedImagePtr image, const FillLayer
                 }
             }
 
-            layerRenderer->repaintRectangle(rectToRepaint, false, shouldClipToLayer);
+            layerRenderer->repaintRectangle(rectToRepaint, shouldClipToLayer);
             if (geometry.destRect() == rendererRect)
                 return true;
         }
     }
     return false;
 }
-
-#if PLATFORM(MAC)
-
-void RenderBox::paintCustomHighlight(const LayoutPoint& paintOffset, const AtomicString& type, bool behindText)
-{
-    Page* page = frame().page();
-    if (!page)
-        return;
-
-    InlineBox* boxWrap = inlineBoxWrapper();
-    RootInlineBox* r = boxWrap ? &boxWrap->root() : 0;
-    if (r) {
-        FloatRect rootRect(paintOffset.x() + r->x(), paintOffset.y() + r->selectionTop(), r->logicalWidth(), r->selectionHeight());
-        FloatRect imageRect(paintOffset.x() + x(), rootRect.y(), width(), rootRect.height());
-        page->chrome().client().paintCustomHighlight(element(), type, imageRect, rootRect, behindText, false);
-    } else {
-        FloatRect imageRect(paintOffset.x() + x(), paintOffset.y() + y(), width(), height());
-        page->chrome().client().paintCustomHighlight(element(), type, imageRect, imageRect, behindText, false);
-    }
-}
-
-#endif
 
 bool RenderBox::pushContentsClip(PaintInfo& paintInfo, const LayoutPoint& accumulatedOffset)
 {
@@ -1651,10 +1646,10 @@ bool RenderBox::pushContentsClip(PaintInfo& paintInfo, const LayoutPoint& accumu
         paintObject(paintInfo, accumulatedOffset);
         paintInfo.phase = PaintPhaseChildBlockBackgrounds;
     }
-    IntRect clipRect = pixelSnappedIntRect(isControlClip ? controlClipRect(accumulatedOffset) : overflowClipRect(accumulatedOffset, paintInfo.renderRegion, IgnoreOverlayScrollbarSize, paintInfo.phase));
+    IntRect clipRect = pixelSnappedIntRect(isControlClip ? controlClipRect(accumulatedOffset) : overflowClipRect(accumulatedOffset, paintInfo.renderNamedFlowFragment, IgnoreOverlayScrollbarSize, paintInfo.phase));
     paintInfo.context->save();
     if (style().hasBorderRadius())
-        paintInfo.context->clipRoundedRect(style().getRoundedInnerBorderFor(LayoutRect(accumulatedOffset, size())));
+        paintInfo.context->clipRoundedRect(FloatRoundedRect(style().getRoundedInnerBorderFor(LayoutRect(accumulatedOffset, size()))));
     paintInfo.context->clip(clipRect);
     return true;
 }
@@ -1953,7 +1948,7 @@ LayoutSize RenderBox::offsetFromContainer(RenderObject* o, const LayoutPoint& po
             RenderBlock* block = toRenderBlock(o);
             LayoutRect columnRect(frameRect());
             block->adjustStartEdgeForWritingModeIncludingColumns(columnRect);
-            offset += toSize(columnRect.location());
+            offset += toLayoutSize(columnRect.location());
             LayoutPoint columnPoint = block->flipForWritingModeIncludingColumns(point + offset);
             offset = toLayoutSize(block->flipForWritingModeIncludingColumns(toLayoutPoint(offset)));
             o->adjustForColumns(offset, columnPoint);
@@ -2780,7 +2775,7 @@ LayoutUnit RenderBox::computePercentageLogicalHeight(const Length& height) const
             availableHeight = std::max<LayoutUnit>(0, contentBoxHeight);
         }
     } else if (cbstyle.logicalHeight().isViewportPercentage()) {
-        LayoutUnit heightWithScrollbar = valueForLength(cbstyle.logicalHeight(), 0, &view());
+        LayoutUnit heightWithScrollbar = valueForLength(cbstyle.logicalHeight(), 0);
         if (heightWithScrollbar != -1) {
             LayoutUnit contentBoxHeightWithScrollbar = cb->adjustContentBoxLogicalHeightForBoxSizing(heightWithScrollbar);
             // We need to adjust for min/max height because this method does 
@@ -2860,7 +2855,7 @@ LayoutUnit RenderBox::computeReplacedLogicalWidthUsing(Length logicalWidth) cons
             if (cw > 0 || (!cw && (containerLogicalWidth.isFixed() || containerLogicalWidth.isPercent())))
                 return adjustContentBoxLogicalWidthForBoxSizing(minimumValueForLength(logicalWidth, cw));
         }
-        // fall through
+        FALLTHROUGH;
         case Intrinsic:
         case MinIntrinsic:
         case Auto:
@@ -3090,7 +3085,7 @@ LayoutUnit RenderBox::containingBlockLogicalHeightForPositioned(const RenderBoxM
         if (isFixedPosition && containingBlock->isRenderView())
             return toRenderView(containingBlock)->clientLogicalHeightForFixedPosition();
 
-        const RenderBlock* cb = toRenderBlock(containingBlock);
+        const RenderBlock* cb = containingBlock->isRenderBlock() ? toRenderBlock(containingBlock) : containingBlock->containingBlock();
         LayoutUnit result = cb->clientLogicalHeight();
         RenderFlowThread* flowThread = flowThreadContainingBlock();
         if (flowThread && containingBlock->isRenderFlowThread() && flowThread->isHorizontalWritingMode() == containingBlock->isHorizontalWritingMode()) {
@@ -3657,6 +3652,7 @@ void RenderBox::computePositionedLogicalHeightUsing(Length logicalHeightLength, 
     const LayoutUnit containerRelativeLogicalWidth = containingBlockLogicalWidthForPositioned(containerBlock, 0, false);
 
     LayoutUnit logicalTopValue = 0;
+    LayoutUnit resolvedLogicalHeight = 0;
 
     bool logicalHeightIsAuto = logicalHeightLength.isAuto();
     bool logicalTopIsAuto = logicalTop.isAuto();
@@ -3664,9 +3660,10 @@ void RenderBox::computePositionedLogicalHeightUsing(Length logicalHeightLength, 
 
     // Height is never unsolved for tables.
     if (isTable()) {
-        logicalHeightLength.setValue(Fixed, contentLogicalHeight);
+        resolvedLogicalHeight = contentLogicalHeight;
         logicalHeightIsAuto = false;
-    }
+    } else
+        resolvedLogicalHeight = adjustContentBoxLogicalHeightForBoxSizing(valueForLength(logicalHeightLength, containerLogicalHeight));
 
     if (!logicalTopIsAuto && !logicalHeightIsAuto && !logicalBottomIsAuto) {
         /*-----------------------------------------------------------------------*\
@@ -3680,7 +3677,7 @@ void RenderBox::computePositionedLogicalHeightUsing(Length logicalHeightLength, 
         // NOTE:  It is not necessary to solve for 'bottom' in the over constrained
         // case because the value is not used for any further calculations.
 
-        logicalHeightValue = adjustContentBoxLogicalHeightForBoxSizing(valueForLength(logicalHeightLength, containerLogicalHeight));
+        logicalHeightValue = resolvedLogicalHeight;
         logicalTopValue = valueForLength(logicalTop, containerLogicalHeight);
 
         const LayoutUnit availableSpace = containerLogicalHeight - (logicalTopValue + logicalHeightValue + valueForLength(logicalBottom, containerLogicalHeight) + bordersPlusPadding);
@@ -3747,7 +3744,7 @@ void RenderBox::computePositionedLogicalHeightUsing(Length logicalHeightLength, 
             logicalHeightValue = contentLogicalHeight;
         } else if (logicalTopIsAuto && !logicalHeightIsAuto && !logicalBottomIsAuto) {
             // RULE 4: (solve of top)
-            logicalHeightValue = adjustContentBoxLogicalHeightForBoxSizing(valueForLength(logicalHeightLength, containerLogicalHeight));
+            logicalHeightValue = resolvedLogicalHeight;
             logicalTopValue = availableSpace - (logicalHeightValue + valueForLength(logicalBottom, containerLogicalHeight));
         } else if (!logicalTopIsAuto && logicalHeightIsAuto && !logicalBottomIsAuto) {
             // RULE 5: (solve of height)
@@ -3755,7 +3752,7 @@ void RenderBox::computePositionedLogicalHeightUsing(Length logicalHeightLength, 
             logicalHeightValue = std::max<LayoutUnit>(0, availableSpace - (logicalTopValue + valueForLength(logicalBottom, containerLogicalHeight)));
         } else if (!logicalTopIsAuto && !logicalHeightIsAuto && logicalBottomIsAuto) {
             // RULE 6: (no need solve of bottom)
-            logicalHeightValue = adjustContentBoxLogicalHeightForBoxSizing(valueForLength(logicalHeightLength, containerLogicalHeight));
+            logicalHeightValue = resolvedLogicalHeight;
             logicalTopValue = valueForLength(logicalTop, containerLogicalHeight);
         }
     }
@@ -4105,7 +4102,7 @@ LayoutRect RenderBox::localCaretRect(InlineBox* box, int caretOffset, LayoutUnit
     // FIXME: Border/padding should be added for all elements but this workaround
     // is needed because we use offsets inside an "atomic" element to represent
     // positions before and after the element in deprecated editing offsets.
-    if (element() && !(editingIgnoresContent(element()) || isTableElement(element()))) {
+    if (element() && !(editingIgnoresContent(element()) || isRenderedTable(element()))) {
         rect.setX(rect.x() + borderLeft() + paddingLeft());
         rect.setY(rect.y() + paddingTop() + borderTop());
     }
@@ -4123,8 +4120,8 @@ VisiblePosition RenderBox::positionForPoint(const LayoutPoint& point)
         return createVisiblePosition(nonPseudoElement() ? firstPositionInOrBeforeNode(nonPseudoElement()) : Position());
 
     if (isTable() && nonPseudoElement()) {
-        LayoutUnit right = contentWidth() + borderAndPaddingWidth();
-        LayoutUnit bottom = contentHeight() + borderAndPaddingHeight();
+        LayoutUnit right = contentWidth() + horizontalBorderAndPaddingExtent();
+        LayoutUnit bottom = contentHeight() + verticalBorderAndPaddingExtent();
         
         if (point.x() < 0 || point.x() > right || point.y() < 0 || point.y() > bottom) {
             if (point.x() <= right / 2)
@@ -4307,22 +4304,8 @@ void RenderBox::addLayoutOverflow(const LayoutRect& rect)
         // Overflow is in the block's coordinate space and thus is flipped for horizontal-bt and vertical-rl 
         // writing modes.  At this stage that is actually a simplification, since we can treat horizontal-tb/bt as the same
         // and vertical-lr/rl as the same.
-        bool hasTopOverflow = !style().isLeftToRightDirection() && !isHorizontalWritingMode();
-        bool hasLeftOverflow = !style().isLeftToRightDirection() && isHorizontalWritingMode();
-        if (isFlexibleBox() && style().isReverseFlexDirection()) {
-            RenderFlexibleBox* flexibleBox = toRenderFlexibleBox(this);
-            if (flexibleBox->isHorizontalFlow())
-                hasLeftOverflow = true;
-            else
-                hasTopOverflow = true;
-        }
-
-        if (hasColumns() && style().columnProgression() == ReverseColumnProgression) {
-            if (isHorizontalWritingMode() ^ !style().hasInlineColumnAxis())
-                hasLeftOverflow = !hasLeftOverflow;
-            else
-                hasTopOverflow = !hasTopOverflow;
-        }
+        bool hasTopOverflow = isTopLayoutOverflowAllowed();
+        bool hasLeftOverflow = isLeftLayoutOverflowAllowed();
 
         if (!hasTopOverflow)
             overflowRect.shiftYEdgeTo(std::max(overflowRect.y(), clientBox.y()));
@@ -4433,10 +4416,7 @@ bool RenderBox::hasUnsplittableScrollingOverflow() const
 
 bool RenderBox::isUnsplittableForPagination() const
 {
-    return isReplaced() || hasUnsplittableScrollingOverflow() || (parent() && isWritingModeRoot())
-        // FIXME: Treat multi-column elements as unsplittable for now. Remove once we implement the correct
-        // fragmentation model for multicolumn.
-        || isRenderMultiColumnBlock();
+    return isReplaced() || hasUnsplittableScrollingOverflow() || (parent() && isWritingModeRoot()) || isRenderNamedFlowFragmentContainer();
 }
 
 LayoutUnit RenderBox::lineHeight(bool /*firstLine*/, LineDirectionMode direction, LinePositionMode /*linePositionMode*/) const
@@ -4544,7 +4524,7 @@ LayoutRect RenderBox::layoutOverflowRectForPropagation(RenderStyle* parentStyle)
     return rect;
 }
 
-LayoutRect RenderBox::overflowRectForPaintRejection(RenderRegion* region) const
+LayoutRect RenderBox::overflowRectForPaintRejection(RenderNamedFlowFragment* namedFlowFragment) const
 {
     LayoutRect overflowRect = visualOverflowRect();
     
@@ -4552,14 +4532,14 @@ LayoutRect RenderBox::overflowRectForPaintRejection(RenderRegion* region) const
     // cause the paint rejection algorithm to prevent them from painting when using different width regions.
     // e.g. an absolutely positioned box with bottom:0px and right:0px would have it's frameRect.x relative
     // to the flow thread, not the last region (in which it will end up because of bottom:0px)
-    if (region) {
-        if (RenderFlowThread* flowThread = region->flowThread()) {
+    if (namedFlowFragment) {
+        if (RenderFlowThread* flowThread = namedFlowFragment->flowThread()) {
             RenderRegion* startRegion = 0;
             RenderRegion* endRegion = 0;
             flowThread->getRegionRangeForBox(this, startRegion, endRegion);
 
             if (startRegion && endRegion)
-                overflowRect.unite(region->visualOverflowRectForBox(this));
+                overflowRect.unite(namedFlowFragment->visualOverflowRectForBox(this));
         }
     }
     

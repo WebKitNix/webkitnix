@@ -6,13 +6,13 @@
  * are met:
  *
  * 1.  Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer. 
+ *     notice, this list of conditions and the following disclaimer.
  * 2.  Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution. 
+ *     documentation and/or other materials provided with the distribution.
  * 3.  Neither the name of Apple Computer, Inc. ("Apple") nor the names of
  *     its contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission. 
+ *     from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY APPLE AND ITS CONTRIBUTORS "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -44,6 +44,7 @@
 #import "WebViewInternal.h"
 #import <algorithm>
 #import <bindings/ScriptValue.h>
+#import <inspector/InspectorAgentBase.h>
 #import <WebCore/InspectorController.h>
 #import <WebCore/InspectorFrontendClient.h>
 #import <WebCore/MainFrame.h>
@@ -52,7 +53,6 @@
 #import <WebCore/SoftLinking.h>
 #import <WebKit/DOMExtensions.h>
 #import <WebKitSystemInterface.h>
-#import <wtf/PassOwnPtr.h>
 #import <wtf/text/Base64.h>
 
 SOFT_LINK_STAGED_FRAMEWORK(WebInspectorUI, PrivateFrameworks, A)
@@ -108,8 +108,9 @@ using namespace WebCore;
     BOOL _visible;
     BOOL _destroyingInspectorView;
 }
-- (id)initWithInspectedWebView:(WebView *)webView;
+- (id)initWithInspectedWebView:(WebView *)webView isUnderTest:(BOOL)isUnderTest;
 - (NSString *)inspectorPagePath;
+- (NSString *)inspectorTestPagePath;
 - (WebView *)webView;
 - (void)attach;
 - (void)detach;
@@ -141,7 +142,7 @@ void WebInspectorClient::inspectorDestroyed()
 
 InspectorFrontendChannel* WebInspectorClient::openInspectorFrontend(InspectorController* inspectorController)
 {
-    RetainPtr<WebInspectorWindowController> windowController = adoptNS([[WebInspectorWindowController alloc] initWithInspectedWebView:m_webView]);
+    RetainPtr<WebInspectorWindowController> windowController = adoptNS([[WebInspectorWindowController alloc] initWithInspectedWebView:m_webView isUnderTest:inspectorController->isUnderTest()]);
     [windowController.get() setInspectorClient:this];
 
     m_frontendPage = core([windowController.get() webView]);
@@ -209,8 +210,8 @@ void WebInspectorClient::releaseFrontend()
 }
 
 
-WebInspectorFrontendClient::WebInspectorFrontendClient(WebView* inspectedWebView, WebInspectorWindowController* windowController, InspectorController* inspectorController, Page* frontendPage, WTF::PassOwnPtr<Settings> settings)
-    : InspectorFrontendClientLocal(inspectorController,  frontendPage, settings)
+WebInspectorFrontendClient::WebInspectorFrontendClient(WebView* inspectedWebView, WebInspectorWindowController* windowController, InspectorController* inspectorController, Page* frontendPage, std::unique_ptr<Settings> settings)
+    : InspectorFrontendClientLocal(inspectorController,  frontendPage, std::move(settings))
     , m_inspectedWebView(inspectedWebView)
     , m_windowController(windowController)
 {
@@ -232,7 +233,7 @@ void WebInspectorFrontendClient::frontendLoaded()
     InspectorFrontendClientLocal::frontendLoaded();
 
     WebFrame *frame = [m_inspectedWebView mainFrame];
-    
+
     WebFrameLoadDelegateImplementationCache* implementations = WebViewGetFrameLoadDelegateImplementations(m_inspectedWebView);
     if (implementations->didClearInspectorWindowObjectForFrameFunc)
         CallFrameLoadDelegate(implementations->didClearInspectorWindowObjectForFrameFunc, m_inspectedWebView,
@@ -318,14 +319,14 @@ void WebInspectorFrontendClient::updateWindowTitle() const
 void WebInspectorFrontendClient::save(const String& suggestedURL, const String& content, bool base64Encoded, bool forceSaveDialog)
 {
     ASSERT(!suggestedURL.isEmpty());
-    
+
     NSURL *platformURL = m_suggestedToActualURLMap.get(suggestedURL).get();
     if (!platformURL) {
         platformURL = [NSURL URLWithString:suggestedURL];
         // The user must confirm new filenames before we can save to them.
         forceSaveDialog = true;
     }
-    
+
     ASSERT(platformURL);
     if (!platformURL)
         return;
@@ -336,7 +337,7 @@ void WebInspectorFrontendClient::save(const String& suggestedURL, const String& 
 
     auto saveToURL = ^(NSURL *actualURL) {
         ASSERT(actualURL);
-        
+
         m_suggestedToActualURLMap.set(suggestedURLCopy, actualURL);
 
         if (base64Encoded) {
@@ -355,7 +356,7 @@ void WebInspectorFrontendClient::save(const String& suggestedURL, const String& 
         saveToURL(platformURL);
         return;
     }
-    
+
     NSSavePanel *panel = [NSSavePanel savePanel];
     panel.nameFieldStringValue = platformURL.lastPathComponent;
     panel.directoryURL = [platformURL URLByDeletingLastPathComponent];
@@ -371,7 +372,7 @@ void WebInspectorFrontendClient::save(const String& suggestedURL, const String& 
 void WebInspectorFrontendClient::append(const String& suggestedURL, const String& content)
 {
     ASSERT(!suggestedURL.isEmpty());
-    
+
     RetainPtr<NSURL> actualURL = m_suggestedToActualURLMap.get(suggestedURL);
     // do not append unless the user has already confirmed this filename in save().
     if (!actualURL)
@@ -420,20 +421,22 @@ void WebInspectorFrontendClient::append(const String& suggestedURL, const String
 
     [preferences release];
 
-    NSURLRequest *request = [[NSURLRequest alloc] initWithURL:[NSURL fileURLWithPath:[self inspectorPagePath]]];
-    [[_webView mainFrame] loadRequest:request];
-    [request release];
-
     [self setWindowFrameAutosaveName:@"Web Inspector 2"];
     return self;
 }
 
-- (id)initWithInspectedWebView:(WebView *)webView
+- (id)initWithInspectedWebView:(WebView *)webView isUnderTest:(BOOL)isUnderTest
 {
     if (!(self = [self init]))
         return nil;
 
     _inspectedWebView = webView;
+
+    NSString *pagePath = isUnderTest ? [self inspectorTestPagePath] : [self inspectorPagePath];
+    NSURLRequest *request = [[NSURLRequest alloc] initWithURL:[NSURL fileURLWithPath: pagePath]];
+    [[_webView mainFrame] loadRequest:request];
+    [request release];
+
     return self;
 }
 
@@ -452,6 +455,20 @@ void WebInspectorFrontendClient::append(const String& suggestedURL, const String
 
     NSString *path = [[NSBundle bundleWithIdentifier:@"com.apple.WebInspectorUI"] pathForResource:@"Main" ofType:@"html"];
     ASSERT([path length]);
+    return path;
+}
+
+- (NSString *)inspectorTestPagePath
+{
+    // Call the soft link framework function to dlopen it, then [NSBundle bundleWithIdentifier:] will work.
+    WebInspectorUILibrary();
+
+    NSString *path = [[NSBundle bundleWithIdentifier:@"com.apple.WebInspectorUI"] pathForResource:@"Test" ofType:@"html"];
+
+    // We might not have a Test.html in Production builds.
+    if (!path)
+        return nil;
+
     return path;
 }
 
@@ -581,7 +598,7 @@ void WebInspectorFrontendClient::append(const String& suggestedURL, const String
     }
 
     _visible = YES;
-    
+
     _shouldAttach = _inspectorClient->inspectorStartsAttached() && _frontendClient->canAttachWindow() && !_inspectorClient->inspectorAttachDisabled();
 
     if (_shouldAttach) {
@@ -693,7 +710,7 @@ void WebInspectorFrontendClient::append(const String& suggestedURL, const String
 
     if (notifyInspectorController) {
         if (Page* inspectedPage = [_inspectedWebView.get() page])
-            inspectedPage->inspectorController().disconnectFrontend();
+            inspectedPage->inspectorController().disconnectFrontend(Inspector::InspectorDisconnectReason::InspectorDestroyed);
     }
 
     RetainPtr<WebInspectorWindowController> protect(self);
@@ -745,6 +762,13 @@ void WebInspectorFrontendClient::append(const String& suggestedURL, const String
 
     // Allow loading of the main inspector file.
     if ([[request URL] isFileURL] && [[[request URL] path] isEqualToString:[self inspectorPagePath]]) {
+        [listener use];
+        return;
+    }
+
+    // Allow loading of the test inspector file.
+    NSString *testPagePath = [self inspectorTestPagePath];
+    if (testPagePath && [[request URL] isFileURL] && [[[request URL] path] isEqualToString:testPagePath]) {
         [listener use];
         return;
     }

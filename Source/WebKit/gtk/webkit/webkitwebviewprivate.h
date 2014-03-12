@@ -32,8 +32,8 @@
 #include "ResourceResponse.h"
 #include "WebViewInputMethodFilter.h"
 #include "WidgetBackingStore.h"
+#include <memory>
 #include <webkit/webkitwebview.h>
-#include <wtf/gobject/GOwnPtr.h>
 
 #if ENABLE(MEDIA_STREAM)
 #include "UserMediaClientGtk.h"
@@ -101,25 +101,24 @@ struct _WebKitWebViewPrivate {
     WebCore::GtkClickCounter clickCounter;
     WebCore::GtkDragAndDropHelper dragAndDropHelper;
     bool selfScrolling;
+    GRefPtr<GtkTargetList> targetList;
 
-#if USE(ACCELERATED_COMPOSITING)
-    OwnPtr<WebKit::AcceleratedCompositingContext> acceleratedCompositingContext;
-#endif
+    std::unique_ptr<WebKit::AcceleratedCompositingContext> acceleratedCompositingContext;
 
 #if ENABLE(ICONDATABASE)
     gulong iconLoadedHandler;
 #endif
 
 #if ENABLE(MEDIA_STREAM)
-    OwnPtr<WebKit::UserMediaClientGtk> userMediaClient;
+    std::unique_ptr<WebKit::UserMediaClientGtk> userMediaClient;
 #endif
 
 #if ENABLE(GEOLOCATION)
-    OwnPtr<WebCore::GeolocationClientMock> geolocationClientMock;
+    std::unique_ptr<WebCore::GeolocationClientMock> geolocationClientMock;
 #endif
 
 #if ENABLE(NAVIGATOR_CONTENT_UTILS)
-    OwnPtr<WebKit::NavigatorContentUtilsClient> navigatorContentUtilsClient;
+    std::unique_ptr<WebKit::NavigatorContentUtilsClient> navigatorContentUtilsClient;
 #endif
 };
 

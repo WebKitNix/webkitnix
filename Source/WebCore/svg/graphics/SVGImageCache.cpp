@@ -21,9 +21,9 @@
 #include "config.h"
 #include "SVGImageCache.h"
 
-#if ENABLE(SVG)
 #include "FrameView.h"
 #include "GraphicsContext.h"
+#include "HTMLImageElement.h"
 #include "ImageBuffer.h"
 #include "Page.h"
 #include "RenderSVGRoot.h"
@@ -89,10 +89,16 @@ Image* SVGImageCache::imageForRenderer(const RenderObject* renderer)
         return Image::nullImage();
 
     RefPtr<SVGImageForContainer> imageForContainer = it->value;
+    
+    Node* node = renderer->node();
+    if (node && isHTMLImageElement(node)) {
+        const AtomicString& urlString = toHTMLImageElement(node)->imageSourceURL();
+        URL url = node->document().completeURL(urlString);
+        imageForContainer->setURL(url);
+    }
+        
     ASSERT(!imageForContainer->size().isEmpty());
     return imageForContainer.get();
 }
 
 } // namespace WebCore
-
-#endif // ENABLE(SVG)

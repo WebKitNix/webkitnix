@@ -25,6 +25,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if defined(HAVE_CONFIG_H) && HAVE_CONFIG_H
+#ifdef BUILDING_WITH_CMAKE
+#include "cmakeconfig.h"
+#else
+#include "autotoolsconfig.h"
+#endif
+#endif
+
 #include "BrowserWindow.h"
 #include <errno.h>
 #include <gtk/gtk.h>
@@ -60,10 +68,8 @@ static void createBrowserWindow(const gchar *uri, WebKitSettings *webkitSettings
     GtkWidget *mainWindow = browser_window_new(WEBKIT_WEB_VIEW(webView), NULL);
     gchar *url = argumentToURL(uri);
 
-    if (webkitSettings) {
+    if (webkitSettings)
         webkit_web_view_set_settings(WEBKIT_WEB_VIEW(webView), webkitSettings);
-        g_object_unref(webkitSettings);
-    }
 
     browser_window_load_uri(BROWSER_WINDOW(mainWindow), url);
     g_free(url);
@@ -241,6 +247,12 @@ int main(int argc, char *argv[])
 {
     gtk_init(&argc, &argv);
 
+    const gchar *multiprocess = g_getenv("MINIBROWSER_MULTIPROCESS");
+    if (multiprocess && *multiprocess) {
+        webkit_web_context_set_process_model(webkit_web_context_get_default(),
+            WEBKIT_PROCESS_MODEL_MULTIPLE_SECONDARY_PROCESSES);
+    }
+
     GOptionContext *context = g_option_context_new(NULL);
     g_option_context_add_main_entries(context, commandLineOptions, 0);
     g_option_context_add_group(context, gtk_get_option_group(TRUE));
@@ -248,10 +260,8 @@ int main(int argc, char *argv[])
     WebKitSettings *webkitSettings = webkit_settings_new();
     webkit_settings_set_enable_developer_extras(webkitSettings, TRUE);
     webkit_settings_set_enable_webgl(webkitSettings, TRUE);
-    if (!addSettingsGroupToContext(context, webkitSettings)) {
-        g_object_unref(webkitSettings);
-        webkitSettings = 0;
-    }
+    if (!addSettingsGroupToContext(context, webkitSettings))
+        g_clear_object(&webkitSettings);
 
     GError *error = 0;
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
@@ -277,6 +287,8 @@ int main(int argc, char *argv[])
             createBrowserWindow(uriArguments[i], webkitSettings);
     } else
         createBrowserWindow("http://www.webkitgtk.org/", webkitSettings);
+
+    g_clear_object(&webkitSettings);
 
     gtk_main();
 

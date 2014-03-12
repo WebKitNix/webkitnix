@@ -26,8 +26,6 @@
 #ifndef FTLJITFinalizer_h
 #define FTLJITFinalizer_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(FTL_JIT)
 
 #include "DFGFinalizer.h"
@@ -46,12 +44,14 @@ public:
     JITFinalizer(DFG::Plan&);
     virtual ~JITFinalizer();
     
-    bool finalize();
-    bool finalizeFunction();
+    size_t codeSize() override;
+    bool finalize() override;
+    bool finalizeFunction() override;
 
     OwnPtr<LinkBuffer> exitThunksLinkBuffer;
     OwnPtr<LinkBuffer> entrypointLinkBuffer;
     OwnPtr<LinkBuffer> sideCodeLinkBuffer;
+    OwnPtr<LinkBuffer> handleExceptionsLinkBuffer;
     Vector<SlowPathCall> slowPathCalls; // Calls inside the side code.
     Vector<OSRExitCompilationInfo> osrExit;
     MacroAssembler::Label arityCheck;

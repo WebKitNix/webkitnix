@@ -31,9 +31,9 @@
 #ifndef PageScriptDebugServer_h
 #define PageScriptDebugServer_h
 
-#if ENABLE(JAVASCRIPT_DEBUGGER)
+#if ENABLE(INSPECTOR)
 
-#include "ScriptDebugServer.h"
+#include <inspector/ScriptDebugServer.h>
 #include <wtf/Forward.h>
 
 namespace WebCore {
@@ -43,13 +43,13 @@ class FrameView;
 class Page;
 class PageGroup;
 
-class PageScriptDebugServer : public ScriptDebugServer {
+class PageScriptDebugServer : public Inspector::ScriptDebugServer {
     WTF_MAKE_NONCOPYABLE(PageScriptDebugServer);
 public:
     static PageScriptDebugServer& shared();
 
-    void addListener(ScriptDebugListener*, Page*);
-    void removeListener(ScriptDebugListener*, Page*);
+    void addListener(Inspector::ScriptDebugListener*, Page*);
+    void removeListener(Inspector::ScriptDebugListener*, Page*, bool skipRecompile);
 
     virtual void recompileAllJSFunctions() override;
 
@@ -62,11 +62,13 @@ private:
     virtual ListenerSet* getListenersForGlobalObject(JSC::JSGlobalObject*);
     virtual void didPause(JSC::JSGlobalObject*);
     virtual void didContinue(JSC::JSGlobalObject*);
-
     virtual void runEventLoopWhilePaused();
+    virtual bool isContentScript(JSC::ExecState*) const override;
+    virtual void reportException(JSC::ExecState*, JSC::JSValue) const override;
+
 
     void didAddFirstListener(Page*);
-    void didRemoveLastListener(Page*);
+    void didRemoveLastListener(Page*, bool skipRecompile);
 
     void setJavaScriptPaused(const PageGroup&, bool paused);
     void setJavaScriptPaused(Page*, bool paused);
@@ -79,6 +81,6 @@ private:
 
 } // namespace WebCore
 
-#endif // ENABLE(JAVASCRIPT_DEBUGGER)
+#endif // ENABLE(INSPECTOR)
 
 #endif // PageScriptDebugServer_h

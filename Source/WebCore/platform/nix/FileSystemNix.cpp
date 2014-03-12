@@ -35,13 +35,19 @@
 #include <gio/gio.h>
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 #include <wtf/gobject/GRefPtr.h>
 #include <wtf/gobject/GlibUtilities.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
 namespace WebCore {
+
+#ifdef HAVE_ST_BIRTHTIME
+#define birthtime(x) x.st_birthtime
+#else
+#define birthtime(x) x.st_ctime
+#endif
 
 // On linux file names are just raw bytes, so also strings that cannot be encoded in any way
 // are valid file names. This mean that we cannot just store a file name as-is in a String
@@ -52,13 +58,13 @@ String filenameToString(const char* filename)
     if (!filename)
         return String();
 
-    GOwnPtr<gchar> escapedString(g_uri_escape_string(filename, "/:", false));
+    std::unique_ptr<gchar> escapedString(g_uri_escape_string(filename, "/:", false));
     return escapedString.get();
 }
 
 CString fileSystemRepresentation(const String& path)
 {
-    GOwnPtr<gchar> filename(g_uri_unescape_string(path.utf8().data(), 0));
+    std::unique_ptr<gchar> filename(g_uri_unescape_string(path.utf8().data(), 0));
     return filename.get();
 }
 
@@ -66,7 +72,7 @@ CString fileSystemRepresentation(const String& path)
 String filenameForDisplay(const String& string)
 {
     CString filename = fileSystemRepresentation(string);
-    GOwnPtr<gchar> display(g_filename_to_utf8(filename.data(), 0, 0, 0, 0));
+    std::unique_ptr<gchar> display(g_filename_to_utf8(filename.data(), 0, 0, 0, 0));
     if (!display)
         return string;
 
@@ -182,7 +188,7 @@ String pathGetFileName(const String& pathName)
         return pathName;
 
     CString tmpFilename = fileSystemRepresentation(pathName);
-    GOwnPtr<gchar> baseName(g_path_get_basename(tmpFilename.data()));
+    std::unique_ptr<gchar> baseName(g_path_get_basename(tmpFilename.data()));
     return String::fromUTF8(baseName.get());
 }
 
@@ -193,11 +199,11 @@ CString applicationDirectoryPath()
         return path;
 
     // If the above fails, check the PATH env variable.
-    GOwnPtr<char> currentExePath(g_find_program_in_path(g_get_prgname()));
+    std::unique_ptr<char> currentExePath(g_find_program_in_path(g_get_prgname()));
     if (!currentExePath.get())
         return CString();
 
-    GOwnPtr<char> dirname(g_path_get_dirname(currentExePath.get()));
+    std::unique_ptr<char> dirname(g_path_get_dirname(currentExePath.get()));
     return dirname.get();
 }
 
@@ -207,7 +213,7 @@ CString sharedResourcesPath()
     if (!cachedPath.isNull())
         return cachedPath;
 
-    GOwnPtr<gchar> dataPath(g_build_filename(DATA_DIR, "webkitnix", NULL));
+    std::unique_ptr<gchar> dataPath(g_build_filename(DATA_DIR, "webkitnix", NULL));
 
     cachedPath = dataPath.get();
     return cachedPath;
@@ -225,7 +231,7 @@ uint64_t getVolumeFreeSizeForPath(const char* path)
 
 String directoryName(const String& path)
 {
-    GOwnPtr<char> dirname(g_path_get_dirname(fileSystemRepresentation(path).data()));
+    std::unique_ptr<char> dirname(g_path_get_dirname(fileSystemRepresentation(path).data()));
     return String::fromUTF8(dirname.get());
 }
 
@@ -243,7 +249,7 @@ Vector<String> listDirectory(const String& path, const String& filter)
         if (!g_pattern_match_string(pspec, name))
             continue;
 
-        GOwnPtr<gchar> entry(g_build_filename(filename.data(), name, NULL));
+        std::unique_ptr<gchar> entry(g_build_filename(filename.data(), name, NULL));
         entries.append(filenameToString(entry.get()));
     }
     g_pattern_spec_free(pspec);
@@ -254,8 +260,8 @@ Vector<String> listDirectory(const String& path, const String& filter)
 
 String openTemporaryFile(const String& prefix, PlatformFileHandle& handle)
 {
-    GOwnPtr<gchar> filename(g_strdup_printf("%s%s", prefix.utf8().data(), createCanonicalUUIDString().utf8().data()));
-    GOwnPtr<gchar> tempPath(g_build_filename(g_get_tmp_dir(), filename.get(), NULL));
+    std::unique_ptr<gchar> filename(g_strdup_printf("%s%s", prefix.utf8().data(), createCanonicalUUIDString().utf8().data()));
+    std::unique_ptr<gchar> tempPath(g_build_filename(g_get_tmp_dir(), filename.get(), NULL));
     GRefPtr<GFile> file = adoptGRef(g_file_new_for_path(tempPath.get()));
 
     handle = g_file_create_readwrite(file.get(), G_FILE_CREATE_NONE, 0, 0);
@@ -325,7 +331,7 @@ int writeToFile(PlatformFileHandle handle, const char* data, int length)
 
 int readFromFile(PlatformFileHandle handle, char* data, int length)
 {
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     do {
         gssize bytesRead = g_input_stream_read(g_io_stream_get_input_stream(G_IO_STREAM(handle)), data, length, 0, &error.outPtr());
         if (bytesRead >= 0)
@@ -337,6 +343,22 @@ int readFromFile(PlatformFileHandle handle, char* data, int length)
 bool unloadModule(PlatformModule module)
 {
     return g_module_close(module);
+}
+
+bool getFileCreationTime(const String& path, time_t& result)
+{
+    CString fsRep = fileSystemRepresentation(path);
+
+    if (!fsRep.data() || fsRep.data()[0] == '\0')
+        return false;
+
+    struct stat fileInfo;
+
+    if (stat(fsRep.data(), &fileInfo))
+        return false;
+
+    result = birthtime(fileInfo);
+    return true;
 }
 
 } // namespace WebCore

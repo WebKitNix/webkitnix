@@ -35,6 +35,7 @@
 #if ENABLE(INSPECTOR)
 
 #include "InspectorValues.h"
+#include "JSCInlines.h"
 #include "ScriptFunctionCall.h"
 #include "ScriptObject.h"
 #include <wtf/text/WTFString.h>
@@ -141,7 +142,6 @@ void InjectedScript::getInternalProperties(ErrorString* errorString, const Strin
         *properties = array;
 }
 
-#if ENABLE(JAVASCRIPT_DEBUGGER)
 PassRefPtr<Array<Inspector::TypeBuilder::Debugger::CallFrame>> InjectedScript::wrapCallFrames(const Deprecated::ScriptValue& callFrames)
 {
     ASSERT(!hasNoValue());
@@ -157,7 +157,6 @@ PassRefPtr<Array<Inspector::TypeBuilder::Debugger::CallFrame>> InjectedScript::w
 
     return Array<Inspector::TypeBuilder::Debugger::CallFrame>::create();
 }
-#endif
 
 PassRefPtr<Inspector::TypeBuilder::Runtime::RemoteObject> InjectedScript::wrapObject(const Deprecated::ScriptValue& value, const String& groupName, bool generatePreview) const
 {

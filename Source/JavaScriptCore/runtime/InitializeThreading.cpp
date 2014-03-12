@@ -38,6 +38,7 @@
 #include "JSGlobalObject.h"
 #include "JSLock.h"
 #include "LLIntData.h"
+#include "StructureIDTable.h"
 #include "WriteBarrier.h"
 #include <mutex>
 #include <wtf/dtoa.h>
@@ -72,6 +73,8 @@ void initializeThreading()
 #ifndef NDEBUG
         DisallowGC::initialize();
 #endif
+        WTFThreadData& threadData = wtfThreadData();
+        threadData.setSavedLastStackTop(threadData.stack().origin());
     });
 }
 

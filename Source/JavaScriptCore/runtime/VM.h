@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2009, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2008, 2009, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,6 +44,7 @@
 #include "PrivateName.h"
 #include "PrototypeMap.h"
 #include "SmallStrings.h"
+#include "SourceCode.h"
 #include "Strong.h"
 #include "ThunkGenerators.h"
 #include "TypedArrayController.h"
@@ -68,6 +69,8 @@
 
 namespace JSC {
 
+    class ArityCheckFailReturnThunks;
+    class BuiltinExecutables;
     class CodeBlock;
     class CodeCache;
     class CommonIdentifiers;
@@ -103,7 +106,6 @@ namespace JSC {
 #if ENABLE(DFG_JIT)
     namespace DFG {
     class LongLivedState;
-    class Worklist;
     }
 #endif // ENABLE(DFG_JIT)
 #if ENABLE(FTL_JIT)
@@ -111,6 +113,9 @@ namespace JSC {
     class Thunks;
     }
 #endif // ENABLE(FTL_JIT)
+    namespace CommonSlowPaths {
+    struct ArityCheckData;
+    }
 
     struct HashTable;
     struct Instruction;
@@ -204,10 +209,6 @@ namespace JSC {
 
         void makeUsableFromMultipleThreads() { heap.machineThreads().makeUsableFromMultipleThreads(); }
         
-#if ENABLE(DFG_JIT)
-        DFG::Worklist* ensureWorklist();
-#endif // ENABLE(DFG_JIT)
-
     private:
         RefPtr<JSLock> m_apiLock;
 
@@ -224,7 +225,6 @@ namespace JSC {
         
 #if ENABLE(DFG_JIT)
         OwnPtr<DFG::LongLivedState> dfgState;
-        RefPtr<DFG::Worklist> worklist;
 #endif // ENABLE(DFG_JIT)
 
         VMType vmType;
@@ -304,10 +304,10 @@ namespace JSC {
             return m_inDefineOwnProperty;
         }
 
-        LegacyProfiler* enabledProfiler()
-        {
-            return m_enabledProfiler;
-        }
+        LegacyProfiler* enabledProfiler() { return m_enabledProfiler; }
+        void setEnabledProfiler(LegacyProfiler*);
+
+        void* enabledProfilerAddress() { return &m_enabledProfiler; }
 
 #if ENABLE(JIT) && ENABLE(LLINT)
         bool canUseJIT() { return m_canUseJIT; }
@@ -340,7 +340,10 @@ namespace JSC {
             return jitStubs->ctiStub(this, generator);
         }
         NativeExecutable* getHostFunction(NativeFunction, Intrinsic);
-#endif
+        
+        std::unique_ptr<ArityCheckFailReturnThunks> arityCheckFailReturnThunks;
+#endif // ENABLE(JIT)
+        std::unique_ptr<CommonSlowPaths::ArityCheckData> arityCheckData;
 #if ENABLE(FTL_JIT)
         std::unique_ptr<FTL::Thunks> ftlThunks;
 #endif
@@ -372,12 +375,24 @@ namespace JSC {
         JS_EXPORT_PRIVATE JSValue throwException(ExecState*, JSValue);
         JS_EXPORT_PRIVATE JSObject* throwException(ExecState*, JSObject*);
         
-        void** addressOfJSStackLimit() { return &m_jsStackLimit; }
+        void* stackPointerAtVMEntry() const { return m_stackPointerAtVMEntry; }
+        void setStackPointerAtVMEntry(void*);
+
+        size_t reservedZoneSize() const { return m_reservedZoneSize; }
+        size_t updateReservedZoneSize(size_t reservedZoneSize);
+
+#if ENABLE(FTL_JIT)
+        void updateFTLLargestStackSize(size_t);
+        void** addressOfFTLStackLimit() { return &m_ftlStackLimit; }
+#endif
+
+#if ENABLE(LLINT_C_LOOP)
         void* jsStackLimit() { return m_jsStackLimit; }
         void setJSStackLimit(void* limit) { m_jsStackLimit = limit; }
-
+#endif
         void* stackLimit() { return m_stackLimit; }
-        void setStackLimit(void* limit) { m_stackLimit = limit; }
+        void** addressOfStackLimit() { return &m_stackLimit; }
+
         bool isSafeToRecurse(size_t neededStackInBytes = 0) const
         {
             ASSERT(wtfThreadData().stack().isGrowingDownward());
@@ -386,10 +401,12 @@ namespace JSC {
             return curr >= limit && static_cast<size_t>(curr - limit) >= neededStackInBytes;
         }
 
+        void* lastStackTop() { return m_lastStackTop; }
+        void setLastStackTop(void* lastStackTop) { m_lastStackTop = lastStackTop; }
+
         const ClassInfo* const jsArrayClassInfo;
         const ClassInfo* const jsFinalObjectClassInfo;
 
-        ReturnAddressPtr exceptionLocation;
         JSValue hostCallReturnValue;
         ExecState* newCallFrameReturnValue;
         ExecState* callFrameForThrow;
@@ -412,7 +429,9 @@ namespace JSC {
                 // max(scratch buffer size) * 4.
                 sizeOfLastScratchBuffer = size * 2;
 
-                scratchBuffers.append(ScratchBuffer::create(sizeOfLastScratchBuffer));
+                ScratchBuffer* newBuffer = ScratchBuffer::create(sizeOfLastScratchBuffer);
+                RELEASE_ASSERT(newBuffer);
+                scratchBuffers.append(newBuffer);
             }
 
             ScratchBuffer* result = scratchBuffers.last();
@@ -431,7 +450,6 @@ namespace JSC {
         String cachedDateString;
         double cachedDateStringValue;
 
-        LegacyProfiler* m_enabledProfiler;
         OwnPtr<Profiler::Database> m_perBytecodeProfiler;
         RefPtr<TypedArrayController> m_typedArrayController;
         RegExpCache* m_regExpCache;
@@ -442,7 +460,9 @@ namespace JSC {
         RTTraceList* m_rtTraceList;
 #endif
 
-        ThreadIdentifier exclusiveThread;
+        bool hasExclusiveThread() const { return m_apiLock->hasExclusiveThread(); }
+        std::thread::id exclusiveThread() const { return m_apiLock->exclusiveThread(); }
+        void setExclusiveThread(std::thread::id threadId) { m_apiLock->setExclusiveThread(threadId); }
 
         JS_EXPORT_PRIVATE void resetDateCache();
 
@@ -470,21 +490,20 @@ namespace JSC {
         bool haveEnoughNewStringsToHashCons() { return m_newStringsSinceLastHashCons > s_minNumberOfNewStringsToHashCons; }
         void resetNewStringsSinceLastHashCons() { m_newStringsSinceLastHashCons = 0; }
 
-        bool currentThreadIsHoldingAPILock() const
-        {
-            return m_apiLock->currentThreadIsHoldingLock() || exclusiveThread == currentThread();
-        }
+        bool currentThreadIsHoldingAPILock() const { return m_apiLock->currentThreadIsHoldingLock(); }
 
         JSLock& apiLock() { return *m_apiLock; }
         CodeCache* codeCache() { return m_codeCache.get(); }
 
-        void prepareToDiscardCode();
+        void waitForCompilationsToComplete();
         
         JS_EXPORT_PRIVATE void discardAllCode();
 
         void registerWatchpointForImpureProperty(const Identifier&, Watchpoint*);
         // FIXME: Use AtomicString once it got merged with Identifier.
         JS_EXPORT_PRIVATE void addImpureProperty(const String&);
+        
+        BuiltinExecutables* builtinExecutables() { return m_builtinExecutables.get(); }
 
     private:
         friend class LLIntOffsetsExtractor;
@@ -494,6 +513,9 @@ namespace JSC {
         VM(VMType, HeapType);
         static VM*& sharedInstanceInternal();
         void createNativeThunk();
+
+        void updateStackLimit();
+
 #if ENABLE(ASSEMBLER)
         bool m_canUseAssembler;
 #endif
@@ -506,8 +528,9 @@ namespace JSC {
 #if ENABLE(GC_VALIDATION)
         const ClassInfo* m_initializingObjectClass;
 #endif
-
-#if USE(SEPARATE_C_AND_JS_STACK)
+        void* m_stackPointerAtVMEntry;
+        size_t m_reservedZoneSize;
+#if ENABLE(LLINT_C_LOOP)
         struct {
             void* m_stackLimit;
             void* m_jsStackLimit;
@@ -517,12 +540,18 @@ namespace JSC {
             void* m_stackLimit;
             void* m_jsStackLimit;
         };
+#if ENABLE(FTL_JIT)
+        void* m_ftlStackLimit;
+        size_t m_largestFTLStackSize;
 #endif
+#endif
+        void* m_lastStackTop;
         JSValue m_exception;
         bool m_inDefineOwnProperty;
         OwnPtr<CodeCache> m_codeCache;
+        LegacyProfiler* m_enabledProfiler;
+        OwnPtr<BuiltinExecutables> m_builtinExecutables;
         RefCountedArray<StackFrame> m_exceptionStack;
-
         HashMap<String, RefPtr<WatchpointSet>> m_impurePropertyWatchpointSets;
     };
 
@@ -542,6 +571,13 @@ namespace JSC {
     {
         return &m_vm->heap;
     }
+
+#if !ENABLE(LLINT_C_LOOP)
+    extern "C" void sanitizeStackForVMImpl(VM*);
+#endif
+
+    void sanitizeStackForVM(VM*);
+    void logSanitizeStack(VM*);
 
 } // namespace JSC
 

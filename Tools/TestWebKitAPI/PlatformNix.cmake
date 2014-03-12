@@ -1,3 +1,14 @@
+set(TestWebKitAPI_INCLUDE_DIRS
+    ${DERIVED_SOURCES_WEBKIT2_DIR}/include
+    ${WEBKIT2_DIR}/UIProcess/API/nix
+    ${GLIB_INCLUDE_DIRS}
+    ${CAIRO_INCLUDE_DIRS}
+    ${PNG_INCLUDE_DIRS}
+    "${PLATFORM_DIR}/nix/"
+    ${TESTWEBKITAPI_DIR}/nix
+    ${TOOLS_DIR}/Shared/nix
+)
+
 add_custom_target(forwarding-headersNixForTestWebKitAPI
     COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT2_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include nix
     COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT2_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include CoordinatedGraphics
@@ -10,6 +21,9 @@ if (WTF_USE_CURL)
         COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${TESTWEBKITAPI_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include curl
     )
 else ()
+    list(APPEND TestWebKitAPI_INCLUDE_DIRS
+        ${LIBSOUP_INCLUDE_DIRS}
+    )
     add_custom_target(forwarding-headersNetworkForTestWebKitAPI
         COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT2_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
         COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${TESTWEBKITAPI_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
@@ -18,16 +32,7 @@ endif ()
 set(ForwardingHeadersForTestWebKitAPI_NAME forwarding-headersNixForTestWebKitAPI)
 add_dependencies(forwarding-headersNixForTestWebKitAPI forwarding-headersNetworkForTestWebKitAPI)
 
-include_directories(
-    ${DERIVED_SOURCES_WEBKIT2_DIR}/include
-    ${WEBKIT2_DIR}/UIProcess/API/nix
-    ${GLIB_INCLUDE_DIRS}
-    ${CAIRO_INCLUDE_DIRS}
-    ${PNG_INCLUDE_DIRS}
-    "${PLATFORM_DIR}/nix/"
-    ${TESTWEBKITAPI_DIR}/nix
-    ${TOOLS_DIR}/Shared/nix
-)
+include_directories(${TestWebKitAPI_INCLUDE_DIRS})
 
 set(test_main_SOURCES
     ${TESTWEBKITAPI_DIR}/nix/main.cpp

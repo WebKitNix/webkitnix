@@ -41,7 +41,7 @@
 #include <wtf/StdLibExtras.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 #include <wtf/gobject/GlibUtilities.h>
 
 #if OS(LINUX)
@@ -132,7 +132,7 @@ void ProcessLauncher::launchProcess()
 
     auto args = createArgsArray(processCmdPrefix, executablePath, String::number(sockets[0]), pluginPath);
 
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     int spawnFlags = G_SPAWN_LEAVE_DESCRIPTORS_OPEN | G_SPAWN_SEARCH_PATH;
     if (!g_spawn_async(0, reinterpret_cast<char**>(args.data()), 0, static_cast<GSpawnFlags>(spawnFlags), childSetupFunction, GINT_TO_POINTER(sockets[1]), &pid, &error.outPtr())) {
         g_printerr("Unable to fork a new WebProcess: %s.\n", error->message);

@@ -30,6 +30,7 @@
 #include "SessionTracker.h"
 #include "WebFrame.h"
 #include "WebPage.h"
+#include <WebCore/SessionID.h>
 #include <WebCore/Settings.h>
 #include <wtf/NeverDestroyed.h>
 
@@ -37,35 +38,27 @@ using namespace WebCore;
 
 namespace WebKit {
 
-void WebFrameNetworkingContext::ensurePrivateBrowsingSession(uint64_t sessionID)
+void WebFrameNetworkingContext::ensurePrivateBrowsingSession(SessionID sessionID)
 {
     ASSERT(isMainThread());
 
     if (SessionTracker::session(sessionID))
         return;
 
-    SessionTracker::session(sessionID) = NetworkStorageSession::createPrivateBrowsingSession(String::number(sessionID));
+    SessionTracker::setSession(sessionID, NetworkStorageSession::createPrivateBrowsingSession(String::number(sessionID.sessionID())));
 }
 
 WebFrameNetworkingContext::WebFrameNetworkingContext(WebFrame* frame)
     : FrameNetworkingContext(frame->coreFrame())
-    , m_initiatingPageID(0)
 {
-    if (WebPage* page = frame->page())
-        m_initiatingPageID = page->pageID();
 }
 
 NetworkStorageSession& WebFrameNetworkingContext::storageSession() const
 {
     if (frame() && frame()->settings().privateBrowsingEnabled())
-        return *SessionTracker::session(SessionTracker::legacyPrivateSessionID);
+        return *SessionTracker::session(SessionID::legacyPrivateSessionID());
 
     return NetworkStorageSession::defaultStorageSession();
-}
-
-uint64_t WebFrameNetworkingContext::initiatingPageID() const
-{
-    return m_initiatingPageID;
 }
 
 WebFrameLoaderClient* WebFrameNetworkingContext::webFrameLoaderClient() const

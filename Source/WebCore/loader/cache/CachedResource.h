@@ -31,6 +31,7 @@
 #include "ResourceLoaderOptions.h"
 #include "ResourceRequest.h"
 #include "ResourceResponse.h"
+#include "SessionID.h"
 #include "Timer.h"
 #include <time.h>
 #include <wtf/HashCountedSet.h>
@@ -67,10 +68,8 @@ public:
         CSSStyleSheet,
         Script,
         FontResource,
-        RawResource
-#if ENABLE(SVG)
-        , SVGDocumentResource
-#endif
+        RawResource,
+        SVGDocumentResource
 #if ENABLE(XSLT)
         , XSLStyleSheet
 #endif
@@ -80,9 +79,6 @@ public:
 #endif
 #if ENABLE(VIDEO_TRACK)
         , TextTrackResource
-#endif
-#if ENABLE(CSS_SHADERS)
-        , ShaderResource
 #endif
     };
 
@@ -94,7 +90,7 @@ public:
         DecodeError
     };
 
-    CachedResource(const ResourceRequest&, Type);
+    CachedResource(const ResourceRequest&, Type, SessionID);
     virtual ~CachedResource();
 
     virtual void load(CachedResourceLoader*, const ResourceLoaderOptions&);
@@ -116,6 +112,7 @@ public:
 #if ENABLE(CACHE_PARTITIONING)
     const String& cachePartition() const { return m_resourceRequest.cachePartition(); }
 #endif
+    SessionID sessionID() const { return m_sessionID; }
     Type type() const { return static_cast<Type>(m_type); }
     
     ResourceLoadPriority loadPriority() const { return m_loadPriority; }
@@ -158,7 +155,9 @@ public:
 
     SubresourceLoader* loader() { return m_loader.get(); }
 
-    virtual bool isImage() const { return false; }
+    bool isImage() const { return type() == ImageResource; }
+    // FIXME: CachedRawResource could be either a main resource or a raw XHR resource.
+    bool isMainOrRawResource() const { return type() == MainResource || type() == RawResource; }
     bool ignoreForRequestCount() const
     {
         return type() == MainResource
@@ -259,7 +258,7 @@ public:
 
     virtual bool canReuse(const ResourceRequest&) const { return true; }
 
-#if PLATFORM(MAC)
+#if USE(FOUNDATION)
     void tryReplaceEncodedData(PassRefPtr<SharedBuffer>);
 #endif
 
@@ -293,6 +292,7 @@ protected:
     HashMap<CachedResourceClient*, OwnPtr<CachedResourceCallback>> m_clientsAwaitingCallback;
 
     ResourceRequest m_resourceRequest;
+    SessionID m_sessionID;
     String m_accept;
     RefPtr<SubresourceLoader> m_loader;
     ResourceLoaderOptions m_options;
@@ -370,6 +370,9 @@ private:
     // These handles will need to be updated to point to the m_resourceToRevalidate in case we get 304 response.
     HashSet<CachedResourceHandleBase*> m_handlesToRevalidate;
 };
+
+#define CACHED_RESOURCE_TYPE_CASTS(ToClassName, FromClassName, CachedResourceType) \
+    TYPE_CASTS_BASE(ToClassName, FromClassName, resource, resource->type() == CachedResourceType, resource.type() == CachedResourceType)
 
 }
 

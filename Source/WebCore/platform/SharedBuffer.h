@@ -27,6 +27,7 @@
 #ifndef SharedBuffer_h
 #define SharedBuffer_h
 
+#include <runtime/ArrayBuffer.h>
 #include <wtf/Forward.h>
 #include <wtf/OwnPtr.h>
 #include <wtf/RefCounted.h>
@@ -38,10 +39,10 @@
 #endif
 
 #if USE(SOUP)
-#include "GOwnPtrSoup.h"
+#include "GUniquePtrSoup.h"
 #endif
 
-#if PLATFORM(MAC)
+#if USE(FOUNDATION)
 OBJC_CLASS NSData;
 #endif
 
@@ -66,7 +67,7 @@ public:
     
     ~SharedBuffer();
     
-#if PLATFORM(MAC)
+#if USE(FOUNDATION)
     // FIXME: This class exists as a temporary workaround so that code that does:
     // [buffer->createNSData() autorelease] will fail to compile.
     // Once both Mac and iOS builds with this change we can change the return type to be RetainPtr<NSData>,
@@ -99,6 +100,9 @@ public:
     // to be merged into a flat buffer. Use getSomeData() whenever possible
     // for better performance.
     const char* data() const;
+    // Creates an ArrayBuffer and copies this SharedBuffer's contents to that
+    // ArrayBuffer without merging segmented buffers into a flat buffer.
+    PassRefPtr<ArrayBuffer> createArrayBuffer() const;
 
     unsigned size() const;
 
@@ -211,7 +215,7 @@ private:
 
 #if USE(SOUP)
     explicit SharedBuffer(SoupBuffer*);
-    GOwnPtr<SoupBuffer> m_soupBuffer;
+    GUniquePtr<SoupBuffer> m_soupBuffer;
 #endif
 };
 

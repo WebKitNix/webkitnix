@@ -37,14 +37,6 @@ namespace WebCore {
 class HTMLTrackElement;
 class LoadableTextTrack;
 
-class LoadableTextTrackClient : public TextTrackClient {
-public:
-    virtual ~LoadableTextTrackClient() { }
-    
-    virtual bool canLoadUrl(LoadableTextTrack*, const URL&) { return false; }
-    virtual void loadingCompleted(LoadableTextTrack*, bool /* loadingFailed */) { }
-};
-
 class LoadableTextTrack : public TextTrack, private TextTrackLoaderClient {
 public:
     static PassRefPtr<LoadableTextTrack> create(HTMLTrackElement* track, const String& kind, const String& label, const String& language)
@@ -69,9 +61,7 @@ public:
 
 private:
     // TextTrackLoaderClient
-    virtual bool shouldLoadCues(TextTrackLoader*) override { return true; }
     virtual void newCuesAvailable(TextTrackLoader*) override;
-    virtual void cueLoadingStarted(TextTrackLoader*) override;
     virtual void cueLoadingCompleted(TextTrackLoader*, bool loadingFailed) override;
 #if ENABLE(WEBVTT_REGIONS)
     virtual void newRegionsAvailable(TextTrackLoader*);
@@ -83,7 +73,7 @@ private:
 
     HTMLTrackElement* m_trackElement;
     Timer<LoadableTextTrack> m_loadTimer;
-    OwnPtr<TextTrackLoader> m_loader;
+    std::unique_ptr<TextTrackLoader> m_loader;
     URL m_url;
     bool m_isDefault;
 };

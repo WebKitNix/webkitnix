@@ -151,10 +151,8 @@ NSURL *(*wkAVAssetResolvedURL)(AVAsset*);
 
 NSCursor *(*wkCursor)(const char*);
 
-#if PLATFORM(MAC)
 NSArray *(*wkSpeechSynthesisGetVoiceIdentifiers)(void);
 NSString *(*wkSpeechSynthesisGetDefaultVoiceIdentifierForLocale)(NSLocale *);
-#endif
 
 void (*wkUnregisterUniqueIdForElement)(id element);
 void (*wkAccessibilityHandleFocusChanged)(void);
@@ -214,3 +212,6 @@ bool (*wkIsPublicSuffix)(NSString *host);
 #if ENABLE(CACHE_PARTITIONING)
 CFStringRef (*wkCachePartitionKey)(void);
 #endif
+
+int (*wkExernalDeviceTypeForPlayer)(AVPlayer *);
+NSString *(*wkExernalDeviceDisplayNameForPlayer)(AVPlayer *);

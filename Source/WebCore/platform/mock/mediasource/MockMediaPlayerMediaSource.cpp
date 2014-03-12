@@ -29,8 +29,8 @@
 #if ENABLE(MEDIA_SOURCE)
 
 #include "ExceptionCodePlaceholder.h"
-#include "HTMLMediaSource.h"
 #include "MediaPlayer.h"
+#include "MediaSourcePrivateClient.h"
 #include "MockMediaSourcePrivate.h"
 #include <wtf/Functional.h>
 #include <wtf/MainThread.h>
@@ -41,7 +41,7 @@ namespace WebCore {
 // MediaPlayer Enigne Support
 void MockMediaPlayerMediaSource::registerMediaEngine(MediaEngineRegistrar registrar)
 {
-    registrar(create, getSupportedTypes, supportsType, 0, 0, 0);
+    registrar(create, getSupportedTypes, supportsType, 0, 0, 0, 0);
 }
 
 PassOwnPtr<MediaPlayerPrivateInterface> MockMediaPlayerMediaSource::create(MediaPlayer* player)
@@ -100,7 +100,7 @@ void MockMediaPlayerMediaSource::load(const String&)
     ASSERT_NOT_REACHED();
 }
 
-void MockMediaPlayerMediaSource::load(const String&, PassRefPtr<HTMLMediaSource> source)
+void MockMediaPlayerMediaSource::load(const String&, MediaSourcePrivateClient* source)
 {
     m_mediaSource = source;
     m_mediaSourcePrivate = MockMediaSourcePrivate::create(this);
@@ -166,9 +166,12 @@ double MockMediaPlayerMediaSource::maxTimeSeekableDouble() const
     return m_duration;
 }
 
-PassRefPtr<TimeRanges> MockMediaPlayerMediaSource::buffered() const
+std::unique_ptr<PlatformTimeRanges> MockMediaPlayerMediaSource::buffered() const
 {
-    return m_mediaSource ? m_mediaSource->buffered() : TimeRanges::create();
+    if (m_mediaSource)
+        return m_mediaSource->buffered();
+
+    return PlatformTimeRanges::create();
 }
 
 bool MockMediaPlayerMediaSource::didLoadingProgress() const
@@ -209,12 +212,16 @@ void MockMediaPlayerMediaSource::seekWithTolerance(double time, double negativeT
 
 void MockMediaPlayerMediaSource::advanceCurrentTime()
 {
-    RefPtr<TimeRanges> buffered = this->buffered();
+    if (!m_mediaSource)
+        return;
+
+    auto buffered = m_mediaSource->buffered();
     size_t pos = buffered->find(m_currentTime.toDouble());
     if (pos == notFound)
         return;
 
-    m_currentTime = MediaTime::createWithDouble(std::min(m_duration, buffered->end(pos, IGNORE_EXCEPTION)));
+    bool ignoreError;
+    m_currentTime = MediaTime::createWithDouble(std::min(m_duration, buffered->end(pos, ignoreError)));
     m_player->timeChanged();
 }
 

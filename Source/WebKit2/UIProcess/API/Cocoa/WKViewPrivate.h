@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,7 +40,22 @@
 - (id)initWithFrame:(NSRect)frame contextRef:(WKContextRef)contextRef pageGroupRef:(WKPageGroupRef)pageGroupRef relatedToPage:(WKPageRef)relatedPage;
 #endif
 
-#if !TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
+
+@property (nonatomic) CGSize minimumLayoutSizeOverride;
+
+// Define the inset of the scrollview unusable by the web page.
+@property (nonatomic, setter=_setObscuredInsets:) UIEdgeInsets _obscuredInsets;
+
+@property (nonatomic, setter=_setBackgroundExtendsBeyondPage:) BOOL _backgroundExtendsBeyondPage;
+
+// This is deprecated and should be removed entirely: <rdar://problem/16294704>.
+@property (readonly) UIColor *_pageExtendedBackgroundColor;
+
+- (void)_beginInteractiveObscuredInsetsChange;
+- (void)_endInteractiveObscuredInsetsChange;
+
+#else
 
 - (NSPrintOperation *)printOperationWithPrintInfo:(NSPrintInfo *)printInfo forFrame:(WKFrameRef)frameRef;
 - (BOOL)canChangeFrameLayout:(WKFrameRef)frameRef;
@@ -55,7 +70,6 @@
 - (void)enableFrameSizeUpdates;
 - (BOOL)frameSizeUpdatesDisabled;
 
-- (void)performDictionaryLookupAtCurrentMouseLocation;
 + (void)hideWordDefinitionWindow;
 
 @property (readwrite) CGFloat minimumLayoutWidth;
@@ -66,7 +80,9 @@
 @property (readonly, getter=isUsingUISideCompositing) BOOL usingUISideCompositing;
 @property (readwrite) BOOL allowsMagnification;
 @property (readwrite) double magnification;
+@property (readwrite) BOOL allowsBackForwardNavigationGestures;
 
+@property (readonly) NSColor *_pageExtendedBackgroundColor;
 @property(copy, nonatomic) NSColor *underlayColor;
 
 - (NSView*)fullScreenPlaceholderView;
@@ -84,6 +100,11 @@
 - (void)waitForAsyncDrawingAreaSizeUpdate;
 
 - (void)setMagnification:(double)magnification centeredAtPoint:(NSPoint)point;
+
+- (void)saveBackForwardSnapshotForCurrentItem;
+
+// Views must be layer-backed, have no transform applied, be in back-to-front z-order, and the whole set must be a contiguous opaque rectangle.
+- (void)_setCustomSwipeViews:(NSArray *)customSwipeViews;
 
 #endif
 

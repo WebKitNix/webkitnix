@@ -26,21 +26,11 @@
 #import "config.h"
 #import "WebInspectorProxy.h"
 
-#if ENABLE(INSPECTOR)
+#if PLATFORM(IOS) && ENABLE(INSPECTOR)
 
 #import <WebCore/NotImplemented.h>
 
 namespace WebKit {
-
-void WebInspectorProxy::createInspectorWindow()
-{
-    notImplemented();
-}
-
-void WebInspectorProxy::updateInspectorWindowTitle() const
-{
-    notImplemented();
-}
 
 WebPageProxy* WebInspectorProxy::platformCreateInspectorPage()
 {
@@ -84,11 +74,6 @@ void WebInspectorProxy::platformAppend(const String& suggestedURL, const String&
     notImplemented();
 }
 
-void WebInspectorProxy::inspectedViewFrameDidChange(CGFloat)
-{
-    notImplemented();
-}
-
 unsigned WebInspectorProxy::platformInspectedWindowHeight()
 {
     notImplemented();
@@ -127,6 +112,12 @@ String WebInspectorProxy::inspectorPageURL() const
     return String();
 }
 
+String WebInspectorProxy::inspectorTestPageURL() const
+{
+    notImplemented();
+    return String();
+}
+
 String WebInspectorProxy::inspectorBaseURL() const
 {
     notImplemented();
@@ -145,4 +136,4 @@ void WebInspectorProxy::platformAttachAvailabilityChanged(bool available)
 
 } // namespace WebKit
 
-#endif // ENABLE(INSPECTOR)
+#endif // PLATFORM(IOS) && ENABLE(INSPECTOR)

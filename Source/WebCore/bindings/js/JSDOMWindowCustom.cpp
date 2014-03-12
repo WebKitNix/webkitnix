@@ -42,8 +42,8 @@
 #endif
 
 #if ENABLE(IOS_TOUCH_EVENTS)
-#include "JSTouchConstructor.h"
-#include "JSTouchListConstructor.h"
+#include "JSTouchConstructorIOS.h"
+#include "JSTouchListConstructorIOS.h"
 #endif
 
 #if ENABLE(WEB_AUDIO)
@@ -72,24 +72,24 @@ void JSDOMWindow::visitChildren(JSCell* cell, SlotVisitor& visitor)
 }
 
 template<NativeFunction nativeFunction, int length>
-EncodedJSValue nonCachingStaticFunctionGetter(ExecState* exec, EncodedJSValue, EncodedJSValue, PropertyName propertyName)
+EncodedJSValue nonCachingStaticFunctionGetter(ExecState* exec, JSObject*, EncodedJSValue, PropertyName propertyName)
 {
     return JSValue::encode(JSFunction::create(exec->vm(), exec->lexicalGlobalObject(), length, propertyName.publicName(), nativeFunction));
 }
 
-static EncodedJSValue childFrameGetter(ExecState* exec, EncodedJSValue slotBase, EncodedJSValue, PropertyName propertyName)
+static EncodedJSValue childFrameGetter(ExecState* exec, JSObject* slotBase, EncodedJSValue, PropertyName propertyName)
 {
-    return JSValue::encode(toJS(exec, jsCast<JSDOMWindow*>(JSValue::decode(slotBase))->impl().frame()->tree().scopedChild(propertyNameToAtomicString(propertyName))->document()->domWindow()));
+    return JSValue::encode(toJS(exec, jsCast<JSDOMWindow*>(slotBase)->impl().frame()->tree().scopedChild(propertyNameToAtomicString(propertyName))->document()->domWindow()));
 }
 
-static EncodedJSValue indexGetter(ExecState* exec, EncodedJSValue slotBase, EncodedJSValue, unsigned index)
+static EncodedJSValue indexGetter(ExecState* exec, JSObject* slotBase, EncodedJSValue, unsigned index)
 {
-    return JSValue::encode(toJS(exec, jsCast<JSDOMWindow*>(JSValue::decode(slotBase))->impl().frame()->tree().scopedChild(index)->document()->domWindow()));
+    return JSValue::encode(toJS(exec, jsCast<JSDOMWindow*>(slotBase)->impl().frame()->tree().scopedChild(index)->document()->domWindow()));
 }
 
-static EncodedJSValue namedItemGetter(ExecState* exec, EncodedJSValue slotBase, EncodedJSValue, PropertyName propertyName)
+static EncodedJSValue namedItemGetter(ExecState* exec, JSObject* slotBase, EncodedJSValue, PropertyName propertyName)
 {
-    JSDOMWindowBase* thisObj = jsCast<JSDOMWindow*>(JSValue::decode(slotBase));
+    JSDOMWindowBase* thisObj = jsCast<JSDOMWindow*>(slotBase);
     Document* document = thisObj->impl().frame()->document();
 
     ASSERT(BindingSecurity::shouldAllowAccessToDOMWindow(exec, thisObj->impl()));
@@ -116,7 +116,7 @@ bool JSDOMWindow::getOwnPropertySlot(JSObject* object, ExecState* exec, Property
     // are not affected by properties changed on the Window or anything in its prototype chain.
     // This is consistent with the behavior of Firefox.
 
-    const HashEntry* entry;
+    const HashTableValue* entry;
 
     // We don't want any properties other than "close" and "closed" on a frameless window (i.e. one whose page got closed,
     // or whose iframe got removed).
@@ -344,7 +344,7 @@ void JSDOMWindow::put(JSCell* cell, ExecState* exec, PropertyName propertyName, 
         return;
     }
 
-    if (lookupPut(exec, propertyName, value, *s_info.propHashTable(exec), slot))
+    if (lookupPut(exec, propertyName, thisObject, value, *s_info.propHashTable(exec), slot))
         return;
 
     if (BindingSecurity::shouldAllowAccessToDOMWindow(exec, thisObject->impl()))

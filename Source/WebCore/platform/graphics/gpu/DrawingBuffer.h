@@ -39,7 +39,7 @@
 #include <wtf/Noncopyable.h>
 #include <wtf/OwnPtr.h>
 #include <wtf/PassOwnPtr.h>
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include <wtf/RetainPtr.h>
 #endif
 
@@ -117,11 +117,9 @@ public:
 
     void markContentsChanged() { m_contentsChanged = true; }
 
-#if USE(ACCELERATED_COMPOSITING)
     PlatformLayer* platformLayer();
     unsigned frontColorBuffer() const;
     void paintCompositedResultsToCanvas(ImageBuffer*);
-#endif
 
     GraphicsContext3D* graphicsContext3D() const { return m_context.get(); }
 
@@ -163,7 +161,7 @@ private:
     // True if our contents have been modified since the last presentation of this buffer.
     bool m_contentsChanged;
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     RetainPtr<WebGLLayer> m_platformLayer;
 #endif
 };

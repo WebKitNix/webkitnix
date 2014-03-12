@@ -31,6 +31,7 @@
 
 #import "WebKitLogging.h"
 #import "WebPreferenceKeysPrivate.h"
+#import "WebViewGroup.h"
 #import <WebCore/AlternativeTextUIController.h>
 #import <WebCore/WebCoreObjCExtras.h>
 #import <WebCore/HistoryItem.h>
@@ -46,7 +47,6 @@
 BOOL applicationIsTerminating = NO;
 int pluginDatabaseClientCount = 0;
 
-#if USE(ACCELERATED_COMPOSITING)
 void LayerFlushController::scheduleLayerFlush()
 {
     m_layerFlushScheduler.schedule();
@@ -70,7 +70,6 @@ WebViewLayerFlushScheduler::WebViewLayerFlushScheduler(LayerFlushController* flu
     , m_flushController(flushController)
 {
 }
-#endif
 
 @implementation WebViewPrivate
 

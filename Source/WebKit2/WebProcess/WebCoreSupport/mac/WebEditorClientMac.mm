@@ -30,6 +30,8 @@
 #import "config.h"
 #import "WebEditorClient.h"
 
+#if PLATFORM(MAC)
+
 #import "WebCoreArgumentCoders.h"
 #import "WebPage.h"
 #import "WebFrame.h"
@@ -44,8 +46,7 @@
 #import <WebCore/KeyboardEvent.h>
 #import <WebCore/NotImplemented.h>
 #import <WebCore/Page.h>
-#import <WebKit/WebResource.h>
-#import <WebKit/WebNSURLExtras.h>
+#import <WebCore/WebCoreNSURLExtras.h>
 
 using namespace WebCore;
 
@@ -53,7 +54,7 @@ using namespace WebCore;
 - (DOMDocumentFragment*)_documentFromRange:(NSRange)range document:(DOMDocument*)document documentAttributes:(NSDictionary *)dict subresources:(NSArray **)subresources;
 @end
 
-@interface WebResource (WebResourceInternal)
+@interface NSObject (WebResourceInternal)
 - (WebCore::ArchiveResource*)_coreResource;
 @end
 
@@ -61,31 +62,31 @@ namespace WebKit {
     
 void WebEditorClient::handleKeyboardEvent(KeyboardEvent* event)
 {
-    if (m_page->handleEditingKeyboardEvent(event, false))
+    if (m_page->handleEditingKeyboardEvent(event))
         event->setDefaultHandled();
 }
 
 void WebEditorClient::handleInputMethodKeydown(KeyboardEvent* event)
 {
-    if (m_page->handleEditingKeyboardEvent(event, true))
+    if (event->handledByInputMethod())
         event->setDefaultHandled();
 }
     
 NSString *WebEditorClient::userVisibleString(NSURL *url)
 {
-    return [url _web_userVisibleString];
+    return WebCore::userVisibleString(url);
 }
 
 NSURL *WebEditorClient::canonicalizeURL(NSURL *url)
 {
-    return [url _webkit_canonicalize];
+    return URLByCanonicalizingURL(url);
 }
 
 NSURL *WebEditorClient::canonicalizeURLString(NSString *URLString)
 {
     NSURL *URL = nil;
-    if ([URLString _webkit_looksLikeAbsoluteURL])
-        URL = [[NSURL _web_URLWithUserTypedString:URLString] _webkit_canonicalize];
+    if (looksLikeAbsoluteURL(URLString))
+        URL = URLByCanonicalizingURL(URLWithUserTypedString(URLString, nil));
     return URL;
 }
     
@@ -114,11 +115,13 @@ DocumentFragment* WebEditorClient::documentFragmentFromAttributedString(NSAttrib
     
     NSArray *subResources;
     Document* document = m_page->mainFrame()->document();
+
+    // FIXME: Isntead of calling this WebKit1 method, the code should be factored out and moved into WebCore.
     DOMDocumentFragment* fragment = [string _documentFromRange:NSMakeRange(0, [string length])
                                                       document:kit(document)
                                             documentAttributes:dictionary
                                                   subresources:&subResources];
-    for (WebResource* resource in subResources)
+    for (id resource in subResources)
         resources.append([resource _coreResource]);
 
     return core(fragment);
@@ -235,3 +238,5 @@ void WebEditorClient::toggleAutomaticSpellingCorrection()
 #endif // USE(AUTOMATIC_TEXT_REPLACEMENT)
 
 } // namespace WebKit
+
+#endif // PLATFORM(MAC)

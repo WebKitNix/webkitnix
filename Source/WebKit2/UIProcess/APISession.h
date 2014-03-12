@@ -27,25 +27,25 @@
 #define APISession_h
 
 #include "APIObject.h"
-#include "SessionTracker.h"
+#include <WebCore/SessionID.h>
 #include <wtf/PassRefPtr.h>
 
 namespace API {
 
 class Session : public API::ObjectImpl<API::Object::Type::Session> {
 public:
+    // FIXME: We can create sessions on demand, because we hardcode the fact that all sessions but the default one are ephemeral. We'll need to create them explicitly once sessions have more configuration options.
     static PassRefPtr<Session> create(bool isEphemeral);
     static Session& defaultSession();
     static Session& legacyPrivateSession();
     bool isEphemeral() const;
-    uint64_t getID() const;
+    WebCore::SessionID getID() const;
     virtual ~Session();
 
 private:
     explicit Session(bool isEphemeral);
-    Session(bool isEphemeral, uint64_t sessionID);
-    bool m_isEphemeral;
-    uint64_t m_sessionID;
+    explicit Session(WebCore::SessionID);
+    WebCore::SessionID m_sessionID;
 };
 
 } // namespace API

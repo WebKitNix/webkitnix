@@ -59,15 +59,11 @@ bool RemoteNetworkingContext::localFileContentSniffingEnabled() const
 
 NetworkStorageSession& RemoteNetworkingContext::storageSession() const
 {
-    if (m_privateBrowsingEnabled) {
-        NetworkStorageSession* privateSession = SessionTracker::session(SessionTracker::legacyPrivateSessionID).get();
-        if (privateSession)
-            return *privateSession;
-        // Some requests with private browsing mode requested may still be coming shortly after NetworkProcess was told to destroy its session.
-        // FIXME: Find a way to track private browsing sessions more rigorously.
-        LOG_ERROR("Private browsing was requested, but there was no session for it. Please file a bug unless you just disabled private browsing, in which case it's an expected race.");
-    }
-
+    NetworkStorageSession* session = SessionTracker::session(m_sessionID);
+    if (session)
+        return *session;
+    // Some requests may still be coming shortly after NetworkProcess was told to destroy its session.
+    LOG_ERROR("Invalid session ID. Please file a bug unless you just disabled private browsing, in which case it's an expected race.");
     return NetworkStorageSession::defaultStorageSession();
 }
 
@@ -81,13 +77,15 @@ ResourceError RemoteNetworkingContext::blockedError(const ResourceRequest& reque
     return WebKit::blockedError(request);
 }
 
-void RemoteNetworkingContext::ensurePrivateBrowsingSession(uint64_t sessionID)
+void RemoteNetworkingContext::ensurePrivateBrowsingSession(SessionID sessionID)
 {
+    ASSERT(sessionID.isEphemeral());
+
     if (SessionTracker::session(sessionID))
         return;
 
     ASSERT(!SessionTracker::getIdentifierBase().isNull());
-    SessionTracker::session(sessionID) = NetworkStorageSession::createPrivateBrowsingSession(SessionTracker::getIdentifierBase() + '.' + String::number(sessionID));
+    SessionTracker::setSession(sessionID, NetworkStorageSession::createPrivateBrowsingSession(SessionTracker::getIdentifierBase() + '.' + String::number(sessionID.sessionID())));
 }
 
 }

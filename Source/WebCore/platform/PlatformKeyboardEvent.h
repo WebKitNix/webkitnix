@@ -27,21 +27,18 @@
 #ifndef PlatformKeyboardEvent_h
 #define PlatformKeyboardEvent_h
 
+#include "KeypressCommand.h"
 #include "PlatformEvent.h"
 #include <wtf/WindowsExtras.h>
 #include <wtf/text/WTFString.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include <wtf/RetainPtr.h>
 OBJC_CLASS NSEvent;
 #endif
 
 #if PLATFORM(IOS)
-#ifdef __OBJC__
-@class WebEvent;
-#else
-class WebEvent;
-#endif
+OBJC_CLASS WebEvent;
 #endif
 
 #if PLATFORM(GTK)
@@ -64,6 +61,9 @@ namespace WebCore {
             , m_windowsVirtualKeyCode(0)
             , m_nativeVirtualKeyCode(0)
             , m_macCharCode(0)
+#if USE(APPKIT)
+            , m_handledByInputMethod(false)
+#endif
             , m_autoRepeat(false)
             , m_isKeypad(false)
             , m_isSystemKey(false)
@@ -81,6 +81,9 @@ namespace WebCore {
             , m_windowsVirtualKeyCode(windowsVirtualKeyCode)
             , m_nativeVirtualKeyCode(nativeVirtualKeyCode)
             , m_macCharCode(macCharCode)
+#if USE(APPKIT)
+            , m_handledByInputMethod(false)
+#endif
             , m_autoRepeat(isAutoRepeat)
             , m_isKeypad(isKeypad)
             , m_isSystemKey(isSystemKey)
@@ -112,6 +115,11 @@ namespace WebCore {
         int nativeVirtualKeyCode() const { return m_nativeVirtualKeyCode; }
         int macCharCode() const { return m_macCharCode; }
 
+#if USE(APPKIT)
+        bool handledByInputMethod() const { return m_handledByInputMethod; }
+        const Vector<KeypressCommand>& commands() const { return m_commands; }
+#endif
+
         bool isAutoRepeat() const { return m_autoRepeat; }
         bool isKeypad() const { return m_isKeypad; }
         bool isSystemKey() const { return m_isSystemKey; }
@@ -119,7 +127,7 @@ namespace WebCore {
         static bool currentCapsLockState();
         static void getCurrentModifierState(bool& shiftKey, bool& ctrlKey, bool& altKey, bool& metaKey);
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #if !PLATFORM(IOS)
         NSEvent* macEvent() const { return m_macEvent.get(); }
 #else
@@ -154,11 +162,15 @@ namespace WebCore {
         int m_windowsVirtualKeyCode;
         int m_nativeVirtualKeyCode;
         int m_macCharCode;
+#if USE(APPKIT)
+        bool m_handledByInputMethod;
+        Vector<KeypressCommand> m_commands;
+#endif
         bool m_autoRepeat;
         bool m_isKeypad;
         bool m_isSystemKey;
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #if !PLATFORM(IOS)
         RetainPtr<NSEvent> m_macEvent;
 #else

@@ -36,7 +36,6 @@
 #include "SharedWorker.h"
 
 #include "ExceptionCode.h"
-#include "FeatureObserver.h"
 #include "InspectorInstrumentation.h"
 #include "URL.h"
 #include "MessageChannel.h"
@@ -60,13 +59,11 @@ PassRefPtr<SharedWorker> SharedWorker::create(ScriptExecutionContext& context, c
     ASSERT_WITH_SECURITY_IMPLICATION(context.isDocument());
     Document& document = static_cast<Document&>(context);
 
-    FeatureObserver::observe(document.domWindow(), FeatureObserver::SharedWorkerStart);
-
     RefPtr<SharedWorker> worker = adoptRef(new SharedWorker(context));
 
     RefPtr<MessageChannel> channel = MessageChannel::create(context);
     worker->m_port = channel->port1();
-    OwnPtr<MessagePortChannel> remotePort = channel->port2()->disentangle();
+    std::unique_ptr<MessagePortChannel> remotePort = channel->port2()->disentangle();
     ASSERT(remotePort);
 
     worker->suspendIfNeeded();
@@ -80,7 +77,7 @@ PassRefPtr<SharedWorker> SharedWorker::create(ScriptExecutionContext& context, c
         return 0;
     }
 
-    SharedWorkerRepository::connect(worker.get(), remotePort.release(), scriptURL, name, ec);
+    SharedWorkerRepository::connect(worker.get(), std::move(remotePort), scriptURL, name, ec);
 
     return worker.release();
 }

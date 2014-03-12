@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,42 +31,57 @@
 #include "CodeBlock.h"
 #include "DFGCommon.h"
 #include "Interpreter.h"
+#include "JSCInlines.h"
+#include "Options.h"
 
 namespace JSC { namespace DFG {
 
-#if ENABLE(DFG_JIT)
+bool isSupported(CodeBlock* codeBlock)
+{
+    return Options::useDFGJIT()
+        && MacroAssembler::supportsFloatingPoint()
+        && Options::bytecodeRangeToDFGCompile().isInRange(codeBlock->instructionCount());
+}
+
 bool mightCompileEval(CodeBlock* codeBlock)
 {
-    return codeBlock->instructionCount() <= Options::maximumOptimizationCandidateInstructionCount();
+    return isSupported(codeBlock)
+        && codeBlock->instructionCount() <= Options::maximumOptimizationCandidateInstructionCount();
 }
 bool mightCompileProgram(CodeBlock* codeBlock)
 {
-    return codeBlock->instructionCount() <= Options::maximumOptimizationCandidateInstructionCount();
+    return isSupported(codeBlock)
+        && codeBlock->instructionCount() <= Options::maximumOptimizationCandidateInstructionCount();
 }
 bool mightCompileFunctionForCall(CodeBlock* codeBlock)
 {
-    return codeBlock->instructionCount() <= Options::maximumOptimizationCandidateInstructionCount();
+    return isSupported(codeBlock)
+        && codeBlock->instructionCount() <= Options::maximumOptimizationCandidateInstructionCount();
 }
 bool mightCompileFunctionForConstruct(CodeBlock* codeBlock)
 {
-    return codeBlock->instructionCount() <= Options::maximumOptimizationCandidateInstructionCount();
+    return isSupported(codeBlock)
+        && codeBlock->instructionCount() <= Options::maximumOptimizationCandidateInstructionCount();
 }
 
 bool mightInlineFunctionForCall(CodeBlock* codeBlock)
 {
-    return codeBlock->instructionCount() <= Options::maximumFunctionForCallInlineCandidateInstructionCount()
+    return isSupported(codeBlock) 
+        && codeBlock->instructionCount() <= Options::maximumFunctionForCallInlineCandidateInstructionCount()
         && !codeBlock->ownerExecutable()->needsActivation()
         && codeBlock->ownerExecutable()->isInliningCandidate();
 }
 bool mightInlineFunctionForClosureCall(CodeBlock* codeBlock)
 {
-    return codeBlock->instructionCount() <= Options::maximumFunctionForClosureCallInlineCandidateInstructionCount()
+    return isSupported(codeBlock) 
+        && codeBlock->instructionCount() <= Options::maximumFunctionForClosureCallInlineCandidateInstructionCount()
         && !codeBlock->ownerExecutable()->needsActivation()
         && codeBlock->ownerExecutable()->isInliningCandidate();
 }
 bool mightInlineFunctionForConstruct(CodeBlock* codeBlock)
 {
-    return codeBlock->instructionCount() <= Options::maximumFunctionForConstructInlineCandidateInstructionCount()
+    return isSupported(codeBlock) 
+        && codeBlock->instructionCount() <= Options::maximumFunctionForConstructInlineCandidateInstructionCount()
         && !codeBlock->ownerExecutable()->needsActivation()
         && codeBlock->ownerExecutable()->isInliningCandidate();
 }
@@ -100,9 +115,9 @@ CapabilityLevel capabilityLevel(OpcodeID opcodeID, CodeBlock* codeBlock, Instruc
     case op_mul:
     case op_mod:
     case op_div:
-#if ENABLE(DEBUG_WITH_BREAKPOINT)
     case op_debug:
-#endif
+    case op_profile_will_call:
+    case op_profile_did_call:
     case op_mov:
     case op_captured_mov:
     case op_check_has_instance:
@@ -196,8 +211,11 @@ CapabilityLevel capabilityLevel(OpcodeID opcodeID, CodeBlock* codeBlock, Instruc
     }
 
     case op_call_varargs:
-        if (codeBlock->usesArguments() && pc[4].u.operand == codeBlock->argumentsRegister().offset())
+        if (codeBlock->usesArguments() && pc[4].u.operand == codeBlock->argumentsRegister().offset()
+            && !pc[6].u.operand)
             return CanInline;
+        // FIXME: We should handle this.
+        // https://bugs.webkit.org/show_bug.cgi?id=127626
         return CannotCompile;
 
     case op_new_regexp: 
@@ -243,8 +261,6 @@ CapabilityLevel capabilityLevel(CodeBlock* codeBlock)
     
     return result;
 }
-
-#endif
 
 } } // namespace JSC::DFG
 

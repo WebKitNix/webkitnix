@@ -39,8 +39,6 @@
 
 namespace WebCore {
 
-class FloatRect;
-
 class LayoutRect {
 public:
     LayoutRect() { }
@@ -216,7 +214,7 @@ inline IntRect pixelSnappedIntRect(const LayoutRect& rect)
 
 IntRect enclosingIntRect(const LayoutRect&);
 LayoutRect enclosingLayoutRect(const FloatRect&);
-
+FloatRect enclosingRectForPainting(const LayoutRect&, float pixelSnappingFactor);
 
 inline IntRect pixelSnappedIntRect(LayoutUnit left, LayoutUnit top, LayoutUnit width, LayoutUnit height)
 {
@@ -231,6 +229,22 @@ inline IntRect pixelSnappedIntRectFromEdges(LayoutUnit left, LayoutUnit top, Lay
 inline IntRect pixelSnappedIntRect(LayoutPoint location, LayoutSize size)
 {
     return IntRect(roundedIntPoint(location), pixelSnappedIntSize(size, location));
+}
+
+inline FloatRect pixelSnappedForPainting(const LayoutRect& rect, float pixelSnappingFactor)
+{
+#if ENABLE(SUBPIXEL_LAYOUT)
+    return FloatRect(roundToDevicePixel(rect.x(), pixelSnappingFactor), roundToDevicePixel(rect.y(), pixelSnappingFactor),
+        snapSizeToDevicePixel(rect.width(), rect.x(), pixelSnappingFactor), snapSizeToDevicePixel(rect.height(), rect.y(), pixelSnappingFactor));
+#else
+    UNUSED_PARAM(pixelSnappingFactor);
+    return FloatRect(rect);
+#endif
+}
+
+inline FloatRect pixelSnappedForPainting(LayoutUnit x, LayoutUnit y, LayoutUnit width, LayoutUnit height, float pixelSnappingFactor)
+{
+    return pixelSnappedForPainting(LayoutRect(x, y, width, height), pixelSnappingFactor);
 }
 
 } // namespace WebCore

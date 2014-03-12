@@ -28,7 +28,7 @@
 #include "Filter.h"
 #include "ImageBuffer.h"
 #include "TextStream.h"
-#include <runtime/Operations.h>
+#include <runtime/JSCInlines.h>
 #include <runtime/TypedArrayInlines.h>
 #include <runtime/Uint8ClampedArray.h>
 
@@ -37,6 +37,8 @@
 #endif
 
 namespace WebCore {
+
+static const float kMaxFilterArea = 4096 * 4096;
 
 FilterEffect::FilterEffect(Filter* filter)
     : m_alphaImage(false)
@@ -56,10 +58,15 @@ FilterEffect::~FilterEffect()
 {
 }
 
-inline bool isFilterSizeValid(IntRect rect)
+float FilterEffect::maxFilterArea()
 {
-    if (rect.width() < 0 || rect.width() > kMaxFilterSize
-        || rect.height() < 0 || rect.height() > kMaxFilterSize)
+    return kMaxFilterArea;
+}
+
+bool FilterEffect::isFilterSizeValid(const FloatRect& rect)
+{
+    if (rect.width() < 0 || rect.height() < 0
+        || (rect.height() * rect.width() > kMaxFilterArea))
         return false;
     return true;
 }

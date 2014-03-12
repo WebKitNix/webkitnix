@@ -30,7 +30,7 @@
 #include "WebSocketServerConnection.h"
 #include <WebCore/SocketStreamHandle.h>
 #include <wtf/PassOwnPtr.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 #include <wtf/text/CString.h>
 
 

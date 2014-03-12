@@ -31,6 +31,7 @@
 #include "CodeBlock.h"
 #include "DFGJITCode.h"
 #include "Executable.h"
+#include "JSCInlines.h"
 
 namespace JSC { namespace DFG {
 
@@ -84,6 +85,8 @@ void ToFTLDeferredCompilationCallback::compilationDidComplete(
     
     m_dfgCodeBlock->jitCode()->dfg()->setOptimizationThresholdBasedOnCompilationResult(
         m_dfgCodeBlock.get(), result);
+
+    DeferredCompilationCallback::compilationDidComplete(codeBlock, result);
 }
 
 } } // JSC::DFG

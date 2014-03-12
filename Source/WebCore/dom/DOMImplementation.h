@@ -26,6 +26,7 @@
 
 #include "Document.h"
 #include "MediaPlayer.h"
+#include <memory>
 #include <wtf/Forward.h>
 #include <wtf/PassRefPtr.h>
 #include <wtf/RefCounted.h>
@@ -38,14 +39,14 @@ class DocumentType;
 class Frame;
 class HTMLDocument;
 class URL;
-class RegularExpression;
 
 typedef int ExceptionCode;
 
 class DOMImplementation : public ScriptWrappable {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    static PassOwnPtr<DOMImplementation> create(Document& document) { return adoptPtr(new DOMImplementation(document)); }
+    explicit DOMImplementation(Document&);
+
     
     void ref() { m_document.ref(); }
     void deref() { m_document.deref(); }
@@ -65,14 +66,12 @@ public:
     PassRefPtr<HTMLDocument> createHTMLDocument(const String& title);
 
     // Other methods (not part of DOM)
-    static PassRefPtr<Document> createDocument(const String& MIMEType, Frame*, const URL&, bool inViewSourceMode);
+    static PassRefPtr<Document> createDocument(const String& MIMEType, Frame*, const URL&);
 
     static bool isXMLMIMEType(const String& MIMEType);
     static bool isTextMIMEType(const String& MIMEType);
 
 private:
-    explicit DOMImplementation(Document&);
-
     Document& m_document;
 };
 

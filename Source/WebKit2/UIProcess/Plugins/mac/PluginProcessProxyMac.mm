@@ -33,15 +33,13 @@
 #import "PluginProcessCreationParameters.h"
 #import "PluginProcessMessages.h"
 #import "WebKitSystemInterface.h"
+#import <QuartzCore/CARemoteLayerServer.h>
 #import <WebCore/FileSystem.h>
 #import <WebCore/URL.h>
-#import <WebCore/RuntimeApplicationChecks.h>
 #import <crt_externs.h>
 #import <mach-o/dyld.h>
 #import <spawn.h>
 #import <wtf/text/CString.h>
-
-#import <QuartzCore/CARemoteLayerServer.h>
 
 @interface WKPlaceholderModalWindow : NSWindow 
 @end
@@ -69,8 +67,12 @@ bool PluginProcessProxy::pluginNeedsExecutableHeap(const PluginModuleInfo& plugi
     
     if (pluginInfo.bundleIdentifier == "com.apple.QuickTime Plugin.plugin")
         return false;
-    
-    return true;
+
+    // We only allow 32-bit plug-ins to have the heap marked executable.
+    if (pluginInfo.pluginArchitecture == CPU_TYPE_X86)
+        return true;
+
+    return false;
 }
 
 bool PluginProcessProxy::createPropertyListFile(const PluginModuleInfo& plugin)
@@ -129,10 +131,6 @@ static bool shouldUseXPC()
         return [value boolValue];
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
-    // FIXME: Temporary workaround for <rdar://problem/13236883>
-    if (applicationIsSafari())
-        return false;
-
     return true;
 #else
     return false;
@@ -149,7 +147,8 @@ void PluginProcessProxy::platformGetLaunchOptions(ProcessLauncher::LaunchOptions
     if (pluginProcessAttributes.sandboxPolicy == PluginProcessSandboxPolicyUnsandboxed)
         launchOptions.extraInitializationData.add("disable-sandbox", "1");
 
-    launchOptions.useXPC = shouldUseXPC();
+    // FIXME: We should still use XPC for plug-ins that want the heap to be executable, see <rdar://problem/16059483>.
+    launchOptions.useXPC = shouldUseXPC() && !launchOptions.executableHeap;
 }
 
 void PluginProcessProxy::platformInitializePluginProcess(PluginProcessCreationParameters& parameters)
@@ -157,7 +156,7 @@ void PluginProcessProxy::platformInitializePluginProcess(PluginProcessCreationPa
     // For now only Flash is known to behave with asynchronous plug-in initialization.
     parameters.supportsAsynchronousPluginInitialization = m_pluginProcessAttributes.moduleInfo.bundleIdentifier == "com.macromedia.Flash Player.plugin";
 
-#if USE(ACCELERATED_COMPOSITING) && HAVE(HOSTED_CORE_ANIMATION)
+#if HAVE(HOSTED_CORE_ANIMATION)
     mach_port_t renderServerPort = [[CARemoteLayerServer sharedServer] serverPort];
     if (renderServerPort != MACH_PORT_NULL)
         parameters.acceleratedCompositingPort = IPC::MachPort(renderServerPort, MACH_MSG_TYPE_COPY_SEND);
@@ -461,6 +460,18 @@ void PluginProcessProxy::openFile(const String& fullPath, bool& result)
 
     result = true;
     [[NSWorkspace sharedWorkspace] openFile:fullPath];
+}
+
+int pluginProcessLatencyQOS()
+{
+    static int qos = [[NSUserDefaults standardUserDefaults] integerForKey:@"WebKitPluginProcessLatencyQOS"];
+    return qos;
+}
+
+int pluginProcessThroughputQOS()
+{
+    static int qos = [[NSUserDefaults standardUserDefaults] integerForKey:@"WebKitPluginProcessThroughputQOS"];
+    return qos;
 }
 
 } // namespace WebKit

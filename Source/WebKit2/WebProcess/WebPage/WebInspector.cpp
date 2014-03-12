@@ -38,6 +38,7 @@
 #include <WebCore/MainFrame.h>
 #include <WebCore/Page.h>
 #include <WebCore/ScriptController.h>
+#include <inspector/InspectorAgentBase.h>
 #include <bindings/ScriptValue.h>
 #include <wtf/text/StringConcatenate.h>
 
@@ -52,10 +53,10 @@ PassRefPtr<WebInspector> WebInspector::create(WebPage* page, InspectorFrontendCh
 
 WebInspector::WebInspector(WebPage* page, InspectorFrontendChannel* frontendChannel)
     : m_page(page)
-    , m_inspectorPage(0)
-    , m_frontendClient(0)
+    , m_inspectorPage(nullptr)
+    , m_frontendClient(nullptr)
     , m_frontendChannel(frontendChannel)
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     , m_hasLocalizedStringsURL(false)
 #endif
 #if ENABLE(INSPECTOR_SERVER)
@@ -68,7 +69,7 @@ WebInspector::WebInspector(WebPage* page, InspectorFrontendChannel* frontendChan
 WebPage* WebInspector::createInspectorPage()
 {
     if (!m_page)
-        return 0;
+        return nullptr;
 
     ASSERT(!m_inspectorPage);
     ASSERT(!m_frontendClient);
@@ -79,11 +80,41 @@ WebPage* WebInspector::createInspectorPage()
     if (!WebProcess::shared().parentProcessConnection()->sendSync(Messages::WebInspectorProxy::CreateInspectorPage(),
             Messages::WebInspectorProxy::CreateInspectorPage::Reply(inspectorPageID, parameters),
             m_page->pageID(), std::chrono::milliseconds::max())) {
-        return 0;
+        return nullptr;
     }
 
     if (!inspectorPageID)
-        return 0;
+        return nullptr;
+
+    WebProcess::shared().createWebPage(inspectorPageID, parameters);
+    m_inspectorPage = WebProcess::shared().webPage(inspectorPageID);
+    ASSERT(m_inspectorPage);
+
+    auto frontendClient = std::make_unique<WebInspectorFrontendClient>(m_page, m_inspectorPage);
+    m_frontendClient = frontendClient.get();
+    m_inspectorPage->corePage()->inspectorController().setInspectorFrontendClient(std::move(frontendClient));
+    return m_inspectorPage;
+}
+
+WebPage* WebInspector::createInspectorPageForTest()
+{
+    if (!m_page)
+        return nullptr;
+
+    ASSERT(!m_inspectorPage);
+    ASSERT(!m_frontendClient);
+
+    uint64_t inspectorPageID = 0;
+    WebPageCreationParameters parameters;
+
+    if (!WebProcess::shared().parentProcessConnection()->sendSync(Messages::WebInspectorProxy::CreateInspectorPageForTest(),
+            Messages::WebInspectorProxy::CreateInspectorPageForTest::Reply(inspectorPageID, parameters),
+            m_page->pageID(), std::chrono::milliseconds::max())) {
+        return nullptr;
+    }
+
+    if (!inspectorPageID)
+        return nullptr;
 
     WebProcess::shared().createWebPage(inspectorPageID, parameters);
     m_inspectorPage = WebProcess::shared().webPage(inspectorPageID);
@@ -97,9 +128,9 @@ WebPage* WebInspector::createInspectorPage()
 
 void WebInspector::destroyInspectorPage()
 {
-    m_inspectorPage = 0;
-    m_frontendClient = 0;
-    m_frontendChannel = 0;
+    m_inspectorPage = nullptr;
+    m_frontendClient = nullptr;
+    m_frontendChannel = nullptr;
 }
 
 // Called from WebInspectorFrontendClient
@@ -232,49 +263,39 @@ void WebInspector::showMainResourceForFrame(uint64_t frameID)
 
 void WebInspector::startJavaScriptDebugging()
 {
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     m_page->corePage()->inspectorController().show();
     if (m_frontendClient)
         m_frontendClient->setDebuggingEnabled(true);
-#endif
 }
 
 void WebInspector::stopJavaScriptDebugging()
 {
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     m_page->corePage()->inspectorController().show();
     if (m_frontendClient)
         m_frontendClient->setDebuggingEnabled(false);
-#endif
 }
 
 void WebInspector::setJavaScriptProfilingEnabled(bool enabled)
 {
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     m_page->corePage()->inspectorController().show();
     if (!m_frontendClient)
         return;
 
     m_page->corePage()->inspectorController().setProfilerEnabled(enabled);
-#endif
 }
 
 void WebInspector::startJavaScriptProfiling()
 {
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     m_page->corePage()->inspectorController().show();
     if (m_frontendClient)
         m_frontendClient->startProfilingJavaScript();
-#endif
 }
 
 void WebInspector::stopJavaScriptProfiling()
 {
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     m_page->corePage()->inspectorController().show();
     if (m_frontendClient)
         m_frontendClient->stopProfilingJavaScript();
-#endif
 }
 
 void WebInspector::startPageProfiling()
@@ -326,7 +347,7 @@ void WebInspector::remoteFrontendConnected()
 void WebInspector::remoteFrontendDisconnected()
 {
     ASSERT(m_remoteFrontendConnected);
-    m_page->corePage()->inspectorController().disconnectFrontend();
+    m_page->corePage()->inspectorController().disconnectFrontend(Inspector::InspectorDisconnectReason::InspectorDestroyed);
     m_remoteFrontendConnected = false;
 }
 #endif

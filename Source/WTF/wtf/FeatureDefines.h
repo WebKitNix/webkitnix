@@ -60,10 +60,6 @@
 #define ENABLE_ASYNC_SCROLLING 1
 #endif
 
-#if !defined(ENABLE_8BIT_TEXTRUN)
-#define ENABLE_8BIT_TEXTRUN 1
-#endif
-
 #if !defined(ENABLE_CONTEXT_MENUS)
 #define ENABLE_CONTEXT_MENUS 0
 #endif
@@ -132,10 +128,6 @@
 #define ENABLE_REMOTE_INSPECTOR 1
 #endif
 
-#if !defined(ENABLE_REPAINT_THROTTLING)
-#define ENABLE_REPAINT_THROTTLING 0
-#endif
-
 #if !defined(ENABLE_RESPECT_EXIF_ORIENTATION)
 #define ENABLE_RESPECT_EXIF_ORIENTATION 1
 #endif
@@ -167,11 +159,7 @@
 #endif /* PLATFORM(IOS) */
 
 /* --------- Apple MAC port (not IOS) --------- */
-#if PLATFORM(MAC) && !PLATFORM(IOS)
-
-#if !defined(ENABLE_8BIT_TEXTRUN)
-#define ENABLE_8BIT_TEXTRUN 1
-#endif
+#if PLATFORM(MAC)
 
 #if !defined(ENABLE_CSS_IMAGE_SET)
 #define ENABLE_CSS_IMAGE_SET 1
@@ -248,7 +236,7 @@
 #define ENABLE_MEDIA_SOURCE 1
 #endif
 
-#endif /* PLATFORM(MAC) && !PLATFORM(IOS) */
+#endif /* PLATFORM(MAC) */
 
 /* --------- Apple Windows port --------- */
 #if PLATFORM(WIN) && !OS(WINCE) && !PLATFORM(WIN_CAIRO)
@@ -295,10 +283,6 @@
 #define ENABLE_VIEW_MODE_CSS_MEDIA 0
 #endif
 
-#if !defined(ENABLE_WEBGL)
-#define ENABLE_WEBGL 1
-#endif
-
 #endif /* PLATFORM(WIN_CAIRO) */
 
 /* --------- NIX port (Unix) --------- */
@@ -317,10 +301,6 @@
 #define ENABLE_SUBPIXEL_LAYOUT 1
 #endif
 
-#if !defined(ENABLE_8BIT_TEXTRUN)
-#define ENABLE_8BIT_TEXTRUN 1
-#endif
-
 #endif /* PLATFORM(EFL) */
 
 /* --------- Gtk port (Unix, Windows, Mac) --------- */
@@ -332,8 +312,8 @@
 #endif
 #endif
 
-#if !defined(ENABLE_8BIT_TEXTRUN)
-#define ENABLE_8BIT_TEXTRUN 1
+#if !defined(ENABLE_SUBPIXEL_LAYOUT)
+#define ENABLE_SUBPIXEL_LAYOUT 1
 #endif
 
 #endif /* PLATFORM(GTK) */
@@ -343,10 +323,6 @@
 
 #if !defined(ENABLE_3D_RENDERING)
 #define ENABLE_3D_RENDERING 0
-#endif
-
-#if !defined(ENABLE_8BIT_TEXTRUN)
-#define ENABLE_8BIT_TEXTRUN 0
 #endif
 
 #if !defined(ENABLE_ACCELERATED_2D_CANVAS)
@@ -421,10 +397,6 @@
 #define ENABLE_CSS_IMAGE_SET 0
 #endif
 
-#if !defined(ENABLE_CSS_SHADERS)
-#define ENABLE_CSS_SHADERS 0
-#endif
-
 #if !defined(ENABLE_CSS_STICKY_POSITION)
 #define ENABLE_CSS_STICKY_POSITION 0
 #endif
@@ -465,16 +437,8 @@
 #define ENABLE_DEVICE_ORIENTATION 0
 #endif
 
-#if !defined(ENABLE_DIRECTORY_UPLOAD)
-#define ENABLE_DIRECTORY_UPLOAD 0
-#endif
-
 #if !defined(ENABLE_DOWNLOAD_ATTRIBUTE)
 #define ENABLE_DOWNLOAD_ATTRIBUTE 0
-#endif
-
-#if !defined(ENABLE_DRAGGABLE_REGION)
-#define ENABLE_DRAGGABLE_REGION 0
 #endif
 
 #if !defined(ENABLE_DRAG_SUPPORT)
@@ -527,10 +491,6 @@
 
 #if !defined(ENABLE_ICONDATABASE)
 #define ENABLE_ICONDATABASE 1
-#endif
-
-#if !defined(ENABLE_IFRAME_SEAMLESS)
-#define ENABLE_IFRAME_SEAMLESS 1
 #endif
 
 #if !defined(ENABLE_IMAGE_DECODER_DOWN_SAMPLING)
@@ -587,10 +547,6 @@
 #define ENABLE_INSPECTOR 1
 #endif
 
-#if !defined(ENABLE_JAVASCRIPT_DEBUGGER)
-#define ENABLE_JAVASCRIPT_DEBUGGER 1
-#endif
-
 #if !defined(ENABLE_JAVASCRIPT_I18N_API)
 #define ENABLE_JAVASCRIPT_I18N_API 0
 #endif
@@ -605,10 +561,6 @@
 
 #if !defined(ENABLE_LEGACY_VENDOR_PREFIXES)
 #define ENABLE_LEGACY_VENDOR_PREFIXES 0
-#endif
-
-#if !defined(ENABLE_LEGACY_VIEWPORT_ADAPTION)
-#define ENABLE_LEGACY_VIEWPORT_ADAPTION 0
 #endif
 
 #if !defined(ENABLE_LETTERPRESS)
@@ -729,10 +681,6 @@
 #define ENABLE_QUOTA 0
 #endif
 
-#if !defined(ENABLE_REPAINT_THROTTLING)
-#define ENABLE_REPAINT_THROTTLING 0
-#endif
-
 #if !defined(ENABLE_REMOTE_INSPECTOR)
 #define ENABLE_REMOTE_INSPECTOR 0
 #endif
@@ -751,10 +699,6 @@
 
 #if !defined(ENABLE_SCRIPTED_SPEECH)
 #define ENABLE_SCRIPTED_SPEECH 0
-#endif
-
-#if !defined(ENABLE_SHADOW_DOM)
-#define ENABLE_SHADOW_DOM 0
 #endif
 
 #if !defined(ENABLE_SHARED_WORKERS)
@@ -781,14 +725,8 @@
 #define ENABLE_SUBPIXEL_LAYOUT 0
 #endif
 
-#if !defined(ENABLE_SVG)
-#define ENABLE_SVG 1
-#endif
-
-#if ENABLE(SVG)
 #if !defined(ENABLE_SVG_FONTS)
 #define ENABLE_SVG_FONTS 1
-#endif
 #endif
 
 #if !defined(ENABLE_TEMPLATE_ELEMENT)
@@ -867,6 +805,10 @@
 #define ENABLE_WEB_TIMING 0
 #endif
 
+#if !defined(ENABLE_WILL_REVEAL_EDGE_EVENTS)
+#define ENABLE_WILL_REVEAL_EDGE_EVENTS 1
+#endif
+
 #if !defined(ENABLE_XHR_TIMEOUT)
 #define ENABLE_XHR_TIMEOUT 0
 #endif
@@ -881,16 +823,8 @@
 #error "ENABLE(SATURATED_LAYOUT_ARITHMETIC) requires ENABLE(SUBPIXEL_LAYOUT)"
 #endif
 
-#if ENABLE(SVG_FONTS) && !ENABLE(SVG)
-#error "ENABLE(SVG_FONTS) requires ENABLE(SVG)"
-#endif
-
 #if ENABLE(VIDEO_TRACK) && !ENABLE(VIDEO)
 #error "ENABLE(VIDEO_TRACK) requires ENABLE(VIDEO)"
-#endif
-
-#if ENABLE(CSS_SHADERS) && !ENABLE(WEBGL)
-#error "ENABLE(CSS_SHADERS) requires ENABLE(WEBGL)"
 #endif
 
 #if ENABLE(REMOTE_INSPECTOR) && !ENABLE(INSPECTOR)

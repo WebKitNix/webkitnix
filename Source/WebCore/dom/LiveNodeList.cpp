@@ -57,16 +57,6 @@ template <> inline bool isMatchingElement(const ClassNodeList* nodeList, Element
     return nodeList->nodeMatchesInlined(element);
 }
 
-ALWAYS_INLINE Element* LiveNodeList::iterateForPreviousElement(Element* current) const
-{
-    ContainerNode& rootNode = this->rootNode();
-    for (; current; current = ElementTraversal::previous(current, &rootNode)) {
-        if (isMatchingElement(static_cast<const LiveNodeList*>(this), current))
-            return current;
-    }
-    return 0;
-}
-
 template <class NodeListType>
 inline Element* firstMatchingElement(const NodeListType* nodeList, ContainerNode& root)
 {
@@ -77,10 +67,28 @@ inline Element* firstMatchingElement(const NodeListType* nodeList, ContainerNode
 }
 
 template <class NodeListType>
+inline Element* lastMatchingElement(const NodeListType* nodeList, ContainerNode& root)
+{
+    Element* element = ElementTraversal::lastWithin(&root);
+    while (element && !isMatchingElement(nodeList, element))
+        element = ElementTraversal::previous(element, &root);
+    return element;
+}
+
+template <class NodeListType>
 inline Element* nextMatchingElement(const NodeListType* nodeList, Element* current, ContainerNode& root)
 {
     do {
         current = ElementTraversal::next(current, &root);
+    } while (current && !isMatchingElement(nodeList, current));
+    return current;
+}
+
+template <class NodeListType>
+inline Element* previousMatchingElement(const NodeListType* nodeList, Element* current, ContainerNode& root)
+{
+    do {
+        current = ElementTraversal::previous(current, &root);
     } while (current && !isMatchingElement(nodeList, current));
     return current;
 }
@@ -97,40 +105,56 @@ inline Element* traverseMatchingElementsForward(const NodeListType* nodeList, El
     return element;
 }
 
+template <class NodeListType>
+inline Element* traverseMatchingElementsBackward(const NodeListType* nodeList, Element& current, unsigned count, ContainerNode& root)
+{
+    Element* element = &current;
+    for (; count; --count) {
+        element = previousMatchingElement(nodeList, element, root);
+        if (!element)
+            return nullptr;
+    }
+    return element;
+}
+
 Element* LiveNodeList::collectionFirst() const
 {
     auto& root = rootNode();
-    if (type() == HTMLTagNodeListType)
+    if (type() == Type::HTMLTagNodeListType)
         return firstMatchingElement(static_cast<const HTMLTagNodeList*>(this), root);
-    if (type() == ClassNodeListType)
+    if (type() == Type::ClassNodeListType)
         return firstMatchingElement(static_cast<const ClassNodeList*>(this), root);
     return firstMatchingElement(static_cast<const LiveNodeList*>(this), root);
 }
 
 Element* LiveNodeList::collectionLast() const
 {
-    // FIXME: This should be optimized similarly to the forward case.
-    return iterateForPreviousElement(ElementTraversal::lastWithin(&rootNode()));
+    auto& root = rootNode();
+    if (type() == Type::HTMLTagNodeListType)
+        return lastMatchingElement(static_cast<const HTMLTagNodeList*>(this), root);
+    if (type() == Type::ClassNodeListType)
+        return lastMatchingElement(static_cast<const ClassNodeList*>(this), root);
+    return lastMatchingElement(static_cast<const LiveNodeList*>(this), root);
 }
 
 Element* LiveNodeList::collectionTraverseForward(Element& current, unsigned count, unsigned& traversedCount) const
 {
     auto& root = rootNode();
-    if (type() == HTMLTagNodeListType)
+    if (type() == Type::HTMLTagNodeListType)
         return traverseMatchingElementsForward(static_cast<const HTMLTagNodeList*>(this), current, count, traversedCount, root);
-    if (type() == ClassNodeListType)
+    if (type() == Type::ClassNodeListType)
         return traverseMatchingElementsForward(static_cast<const ClassNodeList*>(this), current, count, traversedCount, root);
     return traverseMatchingElementsForward(static_cast<const LiveNodeList*>(this), current, count, traversedCount, root);
 }
 
 Element* LiveNodeList::collectionTraverseBackward(Element& current, unsigned count) const
 {
-    // FIXME: This should be optimized similarly to the forward case.
     auto& root = rootNode();
-    Element* element = &current;
-    for (; count && element ; --count)
-        element = iterateForPreviousElement(ElementTraversal::previous(element, &root));
-    return element;
+    if (type() == Type::HTMLTagNodeListType)
+        return traverseMatchingElementsBackward(static_cast<const HTMLTagNodeList*>(this), current, count, root);
+    if (type() == Type::ClassNodeListType)
+        return traverseMatchingElementsBackward(static_cast<const ClassNodeList*>(this), current, count, root);
+    return traverseMatchingElementsBackward(static_cast<const LiveNodeList*>(this), current, count, root);
 }
 
 unsigned LiveNodeList::length() const
@@ -143,8 +167,16 @@ Node* LiveNodeList::item(unsigned offset) const
     return m_indexCache.nodeAt(*this, offset);
 }
 
-void LiveNodeList::invalidateCache() const
+size_t LiveNodeList::memoryCost() const
 {
+    return m_indexCache.memoryCost();
+}
+
+void LiveNodeList::invalidateCache(Document& document) const
+{
+    if (!m_indexCache.hasValidCache())
+        return;
+    document.unregisterNodeList(const_cast<LiveNodeList&>(*this));
     m_indexCache.invalidate();
 }
 

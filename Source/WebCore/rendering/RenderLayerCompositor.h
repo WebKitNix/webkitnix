@@ -26,8 +26,6 @@
 #ifndef RenderLayerCompositor_h
 #define RenderLayerCompositor_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #include "ChromeClient.h"
 #include "GraphicsLayerClient.h"
 #include "GraphicsLayerUpdater.h"
@@ -82,8 +80,7 @@ enum {
     CompositingReasonBlendingWithCompositedDescendants      = 1 << 20,
     CompositingReasonPerspective                            = 1 << 21,
     CompositingReasonPreserve3D                             = 1 << 22,
-    CompositingReasonRoot                                   = 1 << 23,
-    CompositingReasonBlending                               = 1 << 24
+    CompositingReasonRoot                                   = 1 << 23
 };
 typedef unsigned CompositingReasons;
 
@@ -143,9 +140,6 @@ public:
     // we discover that an iframe is overlapped during painting).
     void scheduleCompositingLayerUpdate();
 
-    // Update the maps that we use to distribute layers to coresponding regions.
-    void updateRenderFlowThreadLayersIfNeeded();
-    
     // Update the compositing state of the given layer. Returns true if that state changed.
     enum CompositingChangeRepaint { CompositingChangeRepaintNow, CompositingChangeWillRepaintLater };
     bool updateLayerCompositingState(RenderLayer&, CompositingChangeRepaint = CompositingChangeRepaintNow);
@@ -185,7 +179,7 @@ public:
     void repaintCompositedLayers(const IntRect* = 0);
 
     // Returns true if the given layer needs it own backing store.
-    bool requiresOwnBackingStore(const RenderLayer&, const RenderLayer* compositingAncestorLayer, const IntRect& layerCompositedBoundsInAncestor, const IntRect& ancestorCompositedBounds) const;
+    bool requiresOwnBackingStore(const RenderLayer&, const RenderLayer* compositingAncestorLayer, const LayoutRect& layerCompositedBoundsInAncestor, const LayoutRect& ancestorCompositedBounds) const;
 
     RenderLayer& rootRenderLayer() const;
     GraphicsLayer* rootGraphicsLayer() const;
@@ -272,19 +266,20 @@ public:
     GraphicsLayer* updateLayerForFooter(bool wantsLayer);
 #endif
 
-    void updateViewportConstraintStatus(RenderLayer&);
-    void removeViewportConstrainedLayer(RenderLayer&);
+    void updateScrollCoordinatedStatus(RenderLayer&);
+    void removeFromScrollCoordinatedLayers(RenderLayer&);
+
+    void willRemoveScrollingLayer(RenderLayer&);
+    void didAddScrollingLayer(RenderLayer&);
 
 #if PLATFORM(IOS)
     void registerAllViewportConstrainedLayers();
     void unregisterAllViewportConstrainedLayers();
 
-    void scrollingLayerAddedOrUpdated(RenderLayer*);
-    void scrollingLayerRemoved(RenderLayer*, PlatformLayer* scrollingLayer, PlatformLayer* contentsLayer);
-
     void registerAllScrollingLayers();
     void unregisterAllScrollingLayers();
 #endif
+
     void resetTrackedRepaintRects();
     void setTracksRepaints(bool);
 
@@ -301,7 +296,8 @@ public:
     
     void didPaintBacking(RenderLayerBacking*);
 
-    bool mainFrameBackingIsTiledWithMargin() const;
+    void setRootExtendedBackgroundColor(const Color&);
+    Color rootExtendedBackgroundColor() const { return m_rootExtendedBackgroundColor; }
 
 private:
     class OverlapMap;
@@ -309,7 +305,7 @@ private:
     // GraphicsLayerClient implementation
     virtual void notifyAnimationStarted(const GraphicsLayer*, double) override { }
     virtual void notifyFlushRequired(const GraphicsLayer*) override;
-    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const IntRect&) override;
+    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const FloatRect&) override;
 
     virtual bool isTrackingRepaints() const override;
     
@@ -395,14 +391,13 @@ private:
     bool requiresCompositingForPlugin(RenderLayerModelObject&) const;
     bool requiresCompositingForFrame(RenderLayerModelObject&) const;
     bool requiresCompositingForFilters(RenderLayerModelObject&) const;
-    bool requiresCompositingForBlending(RenderLayerModelObject&) const;
     bool requiresCompositingForScrollableFrame() const;
     bool requiresCompositingForPosition(RenderLayerModelObject&, const RenderLayer&, RenderLayer::ViewportConstrainedNotCompositedReason* = 0) const;
     bool requiresCompositingForOverflowScrolling(const RenderLayer&) const;
     bool requiresCompositingForIndirectReason(RenderLayerModelObject&, bool hasCompositedDescendants, bool hasBlendedDescendants, bool has3DTransformedDescendants, RenderLayer::IndirectCompositingReason&) const;
 
 #if PLATFORM(IOS)
-    bool requiresCompositingForScrolling(RenderLayerModelObject&) const;
+    bool requiresCompositingForScrolling(const RenderLayer&) const;
 
     void updateCustomLayersAfterFlush();
 
@@ -410,9 +405,14 @@ private:
 
 #endif
 
-    void addViewportConstrainedLayer(RenderLayer&);
-    void registerOrUpdateViewportConstrainedLayer(RenderLayer&);
-    void unregisterViewportConstrainedLayer(RenderLayer&);
+    enum ScrollCoordinationReason {
+        FixedOrSticky = 1 << 0,
+        Scrolling = 1 << 1
+    };
+    typedef unsigned ScrollCoordinationReasons;
+
+    void updateScrollCoordinatedLayer(RenderLayer&, ScrollCoordinationReasons);
+    void detachScrollCoordinatedLayer(RenderLayer&);
 
     FixedPositionViewportConstraints computeFixedViewportConstraints(RenderLayer&) const;
     StickyPositionViewportConstraints computeStickyViewportConstraints(RenderLayer&) const;
@@ -482,8 +482,8 @@ private:
     HashSet<RenderLayer*> m_scrollingLayers;
     HashSet<RenderLayer*> m_scrollingLayersNeedingUpdate;
 #endif
-    HashSet<RenderLayer*> m_viewportConstrainedLayers;
-    HashSet<RenderLayer*> m_viewportConstrainedLayersNeedingUpdate;
+    HashSet<RenderLayer*> m_scrollCoordinatedLayers;
+    HashSet<RenderLayer*> m_scrollCoordinatedLayersNeedingUpdate;
 
     // Enclosing layer for overflow controls and the clipping layer
     std::unique_ptr<GraphicsLayer> m_overflowControlsHostLayer;
@@ -517,11 +517,11 @@ private:
     double m_obligatoryBackingStoreBytes;
     double m_secondaryBackingStoreBytes;
 #endif
+
+    Color m_rootExtendedBackgroundColor;
 };
 
 
 } // namespace WebCore
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // RenderLayerCompositor_h

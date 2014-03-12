@@ -42,7 +42,7 @@ struct FontCustomPlatformData;
 
 class CachedFont final : public CachedResource {
 public:
-    CachedFont(const ResourceRequest&);
+    CachedFont(const ResourceRequest&, SessionID);
     virtual ~CachedFont();
 
     void beginLoadIfNeeded(CachedResourceLoader* dl);
@@ -69,7 +69,7 @@ private:
 
     std::unique_ptr<FontCustomPlatformData> m_fontData;
     bool m_loadInitiated;
-    bool m_hasCreatedFontData;
+    bool m_hasCreatedFontDataWrappingResource;
 
 #if ENABLE(SVG_FONTS)
     RefPtr<SVGDocument> m_externalSVGDocument;
@@ -77,6 +77,8 @@ private:
 
     friend class MemoryCache;
 };
+
+CACHED_RESOURCE_TYPE_CASTS(CachedFont, CachedResource, CachedResource::FontResource)
 
 } // namespace WebCore
 

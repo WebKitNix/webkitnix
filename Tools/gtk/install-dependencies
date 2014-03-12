@@ -40,12 +40,14 @@ function installDependenciesWithApt {
         autopoint \
         autotools-dev \
         bison \
+        cmake \
         flex \
         gawk \
         gnome-common \
         gperf \
         gtk-doc-tools \
         intltool \
+        itstool \
         libatk1.0-dev \
         libenchant-dev \
         libfaad-dev \
@@ -121,6 +123,7 @@ function installDependenciesWithApt {
 
     # These are dependencies necessary for using webkit-patch
     apt-get install \
+        git-svn \
         subversion
 }
 
@@ -132,6 +135,7 @@ function installDependenciesWithYum {
         automake \
         bison \
         cairo-devel \
+        cmake \
         enchant-devel \
         flex \
         fontconfig-devel \
@@ -182,6 +186,7 @@ function installDependenciesWithYum {
         git \
         gobject-introspection \
         icon-naming-utils \
+        itstool \
         libXfont-devel \
         libcroco-devel \
         libgcrypt-devel \
@@ -196,6 +201,11 @@ function installDependenciesWithYum {
         xorg-x11-proto-devel \
         xorg-x11-util-macros \
         xorg-x11-xtrans-devel
+
+    # These are dependencies necessary for using webkit-patch
+    yum install \
+        git-svn \
+        subversion
 }
 
 checkInstaller

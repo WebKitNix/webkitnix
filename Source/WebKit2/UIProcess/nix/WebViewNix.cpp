@@ -159,11 +159,11 @@ void WebViewNix::didFindZoomableArea(const IntPoint& target, const IntRect& area
     m_viewClientNix.didFindZoomableArea(this, toAPI(target), toAPI(area));
 }
 
-void WebViewNix::didCommitLoadForMainFrame()
+void WebViewNix::didCommitLoadForMainFrame(const String& mimeType, bool useCustomContentProvider)
 {
     m_scaleFactorToSync = 0;
     setContentPosition(WebCore::FloatPoint());
-    WebView::didCommitLoadForMainFrame();
+    WebView::didCommitLoadForMainFrame(mimeType, useCustomContentProvider);
     m_viewClientNix.didCommitLoadForMainFrame(this);
 }
 

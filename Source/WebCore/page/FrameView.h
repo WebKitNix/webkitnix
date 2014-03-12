@@ -129,13 +129,14 @@ public:
     IntRect customFixedPositionLayoutRect() const { return m_customFixedPositionLayoutRect; }
     void setCustomFixedPositionLayoutRect(const IntRect&);
     bool updateFixedPositionLayoutRect();
+#else
+    bool useCustomFixedPositionLayoutRect() const { return false; }
 #endif
 
 #if ENABLE(REQUEST_ANIMATION_FRAME)
     void serviceScriptedAnimations(double monotonicAnimationStartTime);
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     void updateCompositingLayersAfterStyleChange();
     void updateCompositingLayersAfterLayout();
     bool flushCompositingStateForThisFrame(Frame* rootFrameForFlush);
@@ -155,7 +156,6 @@ public:
     // In the future when any ScrollableArea can have a node in th ScrollingTree, this should
     // become a virtual function on ScrollableArea.
     uint64_t scrollLayerID() const;
-#endif
 
     bool hasCompositedContent() const;
     bool hasCompositedContentIncludingDescendants() const;
@@ -193,17 +193,22 @@ public:
     void setBaseBackgroundColor(const Color&);
     void updateBackgroundRecursively(const Color&, bool);
 
-    // extendedBackgroundRect() is in the viewport's coordinate space. 
-    bool hasExtendedBackground() const;
-    IntRect extendedBackgroundRect() const;
-    
-#if USE(ACCELERATED_COMPOSITING)
+    // setBackgroundExtendsBeyondPage() is controlled by Settings::setBackgroundShouldExtendBeyondPage(). Some
+    // extended backgrounds require an extended background rect for painting, (at this time, that corresponds
+    // to documents with background images) and needsExtendedBackgroundRectForPainting() determines if this
+    // FrameView is one of those special FrameViews that does require an extended rect for painting. Since
+    // needing an extended background rect for painting is something that can change in the course of a FrameView's
+    // life, the extended rect is set and unset using setHasExtendedBackgroundRectForPainting(). The
+    // extendedBackgroundRectForPainting() is in the viewport's coordinate space.
     void setBackgroundExtendsBeyondPage(bool);
-#endif
+    bool needsExtendedBackgroundRectForPainting() const;
+    void setHasExtendedBackgroundRectForPainting(bool shouldHaveExtendedBackgroundRect);
+    bool hasExtendedBackgroundRectForPainting() const;
+    IntRect extendedBackgroundRectForPainting() const;
 
     bool shouldUpdateWhileOffscreen() const;
     void setShouldUpdateWhileOffscreen(bool);
-    bool shouldUpdate(bool = false) const;
+    bool shouldUpdate() const;
 
     void adjustViewSize();
     
@@ -214,11 +219,11 @@ public:
 
     virtual float visibleContentScaleFactor() const override;
 
-#if !PLATFORM(IOS)
+#if USE(TILED_BACKING_STORE)
     virtual void setFixedVisibleContentRect(const IntRect&) override;
 #endif
     virtual void setScrollPosition(const IntPoint&) override;
-    void scrollPositionChangedViaPlatformWidget();
+    void scrollPositionChangedViaPlatformWidget(const IntPoint& oldPosition, const IntPoint& newPosition);
     virtual void updateLayerPositionsAfterScrolling() override;
     virtual void updateCompositingLayersAfterScrolling() override;
     virtual bool requestScrollPositionUpdate(const IntPoint&) override;
@@ -229,6 +234,9 @@ public:
     // This is different than visibleContentRect() in that it ignores negative (or overly positive)
     // offsets from rubber-banding, and it takes zooming into account. 
     LayoutRect viewportConstrainedVisibleContentRect() const;
+
+    // A rectangle in content coordinates that is used to clip layers for fixed-position objects.
+    LayoutRect viewportConstrainedExtentRect() const;
 
     String mediaType() const;
     void setMediaType(const String&);
@@ -254,23 +262,18 @@ public:
 
     // Functions for querying the current scrolled position, negating the effects of overhang
     // and adjusting for page scale.
-    IntSize scrollOffsetForFixedPosition() const;
+    LayoutSize scrollOffsetForFixedPosition() const;
     // Static function can be called from another thread.
-    static IntSize scrollOffsetForFixedPosition(const IntRect& visibleContentRect, const IntSize& totalContentsSize, const IntPoint& scrollPosition, const IntPoint& scrollOrigin, float frameScaleFactor, bool fixedElementsLayoutRelativeToFrame, ScrollBehaviorForFixedElements, int headerHeight, int footerHeight);
+    static LayoutSize scrollOffsetForFixedPosition(const LayoutRect& visibleContentRect, const LayoutSize& totalContentsSize, const LayoutPoint& scrollPosition, const LayoutPoint& scrollOrigin, float frameScaleFactor, bool fixedElementsLayoutRelativeToFrame, ScrollBehaviorForFixedElements, int headerHeight, int footerHeight);
 
     bool fixedElementsLayoutRelativeToFrame() const;
 
-    void beginDeferredRepaints();
-    void endDeferredRepaints();
-    void handleLoadCompleted();
-    void flushDeferredRepaints();
-    void startDeferredRepaintTimer(double delay);
-    void resetDeferredRepaintDelay();
-
+    void disableLayerFlushThrottlingTemporarilyForInteraction();
     void updateLayerFlushThrottlingInAllFrames();
     void adjustTiledBackingCoverage();
+    bool speculativeTilingEnabled() const { return m_speculativeTilingEnabled; }
 
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
     void updateAnnotatedRegions();
 #endif
     void updateControlTints();
@@ -359,15 +362,6 @@ public:
     enum ScrollbarModesCalculationStrategy { RulesFromWebContentOnly, AnyRule };
     void calculateScrollbarModesForLayout(ScrollbarMode& hMode, ScrollbarMode& vMode, ScrollbarModesCalculationStrategy = AnyRule);
 
-    // Normal delay
-    static void setRepaintThrottlingDeferredRepaintDelay(double p);
-    // Negative value would mean that first few repaints happen without a delay
-    static void setRepaintThrottlingnInitialDeferredRepaintDelayDuringLoading(double p);
-    // The delay grows on each repaint to this maximum value
-    static void setRepaintThrottlingMaxDeferredRepaintDelayDuringLoading(double p);
-    // On each repaint the delay increses by this amount
-    static void setRepaintThrottlingDeferredRepaintDelayIncrementDuringLoading(double p);
-
     virtual IntPoint lastKnownMousePosition() const override;
     virtual bool isHandlingWheelEvent() const override;
     bool shouldSetCursor() const;
@@ -383,7 +377,7 @@ public:
     void setTracksRepaints(bool);
     bool isTrackingRepaints() const { return m_isTrackingRepaints; }
     void resetTrackedRepaints();
-    const Vector<IntRect>& trackedRepaintRects() const { return m_trackedRepaintRects; }
+    const Vector<FloatRect>& trackedRepaintRects() const { return m_trackedRepaintRects; }
     String trackedRepaintRectsAsText() const;
 
     typedef HashSet<ScrollableArea*> ScrollableAreaSet;
@@ -451,7 +445,7 @@ public:
     void didAddWidgetToRenderTree(Widget&);
     void willRemoveWidgetFromRenderTree(Widget&);
 
-    void addTrackedRepaintRect(const IntRect&);
+    void addTrackedRepaintRect(const FloatRect&);
 
     // exposedRect represents WebKit's understanding of what part
     // of the view is actually exposed on screen (taking into account
@@ -494,6 +488,7 @@ private:
     bool useSlowRepaintsIfNotOverlapped() const;
     void updateCanBlitOnScrollRecursively();
     bool contentsInCompositedLayer() const;
+    bool shouldLayoutAfterContentsResized() const;
 
     bool shouldUpdateCompositingLayersAfterScrolling() const;
 
@@ -508,7 +503,7 @@ private:
     void performPostLayoutTasks();
     void autoSizeIfEnabled();
 
-    virtual void repaintContentRectangle(const IntRect&, bool immediate) override;
+    virtual void repaintContentRectangle(const IntRect&) override;
     virtual void contentsResized() override;
     virtual void visibleContentsResized() override;
     virtual void addedOrRemovedScrollbar() override;
@@ -530,7 +525,6 @@ private:
     virtual ScrollableArea* enclosingScrollableArea() const override;
     virtual IntRect scrollableAreaBoundingBox() const override;
     virtual bool scrollAnimatorEnabled() const override;
-#if USE(ACCELERATED_COMPOSITING)
     virtual bool usesCompositedScrolling() const override;
     virtual GraphicsLayer* layerForScrolling() const override;
     virtual GraphicsLayer* layerForHorizontalScrollbar() const override;
@@ -539,7 +533,8 @@ private:
 #if ENABLE(RUBBER_BANDING)
     virtual GraphicsLayer* layerForOverhangAreas() const override;
 #endif
-#endif
+
+    void sendWillRevealEdgeEventsIfNeeded(const IntPoint& oldPosition, const IntPoint& newPosition);
 
     // Override scrollbar notifications to update the AXObject cache.
     virtual void didAddScrollbar(Scrollbar*, ScrollbarOrientation) override;
@@ -551,16 +546,13 @@ private:
 
     virtual void notifyPageThatContentAreaWillPaint() const override;
 
-    bool shouldUseLoadTimeDeferredRepaintDelay() const;
-    void deferredRepaintTimerFired(Timer<FrameView>&);
-    void doDeferredRepaints();
-    void updateDeferredRepaintDelayAfterRepaint();
-    double adjustedDeferredRepaintDelay() const;
+    void enableSpeculativeTilingIfNeeded();
+    void speculativeTilingEnableTimerFired(Timer<FrameView>&);
 
     bool updateEmbeddedObjects();
     void updateEmbeddedObject(RenderEmbeddedObject&);
     void scrollToAnchor();
-    void scrollPositionChanged();
+    void scrollPositionChanged(const IntPoint& oldPosition, const IntPoint& newPosition);
 
     bool hasCustomScrollbars() const;
 
@@ -633,15 +625,10 @@ private:
     bool m_inProgrammaticScroll;
     bool m_safeToPropagateScrollToParent;
 
-    unsigned m_deferringRepaints;
-    unsigned m_repaintCount;
-    Vector<LayoutRect> m_repaintRects;
-    Timer<FrameView> m_deferredRepaintTimer;
-    double m_deferredRepaintDelay;
     double m_lastPaintTime;
 
     bool m_isTrackingRepaints; // Used for testing.
-    Vector<IntRect> m_trackedRepaintRects;
+    Vector<FloatRect> m_trackedRepaintRects;
 
     bool m_shouldUpdateWhileOffscreen;
 
@@ -663,6 +650,9 @@ private:
 
     // Renderer to hold our custom scroll corner.
     RenderPtr<RenderScrollbarPart> m_scrollCorner;
+
+    bool m_speculativeTilingEnabled;
+    Timer<FrameView> m_speculativeTilingEnableTimer;
 
 #if PLATFORM(IOS)
     bool m_useCustomFixedPositionLayoutRect;
@@ -690,11 +680,6 @@ private:
     int m_footerHeight;
 
     LayoutMilestones m_milestonesPendingPaint;
-
-    static double s_normalDeferredRepaintDelay;
-    static double s_initialDeferredRepaintDelayDuringLoading;
-    static double s_maxDeferredRepaintDelayDuringLoading;
-    static double s_deferredRepaintDelayIncrementDuringLoading;
 
     static const unsigned visualCharacterThreshold = 200;
     static const unsigned visualPixelThreshold = 32 * 32;

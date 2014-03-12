@@ -58,10 +58,10 @@ public:
     // Notifications from weak pointers.
     virtual void removeIDBDatabaseBackend(const String& uniqueIdentifier) override final;
 
-    virtual void getDatabaseNames(PassRefPtr<IDBCallbacks>, PassRefPtr<SecurityOrigin>, ScriptExecutionContext*, const String& dataDir) override final;
+    virtual void getDatabaseNames(PassRefPtr<IDBCallbacks>, const SecurityOrigin& openingOrigin, const SecurityOrigin& mainFrameOrigin, ScriptExecutionContext*, const String& dataDir) override final;
     virtual void open(const String& name, uint64_t version, int64_t transactionId, PassRefPtr<IDBCallbacks>, PassRefPtr<IDBDatabaseCallbacks>, const SecurityOrigin& openingOrigin, const SecurityOrigin& mainFrameOrigin) override final;
 
-    virtual void deleteDatabase(const String& name, PassRefPtr<IDBCallbacks>, PassRefPtr<SecurityOrigin>, ScriptExecutionContext*, const String& dataDir) override final;
+    virtual void deleteDatabase(const String& name, const SecurityOrigin& openingOrigin, const SecurityOrigin& mainFrameOrigin, PassRefPtr<IDBCallbacks>, ScriptExecutionContext*, const String& dataDir) override final;
 
 protected:
     virtual PassRefPtr<IDBBackingStoreLevelDB> openBackingStore(const SecurityOrigin&, const String& dataDir);

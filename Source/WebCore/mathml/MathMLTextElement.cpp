@@ -33,6 +33,7 @@
 #include "MathMLNames.h"
 #include "RenderMathMLOperator.h"
 #include "RenderMathMLSpace.h"
+#include "RenderMathMLToken.h"
 
 namespace WebCore {
     
@@ -52,21 +53,23 @@ PassRefPtr<MathMLTextElement> MathMLTextElement::create(const QualifiedName& tag
 void MathMLTextElement::didAttachRenderers()
 {
     MathMLElement::didAttachRenderers();
-    if (renderer())
-        renderer()->updateFromElement();
+    if (renderer() && renderer()->isRenderMathMLToken())
+        toRenderMathMLToken(renderer())->updateTokenContent();
 }
 
 void MathMLTextElement::childrenChanged(const ChildChange& change)
 {
     MathMLElement::childrenChanged(change);
-    if (renderer())
-        renderer()->updateFromElement();
+    if (renderer() && renderer()->isRenderMathMLToken())
+        toRenderMathMLToken(renderer())->updateTokenContent();
 }
 
 RenderPtr<RenderElement> MathMLTextElement::createElementRenderer(PassRef<RenderStyle> style)
 {
     if (hasLocalName(MathMLNames::moTag))
         return createRenderer<RenderMathMLOperator>(*this, std::move(style));
+    if (hasLocalName(MathMLNames::miTag))
+        return createRenderer<RenderMathMLToken>(*this, std::move(style));
     if (hasLocalName(MathMLNames::mspaceTag))
         return createRenderer<RenderMathMLSpace>(*this, std::move(style));
 
@@ -75,7 +78,7 @@ RenderPtr<RenderElement> MathMLTextElement::createElementRenderer(PassRef<Render
 
 bool MathMLTextElement::childShouldCreateRenderer(const Node& child) const
 {
-    return child.isTextNode();
+    return !hasLocalName(mspaceTag) && child.isTextNode();
 }
 
 }

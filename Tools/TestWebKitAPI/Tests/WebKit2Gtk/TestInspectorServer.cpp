@@ -79,7 +79,7 @@ static void startTestServerMonitor()
 static void startTestServer()
 {
     // Prepare argv[] for spawning the server process.
-    GOwnPtr<char> testServerPath(g_build_filename(WEBKIT_EXEC_PATH, "TestWebKitAPI", "WebKit2Gtk", gTestServerAppName, NULL));
+    GUniquePtr<char> testServerPath(g_build_filename(WEBKIT_EXEC_PATH, "TestWebKitAPI", "WebKit2Gtk", gTestServerAppName, NULL));
 
     // We install a handler to ensure that we kill the child process
     // if the parent dies because of whatever the reason is.
@@ -158,7 +158,7 @@ public:
 // Should contain only one entry pointing to http://127.0.0.1:2999/webinspector/Main.html?page=1
 static void testInspectorServerPageList(InspectorServerTest* test, gconstpointer)
 {
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
 
     test->showInWindowAndWaitUntilMapped(GTK_WINDOW_TOPLEVEL);
     g_assert(test->getPageList());
@@ -173,17 +173,17 @@ static void testInspectorServerPageList(InspectorServerTest* test, gconstpointer
     g_assert(!error.get());
     int pageId = WebViewTest::javascriptResultToNumber(javascriptResult);
 
-    GOwnPtr<char> valueString;
+    GUniquePtr<char> valueString;
     javascriptResult = test->runJavaScriptAndWaitUntilFinished("pages[0].url;", &error.outPtr());
     g_assert(javascriptResult);
     g_assert(!error.get());
-    valueString.set(WebViewTest::javascriptResultToCString(javascriptResult));
+    valueString.reset(WebViewTest::javascriptResultToCString(javascriptResult));
     g_assert_cmpstr(valueString.get(), ==, "http://127.0.0.1:2999/");
 
     javascriptResult = test->runJavaScriptAndWaitUntilFinished("pages[0].inspectorUrl;", &error.outPtr());
     g_assert(javascriptResult);
     g_assert(!error.get());
-    valueString.set(WebViewTest::javascriptResultToCString(javascriptResult));
+    valueString.reset(WebViewTest::javascriptResultToCString(javascriptResult));
     String validInspectorURL = String("/Main.html?page=") + String::number(pageId);
     ASSERT_CMP_CSTRING(valueString.get(), ==, validInspectorURL.utf8());
 }
@@ -228,7 +228,7 @@ static void openRemoteDebuggingSession(InspectorServerTest* test, gconstpointer)
 
     g_assert(test->getPageList());
 
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     WebKitJavascriptResult* javascriptResult = test->runJavaScriptAndWaitUntilFinished("pages[0].inspectorUrl;", &error.outPtr());
     g_assert(javascriptResult);
     g_assert(!error.get());
@@ -241,13 +241,13 @@ static void openRemoteDebuggingSession(InspectorServerTest* test, gconstpointer)
     g_assert(javascriptResult);
     g_assert(!error.get());
 
-    GOwnPtr<char> title(WebViewTest::javascriptResultToCString(javascriptResult));
+    GUniquePtr<char> title(WebViewTest::javascriptResultToCString(javascriptResult));
     g_assert_cmpstr(title.get(), ==, "http://127.0.0.1:2999/");
 }
 
 static void sendIncompleteRequest(InspectorServerTest* test, gconstpointer)
 {
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
 
     // Connect to the inspector server.
     GRefPtr<GSocketClient> client = adoptGRef(g_socket_client_new());

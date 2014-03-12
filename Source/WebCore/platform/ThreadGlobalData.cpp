@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 Apple Inc. All Rights Reserved.
+ * Copyright (C) 2008, 2014 Apple Inc. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,23 +29,21 @@
 
 #include "CachedResourceRequestInitiators.h"
 #include "EventNames.h"
-#include "InspectorCounters.h"
+#include "TextCodecICU.h"
 #include "ThreadTimers.h"
 #include <wtf/MainThread.h>
+#include <wtf/ThreadSpecific.h>
+#include <wtf/Threading.h>
 #include <wtf/WTFThreadData.h>
 #include <wtf/text/StringImpl.h>
 
-#if USE(ICU_UNICODE)
-#include "TextCodecICU.h"
-#endif
-
 #if PLATFORM(MAC)
-#include "TextCodecMac.h"
+#include "TextCodeCMac.h"
 #endif
 
-#include <wtf/Threading.h>
-#include <wtf/ThreadSpecific.h>
-using namespace WTF;
+#if ENABLE(WEB_REPLAY)
+#include "ReplayInputTypes.h"
+#endif
 
 namespace WebCore {
 
@@ -58,17 +56,15 @@ ThreadGlobalData::ThreadGlobalData()
     : m_cachedResourceRequestInitiators(adoptPtr(new CachedResourceRequestInitiators))
     , m_eventNames(adoptPtr(new EventNames))
     , m_threadTimers(adoptPtr(new ThreadTimers))
+#if ENABLE(WEB_REPLAY)
+    , m_inputTypes(std::make_unique<ReplayInputTypes>())
+#endif
 #ifndef NDEBUG
     , m_isMainThread(isMainThread())
 #endif
-#if USE(ICU_UNICODE)
     , m_cachedConverterICU(adoptPtr(new ICUConverterWrapper))
-#endif
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+#if PLATFORM(MAC)
     , m_cachedConverterTEC(adoptPtr(new TECConverterWrapper))
-#endif
-#if ENABLE(INSPECTOR)
-    , m_inspectorCounters(adoptPtr(new ThreadLocalInspectorCounters()))
 #endif
 {
     // This constructor will have been called on the main thread before being called on
@@ -85,23 +81,21 @@ ThreadGlobalData::~ThreadGlobalData()
 
 void ThreadGlobalData::destroy()
 {
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+#if PLATFORM(MAC)
     m_cachedConverterTEC.clear();
 #endif
 
-#if USE(ICU_UNICODE)
     m_cachedConverterICU.clear();
-#endif
 
-#if ENABLE(INSPECTOR)
-    m_inspectorCounters.clear();
+#if ENABLE(WEB_REPLAY)
+    m_inputTypes = nullptr;
 #endif
 
     m_eventNames.clear();
     m_threadTimers.clear();
 }
 
-#if ENABLE(WORKERS) && USE(WEB_THREAD)
+#if USE(WEB_THREAD)
 void ThreadGlobalData::setWebCoreThreadData()
 {
     ASSERT(isWebThread());

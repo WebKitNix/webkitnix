@@ -26,8 +26,6 @@
 #ifndef DFGJITFinalizer_h
 #define DFGJITFinalizer_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(DFG_JIT)
 
 #include "DFGFinalizer.h"
@@ -42,6 +40,7 @@ public:
     JITFinalizer(Plan&, PassRefPtr<JITCode>, PassOwnPtr<LinkBuffer>, MacroAssemblerCodePtr withArityCheck = MacroAssemblerCodePtr(MacroAssemblerCodePtr::EmptyValue));
     virtual ~JITFinalizer();
     
+    virtual size_t codeSize() override;
     virtual bool finalize() override;
     virtual bool finalizeFunction() override;
 

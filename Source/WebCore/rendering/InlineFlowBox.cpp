@@ -50,13 +50,22 @@ struct SameSizeAsInlineFlowBox : public InlineBox {
 COMPILE_ASSERT(sizeof(InlineFlowBox) == sizeof(SameSizeAsInlineFlowBox), InlineFlowBox_should_stay_small);
 
 #if !ASSERT_WITH_SECURITY_IMPLICATION_DISABLED
+
 InlineFlowBox::~InlineFlowBox()
 {
-    if (!m_hasBadChildList) {
-        for (InlineBox* child = firstChild(); child; child = child->nextOnLine())
-            child->setHasBadParent();
-    }
+    setHasBadChildList();
 }
+
+void InlineFlowBox::setHasBadChildList()
+{
+    assertNotDeleted();
+    if (m_hasBadChildList)
+        return;
+    for (InlineBox* child = firstChild(); child; child = child->nextOnLine())
+        child->setHasBadParent();
+    m_hasBadChildList = true;
+}
+
 #endif
 
 LayoutUnit InlineFlowBox::getFlowSpacingLogicalWidth()
@@ -741,7 +750,6 @@ void InlineFlowBox::placeBoxesInBlockDirection(LayoutUnit top, LayoutUnit maxHei
     }
 }
 
-#if ENABLE(CSS3_TEXT_DECORATION)
 void InlineFlowBox::computeMaxLogicalTop(float& maxLogicalTop) const
 {
     for (InlineBox* curr = firstChild(); curr; curr = curr->nextOnLine()) {
@@ -758,7 +766,6 @@ void InlineFlowBox::computeMaxLogicalTop(float& maxLogicalTop) const
         maxLogicalTop = std::max<float>(maxLogicalTop, localMaxLogicalTop);
     }
 }
-#endif // CSS3_TEXT_DECORATION
 
 void InlineFlowBox::flipLinesInBlockDirection(LayoutUnit lineTop, LayoutUnit lineBottom)
 {
@@ -1220,8 +1227,8 @@ void InlineFlowBox::paintFillLayer(const PaintInfo& paintInfo, const Color& c, c
         }
         LayoutUnit stripX = rect.x() - (isHorizontal() ? logicalOffsetOnLine : LayoutUnit());
         LayoutUnit stripY = rect.y() - (isHorizontal() ? LayoutUnit() : logicalOffsetOnLine);
-        LayoutUnit stripWidth = isHorizontal() ? totalLogicalWidth : static_cast<LayoutUnit>(width());
-        LayoutUnit stripHeight = isHorizontal() ? static_cast<LayoutUnit>(height()) : totalLogicalWidth;
+        LayoutUnit stripWidth = isHorizontal() ? totalLogicalWidth : LayoutUnit(width());
+        LayoutUnit stripHeight = isHorizontal() ? LayoutUnit(height()) : totalLogicalWidth;
 
         GraphicsContextStateSaver stateSaver(*paintInfo.context);
         paintInfo.context->clip(LayoutRect(rect.x(), rect.y(), width(), height()));
@@ -1666,15 +1673,16 @@ void InlineFlowBox::showLineTreeAndMark(const InlineBox* markedBox1, const char*
 
 void InlineFlowBox::checkConsistency() const
 {
+    assertNotDeleted();
     ASSERT_WITH_SECURITY_IMPLICATION(!m_hasBadChildList);
 #ifdef CHECK_CONSISTENCY
-    const InlineBox* prev = 0;
-    for (const InlineBox* child = m_firstChild; child; child = child->nextOnLine()) {
+    const InlineBox* previousChild = nullptr;
+    for (const InlineBox* child = firstChild(); child; child = child->nextOnLine()) {
         ASSERT(child->parent() == this);
-        ASSERT(child->prevOnLine() == prev);
-        prev = child;
+        ASSERT(child->prevOnLine() == previousChild);
+        previousChild = child;
     }
-    ASSERT(prev == m_lastChild);
+    ASSERT(previousChild == m_lastChild);
 #endif
 }
 

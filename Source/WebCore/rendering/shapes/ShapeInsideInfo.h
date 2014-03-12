@@ -30,7 +30,7 @@
 #ifndef ShapeInsideInfo_h
 #define ShapeInsideInfo_h
 
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
 
 #include "ShapeInfo.h"
 #include <wtf/PassOwnPtr.h>
@@ -103,17 +103,19 @@ public:
 
     virtual bool lineOverlapsShapeBounds() const override
     {
-        return computedShape().lineOverlapsShapePaddingBounds(m_shapeLineTop, m_lineHeight);
+        return computedShape().lineOverlapsShapePaddingBounds(m_referenceBoxLineTop, m_lineHeight);
     }
 
 protected:
-    virtual LayoutBox resolvedLayoutBox() const override
+    virtual LayoutBox referenceBox() const override
     {
         if (shapeValue()->layoutBox() == BoxMissing)
             return ContentBox;
 
         return shapeValue()->layoutBox();
     }
+
+    virtual const RenderStyle& styleForWritingMode() const override;
 
 private:
     virtual LayoutRect computedShapeLogicalBoundingBox() const override { return computedShape().shapePaddingLogicalBoundingBox(); }

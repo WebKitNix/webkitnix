@@ -26,8 +26,6 @@
 #ifndef DFGInsertionSet_h
 #define DFGInsertionSet_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(DFG_JIT)
 
 #include "DFGGraph.h"
@@ -56,7 +54,7 @@ public:
     {
         return insert(Insertion(index, element));
     }
-
+    
 #define DFG_DEFINE_INSERT_NODE(templatePre, templatePost, typeParams, valueParamsComma, valueParams, valueArgs) \
     templatePre typeParams templatePost Node* insertNode(size_t index, SpeculatedType type valueParamsComma valueParams) \
     { \
@@ -65,6 +63,20 @@ public:
     DFG_VARIADIC_TEMPLATE_FUNCTION(DFG_DEFINE_INSERT_NODE)
 #undef DFG_DEFINE_INSERT_NODE
     
+    Node* insertConstant(size_t index, NodeOrigin origin, JSValue value)
+    {
+        unsigned constantReg =
+            m_graph.constantRegisterForConstant(value);
+        return insertNode(
+            index, speculationFromValue(value), JSConstant, origin,
+            OpInfo(constantReg));
+    }
+    
+    Node* insertConstant(size_t index, CodeOrigin origin, JSValue value)
+    {
+        return insertConstant(index, NodeOrigin(origin), value);
+    }
+
     void execute(BasicBlock* block)
     {
         executeInsertions(*block, m_insertions);

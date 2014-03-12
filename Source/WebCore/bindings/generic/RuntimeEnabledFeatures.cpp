@@ -73,10 +73,6 @@ RuntimeEnabledFeatures::RuntimeEnabledFeatures()
 #if ENABLE(VIDEO_TRACK)
     , m_isVideoTrackEnabled(true)
 #endif
-#if ENABLE(SHADOW_DOM)
-    , m_isShadowDOMEnabled(false)
-    , m_isAuthorShadowDOMForAnyElementEnabled(false)
-#endif
 #if ENABLE(INPUT_TYPE_DATE)
     , m_isInputTypeDateEnabled(true)
 #endif
@@ -97,9 +93,6 @@ RuntimeEnabledFeatures::RuntimeEnabledFeatures()
 #endif
 #if ENABLE(CSP_NEXT)
     , m_areExperimentalContentSecurityPolicyFeaturesEnabled(false)
-#endif
-#if ENABLE(IFRAME_SEAMLESS)
-    , m_areSeamlessIFramesEnabled(false)
 #endif
 #if ENABLE(FONT_LOAD_EVENTS)
     , m_isFontLoadEventsEnabled(false)

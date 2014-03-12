@@ -61,6 +61,7 @@
 #include "PlatformWheelEvent.h"
 #include "ProcessingInstruction.h"
 #include "ProgressEvent.h"
+#include "Range.h"
 #include "RenderBlock.h"
 #include "RenderBox.h"
 #include "RenderTextControl.h"
@@ -76,7 +77,7 @@
 #include "WheelEvent.h"
 #include "XMLNames.h"
 #include "htmlediting.h"
-#include <runtime/Operations.h>
+#include <runtime/JSCInlines.h>
 #include <runtime/VM.h>
 #include <wtf/RefCountedLeakCounter.h>
 #include <wtf/text/CString.h>
@@ -305,30 +306,23 @@ Node::~Node()
     if (hasRareData())
         clearRareData();
 
-    if (!isContainerNode()) {
-        if (Document* document = documentInternal())
-            willBeDeletedFrom(document);
-    }
+    if (!isContainerNode())
+        willBeDeletedFrom(document());
 
-    m_treeScope->selfOnlyDeref();
-
-    InspectorCounters::decrementCounter(InspectorCounters::NodeCounter);
+    document().decrementReferencingNodeCount();
 }
 
-void Node::willBeDeletedFrom(Document* document)
+void Node::willBeDeletedFrom(Document& document)
 {
     if (hasEventTargetData()) {
 #if ENABLE(TOUCH_EVENTS) && PLATFORM(IOS)
-        if (document)
-            document->removeTouchEventListener(this, true);
+        document.removeTouchEventListener(this, true);
 #endif
         clearEventTargetData();
     }
 
-    if (document) {
-        if (AXObjectCache* cache = document->existingAXObjectCache())
-            cache->remove(this);
-    }
+    if (AXObjectCache* cache = document.existingAXObjectCache())
+        cache->remove(this);
 }
 
 NodeRareData* Node::rareData() const
@@ -727,10 +721,19 @@ bool Document::shouldInvalidateNodeListAndCollectionCaches(const QualifiedName* 
 
 void Document::invalidateNodeListAndCollectionCaches(const QualifiedName* attrName)
 {
-    for (HashSet<LiveNodeList*>::iterator it = m_listsInvalidatedAtDocument.begin(), end = m_listsInvalidatedAtDocument.end(); it != end; ++it)
-        (*it)->invalidateCache(attrName);
-    for (HashSet<HTMLCollection*>::iterator it = m_collectionsInvalidatedAtDocument.begin(), end = m_collectionsInvalidatedAtDocument.end(); it != end; ++it)
-        (*it)->invalidateCache(attrName);
+#if !ASSERT_DISABLED
+    m_inInvalidateNodeListAndCollectionCaches = true;
+#endif
+    HashSet<LiveNodeList*> liveNodeLists = std::move(m_listsInvalidatedAtDocument);
+    for (auto it : liveNodeLists)
+        it->invalidateCache(attrName);
+
+    HashSet<HTMLCollection*> collectionLists = std::move(m_collectionsInvalidatedAtDocument);
+    for (auto it : collectionLists)
+        it->invalidateCache(attrName);
+#if !ASSERT_DISABLED
+    m_inInvalidateNodeListAndCollectionCaches = false;
+#endif
 }
 
 void Node::invalidateNodeListAndCollectionCachesInAncestors(const QualifiedName* attrName, Element* attributeOwnerElement)
@@ -956,8 +959,8 @@ Node* Node::deprecatedShadowAncestorNode() const
 
 ShadowRoot* Node::containingShadowRoot() const
 {
-    ContainerNode* root = treeScope().rootNode();
-    return root && root->isShadowRoot() ? toShadowRoot(root) : 0;
+    ContainerNode& root = treeScope().rootNode();
+    return root.isShadowRoot() ? toShadowRoot(&root) : nullptr;
 }
 
 Node* Node::nonBoundaryShadowTreeRootNode()
@@ -1016,7 +1019,7 @@ void Node::removedFrom(ContainerNode& insertionPoint)
     ASSERT(insertionPoint.inDocument() || isContainerNode());
     if (insertionPoint.inDocument())
         clearFlag(InDocumentFlag);
-    if (isInShadowTree() && !treeScope().rootNode()->isShadowRoot())
+    if (isInShadowTree() && !treeScope().rootNode().isShadowRoot())
         clearFlag(IsInShadowTreeFlag);
 }
 
@@ -1303,7 +1306,7 @@ static void appendTextContent(const Node* node, bool convertBRsToNewlines, bool&
             content.append('\n');
             break;
         }
-    // Fall through.
+        FALLTHROUGH;
     case Node::ATTRIBUTE_NODE:
     case Node::ENTITY_NODE:
     case Node::ENTITY_REFERENCE_NODE:
@@ -1378,18 +1381,6 @@ bool Node::offsetInCharacters() const
     return false;
 }
 
-static inline unsigned short compareDetachedElementsPosition(Node* firstNode, Node* secondNode)
-{
-    // If the 2 nodes are not in the same tree, return the result of adding DOCUMENT_POSITION_DISCONNECTED,
-    // DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC, and either DOCUMENT_POSITION_PRECEDING or
-    // DOCUMENT_POSITION_FOLLOWING, with the constraint that this is to be consistent. Whether to return
-    // DOCUMENT_POSITION_PRECEDING or DOCUMENT_POSITION_FOLLOWING is implemented here via pointer
-    // comparison.
-    // See step 3 in http://www.w3.org/TR/2012/WD-dom-20121206/#dom-node-comparedocumentposition
-    unsigned short direction = (firstNode > secondNode) ? Node::DOCUMENT_POSITION_PRECEDING : Node::DOCUMENT_POSITION_FOLLOWING;
-    return Node::DOCUMENT_POSITION_DISCONNECTED | Node::DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC | direction;
-}
-
 unsigned short Node::compareDocumentPosition(Node* otherNode)
 {
     // It is not clear what should be done if |otherNode| is 0.
@@ -1408,7 +1399,7 @@ unsigned short Node::compareDocumentPosition(Node* otherNode)
     // If either of start1 or start2 is null, then we are disconnected, since one of the nodes is
     // an orphaned attribute node.
     if (!start1 || !start2)
-        return compareDetachedElementsPosition(this, otherNode);
+        return DOCUMENT_POSITION_DISCONNECTED | DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC;
 
     Vector<Node*, 16> chain1;
     Vector<Node*, 16> chain2;
@@ -1442,7 +1433,7 @@ unsigned short Node::compareDocumentPosition(Node* otherNode)
     // comparing Attr nodes here, since they return false from inDocument() all the time (which seems like a bug).
     if (start1->inDocument() != start2->inDocument() ||
         &start1->treeScope() != &start2->treeScope())
-        return compareDetachedElementsPosition(this, otherNode);
+        return DOCUMENT_POSITION_DISCONNECTED | DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC;
 
     // We need to find a common ancestor container, and then compare the indices of the two immediate children.
     Node* current;
@@ -1456,7 +1447,7 @@ unsigned short Node::compareDocumentPosition(Node* otherNode)
 
     // If the two elements don't have a common root, they're not in the same tree.
     if (chain1[index1 - 1] != chain2[index2 - 1])
-        return compareDetachedElementsPosition(this, otherNode);
+        return DOCUMENT_POSITION_DISCONNECTED | DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC;
 
     // Walk the two chains backwards and look for the first difference.
     for (unsigned i = std::min(index1, index2); i; --i) {
@@ -1694,20 +1685,20 @@ void Node::showTreeForThisAcrossFrame() const
 
 void NodeListsNodeData::invalidateCaches(const QualifiedName* attrName)
 {
-    for (auto it = m_atomicNameCaches.begin(), end = m_atomicNameCaches.end(); it != end; ++it)
-        it->value->invalidateCache(attrName);
+    for (auto& atomicName : m_atomicNameCaches)
+        atomicName.value->invalidateCache(attrName);
 
-    for (auto it = m_nameCaches.begin(), end = m_nameCaches.end(); it != end; ++it)
-        it->value->invalidateCache(attrName);
+    for (auto& name : m_nameCaches)
+        name.value->invalidateCache(attrName);
 
-    for (auto it = m_cachedCollections.begin(), end = m_cachedCollections.end(); it != end; ++it)
-        it->value->invalidateCache(attrName);
+    for (auto& collection : m_cachedCollections)
+        collection.value->invalidateCache(attrName);
 
     if (attrName)
         return;
 
-    for (auto it = m_tagNodeListCacheNS.begin(), end = m_tagNodeListCacheNS.end(); it != end; ++it)
-        it->value->invalidateCache();
+    for (auto& tagNodeList : m_tagNodeListCacheNS)
+        tagNodeList.value->invalidateCache(nullptr);
 }
 
 void Node::getSubresourceURLs(ListHashSet<URL>& urls) const
@@ -2101,9 +2092,9 @@ void Node::defaultEventHandler(Event* event)
     if (eventType == eventNames().keydownEvent || eventType == eventNames().keypressEvent) {
         if (event->isKeyboardEvent())
             if (Frame* frame = document().frame())
-                frame->eventHandler().defaultKeyboardEventHandler(static_cast<KeyboardEvent*>(event));
+                frame->eventHandler().defaultKeyboardEventHandler(toKeyboardEvent(event));
     } else if (eventType == eventNames().clickEvent) {
-        int detail = event->isUIEvent() ? static_cast<UIEvent*>(event)->detail() : 0;
+        int detail = event->isUIEvent() ? toUIEvent(event)->detail() : 0;
         if (dispatchDOMActivateEvent(detail, event))
             event->setDefaultHandled();
 #if ENABLE(CONTEXT_MENUS)
@@ -2115,11 +2106,10 @@ void Node::defaultEventHandler(Event* event)
     } else if (eventType == eventNames().textInputEvent) {
         if (event->eventInterface() == TextEventInterfaceType)
             if (Frame* frame = document().frame())
-                frame->eventHandler().defaultTextInputEventHandler(static_cast<TextEvent*>(event));
+                frame->eventHandler().defaultTextInputEventHandler(toTextEvent(event));
 #if ENABLE(PAN_SCROLLING)
     } else if (eventType == eventNames().mousedownEvent && event->isMouseEvent()) {
-        MouseEvent* mouseEvent = static_cast<MouseEvent*>(event);
-        if (mouseEvent->button() == MiddleButton) {
+        if (toMouseEvent(event)->button() == MiddleButton) {
             if (enclosingLinkEventParentOrSelf())
                 return;
 
@@ -2134,8 +2124,7 @@ void Node::defaultEventHandler(Event* event)
         }
 #endif
     } else if ((eventType == eventNames().wheelEvent || eventType == eventNames().mousewheelEvent) && event->eventInterface() == WheelEventInterfaceType) {
-        WheelEvent* wheelEvent = static_cast<WheelEvent*>(event);
-        
+
         // If we don't have a renderer, send the wheel event to the first node we find with a renderer.
         // This is needed for <option> and <optgroup> elements so that <select>s get a wheel scroll.
         Node* startNode = this;
@@ -2144,18 +2133,16 @@ void Node::defaultEventHandler(Event* event)
         
         if (startNode && startNode->renderer())
             if (Frame* frame = document().frame())
-                frame->eventHandler().defaultWheelEventHandler(startNode, wheelEvent);
+                frame->eventHandler().defaultWheelEventHandler(startNode, toWheelEvent(event));
 #if ENABLE(TOUCH_EVENTS) && PLATFORM(IOS)
     } else if (event->eventInterface() == TouchEventInterfaceType && eventNames().isTouchEventType(eventType)) {
-        TouchEvent* touchEvent = static_cast<TouchEvent*>(event);
-
         RenderObject* renderer = this->renderer();
         while (renderer && (!renderer->isBox() || !toRenderBox(renderer)->canBeScrolledAndHasScrollableArea()))
             renderer = renderer->parent();
 
         if (renderer && renderer->node()) {
             if (Frame* frame = document().frame())
-                frame->eventHandler().defaultTouchEventHandler(renderer->node(), touchEvent);
+                frame->eventHandler().defaultTouchEventHandler(renderer->node(), toTouchEvent(event));
         }
 #endif
     } else if (event->type() == eventNames().webkitEditableContentChangedEvent) {
@@ -2194,31 +2181,6 @@ bool Node::willRespondToMouseWheelEvents()
     return hasEventListeners(eventNames().mousewheelEvent);
 }
 
-// This is here so it can be inlined into Node::removedLastRef.
-// FIXME: Really? Seems like this could be inlined into Node::removedLastRef if it was in TreeScope.h.
-// FIXME: It also not seem important to inline this. Is this really hot?
-inline void TreeScope::removedLastRefToScope()
-{
-    ASSERT(!deletionHasBegun());
-    if (m_selfOnlyRefCount) {
-        // If removing a child removes the last self-only ref, we don't want the scope to be destroyed
-        // until after removeDetachedChildren returns, so we protect ourselves with an extra self-only ref.
-        selfOnlyRef();
-        dropChildren();
-#ifndef NDEBUG
-        // We need to do this right now since selfOnlyDeref() can delete this.
-        rootNode()->m_inRemovedLastRefFunction = false;
-#endif
-        selfOnlyDeref();
-    } else {
-#ifndef NDEBUG
-        rootNode()->m_inRemovedLastRefFunction = false;
-        beginDeletion();
-#endif
-        delete this;
-    }
-}
-
 // It's important not to inline removedLastRef, because we don't want to inline the code to
 // delete a Node at each deref call site.
 void Node::removedLastRef()
@@ -2226,8 +2188,8 @@ void Node::removedLastRef()
     // An explicit check for Document here is better than a virtual function since it is
     // faster for non-Document nodes, and because the call to removedLastRef that is inlined
     // at all deref call sites is smaller if it's a non-virtual function.
-    if (isTreeScope()) {
-        treeScope().removedLastRefToScope();
+    if (isDocumentNode()) {
+        toDocument(*this).removedLastRef();
         return;
     }
 

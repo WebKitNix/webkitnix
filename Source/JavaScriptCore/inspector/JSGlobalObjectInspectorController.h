@@ -35,15 +35,21 @@
 #include <wtf/text/WTFString.h>
 
 namespace JSC {
+class ConsoleClient;
 class ExecState;
 class JSGlobalObject;
+class JSValue;
 }
 
 namespace Inspector {
 
 class InjectedScriptManager;
+class InspectorConsoleAgent;
 class InspectorBackendDispatcher;
+class InspectorConsoleAgent;
 class InspectorFrontendChannel;
+class JSConsoleClient;
+class ScriptCallStack;
 
 class JSGlobalObjectInspectorController final : public InspectorEnvironment {
     WTF_MAKE_NONCOPYABLE(JSGlobalObjectInspectorController);
@@ -53,19 +59,29 @@ public:
     ~JSGlobalObjectInspectorController();
 
     void connectFrontend(InspectorFrontendChannel*);
-    void disconnectFrontend();
+    void disconnectFrontend(InspectorDisconnectReason reason);
     void dispatchMessageFromFrontend(const String&);
+
+    void globalObjectDestroyed();
+
+    void reportAPIException(JSC::ExecState*, JSC::JSValue exception);
+
+    JSC::ConsoleClient* consoleClient() const;
 
     virtual bool developerExtrasEnabled() const override { return true; }
     virtual bool canAccessInspectedScriptState(JSC::ExecState*) const override { return true; }
     virtual InspectorFunctionCallHandler functionCallHandler() const override;
     virtual InspectorEvaluateHandler evaluateHandler() const override;
     virtual void willCallInjectedScriptFunction(JSC::ExecState*, const String&, int) override { }
-    virtual void didCallInjectedScriptFunction() override { }
+    virtual void didCallInjectedScriptFunction(JSC::ExecState*) override { }
 
 private:
+    void appendAPIBacktrace(ScriptCallStack* callStack);
+
     JSC::JSGlobalObject& m_globalObject;
     std::unique_ptr<InjectedScriptManager> m_injectedScriptManager;
+    std::unique_ptr<JSConsoleClient> m_consoleClient;
+    InspectorConsoleAgent* m_consoleAgent;
     InspectorAgentRegistry m_agents;
     InspectorFrontendChannel* m_inspectorFrontendChannel;
     RefPtr<InspectorBackendDispatcher> m_inspectorBackendDispatcher;

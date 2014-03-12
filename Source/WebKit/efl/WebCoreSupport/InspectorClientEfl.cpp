@@ -28,6 +28,7 @@
 #include "MainFrame.h"
 #include "NotImplemented.h"
 #include "ewk_view_private.h"
+#include <inspector/InspectorAgentBase.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
@@ -147,7 +148,7 @@ String InspectorClientEfl::inspectorFilesPath()
 }
 
 InspectorFrontendClientEfl::InspectorFrontendClientEfl(Evas_Object* inspectedView, Evas_Object* inspectorView, InspectorClientEfl* inspectorClient)
-    : InspectorFrontendClientLocal(&EWKPrivate::corePage(inspectedView)->inspectorController(), EWKPrivate::corePage(inspectorView), adoptPtr(new InspectorFrontendSettingsEfl()))
+    : InspectorFrontendClientLocal(&EWKPrivate::corePage(inspectedView)->inspectorController(), EWKPrivate::corePage(inspectorView), std::make_unique<InspectorFrontendSettingsEfl>())
     , m_inspectedView(inspectedView)
     , m_inspectorView(inspectorView)
     , m_inspectorClient(inspectorClient)
@@ -213,7 +214,7 @@ void InspectorFrontendClientEfl::setToolbarHeight(unsigned)
 void InspectorFrontendClientEfl::destroyInspectorWindow(bool notifyInspectorController)
 {
     if (notifyInspectorController)
-        EWKPrivate::corePage(m_inspectedView)->inspectorController().disconnectFrontend();
+        EWKPrivate::corePage(m_inspectedView)->inspectorController().disconnectFrontend(Inspector::InspectorDisconnectReason::InspectorDestroyed);
 
     if (m_inspectorClient)
         m_inspectorClient->releaseFrontendPage();

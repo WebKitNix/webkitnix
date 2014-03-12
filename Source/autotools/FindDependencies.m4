@@ -129,7 +129,10 @@ esac
 AC_SUBST([UNICODE_CFLAGS])
 AC_SUBST([UNICODE_LIBS])
 
-PKG_CHECK_MODULES([ZLIB], [zlib])
+PKG_CHECK_MODULES([ZLIB], [zlib], [], [
+	AC_CHECK_LIB([z], [gzread], ,
+	  [AC_MSG_ERROR([unable to find the libz library])]
+	)])
 AC_SUBST([ZLIB_CFLAGS])
 AC_SUBST([ZLIB_LIBS])
 
@@ -323,30 +326,17 @@ if test "$enable_gamepad" = "yes" && test "$os_linux" = no; then
     enable_gamepad=no;
 fi
 
-# Turn off svg features if --disable-svg is requested.
-if test "$enable_svg" = "no"; then
-   enable_svg_fonts=no
-fi
-
-# Check for SVG features, enabling SVG if necessary.
-if test "$enable_svg_fonts" = "yes" && test "$enable_svg" = "no"; then
-    AC_MSG_WARN([SVG feature(s) requested but SVG is disabled.. Enabling SVG support])
-    enable_svg=yes
-fi
-
 if test "$enable_opcode_stats" = "yes"; then
     if test "$enable_jit" = "yes"; then
         AC_MSG_ERROR([JIT must be disabled for Opcode stats to work.])
     fi
 fi
 
-# Enable CSS Filters and Shaders if accelerated_compositing is turned on.
+# Enable CSS Filters if accelerated_compositing is turned on.
 enable_css_filters=no;
-enable_css_shaders=no;
-AC_MSG_CHECKING([whether to enable CSS Filters and Shaders])
+AC_MSG_CHECKING([whether to enable CSS Filters])
 if test "$enable_accelerated_compositing" = "yes" && test "$found_opengl" = "yes"; then
     enable_css_filters=yes;
-    enable_css_shaders=yes;
 fi
 AC_MSG_RESULT([$enable_css_filters])
 
@@ -414,9 +404,20 @@ PKG_CHECK_MODULES([LIBXSLT],[libxslt >= libxslt_required_version])
 AC_SUBST([LIBXSLT_CFLAGS])
 AC_SUBST([LIBXSLT_LIBS])
 
-# Check if geoclue is available.
+# Check if geoclue is available, with a preference over Geoclue2 if present.
+geolocation_description="none"
 if test "$enable_geolocation" = "yes"; then
-    PKG_CHECK_MODULES([GEOCLUE], [geoclue])
+    PKG_CHECK_MODULES([GEOCLUE2], [gio-unix-2.0 geoclue-2.0 >= geoclue2_required_version], [found_geoclue2=yes], [found_geoclue2=no])
+    if test "$found_geoclue2" = "yes"; then
+        GEOCLUE_CFLAGS="$GEOCLUE2_CFLAGS"
+        GEOCLUE_LIBS="$GEOCLUE2_LIBS"
+        GEOCLUE_DBUS_INTERFACE=`$PKG_CONFIG --variable dbus_interface geoclue-2.0`
+        AC_SUBST(GEOCLUE_DBUS_INTERFACE)
+        geolocation_description="Geoclue 2"
+    else
+        PKG_CHECK_MODULES([GEOCLUE], [geoclue])
+        geolocation_description="Geoclue"
+    fi
     AC_SUBST([GEOCLUE_CFLAGS])
     AC_SUBST([GEOCLUE_LIBS])
 fi
@@ -514,7 +515,7 @@ if test "$enable_webkit2" = "yes"; then
     AC_SUBST(GTK_UNIX_PRINTING_LIBS)
 
     # On some Linux/Unix platforms, shm_* may only be available if linking against librt
-    if test "$os_win32" = "no"; then
+    if test "$os_win32" = "no" && test "$os_openbsd" = "no"; then
         AC_SEARCH_LIBS([shm_open], [rt], [SHM_LIBS="-lrt"])
         AC_SUBST(SHM_LIBS)
     fi

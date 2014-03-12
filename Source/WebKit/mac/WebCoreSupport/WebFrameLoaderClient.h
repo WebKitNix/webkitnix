@@ -62,9 +62,8 @@ private:
 
     virtual void makeRepresentation(WebCore::DocumentLoader*) override;
     virtual bool hasHTMLView() const override;
-    virtual void forceLayout() override;
 #if PLATFORM(IOS)
-    virtual void forceLayoutWithoutRecalculatingStyles() override;
+    virtual bool forceLayoutOnRestoreFromPageCache() override;
 #endif
     virtual void forceLayoutForNonHTML() override;
 
@@ -147,7 +146,6 @@ private:
     virtual void updateGlobalHistoryRedirectLinks() override;
 
     virtual bool shouldGoToHistoryItem(WebCore::HistoryItem*) const override;
-    virtual bool shouldStopLoadingForHistoryItem(WebCore::HistoryItem*) const override;
     virtual void updateGlobalHistoryItemForPage() override;
 
     virtual void didDisplayInsecureContent() override;
@@ -223,9 +221,7 @@ private:
     virtual bool shouldLoadMediaElementURL(const WebCore::URL&) const override;
 #endif
 
-#if PLATFORM(MAC)
     virtual RemoteAXObjectRef accessibilityRemoteObject() override { return 0; }
-#endif
     
     RetainPtr<WebFramePolicyListener> setUpPolicyListener(WebCore::FramePolicyFunction);
 

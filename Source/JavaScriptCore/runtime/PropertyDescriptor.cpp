@@ -30,7 +30,7 @@
 
 #include "GetterSetter.h"
 #include "JSObject.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC {
 unsigned PropertyDescriptor::defaultAttributes = DontDelete | DontEnum | ReadOnly;
@@ -113,6 +113,16 @@ void PropertyDescriptor::setDescriptor(JSValue value, unsigned attributes)
         m_value = value;
         m_seenAttributes = EnumerablePresent | ConfigurablePresent | WritablePresent;
     }
+}
+
+void PropertyDescriptor::setCustomDescriptor(unsigned attributes)
+{
+    m_attributes = attributes | Accessor | CustomAccessor;
+    m_attributes &= ~ReadOnly;
+    m_seenAttributes = EnumerablePresent | ConfigurablePresent;
+    setGetter(jsUndefined());
+    setSetter(jsUndefined());
+    m_value = JSValue();
 }
 
 void PropertyDescriptor::setAccessorDescriptor(GetterSetter* accessor, unsigned attributes)

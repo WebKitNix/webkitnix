@@ -25,8 +25,7 @@
 
 #include "RuleFeature.h"
 #include "RuleSet.h"
-
-#include <wtf/OwnPtr.h>
+#include <memory>
 #include <wtf/RefPtr.h>
 #include <wtf/Vector.h>
 
@@ -38,7 +37,6 @@ class DocumentStyleSheetCollection;
 class InspectorCSSOMWrappers;
 class MediaQueryEvaluator;
 class RuleSet;
-class StyleScopeResolver;
 
 class DocumentRuleSets {
 public:
@@ -53,17 +51,17 @@ public:
 
     void initUserStyle(DocumentStyleSheetCollection&, const MediaQueryEvaluator&, StyleResolver&);
     void resetAuthorStyle();
-    void appendAuthorStyleSheets(unsigned firstNew, const Vector<RefPtr<CSSStyleSheet>>&, MediaQueryEvaluator*, InspectorCSSOMWrappers&, bool isViewSource, StyleResolver*);
+    void appendAuthorStyleSheets(unsigned firstNew, const Vector<RefPtr<CSSStyleSheet>>&, MediaQueryEvaluator*, InspectorCSSOMWrappers&, StyleResolver*);
 
-    void collectFeatures(bool isViewSource, StyleScopeResolver*);
+    void collectFeatures();
 
 private:
     void collectRulesFromUserStyleSheets(const Vector<RefPtr<CSSStyleSheet>>&, RuleSet& userStyle, const MediaQueryEvaluator&, StyleResolver&);
-    OwnPtr<RuleSet> m_authorStyle;
-    OwnPtr<RuleSet> m_userStyle;
+    std::unique_ptr<RuleSet> m_authorStyle;
+    std::unique_ptr<RuleSet> m_userStyle;
     RuleFeatureSet m_features;
-    OwnPtr<RuleSet> m_siblingRuleSet;
-    OwnPtr<RuleSet> m_uncommonAttributeRuleSet;
+    std::unique_ptr<RuleSet> m_siblingRuleSet;
+    std::unique_ptr<RuleSet> m_uncommonAttributeRuleSet;
 };
 
 } // namespace WebCore

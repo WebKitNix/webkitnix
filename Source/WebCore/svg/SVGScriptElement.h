@@ -21,7 +21,6 @@
 #ifndef SVGScriptElement_h
 #define SVGScriptElement_h
 
-#if ENABLE(SVG)
 #include "SVGAnimatedBoolean.h"
 #include "SVGAnimatedString.h"
 #include "SVGElement.h"
@@ -37,10 +36,6 @@ class SVGScriptElement final : public SVGElement
                              , public ScriptElement {
 public:
     static PassRefPtr<SVGScriptElement> create(const QualifiedName&, Document&, bool wasInsertedByParser);
-
-#ifndef NDEBUG
-    virtual bool isAnimatableAttribute(const QualifiedName&) const override;
-#endif
 
 private:
     SVGScriptElement(const QualifiedName&, Document&, bool wasInsertedByParser, bool alreadyStarted);
@@ -79,6 +74,10 @@ private:
     virtual bool haveFiredLoadEvent() const override { return ScriptElement::haveFiredLoadEvent(); }
     virtual Timer<SVGElement>* svgLoadEventTimer() override { return &m_svgLoadEventTimer; }
 
+#ifndef NDEBUG
+    virtual bool filterOutAnimatableAttribute(const QualifiedName&) const override;
+#endif
+
     BEGIN_DECLARE_ANIMATED_PROPERTIES(SVGScriptElement)
         DECLARE_ANIMATED_STRING(Href, href)
         DECLARE_ANIMATED_BOOLEAN(ExternalResourcesRequired, externalResourcesRequired)
@@ -91,5 +90,4 @@ NODE_TYPE_CASTS(SVGScriptElement)
 
 } // namespace WebCore
 
-#endif // ENABLE(SVG)
 #endif

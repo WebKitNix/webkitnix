@@ -20,13 +20,12 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "config.h"
 
 #import "APICast.h"
-#import "APIShims.h"
 #import "JSContextInternal.h"
 #import "JSGlobalObject.h"
 #import "JSValueInternal.h"
@@ -34,7 +33,7 @@
 #import "JSWrapperMap.h"
 #import "JavaScriptCore.h"
 #import "ObjcRuntimeExtras.h"
-#import "Operations.h"
+#import "JSCInlines.h"
 #import "StrongInlines.h"
 #import <wtf/HashSet.h>
 
@@ -80,6 +79,7 @@
 
 - (void)dealloc
 {
+    m_exception.clear();
     [m_wrapperMap release];
     JSGlobalContextRelease(m_context);
     [m_virtualMachine release];
@@ -89,9 +89,17 @@
 
 - (JSValue *)evaluateScript:(NSString *)script
 {
-    JSValueRef exceptionValue = 0;
+    return [self evaluateScript:script withSourceURL:nil];
+}
+
+- (JSValue *)evaluateScript:(NSString *)script withSourceURL:(NSURL *)sourceURL
+{
+    JSValueRef exceptionValue = nullptr;
     JSStringRef scriptJS = JSStringCreateWithCFString((CFStringRef)script);
-    JSValueRef result = JSEvaluateScript(m_context, scriptJS, 0, 0, 0, &exceptionValue);
+    JSStringRef sourceURLJS = sourceURL ? JSStringCreateWithCFString((CFStringRef)[sourceURL absoluteString]) : nullptr;
+    JSValueRef result = JSEvaluateScript(m_context, scriptJS, nullptr, sourceURLJS, 0, &exceptionValue);
+    if (sourceURLJS)
+        JSStringRelease(sourceURLJS);
     JSStringRelease(scriptJS);
 
     if (exceptionValue)
@@ -102,6 +110,7 @@
 
 - (void)setException:(JSValue *)value
 {
+    JSC::JSLockHolder locker(toJS(m_context));
     if (value)
         m_exception.set(toJS(m_context)->vm(), toJS(JSValueToObject(m_context, valueInternalValue(value), 0)));
     else
@@ -139,6 +148,15 @@
     if (!entry)
         return nil;
     return [JSValue valueWithJSValueRef:entry->thisValue inContext:[JSContext currentContext]];
+}
+
++ (JSValue *)currentCallee
+{
+    WTFThreadData& threadData = wtfThreadData();
+    CallbackData *entry = (CallbackData *)threadData.m_apiData;
+    if (!entry)
+        return nil;
+    return [JSValue valueWithJSValueRef:entry->calleeValue inContext:[JSContext currentContext]];
 }
 
 + (NSArray *)currentArguments
@@ -238,12 +256,12 @@
     return NO;
 }
 
-- (void)beginCallbackWithData:(CallbackData *)callbackData thisValue:(JSValueRef)thisValue argumentCount:(size_t)argumentCount arguments:(const JSValueRef *)arguments
+- (void)beginCallbackWithData:(CallbackData *)callbackData calleeValue:(JSValueRef)calleeValue thisValue:(JSValueRef)thisValue argumentCount:(size_t)argumentCount arguments:(const JSValueRef *)arguments
 {
     WTFThreadData& threadData = wtfThreadData();
     [self retain];
     CallbackData *prevStack = (CallbackData *)threadData.m_apiData;
-    *callbackData = (CallbackData){ prevStack, self, [self.exception retain], thisValue, argumentCount, arguments, nil };
+    *callbackData = (CallbackData){ prevStack, self, [self.exception retain], calleeValue, thisValue, argumentCount, arguments, nil };
     threadData.m_apiData = callbackData;
     self.exception = nil;
 }
@@ -260,14 +278,13 @@
 
 - (JSValue *)wrapperForObjCObject:(id)object
 {
-    // Lock access to m_wrapperMap
-    JSC::JSLockHolder lock(toJS(m_context));
+    JSC::JSLockHolder locker(toJS(m_context));
     return [m_wrapperMap jsWrapperForObject:object];
 }
 
 - (JSValue *)wrapperForJSObject:(JSValueRef)value
 {
-    JSC::JSLockHolder lock(toJS(m_context));
+    JSC::JSLockHolder locker(toJS(m_context));
     return [m_wrapperMap objcWrapperForJSValueRef:value];
 }
 

@@ -26,11 +26,10 @@
 #ifndef GraphicsLayerClient_h
 #define GraphicsLayerClient_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
 namespace WebCore {
 
 class FloatPoint;
+class FloatRect;
 class GraphicsContext;
 class GraphicsLayer;
 class IntPoint;
@@ -72,7 +71,7 @@ public:
     // Notification that this layer requires a flush before the next display refresh.
     virtual void notifyFlushBeforeDisplayRefresh(const GraphicsLayer*) { }
 
-    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const IntRect& inClip) = 0;
+    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const FloatRect& inClip) = 0;
     virtual void didCommitChangesForLayer(const GraphicsLayer*) const { }
 
     // Provides current transform (taking transform-origin and animations into account). Input matrix has been
@@ -95,6 +94,10 @@ public:
     virtual bool shouldSkipLayerInDump(const GraphicsLayer*) const { return false; }
     virtual bool shouldDumpPropertyForLayer(const GraphicsLayer*, const char*) const { return true; }
 
+#if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
+    virtual bool mediaLayerMustBeUpdatedOnMainThread() const { return false; }
+#endif
+
 #ifndef NDEBUG
     // RenderLayerBacking overrides this to verify that it is not
     // currently painting contents. An ASSERT fails, if it is.
@@ -106,7 +109,5 @@ public:
 };
 
 } // namespace WebCore
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // GraphicsLayerClient_h

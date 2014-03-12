@@ -61,6 +61,10 @@ OBJC_CLASS NSString;
 typedef struct HBITMAP__* HBITMAP;
 #endif
 
+namespace JSC { namespace Yarr {
+class RegularExpression;
+} }
+
 namespace WebCore {
 
     class AnimationController;
@@ -81,7 +85,6 @@ namespace WebCore {
     class MainFrame;
     class Node;
     class Range;
-    class RegularExpression;
     class RenderLayer;
     class RenderView;
     class RenderWidget;
@@ -178,9 +181,6 @@ namespace WebCore {
         bool shouldUsePrintingLayout() const;
         FloatSize resizePageRectsKeepingRatio(const FloatSize& originalSize, const FloatSize& expectedSize);
 
-        bool inViewSourceMode() const;
-        void setInViewSourceMode(bool = true);
-
         void setDocument(PassRefPtr<Document>);
 
         void setPageZoomFactor(float factor);
@@ -192,9 +192,7 @@ namespace WebCore {
         // Scale factor of this frame with respect to the container.
         float frameScaleFactor() const;
 
-#if USE(ACCELERATED_COMPOSITING)
         void deviceOrPageScaleFactorChanged();
-#endif
 
 #if PLATFORM(IOS)
         const ViewportArguments& viewportArguments() const;
@@ -237,7 +235,7 @@ namespace WebCore {
         Document* documentAtPoint(const IntPoint& windowPoint);
         PassRefPtr<Range> rangeForPoint(const IntPoint& framePoint);
 
-        String searchForLabelsAboveCell(RegularExpression*, HTMLTableCellElement*, size_t* resultDistanceFromStartOfCell);
+        String searchForLabelsAboveCell(JSC::Yarr::RegularExpression*, HTMLTableCellElement*, size_t* resultDistanceFromStartOfCell);
         String searchForLabelsBeforeElement(const Vector<String>& labels, Element*, size_t* resultDistance, bool* resultIsInCellAbove);
         String matchLabelsAgainstElement(const Vector<String>& labels, Element*);
 
@@ -255,7 +253,6 @@ namespace WebCore {
         void updateLayout() const;
         NSRect caretRect() const;
         NSRect rectForScrollToVisible() const;
-        NSRect rectForSelection(VisibleSelection&) const;
         DOMCSSStyleDeclaration* styleAtSelectionStart() const;
         unsigned formElementsCharacterCount() const;
         void setTimersPaused(bool);
@@ -301,7 +298,7 @@ namespace WebCore {
         RefPtr<Document> m_doc;
 
         const std::unique_ptr<ScriptController> m_script;
-        const OwnPtr<Editor> m_editor;
+        const std::unique_ptr<Editor> m_editor;
         const OwnPtr<FrameSelection> m_selection;
         const OwnPtr<EventHandler> m_eventHandler;
         const std::unique_ptr<AnimationController> m_animationController;
@@ -337,8 +334,6 @@ namespace WebCore {
 #if ENABLE(ORIENTATION_EVENTS)
         int m_orientation;
 #endif
-
-        bool m_inViewSourceMode;
 
 #if USE(TILED_BACKING_STORE)
     // FIXME: The tiled backing store belongs in FrameView, not Frame.
@@ -410,16 +405,6 @@ namespace WebCore {
     inline HTMLFrameOwnerElement* Frame::ownerElement() const
     {
         return m_ownerElement;
-    }
-
-    inline bool Frame::inViewSourceMode() const
-    {
-        return m_inViewSourceMode;
-    }
-
-    inline void Frame::setInViewSourceMode(bool mode)
-    {
-        m_inViewSourceMode = mode;
     }
 
     inline FrameTree& Frame::tree() const

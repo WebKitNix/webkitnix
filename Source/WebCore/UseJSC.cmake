@@ -97,7 +97,6 @@ list(APPEND WebCore_SOURCES
     bindings/js/JSImageConstructor.cpp
     bindings/js/JSImageDataCustom.cpp
     bindings/js/JSInspectorFrontendHostCustom.cpp
-    bindings/js/JSJavaScriptCallFrameCustom.cpp
     bindings/js/JSLazyEventListener.cpp
     bindings/js/JSLocationCustom.cpp
     bindings/js/JSMainThreadExecState.cpp
@@ -135,6 +134,9 @@ list(APPEND WebCore_SOURCES
     bindings/js/JSStyleSheetCustom.cpp
     bindings/js/JSStyleSheetListCustom.cpp
     bindings/js/JSSubtleCryptoCustom.cpp
+    bindings/js/JSSVGElementInstanceCustom.cpp
+    bindings/js/JSSVGLengthCustom.cpp
+    bindings/js/JSSVGPathSegCustom.cpp
     bindings/js/JSTextCustom.cpp
     bindings/js/JSTextTrackCueCustom.cpp
     bindings/js/JSTextTrackCustom.cpp
@@ -154,13 +156,10 @@ list(APPEND WebCore_SOURCES
     bindings/js/JSXMLHttpRequestCustom.cpp
     bindings/js/JSXPathResultCustom.cpp
     bindings/js/JSXSLTProcessorCustom.cpp
-    bindings/js/JavaScriptCallFrame.cpp
     bindings/js/PageScriptDebugServer.cpp
     bindings/js/ScheduledAction.cpp
     bindings/js/ScriptCachedFrameData.cpp
-    bindings/js/ScriptCallStackFactory.cpp
     bindings/js/ScriptController.cpp
-    bindings/js/ScriptDebugServer.cpp
     bindings/js/ScriptGlobalObject.cpp
     bindings/js/ScriptProfile.cpp
     bindings/js/ScriptProfiler.cpp
@@ -247,14 +246,6 @@ endif ()
 if (ENABLE_SHARED_WORKERS)
     list(APPEND WebCore_SOURCES
         bindings/js/JSSharedWorkerCustom.cpp
-    )
-endif ()
-
-if (ENABLE_SVG)
-    list(APPEND WebCore_SOURCES
-        bindings/js/JSSVGElementInstanceCustom.cpp
-        bindings/js/JSSVGLengthCustom.cpp
-        bindings/js/JSSVGPathSegCustom.cpp
     )
 endif ()
 

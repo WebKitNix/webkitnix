@@ -491,4 +491,11 @@ void EventSenderProxy::continuousMouseScrollBy(int horizontal, int vertical, boo
     notImplemented();
 }
 
+void EventSenderProxy::mouseScrollByWithWheelAndMomentumPhases(int x, int y, int /*phase*/, int /*momentum*/)
+{
+    // Nix does not have the concept of wheel gesture phases or momentum. Just relay to
+    // the mouse wheel handler.
+    mouseScrollBy(x, y);
+}
+
 }

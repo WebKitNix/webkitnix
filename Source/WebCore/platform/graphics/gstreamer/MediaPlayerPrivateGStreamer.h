@@ -59,7 +59,7 @@ public:
 
     void load(const String &url);
 #if ENABLE(MEDIA_SOURCE)
-    void load(const String& url, PassRefPtr<HTMLMediaSource>);
+    void load(const String& url, MediaSourcePrivateClient*);
 #endif
     void commitLoad();
     void cancelLoad();
@@ -81,7 +81,7 @@ public:
     void setPreload(MediaPlayer::Preload);
     void fillTimerFired(Timer<MediaPlayerPrivateGStreamer>*);
 
-    PassRefPtr<TimeRanges> buffered() const;
+    std::unique_ptr<PlatformTimeRanges> buffered() const;
     float maxTimeSeekable() const;
     bool didLoadingProgress() const;
     unsigned totalBytes() const;
@@ -207,7 +207,7 @@ private:
     RefPtr<InbandTextTrackPrivate> m_chaptersTrack;
 #endif
 #if ENABLE(MEDIA_SOURCE)
-    RefPtr<HTMLMediaSource> m_mediaSource;
+    RefPtr<MediaSourcePrivateClient> m_mediaSource;
 #endif
 };
 }

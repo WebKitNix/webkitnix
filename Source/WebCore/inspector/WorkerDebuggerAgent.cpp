@@ -29,15 +29,15 @@
  */
 
 #include "config.h"
-
-#if ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
 #include "WorkerDebuggerAgent.h"
 
-#include "ScriptDebugServer.h"
+#if ENABLE(INSPECTOR)
+
 #include "WorkerGlobalScope.h"
 #include "WorkerThread.h"
 #include <inspector/InjectedScript.h>
 #include <inspector/InjectedScriptManager.h>
+#include <inspector/ScriptDebugServer.h>
 #include <mutex>
 #include <wtf/MessageQueue.h>
 #include <wtf/NeverDestroyed.h>
@@ -92,21 +92,21 @@ private:
 
 const char* WorkerDebuggerAgent::debuggerTaskMode = "debugger";
 
-WorkerDebuggerAgent::WorkerDebuggerAgent(InstrumentingAgents* instrumentingAgents, WorkerGlobalScope* inspectedWorkerGlobalScope, InjectedScriptManager* injectedScriptManager)
-    : InspectorDebuggerAgent(instrumentingAgents, injectedScriptManager)
+WorkerDebuggerAgent::WorkerDebuggerAgent(InjectedScriptManager* injectedScriptManager, InstrumentingAgents* instrumentingAgents, WorkerGlobalScope* inspectedWorkerGlobalScope)
+    : WebDebuggerAgent(injectedScriptManager, instrumentingAgents)
     , m_scriptDebugServer(inspectedWorkerGlobalScope, WorkerDebuggerAgent::debuggerTaskMode)
     , m_inspectedWorkerGlobalScope(inspectedWorkerGlobalScope)
 {
     std::lock_guard<std::mutex> lock(workerDebuggerAgentsMutex());
-    workerDebuggerAgents().set(inspectedWorkerGlobalScope->thread(), this);
+    workerDebuggerAgents().set(&inspectedWorkerGlobalScope->thread(), this);
 }
 
 WorkerDebuggerAgent::~WorkerDebuggerAgent()
 {
     std::lock_guard<std::mutex> lock(workerDebuggerAgentsMutex());
 
-    ASSERT(workerDebuggerAgents().contains(m_inspectedWorkerGlobalScope->thread()));
-    workerDebuggerAgents().remove(m_inspectedWorkerGlobalScope->thread());
+    ASSERT(workerDebuggerAgents().contains(&m_inspectedWorkerGlobalScope->thread()));
+    workerDebuggerAgents().remove(&m_inspectedWorkerGlobalScope->thread());
 }
 
 void WorkerDebuggerAgent::interruptAndDispatchInspectorCommands(WorkerThread* thread)
@@ -122,9 +122,14 @@ void WorkerDebuggerAgent::startListeningScriptDebugServer()
     scriptDebugServer().addListener(this);
 }
 
-void WorkerDebuggerAgent::stopListeningScriptDebugServer()
+void WorkerDebuggerAgent::stopListeningScriptDebugServer(bool isBeingDestroyed)
 {
-    scriptDebugServer().removeListener(this);
+    scriptDebugServer().removeListener(this, isBeingDestroyed);
+}
+
+void WorkerDebuggerAgent::breakpointActionLog(JSC::ExecState*, const String& message)
+{
+    m_inspectedWorkerGlobalScope->addConsoleMessage(MessageSource::JS, MessageLevel::Log, message);
 }
 
 WorkerScriptDebugServer& WorkerDebuggerAgent::scriptDebugServer()
@@ -135,9 +140,10 @@ WorkerScriptDebugServer& WorkerDebuggerAgent::scriptDebugServer()
 InjectedScript WorkerDebuggerAgent::injectedScriptForEval(ErrorString* error, const int* executionContextId)
 {
     if (executionContextId) {
-        *error = "Execution context id is not supported for workers as there is only one execution context.";
+        *error = ASCIILiteral("Execution context id is not supported for workers as there is only one execution context.");
         return InjectedScript();
     }
+
     JSC::ExecState* scriptState = execStateFromWorkerGlobalScope(m_inspectedWorkerGlobalScope);
     return injectedScriptManager()->injectedScriptFor(scriptState);
 }
@@ -154,4 +160,4 @@ void WorkerDebuggerAgent::unmuteConsole()
 
 } // namespace WebCore
 
-#endif // ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
+#endif // ENABLE(INSPECTOR)

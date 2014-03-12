@@ -40,7 +40,7 @@
 #include <wtf/RetainPtr.h>
 #include <wtf/text/WTFString.h>
 
-#if PLATFORM(MAC)
+#if USE(APPKIT)
 OBJC_CLASS NSImage;
 #endif
 
@@ -141,10 +141,14 @@ public:
 
     virtual PassNativeImagePtr nativeImageForCurrentFrame() { return 0; }
     virtual ImageOrientation orientationForCurrentFrame() { return ImageOrientation(); }
-    
-#if PLATFORM(MAC)
+
     // Accessors for native image formats.
+
+#if USE(APPKIT)
     virtual NSImage* getNSImage() { return 0; }
+#endif
+
+#if PLATFORM(COCOA)
     virtual CFDataRef getTIFFRepresentation() { return 0; }
 #endif
 

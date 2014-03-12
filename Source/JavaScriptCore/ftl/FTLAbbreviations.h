@@ -26,12 +26,9 @@
 #ifndef FTLAbbreviations_h
 #define FTLAbbreviations_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(FTL_JIT)
 
 #include "FTLAbbreviatedTypes.h"
-#include "FTLSwitchCase.h"
 #include "FTLValueFromBlock.h"
 #include "LLVMAPI.h"
 #include <cstring>
@@ -58,6 +55,7 @@ static inline LType floatType(LContext context) { return llvm->FloatTypeInContex
 static inline LType doubleType(LContext context) { return llvm->DoubleTypeInContext(context); }
 
 static inline LType pointerType(LType type) { return llvm->PointerType(type, 0); }
+static inline LType arrayType(LType type, unsigned count) { return llvm->ArrayType(type, count); }
 static inline LType vectorType(LType type, unsigned count) { return llvm->VectorType(type, count); }
 
 enum PackingMode { NotPacked, Packed };
@@ -119,6 +117,8 @@ static inline unsigned mdKindID(LContext context, const char* string) { return l
 static inline LValue mdString(LContext context, const char* string, unsigned length) { return llvm->MDStringInContext(context, string, length); }
 static inline LValue mdString(LContext context, const char* string) { return mdString(context, string, std::strlen(string)); }
 static inline LValue mdNode(LContext context, LValue* args, unsigned numArgs) { return llvm->MDNodeInContext(context, args, numArgs); }
+template<typename VectorType>
+static inline LValue mdNode(LContext context, const VectorType& vector) { return mdNode(context, const_cast<LValue*>(vector.begin()), vector.size()); }
 static inline LValue mdNode(LContext context) { return mdNode(context, 0, 0); }
 static inline LValue mdNode(LContext context, LValue arg1) { return mdNode(context, &arg1, 1); }
 static inline LValue mdNode(LContext context, LValue arg1, LValue arg2)
@@ -126,12 +126,18 @@ static inline LValue mdNode(LContext context, LValue arg1, LValue arg2)
     LValue args[] = { arg1, arg2 };
     return mdNode(context, args, 2);
 }
+static inline LValue mdNode(LContext context, LValue arg1, LValue arg2, LValue arg3)
+{
+    LValue args[] = { arg1, arg2, arg3 };
+    return mdNode(context, args, 3);
+}
 
 static inline void setMetadata(LValue instruction, unsigned kind, LValue metadata) { llvm->SetMetadata(instruction, kind, metadata); }
 
 static inline LValue addFunction(LModule module, const char* name, LType type) { return llvm->AddFunction(module, name, type); }
 static inline void setLinkage(LValue global, LLinkage linkage) { llvm->SetLinkage(global, linkage); }
 static inline void setFunctionCallingConv(LValue function, LCallConv convention) { llvm->SetFunctionCallConv(function, convention); }
+static inline void addTargetDependentFunctionAttr(LValue function, const char* key, const char* value) { llvm->AddTargetDependentFunctionAttr(function, key, value); }
 
 static inline LValue addExternFunction(LModule module, const char* name, LType type)
 {

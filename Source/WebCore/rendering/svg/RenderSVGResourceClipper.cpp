@@ -21,8 +21,6 @@
  */
 
 #include "config.h"
-
-#if ENABLE(SVG)
 #include "RenderSVGResourceClipper.h"
 
 #include "ElementIterator.h"
@@ -61,7 +59,7 @@ void RenderSVGResourceClipper::removeAllClientsFromCache(bool markForInvalidatio
     markAllClientsForInvalidation(markForInvalidation ? LayoutAndBoundariesInvalidation : ParentOnlyInvalidation);
 }
 
-void RenderSVGResourceClipper::removeClientFromCache(RenderObject& client, bool markForInvalidation)
+void RenderSVGResourceClipper::removeClientFromCache(RenderElement& client, bool markForInvalidation)
 {
     m_clipper.remove(&client);
 
@@ -148,7 +146,7 @@ bool RenderSVGResourceClipper::applyClippingToContext(RenderElement& renderer, c
     }
 
     AffineTransform absoluteTransform;
-    SVGRenderingContext::calculateTransformationToOutermostCoordinateSystem(&renderer, absoluteTransform);
+    SVGRenderingContext::calculateTransformationToOutermostCoordinateSystem(renderer, absoluteTransform);
 
     if (shouldCreateClipData && !repaintRect.isEmpty()) {
         if (!SVGRenderingContext::createImageBuffer(repaintRect, absoluteTransform, clipperData->clipMaskImage, ColorSpaceDeviceRGB, Unaccelerated))
@@ -316,5 +314,3 @@ FloatRect RenderSVGResourceClipper::resourceBoundingBox(const RenderObject& obje
 }
 
 }
-
-#endif // ENABLE(SVG)

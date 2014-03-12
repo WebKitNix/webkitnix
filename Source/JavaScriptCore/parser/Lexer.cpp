@@ -27,10 +27,12 @@
 
 #include "JSFunctionInlines.h"
 
+#include "BuiltinNames.h"
 #include "JSGlobalObjectFunctions.h"
 #include "Identifier.h"
 #include "NodeInfo.h"
 #include "Nodes.h"
+#include "JSCInlines.h"
 #include <wtf/dtoa.h>
 #include <ctype.h>
 #include <limits.h>
@@ -90,6 +92,7 @@ enum CharacterType {
 
     // Other types (only one so far)
     CharacterWhiteSpace,
+    CharacterPrivateIdentifierStart
 };
 
 // 256 Latin-1 codes
@@ -158,7 +161,7 @@ static const unsigned short typesOfLatin1Characters[256] = {
 /*  61 - =                  */ CharacterEqual,
 /*  62 - >                  */ CharacterGreater,
 /*  63 - ?                  */ CharacterQuestion,
-/*  64 - @                  */ CharacterInvalid,
+/*  64 - @                  */ CharacterPrivateIdentifierStart,
 /*  65 - A                  */ CharacterIdentifierStart,
 /*  66 - B                  */ CharacterIdentifierStart,
 /*  67 - C                  */ CharacterIdentifierStart,
@@ -486,9 +489,10 @@ static const LChar singleCharacterEscapeValuesForASCII[128] = {
 };
 
 template <typename T>
-Lexer<T>::Lexer(VM* vm)
+Lexer<T>::Lexer(VM* vm, JSParserStrictness strictness)
     : m_isReparsing(false)
     , m_vm(vm)
+    , m_parsingBuiltinFunction(strictness == JSParseBuiltin)
 {
 }
 
@@ -753,7 +757,27 @@ inline void Lexer<T>::record16(int c)
     ASSERT(c <= static_cast<int>(USHRT_MAX));
     m_buffer16.append(static_cast<UChar>(c));
 }
-
+    
+#if !ASSERT_DISABLED
+bool isSafeBuiltinIdentifier(VM& vm, const Identifier* ident)
+{
+    if (!ident)
+        return true;
+    /* Just block any use of suspicious identifiers.  This is intended to
+     * be used as a safety net while implementing builtins.
+     */
+    if (*ident == vm.propertyNames->builtinNames().callPublicName())
+        return false;
+    if (*ident == vm.propertyNames->builtinNames().applyPublicName())
+        return false;
+    if (*ident == vm.propertyNames->eval)
+        return false;
+    if (*ident == vm.propertyNames->Function)
+        return false;
+    return true;
+}
+#endif
+    
 template <>
 template <bool shouldCreateIdentifier> ALWAYS_INLINE JSTokenType Lexer<LChar>::parseIdentifier(JSTokenData* tokenData, unsigned lexerFlags, bool strictMode)
 {
@@ -765,7 +789,11 @@ template <bool shouldCreateIdentifier> ALWAYS_INLINE JSTokenType Lexer<LChar>::p
             return keyword == RESERVED_IF_STRICT && !strictMode ? IDENT : keyword;
         }
     }
-
+    
+    bool isPrivateName = m_current == '@' && m_parsingBuiltinFunction;
+    if (isPrivateName)
+        shift();
+    
     const LChar* identifierStart = currentSourcePtr();
     unsigned identifierLineStart = currentLineStartOffset();
     
@@ -779,18 +807,29 @@ template <bool shouldCreateIdentifier> ALWAYS_INLINE JSTokenType Lexer<LChar>::p
 
     const Identifier* ident = 0;
     
-    if (shouldCreateIdentifier) {
+    if (shouldCreateIdentifier || m_parsingBuiltinFunction) {
         int identifierLength = currentSourcePtr() - identifierStart;
         ident = makeIdentifier(identifierStart, identifierLength);
-
+        if (m_parsingBuiltinFunction) {
+            if (!isSafeBuiltinIdentifier(*m_vm, ident) && !isPrivateName) {
+                m_lexErrorMessage = makeString("The use of '", ident->string(), "' is disallowed in builtin functions.");
+                return ERRORTOK;
+            }
+            if (isPrivateName)
+                ident = m_vm->propertyNames->getPrivateName(*ident);
+            else if (*ident == m_vm->propertyNames->undefinedKeyword)
+                tokenData->ident = &m_vm->propertyNames->undefinedPrivateName;
+            if (!ident)
+                return INVALID_PRIVATE_NAME_ERRORTOK;
+        }
         tokenData->ident = ident;
     } else
         tokenData->ident = 0;
 
-    if (UNLIKELY((remaining < maxTokenLength) && !(lexerFlags & LexerFlagsIgnoreReservedWords))) {
+    if (UNLIKELY((remaining < maxTokenLength) && !(lexerFlags & LexerFlagsIgnoreReservedWords)) && !isPrivateName) {
         ASSERT(shouldCreateIdentifier);
         if (remaining < maxTokenLength) {
-            const HashEntry* entry = m_vm->keywords->getKeyword(*ident);
+            const HashTableValue* entry = m_vm->keywords->getKeyword(*ident);
             ASSERT((remaining < maxTokenLength) || !entry);
             if (!entry)
                 return IDENT;
@@ -814,6 +853,10 @@ template <bool shouldCreateIdentifier> ALWAYS_INLINE JSTokenType Lexer<UChar>::p
             return keyword == RESERVED_IF_STRICT && !strictMode ? IDENT : keyword;
         }
     }
+    
+    bool isPrivateName = m_current == '@' && m_parsingBuiltinFunction;
+    if (isPrivateName)
+        shift();
 
     const UChar* identifierStart = currentSourcePtr();
     int identifierLineStart = currentLineStartOffset();
@@ -826,6 +869,7 @@ template <bool shouldCreateIdentifier> ALWAYS_INLINE JSTokenType Lexer<UChar>::p
     }
     
     if (UNLIKELY(m_current == '\\')) {
+        ASSERT(!isPrivateName);
         setOffsetFromSourcePtr(identifierStart, identifierLineStart);
         return parseIdentifierSlowCase<shouldCreateIdentifier>(tokenData, lexerFlags, strictMode);
     }
@@ -837,21 +881,32 @@ template <bool shouldCreateIdentifier> ALWAYS_INLINE JSTokenType Lexer<UChar>::p
 
     const Identifier* ident = 0;
     
-    if (shouldCreateIdentifier) {
+    if (shouldCreateIdentifier || m_parsingBuiltinFunction) {
         int identifierLength = currentSourcePtr() - identifierStart;
         if (isAll8Bit)
             ident = makeIdentifierLCharFromUChar(identifierStart, identifierLength);
         else
             ident = makeIdentifier(identifierStart, identifierLength);
-        
+        if (m_parsingBuiltinFunction) {
+            if (!isSafeBuiltinIdentifier(*m_vm, ident) && !isPrivateName) {
+                m_lexErrorMessage = makeString("The use of '", ident->string(), "' is disallowed in builtin functions.");
+                return ERRORTOK;
+            }
+            if (isPrivateName)
+                ident = m_vm->propertyNames->getPrivateName(*ident);
+            else if (*ident == m_vm->propertyNames->undefinedKeyword)
+                tokenData->ident = &m_vm->propertyNames->undefinedPrivateName;
+            if (!ident)
+                return INVALID_PRIVATE_NAME_ERRORTOK;
+        }
         tokenData->ident = ident;
     } else
         tokenData->ident = 0;
     
-    if (UNLIKELY((remaining < maxTokenLength) && !(lexerFlags & LexerFlagsIgnoreReservedWords))) {
+    if (UNLIKELY((remaining < maxTokenLength) && !(lexerFlags & LexerFlagsIgnoreReservedWords)) && !isPrivateName) {
         ASSERT(shouldCreateIdentifier);
         if (remaining < maxTokenLength) {
-            const HashEntry* entry = m_vm->keywords->getKeyword(*ident);
+            const HashTableValue* entry = m_vm->keywords->getKeyword(*ident);
             ASSERT((remaining < maxTokenLength) || !entry);
             if (!entry)
                 return IDENT;
@@ -918,7 +973,7 @@ template <bool shouldCreateIdentifier> JSTokenType Lexer<T>::parseIdentifierSlow
         ASSERT(shouldCreateIdentifier);
         // Keywords must not be recognized if there was an \uXXXX in the identifier.
         if (remaining < maxTokenLength) {
-            const HashEntry* entry = m_vm->keywords->getKeyword(*ident);
+            const HashTableValue* entry = m_vm->keywords->getKeyword(*ident);
             ASSERT((remaining < maxTokenLength) || !entry);
             if (!entry)
                 return IDENT;
@@ -1607,7 +1662,7 @@ start:
                 }
             }
         }
-        // Fall through into CharacterNumber
+        FALLTHROUGH;
     case CharacterNumber:
         if (LIKELY(token != NUMBER)) {
             if (!parseDecimal(tokenData->doubleValue)) {
@@ -1656,8 +1711,9 @@ inNumberAfterDecimalPoint:
         break;
     case CharacterIdentifierStart:
         ASSERT(isIdentStart(m_current));
-        // Fall through into CharacterBackSlash.
+        FALLTHROUGH;
     case CharacterBackSlash:
+        parseIdent:
         if (lexerFlags & LexexFlagsDontBuildKeywords)
             token = parseIdentifier<false>(tokenData, lexerFlags, strictMode);
         else
@@ -1670,6 +1726,11 @@ inNumberAfterDecimalPoint:
         m_terminator = true;
         m_lineStart = m_code;
         goto start;
+    case CharacterPrivateIdentifierStart:
+        if (m_parsingBuiltinFunction)
+            goto parseIdent;
+
+        FALLTHROUGH;
     case CharacterInvalid:
         m_lexErrorMessage = invalidCharacterMessage();
         token = ERRORTOK;

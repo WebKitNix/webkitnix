@@ -34,7 +34,7 @@
 #include "TrackPrivateBase.h"
 #include <glib-object.h>
 #include <gst/gst.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 
 GST_DEBUG_CATEGORY_EXTERN(webkit_media_player_debug);
 #define GST_CAT_DEFAULT webkit_media_player_debug
@@ -97,9 +97,11 @@ void TrackPrivateBaseGStreamer::disconnect()
 
     if (m_activeTimerHandler)
         g_source_remove(m_activeTimerHandler);
+    m_activeTimerHandler = 0;
 
     if (m_tagTimerHandler)
         g_source_remove(m_tagTimerHandler);
+    m_tagTimerHandler = 0;
 
     m_pad.clear();
     m_tags.clear();
@@ -111,6 +113,7 @@ void TrackPrivateBaseGStreamer::activeChanged()
         g_source_remove(m_activeTimerHandler);
     m_activeTimerHandler = g_timeout_add(0,
         reinterpret_cast<GSourceFunc>(trackPrivateActiveChangeTimeoutCallback), this);
+    g_source_set_name_by_id(m_activeTimerHandler, "[WebKit] trackPrivateActiveChangeTimeoutCallback");
 }
 
 void TrackPrivateBaseGStreamer::tagsChanged()
@@ -127,10 +130,12 @@ void TrackPrivateBaseGStreamer::tagsChanged()
 
     m_tagTimerHandler = g_timeout_add(0,
         reinterpret_cast<GSourceFunc>(trackPrivateTagsChangeTimeoutCallback), this);
+    g_source_set_name_by_id(m_tagTimerHandler, "[WebKit] trackPrivateTagsChangeTimeoutCallback");
 }
 
 void TrackPrivateBaseGStreamer::notifyTrackOfActiveChanged()
 {
+    m_activeTimerHandler = 0;
     if (!m_pad)
         return;
 
@@ -143,7 +148,7 @@ void TrackPrivateBaseGStreamer::notifyTrackOfActiveChanged()
 
 bool TrackPrivateBaseGStreamer::getTag(GstTagList* tags, const gchar* tagName, String& value)
 {
-    GOwnPtr<gchar> tagValue;
+    GUniqueOutPtr<gchar> tagValue;
     if (gst_tag_list_get_string(tags, tagName, &tagValue.outPtr())) {
         INFO_MEDIA_MESSAGE("Track %d got %s %s.", m_index, tagName, tagValue.get());
         value = tagValue.get();

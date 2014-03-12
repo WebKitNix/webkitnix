@@ -26,8 +26,6 @@
 #ifndef GraphicsLayerCARemote_h
 #define GraphicsLayerCARemote_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #include <WebCore/GraphicsLayerCA.h>
 #include <WebCore/PlatformLayer.h>
 
@@ -56,7 +54,7 @@ private:
     virtual PassRefPtr<WebCore::PlatformCALayer> createPlatformCALayer(PlatformLayer*, WebCore::PlatformCALayerClient* owner) override;
 
     // No accelerated animations for now.
-    virtual bool addAnimation(const WebCore::KeyframeValueList&, const WebCore::IntSize&, const WebCore::Animation*, const String&, double) override { return false; }
+    virtual bool addAnimation(const WebCore::KeyframeValueList&, const WebCore::FloatSize&, const WebCore::Animation*, const String&, double) override { return false; }
 
     // PlatformCALayerRemote can't currently proxy directly composited image contents, so opt out of this optimization.
     virtual bool shouldDirectlyCompositeImage(WebCore::Image*) const override { return false; }
@@ -67,7 +65,5 @@ private:
 GRAPHICSLAYER_TYPE_CASTS(GraphicsLayerCARemote, isGraphicsLayerCARemote());
 
 } // namespace WebKit
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // GraphicsLayerCARemote_h

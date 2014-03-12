@@ -35,6 +35,7 @@
 #if ENABLE(INSPECTOR)
 
 #include "InspectorValues.h"
+#include "JSCInlines.h"
 #include "JSGlobalObject.h"
 #include "ScriptFunctionCall.h"
 #include <wtf/text/WTFString.h>
@@ -94,7 +95,7 @@ Deprecated::ScriptValue InjectedScriptBase::callFunctionWithEvalEnabled(Deprecat
         scriptState->lexicalGlobalObject()->setEvalEnabled(false);
 
     if (m_environment)
-        m_environment->didCallInjectedScriptFunction();
+        m_environment->didCallInjectedScriptFunction(m_injectedScriptObject.scriptState());
 
     return resultValue;
 }

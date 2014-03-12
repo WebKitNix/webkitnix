@@ -5,6 +5,9 @@ function runTest() {
     if (!window.targetScaleFactor)
         window.targetScaleFactor = 2;
 
+    if(!sessionStorage.pageReloaded && window.targetScaleFactor == window.deviceScaleFactor)
+        return;
+
     if (!sessionStorage.scaleFactorIsSet) {
         testRunner.waitUntilDone();
         testRunner.setBackingScaleFactor(targetScaleFactor, scaleFactorIsSet);
@@ -13,7 +16,8 @@ function runTest() {
     if (sessionStorage.pageReloaded && sessionStorage.scaleFactorIsSet) {
         delete sessionStorage.pageReloaded;
         delete sessionStorage.scaleFactorIsSet;
-        testRunner.notifyDone();
+        if (!window.manualNotifyDone)
+            testRunner.notifyDone();
     } else {
         // Right now there is a bug that srcset does not properly deal with dynamic changes to the scale factor,
         // so to work around that, we must reload the page to get the new image.

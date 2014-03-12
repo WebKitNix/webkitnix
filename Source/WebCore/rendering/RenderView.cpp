@@ -40,20 +40,14 @@
 #include "RenderIterator.h"
 #include "RenderLayer.h"
 #include "RenderLayerBacking.h"
+#include "RenderLayerCompositor.h"
 #include "RenderNamedFlowThread.h"
 #include "RenderSelectionInfo.h"
 #include "RenderWidget.h"
+#include "Settings.h"
 #include "StyleInheritedData.h"
 #include "TransformState.h"
 #include <wtf/StackStats.h>
-
-#if USE(ACCELERATED_COMPOSITING)
-#include "RenderLayerCompositor.h"
-#endif
-
-#if ENABLE(CSS_SHADERS) && USE(3D_GRAPHICS)
-#include "CustomFilterGlobalContext.h"
-#endif
 
 namespace WebCore {
 
@@ -172,67 +166,14 @@ void RenderView::checkLayoutState(const LayoutState& state)
 }
 #endif
 
-static RenderBox* enclosingSeamlessRenderer(Document& document)
+void RenderView::initializeLayoutState(LayoutState& state)
 {
-    Element* ownerElement = document.seamlessParentIFrame();
-    if (!ownerElement)
-        return 0;
-    return ownerElement->renderBox();
-}
-
-void RenderView::addChild(RenderObject* newChild, RenderObject* beforeChild)
-{
-    // Seamless iframes are considered part of an enclosing render flow thread from the parent document. This is necessary for them to look
-    // up regions in the parent document during layout.
-    if (newChild && !newChild->isRenderFlowThread()) {
-        RenderBox* seamlessBox = enclosingSeamlessRenderer(document());
-        if (seamlessBox && seamlessBox->flowThreadContainingBlock())
-            newChild->setFlowThreadState(seamlessBox->flowThreadState());
-    }
-    RenderBlockFlow::addChild(newChild, beforeChild);
-}
-
-bool RenderView::initializeLayoutState(LayoutState& state)
-{
-    bool isSeamlessAncestorInFlowThread = false;
-
     // FIXME: May be better to push a clip and avoid issuing offscreen repaints.
     state.m_clipped = false;
-    
-    // Check the writing mode of the seamless ancestor. It has to match our document's writing mode, or we won't inherit any
-    // pagination information.
-    RenderBox* seamlessAncestor = enclosingSeamlessRenderer(document());
-    LayoutState* seamlessLayoutState = seamlessAncestor ? seamlessAncestor->view().layoutState() : 0;
-    bool shouldInheritPagination = seamlessLayoutState && !m_pageLogicalHeight && seamlessAncestor->style().writingMode() == style().writingMode();
-    
-    state.m_pageLogicalHeight = shouldInheritPagination ? seamlessLayoutState->m_pageLogicalHeight : m_pageLogicalHeight;
-    state.m_pageLogicalHeightChanged = shouldInheritPagination ? seamlessLayoutState->m_pageLogicalHeightChanged : m_pageLogicalHeightChanged;
-    state.m_isPaginated = state.m_pageLogicalHeight;
-    if (state.m_isPaginated && shouldInheritPagination) {
-        // Set up the correct pagination offset. We can use a negative offset in order to push the top of the RenderView into its correct place
-        // on a page. We can take the iframe's offset from the logical top of the first page and make the negative into the pagination offset within the child
-        // view.
-        bool isFlipped = seamlessAncestor->style().isFlippedBlocksWritingMode();
-        LayoutSize layoutOffset = seamlessLayoutState->layoutOffset();
-        LayoutSize iFrameOffset(layoutOffset.width() + seamlessAncestor->x() + (!isFlipped ? seamlessAncestor->borderLeft() + seamlessAncestor->paddingLeft() :
-            seamlessAncestor->borderRight() + seamlessAncestor->paddingRight()),
-            layoutOffset.height() + seamlessAncestor->y() + (!isFlipped ? seamlessAncestor->borderTop() + seamlessAncestor->paddingTop() :
-            seamlessAncestor->borderBottom() + seamlessAncestor->paddingBottom()));
-        
-        LayoutSize offsetDelta = seamlessLayoutState->m_pageOffset - iFrameOffset;
-        state.m_pageOffset = offsetDelta;
-        
-        // Set the current render flow thread to point to our ancestor. This will allow the seamless document to locate the correct
-        // regions when doing a layout.
-        if (seamlessAncestor->flowThreadContainingBlock()) {
-            flowThreadController().setCurrentRenderFlowThread(seamlessAncestor->view().flowThreadController().currentRenderFlowThread());
-            isSeamlessAncestorInFlowThread = true;
-        }
-    }
 
-    // FIXME: We need to make line grids and exclusions work with seamless iframes as well here. Basically all layout state information needs
-    // to propagate here and not just pagination information.
-    return isSeamlessAncestorInFlowThread;
+    state.m_pageLogicalHeight = m_pageLogicalHeight;
+    state.m_pageLogicalHeightChanged = m_pageLogicalHeightChanged;
+    state.m_isPaginated = state.m_pageLogicalHeight;
 }
 
 // The algorithm below assumes this is a full layout. In case there are previously computed values for regions, supplemental steps are taken
@@ -319,9 +260,7 @@ void RenderView::layout()
                 || box.style().logicalHeight().isViewportPercentage()
                 || box.style().logicalMinHeight().isViewportPercentage()
                 || box.style().logicalMaxHeight().isViewportPercentage()
-#if ENABLE(SVG)
                 || box.isSVGRoot()
-#endif
                 )
                 box.setChildNeedsLayout(MarkOnlyThis);
         }
@@ -332,7 +271,7 @@ void RenderView::layout()
         return;
 
     m_layoutState = std::make_unique<LayoutState>();
-    bool isSeamlessAncestorInFlowThread = initializeLayoutState(*m_layoutState);
+    initializeLayoutState(*m_layoutState);
 
     m_pageLogicalHeightChanged = false;
 
@@ -348,9 +287,6 @@ void RenderView::layout()
 #endif
     m_layoutState = nullptr;
     clearNeedsLayout();
-    
-    if (isSeamlessAncestorInFlowThread)
-        flowThreadController().setCurrentRenderFlowThread(0);
 }
 
 LayoutUnit RenderView::pageOrViewLogicalHeight() const
@@ -465,14 +401,14 @@ bool RenderView::requiresColumns(int) const
     return frameView().pagination().mode != Pagination::Unpaginated;
 }
 
-void RenderView::calcColumnWidth()
+void RenderView::computeColumnCountAndWidth()
 {
     int columnWidth = contentLogicalWidth();
     if (style().hasInlineColumnAxis()) {
         if (int pageLength = frameView().pagination().pageLength)
             columnWidth = pageLength;
     }
-    setDesiredColumnCountAndWidth(1, columnWidth);
+    setComputedColumnCountAndWidth(1, columnWidth);
 }
 
 ColumnInfo::PaginationUnit RenderView::paginationUnit() const
@@ -537,14 +473,12 @@ void RenderView::paintBoxDecorations(PaintInfo& paintInfo, const LayoutPoint&)
             break;
         }
 
-#if USE(ACCELERATED_COMPOSITING)
         if (RenderLayer* compositingLayer = layer->enclosingCompositingLayerForRepaint()) {
             if (!compositingLayer->backing()->paintsIntoWindow()) {
                 frameView().setCannotBlitToWindow();
                 break;
             }
         }
-#endif
     }
 
     if (document().ownerElement())
@@ -563,16 +497,14 @@ void RenderView::paintBoxDecorations(PaintInfo& paintInfo, const LayoutPoint&)
         rootObscuresBackground = rendererObscuresBackground(rootRenderer);
     }
 
-    bool hasTiledMargin = false;
-#if USE(ACCELERATED_COMPOSITING)
-    hasTiledMargin = compositor().mainFrameBackingIsTiledWithMargin();
-#endif
+    compositor().setRootExtendedBackgroundColor(frameView().frame().settings().backgroundShouldExtendBeyondPage()
+        ? frameView().documentBackgroundColor() : Color());
 
     Page* page = document().page();
     float pageScaleFactor = page ? page->pageScaleFactor() : 1;
 
     // If painting will entirely fill the view, no need to fill the background.
-    if (!hasTiledMargin && rootFillsViewport && rootObscuresBackground && pageScaleFactor >= 1)
+    if (rootFillsViewport && rootObscuresBackground && pageScaleFactor >= 1)
         return;
 
     // This code typically only executes if the root element's visibility has been set to hidden,
@@ -582,7 +514,7 @@ void RenderView::paintBoxDecorations(PaintInfo& paintInfo, const LayoutPoint&)
     if (frameView().isTransparent()) // FIXME: This needs to be dynamic. We should be able to go back to blitting if we ever stop being transparent.
         frameView().setCannotBlitToWindow(); // The parent must show behind the child.
     else {
-        Color backgroundColor = hasTiledMargin ? frameView().documentBackgroundColor() : frameView().baseBackgroundColor();
+        Color backgroundColor = frameView().baseBackgroundColor();
         if (backgroundColor.alpha()) {
             CompositeOperator previousOperator = paintInfo.context->compositeOperation();
             paintInfo.context->setCompositeOperation(CompositeCopy);
@@ -600,68 +532,83 @@ bool RenderView::shouldRepaint(const LayoutRect& rect) const
 
 void RenderView::repaintRootContents()
 {
-#if USE(ACCELERATED_COMPOSITING)
     if (layer()->isComposited()) {
         layer()->setBackingNeedsRepaint(GraphicsLayer::DoNotClipToLayer);
         return;
     }
-#endif
     repaint();
 }
 
-void RenderView::repaintViewRectangle(const LayoutRect& ur, bool immediate) const
+void RenderView::repaintViewRectangle(const LayoutRect& repaintRect) const
 {
-    if (!shouldRepaint(ur))
+    if (!shouldRepaint(repaintRect))
         return;
 
-    // We always just invalidate the root view, since we could be an iframe that is clipped out
-    // or even invisible.
-    Element* elt = document().ownerElement();
-    if (!elt)
-        frameView().repaintContentRectangle(pixelSnappedIntRect(ur), immediate);
-    else if (RenderBox* obj = elt->renderBox()) {
-        LayoutRect vr = viewRect();
+    if (auto ownerElement = document().ownerElement()) {
+        if (!ownerElement->renderer())
+            return;
+        auto& ownerBox = toRenderBox(*ownerElement->renderer());
+        LayoutRect viewRect = this->viewRect();
 #if PLATFORM(IOS)
         // Don't clip using the visible rect since clipping is handled at a higher level on iPhone.
-        LayoutRect r = ur;
+        LayoutRect adjustedRect = repaintRect;
 #else
-        LayoutRect r = intersection(ur, vr);
+        LayoutRect adjustedRect = intersection(repaintRect, viewRect);
 #endif
-        
-        // Subtract out the contentsX and contentsY offsets to get our coords within the viewing
-        // rectangle.
-        r.moveBy(-vr.location());
-
-        // FIXME: Hardcoded offsets here are not good.
-        r.moveBy(obj->contentBoxRect().location());
-        obj->repaintRectangle(r, immediate);
+        adjustedRect.moveBy(-viewRect.location());
+        adjustedRect.moveBy(ownerBox.contentBoxRect().location());
+        ownerBox.repaintRectangle(adjustedRect);
+        return;
     }
+
+    frameView().addTrackedRepaintRect(pixelSnappedForPainting(repaintRect, document().deviceScaleFactor()));
+
+    // FIXME: convert all repaint rect dependencies to FloatRect/LayoutRect
+    IntRect pixelSnappedRect = pixelSnappedIntRect(repaintRect);
+    if (!m_accumulatedRepaintRegion) {
+        frameView().repaintContentRectangle(pixelSnappedRect);
+        return;
+    }
+    m_accumulatedRepaintRegion->unite(pixelSnappedRect);
+
+    // Region will get slow if it gets too complex. Merge all rects so far to bounds if this happens.
+    // FIXME: Maybe there should be a region type that does this automatically.
+    static const unsigned maximumRepaintRegionGridSize = 16 * 16;
+    if (m_accumulatedRepaintRegion->gridSize() > maximumRepaintRegionGridSize)
+        m_accumulatedRepaintRegion = std::make_unique<Region>(m_accumulatedRepaintRegion->bounds());
 }
 
-void RenderView::repaintRectangleInViewAndCompositedLayers(const LayoutRect& ur, bool immediate)
+void RenderView::flushAccumulatedRepaintRegion() const
+{
+    ASSERT(!document().ownerElement());
+    ASSERT(m_accumulatedRepaintRegion);
+    auto repaintRects = m_accumulatedRepaintRegion->rects();
+    for (auto& rect : repaintRects)
+        frameView().repaintContentRectangle(rect);
+    m_accumulatedRepaintRegion = nullptr;
+}
+
+void RenderView::repaintRectangleInViewAndCompositedLayers(const LayoutRect& ur)
 {
     if (!shouldRepaint(ur))
         return;
 
-    repaintViewRectangle(ur, immediate);
-    
-#if USE(ACCELERATED_COMPOSITING)
+    repaintViewRectangle(ur);
+
     RenderLayerCompositor& compositor = this->compositor();
     if (compositor.inCompositingMode()) {
         IntRect repaintRect = pixelSnappedIntRect(ur);
         compositor.repaintCompositedLayers(&repaintRect);
     }
-#endif
 }
 
 void RenderView::repaintViewAndCompositedLayers()
 {
     repaintRootContents();
-#if USE(ACCELERATED_COMPOSITING)
+
     RenderLayerCompositor& compositor = this->compositor();
     if (compositor.inCompositingMode())
         compositor.repaintCompositedLayers();
-#endif
 }
 
 LayoutRect RenderView::visualOverflowRect() const
@@ -786,7 +733,6 @@ void RenderView::repaintSelection() const
     }
 }
 
-#if USE(ACCELERATED_COMPOSITING)
 // Compositing layer dimensions take outline size into account, so we have to recompute layer
 // bounds when it changes.
 // FIXME: This is ugly; it would be nice to have a better way to do this.
@@ -799,7 +745,6 @@ void RenderView::setMaximalOutlineSize(int o)
         compositor().setCompositingLayersNeedRebuild();    // FIXME: this really just needs to be a geometry update.
     }
 }
-#endif
 
 // When exploring the RenderTree looking for the nodes involved in the Selection, sometimes it's
 // required to change the traversing direction because the "start" position is below the "end" one.
@@ -933,8 +878,6 @@ void RenderView::setSelection(RenderObject* start, int startPos, RenderObject* e
     if (blockRepaintMode == RepaintNothing)
         return;
 
-    frameView().beginDeferredRepaints();
-
     // Have any of the old selected objects changed compared to the new selection?
     for (SelectedObjectMap::iterator i = oldSelectedObjects.begin(); i != oldObjectsEnd; ++i) {
         RenderObject* obj = i->key;
@@ -975,8 +918,6 @@ void RenderView::setSelection(RenderObject* start, int startPos, RenderObject* e
     SelectedBlockMap::iterator newBlocksEnd = newSelectedBlocks.end();
     for (SelectedBlockMap::iterator i = newSelectedBlocks.begin(); i != newBlocksEnd; ++i)
         i->value->repaint();
-
-    frameView().endDeferredRepaints();
 }
 
 void RenderView::getSelection(RenderObject*& startRenderer, int& startOffset, RenderObject*& endRenderer, int& endOffset) const
@@ -1015,7 +956,7 @@ LayoutRect RenderView::viewRect() const
 {
     if (shouldUsePrintingLayout())
         return LayoutRect(LayoutPoint(), size());
-    return frameView().visibleContentRect();
+    return frameView().visibleContentRect(ScrollableArea::LegacyIOSDocumentVisibleRect);
 }
 
 IntRect RenderView::unscaledDocumentRect() const
@@ -1037,7 +978,7 @@ bool RenderView::rootBackgroundIsEntirelyFixed() const
 LayoutRect RenderView::backgroundRect(RenderBox* backgroundRenderer) const
 {
     if (!hasColumns())
-        return frameView().hasExtendedBackground() ? frameView().extendedBackgroundRect() : unscaledDocumentRect();
+        return frameView().hasExtendedBackgroundRectForPainting() ? frameView().extendedBackgroundRectForPainting() : unscaledDocumentRect();
 
     ColumnInfo* columnInfo = this->columnInfo();
     LayoutRect backgroundRect(0, 0, columnInfo->desiredColumnWidth(), columnInfo->columnHeight() * columnInfo->columnCount());
@@ -1109,7 +1050,9 @@ bool RenderView::shouldDisableLayoutStateForSubtree(RenderObject* renderer) cons
 
 IntSize RenderView::viewportSize() const
 {
-    return frameView().visibleContentRect(ScrollableArea::IncludeScrollbars).size();
+    // FIXME: viewportSize() is used to layout content from viewport units. On iOS, it should use the last stable
+    // unobscured rect. See <rdar://problem/16279088>.
+    return frameView().visibleContentRectIncludingScrollbars(ScrollableArea::LegacyIOSDocumentVisibleRect).size();
 }
 
 void RenderView::updateHitTestResult(HitTestResult& result, const LayoutPoint& point)
@@ -1155,7 +1098,6 @@ void RenderView::setBestTruncatedAt(int y, RenderBoxModelObject* forRenderer, bo
     }
 }
 
-#if USE(ACCELERATED_COMPOSITING)
 bool RenderView::usesCompositing() const
 {
     return m_compositor && m_compositor->inCompositingMode();
@@ -1168,26 +1110,12 @@ RenderLayerCompositor& RenderView::compositor()
 
     return *m_compositor;
 }
-#endif
 
 void RenderView::setIsInWindow(bool isInWindow)
 {
-#if USE(ACCELERATED_COMPOSITING)
     if (m_compositor)
         m_compositor->setIsInWindow(isInWindow);
-#else
-    UNUSED_PARAM(isInWindow);
-#endif
 }
-
-#if ENABLE(CSS_SHADERS) && USE(3D_GRAPHICS)
-CustomFilterGlobalContext* RenderView::customFilterGlobalContext()
-{
-    if (!m_customFilterGlobalContext)
-        m_customFilterGlobalContext = adoptPtr(new CustomFilterGlobalContext());
-    return m_customFilterGlobalContext.get();
-}
-#endif
 
 void RenderView::styleDidChange(StyleDifference diff, const RenderStyle* oldStyle)
 {
@@ -1213,24 +1141,6 @@ FlowThreadController& RenderView::flowThreadController()
 
     return *m_flowThreadController;
 }
-
-#if PLATFORM(IOS)
-static bool isFixedPositionInViewport(const RenderObject& renderer, const RenderObject* container)
-{
-    return (renderer.style().position() == FixedPosition) && renderer.container() == container;
-}
-
-bool RenderView::hasCustomFixedPosition(const RenderObject& renderer, ContainingBlockCheck checkContainer) const
-{
-    if (!frameView().useCustomFixedPositionLayoutRect())
-        return false;
-
-    if (checkContainer == CheckContainingBlock)
-        return isFixedPositionInViewport(renderer, this);
-
-    return renderer.style().position() == FixedPosition;
-}
-#endif
 
 void RenderView::pushLayoutStateForCurrentFlowThread(const RenderObject& object)
 {
@@ -1268,6 +1178,56 @@ ImageQualityController& RenderView::imageQualityController()
     if (!m_imageQualityController)
         m_imageQualityController = ImageQualityController::create(*this);
     return *m_imageQualityController;
+}
+
+void RenderView::addRendererWithPausedImageAnimations(RenderElement& renderer)
+{
+    if (renderer.hasPausedImageAnimations()) {
+        ASSERT(m_renderersWithPausedImageAnimation.contains(&renderer));
+        return;
+    }
+    renderer.setHasPausedImageAnimations(true);
+    m_renderersWithPausedImageAnimation.add(&renderer);
+}
+
+void RenderView::removeRendererWithPausedImageAnimations(RenderElement& renderer)
+{
+    ASSERT(renderer.hasPausedImageAnimations());
+    ASSERT(m_renderersWithPausedImageAnimation.contains(&renderer));
+
+    renderer.setHasPausedImageAnimations(false);
+    m_renderersWithPausedImageAnimation.remove(&renderer);
+}
+
+void RenderView::resumePausedImageAnimationsIfNeeded()
+{
+    auto visibleRect = frameView().visibleContentRect();
+    Vector<RenderElement*, 10> toRemove;
+    for (auto* renderer : m_renderersWithPausedImageAnimation) {
+        if (renderer->repaintForPausedImageAnimationsIfNeeded(visibleRect))
+            toRemove.append(renderer);
+    }
+    for (auto& renderer : toRemove)
+        removeRendererWithPausedImageAnimations(*renderer);
+}
+
+RenderView::RepaintRegionAccumulator::RepaintRegionAccumulator(RenderView* view)
+    : m_rootView(view ? view->document().topDocument().renderView() : nullptr)
+{
+    if (!m_rootView)
+        return;
+    m_wasAccumulatingRepaintRegion = !!m_rootView->m_accumulatedRepaintRegion;
+    if (!m_wasAccumulatingRepaintRegion)
+        m_rootView->m_accumulatedRepaintRegion = std::make_unique<Region>();
+}
+
+RenderView::RepaintRegionAccumulator::~RepaintRegionAccumulator()
+{
+    if (!m_rootView)
+        return;
+    if (m_wasAccumulatingRepaintRegion)
+        return;
+    m_rootView->flushAccumulatedRepaintRegion();
 }
 
 } // namespace WebCore

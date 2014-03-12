@@ -32,8 +32,9 @@
 #include "DFGDriver.h"
 #include "JIT.h"
 #include "LLIntEntrypoint.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include "Parser.h"
+#include <wtf/CommaPrinter.h>
 #include <wtf/Vector.h>
 #include <wtf/text/StringBuilder.h>
 
@@ -118,12 +119,14 @@ void ScriptExecutable::installCode(CodeBlock* genericCodeBlock)
     switch (kind) {
     case CodeForCall:
         m_jitCodeForCall = genericCodeBlock->jitCode();
-        m_jitCodeForCallWithArityCheck = genericCodeBlock->jitCodeWithArityCheck();
+        m_jitCodeForCallWithArityCheck = MacroAssemblerCodePtr();
+        m_jitCodeForCallWithArityCheckAndPreserveRegs = MacroAssemblerCodePtr();
         m_numParametersForCall = genericCodeBlock->numParameters();
         break;
     case CodeForConstruct:
         m_jitCodeForConstruct = genericCodeBlock->jitCode();
-        m_jitCodeForConstructWithArityCheck = genericCodeBlock->jitCodeWithArityCheck();
+        m_jitCodeForConstructWithArityCheck = MacroAssemblerCodePtr();
+        m_jitCodeForConstructWithArityCheckAndPreserveRegs = MacroAssemblerCodePtr();
         m_numParametersForConstruct = genericCodeBlock->numParameters();
         break;
     }
@@ -133,7 +136,6 @@ void ScriptExecutable::installCode(CodeBlock* genericCodeBlock)
         ProgramExecutable* executable = jsCast<ProgramExecutable*>(this);
         ProgramCodeBlock* codeBlock = static_cast<ProgramCodeBlock*>(genericCodeBlock);
         
-        ASSERT(!codeBlock->jitCodeWithArityCheck());
         ASSERT(kind == CodeForCall);
         
         oldCodeBlock = executable->m_programCodeBlock;
@@ -145,7 +147,6 @@ void ScriptExecutable::installCode(CodeBlock* genericCodeBlock)
         EvalExecutable* executable = jsCast<EvalExecutable*>(this);
         EvalCodeBlock* codeBlock = static_cast<EvalCodeBlock*>(genericCodeBlock);
         
-        ASSERT(!codeBlock->jitCodeWithArityCheck());
         ASSERT(kind == CodeForCall);
         
         oldCodeBlock = executable->m_evalCodeBlock;
@@ -172,12 +173,16 @@ void ScriptExecutable::installCode(CodeBlock* genericCodeBlock)
 
     if (oldCodeBlock)
         oldCodeBlock->unlinkIncomingCalls();
+
+    Debugger* debugger = genericCodeBlock->globalObject()->debugger();
+    if (debugger)
+        debugger->registerCodeBlock(genericCodeBlock);
 }
 
 PassRefPtr<CodeBlock> ScriptExecutable::newCodeBlockFor(
-    CodeSpecializationKind kind, JSScope* scope, JSObject*& exception)
+    CodeSpecializationKind kind, JSFunction* function, JSScope** scope, JSObject*& exception)
 {
-    VM* vm = scope->vm();
+    VM* vm = (*scope)->vm();
 
     ASSERT(vm->heap.isDeferred());
     ASSERT(startColumn() != UINT_MAX);
@@ -187,8 +192,9 @@ PassRefPtr<CodeBlock> ScriptExecutable::newCodeBlockFor(
         EvalExecutable* executable = jsCast<EvalExecutable*>(this);
         RELEASE_ASSERT(kind == CodeForCall);
         RELEASE_ASSERT(!executable->m_evalCodeBlock);
+        RELEASE_ASSERT(!function);
         return adoptRef(new EvalCodeBlock(
-            executable, executable->m_unlinkedEvalCodeBlock.get(), scope,
+            executable, executable->m_unlinkedEvalCodeBlock.get(), *scope,
             executable->source().provider()));
     }
     
@@ -196,15 +202,17 @@ PassRefPtr<CodeBlock> ScriptExecutable::newCodeBlockFor(
         ProgramExecutable* executable = jsCast<ProgramExecutable*>(this);
         RELEASE_ASSERT(kind == CodeForCall);
         RELEASE_ASSERT(!executable->m_programCodeBlock);
+        RELEASE_ASSERT(!function);
         return adoptRef(new ProgramCodeBlock(
-            executable, executable->m_unlinkedProgramCodeBlock.get(), scope,
+            executable, executable->m_unlinkedProgramCodeBlock.get(), *scope,
             executable->source().provider(), executable->source().startColumn()));
     }
     
     RELEASE_ASSERT(classInfo() == FunctionExecutable::info());
+    RELEASE_ASSERT(function);
     FunctionExecutable* executable = jsCast<FunctionExecutable*>(this);
     RELEASE_ASSERT(!executable->codeBlockFor(kind));
-    JSGlobalObject* globalObject = scope->globalObject();
+    JSGlobalObject* globalObject = (*scope)->globalObject();
     ParserError error;
     DebuggerMode debuggerMode = globalObject->hasDebugger() ? DebuggerOn : DebuggerOff;
     ProfilerMode profilerMode = globalObject->hasProfiler() ? ProfilerOn : ProfilerOff;
@@ -218,13 +226,21 @@ PassRefPtr<CodeBlock> ScriptExecutable::newCodeBlockFor(
             error.toErrorObject(globalObject, executable->m_source));
         return 0;
     }
+
+    // Parsing reveals whether our function uses features that require a separate function name object in the scope chain.
+    // Be sure to add this scope before linking the bytecode because this scope will change the resolution depth of non-local variables.
+    if (!executable->m_didParseForTheFirstTime) {
+        executable->m_didParseForTheFirstTime = true;
+        function->addNameScopeIfNeeded(*vm);
+        *scope = function->scope();
+    }
     
     SourceProvider* provider = executable->source().provider();
     unsigned sourceOffset = executable->source().startOffset();
     unsigned startColumn = executable->source().startColumn();
 
     return adoptRef(new FunctionCodeBlock(
-        executable, unlinkedCodeBlock, scope, provider, sourceOffset, startColumn));
+        executable, unlinkedCodeBlock, *scope, provider, sourceOffset, startColumn));
 }
 
 PassRefPtr<CodeBlock> ScriptExecutable::newReplacementCodeBlockFor(
@@ -286,13 +302,13 @@ static void setupJIT(VM& vm, CodeBlock* codeBlock)
 }
 
 JSObject* ScriptExecutable::prepareForExecutionImpl(
-    ExecState* exec, JSScope* scope, CodeSpecializationKind kind)
+    ExecState* exec, JSFunction* function, JSScope** scope, CodeSpecializationKind kind)
 {
     VM& vm = exec->vm();
     DeferGC deferGC(vm.heap);
     
     JSObject* exception = 0;
-    RefPtr<CodeBlock> codeBlock = newCodeBlockFor(kind, scope, exception);
+    RefPtr<CodeBlock> codeBlock = newCodeBlockFor(kind, function, scope, exception);
     if (!codeBlock) {
         RELEASE_ASSERT(exception);
         return exception;
@@ -371,6 +387,7 @@ FunctionExecutable::FunctionExecutable(VM& vm, const SourceCode& source, Unlinke
     : ScriptExecutable(vm.functionExecutableStructure.get(), vm, source, unlinkedExecutable->isInStrictContext())
     , m_unlinkedExecutable(vm, this, unlinkedExecutable)
     , m_bodyIncludesBraces(bodyIncludesBraces)
+    , m_didParseForTheFirstTime(false)
 {
     RELEASE_ASSERT(!source.isNull());
     ASSERT(source.length());
@@ -604,6 +621,46 @@ FunctionExecutable* FunctionExecutable::fromGlobalCode(const Identifier& name, E
 String FunctionExecutable::paramString() const
 {
     return m_unlinkedExecutable->paramString();
+}
+
+void ExecutableBase::dump(PrintStream& out) const
+{
+    ExecutableBase* realThis = const_cast<ExecutableBase*>(this);
+    
+    if (classInfo() == NativeExecutable::info()) {
+        NativeExecutable* native = jsCast<NativeExecutable*>(realThis);
+        out.print("NativeExecutable:", RawPointer(bitwise_cast<void*>(native->function())), "/", RawPointer(bitwise_cast<void*>(native->constructor())));
+        return;
+    }
+    
+    if (classInfo() == EvalExecutable::info()) {
+        EvalExecutable* eval = jsCast<EvalExecutable*>(realThis);
+        if (CodeBlock* codeBlock = eval->codeBlock())
+            out.print(*codeBlock);
+        else
+            out.print("EvalExecutable w/o CodeBlock");
+        return;
+    }
+    
+    if (classInfo() == ProgramExecutable::info()) {
+        ProgramExecutable* eval = jsCast<ProgramExecutable*>(realThis);
+        if (CodeBlock* codeBlock = eval->codeBlock())
+            out.print(*codeBlock);
+        else
+            out.print("ProgramExecutable w/o CodeBlock");
+        return;
+    }
+    
+    FunctionExecutable* function = jsCast<FunctionExecutable*>(realThis);
+    if (!function->eitherCodeBlock())
+        out.print("FunctionExecutable w/o CodeBlock");
+    else {
+        CommaPrinter comma("/");
+        if (function->codeBlockForCall())
+            out.print(comma, *function->codeBlockForCall());
+        if (function->codeBlockForConstruct())
+            out.print(comma, *function->codeBlockForConstruct());
+    }
 }
 
 CodeBlockHash ExecutableBase::hashFor(CodeSpecializationKind kind) const

@@ -26,8 +26,6 @@
 #ifndef DFGFinalizer_h
 #define DFGFinalizer_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(DFG_JIT)
 
 #include "JITCode.h"
@@ -46,6 +44,7 @@ public:
     Finalizer(Plan&);
     virtual ~Finalizer();
     
+    virtual size_t codeSize() = 0;
     virtual bool finalize() = 0;
     virtual bool finalizeFunction() = 0;
 

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="DebugSuffix|Win32">
       <Configuration>DebugSuffix</Configuration>
@@ -55,6 +55,7 @@
     <ClCompile Include="..\wtf\BitVector.cpp" />
     <ClCompile Include="..\wtf\CompilationThread.cpp" />
     <ClCompile Include="..\wtf\Compression.cpp" />
+    <ClCompile Include="..\wtf\CryptographicUtilities.cpp" />
     <ClCompile Include="..\wtf\CryptographicallyRandomNumber.cpp" />
     <ClCompile Include="..\wtf\CurrentTime.cpp" />
     <ClCompile Include="..\wtf\DataLog.cpp" />
@@ -75,16 +76,6 @@
     <ClCompile Include="..\wtf\FilePrintStream.cpp" />
     <ClCompile Include="..\wtf\FunctionDispatcher.cpp" />
     <ClCompile Include="..\wtf\gobject\GlibUtilities.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSuffix|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSuffix|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Production|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\wtf\gobject\GOwnPtr.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSuffix|Win32'">true</ExcludedFromBuild>
@@ -170,6 +161,7 @@
     <ClInclude Include="..\wtf\CheckedBoolean.h" />
     <ClInclude Include="..\wtf\Compiler.h" />
     <ClInclude Include="..\wtf\Compression.h" />
+    <ClInclude Include="..\wtf\CryptographicUtilities.h" />
     <ClInclude Include="..\wtf\CryptographicallyRandomNumber.h" />
     <ClInclude Include="..\wtf\CurrentTime.h" />
     <ClInclude Include="..\wtf\DataLog.h" />
@@ -204,7 +196,6 @@
     <ClInclude Include="..\wtf\GetPtr.h" />
     <ClInclude Include="..\wtf\gobject\GlibUtilities.h" />
     <ClInclude Include="..\wtf\gobject\GMutexLocker.h" />
-    <ClInclude Include="..\wtf\gobject\GOwnPtr.h" />
     <ClInclude Include="..\wtf\gobject\GRefPtr.h" />
     <ClInclude Include="..\wtf\gobject\GTypedefs.h" />
     <ClInclude Include="..\wtf\GregorianDateTime.h" />
@@ -212,6 +203,7 @@
     <ClInclude Include="..\wtf\HashFunctions.h" />
     <ClInclude Include="..\wtf\HashIterators.h" />
     <ClInclude Include="..\wtf\HashMap.h" />
+    <ClInclude Include="..\wtf\HashMethod.h" />
     <ClInclude Include="..\wtf\HashSet.h" />
     <ClInclude Include="..\wtf\HashTable.h" />
     <ClInclude Include="..\wtf\HashTraits.h" />
@@ -285,6 +277,7 @@
     <ClInclude Include="..\wtf\text\Base64.h" />
     <ClInclude Include="..\wtf\text\CString.h" />
     <ClInclude Include="..\wtf\text\IntegerToStringConversion.h" />
+    <ClInclude Include="..\wtf\text\LChar.h" />
     <ClInclude Include="..\wtf\text\StringBuffer.h" />
     <ClInclude Include="..\wtf\text\StringBuilder.h" />
     <ClInclude Include="..\wtf\text\StringConcatenate.h" />
@@ -300,9 +293,6 @@
     <ClInclude Include="..\wtf\threads\BinarySemaphore.h" />
     <ClInclude Include="..\wtf\unicode\CharacterNames.h" />
     <ClInclude Include="..\wtf\unicode\Collator.h" />
-    <ClInclude Include="..\wtf\unicode\icu\UnicodeIcu.h" />
-    <ClInclude Include="..\wtf\unicode\Unicode.h" />
-    <ClInclude Include="..\wtf\unicode\UnicodeMacrosFromICU.h" />
     <ClInclude Include="..\wtf\unicode\UTF8.h" />
     <ClInclude Include="..\wtf\ValueCheck.h" />
     <ClInclude Include="..\wtf\Vector.h" />

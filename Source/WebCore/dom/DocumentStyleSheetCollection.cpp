@@ -282,10 +282,7 @@ void DocumentStyleSheetCollection::collectActiveStyleSheets(Vector<RefPtr<StyleS
             }
 #endif
         } else if ((n->isHTMLElement() && (n->hasTagName(linkTag) || n->hasTagName(styleTag)))
-#if ENABLE(SVG)
-                   ||  (n->isSVGElement() && n->hasTagName(SVGNames::styleTag))
-#endif
-                   ) {
+            || (n->isSVGElement() && n->hasTagName(SVGNames::styleTag))) {
             Element* e = toElement(n);
             AtomicString title = e->getAttribute(titleAttr);
             bool enabledViaScript = false;
@@ -311,12 +308,9 @@ void DocumentStyleSheetCollection::collectActiveStyleSheets(Vector<RefPtr<StyleS
             }
             // Get the current preferred styleset. This is the
             // set of sheets that will be enabled.
-#if ENABLE(SVG)
             if (isSVGStyleElement(e))
                 sheet = toSVGStyleElement(e)->sheet();
-            else
-#endif
-            {
+            else {
                 if (isHTMLLinkElement(e))
                     sheet = toHTMLLinkElement(n)->sheet();
                 else {
@@ -372,6 +366,7 @@ void DocumentStyleSheetCollection::analyzeStyleSheetChange(UpdateFlag updateFlag
         return;
     if (!m_document.styleResolverIfExists())
         return;
+    StyleResolver& styleResolver = *m_document.styleResolverIfExists();
 
     // Find out which stylesheets are new.
     unsigned oldStylesheetCount = m_activeAuthorStyleSheets.size();
@@ -402,7 +397,7 @@ void DocumentStyleSheetCollection::analyzeStyleSheetChange(UpdateFlag updateFlag
     // If we are already parsing the body and so may have significant amount of elements, put some effort into trying to avoid style recalcs.
     if (!m_document.body() || m_document.hasNodesWithPlaceholderStyle())
         return;
-    StyleInvalidationAnalysis invalidationAnalysis(addedSheets);
+    StyleInvalidationAnalysis invalidationAnalysis(addedSheets, styleResolver.mediaQueryEvaluator());
     if (invalidationAnalysis.dirtiesAllStyle())
         return;
     invalidationAnalysis.invalidateStyle(m_document);
@@ -432,14 +427,6 @@ static void filterEnabledNonemptyCSSStyleSheets(Vector<RefPtr<CSSStyleSheet>>& r
     }
 }
 
-static void collectActiveCSSStyleSheetsFromSeamlessParents(Vector<RefPtr<CSSStyleSheet>>& sheets, Document& document)
-{
-    HTMLIFrameElement* seamlessParentIFrame = document.seamlessParentIFrame();
-    if (!seamlessParentIFrame)
-        return;
-    sheets.appendVector(seamlessParentIFrame->document().styleSheetCollection().activeAuthorStyleSheets());
-}
-
 bool DocumentStyleSheetCollection::updateActiveStyleSheets(UpdateFlag updateFlag)
 {
     if (m_document.inStyleRecalc()) {
@@ -460,7 +447,6 @@ bool DocumentStyleSheetCollection::updateActiveStyleSheets(UpdateFlag updateFlag
     Vector<RefPtr<CSSStyleSheet>> activeCSSStyleSheets;
     activeCSSStyleSheets.appendVector(injectedAuthorStyleSheets());
     activeCSSStyleSheets.appendVector(documentAuthorStyleSheets());
-    collectActiveCSSStyleSheetsFromSeamlessParents(activeCSSStyleSheets, m_document);
     filterEnabledNonemptyCSSStyleSheets(activeCSSStyleSheets, activeStyleSheets);
 
     StyleResolverUpdateType styleResolverUpdateType;
@@ -481,14 +467,12 @@ bool DocumentStyleSheetCollection::updateActiveStyleSheets(UpdateFlag updateFlag
         resetCSSFeatureFlags();
     }
 
-    m_weakCopyOfActiveStyleSheetListForFastLookup.clear();
+    m_weakCopyOfActiveStyleSheetListForFastLookup = nullptr;
     m_activeAuthorStyleSheets.swap(activeCSSStyleSheets);
     m_styleSheetsForStyleSheetList.swap(activeStyleSheets);
 
     m_usesRemUnits = styleSheetsUseRemUnits(m_activeAuthorStyleSheets);
     m_pendingUpdateType = NoUpdate;
-
-    m_document.notifySeamlessChildDocumentsOfStylesheetUpdate();
 
     return requiresFullStyleRecalc;
 }
@@ -496,7 +480,7 @@ bool DocumentStyleSheetCollection::updateActiveStyleSheets(UpdateFlag updateFlag
 bool DocumentStyleSheetCollection::activeStyleSheetsContains(const CSSStyleSheet* sheet) const
 {
     if (!m_weakCopyOfActiveStyleSheetListForFastLookup) {
-        m_weakCopyOfActiveStyleSheetListForFastLookup = adoptPtr(new HashSet<const CSSStyleSheet*>);
+        m_weakCopyOfActiveStyleSheetListForFastLookup = std::make_unique<HashSet<const CSSStyleSheet*>>();
         for (unsigned i = 0; i < m_activeAuthorStyleSheets.size(); ++i)
             m_weakCopyOfActiveStyleSheetListForFastLookup->add(m_activeAuthorStyleSheets[i].get());
     }

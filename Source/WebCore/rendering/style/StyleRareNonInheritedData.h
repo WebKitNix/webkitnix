@@ -47,8 +47,10 @@ class StyleDeprecatedFlexibleBoxData;
 class StyleFilterData;
 #endif
 class StyleFlexibleBoxData;
+#if ENABLE(CSS_GRID_LAYOUT)
 class StyleGridData;
 class StyleGridItemData;
+#endif
 class StyleMarqueeData;
 class StyleMultiColData;
 class StyleReflection;
@@ -106,9 +108,6 @@ public:
 #if ENABLE(DASHBOARD_SUPPORT)
     Vector<StyleDashboardRegion> m_dashboardRegions;
 #endif
-#if ENABLE(DRAGGABLE_REGION)
-    DraggableRegionMode m_draggableRegionMode;
-#endif
 
     DataRef<StyleDeprecatedFlexibleBoxData> m_deprecatedFlexibleBox; // Flexible box properties
     DataRef<StyleFlexibleBoxData> m_flexibleBox;
@@ -120,14 +119,16 @@ public:
     DataRef<StyleFilterData> m_filter; // Filter operations (url, sepia, blur, etc.)
 #endif
 
+#if ENABLE(CSS_GRID_LAYOUT)
     DataRef<StyleGridData> m_grid;
     DataRef<StyleGridItemData> m_gridItem;
+#endif
 
     std::unique_ptr<ContentData> m_content;
     OwnPtr<CounterDirectiveMap> m_counterDirectives;
     String m_altText;
 
-    OwnPtr<ShadowData> m_boxShadow;  // For box-shadow decorations.
+    std::unique_ptr<ShadowData> m_boxShadow; // For box-shadow decorations.
     
     RefPtr<StyleReflection> m_boxReflect;
 
@@ -139,8 +140,10 @@ public:
 
     LengthSize m_pageSize;
 
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
     RefPtr<ShapeValue> m_shapeInside;
+#endif
+#if ENABLE(CSS_SHAPES)
     RefPtr<ShapeValue> m_shapeOutside;
     Length m_shapeMargin;
     Length m_shapePadding;
@@ -149,10 +152,8 @@ public:
 
     RefPtr<ClipPathOperation> m_clipPath;
 
-#if ENABLE(CSS3_TEXT_DECORATION)
     Color m_textDecorationColor;
     Color m_visitedLinkTextDecorationColor;
-#endif
     Color m_visitedLinkBackgroundColor;
     Color m_visitedLinkOutlineColor;
     Color m_visitedLinkBorderLeftColor;
@@ -187,20 +188,17 @@ public:
     unsigned m_borderFit : 1; // EBorderFit
     unsigned m_textCombine : 1; // CSS3 text-combine properties
 
-#if ENABLE(CSS3_TEXT_DECORATION)
     unsigned m_textDecorationStyle : 3; // TextDecorationStyle
-#endif
     unsigned m_wrapFlow: 3; // WrapFlow
     unsigned m_wrapThrough: 1; // WrapThrough
 
-#if USE(ACCELERATED_COMPOSITING)
     unsigned m_runningAcceleratedAnimation : 1;
-#endif
 
-    unsigned m_hasAspectRatio : 1; // Whether or not an aspect ratio has been specified.
+    unsigned m_aspectRatioType : 2;
 
 #if ENABLE(CSS_COMPOSITING)
     unsigned m_effectiveBlendMode: 5; // EBlendMode
+    unsigned m_isolation : 1; // Isolation
 #endif
 
     unsigned m_objectFit : 3; // ObjectFit

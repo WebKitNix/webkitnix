@@ -39,7 +39,7 @@
 #include <WebCore/NotImplemented.h>
 #include <wtf/RunLoop.h>
 
-#if PLATFORM(MAC)
+#if OS(DARWIN)
 #include "MachPort.h"
 #endif
 
@@ -63,7 +63,7 @@ PluginProcessProxy::PluginProcessProxy(PluginProcessManager* PluginProcessManage
     , m_pluginProcessAttributes(pluginProcessAttributes)
     , m_pluginProcessToken(pluginProcessToken)
     , m_numPendingConnectionRequests(0)
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     , m_modalWindowIsShowing(false)
     , m_fullscreenWindowIsShowing(false)
     , m_preFullscreenAppPresentationOptions(0)
@@ -88,7 +88,7 @@ void PluginProcessProxy::getPluginProcessConnection(PassRefPtr<Messages::WebProc
 {
     m_pendingConnectionReplies.append(reply);
 
-    if (isLaunching()) {
+    if (state() == State::Launching) {
         m_numPendingConnectionRequests++;
         return;
     }
@@ -103,7 +103,7 @@ void PluginProcessProxy::getSitesWithData(WebPluginSiteDataManager* webPluginSit
     ASSERT(!m_pendingGetSitesReplies.contains(callbackID));
     m_pendingGetSitesReplies.set(callbackID, webPluginSiteDataManager);
 
-    if (isLaunching()) {
+    if (state() == State::Launching) {
         m_pendingGetSitesRequests.append(callbackID);
         return;
     }
@@ -117,7 +117,7 @@ void PluginProcessProxy::clearSiteData(WebPluginSiteDataManager* webPluginSiteDa
     ASSERT(!m_pendingClearSiteDataReplies.contains(callbackID));
     m_pendingClearSiteDataReplies.set(callbackID, webPluginSiteDataManager);
 
-    if (isLaunching()) {
+    if (state() == State::Launching) {
         ClearSiteDataRequest request;
         request.sites = sites;
         request.flags = flags;
@@ -137,7 +137,7 @@ void PluginProcessProxy::pluginProcessCrashedOrFailedToLaunch()
     while (!m_pendingConnectionReplies.isEmpty()) {
         RefPtr<Messages::WebProcessProxy::GetPluginProcessConnection::DelayedReply> reply = m_pendingConnectionReplies.takeFirst();
 
-#if PLATFORM(MAC)
+#if OS(DARWIN)
         reply->send(IPC::Attachment(0, MACH_MSG_TYPE_MOVE_SEND), false);
 #elif USE(UNIX_DOMAIN_SOCKETS)
         reply->send(IPC::Attachment(), false);
@@ -158,7 +158,7 @@ void PluginProcessProxy::pluginProcessCrashedOrFailedToLaunch()
 
 void PluginProcessProxy::didClose(IPC::Connection*)
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (m_modalWindowIsShowing)
         endModal();
 
@@ -208,6 +208,10 @@ void PluginProcessProxy::didFinishLaunching(ProcessLauncher*, IPC::Connection::I
     // Initialize the plug-in host process.
     m_connection->send(Messages::PluginProcess::InitializePluginProcess(parameters), 0);
 
+#if PLATFORM(COCOA)
+    m_connection->send(Messages::PluginProcess::SetQOS(pluginProcessLatencyQOS(), pluginProcessThroughputQOS()), 0);
+#endif
+
     // Send all our pending requests.
     for (size_t i = 0; i < m_pendingGetSitesRequests.size(); ++i)
         m_connection->send(Messages::PluginProcess::GetSitesWithData(m_pendingGetSitesRequests[i]), 0);
@@ -224,7 +228,7 @@ void PluginProcessProxy::didFinishLaunching(ProcessLauncher*, IPC::Connection::I
     
     m_numPendingConnectionRequests = 0;
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (WebContext::processSuppressionIsEnabledForAllContexts())
         setProcessSuppressionEnabled(true);
 #endif
@@ -237,7 +241,7 @@ void PluginProcessProxy::didCreateWebProcessConnection(const IPC::Attachment& co
     // Grab the first pending connection reply.
     RefPtr<Messages::WebProcessProxy::GetPluginProcessConnection::DelayedReply> reply = m_pendingConnectionReplies.takeFirst();
 
-#if PLATFORM(MAC)
+#if OS(DARWIN)
     reply->send(IPC::Attachment(connectionIdentifier.port(), MACH_MSG_TYPE_MOVE_SEND), supportsAsynchronousPluginInitialization);
 #elif USE(UNIX_DOMAIN_SOCKETS)
     reply->send(connectionIdentifier, supportsAsynchronousPluginInitialization);

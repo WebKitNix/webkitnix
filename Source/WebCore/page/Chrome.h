@@ -28,7 +28,7 @@
 #include <wtf/Forward.h>
 #include <wtf/RefPtr.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #ifndef __OBJC__
 class NSView;
 #endif
@@ -69,9 +69,9 @@ public:
     ChromeClient& client() { return m_client; }
 
     // HostWindow methods.
-    virtual void invalidateRootView(const IntRect&, bool) override;
-    virtual void invalidateContentsAndRootView(const IntRect&, bool) override;
-    virtual void invalidateContentsForSlowScroll(const IntRect&, bool) override;
+    virtual void invalidateRootView(const IntRect&) override;
+    virtual void invalidateContentsAndRootView(const IntRect&) override;
+    virtual void invalidateContentsForSlowScroll(const IntRect&) override;
     virtual void scroll(const IntSize&, const IntRect&, const IntRect&) override;
 #if USE(TILED_BACKING_STORE)
     virtual void delegatedScrollRequested(const IntPoint& scrollPoint) override;
@@ -93,7 +93,6 @@ public:
     void scrollRectIntoView(const IntRect&) const;
 
     void contentsSizeChanged(Frame*, const IntSize&) const;
-    void layoutUpdated(Frame*) const;
 
     void setWindowRect(const FloatRect&) const;
     FloatRect windowRect() const;
@@ -162,15 +161,12 @@ public:
 
     void runOpenPanel(Frame*, PassRefPtr<FileChooser>);
     void loadIconForFiles(const Vector<String>&, FileIconLoader*);
-#if ENABLE(DIRECTORY_UPLOAD)
-    void enumerateChosenDirectory(FileChooser*);
-#endif
 
     void dispatchViewportPropertiesDidChange(const ViewportArguments&) const;
 
     bool requiresFullscreenForVideoPlayback();
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     void focusNSView(NSView*);
 #endif
 

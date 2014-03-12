@@ -23,7 +23,6 @@
 #ifndef SVGRootInlineBox_h
 #define SVGRootInlineBox_h
 
-#if ENABLE(SVG)
 #include "RootInlineBox.h"
 #include "SVGRenderSupport.h"
 #include "SVGTextLayoutEngine.h"
@@ -35,19 +34,16 @@ class SVGInlineTextBox;
 
 class SVGRootInlineBox final : public RootInlineBox {
 public:
-    SVGRootInlineBox(RenderSVGText&);
+    explicit SVGRootInlineBox(RenderSVGText&);
 
     RenderSVGText& renderSVGText();
 
-    virtual float virtualLogicalHeight() const { return m_logicalHeight; }
+    virtual float virtualLogicalHeight() const override { return m_logicalHeight; }
     void setLogicalHeight(float height) { m_logicalHeight = height; }
 
-    virtual void paint(PaintInfo&, const LayoutPoint&, LayoutUnit lineTop, LayoutUnit lineBottom);
+    virtual void paint(PaintInfo&, const LayoutPoint&, LayoutUnit lineTop, LayoutUnit lineBottom) override;
 
     void computePerCharacterLayoutInformation();
-
-    virtual FloatRect objectBoundingBox() const { return FloatRect(); }
-    virtual FloatRect repaintRectInLocalCoordinates() const { return FloatRect(); }
 
     InlineBox* closestLeafChildForPosition(const LayoutPoint&);
 
@@ -64,7 +60,5 @@ private:
 INLINE_BOX_OBJECT_TYPE_CASTS(SVGRootInlineBox, isSVGRootInlineBox())
 
 } // namespace WebCore
-
-#endif // ENABLE(SVG)
 
 #endif // SVGRootInlineBox_h

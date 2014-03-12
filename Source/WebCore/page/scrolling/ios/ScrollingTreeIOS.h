@@ -56,10 +56,7 @@ private:
 
     virtual PassOwnPtr<ScrollingTreeNode> createNode(ScrollingNodeType, ScrollingNodeID) override;
 
-    virtual void updateMainFrameScrollPosition(const IntPoint& scrollPosition, SetOrSyncScrollingLayerPosition = SyncScrollingLayerPosition) override;
-#if PLATFORM(MAC)
-    virtual void handleWheelEventPhase(PlatformWheelEventPhase) override { }
-#endif
+    virtual void scrollingTreeNodeDidScroll(ScrollingNodeID, const FloatPoint& scrollPosition, SetOrSyncScrollingLayerPosition = SyncScrollingLayerPosition) override;
 
     RefPtr<AsyncScrollingCoordinator> m_scrollingCoordinator;
 };

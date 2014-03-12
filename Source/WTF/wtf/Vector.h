@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005, 2006, 2007, 2008 Apple Inc. All rights reserved.
+ *  Copyright (C) 2005, 2006, 2007, 2008, 2014 Apple Inc. All rights reserved.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -21,6 +21,7 @@
 #ifndef WTF_Vector_h
 #define WTF_Vector_h
 
+#include <initializer_list>
 #include <limits>
 #include <string.h>
 #include <type_traits>
@@ -29,7 +30,6 @@
 #include <wtf/FastMalloc.h>
 #include <wtf/MallocPtr.h>
 #include <wtf/Noncopyable.h>
-#include <wtf/OwnPtr.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/ValueCheck.h>
 #include <wtf/VectorTraits.h>
@@ -135,10 +135,11 @@ struct VectorCopier;
 template<typename T>
 struct VectorCopier<false, T>
 {
-    static void uninitializedCopy(const T* src, const T* srcEnd, T* dst) 
+    template<typename U>
+    static void uninitializedCopy(const T* src, const T* srcEnd, U* dst)
     {
         while (src != srcEnd) {
-            new (NotNull, dst) T(*src);
+            new (NotNull, dst) U(*src);
             ++dst;
             ++src;
         }
@@ -148,9 +149,14 @@ struct VectorCopier<false, T>
 template<typename T>
 struct VectorCopier<true, T>
 {
-    static void uninitializedCopy(const T* src, const T* srcEnd, T* dst) 
+    static void uninitializedCopy(const T* src, const T* srcEnd, T* dst)
     {
         memcpy(dst, src, reinterpret_cast<const char*>(srcEnd) - reinterpret_cast<const char*>(src));
+    }
+    template<typename U>
+    static void uninitializedCopy(const T* src, const T* srcEnd, U* dst)
+    {
+        VectorCopier<false, T>::uninitializedCopy(src, srcEnd, dst);
     }
 };
 
@@ -305,6 +311,7 @@ public:
 
     T* buffer() { return m_buffer; }
     const T* buffer() const { return m_buffer; }
+    static ptrdiff_t bufferMemoryOffset() { return OBJECT_OFFSETOF(VectorBufferBase, m_buffer); }
     size_t capacity() const { return m_capacity; }
 
     MallocPtr<T> releaseBuffer()
@@ -366,7 +373,7 @@ public:
         deallocateBuffer(buffer());
     }
     
-    void swap(VectorBuffer<T, 0>& other)
+    void swap(VectorBuffer<T, 0>& other, size_t, size_t)
     {
         std::swap(m_buffer, other.m_buffer);
         std::swap(m_capacity, other.m_capacity);
@@ -382,6 +389,7 @@ public:
 
     using Base::buffer;
     using Base::capacity;
+    using Base::bufferMemoryOffset;
 
     using Base::releaseBuffer;
 
@@ -455,20 +463,20 @@ public:
         Base::reallocateBuffer(newCapacity);
     }
 
-    void swap(VectorBuffer& other)
+    void swap(VectorBuffer& other, size_t mySize, size_t otherSize)
     {
         if (buffer() == inlineBuffer() && other.buffer() == other.inlineBuffer()) {
-            std::swap(m_inlineBuffer, other.m_inlineBuffer);
+            swapInlineBuffer(other, mySize, otherSize);
             std::swap(m_capacity, other.m_capacity);
         } else if (buffer() == inlineBuffer()) {
             m_buffer = other.m_buffer;
             other.m_buffer = other.inlineBuffer();
-            std::swap(m_inlineBuffer, other.m_inlineBuffer);
+            swapInlineBuffer(other, mySize, 0);
             std::swap(m_capacity, other.m_capacity);
         } else if (other.buffer() == other.inlineBuffer()) {
             other.m_buffer = m_buffer;
             m_buffer = inlineBuffer();
-            std::swap(m_inlineBuffer, other.m_inlineBuffer);
+            swapInlineBuffer(other, 0, otherSize);
             std::swap(m_capacity, other.m_capacity);
         } else {
             std::swap(m_buffer, other.m_buffer);
@@ -486,6 +494,7 @@ public:
 
     using Base::buffer;
     using Base::capacity;
+    using Base::bufferMemoryOffset;
 
     MallocPtr<T> releaseBuffer()
     {
@@ -500,6 +509,32 @@ protected:
 private:
     using Base::m_buffer;
     using Base::m_capacity;
+    
+    void swapInlineBuffer(VectorBuffer& other, size_t mySize, size_t otherSize)
+    {
+        // FIXME: We could make swap part of VectorTypeOperations
+        // https://bugs.webkit.org/show_bug.cgi?id=128863
+        
+        if (std::is_pod<T>::value)
+            std::swap(m_inlineBuffer, other.m_inlineBuffer);
+        else
+            swapInlineBuffers(inlineBuffer(), other.inlineBuffer(), mySize, otherSize);
+    }
+    
+    static void swapInlineBuffers(T* left, T* right, size_t leftSize, size_t rightSize)
+    {
+        if (left == right)
+            return;
+        
+        ASSERT(leftSize <= inlineCapacity);
+        ASSERT(rightSize <= inlineCapacity);
+        
+        size_t swapBound = std::min(leftSize, rightSize);
+        for (unsigned i = 0; i < swapBound; ++i)
+            std::swap(left[i], right[i]);
+        VectorTypeOperations<T>::move(left + swapBound, left + leftSize, right + swapBound);
+        VectorTypeOperations<T>::move(right + swapBound, right + rightSize, left + swapBound);
+    }
 
     T* inlineBuffer() { return reinterpret_cast_ptr<T*>(m_inlineBuffer); }
     const T* inlineBuffer() const { return reinterpret_cast_ptr<const T*>(m_inlineBuffer); }
@@ -548,14 +583,12 @@ public:
             TypeOperations::uninitializedFill(begin(), end(), val);
     }
 
-#if COMPILER_SUPPORTS(CXX_GENERALIZED_INITIALIZERS)
     Vector(std::initializer_list<T> initializerList)
     {
         reserveInitialCapacity(initializerList.size());
         for (const auto& element : initializerList)
             uncheckedAppend(element);
     }
-#endif
 
     ~Vector()
     {
@@ -575,6 +608,7 @@ public:
     Vector& operator=(Vector&&);
 
     size_t size() const { return m_size; }
+    static ptrdiff_t sizeMemoryOffset() { return OBJECT_OFFSETOF(Vector, m_size); }
     size_t capacity() const { return Base::capacity(); }
     bool isEmpty() const { return !size(); }
 
@@ -608,6 +642,7 @@ public:
 
     T* data() { return Base::buffer(); }
     const T* data() const { return Base::buffer(); }
+    static ptrdiff_t dataMemoryOffset() { return Base::bufferMemoryOffset(); }
 
     iterator begin() { return data(); }
     iterator end() { return begin() + m_size; }
@@ -676,8 +711,8 @@ public:
 
     void swap(Vector<T, inlineCapacity, OverflowHandler>& other)
     {
+        Base::swap(other, m_size, other.m_size);
         std::swap(m_size, other.m_size);
-        Base::swap(other);
     }
 
     void reverse();
@@ -1000,7 +1035,6 @@ void Vector<T, inlineCapacity, OverflowHandler>::shrinkCapacity(size_t newCapaci
 // Templatizing these is better than just letting the conversion happen implicitly,
 // because for instance it allows a PassRefPtr to be appended to a RefPtr vector
 // without refcount thrash.
-
 template<typename T, size_t inlineCapacity, typename OverflowHandler> template<typename U>
 void Vector<T, inlineCapacity, OverflowHandler>::append(const U* data, size_t dataSize)
 {
@@ -1012,8 +1046,7 @@ void Vector<T, inlineCapacity, OverflowHandler>::append(const U* data, size_t da
     if (newSize < m_size)
         CRASH();
     T* dest = end();
-    for (size_t i = 0; i < dataSize; ++i)
-        new (NotNull, &dest[i]) T(data[i]);
+    VectorCopier<std::is_trivial<T>::value, U>::uninitializedCopy(data, &data[dataSize], dest);
     m_size = newSize;
 }
 
@@ -1030,8 +1063,7 @@ bool Vector<T, inlineCapacity, OverflowHandler>::tryAppend(const U* data, size_t
     if (newSize < m_size)
         return false;
     T* dest = end();
-    for (size_t i = 0; i < dataSize; ++i)
-        new (NotNull, &dest[i]) T(data[i]);
+    VectorCopier<std::is_trivial<T>::value, U>::uninitializedCopy(data, &data[dataSize], dest);
     m_size = newSize;
     return true;
 }
@@ -1093,8 +1125,7 @@ void Vector<T, inlineCapacity, OverflowHandler>::insert(size_t position, const U
         CRASH();
     T* spot = begin() + position;
     TypeOperations::moveOverlapping(spot, end(), spot + dataSize);
-    for (size_t i = 0; i < dataSize; ++i)
-        new (NotNull, &spot[i]) T(data[i]);
+    VectorCopier<std::is_trivial<T>::value, U>::uninitializedCopy(data, &data[dataSize], spot);
     m_size = newSize;
 }
  

@@ -43,9 +43,9 @@ enum {
 typedef uint32_t WKPluginLoadPolicy;
 
 enum {
-    kWKWebGLLoadPolicyInactive = 0,
+    kWKWebGLLoadPolicyBlocked = 0,
     kWKWebGLLoadPolicyLoadNormally,
-    kWKWebGLLoadPolicyBlocked
+    kWKWebGLLoadPolicyPending
 };
 typedef uint32_t WKWebGLLoadPolicy;
 
@@ -331,6 +331,7 @@ typedef struct WKPageLoaderClientV4 {
     
     // Version 4
     WKPageWebGLLoadPolicyCallback                                       webGLLoadPolicy;
+    WKPageWebGLLoadPolicyCallback                                       resolveWebGLLoadPolicy;
 } WKPageLoaderClientV4;
 
 // FIXME: These should be deprecated.

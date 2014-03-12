@@ -28,8 +28,9 @@
 
 #include "CopyToken.h"
 #include "HandleTypes.h"
-#include "MarkStackInlines.h"
+#include "MarkStack.h"
 
+#include <wtf/HashSet.h>
 #include <wtf/text/StringHash.h>
 
 namespace JSC {
@@ -37,9 +38,11 @@ namespace JSC {
 class ConservativeRoots;
 class GCThreadSharedData;
 class Heap;
-template<typename T> class Weak;
-template<typename T> class WriteBarrierBase;
 template<typename T> class JITWriteBarrier;
+class UnconditionalFinalizer;
+template<typename T> class Weak;
+class WeakReferenceHarvester;
+template<typename T> class WriteBarrierBase;
 
 class SlotVisitor {
     WTF_MAKE_NONCOPYABLE(SlotVisitor);
@@ -51,6 +54,8 @@ public:
 
     MarkStackArray& markStack() { return m_stack; }
 
+    VM& vm();
+    const VM& vm() const;
     Heap* heap() const;
 
     void append(ConservativeRoots&);
@@ -65,6 +70,9 @@ public:
     void appendUnbarrieredValue(JSValue*);
     template<typename T>
     void appendUnbarrieredWeak(Weak<T>*);
+    template<typename T>
+    void appendUnbarrieredReadOnlyPointer(T*);
+    void appendUnbarrieredReadOnlyValue(JSValue);
     void unconditionallyAppend(JSCell*);
     
     void addOpaqueRoot(void*);
@@ -75,7 +83,7 @@ public:
     GCThreadSharedData& sharedData() const { return m_shared; }
     bool isEmpty() { return m_stack.isEmpty(); }
 
-    void setup();
+    void didStartMarking();
     void reset();
     void clearMarkStack();
 

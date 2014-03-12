@@ -38,19 +38,51 @@ namespace WebCore {
 void CursorAdvanceOperation::perform(std::function<void()> completionCallback)
 {
     LOG(StorageAPI, "CursorAdvanceOperation");
-    m_cursor->transaction().database().serverConnection().cursorAdvance(*m_cursor, *this, completionCallback);
+
+    RefPtr<CursorAdvanceOperation> operation(this);
+    auto callback = [this, operation, completionCallback](PassRefPtr<IDBKey> key, PassRefPtr<IDBKey> primaryKey, PassRefPtr<SharedBuffer> valueBuffer, PassRefPtr<IDBDatabaseError> error) {
+        if (error) {
+            m_cursor->clear();
+            m_callbacks->onError(error);
+        } else if (!key) {
+            // If there's no error but also no key, then the cursor reached the end.
+            m_cursor->clear();
+            m_callbacks->onSuccess(static_cast<SharedBuffer*>(0));
+        } else {
+            m_cursor->updateCursorData(key.get(), primaryKey.get(), valueBuffer.get());
+            m_callbacks->onSuccess(key, primaryKey, valueBuffer);
+        }
+
+        // FIXME: Cursor operations should be able to pass along an error instead of success
+        completionCallback();
+    };
+
+    m_cursor->transaction().database().serverConnection().cursorAdvance(*m_cursor, *this, callback);
 }
 
 void CursorIterationOperation::perform(std::function<void()> completionCallback)
 {
     LOG(StorageAPI, "CursorIterationOperation");
-    m_cursor->transaction().database().serverConnection().cursorIterate(*m_cursor, *this, completionCallback);
-}
 
-void CursorPrefetchIterationOperation::perform(std::function<void()> completionCallback)
-{
-    LOG(StorageAPI, "CursorPrefetchIterationOperation");
-    m_cursor->transaction().database().serverConnection().cursorPrefetchIteration(*m_cursor, *this, completionCallback);
+    RefPtr<CursorIterationOperation> operation(this);
+    auto callback = [this, operation, completionCallback](PassRefPtr<IDBKey> key, PassRefPtr<IDBKey> primaryKey, PassRefPtr<SharedBuffer> valueBuffer, PassRefPtr<IDBDatabaseError> error) {
+        if (error) {
+            m_cursor->clear();
+            m_callbacks->onError(error);
+        } else if (!key) {
+            // If there's no error but also no key, then the cursor reached the end.
+            m_cursor->clear();
+            m_callbacks->onSuccess(static_cast<SharedBuffer*>(0));
+        } else {
+            m_cursor->updateCursorData(key.get(), primaryKey.get(), valueBuffer.get());
+            m_callbacks->onSuccess(key, primaryKey, valueBuffer);
+        }
+
+        // FIXME: Cursor operations should be able to pass along an error instead of success
+        completionCallback();
+    };
+
+    m_cursor->transaction().database().serverConnection().cursorIterate(*m_cursor, *this, callback);
 }
 
 } // namespace WebCore

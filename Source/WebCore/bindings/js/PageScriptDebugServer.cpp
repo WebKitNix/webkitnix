@@ -30,10 +30,9 @@
  */
 
 #include "config.h"
-
-#if ENABLE(JAVASCRIPT_DEBUGGER)
-
 #include "PageScriptDebugServer.h"
+
+#if ENABLE(INSPECTOR)
 
 #include "Document.h"
 #include "EventLoop.h"
@@ -44,7 +43,7 @@
 #include "PageGroup.h"
 #include "PluginView.h"
 #include "ScriptController.h"
-#include "ScriptDebugListener.h"
+#include "Timer.h"
 #include "Widget.h"
 #include <runtime/JSLock.h>
 #include <wtf/MainThread.h>
@@ -58,6 +57,7 @@
 #endif
 
 using namespace JSC;
+using namespace Inspector;
 
 namespace WebCore {
 
@@ -102,7 +102,7 @@ void PageScriptDebugServer::addListener(ScriptDebugListener* listener, Page* pag
         didAddFirstListener(page);
 }
 
-void PageScriptDebugServer::removeListener(ScriptDebugListener* listener, Page* page)
+void PageScriptDebugServer::removeListener(ScriptDebugListener* listener, Page* page, bool skipRecompile)
 {
     ASSERT_ARG(listener, listener);
     ASSERT_ARG(page, page);
@@ -116,14 +116,14 @@ void PageScriptDebugServer::removeListener(ScriptDebugListener* listener, Page* 
 
     if (listeners->isEmpty()) {
         m_pageListenersMap.remove(it);
-        didRemoveLastListener(page);
+        didRemoveLastListener(page, skipRecompile);
     }
 }
 
 void PageScriptDebugServer::recompileAllJSFunctions()
 {
     JSLockHolder lock(JSDOMWindow::commonVM());
-    Debugger::recompileAllJSFunctions(JSDOMWindow::commonVM());
+    Debugger::recompileAllJSFunctions(&JSDOMWindow::commonVM());
 }
 
 ScriptDebugServer::ListenerSet* PageScriptDebugServer::getListenersForGlobalObject(JSGlobalObject* globalObject)
@@ -167,7 +167,7 @@ void PageScriptDebugServer::didAddFirstListener(Page* page)
     recompileAllJSFunctions();
 }
 
-void PageScriptDebugServer::didRemoveLastListener(Page* page)
+void PageScriptDebugServer::didRemoveLastListener(Page* page, bool skipRecompile)
 {
     ASSERT(page);
 
@@ -176,7 +176,9 @@ void PageScriptDebugServer::didRemoveLastListener(Page* page)
 
     // Clear debugger before recompiling because we do not need sourceParsed callbacks.
     page->setDebugger(nullptr);
-    recompileAllJSFunctions();
+
+    if (!skipRecompile)
+        recompileAllJSFunctions();
 }
 
 void PageScriptDebugServer::runEventLoopWhilePaused()
@@ -188,9 +190,11 @@ void PageScriptDebugServer::runEventLoopWhilePaused()
     ASSERT(WebThreadIsLockedOrDisabled());
     {
         if (WebThreadIsEnabled())
-            JSC::JSLock::DropAllLocks dropAllLocks(WebCore::JSDOMWindowBase::commonVM(), JSC::JSLock::DropAllLocks::AlwaysDropLocks);
+            JSC::JSLock::DropAllLocks dropAllLocks(WebCore::JSDOMWindowBase::commonVM());
         WebRunLoopEnableNested();
 #endif
+
+    TimerBase::fireTimersInNestedEventLoop();
 
     EventLoop loop;
     while (!m_doneProcessingDebuggerEvents && !loop.ended())
@@ -201,6 +205,16 @@ void PageScriptDebugServer::runEventLoopWhilePaused()
     }
     ASSERT(WebThreadIsLockedOrDisabled());
 #endif
+}
+
+bool PageScriptDebugServer::isContentScript(ExecState* exec) const
+{
+    return &currentWorld(exec) != &mainThreadNormalWorld();
+}
+
+void PageScriptDebugServer::reportException(ExecState* exec, JSValue exception) const
+{
+    WebCore::reportException(exec, exception);
 }
 
 void PageScriptDebugServer::setJavaScriptPaused(const PageGroup& pageGroup, bool paused)
@@ -260,4 +274,4 @@ void PageScriptDebugServer::setJavaScriptPaused(FrameView* view, bool paused)
 
 } // namespace WebCore
 
-#endif // ENABLE(JAVASCRIPT_DEBUGGER)
+#endif // ENABLE(INSPECTOR)

@@ -28,7 +28,6 @@
 
 #include "APICallbackFunction.h"
 #include "APICast.h"
-#include "APIShims.h"
 #include "CodeBlock.h"
 #include "Error.h"
 #include "ExceptionHelpers.h"
@@ -36,7 +35,7 @@
 #include "JSFunction.h"
 #include "JSGlobalObject.h"
 #include "JSLock.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include <wtf/Vector.h>
 
 namespace JSC {

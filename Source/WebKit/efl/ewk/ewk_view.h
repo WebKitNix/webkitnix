@@ -122,8 +122,6 @@
 #include "ewk_window_features.h"
 
 #include <Evas.h>
-#include <cairo.h>
-#include <libsoup/soup.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -153,17 +151,11 @@ struct _Ewk_View_Smart_Class {
 
     Evas_Object *(*window_create)(Ewk_View_Smart_Data *sd, Eina_Bool javascript, const Ewk_Window_Features *window_features); /**< creates a new window, requested by webkit */
     void (*window_close)(Ewk_View_Smart_Data *sd); /**< closes a window */
-    void (*scrolls_process)(Ewk_View_Smart_Data *sd); /**< must be defined */
-    Eina_Bool (*repaints_process)(Ewk_View_Smart_Data *sd); /**< must be defined */
     Eina_Bool (*contents_resize)(Ewk_View_Smart_Data *sd, int w, int h);
     Eina_Bool (*zoom_set)(Ewk_View_Smart_Data *sd, float zoom, Evas_Coord cx, Evas_Coord cy);
     Eina_Bool (*zoom_weak_set)(Ewk_View_Smart_Data *sd, float zoom, Evas_Coord cx, Evas_Coord cy);
     void (*zoom_weak_smooth_scale_set)(Ewk_View_Smart_Data *sd, Eina_Bool smooth_scale);
     void (*flush)(Ewk_View_Smart_Data *sd);
-    Eina_Bool (*pre_render_region)(Ewk_View_Smart_Data *sd, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, float zoom);
-    Eina_Bool (*pre_render_relative_radius)(Ewk_View_Smart_Data *sd, unsigned int n, float zoom);
-    Eina_Bool (*pre_render_start)(Ewk_View_Smart_Data *sd);
-    void (*pre_render_cancel)(Ewk_View_Smart_Data *sd);
     Eina_Bool (*disable_render)(Ewk_View_Smart_Data *sd);
     Eina_Bool (*enable_render)(Ewk_View_Smart_Data *sd);
 
@@ -200,7 +192,7 @@ struct _Ewk_View_Smart_Class {
  * The version you have to put into the version field
  * in the @a Ewk_View_Smart_Class structure.
  */
-#define EWK_VIEW_SMART_CLASS_VERSION 8UL
+#define EWK_VIEW_SMART_CLASS_VERSION 9UL
 
 /**
  * Initializes a whole @a Ewk_View_Smart_Class structure.
@@ -212,7 +204,7 @@ struct _Ewk_View_Smart_Class {
  * @see EWK_VIEW_SMART_CLASS_INIT_VERSION
  * @see EWK_VIEW_SMART_CLASS_INIT_NAME_VERSION
  */
-#define EWK_VIEW_SMART_CLASS_INIT(smart_class_init) {smart_class_init, EWK_VIEW_SMART_CLASS_VERSION, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+#define EWK_VIEW_SMART_CLASS_INIT(smart_class_init) {smart_class_init, EWK_VIEW_SMART_CLASS_VERSION, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 /**
  * Initializes to zero a whole @a Ewk_View_Smart_Class structure.
@@ -1221,80 +1213,6 @@ EAPI Eina_Bool    ewk_view_zoom_animated_mark_stop(Evas_Object *o);
 EAPI Eina_Bool    ewk_view_zoom_animated_set(Evas_Object *o, float zoom, float duration, Evas_Coord cx, Evas_Coord cy);
 
 /**
- * Asks engine to pre-render region.
- *
- * Engines and backing store might be able to pre-render regions in
- * order to speed up zooming or scrolling to that region. Not all
- * engines might implement that and they will return @c EINA_FALSE
- * in that case.
- *
- * The given region is a hint. Engines might do bigger or smaller area
- * that covers that region. Pre-render might not be immediate, it may
- * be postponed to a thread, operated cooperatively in the main loop
- * and may be even ignored or cancelled afterwards.
- *
- * Multiple requests might be queued by engines. One can clear/forget
- * about them with ewk_view_pre_render_cancel().
- *
- * @param o view to ask pre-render of given region
- * @param x absolute coordinate (0=left) to pre-render at zoom
- * @param y absolute coordinate (0=top) to pre-render at zoom
- * @param w width to pre-render starting from @a x at zoom
- * @param h height to pre-render starting from @a y at zoom
- * @param zoom desired zoom
- *
- * @return @c EINA_TRUE if request was accepted, @c EINA_FALSE
- *         otherwise (errors, pre-render feature not supported, etc)
- *
- * @see ewk_view_pre_render_cancel()
- */
-EAPI Eina_Bool    ewk_view_pre_render_region(Evas_Object *o, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h, float zoom);
-
-/**
- * Asks engine to pre-render region, given @a n extra cols/rows.
- *
- * This is an alternative method to ewk_view_pre_render_region(). It does not
- * make sense in all engines and therefore it might not be implemented at all.
- *
- * It's only useful if engine divide the area being rendered in smaller tiles,
- * forming a grid. Then, browser could call this function to pre-render @a n
- * rows/cols involving the current viewport.
- *
- * @param o view to ask pre-render
- * @param n number of cols/rows that must be part of the region pre-rendered
- *
- * @return @c EINA_TRUE if request was accepted, @c EINA_FALSE
- *         otherwise (errors, pre-render feature not supported, etc)
- *
- * @see ewk_view_pre_render_region()
- */
-EAPI Eina_Bool    ewk_view_pre_render_relative_radius(Evas_Object *o, unsigned int n);
-
-/**
- * Asks engine to start pre-rendering.
- *
- * This is an alternative method to pre-render around the view area.
- * The first step is to find the center view area where to start pre-rendering.
- * And then from the center of the view area the backing store append the render request
- * outward in spiral order. So that the tiles which are close to view area are displayed
- * sooner than outside.
- *
- * @param o view to ask pre-render
- *
- * @return @c EINA_TRUE if request was accepted, @c EINA_FALSE
- *         otherwise (errors, pre-render feature not supported, etc)
- *
- */
-EAPI Eina_Bool    ewk_view_pre_render_start(Evas_Object *o);
-
-/**
- * Cancels and clears previous the pre-render requests.
- *
- * @param o view to clear pre-render requests
- */
-EAPI void         ewk_view_pre_render_cancel(Evas_Object *o);
-
-/**
  * Enables (resumes) rendering.
  *
  * @param o view object to enable rendering
@@ -2133,62 +2051,6 @@ EAPI Ewk_View_Smart_Data *ewk_view_smart_data_get(const Evas_Object *o);
 EAPI void ewk_view_scrolls_process(Ewk_View_Smart_Data *sd);
 
 /**
- * Paints using given graphics context the given area.
- *
- * This uses viewport relative area and will also handle scrollbars
- * and other extra elements. See ewk_view_paint_contents() for the
- * alternative function.
- *
- * @param priv the pointer to the private data of the view to use as paint source
- * @param cr the cairo context to use as paint destination, its state will
- *        be saved before operation and restored afterwards
- * @param area viewport relative geometry to paint
- *
- * @return @c EINA_TRUE on success or @c EINA_FALSE on failure
- *
- * @note This is an easy to use version, but internal structures are
- *       always created, then graphics context is clipped, then
- *       painted, restored and destroyed. This might not be optimum,
- *       so using @a Ewk_View_Paint_Context may be a better solutions
- *       for large number of operations.
- *
- * @see ewk_view_paint_contents()
- * @see ewk_view_paint_context_paint()
- *
- * @note This is not for general use but just for subclasses that want
- *       to define their own backing store.
- */
-EAPI Eina_Bool ewk_view_paint(Ewk_View_Private_Data *priv, cairo_t *cr, const Eina_Rectangle *area);
-
-/**
- * Paints just contents using given graphics context the given area.
- *
- * This uses absolute coordinates for area and will just handle
- * contents, no scrollbars or extras. See ewk_view_paint() for the
- * alternative solution.
- *
- * @param priv the pointer to the private data of the view to use as paint source
- * @param cr the cairo context to use as paint destination, its state will
- *        be saved before operation and restored afterwards
- * @param area absolute geometry to paint
- *
- * @return @c EINA_TRUE on success or @c EINA_FALSE on failure
- *
- * @note This is an easy to use version, but internal structures are
- *       always created, then graphics context is clipped, then
- *       painted, restored and destroyed. This might not be optimum,
- *       so using @a Ewk_View_Paint_Context may be a better solutions
- *       for large number of operations.
- *
- * @see ewk_view_paint()
- * @see ewk_view_paint_context_paint_contents()
- *
- * @note This is not for general use but just for subclasses that want
- *       to define their own backing store.
- */
-EAPI Eina_Bool ewk_view_paint_contents(Ewk_View_Private_Data *priv, cairo_t *cr, const Eina_Rectangle *area);
-
-/**
  * Gets the attributes of the viewport meta tag.
  *
  * Properties are returned in the respective pointers. Passing @c NULL to any of
@@ -2430,34 +2292,6 @@ EAPI Eina_Bool ewk_view_mixed_content_displayed_get(const Evas_Object *o);
 EAPI Eina_Bool ewk_view_mixed_content_run_get(const Evas_Object *o);
 
 /**
- * Returns the SoupSession associated with this view.
- *
- * By default, all views share the same, default soup session also available
- * by calling ewk_network_default_soup_session_get.
- *
- * @param o The view to query.
- *
- * @sa ewk_view_soup_session_set, ewk_network_default_soup_session_get
- */
-EAPI SoupSession* ewk_view_soup_session_get(const Evas_Object *o);
-
-/**
- * Associates a new SoupSession with this view.
- *
- * Only sessions of type SoupSessionAsync are supported.
- *
- * @note Changing the SoupSession should not be needed in most cases. If
- *       a different SoupSession is used, the cookie management and some
- *       network functions in ewk will not have any effect on it.
- *
- * @param o The view to change.
- * @param session The new SoupSession.
- *
- * @sa ewk_view_soup_session_get, ewk_network_default_soup_session_get
- */
-EAPI void ewk_view_soup_session_set(Evas_Object *o, SoupSession *session);
-
-/**
  * Returns whether XSSAuditor feature is enabled.
  *
  * @param o view object to query whether XSSAuditor feature is enabled.
@@ -2650,6 +2484,19 @@ EAPI Eina_Bool ewk_view_setting_tiled_backing_store_enabled_get(Evas_Object *o);
  * @return context menu structure on success or @c NULL on failure
  */
 EAPI Ewk_Context_Menu *ewk_view_context_menu_get(const Evas_Object *o);
+
+/**
+ * Gets the image object of the specified area of the page
+ *
+ * The returned image object @b should be freed after use.
+ *
+ * @param o view object to be captured
+ * @param area The area of the page will be captured.
+ * @param scale scale factor of captured object.
+ *
+ * @return newly allocated image object on sucess or @c NULL on failure.
+ */
+EAPI Evas_Object *ewk_view_screenshot_contents_get(const Evas_Object *o, const Eina_Rectangle *area, float scale);
 
 #ifdef __cplusplus
 }

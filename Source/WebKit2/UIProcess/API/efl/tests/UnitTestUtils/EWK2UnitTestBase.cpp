@@ -47,7 +47,7 @@ void EWK2UnitTestBase::SetUp()
     unsigned int width = environment->defaultWidth();
     unsigned int height = environment->defaultHeight();
 
-#if defined(WTF_USE_ACCELERATED_COMPOSITING) && defined(HAVE_ECORE_X)
+#if defined(HAVE_ECORE_X)
     const char* engine = "opengl_x11";
     m_ecoreEvas = ecore_evas_new(engine, 0, 0, width, height, 0);
     // Graceful fallback to software rendering if evas_gl engine is not available.
@@ -233,6 +233,29 @@ bool EWK2UnitTestBase::waitUntilTrue(bool &flag, double timeoutSeconds)
         ecore_main_loop_iterate();
 
     return !data.didTimeOut();
+}
+
+Eina_List* EWK2UnitTestBase::waitUntilSpellingLanguagesLoaded(unsigned expectedLanguageCount, double timeoutValue)
+{
+    // Keep waiting until all languages has been loaded or leave afqter timeout.
+    // Languages are being loaded in the timer, we have to wait for them.
+    Eina_List* loadedLanguages = nullptr;
+    void* actual = nullptr;
+
+    CallbackDataExpectedValue<bool> data(true, timeoutValue);
+    while ((eina_list_count(loadedLanguages) != expectedLanguageCount) && !data.isDone()) {
+        if (loadedLanguages) {
+            // List has to be freed before acquiring new one.
+            actual = nullptr;
+            EINA_LIST_FREE(loadedLanguages, actual)
+                eina_stringshare_del(static_cast<const char*>(actual));
+        }
+
+        loadedLanguages = ewk_text_checker_spell_checking_languages_get();
+        ecore_main_loop_iterate();
+    }
+
+    return loadedLanguages;
 }
 
 void EWK2UnitTestBase::mouseClick(int x, int y, int button)

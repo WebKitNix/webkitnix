@@ -39,10 +39,6 @@
 #include "Timer.h"
 #include "UpdateAtlas.h"
 
-#if ENABLE(CSS_SHADERS)
-#include "FilterOperations.h"
-#endif
-
 namespace WebCore {
 
 class Page;
@@ -60,7 +56,6 @@ public:
     class Client {
     public:
         virtual void didFlushRootLayer() = 0;
-        virtual void willSyncLayerState(CoordinatedGraphicsLayerState&) = 0;
         virtual void notifyFlushRequired() = 0;
         virtual void commitSceneState(const CoordinatedGraphicsState&) = 0;
         virtual void paintLayerContents(const GraphicsLayer*, GraphicsContext&, const IntRect& clipRect) = 0;
@@ -96,7 +91,7 @@ private:
     // GraphicsLayerClient
     virtual void notifyAnimationStarted(const GraphicsLayer*, double time) override;
     virtual void notifyFlushRequired(const GraphicsLayer*) override;
-    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const IntRect& clipRect) override;
+    virtual void paintContents(const GraphicsLayer*, GraphicsContext&, GraphicsLayerPaintingPhase, const FloatRect& clipRect) override;
     virtual float deviceScaleFactor() const override;
     virtual float pageScaleFactor() const override;
 

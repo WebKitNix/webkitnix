@@ -32,6 +32,7 @@
 #include "SourceBufferPrivateClient.h"
 #include <wtf/MediaTime.h>
 #include <wtf/Vector.h>
+#include <wtf/WeakPtr.h>
 
 OBJC_CLASS AVAsset;
 OBJC_CLASS AVSampleBufferAudioRenderer;
@@ -71,17 +72,22 @@ public:
     void effectiveRateChanged();
     void sizeChanged();
 
+#if ENABLE(ENCRYPTED_MEDIA_V2)
+    virtual std::unique_ptr<CDMSession> createSession(const String&);
+    void keyNeeded(Uint8Array*);
+#endif
+
+    WeakPtr<MediaPlayerPrivateMediaSourceAVFObjC> createWeakPtr() { return m_weakPtrFactory.createWeakPtr(); }
+
 private:
     // MediaPlayerPrivateInterface
     virtual void load(const String& url) override;
-    virtual void load(const String& url, PassRefPtr<HTMLMediaSource>) override;
+    virtual void load(const String& url, MediaSourcePrivateClient*) override;
     virtual void cancelLoad() override;
 
     virtual void prepareToPlay() override;
     virtual PlatformMedia platformMedia() const override;
-#if USE(ACCELERATED_COMPOSITING)
     virtual PlatformLayer* platformLayer() const override;
-#endif
 
     virtual void play() override;
     void playInternal();
@@ -113,10 +119,10 @@ private:
     virtual bool seeking() const override;
     virtual void setRateDouble(double) override;
 
-    virtual PassRefPtr<TimeRanges> seekable() const override;
+    virtual std::unique_ptr<PlatformTimeRanges> seekable() const override;
     virtual double maxTimeSeekableDouble() const override;
     virtual double minTimeSeekable() const override;
-    virtual PassRefPtr<TimeRanges> buffered() const override;
+    virtual std::unique_ptr<PlatformTimeRanges> buffered() const override;
 
     virtual bool didLoadingProgress() const override;
 
@@ -127,11 +133,9 @@ private:
 
     virtual bool hasAvailableVideoFrame() const override;
 
-#if USE(ACCELERATED_COMPOSITING)
     virtual bool supportsAcceleratedRendering() const override;
     // called when the rendering system flips the into or out of accelerated rendering mode.
     virtual void acceleratedRenderingStateChanged() override;
-#endif
 
     virtual MediaPlayer::MovieLoadType movieLoadType() const override;
 
@@ -156,11 +160,13 @@ private:
     static bool isAvailable();
     static void getSupportedTypes(HashSet<String>& types);
     static MediaPlayer::SupportsType supportsType(const MediaEngineSupportParameters&);
+    static bool supportsKeySystem(const String& keySystem, const String& mimeType);
 
     friend class MediaSourcePrivateAVFObjC;
 
     MediaPlayer* m_player;
-    RefPtr<HTMLMediaSource> m_mediaSource;
+    WeakPtrFactory<MediaPlayerPrivateMediaSourceAVFObjC> m_weakPtrFactory;
+    RefPtr<MediaSourcePrivateClient> m_mediaSource;
     RefPtr<MediaSourcePrivateAVFObjC> m_mediaSourcePrivate;
     RetainPtr<AVAsset> m_asset;
     RetainPtr<AVSampleBufferDisplayLayer> m_sampleBufferDisplayLayer;

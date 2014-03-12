@@ -20,7 +20,7 @@
 #include "config.h"
 #include "WebKitTestBus.h"
 
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 #include <wtf/text/WTFString.h>
 
 WebKitTestBus::WebKitTestBus()
@@ -31,14 +31,14 @@ WebKitTestBus::WebKitTestBus()
 bool WebKitTestBus::run()
 {
     // FIXME: Use GTestDBus when we bump glib to 2.34.
-    GOwnPtr<char> dbusLaunch(g_find_program_in_path("dbus-launch"));
+    GUniquePtr<char> dbusLaunch(g_find_program_in_path("dbus-launch"));
     if (!dbusLaunch) {
         g_warning("Error starting DBUS daemon: dbus-launch not found in path");
         return false;
     }
 
-    GOwnPtr<char> output;
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<char> output;
+    GUniqueOutPtr<GError> error;
     if (!g_spawn_command_line_sync(dbusLaunch.get(), &output.outPtr(), 0, 0, &error.outPtr())) {
         g_warning("Error starting DBUS daemon: %s", error->message);
         return false;

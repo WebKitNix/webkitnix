@@ -152,7 +152,7 @@ typedef enum {
 /**
  * WebKitViewMode:
  * @WEBKIT_VIEW_MODE_WEB: The normal view mode to display web contents.
- * @WEBKIT_VIEW_MODE_SOURCE: The source mode to display web source code.
+ * @WEBKIT_VIEW_MODE_SOURCE: The source mode to display web source code. Deprecated: 2.6.
  *
  * Enum values to specify the different ways in which a #WebKitWebView
  * can display a web page.
@@ -264,6 +264,9 @@ webkit_web_view_new                                  (void);
 
 WEBKIT_API GtkWidget *
 webkit_web_view_new_with_context                     (WebKitWebContext          *context);
+
+WEBKIT_API GtkWidget *
+webkit_web_view_new_with_related_view                (WebKitWebView             *web_view);
 
 WEBKIT_API GtkWidget *
 webkit_web_view_new_with_group                       (WebKitWebViewGroup        *group);

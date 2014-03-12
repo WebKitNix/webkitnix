@@ -35,8 +35,13 @@
 #include <wtf/RetainPtr.h>
 #include <wtf/StringExtras.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) && !PLATFORM(IOS)
 #include <LaunchServices/UTCoreTypes.h>
+#endif
+
+#if PLATFORM(IOS)
+// FIXME: get kUTTypePNG from MobileCoreServices on iOS
+static const CFStringRef kUTTypePNG = CFSTR("public.png");
 #endif
 
 namespace WTR {
@@ -81,7 +86,7 @@ void computeMD5HashStringForContext(CGContextRef bitmapContext, char hashString[
     // We need to swap the bytes to ensure consistent hashes independently of endianness
     MD5 md5;
     unsigned char* bitmapData = static_cast<unsigned char*>(CGBitmapContextGetData(bitmapContext));
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if ((CGBitmapContextGetBitmapInfo(bitmapContext) & kCGBitmapByteOrderMask) == kCGBitmapByteOrder32Big) {
         for (unsigned row = 0; row < pixelsHigh; row++) {
             Vector<uint8_t> buffer(4 * pixelsWide);
@@ -153,11 +158,6 @@ void TestInvocation::dumpPixelsAndCompareWithExpected(WKImageRef image, WKArrayR
 {
     PlatformWebView* webView = TestController::shared().mainWebView();
     WKRetainPtr<WKImageRef> windowSnapshot = webView->windowSnapshotImage();
-
-    // There is no way at this time to fake a window's scale factor, so we need to avoid the window
-    // snapshots for HiDPI tests.
-    if (WKPageGetBackingScaleFactor(webView->page()) != 1)
-        windowSnapshot = 0;
 
     RetainPtr<CGContextRef> context;
     if (windowSnapshot)

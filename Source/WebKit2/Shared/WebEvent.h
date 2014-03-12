@@ -41,6 +41,12 @@ namespace IPC {
     class ArgumentEncoder;
 }
 
+#if USE(APPKIT)
+namespace WebCore {
+struct KeypressCommand;
+}
+#endif
+
 namespace WebKit {
 
 class WebEvent {
@@ -150,7 +156,7 @@ public:
         ScrollByPixelWheelEvent
     };
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     enum Phase {
         PhaseNone        = 0,
         PhaseBegan       = 1 << 0,
@@ -165,7 +171,7 @@ public:
     WebWheelEvent() { }
 
     WebWheelEvent(Type, const WebCore::IntPoint& position, const WebCore::IntPoint& globalPosition, const WebCore::FloatSize& delta, const WebCore::FloatSize& wheelTicks, Granularity, Modifiers, double timestamp);
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     WebWheelEvent(Type, const WebCore::IntPoint& position, const WebCore::IntPoint& globalPosition, const WebCore::FloatSize& delta, const WebCore::FloatSize& wheelTicks, Granularity, bool directionInvertedFromDevice, Phase, Phase momentumPhase, bool hasPreciseScrollingDeltas, uint32_t scrollCount, const WebCore::FloatSize& unacceleratedScrollingDelta, Modifiers, double timestamp);
 #endif
 
@@ -175,7 +181,7 @@ public:
     const WebCore::FloatSize wheelTicks() const { return m_wheelTicks; }
     Granularity granularity() const { return static_cast<Granularity>(m_granularity); }
     bool directionInvertedFromDevice() const { return m_directionInvertedFromDevice; }
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     Phase phase() const { return static_cast<Phase>(m_phase); }
     Phase momentumPhase() const { return static_cast<Phase>(m_momentumPhase); }
     bool hasPreciseScrollingDeltas() const { return m_hasPreciseScrollingDeltas; }
@@ -195,7 +201,7 @@ private:
     WebCore::FloatSize m_wheelTicks;
     uint32_t m_granularity; // Granularity
     bool m_directionInvertedFromDevice;
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     uint32_t m_phase; // Phase
     uint32_t m_momentumPhase; // Phase
     bool m_hasPreciseScrollingDeltas;
@@ -207,9 +213,14 @@ private:
 // FIXME: Move this class to its own header file.
 class WebKeyboardEvent : public WebEvent {
 public:
-    WebKeyboardEvent() { }
+    WebKeyboardEvent();
+    ~WebKeyboardEvent();
 
+#if USE(APPKIT)
+    WebKeyboardEvent(Type, const String& text, const String& unmodifiedText, const String& keyIdentifier, int windowsVirtualKeyCode, int nativeVirtualKeyCode, int macCharCode, bool handledByInputMethod, const Vector<WebCore::KeypressCommand>&, bool isAutoRepeat, bool isKeypad, bool isSystemKey, Modifiers, double timestamp);
+#else
     WebKeyboardEvent(Type, const String& text, const String& unmodifiedText, const String& keyIdentifier, int windowsVirtualKeyCode, int nativeVirtualKeyCode, int macCharCode, bool isAutoRepeat, bool isKeypad, bool isSystemKey, Modifiers, double timestamp);
+#endif
 
     const String& text() const { return m_text; }
     const String& unmodifiedText() const { return m_unmodifiedText; }
@@ -217,6 +228,10 @@ public:
     int32_t windowsVirtualKeyCode() const { return m_windowsVirtualKeyCode; }
     int32_t nativeVirtualKeyCode() const { return m_nativeVirtualKeyCode; }
     int32_t macCharCode() const { return m_macCharCode; }
+#if USE(APPKIT)
+    bool handledByInputMethod() const { return m_handledByInputMethod; }
+    const Vector<WebCore::KeypressCommand>& commands() const { return m_commands; }
+#endif
     bool isAutoRepeat() const { return m_isAutoRepeat; }
     bool isKeypad() const { return m_isKeypad; }
     bool isSystemKey() const { return m_isSystemKey; }
@@ -233,6 +248,10 @@ private:
     int32_t m_windowsVirtualKeyCode;
     int32_t m_nativeVirtualKeyCode;
     int32_t m_macCharCode;
+#if USE(APPKIT)
+    bool m_handledByInputMethod;
+    Vector<WebCore::KeypressCommand> m_commands;
+#endif
     bool m_isAutoRepeat;
     bool m_isKeypad;
     bool m_isSystemKey;

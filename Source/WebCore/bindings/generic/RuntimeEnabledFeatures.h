@@ -176,14 +176,6 @@ public:
     void setWebkitVideoTrackEnabled(bool isEnabled) { m_isVideoTrackEnabled = isEnabled; }
 #endif
 
-#if ENABLE(SHADOW_DOM)
-    bool shadowDOMEnabled() const { return m_isShadowDOMEnabled; }
-    void setShadowDOMEnabled(bool isEnabled) { m_isShadowDOMEnabled = isEnabled; }
-
-    bool authorShadowDOMForAnyElementEnabled() const { return m_isAuthorShadowDOMForAnyElementEnabled; }
-    void setAuthorShadowDOMForAnyElementEnabled(bool isEnabled) { m_isAuthorShadowDOMForAnyElementEnabled = isEnabled; }
-#endif
-
 #if ENABLE(INPUT_TYPE_DATE)
     bool inputTypeDateEnabled() const { return m_isInputTypeDateEnabled; }
     void setInputTypeDateEnabled(bool isEnabled) { m_isInputTypeDateEnabled = isEnabled; }
@@ -217,11 +209,6 @@ public:
 #if ENABLE(CSP_NEXT)
     bool experimentalContentSecurityPolicyFeaturesEnabled() const { return m_areExperimentalContentSecurityPolicyFeaturesEnabled; }
     void setExperimentalContentSecurityPolicyFeaturesEnabled(bool isEnabled) { m_areExperimentalContentSecurityPolicyFeaturesEnabled = isEnabled; }
-#endif
-
-#if ENABLE(IFRAME_SEAMLESS)
-    bool seamlessIFramesEnabled() const { return m_areSeamlessIFramesEnabled; }
-    void setSeamlessIFramesEnabled(bool isEnabled) { m_areSeamlessIFramesEnabled = isEnabled; }
 #endif
 
     bool langAttributeAwareFormControlUIEnabled() const { return m_isLangAttributeAwareFormControlUIEnabled; }
@@ -276,11 +263,6 @@ private:
     bool m_isVideoTrackEnabled;
 #endif
 
-#if ENABLE(SHADOW_DOM)
-    bool m_isShadowDOMEnabled;
-    bool m_isAuthorShadowDOMForAnyElementEnabled;
-#endif
-
 #if ENABLE(INPUT_TYPE_DATE)
     bool m_isInputTypeDateEnabled;
 #endif
@@ -309,22 +291,11 @@ private:
     bool m_areExperimentalContentSecurityPolicyFeaturesEnabled;
 #endif
 
-#if ENABLE(IFRAME_SEAMLESS)
-    bool m_areSeamlessIFramesEnabled;
-#endif
-
 #if ENABLE(FONT_LOAD_EVENTS)
     bool m_isFontLoadEventsEnabled;
 #endif
 
-#ifndef CLASS_IF_GCC
-#if COMPILER(GCC)
-#define CLASS_IF_GCC class
-#else
-#define CLASS_IF_GCC
-#endif
-#endif
-    friend CLASS_IF_GCC NeverDestroyed<RuntimeEnabledFeatures>;
+    friend class WTF::NeverDestroyed<RuntimeEnabledFeatures>;
 };
 
 } // namespace WebCore

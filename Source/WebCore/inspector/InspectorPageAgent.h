@@ -61,7 +61,6 @@ class InspectorOverlay;
 class InstrumentingAgents;
 class URL;
 class Page;
-class RegularExpression;
 class SharedBuffer;
 class TextResourceDecoder;
 
@@ -148,7 +147,7 @@ public:
 
     // Inspector Controller API
     virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
-    virtual void willDestroyFrontendAndBackend() override;
+    virtual void willDestroyFrontendAndBackend(Inspector::InspectorDisconnectReason) override;
 
     // Cross-agents API
     Page* page() { return m_page; }

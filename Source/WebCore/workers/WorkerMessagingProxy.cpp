@@ -26,14 +26,13 @@
  */
 
 #include "config.h"
-
 #include "WorkerMessagingProxy.h"
 
 #include "ContentSecurityPolicy.h"
 #include "CrossThreadTask.h"
+#include "DOMWindow.h"
 #include "DedicatedWorkerGlobalScope.h"
 #include "DedicatedWorkerThread.h"
-#include "DOMWindow.h"
 #include "Document.h"
 #include "ErrorEvent.h"
 #include "Event.h"
@@ -43,26 +42,28 @@
 #include "MessageEvent.h"
 #include "NotImplemented.h"
 #include "PageGroup.h"
-#include "ScriptCallStack.h"
 #include "ScriptExecutionContext.h"
 #include "Worker.h"
 #include "WorkerDebuggerAgent.h"
 #include "WorkerInspectorController.h"
+#include <inspector/InspectorAgentBase.h>
+#include <inspector/ScriptCallStack.h>
+#include <runtime/ConsoleTypes.h>
 #include <wtf/MainThread.h>
 
 namespace WebCore {
 
 class MessageWorkerGlobalScopeTask : public ScriptExecutionContext::Task {
 public:
-    static PassOwnPtr<MessageWorkerGlobalScopeTask> create(PassRefPtr<SerializedScriptValue> message, PassOwnPtr<MessagePortChannelArray> channels)
+    static PassOwnPtr<MessageWorkerGlobalScopeTask> create(PassRefPtr<SerializedScriptValue> message, std::unique_ptr<MessagePortChannelArray> channels)
     {
-        return adoptPtr(new MessageWorkerGlobalScopeTask(message, channels));
+        return adoptPtr(new MessageWorkerGlobalScopeTask(message, std::move(channels)));
     }
 
 private:
-    MessageWorkerGlobalScopeTask(PassRefPtr<SerializedScriptValue> message, PassOwnPtr<MessagePortChannelArray> channels)
+    MessageWorkerGlobalScopeTask(PassRefPtr<SerializedScriptValue> message, std::unique_ptr<MessagePortChannelArray> channels)
         : m_message(message)
-        , m_channels(channels)
+        , m_channels(std::move(channels))
     {
     }
 
@@ -70,27 +71,27 @@ private:
     {
         ASSERT_WITH_SECURITY_IMPLICATION(scriptContext->isWorkerGlobalScope());
         DedicatedWorkerGlobalScope* context = static_cast<DedicatedWorkerGlobalScope*>(scriptContext);
-        OwnPtr<MessagePortArray> ports = MessagePort::entanglePorts(*scriptContext, m_channels.release());
-        context->dispatchEvent(MessageEvent::create(ports.release(), m_message));
-        context->thread()->workerObjectProxy().confirmMessageFromWorkerObject(context->hasPendingActivity());
+        std::unique_ptr<MessagePortArray> ports = MessagePort::entanglePorts(*scriptContext, std::move(m_channels));
+        context->dispatchEvent(MessageEvent::create(std::move(ports), m_message));
+        context->thread().workerObjectProxy().confirmMessageFromWorkerObject(context->hasPendingActivity());
     }
 
 private:
     RefPtr<SerializedScriptValue> m_message;
-    OwnPtr<MessagePortChannelArray> m_channels;
+    std::unique_ptr<MessagePortChannelArray> m_channels;
 };
 
 class MessageWorkerTask : public ScriptExecutionContext::Task {
 public:
-    static PassOwnPtr<MessageWorkerTask> create(PassRefPtr<SerializedScriptValue> message, PassOwnPtr<MessagePortChannelArray> channels, WorkerMessagingProxy* messagingProxy)
+    static PassOwnPtr<MessageWorkerTask> create(PassRefPtr<SerializedScriptValue> message, std::unique_ptr<MessagePortChannelArray> channels, WorkerMessagingProxy* messagingProxy)
     {
-        return adoptPtr(new MessageWorkerTask(message, channels, messagingProxy));
+        return adoptPtr(new MessageWorkerTask(message, std::move(channels), messagingProxy));
     }
 
 private:
-    MessageWorkerTask(PassRefPtr<SerializedScriptValue> message, PassOwnPtr<MessagePortChannelArray> channels, WorkerMessagingProxy* messagingProxy)
+    MessageWorkerTask(PassRefPtr<SerializedScriptValue> message, std::unique_ptr<MessagePortChannelArray> channels, WorkerMessagingProxy* messagingProxy)
         : m_message(message)
-        , m_channels(channels)
+        , m_channels(std::move(channels))
         , m_messagingProxy(messagingProxy)
     {
     }
@@ -101,13 +102,13 @@ private:
         if (!workerObject || m_messagingProxy->askedToTerminate())
             return;
 
-        OwnPtr<MessagePortArray> ports = MessagePort::entanglePorts(*scriptContext, m_channels.release());
-        workerObject->dispatchEvent(MessageEvent::create(ports.release(), m_message));
+        std::unique_ptr<MessagePortArray> ports = MessagePort::entanglePorts(*scriptContext, std::move(m_channels));
+        workerObject->dispatchEvent(MessageEvent::create(std::move(ports), m_message));
     }
 
 private:
     RefPtr<SerializedScriptValue> m_message;
-    OwnPtr<MessagePortChannelArray> m_channels;
+    std::unique_ptr<MessagePortChannelArray> m_channels;
     WorkerMessagingProxy* m_messagingProxy;
 };
 
@@ -258,8 +259,7 @@ private:
     virtual void performTask(ScriptExecutionContext *context)
     {
         AtomicString eventName = m_isOnLine ? eventNames().onlineEvent : eventNames().offlineEvent;
-        WorkerGlobalScope* workerGlobalScope = static_cast<WorkerGlobalScope*>(context);
-        workerGlobalScope->dispatchEvent(Event::create(eventName, false, false));
+        toWorkerGlobalScope(context)->dispatchEvent(Event::create(eventName, false, false));
     }
 
     bool m_isOnLine;
@@ -284,14 +284,14 @@ WorkerMessagingProxy::WorkerMessagingProxy(Worker* workerObject)
 {
     ASSERT(m_workerObject);
     ASSERT((m_scriptExecutionContext->isDocument() && isMainThread())
-           || (m_scriptExecutionContext->isWorkerGlobalScope() && currentThread() == static_cast<WorkerGlobalScope*>(m_scriptExecutionContext.get())->thread()->threadID()));
+           || (m_scriptExecutionContext->isWorkerGlobalScope() && currentThread() == toWorkerGlobalScope(*m_scriptExecutionContext).thread().threadID()));
 }
 
 WorkerMessagingProxy::~WorkerMessagingProxy()
 {
     ASSERT(!m_workerObject);
     ASSERT((m_scriptExecutionContext->isDocument() && isMainThread())
-           || (m_scriptExecutionContext->isWorkerGlobalScope() && currentThread() == static_cast<WorkerGlobalScope*>(m_scriptExecutionContext.get())->thread()->threadID()));
+           || (m_scriptExecutionContext->isWorkerGlobalScope() && currentThread() == toWorkerGlobalScope(*m_scriptExecutionContext).thread().threadID()));
 }
 
 void WorkerMessagingProxy::startWorkerGlobalScope(const URL& scriptURL, const String& userAgent, const String& sourceCode, WorkerThreadStartMode startMode)
@@ -308,21 +308,21 @@ void WorkerMessagingProxy::startWorkerGlobalScope(const URL& scriptURL, const St
     InspectorInstrumentation::didStartWorkerGlobalScope(m_scriptExecutionContext.get(), this, scriptURL);
 }
 
-void WorkerMessagingProxy::postMessageToWorkerObject(PassRefPtr<SerializedScriptValue> message, PassOwnPtr<MessagePortChannelArray> channels)
+void WorkerMessagingProxy::postMessageToWorkerObject(PassRefPtr<SerializedScriptValue> message, std::unique_ptr<MessagePortChannelArray> channels)
 {
-    m_scriptExecutionContext->postTask(MessageWorkerTask::create(message, channels, this));
+    m_scriptExecutionContext->postTask(MessageWorkerTask::create(message, std::move(channels), this));
 }
 
-void WorkerMessagingProxy::postMessageToWorkerGlobalScope(PassRefPtr<SerializedScriptValue> message, PassOwnPtr<MessagePortChannelArray> channels)
+void WorkerMessagingProxy::postMessageToWorkerGlobalScope(PassRefPtr<SerializedScriptValue> message, std::unique_ptr<MessagePortChannelArray> channels)
 {
     if (m_askedToTerminate)
         return;
 
     if (m_workerThread) {
         ++m_unconfirmedMessageCount;
-        m_workerThread->runLoop().postTask(MessageWorkerGlobalScopeTask::create(message, channels));
+        m_workerThread->runLoop().postTask(MessageWorkerGlobalScopeTask::create(message, std::move(channels)));
     } else
-        m_queuedEarlyTasks.append(MessageWorkerGlobalScopeTask::create(message, channels));
+        m_queuedEarlyTasks.append(MessageWorkerGlobalScopeTask::create(message, std::move(channels)));
 }
 
 bool WorkerMessagingProxy::postTaskForModeToWorkerGlobalScope(PassOwnPtr<ScriptExecutionContext::Task> task, const String& mode)
@@ -405,13 +405,10 @@ void WorkerMessagingProxy::workerObjectDestroyedInternal(ScriptExecutionContext*
 }
 
 #if ENABLE(INSPECTOR)
-#if ENABLE(JAVASCRIPT_DEBUGGER)
 static void connectToWorkerGlobalScopeInspectorTask(ScriptExecutionContext* context, bool)
 {
-    ASSERT_WITH_SECURITY_IMPLICATION(context->isWorkerGlobalScope());
-    static_cast<WorkerGlobalScope*>(context)->workerInspectorController().connectFrontend();
+    toWorkerGlobalScope(context)->workerInspectorController().connectFrontend();
 }
-#endif
 
 void WorkerMessagingProxy::connectToInspector(WorkerGlobalScopeProxy::PageInspector* pageInspector)
 {
@@ -419,45 +416,33 @@ void WorkerMessagingProxy::connectToInspector(WorkerGlobalScopeProxy::PageInspec
         return;
     ASSERT(!m_pageInspector);
     m_pageInspector = pageInspector;
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     m_workerThread->runLoop().postTaskForMode(createCallbackTask(connectToWorkerGlobalScopeInspectorTask, true), WorkerDebuggerAgent::debuggerTaskMode);
-#endif
 }
 
-#if ENABLE(JAVASCRIPT_DEBUGGER)
 static void disconnectFromWorkerGlobalScopeInspectorTask(ScriptExecutionContext* context, bool)
 {
-    ASSERT_WITH_SECURITY_IMPLICATION(context->isWorkerGlobalScope());
-    static_cast<WorkerGlobalScope*>(context)->workerInspectorController().disconnectFrontend();
+    toWorkerGlobalScope(context)->workerInspectorController().disconnectFrontend(Inspector::InspectorDisconnectReason::InspectorDestroyed);
 }
-#endif
 
 void WorkerMessagingProxy::disconnectFromInspector()
 {
     m_pageInspector = 0;
     if (m_askedToTerminate)
         return;
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     m_workerThread->runLoop().postTaskForMode(createCallbackTask(disconnectFromWorkerGlobalScopeInspectorTask, true), WorkerDebuggerAgent::debuggerTaskMode);
-#endif
 }
 
-#if ENABLE(JAVASCRIPT_DEBUGGER)
 static void dispatchOnInspectorBackendTask(ScriptExecutionContext* context, const String& message)
 {
-    ASSERT_WITH_SECURITY_IMPLICATION(context->isWorkerGlobalScope());
-    static_cast<WorkerGlobalScope*>(context)->workerInspectorController().dispatchMessageFromFrontend(message);
+    toWorkerGlobalScope(context)->workerInspectorController().dispatchMessageFromFrontend(message);
 }
-#endif
 
 void WorkerMessagingProxy::sendMessageToInspector(const String& message)
 {
     if (m_askedToTerminate)
         return;
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     m_workerThread->runLoop().postTaskForMode(createCallbackTask(dispatchOnInspectorBackendTask, String(message)), WorkerDebuggerAgent::debuggerTaskMode);
     WorkerDebuggerAgent::interruptAndDispatchInspectorCommands(m_workerThread.get());
-#endif
 }
 #endif
 

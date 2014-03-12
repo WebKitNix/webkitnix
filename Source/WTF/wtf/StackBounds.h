@@ -27,6 +27,8 @@
 #ifndef StackBounds_h
 #define StackBounds_h
 
+#include <algorithm>
+
 namespace WTF {
 
 class StackBounds {
@@ -65,6 +67,32 @@ public:
         if (isGrowingDownward())
             return static_cast<char*>(m_bound) + minAvailableDelta;
         return static_cast<char*>(m_bound) - minAvailableDelta;
+    }
+
+    void* recursionLimit(char* startOfUserStack, size_t maxUserStack, size_t reservedZoneSize) const
+    {
+        checkConsistency();
+        if (maxUserStack < reservedZoneSize)
+            reservedZoneSize = maxUserStack;
+        size_t maxUserStackWithReservedZone = maxUserStack - reservedZoneSize;
+
+        if (isGrowingDownward()) {
+            char* endOfStackWithReservedZone = reinterpret_cast<char*>(m_bound) + reservedZoneSize;
+            if (startOfUserStack < endOfStackWithReservedZone)
+                return endOfStackWithReservedZone;
+            size_t availableUserStack = startOfUserStack - endOfStackWithReservedZone;
+            if (maxUserStackWithReservedZone > availableUserStack)
+                maxUserStackWithReservedZone = availableUserStack;
+            return startOfUserStack - maxUserStackWithReservedZone;
+        }
+
+        char* endOfStackWithReservedZone = reinterpret_cast<char*>(m_bound) - reservedZoneSize;
+        if (startOfUserStack > endOfStackWithReservedZone)
+            return endOfStackWithReservedZone;
+        size_t availableUserStack = endOfStackWithReservedZone - startOfUserStack;
+        if (maxUserStackWithReservedZone > availableUserStack)
+            maxUserStackWithReservedZone = availableUserStack;
+        return startOfUserStack + maxUserStackWithReservedZone;
     }
 
     bool isGrowingDownward() const

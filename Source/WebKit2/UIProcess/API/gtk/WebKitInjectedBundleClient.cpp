@@ -21,12 +21,13 @@
 #include "WebKitInjectedBundleClient.h"
 
 #include "WebImage.h"
+#include "WebKitPrivate.h"
 #include "WebKitURIRequestPrivate.h"
 #include "WebKitURIResponsePrivate.h"
 #include "WebKitWebContextPrivate.h"
 #include "WebKitWebResourcePrivate.h"
 #include "WebKitWebViewPrivate.h"
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 
 using namespace WebKit;
 using namespace WebCore;
@@ -86,8 +87,8 @@ static void didReceiveWebViewMessageFromInjectedBundle(WebKitWebView* webView, c
 
         API::Error* webError = static_cast<API::Error*>(message.get(String::fromUTF8("Error")));
         const ResourceError& platformError = webError->platformError();
-        GOwnPtr<GError> resourceError(g_error_new_literal(g_quark_from_string(platformError.domain().utf8().data()),
-            platformError.errorCode(), platformError.localizedDescription().utf8().data()));
+        GUniquePtr<GError> resourceError(g_error_new_literal(g_quark_from_string(platformError.domain().utf8().data()),
+            toWebKitError(platformError.errorCode()), platformError.localizedDescription().utf8().data()));
 
         webkitWebResourceFailed(resource.get(), resourceError.get());
         webkitWebViewRemoveLoadingWebResource(webView, resourceIdentifier->value());
@@ -121,7 +122,7 @@ static void didReceiveMessageFromInjectedBundle(WKContextRef, WKStringRef messag
 static WKTypeRef getInjectedBundleInitializationUserData(WKContextRef, const void* clientInfo)
 {
     GRefPtr<GVariant> data = webkitWebContextInitializeWebExtensions(WEBKIT_WEB_CONTEXT(clientInfo));
-    GOwnPtr<gchar> dataString(g_variant_print(data.get(), TRUE));
+    GUniquePtr<gchar> dataString(g_variant_print(data.get(), TRUE));
     return static_cast<WKTypeRef>(WKStringCreateWithUTF8CString(dataString.get()));
 }
 

@@ -104,6 +104,11 @@ PassRefPtr<Range> Range::create(Document& ownerDocument, const Position& start, 
     return adoptRef(new Range(ownerDocument, start.containerNode(), start.computeOffsetInContainerNode(), end.containerNode(), end.computeOffsetInContainerNode()));
 }
 
+PassRefPtr<Range> Range::create(ScriptExecutionContext& context)
+{
+    return adoptRef(new Range(toDocument(context)));
+}
+
 #if PLATFORM(IOS)
 PassRefPtr<Range> Range::create(Document& ownerDocument, const VisiblePosition& visibleStart, const VisiblePosition& visibleEnd)
 {
@@ -1565,6 +1570,8 @@ Node* Range::firstNode() const
         return 0;
     if (m_start.container()->offsetInCharacters())
         return m_start.container();
+    // FIXME: A renderer-based rule is completely out of place here.
+    // For one thing, the renderer could be out of date if the DOM was recently changed.
     if (isRendererReplacedElement(m_start.container()->renderer()))
         return m_start.container();
     if (Node* child = m_start.container()->childNode(m_start.offset()))
@@ -1693,28 +1700,6 @@ static bool intervalsSufficientlyOverlap(int startA, int endA, int startB, int e
     return minEnd - maxStart >= sufficientOverlap * std::min(lengthA, lengthB);
 }
 
-#ifndef NDEBUG
-static void printRects(Vector<SelectionRect>& rects)
-{
-    size_t numberOfRects = rects.size();
-    for (size_t i = 0; i < numberOfRects; ++i) {
-        fprintf(stderr, "%zu\t[%d, %d] - [%d, %d]\t%c %s\tis first: %s\tis last:%s\tcontains start: %s\tcontains end: %s\tline: %d\truby: %s\tcolumn: %d\n",
-            i,
-            rects[i].rect().x(), rects[i].rect().y(), rects[i].rect().width(), rects[i].rect().height(),
-            rects[i].isHorizontal() ? 'H' : 'V',
-            rects[i].direction() == LTR ? "LTR" : "RTL",
-            rects[i].isFirstOnLine() ? "yes" : "no",
-            rects[i].isLastOnLine() ? "yes" : "no",
-            rects[i].containsStart() ? "yes" : "no",
-            rects[i].containsEnd() ? "yes" : "no",
-            rects[i].lineNumber(),
-            rects[i].isRubyText() ? "yes": "no",
-            rects[i].columnNumber());
-    }
-    fprintf(stderr, "--------------------------------------\n");
-}
-#endif
-
 static inline void adjustLineHeightOfSelectionRects(Vector<SelectionRect>& rects, size_t numberOfRects, int lineNumber, int lineTop, int lineHeight)
 {
     ASSERT(rects.size() >= numberOfRects);
@@ -1785,10 +1770,6 @@ void Range::collectSelectionRects(Vector<SelectionRect>& rects)
             newRects.shrink(0);
         }
     }
-
-#ifndef NDEBUG
-    printRects(rects);
-#endif
 
     // The range could span over nodes with different writing modes.
     // If this is the case, we use the writing mode of the common ancestor.

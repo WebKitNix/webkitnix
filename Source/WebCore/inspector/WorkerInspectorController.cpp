@@ -36,7 +36,6 @@
 
 #include "CommandLineAPIHost.h"
 #include "InspectorClient.h"
-#include "InspectorConsoleAgent.h"
 #include "InspectorForwarding.h"
 #include "InspectorHeapProfilerAgent.h"
 #include "InspectorInstrumentation.h"
@@ -46,8 +45,8 @@
 #include "InspectorWebFrontendDispatchers.h"
 #include "InstrumentingAgents.h"
 #include "JSMainThreadExecState.h"
-#include "PageInjectedScriptHost.h"
-#include "PageInjectedScriptManager.h"
+#include "WebInjectedScriptHost.h"
+#include "WebInjectedScriptManager.h"
 #include "WorkerConsoleAgent.h"
 #include "WorkerDebuggerAgent.h"
 #include "WorkerGlobalScope.h"
@@ -71,7 +70,7 @@ public:
 private:
     virtual bool sendMessageToFrontend(const String& message) override
     {
-        m_workerGlobalScope.thread()->workerReportingProxy().postMessageToPageInspector(message);
+        m_workerGlobalScope.thread().workerReportingProxy().postMessageToPageInspector(message);
         return true;
     }
     WorkerGlobalScope& m_workerGlobalScope;
@@ -82,23 +81,24 @@ private:
 WorkerInspectorController::WorkerInspectorController(WorkerGlobalScope& workerGlobalScope)
     : m_workerGlobalScope(workerGlobalScope)
     , m_instrumentingAgents(InstrumentingAgents::create(*this))
-    , m_injectedScriptManager(std::make_unique<PageInjectedScriptManager>(*this, PageInjectedScriptHost::create()))
+    , m_injectedScriptManager(std::make_unique<WebInjectedScriptManager>(*this, WebInjectedScriptHost::create()))
     , m_runtimeAgent(nullptr)
 {
-    auto runtimeAgent = std::make_unique<WorkerRuntimeAgent>(m_instrumentingAgents.get(), m_injectedScriptManager.get(), &workerGlobalScope);
+    auto runtimeAgent = std::make_unique<WorkerRuntimeAgent>(m_injectedScriptManager.get(), &workerGlobalScope);
     m_runtimeAgent = runtimeAgent.get();
+    m_instrumentingAgents->setWorkerRuntimeAgent(m_runtimeAgent);
     m_agents.append(std::move(runtimeAgent));
 
-    auto consoleAgent = std::make_unique<WorkerConsoleAgent>(m_instrumentingAgents.get(), m_injectedScriptManager.get());
-#if ENABLE(JAVASCRIPT_DEBUGGER)
-    auto debuggerAgent = std::make_unique<WorkerDebuggerAgent>(m_instrumentingAgents.get(), &workerGlobalScope, m_injectedScriptManager.get());
+    auto consoleAgent = std::make_unique<WorkerConsoleAgent>(m_injectedScriptManager.get());
+    m_instrumentingAgents->setWebConsoleAgent(consoleAgent.get());
+
+    auto debuggerAgent = std::make_unique<WorkerDebuggerAgent>(m_injectedScriptManager.get(), m_instrumentingAgents.get(), &workerGlobalScope);
     m_runtimeAgent->setScriptDebugServer(&debuggerAgent->scriptDebugServer());
     m_agents.append(std::move(debuggerAgent));
 
     m_agents.append(InspectorProfilerAgent::create(m_instrumentingAgents.get(), consoleAgent.get(), &workerGlobalScope, m_injectedScriptManager.get()));
     m_agents.append(std::make_unique<InspectorHeapProfilerAgent>(m_instrumentingAgents.get(), m_injectedScriptManager.get()));
-#endif
-    m_agents.append(std::make_unique<InspectorTimelineAgent>(m_instrumentingAgents.get(), nullptr, nullptr, InspectorTimelineAgent::WorkerInspector, nullptr));
+    m_agents.append(std::make_unique<InspectorTimelineAgent>(m_instrumentingAgents.get(), nullptr, InspectorTimelineAgent::WorkerInspector, nullptr));
     m_agents.append(std::move(consoleAgent));
 
     if (CommandLineAPIHost* commandLineAPIHost = m_injectedScriptManager->commandLineAPIHost()) {
@@ -116,7 +116,7 @@ WorkerInspectorController::WorkerInspectorController(WorkerGlobalScope& workerGl
 WorkerInspectorController::~WorkerInspectorController()
 {
     m_instrumentingAgents->reset();
-    disconnectFrontend();
+    disconnectFrontend(InspectorDisconnectReason::InspectedTargetDestroyed);
 }
 
 void WorkerInspectorController::connectFrontend()
@@ -127,11 +127,12 @@ void WorkerInspectorController::connectFrontend()
     m_agents.didCreateFrontendAndBackend(m_frontendChannel.get(), m_backendDispatcher.get());
 }
 
-void WorkerInspectorController::disconnectFrontend()
+void WorkerInspectorController::disconnectFrontend(InspectorDisconnectReason reason)
 {
     if (!m_frontendChannel)
         return;
-    m_agents.willDestroyFrontendAndBackend();
+
+    m_agents.willDestroyFrontendAndBackend(reason);
     m_backendDispatcher->clearFrontend();
     m_backendDispatcher.clear();
     m_frontendChannel = nullptr;
@@ -143,13 +144,11 @@ void WorkerInspectorController::dispatchMessageFromFrontend(const String& messag
         m_backendDispatcher->dispatch(message);
 }
 
-#if ENABLE(JAVASCRIPT_DEBUGGER)
 void WorkerInspectorController::resume()
 {
     ErrorString unused;
     m_runtimeAgent->run(&unused);
 }
-#endif
 
 InspectorFunctionCallHandler WorkerInspectorController::functionCallHandler() const
 {
@@ -168,11 +167,12 @@ void WorkerInspectorController::willCallInjectedScriptFunction(JSC::ExecState* s
     m_injectedScriptInstrumentationCookies.append(cookie);
 }
 
-void WorkerInspectorController::didCallInjectedScriptFunction()
+void WorkerInspectorController::didCallInjectedScriptFunction(JSC::ExecState* scriptState)
 {
     ASSERT(!m_injectedScriptInstrumentationCookies.isEmpty());
+    ScriptExecutionContext* scriptExecutionContext = scriptExecutionContextFromExecState(scriptState);
     InspectorInstrumentationCookie cookie = m_injectedScriptInstrumentationCookies.takeLast();
-    InspectorInstrumentation::didCallFunction(cookie);
+    InspectorInstrumentation::didCallFunction(cookie, scriptExecutionContext);
 }
 
 } // namespace WebCore

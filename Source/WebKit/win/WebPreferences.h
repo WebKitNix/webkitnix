@@ -169,11 +169,8 @@ public:
     virtual HRESULT STDMETHODCALLTYPE setCSSRegionsEnabled(
         /* [in] */ BOOL);
     
-    virtual HRESULT STDMETHODCALLTYPE areSeamlessIFramesEnabled(
-        /* [retval][out] */ BOOL* enabled);
-    
-    virtual HRESULT STDMETHODCALLTYPE setSeamlessIFramesEnabled(
-        /* [in] */ BOOL);
+    virtual HRESULT STDMETHODCALLTYPE unused7();
+    virtual HRESULT STDMETHODCALLTYPE unused8();
     
     virtual HRESULT STDMETHODCALLTYPE allowsAnimatedImages( 
         /* [retval][out] */ BOOL* enabled);
@@ -479,6 +476,12 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE requestAnimationFrameEnabled(BOOL*);
     virtual HRESULT STDMETHODCALLTYPE setRequestAnimationFrameEnabled(BOOL);
+
+    virtual HRESULT STDMETHODCALLTYPE mockScrollbarsEnabled(BOOL*);
+    virtual HRESULT STDMETHODCALLTYPE setMockScrollbarsEnabled(BOOL);
+
+    virtual HRESULT STDMETHODCALLTYPE screenFontSubstitutionEnabled(BOOL*);
+    virtual HRESULT STDMETHODCALLTYPE setScreenFontSubstitutionEnabled(BOOL);
 
     // WebPreferences
 

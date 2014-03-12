@@ -26,7 +26,7 @@
 #import "config.h"
 #import "WebInspectorProxy.h"
 
-#if ENABLE(INSPECTOR)
+#if PLATFORM(MAC) && ENABLE(INSPECTOR)
 
 #import "WKAPICast.h"
 #import "WebContext.h"
@@ -285,7 +285,7 @@ void WebInspectorProxy::createInspectorWindow()
     NSRect windowFrame = NSMakeRect(0, 0, initialWindowWidth, initialWindowHeight);
 
     // Restore the saved window frame, if there was one.
-    NSString *savedWindowFrameString = page()->pageGroup().preferences()->inspectorWindowFrame();
+    NSString *savedWindowFrameString = page()->pageGroup().preferences().inspectorWindowFrame();
     NSRect savedWindowFrame = NSRectFromString(savedWindowFrameString);
     if (!NSIsEmptyRect(savedWindowFrame))
         windowFrame = savedWindowFrame;
@@ -375,16 +375,16 @@ WebPageProxy* WebInspectorProxy::platformCreateInspectorPage()
 
         switch (m_attachmentSide) {
         case AttachmentSideBottom:
-            initialRect = NSMakeRect(0, 0, NSWidth(inspectedViewFrame), inspectorPageGroup()->preferences()->inspectorAttachedHeight());
+            initialRect = NSMakeRect(0, 0, NSWidth(inspectedViewFrame), inspectorPageGroup()->preferences().inspectorAttachedHeight());
             break;
         case AttachmentSideRight:
-            initialRect = NSMakeRect(0, 0, inspectorPageGroup()->preferences()->inspectorAttachedWidth(), NSHeight(inspectedViewFrame));
+            initialRect = NSMakeRect(0, 0, inspectorPageGroup()->preferences().inspectorAttachedWidth(), NSHeight(inspectedViewFrame));
             break;
         }
     } else {
         initialRect = NSMakeRect(0, 0, initialWindowWidth, initialWindowHeight);
 
-        NSString *windowFrameString = page()->pageGroup().preferences()->inspectorWindowFrame();
+        NSString *windowFrameString = page()->pageGroup().preferences().inspectorWindowFrame();
         NSRect windowFrame = NSRectFromString(windowFrameString);
         if (!NSIsEmptyRect(windowFrame))
             initialRect = [NSWindow contentRectForFrameRect:windowFrame styleMask:windowStyleMask];
@@ -449,7 +449,7 @@ WebPageProxy* WebInspectorProxy::platformCreateInspectorPage()
         0, // unavailablePluginButtonClicked
     };
 
-    inspectorPage->initializeUIClient(reinterpret_cast<const WKPageUIClientBase*>(&uiClient));
+    WKPageSetPageUIClient(toAPI(inspectorPage), &uiClient.base);
 
     return inspectorPage;
 }
@@ -606,7 +606,7 @@ void WebInspectorProxy::windowFrameDidChange()
         return;
 
     NSString *frameString = NSStringFromRect([m_inspectorWindow frame]);
-    page()->pageGroup().preferences()->setInspectorWindowFrame(frameString);
+    page()->pageGroup().preferences().setInspectorWindowFrame(frameString);
 }
 
 void WebInspectorProxy::inspectedViewFrameDidChange(CGFloat currentDimension)
@@ -689,10 +689,10 @@ void WebInspectorProxy::platformAttach()
 
     switch (m_attachmentSide) {
     case AttachmentSideBottom:
-        currentDimension = inspectorPageGroup()->preferences()->inspectorAttachedHeight();
+        currentDimension = inspectorPageGroup()->preferences().inspectorAttachedHeight();
         break;
     case AttachmentSideRight:
-        currentDimension = inspectorPageGroup()->preferences()->inspectorAttachedWidth();
+        currentDimension = inspectorPageGroup()->preferences().inspectorAttachedWidth();
         break;
     }
 
@@ -757,6 +757,20 @@ String WebInspectorProxy::inspectorPageURL() const
     return [[NSURL fileURLWithPath:path] absoluteString];
 }
 
+String WebInspectorProxy::inspectorTestPageURL() const
+{
+    // Call the soft link framework function to dlopen it, then [NSBundle bundleWithIdentifier:] will work.
+    WebInspectorUILibrary();
+
+    NSString *path = [[NSBundle bundleWithIdentifier:@"com.apple.WebInspectorUI"] pathForResource:@"Test" ofType:@"html"];
+
+    // We might not have a Test.html in Production builds.
+    if (!path)
+        return String();
+
+    return [[NSURL fileURLWithPath:path] absoluteString];
+}
+
 String WebInspectorProxy::inspectorBaseURL() const
 {
     // Call the soft link framework function to dlopen it, then [NSBundle bundleWithIdentifier:] will work.
@@ -770,4 +784,4 @@ String WebInspectorProxy::inspectorBaseURL() const
 
 } // namespace WebKit
 
-#endif // ENABLE(INSPECTOR)
+#endif // PLATFORM(MAC) && ENABLE(INSPECTOR)

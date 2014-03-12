@@ -68,6 +68,17 @@ static bool getFileSizeFromFindData(const WIN32_FIND_DATAW& findData, long long&
     return true;
 }
 
+static void getFileCreationTimeFromFindData(const WIN32_FIND_DATAW& findData, time_t& time)
+{
+    ULARGE_INTEGER fileTime;
+    fileTime.HighPart = findData.ftCreationTime.dwHighDateTime;
+    fileTime.LowPart = findData.ftCreationTime.dwLowDateTime;
+
+    // Information about converting time_t to FileTime is available at http://msdn.microsoft.com/en-us/library/ms724228%28v=vs.85%29.aspx
+    time = fileTime.QuadPart / 10000000 - kSecondsFromFileTimeToTimet;
+}
+
+
 static void getFileModificationTimeFromFindData(const WIN32_FIND_DATAW& findData, time_t& time)
 {
     ULARGE_INTEGER fileTime;
@@ -94,6 +105,16 @@ bool getFileModificationTime(const String& path, time_t& time)
         return false;
 
     getFileModificationTimeFromFindData(findData, time);
+    return true;
+}
+
+bool getFileCreationTime(const String& path, time_t& time)
+{
+    WIN32_FIND_DATAW findData;
+    if (!getFindData(path, findData))
+        return false;
+
+    getFileCreationTimeFromFindData(findData, time);
     return true;
 }
 
@@ -138,19 +159,19 @@ String pathByAppendingComponent(const String& path, const String& component)
     Vector<UChar> buffer(MAX_PATH);
 
 #if OS(WINCE)
-    buffer.append(path.characters(), path.length());
+    buffer.append(path.deprecatedCharacters(), path.length());
 
     UChar lastPathCharacter = path[path.length() - 1];
     if (lastPathCharacter != L'\\' && lastPathCharacter != L'/' && component[0] != L'\\' && component[0] != L'/')
         buffer.append(PlatformFilePathSeparator);
 
-    buffer.append(component.characters(), component.length());
+    buffer.append(component.deprecatedCharacters(), component.length());
     buffer.shrinkToFit();
 #else
     if (path.length() + 1 > buffer.size())
         return String();
 
-    memcpy(buffer.data(), path.characters(), path.length() * sizeof(UChar));
+    memcpy(buffer.data(), path.deprecatedCharacters(), path.length() * sizeof(UChar));
     buffer[path.length()] = '\0';
 
     String componentCopy = component;
@@ -167,7 +188,7 @@ String pathByAppendingComponent(const String& path, const String& component)
 
 CString fileSystemRepresentation(const String& path)
 {
-    const UChar* characters = path.characters();
+    const UChar* characters = path.deprecatedCharacters();
     int size = WideCharToMultiByte(CP_ACP, 0, characters, path.length(), 0, 0, 0, 0) - 1;
 
     char* buffer;

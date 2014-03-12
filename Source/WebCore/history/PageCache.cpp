@@ -217,7 +217,7 @@ COMPILE_ASSERT(NumberOfReasonsPagesCannotBeInPageCache <= sizeof(unsigned)*8, Re
 static void logCanCachePageDecision(Page* page)
 {
     // Only bother logging for main frames that have actually loaded and have content.
-    if (page->mainFrame().loader().stateMachine()->creatingInitialEmptyDocument())
+    if (page->mainFrame().loader().stateMachine().creatingInitialEmptyDocument())
         return;
     URL currentURL = page->mainFrame().loader().documentLoader() ? page->mainFrame().loader().documentLoader()->url() : URL();
     if (currentURL.isEmpty())
@@ -231,10 +231,6 @@ static void logCanCachePageDecision(Page* page)
     if (frameRejectReasons)
         rejectReasons |= 1 << FrameCannotBeInPageCache;
     
-    if (!page->backForward().isActive()) {
-        PCLOG("   -The back/forward list is disabled or has 0 capacity");
-        rejectReasons |= 1 << DisabledBackForwardList;
-    }
     if (!page->settings().usesPageCache()) {
         PCLOG("   -Page settings says b/f cache disabled");
         rejectReasons |= 1 << DisabledPageCache;
@@ -310,9 +306,7 @@ PageCache::PageCache()
     , m_size(0)
     , m_head(0)
     , m_tail(0)
-#if USE(ACCELERATED_COMPOSITING)
     , m_shouldClearBackingStores(false)
-#endif
 {
 }
     
@@ -380,7 +374,6 @@ bool PageCache::canCache(Page* page) const
     
     return m_capacity > 0
         && canCachePageContainingThisFrame(&page->mainFrame())
-        && page->backForward().isActive()
         && page->settings().usesPageCache()
 #if ENABLE(DEVICE_ORIENTATION) && !PLATFORM(IOS)
         && !DeviceMotionController::isActiveAt(page)
@@ -439,8 +432,6 @@ void PageCache::markPagesForFullStyleRecalc(Page* page)
     }
 }
 
-
-#if USE(ACCELERATED_COMPOSITING)
 void PageCache::markPagesForDeviceScaleChanged(Page* page)
 {
     for (HistoryItem* current = m_head; current; current = current->m_next) {
@@ -449,7 +440,6 @@ void PageCache::markPagesForDeviceScaleChanged(Page* page)
             cachedPage->markForDeviceScaleChanged();
     }
 }
-#endif
 
 #if ENABLE(VIDEO_TRACK)
 void PageCache::markPagesForCaptionPreferencesChanged()

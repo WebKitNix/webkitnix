@@ -25,7 +25,6 @@
 #ifndef SVGRenderingContext_h
 #define SVGRenderingContext_h
 
-#if ENABLE(SVG)
 #include "ImageBuffer.h"
 #include "PaintInfo.h"
 
@@ -83,8 +82,8 @@ public:
     static void renderSubtreeToImageBuffer(ImageBuffer*, RenderElement&, const AffineTransform&);
     static void clipToImageBuffer(GraphicsContext*, const AffineTransform& absoluteTransform, const FloatRect& targetRect, std::unique_ptr<ImageBuffer>&, bool safeToClear);
 
-    static float calculateScreenFontSizeScalingFactor(const RenderObject*);
-    static void calculateTransformationToOutermostCoordinateSystem(const RenderObject*, AffineTransform& absoluteTransform);
+    static float calculateScreenFontSizeScalingFactor(const RenderObject&);
+    static void calculateTransformationToOutermostCoordinateSystem(const RenderObject&, AffineTransform& absoluteTransform);
     static IntSize clampedAbsoluteSize(const IntSize&);
     static FloatRect clampedAbsoluteTargetRect(const FloatRect& absoluteTargetRect);
     static void clear2DRotation(AffineTransform&);
@@ -115,7 +114,7 @@ private:
     RenderElement* m_renderer;
     PaintInfo* m_paintInfo;
     GraphicsContext* m_savedContext;
-    IntRect m_savedPaintRect;
+    LayoutRect m_savedPaintRect;
 #if ENABLE(FILTERS)
     RenderSVGResourceFilter* m_filter;
 #endif
@@ -123,5 +122,4 @@ private:
 
 } // namespace WebCore
 
-#endif // ENABLE(SVG)
 #endif // SVGRenderingContext_h

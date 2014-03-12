@@ -28,6 +28,7 @@
 
 #if ENABLE(DFG_JIT)
 
+#include "JSCInlines.h"
 #include <wtf/CommaPrinter.h>
 #include <wtf/StringPrintStream.h>
 
@@ -48,6 +49,9 @@ void dumpNodeFlags(PrintStream& actualOut, NodeFlags flags)
             break;
         case NodeResultInt32:
             out.print(comma, "Int32");
+            break;
+        case NodeResultInt52:
+            out.print(comma, "Int52");
             break;
         case NodeResultBoolean:
             out.print(comma, "Boolean");

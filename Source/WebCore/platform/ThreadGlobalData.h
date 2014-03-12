@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 Apple Inc. All Rights Reserved.
+ * Copyright (C) 2008, 2014 Apple Inc. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,7 +40,7 @@ using WTF::ThreadSpecific;
 namespace WebCore {
 
     class EventNames;
-    class ThreadLocalInspectorCounters;
+    class ReplayInputTypes;
     class ThreadTimers;
 
     struct CachedResourceRequestInitiators;
@@ -57,21 +57,18 @@ namespace WebCore {
         const CachedResourceRequestInitiators& cachedResourceRequestInitiators() { return *m_cachedResourceRequestInitiators; }
         EventNames& eventNames() { return *m_eventNames; }
         ThreadTimers& threadTimers() { return *m_threadTimers; }
-
-#if USE(ICU_UNICODE)
-        ICUConverterWrapper& cachedConverterICU() { return *m_cachedConverterICU; }
+#if ENABLE(WEB_REPLAY)
+        ReplayInputTypes& inputTypes() { return *m_inputTypes; }
 #endif
 
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+        ICUConverterWrapper& cachedConverterICU() { return *m_cachedConverterICU; }
+
+#if PLATFORM(MAC)
         TECConverterWrapper& cachedConverterTEC() { return *m_cachedConverterTEC; }
 #endif
 
-#if ENABLE(WORKERS) && USE(WEB_THREAD)
+#if USE(WEB_THREAD)
         void setWebCoreThreadData();
-#endif
-
-#if ENABLE(INSPECTOR)
-        ThreadLocalInspectorCounters& inspectorCounters() { return *m_inspectorCounters; }
 #endif
 
     private:
@@ -79,20 +76,18 @@ namespace WebCore {
         OwnPtr<EventNames> m_eventNames;
         OwnPtr<ThreadTimers> m_threadTimers;
 
+#if ENABLE(WEB_REPLAY)
+        std::unique_ptr<ReplayInputTypes> m_inputTypes;
+#endif
+
 #ifndef NDEBUG
         bool m_isMainThread;
 #endif
 
-#if USE(ICU_UNICODE)
         OwnPtr<ICUConverterWrapper> m_cachedConverterICU;
-#endif
 
-#if PLATFORM(MAC) && !PLATFORM(IOS)
+#if PLATFORM(MAC)
         OwnPtr<TECConverterWrapper> m_cachedConverterTEC;
-#endif
-
-#if ENABLE(INSPECTOR)
-        OwnPtr<ThreadLocalInspectorCounters> m_inspectorCounters;
 #endif
 
         static ThreadSpecific<ThreadGlobalData>* staticData;

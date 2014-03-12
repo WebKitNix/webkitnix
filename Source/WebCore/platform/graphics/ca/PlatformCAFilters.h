@@ -26,7 +26,6 @@
 #ifndef PlatformCAFilters_h
 #define PlatformCAFilters_h
 
-#if USE(ACCELERATED_COMPOSITING)
 #if ENABLE(CSS_FILTERS)
 
 #include "FilterOperations.h"
@@ -53,7 +52,7 @@ public:
     static int numAnimatedFilterProperties(FilterOperation::OperationType);
     static const char* animatedFilterPropertyName(FilterOperation::OperationType, int internalFilterPropertyIndex);
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     static RetainPtr<NSValue> filterValueForOperation(const FilterOperation*, int internalFilterPropertyIndex);
 #endif
 
@@ -65,6 +64,5 @@ public:
 }
 
 #endif // ENABLE(CSS_FILTERS)
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // PlatformCAFilters_h

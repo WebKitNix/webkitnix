@@ -96,34 +96,58 @@ bool ScrollView::platformCanBlitOnScroll() const
     return [[scrollView() contentView] copiesOnScroll];
 }
 
-IntRect ScrollView::actualVisibleContentRect() const
+IntRect ScrollView::unobscuredContentRect() const
 {
-    CGRect r = CGRectZero;
-    BEGIN_BLOCK_OBJC_EXCEPTIONS;
-    WAKScrollView *view = static_cast<WAKScrollView *>(platformWidget());
-    r = [view actualDocumentVisibleRect];
-    END_BLOCK_OBJC_EXCEPTIONS;
-    return enclosingIntRect(r);
-}
-
-IntRect ScrollView::visibleExtentContentRect() const
-{
-    NSScrollView *view = static_cast<NSScrollView *>(platformWidget());
-
-    CGRect r = CGRectZero;
-    BEGIN_BLOCK_OBJC_EXCEPTIONS;
-    if ([view isKindOfClass:[NSScrollView class]])
-        r = [view documentVisibleExtent];
-    else if (view) {
-        r.origin = [view visibleRect].origin;
-        r.size = [view bounds].size;
-    } else {
-        // FIXME: WebKit2 on iOS doesn't inform the WebProcess of the exposed area.
-        return IntRect(IntPoint(), contentsSize());
+    if (WAKScrollView *view = static_cast<WAKScrollView *>(platformWidget())) {
+        CGRect r = CGRectZero;
+        BEGIN_BLOCK_OBJC_EXCEPTIONS;
+        r = [view unobscuredContentRect];
+        END_BLOCK_OBJC_EXCEPTIONS;
+        return enclosingIntRect(r);
     }
 
-    END_BLOCK_OBJC_EXCEPTIONS;
-    return enclosingIntRect(r);
+    if (!m_unobscuredContentRect.isEmpty())
+        return m_unobscuredContentRect;
+
+    return visibleContentRectIncludingScrollbars();
+}
+
+void ScrollView::setUnobscuredContentRect(const IntRect& rect)
+{
+    ASSERT(!platformWidget());
+    m_unobscuredContentRect = rect;
+}
+
+IntRect ScrollView::exposedContentRect() const
+{
+    if (NSScrollView *view = static_cast<NSScrollView *>(platformWidget())) {
+        CGRect r = CGRectZero;
+        BEGIN_BLOCK_OBJC_EXCEPTIONS;
+        if ([view isKindOfClass:[NSScrollView class]])
+            r = [view exposedContentRect];
+        else {
+            r.origin = [view visibleRect].origin;
+            r.size = [view bounds].size;
+        }
+
+        END_BLOCK_OBJC_EXCEPTIONS;
+        return enclosingIntRect(r);
+    }
+
+    const ScrollView* parent = this->parent();
+    if (!parent)
+        return m_exposedContentRect;
+
+    IntRect parentViewExtentContentRect = parent->exposedContentRect();
+    IntRect selfExtentContentRect = rootViewToContents(parentViewExtentContentRect);
+    selfExtentContentRect.intersect(boundsRect());
+    return selfExtentContentRect;
+}
+
+void ScrollView::setExposedContentRect(const IntRect& rect)
+{
+    ASSERT(!platformWidget());
+    m_exposedContentRect = rect;
 }
 
 void ScrollView::setActualScrollPosition(const IntPoint& position)
@@ -212,14 +236,13 @@ bool ScrollView::platformScroll(ScrollDirection, ScrollGranularity)
     return false;
 }
 
-void ScrollView::platformRepaintContentRectangle(const IntRect& rect, bool /*now*/)
+void ScrollView::platformRepaintContentRectangle(const IntRect& rect)
 {
     BEGIN_BLOCK_OBJC_EXCEPTIONS;
 
     NSView *view = documentView();
 
     [view setNeedsDisplayInRect:rect];    
-    // FIXME: Handle "now".
 
     END_BLOCK_OBJC_EXCEPTIONS;
 }

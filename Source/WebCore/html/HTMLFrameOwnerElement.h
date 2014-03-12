@@ -22,6 +22,7 @@
 #define HTMLFrameOwnerElement_h
 
 #include "HTMLElement.h"
+#include <wtf/HashCountedSet.h>
 
 namespace WebCore {
 
@@ -48,9 +49,7 @@ public:
     // RenderElement when using fallback content.
     RenderWidget* renderWidget() const;
 
-#if ENABLE(SVG)
     SVGDocument* getSVGDocument(ExceptionCode&) const;
-#endif
 
     virtual ScrollbarMode scrollingMode() const { return ScrollbarAuto; }
 
@@ -90,9 +89,9 @@ public:
     static bool canLoadFrame(HTMLFrameOwnerElement&);
 
 private:
-    static HashSet<ContainerNode*>& disabledSubtreeRoots()
+    static HashCountedSet<ContainerNode*>& disabledSubtreeRoots()
     {
-        DEFINE_STATIC_LOCAL(HashSet<ContainerNode*>, nodes, ());
+        DEFINE_STATIC_LOCAL(HashCountedSet<ContainerNode*>, nodes, ());
         return nodes;
     }
 

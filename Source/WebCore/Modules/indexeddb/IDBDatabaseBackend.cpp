@@ -56,8 +56,9 @@ IDBDatabaseBackend::IDBDatabaseBackend(const String& name, const String& uniqueI
     , m_identifier(uniqueIdentifier)
     , m_factory(factory)
     , m_serverConnection(serverConnection)
-    , m_transactionCoordinator(IDBTransactionCoordinator::create())
+    , m_transactionCoordinator(std::make_unique<IDBTransactionCoordinator>())
     , m_closingConnection(false)
+    , m_didOpenInternal(false)
 {
     ASSERT(!m_metadata.name.isNull());
 }
@@ -112,6 +113,8 @@ void IDBDatabaseBackend::openInternalAsync()
 
 void IDBDatabaseBackend::didOpenInternalAsync(const IDBDatabaseMetadata& metadata, bool success)
 {
+    m_didOpenInternal = true;
+
     if (!success) {
         processPendingOpenCalls(false);
         return;
@@ -305,7 +308,7 @@ void IDBDatabaseBackend::deleteRange(int64_t transactionId, int64_t objectStoreI
 
 void IDBDatabaseBackend::clearObjectStore(int64_t transactionId, int64_t objectStoreId, PassRefPtr<IDBCallbacks> callbacks)
 {
-    LOG(StorageAPI, "IDBDatabaseBackend::clear");
+    LOG(StorageAPI, "IDBDatabaseBackend::clearObjectStore %lli in transaction %lli", static_cast<long long>(objectStoreId), static_cast<long long>(transactionId));
     IDBTransactionBackend* transaction = m_transactions.get(transactionId);
     if (!transaction)
         return;
@@ -343,7 +346,7 @@ void IDBDatabaseBackend::transactionFinishedAndAbortFired(IDBTransactionBackend*
         // FIXME: When we no longer support setVersion, assert such a thing.
         if (m_pendingSecondHalfOpen) {
             m_pendingSecondHalfOpen->callbacks()->onError(IDBDatabaseError::create(IDBDatabaseException::AbortError, "Version change transaction was aborted in upgradeneeded event handler."));
-            m_pendingSecondHalfOpen.release();
+            m_pendingSecondHalfOpen = nullptr;
         }
         processPendingCalls();
     }
@@ -364,11 +367,15 @@ size_t IDBDatabaseBackend::connectionCount()
 
 void IDBDatabaseBackend::processPendingCalls()
 {
+    // processPendingCalls() will be called again after openInternalAsync() completes.
+    if (!m_didOpenInternal)
+        return;
+
     if (m_pendingSecondHalfOpen) {
         ASSERT(m_pendingSecondHalfOpen->version() == m_metadata.version);
         ASSERT(m_metadata.id != InvalidId);
         m_pendingSecondHalfOpen->callbacks()->onSuccess(this, this->metadata());
-        m_pendingSecondHalfOpen.release();
+        m_pendingSecondHalfOpen = nullptr;
         // Fall through when complete, as pending deletes may be (partially) unblocked.
     }
 
@@ -381,7 +388,7 @@ void IDBDatabaseBackend::processPendingCalls()
     if (!m_pendingDeleteCalls.isEmpty() && isDeleteDatabaseBlocked())
         return;
     while (!m_pendingDeleteCalls.isEmpty()) {
-        OwnPtr<IDBPendingDeleteCall> pendingDeleteCall = m_pendingDeleteCalls.takeFirst();
+        std::unique_ptr<IDBPendingDeleteCall> pendingDeleteCall = m_pendingDeleteCalls.takeFirst();
         m_deleteCallbacksWaitingCompletion.add(pendingDeleteCall->callbacks());
         deleteDatabaseAsync(pendingDeleteCall->callbacks());
     }
@@ -403,16 +410,16 @@ void IDBDatabaseBackend::processPendingCalls()
 void IDBDatabaseBackend::processPendingOpenCalls(bool success)
 {
     // Open calls can be requeued if an open call started a version change transaction or deletes the database.
-    Deque<OwnPtr<IDBPendingOpenCall>> pendingOpenCalls;
+    Deque<std::unique_ptr<IDBPendingOpenCall>> pendingOpenCalls;
     m_pendingOpenCalls.swap(pendingOpenCalls);
 
     while (!pendingOpenCalls.isEmpty()) {
-        OwnPtr<IDBPendingOpenCall> pendingOpenCall = pendingOpenCalls.takeFirst();
+        std::unique_ptr<IDBPendingOpenCall> pendingOpenCall = pendingOpenCalls.takeFirst();
         if (success) {
             if (m_metadata.id == InvalidId) {
                 // This database was deleted then quickly re-opened.
                 // openInternalAsync() will recreate it in the backing store and then resume processing pending callbacks.
-                pendingOpenCalls.prepend(pendingOpenCall.release());
+                pendingOpenCalls.prepend(std::move(pendingOpenCall));
                 pendingOpenCalls.swap(m_pendingOpenCalls);
 
                 openInternalAsync();
@@ -443,7 +450,7 @@ void IDBDatabaseBackend::openConnection(PassRefPtr<IDBCallbacks> prpCallbacks, P
     RefPtr<IDBCallbacks> callbacks = prpCallbacks;
     RefPtr<IDBDatabaseCallbacks> databaseCallbacks = prpDatabaseCallbacks;
 
-    m_pendingOpenCalls.append(IDBPendingOpenCall::create(*callbacks, *databaseCallbacks, transactionId, version));
+    m_pendingOpenCalls.append(std::make_unique<IDBPendingOpenCall>(*callbacks, *databaseCallbacks, transactionId, version));
 
     processPendingCalls();
 }
@@ -456,34 +463,26 @@ void IDBDatabaseBackend::openConnectionInternal(PassRefPtr<IDBCallbacks> prpCall
     RefPtr<IDBCallbacks> callbacks = prpCallbacks;
     RefPtr<IDBDatabaseCallbacks> databaseCallbacks = prpDatabaseCallbacks;
 
-    // We infer that the database didn't exist from its lack of either type of version.
+    // We infer that the database didn't exist from its lack of version.
     bool isNewDatabase = m_metadata.version == IDBDatabaseMetadata::NoIntVersion;
 
-    if (version == IDBDatabaseMetadata::DefaultIntVersion) {
-        // FIXME: this comments was related to Chromium code. It may be incorrect
-        // For unit tests only - skip upgrade steps. Calling from script with DefaultIntVersion throws exception.
-        ASSERT(isNewDatabase);
+    if (version == IDBDatabaseMetadata::DefaultIntVersion && !isNewDatabase) {
         m_databaseCallbacksSet.add(databaseCallbacks);
         callbacks->onSuccess(this, this->metadata());
         return;
     }
 
-    if (version == IDBDatabaseMetadata::NoIntVersion) {
-        if (!isNewDatabase) {
-            m_databaseCallbacksSet.add(RefPtr<IDBDatabaseCallbacks>(databaseCallbacks));
-            callbacks->onSuccess(this, this->metadata());
-            return;
-        }
+    if (isNewDatabase && version == IDBDatabaseMetadata::DefaultIntVersion) {
         // Spec says: If no version is specified and no database exists, set database version to 1.
         version = 1;
     }
 
-    if (version > m_metadata.version) {
+    if (version > m_metadata.version || m_metadata.version == IDBDatabaseMetadata::NoIntVersion) {
         runIntVersionChangeTransaction(callbacks, databaseCallbacks, transactionId, version);
         return;
     }
 
-    if (version < m_metadata.version) {
+    if (version < m_metadata.version && m_metadata.version != IDBDatabaseMetadata::NoIntVersion) {
         callbacks->onError(IDBDatabaseError::create(IDBDatabaseException::VersionError, String::format("The requested version (%llu) is less than the existing version (%llu).", static_cast<unsigned long long>(version), static_cast<unsigned long long>(m_metadata.version))));
         return;
     }
@@ -514,7 +513,7 @@ void IDBDatabaseBackend::runIntVersionChangeTransaction(PassRefPtr<IDBCallbacks>
         callbacks->onBlocked(m_metadata.version);
     // FIXME: Add test for m_runningVersionChangeTransaction.
     if (m_runningVersionChangeTransaction || connectionCount()) {
-        m_pendingOpenCalls.append(IDBPendingOpenCall::create(*callbacks, *databaseCallbacks, transactionId, requestedVersion));
+        m_pendingOpenCalls.append(std::make_unique<IDBPendingOpenCall>(*callbacks, *databaseCallbacks, transactionId, requestedVersion));
         return;
     }
 
@@ -540,7 +539,7 @@ void IDBDatabaseBackend::deleteDatabase(PassRefPtr<IDBCallbacks> prpCallbacks)
         // VersionChangeEvents are received, not just set up to fire.
         // https://bugs.webkit.org/show_bug.cgi?id=71130
         callbacks->onBlocked(m_metadata.version);
-        m_pendingDeleteCalls.append(IDBPendingDeleteCall::create(callbacks.release()));
+        m_pendingDeleteCalls.append(std::make_unique<IDBPendingDeleteCall>(callbacks.release()));
         return;
     }
     deleteDatabaseAsync(callbacks.release());
@@ -551,13 +550,13 @@ bool IDBDatabaseBackend::isDeleteDatabaseBlocked()
     return connectionCount();
 }
 
-void IDBDatabaseBackend::deleteDatabaseAsync(PassRefPtr<IDBCallbacks> callbacks)
+void IDBDatabaseBackend::deleteDatabaseAsync(PassRefPtr<IDBCallbacks> prpCallbacks)
 {
     ASSERT(!isDeleteDatabaseBlocked());
 
     RefPtr<IDBDatabaseBackend> self(this);
+    RefPtr<IDBCallbacks> callbacks = prpCallbacks;
     m_serverConnection->deleteDatabase(m_metadata.name, [self, callbacks](bool success) {
-        ASSERT(self->m_deleteCallbacksWaitingCompletion.contains(callbacks));
         self->m_deleteCallbacksWaitingCompletion.remove(callbacks);
 
         // If this IDBDatabaseBackend was closed while waiting for deleteDatabase to complete, no point in performing any callbacks.
@@ -584,7 +583,7 @@ void IDBDatabaseBackend::close(PassRefPtr<IDBDatabaseCallbacks> prpCallbacks)
     m_databaseCallbacksSet.remove(callbacks);
     if (m_pendingSecondHalfOpen && m_pendingSecondHalfOpen->databaseCallbacks() == callbacks) {
         m_pendingSecondHalfOpen->callbacks()->onError(IDBDatabaseError::create(IDBDatabaseException::AbortError, "The connection was closed."));
-        m_pendingSecondHalfOpen.release();
+        m_pendingSecondHalfOpen = nullptr;
     }
 
     if (connectionCount() > 1)

@@ -37,7 +37,7 @@
 #include <gst/gst.h>
 #include <gst/pbutils/missing-plugins.h>
 #include <limits>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 #include <wtf/text/CString.h>
 
 #if ENABLE(VIDEO_TRACK)
@@ -55,21 +55,6 @@
 #include "MediaSource.h"
 #include "WebKitMediaSourceGStreamer.h"
 #endif
-
-// GstPlayFlags flags from playbin2. It is the policy of GStreamer to
-// not publicly expose element-specific enums. That's why this
-// GstPlayFlags enum has been copied here.
-typedef enum {
-    GST_PLAY_FLAG_VIDEO         = 0x00000001,
-    GST_PLAY_FLAG_AUDIO         = 0x00000002,
-    GST_PLAY_FLAG_TEXT          = 0x00000004,
-    GST_PLAY_FLAG_VIS           = 0x00000008,
-    GST_PLAY_FLAG_SOFT_VOLUME   = 0x00000010,
-    GST_PLAY_FLAG_NATIVE_AUDIO  = 0x00000020,
-    GST_PLAY_FLAG_NATIVE_VIDEO  = 0x00000040,
-    GST_PLAY_FLAG_DOWNLOAD      = 0x00000080,
-    GST_PLAY_FLAG_BUFFERING     = 0x000000100
-} GstPlayFlags;
 
 // Max interval in seconds to stay in the READY state on manual
 // state change requests.
@@ -190,7 +175,7 @@ void MediaPlayerPrivateGStreamer::setAudioStreamProperties(GObject* object)
     GstStructure* structure = gst_structure_new("stream-properties", "media.role", G_TYPE_STRING, role, NULL);
     g_object_set(object, "stream-properties", structure, NULL);
     gst_structure_free(structure);
-    GOwnPtr<gchar> elementName(gst_element_get_name(GST_ELEMENT(object)));
+    GUniquePtr<gchar> elementName(gst_element_get_name(GST_ELEMENT(object)));
     LOG_MEDIA_MESSAGE("Set media.role as %s at %s", role, elementName.get());
 }
 
@@ -202,7 +187,7 @@ PassOwnPtr<MediaPlayerPrivateInterface> MediaPlayerPrivateGStreamer::create(Medi
 void MediaPlayerPrivateGStreamer::registerMediaEngine(MediaEngineRegistrar registrar)
 {
     if (isAvailable())
-        registrar(create, getSupportedTypes, supportsType, 0, 0, 0);
+        registrar(create, getSupportedTypes, supportsType, 0, 0, 0, 0);
 }
 
 bool initializeGStreamerAndRegisterWebKitElements()
@@ -377,7 +362,7 @@ void MediaPlayerPrivateGStreamer::load(const String& url)
 }
 
 #if ENABLE(MEDIA_SOURCE)
-void MediaPlayerPrivateGStreamer::load(const String& url, PassRefPtr<HTMLMediaSource> mediaSource)
+void MediaPlayerPrivateGStreamer::load(const String& url, MediaSourcePrivateClient* mediaSource)
 {
     String mediasourceUri = String::format("mediasource%s", url.utf8().data());
     m_mediaSource = mediaSource;
@@ -687,6 +672,7 @@ void MediaPlayerPrivateGStreamer::videoChanged()
     if (m_videoTimerHandler)
         g_source_remove(m_videoTimerHandler);
     m_videoTimerHandler = g_idle_add_full(G_PRIORITY_DEFAULT, reinterpret_cast<GSourceFunc>(mediaPlayerPrivateVideoChangeTimeoutCallback), this, 0);
+    g_source_set_name_by_id(m_videoTimerHandler, "[WebKit] mediaPlayerPrivateVideoChangeTimeoutCallback");
 }
 
 void MediaPlayerPrivateGStreamer::videoCapsChanged()
@@ -694,6 +680,7 @@ void MediaPlayerPrivateGStreamer::videoCapsChanged()
     if (m_videoCapsTimerHandler)
         g_source_remove(m_videoCapsTimerHandler);
     m_videoCapsTimerHandler = g_timeout_add(0, reinterpret_cast<GSourceFunc>(mediaPlayerPrivateVideoCapsChangeTimeoutCallback), this);
+    g_source_set_name_by_id(m_videoCapsTimerHandler, "[WebKit] mediaPlayerPrivateVideoCapsChangeTimeoutCallback");
 }
 
 void MediaPlayerPrivateGStreamer::notifyPlayerOfVideo()
@@ -747,6 +734,7 @@ void MediaPlayerPrivateGStreamer::audioChanged()
     if (m_audioTimerHandler)
         g_source_remove(m_audioTimerHandler);
     m_audioTimerHandler = g_idle_add_full(G_PRIORITY_DEFAULT, reinterpret_cast<GSourceFunc>(mediaPlayerPrivateAudioChangeTimeoutCallback), this, 0);
+    g_source_set_name_by_id(m_audioTimerHandler, "[WebKit] mediaPlayerPrivateAudioChangeTimeoutCallback");
 }
 
 void MediaPlayerPrivateGStreamer::notifyPlayerOfAudio()
@@ -794,6 +782,7 @@ void MediaPlayerPrivateGStreamer::textChanged()
     if (m_textTimerHandler)
         g_source_remove(m_textTimerHandler);
     m_textTimerHandler = g_timeout_add(0, reinterpret_cast<GSourceFunc>(mediaPlayerPrivateTextChangeTimeoutCallback), this);
+    g_source_set_name_by_id(m_textTimerHandler, "[WebKit] mediaPlayerPrivateTextChangeTimeoutCallback");
 }
 
 void MediaPlayerPrivateGStreamer::notifyPlayerOfText()
@@ -862,6 +851,9 @@ void MediaPlayerPrivateGStreamer::newTextSample()
 
 void MediaPlayerPrivateGStreamer::setRate(float rate)
 {
+    // Higher rate causes crash.
+    rate = clampTo(rate, -20, 20);
+
     // Avoid useless playback rate update.
     if (m_playbackRate == rate) {
         // and make sure that upper layers were notified if rate was set
@@ -902,22 +894,22 @@ void MediaPlayerPrivateGStreamer::setPreservesPitch(bool preservesPitch)
     m_preservesPitch = preservesPitch;
 }
 
-PassRefPtr<TimeRanges> MediaPlayerPrivateGStreamer::buffered() const
+std::unique_ptr<PlatformTimeRanges> MediaPlayerPrivateGStreamer::buffered() const
 {
-    RefPtr<TimeRanges> timeRanges = TimeRanges::create();
+    auto timeRanges = PlatformTimeRanges::create();
     if (m_errorOccured || isLiveStream())
-        return timeRanges.release();
+        return timeRanges;
 
 #if GST_CHECK_VERSION(0, 10, 31)
     float mediaDuration(duration());
     if (!mediaDuration || std::isinf(mediaDuration))
-        return timeRanges.release();
+        return timeRanges;
 
     GstQuery* query = gst_query_new_buffering(GST_FORMAT_PERCENT);
 
     if (!gst_element_query(m_playBin.get(), query)) {
         gst_query_unref(query);
-        return timeRanges.release();
+        return timeRanges;
     }
 
     for (guint index = 0; index < gst_query_get_n_buffering_ranges(query); index++) {
@@ -939,13 +931,13 @@ PassRefPtr<TimeRanges> MediaPlayerPrivateGStreamer::buffered() const
     if (!m_errorOccured && !isLiveStream() && loaded > 0)
         timeRanges->add(0, loaded);
 #endif
-    return timeRanges.release();
+    return timeRanges;
 }
 
 gboolean MediaPlayerPrivateGStreamer::handleMessage(GstMessage* message)
 {
-    GOwnPtr<GError> err;
-    GOwnPtr<gchar> debug;
+    GUniqueOutPtr<GError> err;
+    GUniqueOutPtr<gchar> debug;
     MediaPlayer::NetworkState error;
     bool issueError = true;
     bool attemptNextLocation = false;
@@ -1037,7 +1029,7 @@ gboolean MediaPlayerPrivateGStreamer::handleMessage(GstMessage* message)
         gst_message_parse_request_state(message, &requestedState);
         gst_element_get_state(m_playBin.get(), &currentState, NULL, 250);
         if (requestedState < currentState) {
-            GOwnPtr<gchar> elementName(gst_element_get_name(GST_ELEMENT(message)));
+            GUniquePtr<gchar> elementName(gst_element_get_name(GST_ELEMENT(message)));
             INFO_MEDIA_MESSAGE("Element %s requested state change to %s", elementName.get(),
                 gst_element_state_get_name(requestedState));
             m_requestedState = requestedState;
@@ -1256,7 +1248,7 @@ unsigned MediaPlayerPrivateGStreamer::totalBytes() const
             gst_iterator_resync(iter);
             break;
         case GST_ITERATOR_ERROR:
-            // Fall through.
+            FALLTHROUGH;
         case GST_ITERATOR_DONE:
             done = true;
             break;
@@ -1781,21 +1773,23 @@ void MediaPlayerPrivateGStreamer::setDownloadBuffering()
     if (!m_playBin)
         return;
 
-    GstPlayFlags flags;
+    unsigned flags;
     g_object_get(m_playBin.get(), "flags", &flags, NULL);
 
+    unsigned flagDownload = getGstPlaysFlag("download");
+
     // We don't want to stop downloading if we already started it.
-    if (flags & GST_PLAY_FLAG_DOWNLOAD && m_readyState > MediaPlayer::HaveNothing && !m_resetPipeline)
+    if (flags & flagDownload && m_readyState > MediaPlayer::HaveNothing && !m_resetPipeline)
         return;
 
     bool shouldDownload = !isLiveStream() && m_preload == MediaPlayer::Auto;
     if (shouldDownload) {
         LOG_MEDIA_MESSAGE("Enabling on-disk buffering");
-        g_object_set(m_playBin.get(), "flags", flags | GST_PLAY_FLAG_DOWNLOAD, NULL);
+        g_object_set(m_playBin.get(), "flags", flags | flagDownload, NULL);
         m_fillTimer.startRepeating(0.2);
     } else {
         LOG_MEDIA_MESSAGE("Disabling on-disk buffering");
-        g_object_set(m_playBin.get(), "flags", flags & ~GST_PLAY_FLAG_DOWNLOAD, NULL);
+        g_object_set(m_playBin.get(), "flags", flags & ~flagDownload, NULL);
         m_fillTimer.stop();
     }
 }

@@ -26,7 +26,6 @@
 #include "JSGlobalObjectFunctions.h"
 
 #include "CallFrame.h"
-#include "CallFrameInlines.h"
 #include "Interpreter.h"
 #include "JSFunction.h"
 #include "JSGlobalObject.h"
@@ -35,7 +34,7 @@
 #include "Lexer.h"
 #include "LiteralParser.h"
 #include "Nodes.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include "Parser.h"
 #include "StackVisitor.h"
 #include <wtf/dtoa.h>
@@ -164,6 +163,7 @@ bool isStrWhiteSpace(UChar c)
         case 0x000D:
         case 0x0020:
         case 0x00A0:
+        case 0x180E: // This character used to be in Zs category before Unicode 6.3, and EcmaScript says that we should keep treating it as such.
         case 0x2028:
         case 0x2029:
         case 0xFEFF:

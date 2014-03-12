@@ -30,7 +30,7 @@
 #ifndef InspectorProfilerAgent_h
 #define InspectorProfilerAgent_h
 
-#if ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
+#if ENABLE(INSPECTOR)
 
 #include "InspectorWebAgentBase.h"
 #include "InspectorWebBackendDispatchers.h"
@@ -38,22 +38,21 @@
 #include <wtf/Forward.h>
 #include <wtf/HashMap.h>
 #include <wtf/Noncopyable.h>
-#include <wtf/PassOwnPtr.h>
 #include <wtf/text/WTFString.h>
 
 namespace Inspector {
 class InspectorArray;
+class InspectorConsoleAgent;
 class InspectorObject;
 }
 
 namespace WebCore {
 
-class InspectorConsoleAgent;
 class InstrumentingAgents;
 class Page;
-class PageInjectedScriptManager;
 class ScriptHeapSnapshot;
 class ScriptProfile;
+class WebInjectedScriptManager;
 class WorkerGlobalScope;
 
 typedef String ErrorString;
@@ -61,8 +60,8 @@ typedef String ErrorString;
 class InspectorProfilerAgent : public InspectorAgentBase, public Inspector::InspectorProfilerBackendDispatcherHandler {
     WTF_MAKE_NONCOPYABLE(InspectorProfilerAgent); WTF_MAKE_FAST_ALLOCATED;
 public:
-    static std::unique_ptr<InspectorProfilerAgent> create(InstrumentingAgents*, InspectorConsoleAgent*, Page*, PageInjectedScriptManager*);
-    static std::unique_ptr<InspectorProfilerAgent> create(InstrumentingAgents*, InspectorConsoleAgent*, WorkerGlobalScope*, PageInjectedScriptManager*);
+    static std::unique_ptr<InspectorProfilerAgent> create(InstrumentingAgents*, Inspector::InspectorConsoleAgent*, Page*, WebInjectedScriptManager*);
+    static std::unique_ptr<InspectorProfilerAgent> create(InstrumentingAgents*, Inspector::InspectorConsoleAgent*, WorkerGlobalScope*, WebInjectedScriptManager*);
 
     virtual ~InspectorProfilerAgent();
 
@@ -82,7 +81,7 @@ public:
     virtual void start(ErrorString* = nullptr) override;
     virtual void stop(ErrorString* = nullptr) override;
 
-    void disable();
+    void disable(bool skipRecompile);
     void enable(bool skipRecompile);
     bool enabled() const { return m_enabled; }
     String getCurrentUserInitiatedProfileName(bool incrementProfileNumber = false);
@@ -92,7 +91,7 @@ public:
     virtual void removeProfile(ErrorString*, const String& type, int uid) override;
 
     virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
-    virtual void willDestroyFrontendAndBackend() override;
+    virtual void willDestroyFrontendAndBackend(Inspector::InspectorDisconnectReason) override;
 
     virtual void takeHeapSnapshot(ErrorString*, const bool* reportProgress) override;
     void toggleRecordButton(bool isProfiling);
@@ -101,7 +100,7 @@ public:
     virtual void getHeapObjectId(ErrorString*, const String& objectId, String* heapSnapshotObjectId) override;
 
 protected:
-    InspectorProfilerAgent(InstrumentingAgents*, InspectorConsoleAgent*, PageInjectedScriptManager*);
+    InspectorProfilerAgent(InstrumentingAgents*, Inspector::InspectorConsoleAgent*, WebInjectedScriptManager*);
     virtual void startProfiling(const String& title) = 0;
     virtual PassRefPtr<ScriptProfile> stopProfiling(const String& title) = 0;
 
@@ -115,8 +114,8 @@ private:
     PassRefPtr<Inspector::TypeBuilder::Profiler::ProfileHeader> createProfileHeader(const ScriptProfile&);
     PassRefPtr<Inspector::TypeBuilder::Profiler::ProfileHeader> createSnapshotHeader(const ScriptHeapSnapshot&);
 
-    InspectorConsoleAgent* m_consoleAgent;
-    PageInjectedScriptManager* m_injectedScriptManager;
+    Inspector::InspectorConsoleAgent* m_consoleAgent;
+    WebInjectedScriptManager* m_injectedScriptManager;
     std::unique_ptr<Inspector::InspectorProfilerFrontendDispatcher> m_frontendDispatcher;
     RefPtr<Inspector::InspectorProfilerBackendDispatcher> m_backendDispatcher;
     bool m_enabled;
@@ -134,6 +133,6 @@ private:
 
 } // namespace WebCore
 
-#endif // ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
+#endif // ENABLE(INSPECTOR)
 
 #endif // !defined(InspectorProfilerAgent_h)

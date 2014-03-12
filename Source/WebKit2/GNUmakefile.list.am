@@ -160,10 +160,6 @@ webkit2_built_sources += \
 	DerivedSources/WebKit2/WebResourceCacheManagerProxyMessages.h \
 	DerivedSources/WebKit2/WebResourceLoaderMessageReceiver.cpp \
 	DerivedSources/WebKit2/WebResourceLoaderMessages.h \
-	DerivedSources/WebKit2/WebSoupRequestManagerMessageReceiver.cpp \
-	DerivedSources/WebKit2/WebSoupRequestManagerMessages.h \
-	DerivedSources/WebKit2/WebSoupRequestManagerProxyMessageReceiver.cpp \
-	DerivedSources/WebKit2/WebSoupRequestManagerProxyMessages.h \
 	DerivedSources/WebKit2/WebVibrationProxyMessageReceiver.cpp \
 	DerivedSources/WebKit2/WebVibrationProxyMessages.h
 
@@ -364,6 +360,8 @@ webkit2_sources += \
 	Source/WebKit2/Shared/CommandLine.h \
 	Source/WebKit2/Shared/ConnectionStack.cpp \
 	Source/WebKit2/Shared/ConnectionStack.h \
+	Source/WebKit2/Shared/ContextMenuContextData.cpp \
+	Source/WebKit2/Shared/ContextMenuContextData.h \
 	Source/WebKit2/Shared/CoreIPCSupport/WebContextMessageKinds.h \
 	Source/WebKit2/Shared/DrawingAreaInfo.h \
 	Source/WebKit2/Shared/Downloads/Download.cpp \
@@ -388,6 +386,7 @@ webkit2_sources += \
 	Source/WebKit2/Shared/gtk/LayerTreeContextGtk.cpp \
 	Source/WebKit2/Shared/gtk/NativeWebKeyboardEventGtk.cpp \
 	Source/WebKit2/Shared/gtk/NativeWebMouseEventGtk.cpp \
+	Source/WebKit2/Shared/gtk/NativeWebTouchEventGtk.cpp \
 	Source/WebKit2/Shared/gtk/NativeWebWheelEventGtk.cpp \
 	Source/WebKit2/Shared/gtk/PrintInfoGtk.cpp \
 	Source/WebKit2/Shared/gtk/ProcessExecutablePathGtk.cpp \
@@ -402,6 +401,8 @@ webkit2_sources += \
 	Source/WebKit2/Shared/NativeWebKeyboardEvent.h \
 	Source/WebKit2/Shared/NativeWebMouseEvent.h \
 	Source/WebKit2/Shared/NativeWebWheelEvent.h \
+	Source/WebKit2/Shared/NavigationActionData.cpp \
+	Source/WebKit2/Shared/NavigationActionData.h \
 	Source/WebKit2/Shared/Network/CustomProtocols/CustomProtocolManager.h \
 	Source/WebKit2/Shared/Network/CustomProtocols/soup/CustomProtocolManagerImpl.h \
 	Source/WebKit2/Shared/Network/CustomProtocols/soup/CustomProtocolManagerImpl.cpp \
@@ -521,10 +522,6 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/API/C/gtk/WKView.h \
 	Source/WebKit2/UIProcess/API/C/gtk/WKViewPrivate.h \
 	Source/WebKit2/UIProcess/API/C/soup/WKAPICastSoup.h \
-	Source/WebKit2/UIProcess/API/C/soup/WKContextSoup.cpp \
-	Source/WebKit2/UIProcess/API/C/soup/WKContextSoup.h \
-	Source/WebKit2/UIProcess/API/C/soup/WKSoupRequestManager.cpp \
-	Source/WebKit2/UIProcess/API/C/soup/WKSoupRequestManager.h \
 	Source/WebKit2/UIProcess/API/C/soup/WKSoupCustomProtocolRequestManager.cpp \
 	Source/WebKit2/UIProcess/API/C/soup/WKSoupCustomProtocolRequestManager.h \
 	Source/WebKit2/UIProcess/API/C/WebKit2_C.h \
@@ -543,8 +540,6 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/API/C/WKBatteryManager.h \
 	Source/WebKit2/UIProcess/API/C/WKBatteryStatus.cpp \
 	Source/WebKit2/UIProcess/API/C/WKBatteryStatus.h \
-	Source/WebKit2/UIProcess/API/C/WKColorPickerResultListener.cpp \
-	Source/WebKit2/UIProcess/API/C/WKColorPickerResultListener.h \
 	Source/WebKit2/UIProcess/API/C/WKContext.cpp \
 	Source/WebKit2/UIProcess/API/C/WKContext.h \
 	Source/WebKit2/UIProcess/API/C/WKContextPrivate.h \
@@ -871,6 +866,8 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/Plugins/PluginProcessProxy.h \
 	Source/WebKit2/UIProcess/Plugins/WebPluginSiteDataManager.h \
 	Source/WebKit2/UIProcess/Plugins/WebPluginSiteDataManager.cpp \
+	Source/WebKit2/UIProcess/Plugins/gtk/PluginInfoCache.cpp \
+	Source/WebKit2/UIProcess/Plugins/gtk/PluginInfoCache.h \
 	Source/WebKit2/UIProcess/Plugins/unix/PluginInfoStoreUnix.cpp \
 	Source/WebKit2/UIProcess/Plugins/unix/PluginProcessProxyUnix.cpp \
 	Source/WebKit2/UIProcess/ProcessModel.h \
@@ -886,10 +883,6 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/Storage/StorageManager.h \
 	Source/WebKit2/UIProcess/soup/WebContextSoup.cpp \
 	Source/WebKit2/UIProcess/soup/WebCookieManagerProxySoup.cpp \
-	Source/WebKit2/UIProcess/soup/WebSoupRequestManagerClient.cpp \
-	Source/WebKit2/UIProcess/soup/WebSoupRequestManagerClient.h \
-	Source/WebKit2/UIProcess/soup/WebSoupRequestManagerProxy.cpp \
-	Source/WebKit2/UIProcess/soup/WebSoupRequestManagerProxy.h \
 	Source/WebKit2/UIProcess/TextChecker.h \
 	Source/WebKit2/UIProcess/TextCheckerCompletion.h \
 	Source/WebKit2/UIProcess/TextCheckerCompletion.cpp \
@@ -905,8 +898,6 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/WebBatteryProvider.h \
 	Source/WebKit2/UIProcess/WebColorPicker.cpp \
 	Source/WebKit2/UIProcess/WebColorPicker.h \
-	Source/WebKit2/UIProcess/WebColorPickerResultListenerProxy.cpp \
-	Source/WebKit2/UIProcess/WebColorPickerResultListenerProxy.h \
 	Source/WebKit2/UIProcess/WebConnectionToWebProcess.cpp \
 	Source/WebKit2/UIProcess/WebConnectionToWebProcess.h \
 	Source/WebKit2/UIProcess/WebContext.cpp \
@@ -953,8 +944,6 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/WebGeolocationProvider.h \
 	Source/WebKit2/UIProcess/WebGrammarDetail.cpp \
 	Source/WebKit2/UIProcess/WebGrammarDetail.h \
-	Source/WebKit2/UIProcess/WebHistoryClient.cpp \
-	Source/WebKit2/UIProcess/WebHistoryClient.h \
 	Source/WebKit2/UIProcess/WebIconDatabase.cpp \
 	Source/WebKit2/UIProcess/WebIconDatabase.h \
 	Source/WebKit2/UIProcess/WebIconDatabaseClient.cpp \
@@ -965,8 +954,6 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/WebKeyValueStorageManager.h \
 	Source/WebKit2/UIProcess/WebMediaCacheManagerProxy.cpp \
 	Source/WebKit2/UIProcess/WebMediaCacheManagerProxy.h \
-	Source/WebKit2/UIProcess/WebLoaderClient.cpp \
-	Source/WebKit2/UIProcess/WebLoaderClient.h \
 	Source/WebKit2/UIProcess/WebNetworkInfoManagerProxy.cpp \
 	Source/WebKit2/UIProcess/WebNetworkInfoManagerProxy.h \
 	Source/WebKit2/UIProcess/WebNetworkInfoProvider.cpp \
@@ -983,8 +970,6 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/WebPageGroup.h \
 	Source/WebKit2/UIProcess/WebPageProxy.cpp \
 	Source/WebKit2/UIProcess/WebPageProxy.h \
-	Source/WebKit2/UIProcess/WebPolicyClient.cpp \
-	Source/WebKit2/UIProcess/WebPolicyClient.h \
 	Source/WebKit2/UIProcess/WebPopupMenuProxy.h \
 	Source/WebKit2/UIProcess/WebPreferences.cpp \
 	Source/WebKit2/UIProcess/WebPreferences.h \
@@ -996,8 +981,6 @@ webkit2_sources += \
 	Source/WebKit2/UIProcess/WebTextChecker.h \
 	Source/WebKit2/UIProcess/WebTextCheckerClient.cpp \
 	Source/WebKit2/UIProcess/WebTextCheckerClient.h \
-	Source/WebKit2/UIProcess/WebUIClient.cpp \
-	Source/WebKit2/UIProcess/WebUIClient.h \
 	Source/WebKit2/UIProcess/InspectorServer/HTTPRequest.cpp \
 	Source/WebKit2/UIProcess/InspectorServer/HTTPRequest.h \
 	Source/WebKit2/UIProcess/InspectorServer/WebInspectorServer.cpp \
@@ -1188,8 +1171,6 @@ webkit2_sources += \
 	Source/WebKit2/WebProcess/Storage/StorageAreaMap.h \
 	Source/WebKit2/WebProcess/Storage/StorageNamespaceImpl.cpp \
 	Source/WebKit2/WebProcess/Storage/StorageNamespaceImpl.h \
-	Source/WebKit2/WebProcess/soup/WebSoupRequestManager.cpp \
-	Source/WebKit2/WebProcess/soup/WebSoupRequestManager.h \
 	Source/WebKit2/WebProcess/soup/WebProcessSoup.cpp \
 	Source/WebKit2/WebProcess/soup/WebKitSoupRequestGeneric.cpp \
 	Source/WebKit2/WebProcess/soup/WebKitSoupRequestGeneric.h \
@@ -1270,10 +1251,14 @@ webkit2_sources += \
 	Source/WebKit2/WebProcess/WebPage/PageBanner.h \
 	Source/WebKit2/WebProcess/WebPage/PageOverlay.cpp \
 	Source/WebKit2/WebProcess/WebPage/PageOverlay.h \
+	Source/WebKit2/WebProcess/WebPage/VisitedLinkTableController.cpp \
+	Source/WebKit2/WebProcess/WebPage/VisitedLinkTableController.h \
 	Source/WebKit2/WebProcess/WebPage/WebBackForwardListProxy.cpp \
 	Source/WebKit2/WebProcess/WebPage/WebBackForwardListProxy.h \
 	Source/WebKit2/WebProcess/WebPage/WebContextMenu.cpp \
 	Source/WebKit2/WebProcess/WebPage/WebContextMenu.h \
+	Source/WebKit2/WebProcess/WebPage/WebDocumentLoader.cpp \
+	Source/WebKit2/WebProcess/WebPage/WebDocumentLoader.h \
 	Source/WebKit2/WebProcess/WebPage/WebFrame.cpp \
 	Source/WebKit2/WebProcess/WebPage/WebFrame.h \
 	Source/WebKit2/WebProcess/WebPage/WebInspector.cpp \

@@ -29,12 +29,12 @@
 
 #include "JSWebGLRenderingContext.h"
 
-#include "EXTDrawBuffers.h"
+#include "ANGLEInstancedArrays.h"
 #include "EXTTextureFilterAnisotropic.h"
 #include "ExceptionCode.h"
 #include "HTMLCanvasElement.h"
 #include "HTMLImageElement.h"
-#include "JSEXTDrawBuffers.h"
+#include "JSANGLEInstancedArrays.h"
 #include "JSEXTTextureFilterAnisotropic.h"
 #include "JSHTMLCanvasElement.h"
 #include "JSHTMLImageElement.h"
@@ -53,6 +53,7 @@
 #include "JSWebGLDebugRendererInfo.h"
 #include "JSWebGLDebugShaders.h"
 #include "JSWebGLDepthTexture.h"
+#include "JSWebGLDrawBuffers.h"
 #include "JSWebGLFramebuffer.h"
 #include "JSWebGLLoseContext.h"
 #include "JSWebGLProgram.h"
@@ -77,6 +78,7 @@
 #include "WebGLDebugRendererInfo.h"
 #include "WebGLDebugShaders.h"
 #include "WebGLDepthTexture.h"
+#include "WebGLDrawBuffers.h"
 #include "WebGLExtension.h"
 #include "WebGLFramebuffer.h"
 #include "WebGLGetInfo.h"
@@ -203,8 +205,6 @@ static JSValue toJS(ExecState* exec, JSDOMGlobalObject* globalObject, WebGLExten
     switch (extension->getName()) {
     case WebGLExtension::WebGLLoseContextName:
         return toJS(exec, globalObject, static_cast<WebGLLoseContext*>(extension));
-    case WebGLExtension::EXTDrawBuffersName:
-        return toJS(exec, globalObject, static_cast<EXTDrawBuffers*>(extension));
     case WebGLExtension::EXTTextureFilterAnisotropicName:
         return toJS(exec, globalObject, static_cast<EXTTextureFilterAnisotropic*>(extension));
     case WebGLExtension::OESStandardDerivativesName:
@@ -233,6 +233,10 @@ static JSValue toJS(ExecState* exec, JSDOMGlobalObject* globalObject, WebGLExten
         return toJS(exec, globalObject, static_cast<WebGLCompressedTextureS3TC*>(extension));
     case WebGLExtension::WebGLDepthTextureName:
         return toJS(exec, globalObject, static_cast<WebGLDepthTexture*>(extension));
+    case WebGLExtension::WebGLDrawBuffersName:
+        return toJS(exec, globalObject, static_cast<WebGLDrawBuffers*>(extension));
+    case WebGLExtension::ANGLEInstancedArraysName:
+        return toJS(exec, globalObject, static_cast<ANGLEInstancedArrays*>(extension));
     }
     ASSERT_NOT_REACHED();
     return jsNull();
@@ -461,7 +465,6 @@ static bool functionForUniform(DataFunctionToCall f)
     case f_uniform3v:
     case f_uniform4v:
         return true;
-        break;
     default: break;
     }
     return false;

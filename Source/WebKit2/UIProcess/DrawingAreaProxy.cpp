@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Apple Inc. All rights reserved.
+ * Copyright (C) 2010, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,7 +40,7 @@ DrawingAreaProxy::DrawingAreaProxy(DrawingAreaType type, WebPageProxy* webPagePr
     , m_webPageProxy(webPageProxy)
     , m_size(webPageProxy->viewSize())
 #if PLATFORM(MAC)
-    , m_exposedRectChangedTimer(this, &DrawingAreaProxy::exposedRectChangedTimerFired)
+    , m_exposedRectChangedTimer(RunLoop::main(), this, &DrawingAreaProxy::exposedRectChangedTimerFired)
 #endif
 {
     m_webPageProxy->process().addMessageReceiver(Messages::DrawingAreaProxy::messageReceiverName(), webPageProxy->pageID(), *this);
@@ -74,7 +74,7 @@ void DrawingAreaProxy::setExposedRect(const FloatRect& exposedRect)
         m_exposedRectChangedTimer.startOneShot(0);
 }
 
-void DrawingAreaProxy::exposedRectChangedTimerFired(Timer<DrawingAreaProxy>*)
+void DrawingAreaProxy::exposedRectChangedTimerFired()
 {
     if (!m_webPageProxy->isValid())
         return;
@@ -85,6 +85,6 @@ void DrawingAreaProxy::exposedRectChangedTimerFired(Timer<DrawingAreaProxy>*)
     m_webPageProxy->process().send(Messages::DrawingArea::SetExposedRect(m_exposedRect), m_webPageProxy->pageID());
     m_lastSentExposedRect = m_exposedRect;
 }
-#endif
+#endif // PLATFORM(MAC)
 
 } // namespace WebKit

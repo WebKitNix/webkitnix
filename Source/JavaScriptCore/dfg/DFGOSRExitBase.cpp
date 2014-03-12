@@ -31,11 +31,11 @@
 #include "CodeBlock.h"
 #include "DFGBasicBlock.h"
 #include "DFGNode.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC { namespace DFG {
 
-bool OSRExitBase::considerAddingAsFrequentExitSiteSlow(CodeBlock* profiledCodeBlock)
+bool OSRExitBase::considerAddingAsFrequentExitSiteSlow(CodeBlock* profiledCodeBlock, ExitingJITType jitType)
 {
     CodeBlock* sourceProfiledCodeBlock =
         baselineCodeBlockForOriginAndBaselineCodeBlock(
@@ -43,7 +43,7 @@ bool OSRExitBase::considerAddingAsFrequentExitSiteSlow(CodeBlock* profiledCodeBl
     if (!sourceProfiledCodeBlock)
         return false;
     return sourceProfiledCodeBlock->addFrequentExitSite(
-            FrequentExitSite(m_codeOriginForExitProfile.bytecodeIndex, m_kind));
+        FrequentExitSite(m_codeOriginForExitProfile.bytecodeIndex, m_kind, jitType));
 }
 
 } } // namespace JSC::DFG

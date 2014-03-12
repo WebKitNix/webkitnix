@@ -26,14 +26,6 @@ list(APPEND WebKit_INCLUDE_DIRECTORIES
     ${SQLITE_INCLUDE_DIR}
 )
 
-if (ENABLE_SVG)
-    list(APPEND WebKit_INCLUDE_DIRECTORIES
-        "${WEBCORE_DIR}/svg"
-        "${WEBCORE_DIR}/svg/animation"
-        "${WEBCORE_DIR}/rendering/svg"
-    )
-endif ()
-
 if (ENABLE_VIDEO)
     list(APPEND WebKit_INCLUDE_DIRECTORIES
         "${WEBCORE_DIR}/platform/graphics/gstreamer"
@@ -101,7 +93,6 @@ endif ()
 
 list(APPEND WebKit_SOURCES
     efl/WebCoreSupport/AcceleratedCompositingContextEfl.cpp
-    efl/WebCoreSupport/AssertMatchingEnums.cpp
     efl/WebCoreSupport/BatteryClientEfl.cpp
     efl/WebCoreSupport/ChromeClientEfl.cpp
     efl/WebCoreSupport/ColorChooserEfl.cpp
@@ -118,7 +109,6 @@ list(APPEND WebKit_SOURCES
     efl/WebCoreSupport/NavigatorContentUtilsClientEfl.cpp
     efl/WebCoreSupport/NetworkInfoClientEfl.cpp
     efl/WebCoreSupport/NotificationPresenterClientEfl.cpp
-    efl/WebCoreSupport/PageClientEfl.cpp
     efl/WebCoreSupport/PlatformStrategiesEfl.cpp
     efl/WebCoreSupport/ProgressTrackerClientEfl.cpp
     efl/WebCoreSupport/PopupMenuEfl.cpp

@@ -31,13 +31,6 @@
 
 namespace TestWebKitAPI {
 
-static bool scaleChanged = false;
-
-static void didChangeContentScaleFactor(WKViewRef, const void*)
-{
-    scaleChanged = true;
-}
-
 TEST(WebKit2, WKViewUserViewportToContents)
 {
     // This test creates a WKView and uses the WKViewUserViewportToContents
@@ -51,20 +44,12 @@ TEST(WebKit2, WKViewUserViewportToContents)
     WKViewInitialize(webView.get());
     WKPageSetUseFixedLayout(WKViewGetPage(webView.get()), false);
 
-    WKViewClientV0 viewClient;
-    memset(&viewClient, 0, sizeof(viewClient));
-    viewClient.base.version = 0;
-    viewClient.didChangeContentScaleFactor = didChangeContentScaleFactor;
-    WKViewSetViewClient(webView.get(), &viewClient.base);
-
     WKPoint out;
 
     // At scale 1.0 the viewport and contents coordinates should match.
 
     WKViewSetContentScaleFactor(webView.get(), 1.0);
     WKViewSetContentPosition(webView.get(), WKPointMake(0, 0));
-
-    Util::run(&scaleChanged);
 
     out = WKViewUserViewportToContents(webView.get(), WKPointMake(0, 0));
     EXPECT_EQ(out.x, 0);
@@ -87,11 +72,8 @@ TEST(WebKit2, WKViewUserViewportToContents)
     // At scale 2.0 the viewport distance values will be half
     // the ones seem in the contents.
 
-    scaleChanged = false;
     WKViewSetContentScaleFactor(webView.get(), 2.0);
     WKViewSetContentPosition(webView.get(), WKPointMake(0, 0));
-
-    Util::run(&scaleChanged);
 
     out = WKViewUserViewportToContents(webView.get(), WKPointMake(0, 0));
     EXPECT_EQ(out.x, 0);
@@ -114,11 +96,8 @@ TEST(WebKit2, WKViewUserViewportToContents)
     // At scale 0.5 the viewport distance values will be twice
     // the ones seem in the contents.
 
-    scaleChanged = false;
     WKViewSetContentScaleFactor(webView.get(), 0.5);
     WKViewSetContentPosition(webView.get(), WKPointMake(0, 0));
-
-    Util::run(&scaleChanged);
 
     out = WKViewUserViewportToContents(webView.get(), WKPointMake(0, 0));
     EXPECT_EQ(out.x, 0);

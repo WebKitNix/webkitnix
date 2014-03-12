@@ -28,19 +28,13 @@
 
 #if PLATFORM(IOS)
 
-#import <wtf/RefPtr.h>
+#import <WebCore/HTMLMediaElement.h>
 
-@class UIScreen;
-
-namespace WebCore {
-class HTMLMediaElement;
-}
+OBJC_CLASS UIScreen;
 
 @interface WebVideoFullscreenController : NSObject
-
 - (void)setMediaElement:(WebCore::HTMLMediaElement*)mediaElement;
 - (WebCore::HTMLMediaElement*)mediaElement;
-
 - (void)enterFullscreen:(UIScreen *)screen;
 - (void)exitFullscreen;
 @end

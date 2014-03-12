@@ -34,7 +34,7 @@
 namespace WebCore {
 
 ScrollingTreeScrollingNode::ScrollingTreeScrollingNode(ScrollingTree& scrollingTree, ScrollingNodeID nodeID)
-    : ScrollingTreeNode(scrollingTree, nodeID)
+    : ScrollingTreeNode(scrollingTree, ScrollingNode, nodeID)
     , m_frameScaleFactor(1)
     , m_headerHeight(0)
     , m_footerHeight(0)
@@ -51,8 +51,8 @@ void ScrollingTreeScrollingNode::updateBeforeChildren(const ScrollingStateNode& 
 {
     const ScrollingStateScrollingNode& state = toScrollingStateScrollingNode(stateNode);
 
-    if (state.hasChangedProperty(ScrollingStateScrollingNode::ViewportRect))
-        m_viewportRect = state.viewportRect();
+    if (state.hasChangedProperty(ScrollingStateScrollingNode::ViewportSize))
+        m_viewportSize = state.viewportSize();
 
     if (state.hasChangedProperty(ScrollingStateScrollingNode::TotalContentsSize)) {
         if (scrollingTree().isRubberBandInProgress())
@@ -61,6 +61,9 @@ void ScrollingTreeScrollingNode::updateBeforeChildren(const ScrollingStateNode& 
             m_totalContentsSizeForRubberBand = state.totalContentsSize();
         m_totalContentsSize = state.totalContentsSize();
     }
+
+    if (state.hasChangedProperty(ScrollingStateScrollingNode::ScrollPosition))
+        m_scrollPosition = state.scrollPosition();
 
     if (state.hasChangedProperty(ScrollingStateScrollingNode::ScrollOrigin))
         m_scrollOrigin = state.scrollOrigin();

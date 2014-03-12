@@ -24,23 +24,21 @@
  */
 
 #include "config.h"
-
-#if USE(ACCELERATED_COMPOSITING)
-
 #import "WebLayer.h"
 
 #import "GraphicsContext.h"
 #import "GraphicsLayerCA.h"
 #import "PlatformCALayer.h"
-#if !PLATFORM(IOS)
-#import "ThemeMac.h"
-#endif
 #import <QuartzCore/QuartzCore.h>
 
 #if PLATFORM(IOS)
 #import "WKGraphics.h"
 #import "WAKWindow.h"
 #import "WebCoreThread.h"
+#endif
+
+#if !PLATFORM(IOS)
+#import "ThemeMac.h"
 #endif
 
 @interface CALayer(WebCoreCALayerPrivate)
@@ -132,11 +130,11 @@ void drawLayerContents(CGContextRef context, WebCore::PlatformCALayer* platformC
     ThemeMac::setFocusRingClipRect(focusRingClipRect);
 #endif // !PLATFORM(IOS)
 
-    for (auto rect : dirtyRects) {
+    for (const auto& rect : dirtyRects) {
         GraphicsContextStateSaver stateSaver(graphicsContext);
         graphicsContext.clip(rect);
 
-        layerContents->platformCALayerPaintContents(platformCALayer, graphicsContext, enclosingIntRect(rect));
+        layerContents->platformCALayerPaintContents(platformCALayer, graphicsContext, rect);
     }
 
 #if PLATFORM(IOS)
@@ -276,7 +274,7 @@ void drawRepaintIndicator(CGContextRef context, PlatformCALayer* platformCALayer
         graphicsContext.setIsAcceleratedContext(layer->acceleratesDrawing());
 
         FloatRect clipBounds = CGContextGetClipBoundingBox(context);
-        layer->owner()->platformCALayerPaintContents(layer, graphicsContext, enclosingIntRect(clipBounds));
+        layer->owner()->platformCALayerPaintContents(layer, graphicsContext, clipBounds);
     }
 }
 
@@ -329,5 +327,3 @@ void drawRepaintIndicator(CGContextRef context, PlatformCALayer* platformCALayer
 @end  // implementation WebLayer(ExtendedDescription)
 
 #endif // NDEBUG
-
-#endif // USE(ACCELERATED_COMPOSITING)

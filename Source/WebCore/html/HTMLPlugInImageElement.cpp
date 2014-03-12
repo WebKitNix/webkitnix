@@ -133,7 +133,7 @@ HTMLPlugInImageElement::~HTMLPlugInImageElement()
 
 void HTMLPlugInImageElement::setDisplayState(DisplayState state)
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (state == RestartingWithPendingMouseClick || state == Restarting) {
         m_isRestartedPlugin = true;
         m_snapshotDecision = NeverSnapshot;
@@ -329,7 +329,7 @@ void HTMLPlugInImageElement::updateWidgetCallback(Node& node, unsigned)
 void HTMLPlugInImageElement::startLoadingImage()
 {
     if (!m_imageLoader)
-        m_imageLoader = adoptPtr(new HTMLImageLoader(this));
+        m_imageLoader = adoptPtr(new HTMLImageLoader(*this));
     m_imageLoader->updateFromElement();
 }
 

@@ -74,7 +74,6 @@ public:
     // Extension3D methods
     virtual void blitFramebuffer(long srcX0, long srcY0, long srcX1, long srcY1, long dstX0, long dstY0, long dstX1, long dstY1, unsigned long mask, unsigned long filter);
     virtual void renderbufferStorageMultisample(unsigned long target, unsigned long samples, unsigned long internalformat, unsigned long width, unsigned long height);
-    virtual void copyTextureCHROMIUM(GC3Denum, Platform3DObject, Platform3DObject, GC3Dint, GC3Denum);
     virtual void insertEventMarkerEXT(const String&);
     virtual void pushGroupMarkerEXT(const String&);
     virtual void popGroupMarkerEXT(void);
@@ -84,6 +83,10 @@ public:
     virtual GC3Dboolean isVertexArrayOES(Platform3DObject);
     virtual void bindVertexArrayOES(Platform3DObject);
     virtual void drawBuffersEXT(GC3Dsizei, const GC3Denum*);
+
+    virtual void drawArraysInstanced(GC3Denum mode, GC3Dint first, GC3Dsizei count, GC3Dsizei primcount);
+    virtual void drawElementsInstanced(GC3Denum mode, GC3Dsizei count, GC3Denum type, long long offset, GC3Dsizei primcount);
+    virtual void vertexAttribDivisor(GC3Duint index, GC3Duint divisor);
 
     // EXT Robustness - reset
     virtual int getGraphicsResetStatusARB();
@@ -106,6 +109,7 @@ protected:
 
     bool m_supportsOESvertexArrayObject;
     bool m_supportsIMGMultisampledRenderToTexture;
+    bool m_supportsANGLEinstancedArrays;
 
     PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEIMG m_glFramebufferTexture2DMultisampleIMG;
     PFNGLRENDERBUFFERSTORAGEMULTISAMPLEIMG m_glRenderbufferStorageMultisampleIMG;
@@ -117,6 +121,10 @@ protected:
     PFNGLREADNPIXELSEXTPROC m_glReadnPixelsEXT;
     PFNGLGETNUNIFORMFVEXTPROC m_glGetnUniformfvEXT;
     PFNGLGETNUNIFORMIVEXTPROC m_glGetnUniformivEXT;
+    PFNGLVERTEXATTRIBDIVISORANGLEPROC m_glVertexAttribDivisorANGLE;
+    PFNGLDRAWARRAYSINSTANCEDANGLEPROC m_glDrawArraysInstancedANGLE;
+    PFNGLDRAWELEMENTSINSTANCEDANGLEPROC m_glDrawElementsInstancedANGLE;
+
 
     OwnPtr<GraphicsContext3D::ContextLostCallback> m_contextLostCallback;
 };

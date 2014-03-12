@@ -31,6 +31,7 @@
 #include "FloatRect.h"
 #include "HTMLElement.h"
 #include "IntSize.h"
+#include <memory>
 #include <wtf/Forward.h>
 
 #if USE(CG) || PLATFORM(NIX)
@@ -152,7 +153,6 @@ private:
     virtual void parseAttribute(const QualifiedName&, const AtomicString&) override;
     virtual RenderPtr<RenderElement> createElementRenderer(PassRef<RenderStyle>) override;
     virtual void willAttachRenderers() override;
-    virtual bool areAuthorShadowsAllowed() const override;
 
     virtual bool canContainRangeEndPoint() const override;
     virtual bool canStartSelection() const override;
@@ -172,7 +172,7 @@ private:
 
     IntSize m_size;
 
-    OwnPtr<CanvasRenderingContext> m_context;
+    std::unique_ptr<CanvasRenderingContext> m_context;
 
     bool m_rendererIsCanvas;
 

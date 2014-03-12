@@ -7,13 +7,13 @@
  * are met:
  *
  * 1.  Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer. 
+ *     notice, this list of conditions and the following disclaimer.
  * 2.  Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution. 
+ *     documentation and/or other materials provided with the distribution.
  * 3.  Neither the name of Apple Computer, Inc. ("Apple") nor the names of
  *     its contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission. 
+ *     from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY APPLE AND ITS CONTRIBUTORS "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -55,7 +55,6 @@
 #import <Foundation/Foundation.h>
 #import <WebCore/BlockExceptions.h>
 #import <WebCore/ColorChooser.h>
-#import <WebCore/Console.h>
 #import <WebCore/ContextMenu.h>
 #import <WebCore/ContextMenuController.h>
 #import <WebCore/Cursor.h>
@@ -66,6 +65,7 @@
 #import <WebCore/Frame.h>
 #import <WebCore/FrameLoadRequest.h>
 #import <WebCore/FrameView.h>
+#import <WebCore/GraphicsLayer.h>
 #import <WebCore/HTMLInputElement.h>
 #import <WebCore/HTMLNames.h>
 #import <WebCore/HTMLPlugInImageElement.h>
@@ -78,15 +78,12 @@
 #import <WebCore/Page.h>
 #import <WebCore/PlatformScreen.h>
 #import <WebCore/ResourceRequest.h>
+#import <WebCore/SerializedCryptoKeyWrap.h>
 #import <WebCore/Widget.h>
 #import <WebCore/WindowFeatures.h>
 #import <wtf/PassRefPtr.h>
 #import <wtf/Vector.h>
 #import <wtf/text/WTFString.h>
-
-#if USE(ACCELERATED_COMPOSITING)
-#import <WebCore/GraphicsLayer.h>
-#endif
 
 #if USE(PLUGIN_HOST_PROCESS) && ENABLE(NETSCAPE_PLUGIN_API)
 #import "NetscapePluginHostManager.h"
@@ -97,7 +94,6 @@
 #endif
 
 #if PLATFORM(IOS)
-#import <WebCore/Console.h>
 #import <WebCore/WAKClipView.h>
 #import <WebCore/WAKWindow.h>
 #import <WebCore/WebCoreThreadMessage.h>
@@ -373,25 +369,25 @@ void WebChromeClient::setResizable(bool b)
 inline static NSString *stringForMessageSource(MessageSource source)
 {
     switch (source) {
-    case XMLMessageSource:
+    case MessageSource::XML:
         return WebConsoleMessageXMLMessageSource;
-    case JSMessageSource:
+    case MessageSource::JS:
         return WebConsoleMessageJSMessageSource;
-    case NetworkMessageSource:
+    case MessageSource::Network:
         return WebConsoleMessageNetworkMessageSource;
-    case ConsoleAPIMessageSource:
+    case MessageSource::ConsoleAPI:
         return WebConsoleMessageConsoleAPIMessageSource;
-    case StorageMessageSource:
+    case MessageSource::Storage:
         return WebConsoleMessageStorageMessageSource;
-    case AppCacheMessageSource:
+    case MessageSource::AppCache:
         return WebConsoleMessageAppCacheMessageSource;
-    case RenderingMessageSource:
+    case MessageSource::Rendering:
         return WebConsoleMessageRenderingMessageSource;
-    case CSSMessageSource:
+    case MessageSource::CSS:
         return WebConsoleMessageCSSMessageSource;
-    case SecurityMessageSource:
+    case MessageSource::Security:
         return WebConsoleMessageSecurityMessageSource;
-    case OtherMessageSource:
+    case MessageSource::Other:
         return WebConsoleMessageOtherMessageSource;
     }
     ASSERT_NOT_REACHED();
@@ -401,20 +397,20 @@ inline static NSString *stringForMessageSource(MessageSource source)
 inline static NSString *stringForMessageLevel(MessageLevel level)
 {
     switch (level) {
-    case DebugMessageLevel:
+    case MessageLevel::Debug:
         return WebConsoleMessageDebugMessageLevel;
-    case LogMessageLevel:
+    case MessageLevel::Log:
         return WebConsoleMessageLogMessageLevel;
-    case WarningMessageLevel:
+    case MessageLevel::Warning:
         return WebConsoleMessageWarningMessageLevel;
-    case ErrorMessageLevel:
+    case MessageLevel::Error:
         return WebConsoleMessageErrorMessageLevel;
     }
     ASSERT_NOT_REACHED();
     return @"";
 }
 
-void WebChromeClient::addMessageToConsole(MessageSource source, MessageLevel level, const String& message, unsigned int lineNumber, unsigned columnNumber, const String& sourceURL)
+void WebChromeClient::addMessageToConsole(MessageSource source, MessageLevel level, const String& message, unsigned lineNumber, unsigned columnNumber, const String& sourceURL)
 {
 #if !PLATFORM(IOS)
     id delegate = [m_webView UIDelegate];
@@ -435,7 +431,7 @@ void WebChromeClient::addMessageToConsole(MessageSource source, MessageLevel lev
         respondsToNewSelector = YES;
     else {
         // The old selector only takes JSMessageSource messages.
-        if (source != JSMessageSource)
+        if (source != MessageSource::JS)
             return;
         selector = @selector(webView:addMessageToConsole:);
         if (![delegate respondsToSelector:selector])
@@ -575,25 +571,17 @@ bool WebChromeClient::supportsImmediateInvalidation()
     return true;
 }
 
-void WebChromeClient::invalidateRootView(const IntRect&, bool immediate)
-{
-#if !PLATFORM(IOS)
-    if (immediate) {
-        [[m_webView window] displayIfNeeded];
-        [[m_webView window] flushWindowIfNeeded];
-    }
-#else
-    UNUSED_PARAM(immediate);
-#endif
-}
-
-void WebChromeClient::invalidateContentsAndRootView(const IntRect& rect, bool immediate)
+void WebChromeClient::invalidateRootView(const IntRect&)
 {
 }
 
-void WebChromeClient::invalidateContentsForSlowScroll(const IntRect& rect, bool immediate)
+void WebChromeClient::invalidateContentsAndRootView(const IntRect& rect)
 {
-    invalidateContentsAndRootView(rect, immediate);
+}
+
+void WebChromeClient::invalidateContentsForSlowScroll(const IntRect& rect)
+{
+    invalidateContentsAndRootView(rect);
 }
 
 void WebChromeClient::scroll(const IntSize&, const IntRect&, const IntRect&)
@@ -741,39 +729,6 @@ void WebChromeClient::annotatedRegionsChanged()
 }
 
 #endif
-
-FloatRect WebChromeClient::customHighlightRect(Node* node, const AtomicString& type, const FloatRect& lineRect)
-{
-    BEGIN_BLOCK_OBJC_EXCEPTIONS;
-
-    NSView *documentView = [[kit(node->document().frame()) frameView] documentView];
-    if (![documentView isKindOfClass:[WebHTMLView class]])
-        return NSZeroRect;
-
-    WebHTMLView *webHTMLView = (WebHTMLView *)documentView;
-    id<WebHTMLHighlighter> highlighter = [webHTMLView _highlighterForType:type];
-    return [highlighter highlightRectForLine:lineRect representedNode:kit(node)];
-
-    END_BLOCK_OBJC_EXCEPTIONS;
-
-    return NSZeroRect;
-}
-
-void WebChromeClient::paintCustomHighlight(Node* node, const AtomicString& type, const FloatRect& boxRect, const FloatRect& lineRect,
-    bool behindText, bool entireLine)
-{
-    BEGIN_BLOCK_OBJC_EXCEPTIONS;
-
-    NSView *documentView = [[kit(node->document().frame()) frameView] documentView];
-    if (![documentView isKindOfClass:[WebHTMLView class]])
-        return;
-
-    WebHTMLView *webHTMLView = (WebHTMLView *)documentView;
-    id<WebHTMLHighlighter> highlighter = [webHTMLView _highlighterForType:type];
-    [highlighter paintHighlightForBox:boxRect onLine:lineRect behindText:behindText entireLine:entireLine representedNode:kit(node)];
-
-    END_BLOCK_OBJC_EXCEPTIONS;
-}
 
 #if ENABLE(INPUT_TYPE_COLOR)
 PassOwnPtr<ColorChooser> WebChromeClient::createColorChooser(ColorChooserClient* client, const Color& initialColor)
@@ -930,8 +885,6 @@ bool WebChromeClient::shouldPaintEntireContents() const
 #endif
 }
 
-#if USE(ACCELERATED_COMPOSITING)
-
 void WebChromeClient::attachRootGraphicsLayer(Frame* frame, GraphicsLayer* graphicsLayer)
 {
     BEGIN_BLOCK_OBJC_EXCEPTIONS;
@@ -964,8 +917,6 @@ void WebChromeClient::scheduleCompositingLayerFlush()
     [m_webView _scheduleCompositingLayerFlush];
     END_BLOCK_OBJC_EXCEPTIONS;
 }
-
-#endif
 
 #if ENABLE(VIDEO)
 
@@ -1036,4 +987,32 @@ void WebChromeClient::exitFullScreenForElement(Element* element)
 #endif
 }
 
+#endif // ENABLE(FULLSCREEN_API)
+
+#if ENABLE(SUBTLE_CRYPTO)
+bool WebChromeClient::wrapCryptoKey(const Vector<uint8_t>& key, Vector<uint8_t>& wrappedKey) const
+{
+    Vector<uint8_t> masterKey;
+    SEL selector = @selector(webCryptoMasterKeyForWebView:);
+    if ([[m_webView UIDelegate] respondsToSelector:selector]) {
+        NSData *keyData = CallUIDelegate(m_webView, selector);
+        masterKey.append((uint8_t*)[keyData bytes], [keyData length]);
+    } else if (!getDefaultWebCryptoMasterKey(masterKey))
+        return false;
+
+    return wrapSerializedCryptoKey(masterKey, key, wrappedKey);
+}
+
+bool WebChromeClient::unwrapCryptoKey(const Vector<uint8_t>& wrappedKey, Vector<uint8_t>& key) const
+{
+    Vector<uint8_t> masterKey;
+    SEL selector = @selector(webCryptoMasterKeyForWebView:);
+    if ([[m_webView UIDelegate] respondsToSelector:selector]) {
+        NSData *keyData = CallUIDelegate(m_webView, selector);
+        masterKey.append((uint8_t*)[keyData bytes], [keyData length]);
+    } else if (!getDefaultWebCryptoMasterKey(masterKey))
+        return false;
+
+    return unwrapSerializedCryptoKey(masterKey, wrappedKey, key);
+}
 #endif

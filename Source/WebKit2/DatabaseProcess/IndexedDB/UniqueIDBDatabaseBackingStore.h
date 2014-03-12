@@ -32,13 +32,19 @@
 #include <wtf/RefCounted.h>
 
 namespace WebCore {
+class IDBKey;
+class IDBKeyRange;
+class SharedBuffer;
+
 struct IDBDatabaseMetadata;
+struct IDBGetResult;
+struct IDBKeyData;
 struct IDBObjectStoreMetadata;
 }
 
 namespace WebKit {
 
-class IDBTransactionIdentifier;
+class IDBIdentifier;
 
 class UniqueIDBDatabaseBackingStore : public RefCounted<UniqueIDBDatabaseBackingStore> {
 public:
@@ -46,15 +52,37 @@ public:
 
     virtual std::unique_ptr<WebCore::IDBDatabaseMetadata> getOrEstablishMetadata() = 0;
 
-    virtual bool establishTransaction(const IDBTransactionIdentifier&, const Vector<int64_t>& objectStoreIDs, WebCore::IndexedDB::TransactionMode) = 0;
-    virtual bool beginTransaction(const IDBTransactionIdentifier&) = 0;
-    virtual bool commitTransaction(const IDBTransactionIdentifier&) = 0;
-    virtual bool resetTransaction(const IDBTransactionIdentifier&) = 0;
-    virtual bool rollbackTransaction(const IDBTransactionIdentifier&) = 0;
+    virtual bool establishTransaction(const IDBIdentifier& transactionIdentifier, const Vector<int64_t>& objectStoreIDs, WebCore::IndexedDB::TransactionMode) = 0;
+    virtual bool beginTransaction(const IDBIdentifier&) = 0;
+    virtual bool commitTransaction(const IDBIdentifier&) = 0;
+    virtual bool resetTransaction(const IDBIdentifier&) = 0;
+    virtual bool rollbackTransaction(const IDBIdentifier&) = 0;
 
-    virtual bool changeDatabaseVersion(const IDBTransactionIdentifier&, uint64_t newVersion) = 0;
-    virtual bool createObjectStore(const IDBTransactionIdentifier&, const WebCore::IDBObjectStoreMetadata&) = 0;
-    virtual bool deleteObjectStore(const IDBTransactionIdentifier&, int64_t objectStoreID) = 0;
+    virtual bool changeDatabaseVersion(const IDBIdentifier& transactionIdentifier, uint64_t newVersion) = 0;
+    virtual bool createObjectStore(const IDBIdentifier& transactionIdentifier, const WebCore::IDBObjectStoreMetadata&) = 0;
+    virtual bool deleteObjectStore(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID) = 0;
+    virtual bool clearObjectStore(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID) = 0;
+    virtual bool createIndex(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, const WebCore::IDBIndexMetadata&) = 0;
+    virtual bool deleteIndex(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, int64_t indexID) = 0;
+
+    virtual bool generateKeyNumber(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, int64_t& generatedKey) = 0;
+    virtual bool updateKeyGeneratorNumber(const IDBIdentifier& transactionIdentifier, int64_t objectStoreId, int64_t keyNumber, bool checkCurrent) = 0;
+
+    virtual bool keyExistsInObjectStore(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, const WebCore::IDBKeyData&, bool& keyExists) = 0;
+    virtual bool putRecord(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, const WebCore::IDBKeyData&, const uint8_t* valueBuffer, size_t valueSize) = 0;
+    virtual bool putIndexRecord(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, int64_t indexID, const WebCore::IDBKeyData&, const WebCore::IDBKeyData& indexKey) = 0;
+    virtual bool getIndexRecord(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, int64_t indexID, const WebCore::IDBKeyRangeData&, WebCore::IndexedDB::CursorType, WebCore::IDBGetResult&) = 0;
+    virtual bool deleteRange(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, const WebCore::IDBKeyRangeData&) = 0;
+    virtual bool deleteRecord(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, const WebCore::IDBKeyData&) = 0;
+
+    virtual bool getKeyRecordFromObjectStore(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, const WebCore::IDBKey&, RefPtr<WebCore::SharedBuffer>& result) = 0;
+    virtual bool getKeyRangeRecordFromObjectStore(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, const WebCore::IDBKeyRange&, RefPtr<WebCore::SharedBuffer>& result, RefPtr<WebCore::IDBKey>& resultKey) = 0;
+    virtual bool count(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, int64_t indexID, const WebCore::IDBKeyRangeData&, int64_t& count) = 0;
+
+    virtual bool openCursor(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID, int64_t indexID, WebCore::IndexedDB::CursorDirection, WebCore::IndexedDB::CursorType, WebCore::IDBDatabaseBackend::TaskType, const WebCore::IDBKeyRangeData&, int64_t& cursorID, WebCore::IDBKeyData&, WebCore::IDBKeyData&, Vector<uint8_t>&) = 0;
+    virtual bool advanceCursor(const IDBIdentifier& cursorIdentifier, uint64_t count, WebCore::IDBKeyData&, WebCore::IDBKeyData&, Vector<uint8_t>&) = 0;
+    virtual bool iterateCursor(const IDBIdentifier& cursorIdentifier, const WebCore::IDBKeyData&, WebCore::IDBKeyData&, WebCore::IDBKeyData&, Vector<uint8_t>&) = 0;
+    virtual void notifyCursorsOfChanges(const IDBIdentifier& transactionIdentifier, int64_t objectStoreID) = 0;
 };
 
 } // namespace WebKit

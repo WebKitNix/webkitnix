@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009, 2010, 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2009, 2010, 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -43,6 +43,7 @@
 
 namespace JSC {
 
+class CodeBlock;
 class VM;
 
 // LinkBuffer:
@@ -86,6 +87,7 @@ public:
 #endif
         , m_didAllocate(false)
         , m_code(0)
+        , m_storage(masm->m_assembler.buffer().storage())
         , m_assembler(masm)
         , m_vm(&vm)
 #ifndef NDEBUG
@@ -102,6 +104,7 @@ public:
 #endif
         , m_didAllocate(false)
         , m_code(code)
+        , m_storage(masm->m_assembler.buffer().storage())
         , m_assembler(masm)
         , m_vm(&vm)
 #ifndef NDEBUG
@@ -164,6 +167,11 @@ public:
     }
 
     // These methods are used to obtain handles to allow the code to be relinked / repatched later.
+    
+    CodeLocationLabel entrypoint()
+    {
+        return CodeLocationLabel(code());
+    }
 
     CodeLocationCall locationOf(Call call)
     {
@@ -251,10 +259,19 @@ public:
     }
 
 private:
+#if ENABLE(BRANCH_COMPACTION)
+    int executableOffsetFor(int location)
+    {
+        if (!location)
+            return 0;
+        return bitwise_cast<int32_t*>(m_storage->m_data.begin())[location / sizeof(int32_t) - 1];
+    }
+#endif
+    
     template <typename T> T applyOffset(T src)
     {
 #if ENABLE(BRANCH_COMPACTION)
-        src.m_offset -= m_assembler->executableOffsetFor(src.m_offset);
+        src.m_offset -= executableOffsetFor(src.m_offset);
 #endif
         return src;
     }
@@ -291,6 +308,7 @@ private:
 #endif
     bool m_didAllocate;
     void* m_code;
+    RefPtr<AssemblerData> m_storage;
     MacroAssembler* m_assembler;
     VM* m_vm;
 #ifndef NDEBUG
@@ -302,6 +320,11 @@ private:
     (UNLIKELY((condition))                                              \
      ? ((linkBufferReference).finalizeCodeWithDisassembly dataLogFArgumentsForHeading) \
      : (linkBufferReference).finalizeCodeWithoutDisassembly())
+
+bool shouldShowDisassemblyFor(CodeBlock*);
+
+#define FINALIZE_CODE_FOR(codeBlock, linkBufferReference, dataLogFArgumentsForHeading)  \
+    FINALIZE_CODE_IF(shouldShowDisassemblyFor(codeBlock), linkBufferReference, dataLogFArgumentsForHeading)
 
 // Use this to finalize code, like so:
 //

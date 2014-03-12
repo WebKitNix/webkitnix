@@ -31,7 +31,6 @@
 #include "PlatformWheelEvent.h"
 #include "RenderObject.h"
 #include "ScrollTypes.h"
-#include "Timer.h"
 #include <wtf/Forward.h>
 
 #if ENABLE(ASYNC_SCROLLING)
@@ -40,7 +39,7 @@
 #include <wtf/Threading.h>
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #include <wtf/RetainPtr.h>
 #endif
 
@@ -126,6 +125,9 @@ public:
     // Should be called whenever the set of fixed objects changes.
     void frameViewFixedObjectsDidChange(FrameView*);
 
+    // Called whenever the non-fast scrollable region changes for reasons other than layout.
+    virtual void frameViewNonFastScrollableRegionChanged(FrameView*) { }
+
     // Should be called whenever the root layer for the given frame view changes.
     virtual void frameViewRootLayerDidChange(FrameView*);
 
@@ -133,7 +135,7 @@ public:
     // containers while scrolling.
     virtual bool supportsFixedPositionLayers() const { return false; }
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     // Dispatched by the scrolling tree during handleWheelEvent. This is required as long as scrollbars are painted on the main thread.
     void handleWheelEventPhase(PlatformWheelEventPhase);
 #endif
@@ -150,7 +152,7 @@ public:
     virtual void detachFromStateTree(ScrollingNodeID) { }
     virtual void clearStateTree() { }
     virtual void updateViewportConstrainedNode(ScrollingNodeID, const ViewportConstraints&, GraphicsLayer*) { }
-    virtual void updateScrollingNode(ScrollingNodeID, GraphicsLayer* /*scrollLayer*/, GraphicsLayer* /*counterScrollingLayer*/) { }
+    virtual void updateScrollingNode(ScrollingNodeID, GraphicsLayer* /*scrollLayer*/, GraphicsLayer* /*scrolledContentsLayer*/, GraphicsLayer* /*counterScrollingLayer*/) { }
     virtual void syncChildPositions(const LayoutRect&) { }
     virtual String scrollingStateTreeAsText() const;
     virtual bool isRubberBandInProgress() const { return false; }
@@ -158,12 +160,6 @@ public:
 
     // Generated a unique id for scroll layers.
     ScrollingNodeID uniqueScrollLayerID();
-
-    void scheduleUpdateScrollPositionForNode(ScrollingNodeID, const IntPoint&, bool programmaticScroll, SetOrSyncScrollingLayerPosition);
-
-    // Dispatched by the scrolling tree whenever the main frame scroll position changes.
-    void scheduleUpdateMainFrameScrollPosition(const IntPoint&, bool programmaticScroll, SetOrSyncScrollingLayerPosition);
-    void updateMainFrameScrollPosition(const IntPoint&, bool programmaticScroll, SetOrSyncScrollingLayerPosition);
 
     enum MainThreadScrollingReasonFlags {
         ForcedOnMainThread = 1 << 0,
@@ -179,7 +175,6 @@ public:
     virtual void willDestroyScrollableArea(ScrollableArea*) { }
     virtual void scrollableAreaScrollLayerDidChange(ScrollableArea*) { }
     virtual void scrollableAreaScrollbarLayerDidChange(ScrollableArea*, ScrollbarOrientation) { }
-    virtual void setLayerIsContainerForFixedPositionLayers(GraphicsLayer*, bool) { }
 
     static String synchronousScrollingReasonsAsText(SynchronousScrollingReasons);
     String synchronousScrollingReasonsAsText() const;
@@ -189,11 +184,9 @@ public:
 protected:
     explicit ScrollingCoordinator(Page*);
 
-#if USE(ACCELERATED_COMPOSITING)
     static GraphicsLayer* scrollLayerForScrollableArea(ScrollableArea*);
     static GraphicsLayer* horizontalScrollbarLayerForScrollableArea(ScrollableArea*);
     static GraphicsLayer* verticalScrollbarLayerForScrollableArea(ScrollableArea*);
-#endif
 
     unsigned computeCurrentWheelEventHandlerCount();
     GraphicsLayer* scrollLayerForFrameView(FrameView*);
@@ -210,13 +203,6 @@ private:
     virtual bool hasVisibleSlowRepaintViewportConstrainedObjects(FrameView*) const;
     void updateSynchronousScrollingReasons();
     
-    void updateMainFrameScrollPositionTimerFired(Timer<ScrollingCoordinator>*);
-
-    Timer<ScrollingCoordinator> m_updateMainFrameScrollPositionTimer;
-    IntPoint m_scheduledUpdateScrollPosition;
-    bool m_scheduledUpdateIsProgrammaticScroll;
-    SetOrSyncScrollingLayerPosition m_scheduledScrollingLayerPositionAction;
-
     bool m_forceSynchronousScrollLayerPositionUpdates;
 };
 

@@ -26,12 +26,11 @@
 #ifndef GraphicsLayer_h
 #define GraphicsLayer_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #include "Animation.h"
 #include "Color.h"
 #include "FloatPoint.h"
 #include "FloatPoint3D.h"
+#include "FloatRect.h"
 #include "FloatSize.h"
 #include "GraphicsLayerClient.h"
 #include "IntRect.h"
@@ -61,7 +60,6 @@ typedef unsigned LayerTreeAsTextBehavior;
 
 namespace WebCore {
 
-class FloatRect;
 class GraphicsContext;
 class GraphicsLayerFactory;
 class Image;
@@ -281,9 +279,9 @@ public:
         SetNeedsDisplay
     };
 
-    // Offset is origin of the renderer minus origin of the graphics layer (so either zero or negative).
-    IntSize offsetFromRenderer() const { return m_offsetFromRenderer; }
-    void setOffsetFromRenderer(const IntSize&, ShouldSetNeedsDisplay = SetNeedsDisplay);
+    // Offset is origin of the renderer minus origin of the graphics layer.
+    FloatSize offsetFromRenderer() const { return m_offsetFromRenderer; }
+    void setOffsetFromRenderer(const FloatSize&, ShouldSetNeedsDisplay = SetNeedsDisplay);
 
     // The position of the layer (the location of its top-left corner in its parent)
     const FloatPoint& position() const { return m_position; }
@@ -378,11 +376,11 @@ public:
     bool hasContentsTiling() const { return !m_contentsTileSize.isEmpty(); }
 
     // Set that the position/size of the contents (image or video).
-    IntRect contentsRect() const { return m_contentsRect; }
-    virtual void setContentsRect(const IntRect& r) { m_contentsRect = r; }
+    FloatRect contentsRect() const { return m_contentsRect; }
+    virtual void setContentsRect(const FloatRect& r) { m_contentsRect = r; }
 
-    IntRect contentsClippingRect() const { return m_contentsClippingRect; }
-    virtual void setContentsClippingRect(const IntRect& r) { m_contentsClippingRect = r; }
+    FloatRect contentsClippingRect() const { return m_contentsClippingRect; }
+    virtual void setContentsClippingRect(const FloatRect& r) { m_contentsClippingRect = r; }
 
     // Transitions are identified by a special animation name that cannot clash with a keyframe identifier.
     static String animationNameForTransition(AnimatedPropertyID);
@@ -390,7 +388,7 @@ public:
     // Return true if the animation is handled by the compositing system. If this returns
     // false, the animation will be run by AnimationController.
     // These methods handle both transitions and keyframe animations.
-    virtual bool addAnimation(const KeyframeValueList&, const IntSize& /*boxSize*/, const Animation*, const String& /*animationName*/, double /*timeOffset*/)  { return false; }
+    virtual bool addAnimation(const KeyframeValueList&, const FloatSize& /*boxSize*/, const Animation*, const String& /*animationName*/, double /*timeOffset*/)  { return false; }
     virtual void pauseAnimation(const String& /*animationName*/, double /*timeOffset*/) { }
     virtual void removeAnimation(const String& /*animationName*/) { }
 
@@ -413,7 +411,7 @@ public:
     virtual bool hasContentsLayer() const { return false; }
 
     // Callback from the underlying graphics system to draw layer contents.
-    void paintGraphicsLayerContents(GraphicsContext&, const IntRect& clip);
+    void paintGraphicsLayerContents(GraphicsContext&, const FloatRect& clip);
     // Callback from the underlying graphics system when the layer has been displayed
     virtual void layerDidDisplay(PlatformLayer*) { }
     
@@ -557,7 +555,7 @@ protected:
     String m_name;
     
     // Offset from the owning renderer
-    IntSize m_offsetFromRenderer;
+    FloatSize m_offsetFromRenderer;
     
     // Position is relative to the parent GraphicsLayer
     FloatPoint m_position;
@@ -606,8 +604,8 @@ protected:
     GraphicsLayer* m_replicatedLayer; // For a replica layer, a reference to the original layer.
     FloatPoint m_replicatedLayerPosition; // For a replica layer, the position of the replica.
 
-    IntRect m_contentsRect;
-    IntRect m_contentsClippingRect;
+    FloatRect m_contentsRect;
+    FloatRect m_contentsClippingRect;
     IntPoint m_contentsTilePhase;
     IntSize m_contentsTileSize;
 
@@ -624,7 +622,5 @@ protected:
 // Outside the WebCore namespace for ease of invocation from gdb.
 void showGraphicsLayerTree(const WebCore::GraphicsLayer* layer);
 #endif
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // GraphicsLayer_h

@@ -206,7 +206,6 @@ void GraphicsContext3D::clearDepth(GC3Dclampf depth)
     ::glClearDepthf(depth);
 }
 
-
 Extensions3D* GraphicsContext3D::getExtensions()
 {
     if (!m_extensions)

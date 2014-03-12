@@ -36,8 +36,8 @@
 #include "ActiveDOMObject.h"
 #include "EventTarget.h"
 #include "GenericEventQueue.h"
-#include "HTMLMediaSource.h"
 #include "MediaSourcePrivate.h"
+#include "MediaSourcePrivateClient.h"
 #include "ScriptWrappable.h"
 #include "SourceBuffer.h"
 #include "SourceBufferList.h"
@@ -50,8 +50,11 @@ namespace WebCore {
 
 class GenericEventQueue;
 
-class MediaSource : public RefCounted<MediaSource>, public HTMLMediaSource, public ActiveDOMObject, public EventTargetWithInlineData, public ScriptWrappable {
+class MediaSource : public MediaSourcePrivateClient, public ActiveDOMObject, public EventTargetWithInlineData, public ScriptWrappable, public URLRegistrable {
 public:
+    static void setRegistry(URLRegistry*);
+    static MediaSource* lookup(const String& url) { return s_registry ? static_cast<MediaSource*>(s_registry->lookup(url)) : 0; }
+
     static const AtomicString& openKeyword();
     static const AtomicString& closedKeyword();
     static const AtomicString& endedKeyword();
@@ -66,18 +69,18 @@ public:
     void sourceBufferDidChangeAcitveState(SourceBuffer*, bool);
     void streamEndedWithError(const AtomicString& error, ExceptionCode&);
 
-    // HTMLMediaSource
-    virtual bool attachToElement(HTMLMediaElement*) override;
+    // MediaSourcePrivateClient
     virtual void setPrivateAndOpen(PassRef<MediaSourcePrivate>) override;
-    virtual void close() override;
-    virtual bool isClosed() const override;
     virtual double duration() const override;
-    virtual PassRefPtr<TimeRanges> buffered() const override;
-    virtual void refHTMLMediaSource() override { ref(); }
-    virtual void derefHTMLMediaSource() override { deref(); }
-    virtual void monitorSourceBuffers() override;
+    virtual std::unique_ptr<PlatformTimeRanges> buffered() const override;
+
+    bool attachToElement(HTMLMediaElement*);
+    void close();
+    bool isClosed() const;
+    void monitorSourceBuffers();
 
     void setDuration(double, ExceptionCode&);
+    double currentTime() const;
     const AtomicString& readyState() const { return m_readyState; }
     void setReadyState(const AtomicString&);
     void endOfStream(const AtomicString& error, ExceptionCode&);
@@ -104,8 +107,8 @@ public:
     // URLRegistrable interface
     virtual URLRegistry& registry() const override;
 
-    using RefCounted<MediaSource>::ref;
-    using RefCounted<MediaSource>::deref;
+    using RefCounted<MediaSourcePrivateClient>::ref;
+    using RefCounted<MediaSourcePrivateClient>::deref;
 
 protected:
     explicit MediaSource(ScriptExecutionContext&);
@@ -116,6 +119,8 @@ protected:
     RefPtr<SourceBufferPrivate> createSourceBufferPrivate(const ContentType&, ExceptionCode&);
     void scheduleEvent(const AtomicString& eventName);
     GenericEventQueue& asyncEventQueue() { return m_asyncEventQueue; }
+
+    static URLRegistry* s_registry;
 
     RefPtr<MediaSourcePrivate> m_private;
     RefPtr<SourceBufferList> m_sourceBuffers;

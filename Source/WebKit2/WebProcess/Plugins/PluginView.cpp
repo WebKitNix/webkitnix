@@ -330,7 +330,7 @@ void PluginView::destroyPluginAndReset()
         m_pendingURLRequests.clear();
         m_pendingURLRequestsTimer.stop();
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
         if (m_webPage)
             pluginFocusOrWindowFocusChanged(false);
 #endif
@@ -366,7 +366,7 @@ void PluginView::recreateAndInitialize(PassRefPtr<Plugin> plugin)
 
 void PluginView::setLayerHostingMode(LayerHostingMode layerHostingMode)
 {
-#if HAVE(LAYER_HOSTING_IN_WINDOW_SERVER)
+#if HAVE(OUT_OF_PROCESS_LAYER_HOSTING)
     if (!m_plugin)
         return;
 
@@ -498,19 +498,19 @@ void PluginView::webPageDestroyed()
 
 void PluginView::viewStateDidChange(ViewState::Flags changed)
 {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     platformViewStateDidChange(changed);
 #endif
 }
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 void PluginView::platformViewStateDidChange(ViewState::Flags changed)
 {
     if (!m_plugin || !m_isInitialized)
         return;
 
-    if (changed & ViewState::IsVisible)
-        m_plugin->windowVisibilityChanged(m_webPage->isVisible());
+    if (changed & ViewState::IsVisibleOrOccluded)
+        m_plugin->windowVisibilityChanged(m_webPage->isVisibleOrOccluded());
     if (changed & ViewState::WindowIsActive)
         m_plugin->windowFocusChanged(m_webPage->windowIsFocused());
 }
@@ -597,7 +597,7 @@ void PluginView::didInitializePlugin()
 {
     m_isInitialized = true;
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     windowAndViewFramesChanged(m_webPage->windowFrameInScreenCoordinates(), m_webPage->viewFrameInWindowCoordinates());
 #endif
 
@@ -608,7 +608,7 @@ void PluginView::didInitializePlugin()
 
     redeliverManualStream();
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (m_pluginElement->displayState() < HTMLPlugInElement::Restarting) {
         if (m_plugin->pluginLayer() && frame()) {
             frame()->view()->enterCompositingMode();
@@ -640,7 +640,7 @@ void PluginView::didInitializePlugin()
     }
 }
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 PlatformLayer* PluginView::platformLayer() const
 {
     // The plug-in can be null here if it failed to initialize.
@@ -1263,7 +1263,7 @@ void PluginView::invalidateRect(const IntRect& dirtyRect)
     if (!parent() || !m_plugin || !m_isInitialized)
         return;
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (m_plugin->pluginLayer())
         return;
 #endif
@@ -1371,7 +1371,7 @@ NPObject* PluginView::windowScriptNPObject()
         return 0;
     }
 
-    return m_npRuntimeObjectMap.getOrCreateNPObject(*pluginWorld().vm(), frame()->script().windowShell(pluginWorld())->window());
+    return m_npRuntimeObjectMap.getOrCreateNPObject(pluginWorld().vm(), frame()->script().windowShell(pluginWorld())->window());
 }
 
 NPObject* PluginView::pluginElementNPObject()
@@ -1387,7 +1387,7 @@ NPObject* PluginView::pluginElementNPObject()
     JSObject* object = frame()->script().jsObjectForPluginElement(m_pluginElement.get());
     ASSERT(object);
 
-    return m_npRuntimeObjectMap.getOrCreateNPObject(*pluginWorld().vm(), object);
+    return m_npRuntimeObjectMap.getOrCreateNPObject(pluginWorld().vm(), object);
 }
 
 bool PluginView::evaluate(NPObject* npObject, const String& scriptString, NPVariant* result, bool allowPopups)
@@ -1458,7 +1458,7 @@ void PluginView::willSendEventToPlugin()
     m_webPage->send(Messages::WebPageProxy::StopResponsivenessTimer());
 }
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 void PluginView::pluginFocusOrWindowFocusChanged(bool pluginHasFocusAndWindowHasFocus)
 {
     if (m_webPage)
@@ -1610,7 +1610,7 @@ void PluginView::windowedPluginGeometryDidChange(const WebCore::IntRect& frameRe
 }
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 static bool isAlmostSolidColor(BitmapImage* bitmap)
 {
     CGImageRef image = bitmap->getCGImageRef();
@@ -1685,7 +1685,7 @@ void PluginView::pluginSnapshotTimerFired(DeferrableOneShotTimer<PluginView>&)
             snapshotImage = snapshot->createImage();
         m_pluginElement->updateSnapshot(snapshotImage.get());
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
         unsigned maximumSnapshotRetries = frame() ? frame()->settings().maximumPlugInSnapshotAttempts() : 0;
         if (snapshotImage && isAlmostSolidColor(toBitmapImage(snapshotImage.get())) && m_countSnapshotRetries < maximumSnapshotRetries) {
             ++m_countSnapshotRetries;

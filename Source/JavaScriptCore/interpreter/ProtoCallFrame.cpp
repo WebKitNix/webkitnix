@@ -27,6 +27,8 @@
 #include "ProtoCallFrame.h"
 
 #include "CodeBlock.h"
+#include "JSCInlines.h"
+#include "StackAlignment.h"
 
 namespace JSC {
 
@@ -43,7 +45,9 @@ void ProtoCallFrame::init(CodeBlock* codeBlock, JSScope* scope, JSObject* callee
         if (paddedArgsCount < numParameters)
             paddedArgsCount = numParameters;
     }
-    this->setPaddedArgsCount(paddedArgsCount);
+    // Round up paddedArgsCount to keep the stack frame size aligned.
+    paddedArgsCount = roundArgumentCountToAlignFrame(paddedArgsCount);
+    this->setPaddedArgCount(paddedArgsCount);
     this->clearCurrentVPC();
     this->setThisValue(thisValue);
 }

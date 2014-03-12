@@ -51,6 +51,7 @@ void WebPageCreationParameters::encode(IPC::ArgumentEncoder& encoder) const
     encoder << userAgent;
     encoder << sessionState;
     encoder << highestUsedBackForwardItemID;
+    encoder << visitedLinkTableID;
     encoder << canRunBeforeUnloadConfirmPanel;
     encoder << canRunModal;
     encoder << deviceScaleFactor;
@@ -62,7 +63,7 @@ void WebPageCreationParameters::encode(IPC::ArgumentEncoder& encoder) const
     encoder << backgroundExtendsBeyondPage;
     encoder.encodeEnum(layerHostingMode);
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     encoder << colorSpace;
 #endif
 }
@@ -105,6 +106,8 @@ bool WebPageCreationParameters::decode(IPC::ArgumentDecoder& decoder, WebPageCre
         return false;
     if (!decoder.decode(parameters.highestUsedBackForwardItemID))
         return false;
+    if (!decoder.decode(parameters.visitedLinkTableID))
+        return false;
     if (!decoder.decode(parameters.canRunBeforeUnloadConfirmPanel))
         return false;
     if (!decoder.decode(parameters.canRunModal))
@@ -126,7 +129,7 @@ bool WebPageCreationParameters::decode(IPC::ArgumentDecoder& decoder, WebPageCre
     if (!decoder.decodeEnum(parameters.layerHostingMode))
         return false;
     
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     if (!decoder.decode(parameters.colorSpace))
         return false;
 #endif

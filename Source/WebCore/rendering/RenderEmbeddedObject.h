@@ -58,9 +58,7 @@ public:
 
     bool isReplacementObscured() const;
 
-#if USE(ACCELERATED_COMPOSITING)
     bool allowsAcceleratedCompositing() const;
-#endif
 
 protected:
     virtual void paintReplaced(PaintInfo&, const LayoutPoint&) override final;
@@ -78,13 +76,11 @@ private:
     void paintSnapshotImage(PaintInfo&, const LayoutPoint&, Image*);
     virtual void paintContents(PaintInfo&, const LayoutPoint&) override final;
 
-#if USE(ACCELERATED_COMPOSITING)
     virtual bool requiresLayer() const override final;
-#endif
 
     virtual bool nodeAtPoint(const HitTestRequest&, HitTestResult&, const HitTestLocation& locationInContainer, const LayoutPoint& accumulatedOffset, HitTestAction) override final;
 
-    virtual bool scroll(ScrollDirection, ScrollGranularity, float multiplier, Element** stopElement) override final;
+    virtual bool scroll(ScrollDirection, ScrollGranularity, float multiplier = 1, Element** stopElement = nullptr, RenderBox* startBox = nullptr, const IntPoint& wheelEventAbsolutePoint = IntPoint()) override final;
     virtual bool logicalScroll(ScrollLogicalDirection, ScrollGranularity, float multiplier, Element** stopElement) override final;
 
     void setUnavailablePluginIndicatorIsPressed(bool);

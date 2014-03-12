@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2008, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,13 +29,13 @@
 #include "config.h"
 #include "DebuggerCallFrame.h"
 
-#include "JSFunction.h"
 #include "CodeBlock.h"
 #include "Interpreter.h"
-#include "Operations.h"
+#include "JSActivation.h"
+#include "JSFunction.h"
+#include "JSCInlines.h"
 #include "Parser.h"
 #include "StackVisitor.h"
-#include "VMEntryScope.h"
 
 namespace JSC {
 
@@ -111,6 +111,14 @@ JSScope* DebuggerCallFrame::scope() const
     ASSERT(isValid());
     if (!isValid())
         return 0;
+
+    CodeBlock* codeBlock = m_callFrame->codeBlock();
+    if (codeBlock && codeBlock->needsActivation() && !m_callFrame->hasActivation()) {
+        JSActivation* activation = JSActivation::create(*codeBlock->vm(), m_callFrame, codeBlock);
+        m_callFrame->setActivation(activation);
+        m_callFrame->setScope(activation);
+    }
+
     return m_callFrame->scope();
 }
 
@@ -133,14 +141,10 @@ JSValue DebuggerCallFrame::thisValue() const
 }
 
 // Evaluate some JavaScript code in the scope of this frame.
-JSValue DebuggerCallFrame::evaluate(const String& script, JSValue& exception) const
+JSValue DebuggerCallFrame::evaluate(const String& script, JSValue& exception)
 {
     ASSERT(isValid());
-    return evaluateWithCallFrame(m_callFrame, script, exception);
-}
-
-JSValue DebuggerCallFrame::evaluateWithCallFrame(CallFrame* callFrame, const String& script, JSValue& exception)
-{
+    CallFrame* callFrame = m_callFrame;
     if (!callFrame)
         return jsNull();
 
@@ -154,10 +158,11 @@ JSValue DebuggerCallFrame::evaluateWithCallFrame(CallFrame* callFrame, const Str
     if (vm.exception()) {
         exception = vm.exception();
         vm.clearException();
+        return jsUndefined();
     }
 
     JSValue thisValue = thisValueForCallFrame(callFrame);
-    JSValue result = vm.interpreter->execute(eval, callFrame, thisValue, callFrame->scope());
+    JSValue result = vm.interpreter->execute(eval, callFrame, thisValue, scope());
     if (vm.exception()) {
         exception = vm.exception();
         vm.clearException();

@@ -44,9 +44,10 @@
 
 namespace Inspector {
 class InspectorAgent;
-class InspectorObject;
-class InspectorFrontendChannel;
 class InspectorBackendDispatcher;
+class InspectorDebuggerAgent;
+class InspectorFrontendChannel;
+class InspectorObject;
 }
 
 namespace WebCore {
@@ -54,23 +55,18 @@ namespace WebCore {
 class DOMWrapperWorld;
 class Frame;
 class GraphicsContext;
-class InspectorApplicationCacheAgent;
 class InspectorClient;
 class InspectorDOMAgent;
 class InspectorDOMDebuggerAgent;
-class InspectorDebuggerAgent;
 class InspectorFrontendClient;
-class InspectorMemoryAgent;
 class InspectorOverlay;
 class InspectorPageAgent;
 class InspectorProfilerAgent;
 class InspectorResourceAgent;
 class InstrumentingAgents;
-class IntSize;
-class Page;
-class PageInjectedScriptManager;
 class Node;
-
+class Page;
+class WebInjectedScriptManager;
 struct Highlight;
 
 class InspectorController final : public Inspector::InspectorEnvironment {
@@ -99,7 +95,7 @@ public:
     bool hasRemoteFrontend() const;
 
     void connectFrontend(Inspector::InspectorFrontendChannel*);
-    void disconnectFrontend();
+    void disconnectFrontend(Inspector::InspectorDisconnectReason);
     void setProcessId(long);
 
 #if ENABLE(REMOTE_INSPECTOR)
@@ -116,15 +112,14 @@ public:
 
     PassRefPtr<Inspector::InspectorObject> buildObjectForHighlightedNode() const;
 
-    bool isUnderTest();
+    bool isUnderTest() const { return m_isUnderTest; }
+    void setIsUnderTest(bool isUnderTest) { m_isUnderTest = isUnderTest; }
     void evaluateForTestInFrontend(long callId, const String& script);
 
-#if ENABLE(JAVASCRIPT_DEBUGGER)
     bool profilerEnabled() const;
     void setProfilerEnabled(bool);
 
     void resume();
-#endif
 
     void setResourcesDataSizeLimitsFromInternals(int maximumResourcesContentSize, int maximumSingleResourceContentSize);
 
@@ -141,25 +136,22 @@ public:
     virtual Inspector::InspectorFunctionCallHandler functionCallHandler() const override;
     virtual Inspector::InspectorEvaluateHandler evaluateHandler() const override;
     virtual void willCallInjectedScriptFunction(JSC::ExecState*, const String& scriptName, int scriptLine) override;
-    virtual void didCallInjectedScriptFunction() override;
+    virtual void didCallInjectedScriptFunction(JSC::ExecState*) override;
 
 private:
     friend InstrumentingAgents* instrumentationForPage(Page*);
 
     RefPtr<InstrumentingAgents> m_instrumentingAgents;
-    std::unique_ptr<PageInjectedScriptManager> m_injectedScriptManager;
+    std::unique_ptr<WebInjectedScriptManager> m_injectedScriptManager;
     std::unique_ptr<InspectorOverlay> m_overlay;
 
     Inspector::InspectorAgent* m_inspectorAgent;
     InspectorDOMAgent* m_domAgent;
     InspectorResourceAgent* m_resourceAgent;
     InspectorPageAgent* m_pageAgent;
-    InspectorMemoryAgent* m_memoryAgent;
-#if ENABLE(JAVASCRIPT_DEBUGGER)
-    InspectorDebuggerAgent* m_debuggerAgent;
+    Inspector::InspectorDebuggerAgent* m_debuggerAgent;
     InspectorDOMDebuggerAgent* m_domDebuggerAgent;
     InspectorProfilerAgent* m_profilerAgent;
-#endif
 
     RefPtr<Inspector::InspectorBackendDispatcher> m_inspectorBackendDispatcher;
     std::unique_ptr<InspectorFrontendClient> m_inspectorFrontendClient;

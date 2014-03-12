@@ -201,14 +201,15 @@ void FindController::findStringMatches(const String& string, FindOptions options
 
 bool FindController::getFindIndicatorBitmapAndRect(Frame* frame, ShareableBitmap::Handle& handle, IntRect& selectionRect)
 {
-    selectionRect = enclosingIntRect(frame->selection().bounds());
+    selectionRect = enclosingIntRect(frame->selection().selectionBounds());
 
     // Selection rect can be empty for matches that are currently obscured from view.
     if (selectionRect.isEmpty())
         return false;
 
     IntSize backingStoreSize = selectionRect.size();
-    backingStoreSize.scale(m_webPage->corePage()->deviceScaleFactor());
+    float deviceScaleFactor = m_webPage->corePage()->deviceScaleFactor();
+    backingStoreSize.scale(deviceScaleFactor);
 
     // Create a backing store and paint the find indicator text into it.
     RefPtr<ShareableBitmap> findIndicatorTextBackingStore = ShareableBitmap::createShareable(backingStoreSize, ShareableBitmap::SupportsAlpha);
@@ -216,7 +217,7 @@ bool FindController::getFindIndicatorBitmapAndRect(Frame* frame, ShareableBitmap
         return false;
 
     auto graphicsContext = findIndicatorTextBackingStore->createGraphicsContext();
-    graphicsContext->scale(FloatSize(m_webPage->corePage()->deviceScaleFactor(), m_webPage->corePage()->deviceScaleFactor()));
+    graphicsContext->scale(FloatSize(deviceScaleFactor, deviceScaleFactor));
 
     IntRect paintRect = selectionRect;
     paintRect.move(frame->view()->frameRect().x(), frame->view()->frameRect().y());
@@ -427,7 +428,7 @@ void FindController::drawRect(PageOverlay* /*pageOverlay*/, GraphicsContext& gra
         return;
 
     if (Frame* selectedFrame = frameWithSelection(m_webPage->corePage())) {
-        IntRect findIndicatorRect = selectedFrame->view()->contentsToWindow(enclosingIntRect(selectedFrame->selection().bounds()));
+        IntRect findIndicatorRect = selectedFrame->view()->contentsToWindow(enclosingIntRect(selectedFrame->selection().selectionBounds()));
 
         if (findIndicatorRect != m_findIndicatorRect)
             hideFindIndicator();

@@ -46,9 +46,7 @@ namespace WebCore {
 
 // CSS Filters
 
-#if ENABLE(SVG)
 class CachedSVGDocumentReference;
-#endif
 
 class FilterOperation : public RefCounted<FilterOperation> {
 public:
@@ -64,10 +62,6 @@ public:
         CONTRAST,
         BLUR,
         DROP_SHADOW,
-#if ENABLE(CSS_SHADERS)
-        CUSTOM,
-        VALIDATED_CUSTOM,
-#endif
         PASSTHROUGH,
         NONE
     };
@@ -164,10 +158,8 @@ public:
     const String& url() const { return m_url; }
     const String& fragment() const { return m_fragment; }
 
-#if ENABLE(SVG)
     CachedSVGDocumentReference* cachedSVGDocumentReference() const { return m_cachedSVGDocumentReference.get(); }
-    CachedSVGDocumentReference* createCachedSVGDocumentReference();
-#endif
+    CachedSVGDocumentReference* getOrCreateCachedSVGDocumentReference();
 
     FilterEffect* filterEffect() const { return m_filterEffect.get(); }
     void setFilterEffect(PassRefPtr<FilterEffect> filterEffect) { m_filterEffect = filterEffect; }
@@ -185,9 +177,7 @@ private:
 
     String m_url;
     String m_fragment;
-#if ENABLE(SVG)
     std::unique_ptr<CachedSVGDocumentReference> m_cachedSVGDocumentReference;
-#endif
     RefPtr<FilterEffect> m_filterEffect;
 };
 
@@ -205,16 +195,10 @@ public:
     virtual PassRefPtr<FilterOperation> blend(const FilterOperation* from, double progress, bool blendToPassthrough = false) override;
 
 private:
-    virtual bool operator==(const FilterOperation& o) const override
-    {
-        if (!isSameType(o))
-            return false;
-        const BasicColorMatrixFilterOperation* other = static_cast<const BasicColorMatrixFilterOperation*>(&o);
-        return m_amount == other->m_amount;
-    }
-    
+    virtual bool operator==(const FilterOperation&) const override;
+
     double passthroughAmount() const;
-    
+
     BasicColorMatrixFilterOperation(double amount, OperationType type)
         : FilterOperation(type)
         , m_amount(amount)
@@ -239,13 +223,7 @@ public:
     virtual PassRefPtr<FilterOperation> blend(const FilterOperation* from, double progress, bool blendToPassthrough = false) override;
 
 private:
-    virtual bool operator==(const FilterOperation& o) const override
-    {
-        if (!isSameType(o))
-            return false;
-        const BasicComponentTransferFilterOperation* other = static_cast<const BasicComponentTransferFilterOperation*>(&o);
-        return m_amount == other->m_amount;
-    }
+    virtual bool operator==(const FilterOperation&) const override;
 
     double passthroughAmount() const;
 
@@ -330,10 +308,15 @@ private:
     Color m_color;
 };
 
-#define FILTER_OPERATION_CASTS(ToValueTypeName, predicate) \
+#define SIMPLE_FILTER_OPERATION_CASTS(ToValueTypeName, predicate) \
     TYPE_CASTS_BASE(ToValueTypeName, FilterOperation, operation, operation->type() == FilterOperation::predicate, operation.type() == FilterOperation::predicate)
 
-FILTER_OPERATION_CASTS(ReferenceFilterOperation, REFERENCE)
+SIMPLE_FILTER_OPERATION_CASTS(ReferenceFilterOperation, REFERENCE)
+SIMPLE_FILTER_OPERATION_CASTS(BlurFilterOperation, BLUR)
+SIMPLE_FILTER_OPERATION_CASTS(DropShadowFilterOperation, DROP_SHADOW)
+
+TYPE_CASTS_BASE(BasicColorMatrixFilterOperation, FilterOperation, operation, operation->type() == FilterOperation::GRAYSCALE || operation->type() == FilterOperation::SEPIA || operation->type() == FilterOperation::SATURATE || operation->type() == FilterOperation::HUE_ROTATE, operation.type() == FilterOperation::GRAYSCALE || operation.type() == FilterOperation::SEPIA || operation.type() == FilterOperation::SATURATE || operation.type() == FilterOperation::HUE_ROTATE)
+TYPE_CASTS_BASE(BasicComponentTransferFilterOperation, FilterOperation, operation, operation->type() == FilterOperation::INVERT || operation->type() == FilterOperation::BRIGHTNESS || operation->type() == FilterOperation::CONTRAST || operation->type() == FilterOperation::OPACITY, operation.type() == FilterOperation::INVERT || operation.type() == FilterOperation::BRIGHTNESS || operation.type() == FilterOperation::CONTRAST || operation.type() == FilterOperation::OPACITY)
 
 } // namespace WebCore
 

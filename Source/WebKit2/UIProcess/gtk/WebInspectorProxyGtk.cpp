@@ -38,7 +38,7 @@
 #include <WebCore/NotImplemented.h>
 #include <glib/gi18n-lib.h>
 #include <gtk/gtk.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
@@ -62,7 +62,7 @@ WebPageProxy* WebInspectorProxy::platformCreateInspectorPage()
 {
     ASSERT(m_page);
     ASSERT(!m_inspectorView);
-    m_inspectorView = GTK_WIDGET(webkitWebViewBaseCreate(&page()->process().context(), inspectorPageGroup()));
+    m_inspectorView = GTK_WIDGET(webkitWebViewBaseCreate(&page()->process().context(), inspectorPageGroup(), m_page));
     g_object_add_weak_pointer(G_OBJECT(m_inspectorView), reinterpret_cast<void**>(&m_inspectorView));
     return webkitWebViewBaseGetPage(WEBKIT_WEB_VIEW_BASE(m_inspectorView));
 }
@@ -144,13 +144,18 @@ void WebInspectorProxy::platformInspectedURLChanged(const String& url)
 
     if (!m_inspectorWindow)
         return;
-    GOwnPtr<gchar> title(g_strdup_printf("%s - %s", _("Web Inspector"), url.utf8().data()));
+    GUniquePtr<gchar> title(g_strdup_printf("%s - %s", _("Web Inspector"), url.utf8().data()));
     gtk_window_set_title(GTK_WINDOW(m_inspectorWindow), title.get());
 }
 
 String WebInspectorProxy::inspectorPageURL() const
 {
     return String("resource:///org/webkitgtk/inspector/UserInterface/Main.html");
+}
+
+String WebInspectorProxy::inspectorTestPageURL() const
+{
+    return String("resource:///org/webkitgtk/inspector/UserInterface/Test.html");
 }
 
 String WebInspectorProxy::inspectorBaseURL() const

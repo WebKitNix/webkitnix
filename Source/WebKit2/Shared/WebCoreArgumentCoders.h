@@ -51,9 +51,11 @@ class KeyframeValueList;
 class URL;
 class Notification;
 class ProtectionSpace;
+class Region;
 class ResourceError;
 class ResourceRequest;
 class ResourceResponse;
+class SessionID;
 class StickyPositionViewportConstraints;
 class TextCheckingRequestData;
 class TransformationMatrix;
@@ -65,7 +67,10 @@ struct DictationAlternative;
 struct DragSession;
 struct FileChooserSettings;
 struct IDBDatabaseMetadata;
+struct IDBGetResult;
 struct IDBIndexMetadata;
+struct IDBKeyData;
+struct IDBKeyRangeData;
 struct IDBObjectStoreMetadata;
 struct Length;
 struct GrammarDetail;
@@ -79,7 +84,7 @@ struct ViewportAttributes;
 struct WindowFeatures;
 }
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 namespace WebCore {
 struct KeypressCommand;
 }
@@ -159,6 +164,11 @@ template<> struct ArgumentCoder<WebCore::IntSize> {
     static bool decode(ArgumentDecoder&, WebCore::IntSize&);
 };
 
+template<> struct ArgumentCoder<WebCore::Region> {
+    static void encode(ArgumentEncoder&, const WebCore::Region&);
+    static bool decode(ArgumentDecoder&, WebCore::Region&);
+};
+
 template<> struct ArgumentCoder<WebCore::Length> {
     static void encode(ArgumentEncoder&, const WebCore::Length&);
     static bool decode(ArgumentDecoder&, WebCore::Length&);
@@ -205,7 +215,7 @@ template<> struct ArgumentCoder<WebCore::Cursor> {
 };
 
 template<> struct ArgumentCoder<WebCore::ResourceRequest> {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     static const bool kShouldSerializeWebCoreData = false;
 #else
     static const bool kShouldSerializeWebCoreData = true;
@@ -225,7 +235,7 @@ template<> struct ArgumentCoder<WebCore::ResourceResponse> {
 };
 
 template<> struct ArgumentCoder<WebCore::ResourceError> {
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     static const bool kShouldSerializeWebCoreData = false;
 #else
     static const bool kShouldSerializeWebCoreData = true;
@@ -247,7 +257,7 @@ template<> struct ArgumentCoder<WebCore::Color> {
     static bool decode(ArgumentDecoder&, WebCore::Color&);
 };
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 template<> struct ArgumentCoder<WebCore::KeypressCommand> {
     static void encode(ArgumentEncoder&, const WebCore::KeypressCommand&);
     static bool decode(ArgumentDecoder&, WebCore::KeypressCommand&);
@@ -359,9 +369,19 @@ template<> struct ArgumentCoder<WebCore::IDBDatabaseMetadata> {
     static bool decode(ArgumentDecoder&, WebCore::IDBDatabaseMetadata&);
 };
 
+template<> struct ArgumentCoder<WebCore::IDBGetResult> {
+    static void encode(ArgumentEncoder&, const WebCore::IDBGetResult&);
+    static bool decode(ArgumentDecoder&, WebCore::IDBGetResult&);
+};
+
 template<> struct ArgumentCoder<WebCore::IDBIndexMetadata> {
     static void encode(ArgumentEncoder&, const WebCore::IDBIndexMetadata&);
     static bool decode(ArgumentDecoder&, WebCore::IDBIndexMetadata&);
+};
+
+template<> struct ArgumentCoder<WebCore::IDBKeyData> {
+    static void encode(ArgumentEncoder&, const WebCore::IDBKeyData&);
+    static bool decode(ArgumentDecoder&, WebCore::IDBKeyData&);
 };
 
 template<> struct ArgumentCoder<WebCore::IDBKeyPath> {
@@ -369,11 +389,22 @@ template<> struct ArgumentCoder<WebCore::IDBKeyPath> {
     static bool decode(ArgumentDecoder&, WebCore::IDBKeyPath&);
 };
 
+template<> struct ArgumentCoder<WebCore::IDBKeyRangeData> {
+    static void encode(ArgumentEncoder&, const WebCore::IDBKeyRangeData&);
+    static bool decode(ArgumentDecoder&, WebCore::IDBKeyRangeData&);
+};
+
 template<> struct ArgumentCoder<WebCore::IDBObjectStoreMetadata> {
     static void encode(ArgumentEncoder&, const WebCore::IDBObjectStoreMetadata&);
     static bool decode(ArgumentDecoder&, WebCore::IDBObjectStoreMetadata&);
 };
-#endif
+
+#endif // ENABLE(INDEXED_DATABASE)
+
+template<> struct ArgumentCoder<WebCore::SessionID> {
+    static void encode(ArgumentEncoder&, const WebCore::SessionID&);
+    static bool decode(ArgumentDecoder&, WebCore::SessionID&);
+};
 
 } // namespace IPC
 

@@ -4,7 +4,7 @@
  *           (C) 1998 Waldo Bastian (bastian@kde.org)
  *           (C) 1999 Lars Knoll (knoll@kde.org)
  *           (C) 1999 Antti Koivisto (koivisto@kde.org)
- * Copyright (C) 2003, 2004, 2005, 2006, 2009, 2010 Apple Inc. All rights reserved.
+ * Copyright (C) 2003, 2004, 2005, 2006, 2009, 2010, 2014 Apple Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -28,6 +28,7 @@
 #include "CSSPropertyNames.h"
 #include "CollapsedBorderValue.h"
 #include "RenderBlock.h"
+#include <wtf/HashMap.h>
 #include <wtf/Vector.h>
 
 namespace WebCore {
@@ -53,33 +54,33 @@ public:
     
     bool collapseBorders() const { return style().borderCollapse(); }
 
-    virtual int borderStart() const override { return m_borderStart; }
-    virtual int borderEnd() const override { return m_borderEnd; }
-    virtual int borderBefore() const override;
-    virtual int borderAfter() const override;
+    virtual LayoutUnit borderStart() const override { return m_borderStart; }
+    virtual LayoutUnit borderEnd() const override { return m_borderEnd; }
+    virtual LayoutUnit borderBefore() const override;
+    virtual LayoutUnit borderAfter() const override;
 
-    virtual int borderLeft() const override
+    virtual LayoutUnit borderLeft() const override
     {
         if (style().isHorizontalWritingMode())
             return style().isLeftToRightDirection() ? borderStart() : borderEnd();
         return style().isFlippedBlocksWritingMode() ? borderAfter() : borderBefore();
     }
 
-    virtual int borderRight() const override
+    virtual LayoutUnit borderRight() const override
     {
         if (style().isHorizontalWritingMode())
             return style().isLeftToRightDirection() ? borderEnd() : borderStart();
         return style().isFlippedBlocksWritingMode() ? borderBefore() : borderAfter();
     }
 
-    virtual int borderTop() const override
+    virtual LayoutUnit borderTop() const override
     {
         if (style().isHorizontalWritingMode())
             return style().isFlippedBlocksWritingMode() ? borderAfter() : borderBefore();
         return style().isLeftToRightDirection() ? borderStart() : borderEnd();
     }
 
-    virtual int borderBottom() const override
+    virtual LayoutUnit borderBottom() const override
     {
         if (style().isHorizontalWritingMode())
             return style().isFlippedBlocksWritingMode() ? borderBefore() : borderAfter();
@@ -190,7 +191,7 @@ public:
     LayoutUnit borderSpacingInRowDirection() const
     {
         if (unsigned effectiveColumnCount = numEffCols())
-            return static_cast<LayoutUnit>(effectiveColumnCount + 1) * hBorderSpacing();
+            return (effectiveColumnCount + 1) * hBorderSpacing();
 
         return 0;
     }
@@ -263,6 +264,11 @@ public:
     void addColumn(const RenderTableCol*);
     void removeColumn(const RenderTableCol*);
 
+    LayoutUnit offsetTopForColumn(const RenderTableCol&) const;
+    LayoutUnit offsetLeftForColumn(const RenderTableCol&) const;
+    LayoutUnit offsetWidthForColumn(const RenderTableCol&) const;
+    LayoutUnit offsetHeightForColumn(const RenderTableCol&) const;
+
 protected:
     virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle) override final;
     virtual void simplifiedNormalFlowLayout() override final;
@@ -292,6 +298,8 @@ private:
     void updateColumnCache() const;
     void invalidateCachedColumns();
 
+    void invalidateCachedColumnOffsets();
+
     virtual RenderBlock* firstLineBlock() const override final;
     virtual void updateFirstLetter() override final;
     
@@ -318,6 +326,10 @@ private:
     mutable Vector<RenderTableCaption*> m_captions;
     mutable Vector<RenderTableCol*> m_columnRenderers;
 
+    unsigned effectiveIndexOfColumn(const RenderTableCol&) const;
+    typedef HashMap<const RenderTableCol*, unsigned> EffectiveColumnIndexMap;
+    mutable EffectiveColumnIndexMap m_effectiveColumnIndexMap;
+
     mutable RenderTableSection* m_head;
     mutable RenderTableSection* m_foot;
     mutable RenderTableSection* m_firstBody;
@@ -338,6 +350,8 @@ private:
     short m_vSpacing;
     int m_borderStart;
     int m_borderEnd;
+    mutable LayoutUnit m_columnOffsetTop;
+    mutable LayoutUnit m_columnOffsetHeight;
 };
 
 inline RenderTableSection* RenderTable::topSection() const

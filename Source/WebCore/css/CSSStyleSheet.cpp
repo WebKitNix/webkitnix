@@ -69,9 +69,7 @@ static bool isAcceptableCSSStyleSheetParent(Node* parentNode)
         || parentNode->isDocumentNode()
         || parentNode->hasTagName(HTMLNames::linkTag)
         || isHTMLStyleElement(parentNode)
-#if ENABLE(SVG)
         || parentNode->hasTagName(SVGNames::styleTag)
-#endif
         || parentNode->nodeType() == Node::PROCESSING_INSTRUCTION_NODE;
 }
 #endif
@@ -360,7 +358,7 @@ PassRefPtr<CSSRuleList> CSSStyleSheet::cssRules()
     if (!canAccessRules())
         return 0;
     if (!m_ruleListCSSOMWrapper)
-        m_ruleListCSSOMWrapper = adoptPtr(new StyleSheetCSSRuleList(this));
+        m_ruleListCSSOMWrapper = std::make_unique<StyleSheetCSSRuleList>(this);
     return m_ruleListCSSOMWrapper.get();
 }
 

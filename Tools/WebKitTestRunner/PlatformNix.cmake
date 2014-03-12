@@ -15,6 +15,10 @@ if (WTF_USE_CURL)
         ${WEBKIT2_DIR}/UIProcess/API/C/curl
     )
 else ()
+    list(APPEND WebKitTestRunner_INCLUDE_DIRECTORIES
+        ${WEBCORE_DIR}/platform/network/soup
+    )
+
     add_custom_target(forwarding-headersNetworkForWebKitTestRunner
         COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT_TESTRUNNER_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
     )

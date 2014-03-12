@@ -41,7 +41,7 @@
 #include <WebKit2/WebProcess.h>
 #include <unistd.h>
 #include <wtf/RunLoop.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 #include <wtf/gobject/GRefPtr.h>
 
 

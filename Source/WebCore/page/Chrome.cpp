@@ -77,19 +77,19 @@ Chrome::~Chrome()
     m_client.chromeDestroyed();
 }
 
-void Chrome::invalidateRootView(const IntRect& updateRect, bool immediate)
+void Chrome::invalidateRootView(const IntRect& updateRect)
 {
-    m_client.invalidateRootView(updateRect, immediate);
+    m_client.invalidateRootView(updateRect);
 }
 
-void Chrome::invalidateContentsAndRootView(const IntRect& updateRect, bool immediate)
+void Chrome::invalidateContentsAndRootView(const IntRect& updateRect)
 {
-    m_client.invalidateContentsAndRootView(updateRect, immediate);
+    m_client.invalidateContentsAndRootView(updateRect);
 }
 
-void Chrome::invalidateContentsForSlowScroll(const IntRect& updateRect, bool immediate)
+void Chrome::invalidateContentsForSlowScroll(const IntRect& updateRect)
 {
-    m_client.invalidateContentsForSlowScroll(updateRect, immediate);
+    m_client.invalidateContentsForSlowScroll(updateRect);
 }
 
 void Chrome::scroll(const IntSize& scrollDelta, const IntRect& rectToScroll, const IntRect& clipRect)
@@ -123,11 +123,6 @@ PlatformPageClient Chrome::platformPageClient() const
 void Chrome::contentsSizeChanged(Frame* frame, const IntSize& size) const
 {
     m_client.contentsSizeChanged(frame, size);
-}
-
-void Chrome::layoutUpdated(Frame* frame) const
-{
-    m_client.layoutUpdated(frame);
 }
 
 void Chrome::scrollRectIntoView(const IntRect& rect) const
@@ -466,13 +461,6 @@ void Chrome::disableSuddenTermination()
     m_client.disableSuddenTermination();
 }
 
-#if ENABLE(DIRECTORY_UPLOAD)
-void Chrome::enumerateChosenDirectory(FileChooser* fileChooser)
-{
-    m_client.enumerateChosenDirectory(fileChooser);
-}
-#endif
-
 #if ENABLE(INPUT_TYPE_COLOR)
 PassOwnPtr<ColorChooser> Chrome::createColorChooser(ColorChooserClient* client, const Color& initialColor)
 {
@@ -556,22 +544,13 @@ void Chrome::windowScreenDidChange(PlatformDisplayID displayID)
 
 // --------
 
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
 void ChromeClient::annotatedRegionsChanged()
 {
 }
 #endif
 
 void ChromeClient::populateVisitedLinks()
-{
-}
-
-FloatRect ChromeClient::customHighlightRect(Node*, const AtomicString&, const FloatRect&)
-{
-    return FloatRect();
-}
-
-void ChromeClient::paintCustomHighlight(Node*, const AtomicString&, const FloatRect&, const FloatRect&, bool, bool)
 {
 }
 
@@ -626,15 +605,10 @@ void Chrome::didReceiveDocType(Frame* frame)
     if (!frame->isMainFrame())
         return;
 
-    DocumentType* documentType = frame->document()->doctype();
-    if (!documentType) {
-        // FIXME: We should notify the client when <!DOCTYPE> is removed so that
-        // it can adjust the viewport accordingly. See <rdar://problem/15417894>.
-        return;
-    }
-
-    if (documentType->publicId().contains("xhtml mobile", false))
-        m_client.didReceiveMobileDocType();
+    bool hasMobileDocType = false;
+    if (DocumentType* documentType = frame->document()->doctype())
+        hasMobileDocType = documentType->publicId().contains("xhtml mobile", false);
+    m_client.didReceiveMobileDocType(hasMobileDocType);
 }
 #endif
 

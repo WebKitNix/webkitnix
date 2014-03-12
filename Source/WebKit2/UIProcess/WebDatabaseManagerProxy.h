@@ -44,7 +44,7 @@ class WebContext;
 class WebProcessProxy;
 class WebSecurityOrigin;
 
-typedef GenericCallback<WKArrayRef> ArrayCallback;
+typedef GenericCallback<API::Array*> ArrayCallback;
 
 class WebDatabaseManagerProxy : public API::ObjectImpl<API::Object::Type::DatabaseManager>, public WebContextSupplement, private IPC::MessageReceiver {
 public:
@@ -70,6 +70,8 @@ public:
     static String databaseDetailsDisplayNameKey();
     static String databaseDetailsExpectedUsageKey();
     static String databaseDetailsCurrentUsageKey();
+    static String databaseDetailsCreationTimeKey();
+    static String databaseDetailsModificationTimeKey();
 
     using API::Object::ref;
     using API::Object::deref;

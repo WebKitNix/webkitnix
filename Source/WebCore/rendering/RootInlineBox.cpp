@@ -36,7 +36,10 @@
 #include "RenderView.h"
 #include "VerticalPositionCache.h"
 #include <wtf/NeverDestroyed.h>
-#include <wtf/unicode/Unicode.h>
+
+#if PLATFORM(IOS)
+#include "Settings.h"
+#endif
 
 namespace WebCore {
     
@@ -169,51 +172,14 @@ void RootInlineBox::paintEllipsisBox(PaintInfo& paintInfo, const LayoutPoint& pa
         ellipsisBox()->paint(paintInfo, paintOffset, lineTop, lineBottom);
 }
 
-#if PLATFORM(MAC)
-
-void RootInlineBox::addHighlightOverflow()
-{
-    Page* page = renderer().frame().page();
-    if (!page)
-        return;
-
-    // Highlight acts as a selection inflation.
-    FloatRect rootRect(0, selectionTop(), logicalWidth(), selectionHeight());
-    IntRect inflatedRect = enclosingIntRect(page->chrome().client().customHighlightRect(renderer().element(), renderer().style().highlight(), rootRect));
-    setOverflowFromLogicalRects(inflatedRect, inflatedRect, lineTop(), lineBottom());
-}
-
-void RootInlineBox::paintCustomHighlight(PaintInfo& paintInfo, const LayoutPoint& paintOffset, const AtomicString& highlightType)
-{
-    if (!paintInfo.shouldPaintWithinRoot(renderer()) || renderer().style().visibility() != VISIBLE || paintInfo.phase != PaintPhaseForeground)
-        return;
-
-    Page* page = renderer().frame().page();
-    if (!page)
-        return;
-
-    // Get the inflated rect so that we can properly hit test.
-    FloatRect rootRect(paintOffset.x() + x(), paintOffset.y() + selectionTop(), logicalWidth(), selectionHeight());
-    FloatRect inflatedRect = page->chrome().client().customHighlightRect(renderer().element(), highlightType, rootRect);
-    if (inflatedRect.intersects(paintInfo.rect))
-        page->chrome().client().paintCustomHighlight(renderer().element(), highlightType, rootRect, rootRect, false, true);
-}
-
-#endif
-
 void RootInlineBox::paint(PaintInfo& paintInfo, const LayoutPoint& paintOffset, LayoutUnit lineTop, LayoutUnit lineBottom)
 {
     // Check if we are in the correct region.
-    if (paintInfo.renderRegion && m_hasContainingRegion && containingRegion() != paintInfo.renderRegion)
+    if (paintInfo.renderNamedFlowFragment && m_hasContainingRegion && containingRegion() != reinterpret_cast<RenderRegion*>(paintInfo.renderNamedFlowFragment))
         return;
     
     InlineFlowBox::paint(paintInfo, paintOffset, lineTop, lineBottom);
     paintEllipsisBox(paintInfo, paintOffset, lineTop, lineBottom);
-#if PLATFORM(MAC)
-    const RenderStyle& lineStyle = this->lineStyle();
-    if (lineStyle.highlight() != nullAtom && !paintInfo.context->paintingDisabled())
-        paintCustomHighlight(paintInfo, paintOffset, lineStyle.highlight());
-#endif
 }
 
 bool RootInlineBox::nodeAtPoint(const HitTestRequest& request, HitTestResult& result, const HitTestLocation& locationInContainer, const LayoutPoint& accumulatedOffset, LayoutUnit lineTop, LayoutUnit lineBottom)
@@ -285,11 +251,9 @@ void RootInlineBox::setContainingRegion(RenderRegion& region)
 
 LayoutUnit RootInlineBox::alignBoxesInBlockDirection(LayoutUnit heightOfBlock, GlyphOverflowAndFallbackFontsMap& textBoxDataMap, VerticalPositionCache& verticalPositionCache)
 {
-#if ENABLE(SVG)
     // SVG will handle vertical alignment on its own.
     if (isSVGRootInlineBox())
         return 0;
-#endif
 
     LayoutUnit maxPositionTop = 0;
     LayoutUnit maxPositionBottom = 0;
@@ -344,14 +308,12 @@ LayoutUnit RootInlineBox::alignBoxesInBlockDirection(LayoutUnit heightOfBlock, G
     return heightOfBlock + maxHeight;
 }
 
-#if ENABLE(CSS3_TEXT_DECORATION)
 float RootInlineBox::maxLogicalTop() const
 {
     float maxLogicalTop = 0;
     computeMaxLogicalTop(maxLogicalTop);
     return maxLogicalTop;
 }
-#endif // CSS3_TEXT_DECORATION
 
 LayoutUnit RootInlineBox::beforeAnnotationsAdjustment() const
 {
@@ -366,12 +328,12 @@ LayoutUnit RootInlineBox::beforeAnnotationsAdjustment() const
             return result;
 
         // Annotations over this line may push us further down.
-        LayoutUnit highestAllowedPosition = prevRootBox() ? std::min(prevRootBox()->lineBottom(), lineTop()) + result : static_cast<LayoutUnit>(blockFlow().borderBefore());
+        LayoutUnit highestAllowedPosition = prevRootBox() ? std::min(prevRootBox()->lineBottom(), lineTop()) + result : blockFlow().borderBefore();
         result = computeOverAnnotationAdjustment(highestAllowedPosition);
     } else {
         // Annotations under this line may push us up.
         if (hasAnnotationsBefore())
-            result = computeUnderAnnotationAdjustment(prevRootBox() ? prevRootBox()->lineBottom() : static_cast<LayoutUnit>(blockFlow().borderBefore()));
+            result = computeUnderAnnotationAdjustment(prevRootBox() ? prevRootBox()->lineBottom() : blockFlow().borderBefore());
 
         if (!prevRootBox() || !prevRootBox()->hasAnnotationsAfter())
             return result;
@@ -996,7 +958,7 @@ LayoutUnit RootInlineBox::verticalPositionForBox(InlineBox* box, VerticalPositio
         else if (verticalAlign == TEXT_TOP)
             verticalPosition += renderer->baselinePosition(baselineType(), firstLine, lineDirection) - fontMetrics.ascent(baselineType());
         else if (verticalAlign == MIDDLE)
-            verticalPosition = (verticalPosition - static_cast<LayoutUnit>(fontMetrics.xHeight() / 2) - renderer->lineHeight(firstLine, lineDirection) / 2 + renderer->baselinePosition(baselineType(), firstLine, lineDirection)).round();
+            verticalPosition = (verticalPosition - LayoutUnit(fontMetrics.xHeight() / 2) - renderer->lineHeight(firstLine, lineDirection) / 2 + renderer->baselinePosition(baselineType(), firstLine, lineDirection)).round();
         else if (verticalAlign == TEXT_BOTTOM) {
             verticalPosition += fontMetrics.descent(baselineType());
             // lineHeight - baselinePosition is always 0 for replaced elements (except inline blocks), so don't bother wasting time in that case.

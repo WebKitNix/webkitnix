@@ -25,9 +25,9 @@ messages -> WebPageProxy {
     CreateNewPage(WebCore::ResourceRequest request, WebCore::WindowFeatures windowFeatures, uint32_t modifiers, int32_t mouseButton) -> (uint64_t newPageID, WebKit::WebPageCreationParameters newPageParameters)
     ShowPage()
     ClosePage(bool stopResponsivenessTimer)
-    RunJavaScriptAlert(uint64_t frameID, String message) -> ()
-    RunJavaScriptConfirm(uint64_t frameID, String message) -> (bool result)
-    RunJavaScriptPrompt(uint64_t frameID, String message, String defaultValue) -> (String result)
+    RunJavaScriptAlert(uint64_t frameID, String message) -> () Delayed
+    RunJavaScriptConfirm(uint64_t frameID, String message) -> (bool result) Delayed
+    RunJavaScriptPrompt(uint64_t frameID, String message, String defaultValue) -> (String result) Delayed
     ShouldInterruptJavaScript() -> (bool shouldInterupt)
     MouseDidMoveOverElement(WebKit::WebHitTestResult::Data hitTestResultData, uint32_t modifiers, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
 #if ENABLE(NETSCAPE_PLUGIN_API)
@@ -35,6 +35,7 @@ messages -> WebPageProxy {
 #endif // ENABLE(NETSCAPE_PLUGIN_API)
 #if ENABLE(WEBGL)
     WebGLPolicyForURL(String url) -> (uint32_t loadPolicy)
+    ResolveWebGLPolicyForURL(String url) -> (uint32_t loadPolicy)
 #endif // ENABLE(WEBGL)
     DidChangeViewportProperties(WebCore::ViewportAttributes attributes)
     DidReceiveEvent(uint32_t type, bool handled)
@@ -60,8 +61,8 @@ messages -> WebPageProxy {
     GetIsResizable() -> (bool isResizable)
     SetWindowFrame(WebCore::FloatRect windowFrame)
     GetWindowFrame() -> (WebCore::FloatRect windowFrame)
-    ScreenToWindow(WebCore::IntPoint screenPoint) -> (WebCore::IntPoint windowPoint)
-    WindowToScreen(WebCore::IntRect rect) -> (WebCore::IntRect screenFrame)
+    ScreenToRootView(WebCore::IntPoint screenPoint) -> (WebCore::IntPoint windowPoint)
+    RootViewToScreen(WebCore::IntRect rect) -> (WebCore::IntRect screenFrame)
     RunBeforeUnloadConfirmPanel(String message, uint64_t frameID) -> (bool shouldClose)
     PageDidScroll()
     RunOpenPanel(uint64_t frameID, WebCore::FileChooserSettings parameters)
@@ -71,7 +72,8 @@ messages -> WebPageProxy {
     RecommendedScrollbarStyleDidChange(int32_t newStyle)
     DidChangeScrollbarsForMainFrame(bool hasHorizontalScrollbar, bool hasVerticalScrollbar)
     DidChangeScrollOffsetPinningForMainFrame(bool pinnedToLeftSide, bool pinnedToRightSide, bool pinnedToTopSide, bool pinnedToBottomSide)
-    DidChangePageCount(unsigned pageCount);
+    DidChangePageCount(unsigned pageCount)
+    PageExtendedBackgroundColorDidChange(WebCore::Color backgroundColor)
 #if ENABLE(NETSCAPE_PLUGIN_API)
     DidFailToInitializePlugin(String mimeType, String frameURLString, String pageURLString)
     DidBlockInsecurePluginVersion(String mimeType, String pluginURLString, String frameURLString, String pageURLString, bool replacementObscured)
@@ -90,12 +92,8 @@ messages -> WebPageProxy {
     DidFindZoomableArea(WebCore::IntPoint target, WebCore::IntRect area)
 #endif
 
-#if PLATFORM(EFL) || PLATFORM(IOS) || PLATFORM(NIX)
+#if PLATFORM(EFL) || PLATFORM(NIX)
     DidChangeContentSize(WebCore::IntSize newSize)
-#endif
-
-#if ENABLE(TOUCH_EVENTS)
-    NeedTouchEvents(bool needTouchEvents)
 #endif
 
 #if ENABLE(INPUT_TYPE_COLOR)
@@ -106,8 +104,8 @@ messages -> WebPageProxy {
 
     # Policy messages
     DecidePolicyForResponseSync(uint64_t frameID, WebCore::ResourceResponse response, WebCore::ResourceRequest request, bool canShowMIMEType, uint64_t listenerID, WebKit::InjectedBundleUserMessageEncoder userData) -> (bool receivedPolicyAction, uint64_t policyAction, uint64_t downloadID) Variadic
-    DecidePolicyForNavigationAction(uint64_t frameID, uint32_t navigationType, uint32_t modifiers, int32_t mouseButton, uint64_t originatingFrameID, WebCore::ResourceRequest originalRequest, WebCore::ResourceRequest request, uint64_t listenerID, WebKit::InjectedBundleUserMessageEncoder userData) -> (bool receivedPolicyAction, uint64_t policyAction, uint64_t downloadID) Variadic
-    DecidePolicyForNewWindowAction(uint64_t frameID, uint32_t navigationType, uint32_t modifiers, int32_t mouseButton, WebCore::ResourceRequest request, String frameName, uint64_t listenerID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
+    DecidePolicyForNavigationAction(uint64_t frameID, WebKit::NavigationActionData navigationActionData, uint64_t originatingFrameID, WebCore::ResourceRequest originalRequest, WebCore::ResourceRequest request, uint64_t listenerID, WebKit::InjectedBundleUserMessageEncoder userData) -> (bool receivedPolicyAction, uint64_t policyAction, uint64_t downloadID) Variadic
+    DecidePolicyForNewWindowAction(uint64_t frameID, WebKit::NavigationActionData navigationActionData, WebCore::ResourceRequest request, String frameName, uint64_t listenerID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     UnableToImplementPolicy(uint64_t frameID, WebCore::ResourceError error, WebKit::InjectedBundleUserMessageEncoder userData)  Variadic
 
     # Progress messages
@@ -120,17 +118,17 @@ messages -> WebPageProxy {
     DidCreateSubframe(uint64_t frameID)
 
     # Frame load messages
-    DidCommitLoadForFrame(uint64_t frameID, String mimeType, uint32_t loadType, WebCore::CertificateInfo certificateInfo, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
-    DidFailLoadForFrame(uint64_t frameID, WebCore::ResourceError error, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
-    DidFailProvisionalLoadForFrame(uint64_t frameID, WebCore::ResourceError error, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
+    DidStartProvisionalLoadForFrame(uint64_t frameID, uint64_t navigationID, String url, String unreachableURL, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
+    DidReceiveServerRedirectForProvisionalLoadForFrame(uint64_t frameID, uint64_t navigationID, String url, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
+    DidFailProvisionalLoadForFrame(uint64_t frameID, uint64_t navigationID, WebCore::ResourceError error, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
+    DidCommitLoadForFrame(uint64_t frameID, uint64_t navigationID, String mimeType, bool hasCustomContentProvider, uint32_t loadType, WebCore::CertificateInfo certificateInfo, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
+    DidFailLoadForFrame(uint64_t frameID, uint64_t navigationID, WebCore::ResourceError error, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidFinishDocumentLoadForFrame(uint64_t frameID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
-    DidFinishLoadForFrame(uint64_t frameID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
+    DidFinishLoadForFrame(uint64_t frameID, uint64_t navigationID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidFirstLayoutForFrame(uint64_t frameID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidFirstVisuallyNonEmptyLayoutForFrame(uint64_t frameID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidLayout(uint32_t type, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
-    DidReceiveServerRedirectForProvisionalLoadForFrame(uint64_t frameID, String url, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidRemoveFrameFromHierarchy(uint64_t frameID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
-    DidStartProvisionalLoadForFrame(uint64_t frameID, String url, String unreachableURL, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidReceiveTitleForFrame(uint64_t frameID, String title, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidDisplayInsecureContentForFrame(uint64_t frameID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
     DidRunInsecureContentForFrame(uint64_t frameID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
@@ -138,6 +136,9 @@ messages -> WebPageProxy {
     DidSameDocumentNavigationForFrame(uint64_t frameID, uint32_t type, String url, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
 
     FrameDidBecomeFrameSet(uint64_t frameID, bool value)
+
+    # Custom representations
+    DidFinishLoadingDataForCustomContentProvider(String suggestedFilename, IPC::DataReference data)
 
     # Forms messages
     WillSubmitForm(uint64_t frameID, uint64_t sourceFrameID, Vector<std::pair<String, String>> textFieldValues, uint64_t listenerID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
@@ -157,6 +158,8 @@ messages -> WebPageProxy {
     AutocorrectionContextCallback(String beforeText, String markedText, String selectedText, String afterText, uint64_t location, uint64_t length, uint64_t callbackID)
     InterpretKeyEvent(WebKit::EditorState state, bool isCharEvent) -> (bool handled)
     DidReceivePositionInformation(WebKit::InteractionInformationAtPosition information)
+    SaveImageToLibrary(WebKit::SharedMemory::Handle handle, uint64_t size)
+    DidUpdateBlockSelectionWithTouch(uint32_t touch, uint32_t flags, float growThreshold, float shrinkThreshold)
 #endif
 #if PLATFORM(GTK)
     PrintFinishedCallback(WebCore::ResourceError error, uint64_t callbackID)
@@ -182,7 +185,6 @@ messages -> WebPageProxy {
     BackForwardBackListCount() -> (int32_t count)
     BackForwardForwardListCount() -> (int32_t count)
     BackForwardClear()
-    ShouldGoToBackForwardListItem(uint64_t itemID) -> (bool shouldGoToBackForwardListItem)
     WillGoToBackForwardListItem(uint64_t itemID, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
 
     # Undo/Redo messages
@@ -208,7 +210,7 @@ messages -> WebPageProxy {
 
 #if ENABLE(CONTEXT_MENUS)
     # ContextMenu messages
-    ShowContextMenu(WebCore::IntPoint menuLocation, WebKit::WebHitTestResult::Data hitTestResultData, Vector<WebKit::WebContextMenuItemData> items, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
+    ShowContextMenu(WebCore::IntPoint menuLocation, WebKit::ContextMenuContextData contextMenuContextData, Vector<WebKit::WebContextMenuItemData> items, WebKit::InjectedBundleUserMessageEncoder userData) Variadic
 #endif
 
     # Authentication messages
@@ -246,7 +248,7 @@ messages -> WebPageProxy {
 #if ENABLE(DRAG_SUPPORT)
     DidPerformDragControllerAction(WebCore::DragSession dragSession)
 #endif
-#if PLATFORM(MAC) && ENABLE(DRAG_SUPPORT)
+#if PLATFORM(COCOA) && ENABLE(DRAG_SUPPORT)
     SetDragImage(WebCore::IntPoint clientPosition, WebKit::ShareableBitmap::Handle dragImage, bool linkDrag)
     SetPromisedData(String pasteboardName, WebKit::SharedMemory::Handle imageHandle, uint64_t imageSize, String filename, String extension, String title, String url, String visibleURL, WebKit::SharedMemory::Handle archiveHandle, uint64_t archiveSize)
 #endif
@@ -254,12 +256,11 @@ messages -> WebPageProxy {
     StartDrag(WebCore::DragData dragData, WebKit::ShareableBitmap::Handle dragImage)
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     # Dictionary support.
     DidPerformDictionaryLookup(WebKit::AttributedString text, WebKit::DictionaryPopupInfo dictionaryPopupInfo)
 
     # Keyboard input support messages
-    InterpretQueuedKeyEvent(WebKit::EditorState state) -> (bool handled, Vector<WebCore::KeypressCommand> savedCommands)
     ExecuteSavedCommandBySelector(String selector) -> (bool handled)
 
     # Remote accessibility messages
@@ -285,7 +286,7 @@ messages -> WebPageProxy {
 #if USE(APPKIT)
     SubstitutionsPanelIsShowing() -> (bool isShowing)
 #endif
-#if !PLATFORM(IOS) && PLATFORM(MAC)
+#if PLATFORM(MAC)
     # Autocorrection messages
     ShowCorrectionPanel(int32_t panelType, WebCore::FloatRect boundingBoxOfReplacedString, String replacedString, String replacementString, Vector<String> alternativeReplacementStrings)
     DismissCorrectionPanel(int32_t reason)
@@ -306,12 +307,9 @@ messages -> WebPageProxy {
 #endif
 
 #if PLATFORM(IOS)
-    MainDocumentDidReceiveMobileDocType();
-
     DidGetTapHighlightGeometries(uint64_t requestID, WebCore::Color color, Vector<WebCore::FloatQuad> geometries, WebCore::IntSize topLeftRadius, WebCore::IntSize topRightRadius, WebCore::IntSize bottomLeftRadius, WebCore::IntSize bottomRightRadius)
-    DidChangeViewportArguments(WebCore::ViewportArguments viewportArguments)
 
-    StartAssistingNode(WebCore::IntRect scrollRect, bool hasNextFocusable, bool hasPreviousFocusable)
+    StartAssistingNode(WebKit::AssistedNodeInformation information)
     StopAssistingNode()
     NotifyRevealedSelection()
 #endif
@@ -329,7 +327,7 @@ messages -> WebPageProxy {
 
     SavePDFToFileInDownloadsFolder(String suggestedFilename, String originatingURLString, IPC::DataReference data)
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     SavePDFToTemporaryFolderAndOpenWithNativeApplication(String suggestedFilename, String originatingURLString, IPC::DataReference data, String pdfUUID)
     OpenPDFFromTemporaryFolderWithNativeApplication(String pdfUUID)
 #endif
@@ -341,4 +339,9 @@ messages -> WebPageProxy {
     DidUpdateViewState()
     
     DidSaveToPageCache()
+
+#if ENABLE(SUBTLE_CRYPTO)
+    WrapCryptoKey(Vector<uint8_t> key) -> (bool succeeded, Vector<uint8_t> wrappedKey)
+    UnwrapCryptoKey(Vector<uint8_t> wrappedKey) -> (bool succeeded, Vector<uint8_t> key)
+#endif
 }

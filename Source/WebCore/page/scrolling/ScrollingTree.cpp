@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2012, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,6 +48,7 @@ ScrollingTree::ScrollingTree()
     , m_mainFramePinnedToTheBottom(false)
     , m_mainFrameIsRubberBanding(false)
     , m_scrollPinningBehavior(DoNotPin)
+    , m_latchedNode(0)
     , m_scrollingPerformanceLoggingEnabled(false)
     , m_isHandlingProgrammaticScroll(false)
 {
@@ -59,25 +60,54 @@ ScrollingTree::~ScrollingTree()
 
 bool ScrollingTree::shouldHandleWheelEventSynchronously(const PlatformWheelEvent& wheelEvent)
 {
+    // This method is invoked by the event handling thread
     MutexLocker lock(m_mutex);
 
     if (m_hasWheelEventHandlers)
         return true;
 
+    bool shouldSetLatch = wheelEvent.shouldConsiderLatching();
+    
+    if (hasLatchedNode() && !shouldSetLatch)
+        return false;
+
+    if (shouldSetLatch)
+        m_latchedNode = 0;
+    
     if (!m_nonFastScrollableRegion.isEmpty()) {
         // FIXME: This is not correct for non-default scroll origins.
-        IntPoint position = wheelEvent.position();
+        FloatPoint position = wheelEvent.position();
         position.moveBy(m_mainFrameScrollPosition);
-        if (m_nonFastScrollableRegion.contains(position))
+        if (m_nonFastScrollableRegion.contains(roundedIntPoint(position)))
             return true;
     }
     return false;
+}
+
+void ScrollingTree::setOrClearLatchedNode(const PlatformWheelEvent& wheelEvent, ScrollingNodeID nodeID)
+{
+    if (wheelEvent.shouldConsiderLatching())
+        setLatchedNode(nodeID);
+    else if (wheelEvent.shouldResetLatching())
+        clearLatchedNode();
 }
 
 void ScrollingTree::handleWheelEvent(const PlatformWheelEvent& wheelEvent)
 {
     if (m_rootNode)
         m_rootNode->handleWheelEvent(wheelEvent);
+}
+
+void ScrollingTree::scrollPositionChangedViaDelegatedScrolling(ScrollingNodeID nodeID, const FloatPoint& scrollPosition)
+{
+    ScrollingTreeNode* node = nodeForID(nodeID);
+    if (!node)
+        return;
+
+    if (node->nodeType() != ScrollingNode)
+        return;
+
+    toScrollingTreeScrollingNode(node)->setScrollPositionWithoutContentEdgeConstraints(scrollPosition);
 }
 
 void ScrollingTree::commitNewTreeState(PassOwnPtr<ScrollingStateTree> scrollingStateTree)
@@ -93,7 +123,7 @@ void ScrollingTree::commitNewTreeState(PassOwnPtr<ScrollingStateTree> scrollingS
         MutexLocker lock(m_mutex);
 
         if (rootStateNodeChanged || rootNode->hasChangedProperty(ScrollingStateNode::ScrollLayer))
-            m_mainFrameScrollPosition = IntPoint();
+            m_mainFrameScrollPosition = FloatPoint();
         if (rootStateNodeChanged || rootNode->hasChangedProperty(ScrollingStateScrollingNode::WheelEventHandlerCount))
             m_hasWheelEventHandlers = scrollingStateTree->rootStateNode()->wheelEventHandlerCount();
         if (rootStateNodeChanged || rootNode->hasChangedProperty(ScrollingStateScrollingNode::NonFastScrollableRegion))
@@ -162,15 +192,27 @@ void ScrollingTree::updateTreeFromStateNode(const ScrollingStateNode* stateNode)
 
 void ScrollingTree::removeDestroyedNodes(const ScrollingStateTree& stateTree)
 {
-    const Vector<ScrollingNodeID>& removedNodes = stateTree.removedNodes();
-    size_t size = removedNodes.size();
-    for (size_t i = 0; i < size; ++i) {
-        ScrollingTreeNode* node = m_nodeMap.take(removedNodes[i]);
+    for (const auto& removedNode : stateTree.removedNodes()) {
+        ScrollingTreeNode* node = m_nodeMap.take(removedNode);
+        if (!node)
+            continue;
+
+        if (node->scrollingNodeID() == m_latchedNode)
+            clearLatchedNode();
+
         // Never destroy the root node. There will be a new root node in the state tree, and we will
         // associate it with our existing root node in updateTreeFromStateNode().
-        if (node && node->parent())
+        if (node->parent())
             m_rootNode->removeChild(node);
     }
+}
+
+ScrollingTreeNode* ScrollingTree::nodeForID(ScrollingNodeID nodeID) const
+{
+    if (!nodeID)
+        return nullptr;
+
+    return m_nodeMap.get(nodeID);
 }
 
 void ScrollingTree::setMainFramePinState(bool pinnedToTheLeft, bool pinnedToTheRight, bool pinnedToTheTop, bool pinnedToTheBottom)
@@ -183,16 +225,23 @@ void ScrollingTree::setMainFramePinState(bool pinnedToTheLeft, bool pinnedToTheR
     m_mainFramePinnedToTheBottom = pinnedToTheBottom;
 }
 
-IntPoint ScrollingTree::mainFrameScrollPosition()
+FloatPoint ScrollingTree::mainFrameScrollPosition()
 {
     MutexLocker lock(m_mutex);
     return m_mainFrameScrollPosition;
 }
 
-void ScrollingTree::setMainFrameScrollPosition(IntPoint position)
+void ScrollingTree::setMainFrameScrollPosition(FloatPoint position)
 {
     MutexLocker lock(m_mutex);
     m_mainFrameScrollPosition = position;
+}
+
+bool ScrollingTree::isPointInNonFastScrollableRegion(IntPoint p)
+{
+    MutexLocker lock(m_mutex);
+    
+    return m_nonFastScrollableRegion.contains(p);
 }
 
 bool ScrollingTree::isRubberBandInProgress()
@@ -293,6 +342,24 @@ void ScrollingTree::setScrollingPerformanceLoggingEnabled(bool flag)
 bool ScrollingTree::scrollingPerformanceLoggingEnabled()
 {
     return m_scrollingPerformanceLoggingEnabled;
+}
+
+ScrollingNodeID ScrollingTree::latchedNode()
+{
+    MutexLocker locker(m_mutex);
+    return m_latchedNode;
+}
+
+void ScrollingTree::setLatchedNode(ScrollingNodeID node)
+{
+    MutexLocker locker(m_mutex);
+    m_latchedNode = node;
+}
+
+void ScrollingTree::clearLatchedNode()
+{
+    MutexLocker locker(m_mutex);
+    m_latchedNode = 0;
 }
 
 } // namespace WebCore

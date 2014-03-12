@@ -33,7 +33,6 @@
 #include "WebKit2Initialize.h"
 #include <WebCore/SoupNetworkSession.h>
 #include <WebKit2/NetworkProcess.h>
-#include <error.h>
 #include <runtime/InitializeThreading.h>
 #include <stdlib.h>
 #include <wtf/MainThread.h>
@@ -72,7 +71,7 @@ WK_EXPORT int NetworkProcessMain(int argc, char* argv[])
     int socket = atoi(argv[1]);
 
     WebKit::ChildProcessInitializationParameters parameters;
-    parameters.connectionIdentifier = int(socket);
+    parameters.connectionIdentifier = socket;
 
     NetworkProcess::shared().initialize(parameters);
 

@@ -37,12 +37,15 @@ interface AccessibilityUIElement {
     AccessibilityUIElement linkedUIElementAtIndex(unsigned long index);
     AccessibilityUIElement selectedChildAtIndex(unsigned long index);
     void setSelectedChild(AccessibilityUIElement element);
+    void setSelectedChildAtIndex(unsigned long index);
+    void removeSelectionAtIndex(unsigned long index);
     AccessibilityUIElement titleUIElement();
     AccessibilityUIElement parentElement();
     
     readonly attribute DOMString role;
     readonly attribute DOMString subrole;
     readonly attribute DOMString roleDescription;
+    readonly attribute DOMString computedRoleString;
     readonly attribute DOMString title;
     readonly attribute DOMString description;
     readonly attribute DOMString language;
@@ -139,9 +142,12 @@ interface AccessibilityUIElement {
     DOMString columnIndexRange();
     int rowCount();
     int columnCount();
+    object columnHeaders();
+    object rowHeaders();
 
     AccessibilityUIElement ariaOwnsElementAtIndex(unsigned long index);
     AccessibilityUIElement ariaFlowToElementAtIndex(unsigned long index);
+    AccessibilityUIElement ariaControlsElementAtIndex(unsigned long index);
 
     // Paramaterized attributes.
     DOMString parameterizedAttributeNames();
@@ -152,8 +158,9 @@ interface AccessibilityUIElement {
     DOMString stringForRange(unsigned long location, unsigned long length);
     DOMString attributedStringForRange(unsigned long location, unsigned long length);
     boolean attributedStringRangeIsMisspelled(unsigned long location, unsigned long length);
-    [PassContext] unsigned int uiElementCountForSearchPredicate(AccessibilityUIElement startElement, boolean isDirectionNext, object searchKey, DOMString searchText, boolean visibleOnly);
-    [PassContext] AccessibilityUIElement uiElementForSearchPredicate(AccessibilityUIElement startElement, boolean isDirectionNext, object searchKey, DOMString searchText, boolean visibleOnly);
+    [PassContext] unsigned int uiElementCountForSearchPredicate(AccessibilityUIElement startElement, boolean isDirectionNext, object searchKey, DOMString searchText, boolean visibleOnly, boolean immediateDescendantsOnly);
+    [PassContext] AccessibilityUIElement uiElementForSearchPredicate(AccessibilityUIElement startElement, boolean isDirectionNext, object searchKey, DOMString searchText, boolean visibleOnly, boolean immediateDescendantsOnly);
+    [PassContext] DOMString selectTextWithCriteria(DOMString ambiguityResolution, object searchStrings, DOMString replacementString);
     void setSelectedTextRange(unsigned long location, unsigned long length);
 
     // Scroll area attributes.

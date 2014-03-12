@@ -271,6 +271,13 @@ static bool isAppendableHeader(const String &key)
     return false;
 }
 
+static void removeLeadingAndTrailingQuotes(String& value)
+{
+    unsigned length = value.length();
+    if (value.startsWith('"') && value.endsWith('"') && length > 1)
+        value = value.substring(1, length-2);
+}
+
 static bool getProtectionSpace(CURL* h, const ResourceResponse& response, ProtectionSpace& protectionSpace)
 {
     CURLcode err;
@@ -297,11 +304,14 @@ static bool getProtectionSpace(CURL* h, const ResourceResponse& response, Protec
 
     String realm;
 
-    String authHeader = response.httpHeaderField("WWW-Authenticate");
+    const String authHeader = response.httpHeaderField("WWW-Authenticate");
     const String realmString = "realm=";
     int realmPos = authHeader.find(realmString);
-    if (realmPos > 0)
+    if (realmPos > 0) {
         realm = authHeader.substring(realmPos + realmString.length());
+        realm = realm.left(realm.find(','));
+        removeLeadingAndTrailingQuotes(realm);
+    }
 
     ProtectionSpaceServerType serverType = ProtectionSpaceServerHTTP;
     if (protocol == "https")
@@ -676,11 +686,6 @@ static void setupFormData(ResourceHandle* job, CURLoption sizeOption, struct cur
             expectedSizeOfCurlOffT = sizeof(int);
     }
 
-#if COMPILER(MSVC)
-    // work around compiler error in Visual Studio 2005.  It can't properly
-    // handle math with 64-bit constant declarations.
-#pragma warning(disable: 4307)
-#endif
     static const long long maxCurlOffT = (1LL << (expectedSizeOfCurlOffT * 8 - 1)) - 1;
     // Obtain the total size of the form data
     curl_off_t size = 0;

@@ -64,6 +64,7 @@ private:
     virtual void didUninstallPageOverlay(PageOverlay*) override;
     virtual void setPageOverlayNeedsDisplay(PageOverlay*, const WebCore::IntRect&) override;
     virtual void setPageOverlayOpacity(PageOverlay*, float) override;
+    virtual void clearPageOverlay(PageOverlay*) override;
     virtual bool supportsAsyncScrolling() override { return true; }
 
     virtual void setLayerTreeStateIsFrozen(bool) override;
@@ -74,10 +75,14 @@ private:
     virtual void setExposedRect(const WebCore::FloatRect&) override;
     virtual WebCore::FloatRect exposedRect() const override { return m_scrolledExposedRect; }
 
+#if PLATFORM(IOS)
+    virtual void setExposedContentRect(const WebCore::FloatRect&) override;
+#endif
+
     // WebCore::GraphicsLayerClient
     virtual void notifyAnimationStarted(const WebCore::GraphicsLayer*, double time) override { }
     virtual void notifyFlushRequired(const WebCore::GraphicsLayer*) override { }
-    virtual void paintContents(const WebCore::GraphicsLayer*, WebCore::GraphicsContext&, WebCore::GraphicsLayerPaintingPhase, const WebCore::IntRect& clipRect) override;
+    virtual void paintContents(const WebCore::GraphicsLayer*, WebCore::GraphicsContext&, WebCore::GraphicsLayerPaintingPhase, const WebCore::FloatRect& clipRect) override;
     virtual float deviceScaleFactor() const override;
     virtual void didCommitChangesForLayer(const WebCore::GraphicsLayer*) const override { }
 #if PLATFORM(IOS)

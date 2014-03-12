@@ -30,21 +30,30 @@
 
 #include "WebEvent.h"
 
-#if PLATFORM(MAC)
+#if USE(APPKIT)
 #include <wtf/RetainPtr.h>
 OBJC_CLASS NSView;
-#elif PLATFORM(GTK)
-#include <GOwnPtrGtk.h>
-#include <WebCore/CompositionResults.h>
-#include <WebCore/GtkInputMethodFilter.h>
-typedef union _GdkEvent GdkEvent;
-#elif PLATFORM(EFL)
+
+namespace WebCore {
+struct KeypressCommand;
+}
+#endif
+
+#if PLATFORM(EFL)
 #include <Evas.h>
 #elif PLATFORM(NIX)
 #include <NIXEvents.h>
 #endif
 
+#if PLATFORM(GTK)
+#include <WebCore/CompositionResults.h>
+#include <WebCore/GUniquePtrGtk.h>
+#include <WebCore/GtkInputMethodFilter.h>
+typedef union _GdkEvent GdkEvent;
+#endif
+
 #if PLATFORM(IOS)
+#include <wtf/RetainPtr.h>
 OBJC_CLASS WebIOSEvent;
 #endif
 
@@ -53,7 +62,7 @@ namespace WebKit {
 class NativeWebKeyboardEvent : public WebKeyboardEvent {
 public:
 #if USE(APPKIT)
-    NativeWebKeyboardEvent(NSEvent *, NSView *);
+    NativeWebKeyboardEvent(NSEvent *, bool handledByInputMethod, const Vector<WebCore::KeypressCommand>&);
 #elif PLATFORM(GTK)
     NativeWebKeyboardEvent(const NativeWebKeyboardEvent&);
     NativeWebKeyboardEvent(GdkEvent*, const WebCore::CompositionResults&, WebCore::GtkInputMethodFilter::EventFakedForComposition);
@@ -85,7 +94,7 @@ private:
 #if USE(APPKIT)
     RetainPtr<NSEvent> m_nativeEvent;
 #elif PLATFORM(GTK)
-    GOwnPtr<GdkEvent> m_nativeEvent;
+    GUniquePtr<GdkEvent> m_nativeEvent;
     WebCore::CompositionResults m_compositionResults;
     bool m_fakeEventForComposition;
 #elif PLATFORM(EFL)

@@ -31,6 +31,7 @@
 #include "ScrollingCoordinator.h"
 
 #include "ScrollingTree.h"
+#include "Timer.h"
 #include <wtf/OwnPtr.h>
 #include <wtf/PassRefPtr.h>
 #include <wtf/RefPtr.h>
@@ -56,6 +57,8 @@ public:
 
     void scrollingStateTreePropertiesChanged();
 
+    void scheduleUpdateScrollPositionAfterAsyncScroll(ScrollingNodeID, const FloatPoint&, bool programmaticScroll, SetOrSyncScrollingLayerPosition);
+
 protected:
     AsyncScrollingCoordinator(Page*);
 
@@ -65,6 +68,8 @@ protected:
 
     PassRefPtr<ScrollingTree> releaseScrollingTree() { return m_scrollingTree.release(); }
 
+    void updateScrollPositionAfterAsyncScroll(ScrollingNodeID, const FloatPoint&, bool programmaticScroll, SetOrSyncScrollingLayerPosition);
+
 private:
     virtual bool isAsyncScrollingCoordinator() const override { return true; }
 
@@ -73,6 +78,7 @@ private:
 
     virtual void frameViewLayoutUpdated(FrameView*) override;
     virtual void frameViewRootLayerDidChange(FrameView*) override;
+    virtual void frameViewNonFastScrollableRegionChanged(FrameView*) override;
 
     virtual bool requestScrollPositionUpdate(FrameView*, const IntPoint&) override;
 
@@ -81,7 +87,7 @@ private:
     virtual void clearStateTree() override;
 
     virtual void updateViewportConstrainedNode(ScrollingNodeID, const ViewportConstraints&, GraphicsLayer*) override;
-    virtual void updateScrollingNode(ScrollingNodeID, GraphicsLayer* scrollLayer, GraphicsLayer* counterScrollingLayer) override;
+    virtual void updateScrollingNode(ScrollingNodeID, GraphicsLayer*, GraphicsLayer* scrolledContentsLayer, GraphicsLayer* counterScrollingLayer) override;
     virtual String scrollingStateTreeAsText() const override;
     virtual bool isRubberBandInProgress() const override;
     virtual void setScrollPinningBehavior(ScrollPinningBehavior) override;
@@ -97,15 +103,41 @@ private:
     void ensureRootStateNodeForFrameView(FrameView*);
     void updateMainFrameScrollLayerPosition();
 
-    void setScrollLayerForNode(GraphicsLayer*, ScrollingStateNode*);
-    void setCounterScrollingLayerForNode(GraphicsLayer*, ScrollingStateScrollingNode*);
-    void setHeaderLayerForNode(GraphicsLayer*, ScrollingStateScrollingNode*);
-    void setFooterLayerForNode(GraphicsLayer*, ScrollingStateScrollingNode*);
-    void setNonFastScrollableRegionForNode(const Region&, ScrollingStateScrollingNode*);
-    void setWheelEventHandlerCountForNode(unsigned, ScrollingStateScrollingNode*);
-    void setScrollBehaviorForFixedElementsForNode(ScrollBehaviorForFixedElements, ScrollingStateScrollingNode*);
     // FIXME: move somewhere else?
     void setScrollbarPaintersFromScrollbarsForNode(Scrollbar* verticalScrollbar, Scrollbar* horizontalScrollbar, ScrollingStateScrollingNode*);
+
+    void updateScrollPositionAfterAsyncScrollTimerFired(Timer<AsyncScrollingCoordinator>*);
+
+    Timer<AsyncScrollingCoordinator> m_updateNodeScrollPositionTimer;
+
+    struct ScheduledScrollUpdate {
+        ScheduledScrollUpdate()
+            : nodeID(0)
+            , isProgrammaticScroll(false)
+            , updateLayerPositionAction(SyncScrollingLayerPosition)
+        { }
+
+        ScheduledScrollUpdate(ScrollingNodeID scrollingNodeID, FloatPoint point, bool isProgrammatic, SetOrSyncScrollingLayerPosition udpateAction)
+            : nodeID(scrollingNodeID)
+            , scrollPosition(point)
+            , isProgrammaticScroll(isProgrammatic)
+            , updateLayerPositionAction(udpateAction)
+        { }
+
+        ScrollingNodeID nodeID;
+        FloatPoint scrollPosition;
+        bool isProgrammaticScroll;
+        SetOrSyncScrollingLayerPosition updateLayerPositionAction;
+        
+        bool matchesUpdateType(const ScheduledScrollUpdate& other) const
+        {
+            return nodeID == other.nodeID
+                && isProgrammaticScroll == other.isProgrammaticScroll
+                && updateLayerPositionAction == other.updateLayerPositionAction;
+        }
+    };
+
+    ScheduledScrollUpdate m_scheduledScrollUpdate;
 
     OwnPtr<ScrollingStateTree> m_scrollingStateTree;
     RefPtr<ScrollingTree> m_scrollingTree;

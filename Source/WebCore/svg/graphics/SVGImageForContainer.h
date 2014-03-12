@@ -26,13 +26,12 @@
 #ifndef SVGImageForContainer_h
 #define SVGImageForContainer_h
 
-#if ENABLE(SVG)
-
 #include "AffineTransform.h"
 #include "FloatRect.h"
 #include "FloatSize.h"
 #include "Image.h"
 #include "SVGImage.h"
+#include "URL.h"
 
 namespace WebCore {
 
@@ -46,6 +45,8 @@ public:
     virtual bool isSVGImage() const override { return true; }
 
     virtual IntSize size() const override;
+
+    void setURL(const URL& url) { m_image->setURL(url); }
 
     virtual bool usesContainerSize() const override { return m_image->usesContainerSize(); }
     virtual bool hasRelativeWidth() const override { return m_image->hasRelativeWidth(); }
@@ -79,6 +80,4 @@ private:
     const float m_zoom;
 };
 }
-
-#endif // ENABLE(SVG)
 #endif // SVGImageForContainer_h

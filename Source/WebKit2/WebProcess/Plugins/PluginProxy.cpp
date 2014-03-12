@@ -105,10 +105,7 @@ bool PluginProxy::initialize(const Parameters& parameters)
     m_pendingPluginCreationParameters->contentsScaleFactor = contentsScaleFactor();
     m_pendingPluginCreationParameters->isPrivateBrowsingEnabled = controller()->isPrivateBrowsingEnabled();
     m_pendingPluginCreationParameters->artificialPluginInitializationDelayEnabled = controller()->artificialPluginInitializationDelayEnabled();
-
-#if USE(ACCELERATED_COMPOSITING)
     m_pendingPluginCreationParameters->isAcceleratedCompositingEnabled = controller()->isAcceleratedCompositingEnabled();
-#endif
 
     if (!canInitializeAsynchronously())
         return initializeSynchronously();
@@ -488,7 +485,7 @@ NPObject* PluginProxy::pluginScriptableNPObject()
     return m_connection->npRemoteObjectMap()->createNPObjectProxy(pluginScriptableNPObjectID, this);
 }
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 void PluginProxy::windowFocusChanged(bool hasFocus)
 {
     m_connection->connection()->send(Messages::PluginControllerProxy::WindowFocusChanged(hasFocus), m_pluginInstanceID);

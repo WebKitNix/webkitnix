@@ -21,7 +21,6 @@
 #ifndef SVGTRefElement_h
 #define SVGTRefElement_h
 
-#if ENABLE(SVG)
 #include "SVGTextPositioningElement.h"
 #include "SVGURIReference.h"
 
@@ -61,10 +60,9 @@ private:
         DECLARE_ANIMATED_STRING(Href, href)
     END_DECLARE_ANIMATED_PROPERTIES
 
-    RefPtr<SVGTRefTargetEventListener> m_targetListener;
+    Ref<SVGTRefTargetEventListener> m_targetListener;
 };
 
 } // namespace WebCore
 
-#endif // ENABLE(SVG)
 #endif

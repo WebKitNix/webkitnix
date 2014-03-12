@@ -59,7 +59,6 @@
 #ifndef Atomics_h
 #define Atomics_h
 
-#include <wtf/Platform.h>
 #include <wtf/StdLibExtras.h>
 
 #if OS(WINDOWS)
@@ -71,35 +70,6 @@ extern "C" void _ReadWriteBarrier(void);
 #endif
 
 namespace WTF {
-
-#if OS(WINDOWS)
-
-#if OS(WINCE)
-inline int atomicIncrement(int* addend) { return InterlockedIncrement(reinterpret_cast<long*>(addend)); }
-inline int atomicDecrement(int* addend) { return InterlockedDecrement(reinterpret_cast<long*>(addend)); }
-#elif COMPILER(MINGW)
-inline int atomicIncrement(int* addend) { return InterlockedIncrement(reinterpret_cast<long*>(addend)); }
-inline int atomicDecrement(int* addend) { return InterlockedDecrement(reinterpret_cast<long*>(addend)); }
-
-inline int64_t atomicIncrement(int64_t* addend) { return InterlockedIncrement64(reinterpret_cast<long long*>(addend)); }
-inline int64_t atomicDecrement(int64_t* addend) { return InterlockedDecrement64(reinterpret_cast<long long*>(addend)); }
-#else
-inline int atomicIncrement(int volatile* addend) { return InterlockedIncrement(reinterpret_cast<long volatile*>(addend)); }
-inline int atomicDecrement(int volatile* addend) { return InterlockedDecrement(reinterpret_cast<long volatile*>(addend)); }
-
-inline int64_t atomicIncrement(int64_t volatile* addend) { return InterlockedIncrement64(reinterpret_cast<long long volatile*>(addend)); }
-inline int64_t atomicDecrement(int64_t volatile* addend) { return InterlockedDecrement64(reinterpret_cast<long long volatile*>(addend)); }
-#endif
-
-#elif COMPILER(GCC)
-
-inline int atomicIncrement(int volatile* addend) { return __sync_add_and_fetch(addend, 1); }
-inline int atomicDecrement(int volatile* addend) { return __sync_sub_and_fetch(addend, 1); }
-
-inline int64_t atomicIncrement(int64_t volatile* addend) { return __sync_add_and_fetch(addend, 1); }
-inline int64_t atomicDecrement(int64_t volatile* addend) { return __sync_sub_and_fetch(addend, 1); }
-
-#endif
 
 #if OS(WINDOWS)
 inline bool weakCompareAndSwap(volatile unsigned* location, unsigned expected, unsigned newValue)
@@ -342,8 +312,5 @@ inline bool weakCompareAndSwap(uint8_t* location, uint8_t expected, uint8_t newV
 }
 
 } // namespace WTF
-
-using WTF::atomicDecrement;
-using WTF::atomicIncrement;
 
 #endif // Atomics_h

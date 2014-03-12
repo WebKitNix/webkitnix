@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,8 +26,6 @@
 #ifndef FTLIntrinsicRepository_h
 #define FTLIntrinsicRepository_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(FTL_JIT)
 
 #include "DFGOperations.h"
@@ -40,21 +38,35 @@ namespace JSC { namespace FTL {
     macro(addWithOverflow32, "llvm.sadd.with.overflow.i32", functionType(structType(m_context, int32, boolean), int32, int32)) \
     macro(addWithOverflow64, "llvm.sadd.with.overflow.i64", functionType(structType(m_context, int64, boolean), int64, int64)) \
     macro(doubleAbs, "llvm.fabs.f64", functionType(doubleType, doubleType)) \
+    macro(doubleSin, "llvm.sin.f64", functionType(doubleType, doubleType)) \
+    macro(doubleCos, "llvm.cos.f64", functionType(doubleType, doubleType)) \
+    macro(doubleSqrt, "llvm.sqrt.f64", functionType(doubleType, doubleType)) \
+    macro(frameAddress, "llvm.frameaddress", functionType(pointerType(int8), int32)) \
     macro(mulWithOverflow32, "llvm.smul.with.overflow.i32", functionType(structType(m_context, int32, boolean), int32, int32)) \
     macro(mulWithOverflow64, "llvm.smul.with.overflow.i64", functionType(structType(m_context, int64, boolean), int64, int64)) \
-    macro(patchpointInt64, "llvm.experimental.patchpoint.i64", functionType(int64, int32, int32, ref8, int32, Variadic)) \
-    macro(patchpointVoid, "llvm.experimental.patchpoint.void", functionType(voidType, int32, int32, ref8, int32, Variadic)) \
-    macro(stackmap, "llvm.experimental.stackmap", functionType(voidType, int32, int32, Variadic)) \
+    macro(patchpointInt64, "llvm.experimental.patchpoint.i64", functionType(int64, int64, int32, ref8, int32, Variadic)) \
+    macro(patchpointVoid, "llvm.experimental.patchpoint.void", functionType(voidType, int64, int32, ref8, int32, Variadic)) \
+    macro(stackmap, "llvm.experimental.stackmap", functionType(voidType, int64, int32, Variadic)) \
     macro(subWithOverflow32, "llvm.ssub.with.overflow.i32", functionType(structType(m_context, int32, boolean), int32, int32)) \
     macro(subWithOverflow64, "llvm.ssub.with.overflow.i64", functionType(structType(m_context, int64, boolean), int64, int64)) \
     macro(trap, "llvm.trap", functionType(voidType)) \
     macro(x86SSE2CvtTSD2SI, "llvm.x86.sse2.cvttsd2si", functionType(int32, vectorType(doubleType, 2)))
 
 #define FOR_EACH_FUNCTION_TYPE(macro) \
+    macro(C_JITOperation_EC, functionType(intPtr, intPtr, intPtr)) \
+    macro(C_JITOperation_EJ, functionType(intPtr, intPtr, int64)) \
+    macro(C_JITOperation_EJssJss, functionType(intPtr, intPtr, intPtr, intPtr)) \
+    macro(C_JITOperation_EJssJssJss, functionType(intPtr, intPtr, intPtr, intPtr, intPtr)) \
     macro(C_JITOperation_ESt, functionType(intPtr, intPtr, intPtr)) \
+    macro(D_JITOperation_D, functionType(doubleType, doubleType)) \
+    macro(D_JITOperation_DD, functionType(doubleType, doubleType, doubleType)) \
     macro(I_JITOperation_EJss, functionType(intPtr, intPtr, intPtr)) \
     macro(J_JITOperation_E, functionType(int64, intPtr)) \
+    macro(J_JITOperation_EA, functionType(int64, intPtr, intPtr)) \
     macro(J_JITOperation_EAZ, functionType(int64, intPtr, intPtr, int32)) \
+    macro(J_JITOperation_EDA, functionType(int64, intPtr, doubleType, intPtr)) \
+    macro(J_JITOperation_EJ, functionType(int64, intPtr, int64)) \
+    macro(J_JITOperation_EJA, functionType(int64, intPtr, int64, intPtr)) \
     macro(J_JITOperation_EJJ, functionType(int64, intPtr, int64, int64)) \
     macro(J_JITOperation_EJssZ, functionType(int64, intPtr, intPtr, int32)) \
     macro(J_JITOperation_ESsiJI, functionType(int64, intPtr, intPtr, int64, intPtr)) \
@@ -62,6 +74,8 @@ namespace JSC { namespace FTL {
     macro(P_JITOperation_E, functionType(intPtr, intPtr)) \
     macro(P_JITOperation_EC, functionType(intPtr, intPtr, intPtr)) \
     macro(P_JITOperation_EO, functionType(intPtr, intPtr, intPtr)) \
+    macro(P_JITOperation_ES, functionType(intPtr, intPtr, int64)) \
+    macro(P_JITOperation_EOS, functionType(intPtr, intPtr, intPtr, int64)) \
     macro(P_JITOperation_ESt, functionType(intPtr, intPtr, intPtr)) \
     macro(P_JITOperation_EStPS, functionType(intPtr, intPtr, intPtr, intPtr, intPtr)) \
     macro(P_JITOperation_EStSS, functionType(intPtr, intPtr, intPtr, intPtr, intPtr)) \
@@ -72,6 +86,7 @@ namespace JSC { namespace FTL {
     macro(V_JITOperation_EOZD, functionType(voidType, intPtr, intPtr, int32, doubleType)) \
     macro(V_JITOperation_EOZJ, functionType(voidType, intPtr, intPtr, int32, int64)) \
     macro(V_JITOperation_EC, functionType(voidType, intPtr, intPtr)) \
+    macro(V_JITOperation_ECb, functionType(voidType, intPtr, intPtr)) \
     macro(V_JITOperation_EVws, functionType(voidType, intPtr, intPtr)) \
     macro(Z_JITOperation_D, functionType(int32, doubleType))
 

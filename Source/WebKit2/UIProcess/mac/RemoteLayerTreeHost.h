@@ -26,12 +26,11 @@
 #ifndef RemoteLayerTreeHost_h
 #define RemoteLayerTreeHost_h
 
+#include "LayerRepresentation.h"
 #include "RemoteLayerTreeTransaction.h"
 #include <WebCore/PlatformCALayer.h>
 #include <wtf/HashMap.h>
 #include <wtf/RetainPtr.h>
-
-OBJC_CLASS CALayer;
 
 namespace WebKit {
 
@@ -39,20 +38,24 @@ class WebPageProxy;
 
 class RemoteLayerTreeHost {
 public:
-    explicit RemoteLayerTreeHost(WebPageProxy*);
+    explicit RemoteLayerTreeHost();
     virtual ~RemoteLayerTreeHost();
 
-    CALayer *getLayer(WebCore::GraphicsLayer::PlatformLayerID) const;
+    LayerOrView *getLayer(WebCore::GraphicsLayer::PlatformLayerID) const;
+    LayerOrView *rootLayer() const { return m_rootLayer; }
 
-    void updateLayerTree(const RemoteLayerTreeTransaction&);
+    // Returns true if the root layer changed.
+    bool updateLayerTree(const RemoteLayerTreeTransaction&, float indicatorScaleFactor  = 1);
+
+    void setIsDebugLayerTreeHost(bool flag) { m_isDebugLayerTreeHost = flag; }
+    bool isDebugLayerTreeHost() const { return m_isDebugLayerTreeHost; }
 
 private:
-    CALayer *createLayer(RemoteLayerTreeTransaction::LayerCreationProperties);
+    LayerOrView *createLayer(const RemoteLayerTreeTransaction::LayerCreationProperties&);
 
-    WebPageProxy* m_webPageProxy;
-
-    CALayer *m_rootLayer;
-    HashMap<WebCore::GraphicsLayer::PlatformLayerID, RetainPtr<CALayer>> m_layers;
+    LayerOrView *m_rootLayer;
+    HashMap<WebCore::GraphicsLayer::PlatformLayerID, RetainPtr<LayerOrView>> m_layers;
+    bool m_isDebugLayerTreeHost;
 };
 
 } // namespace WebKit

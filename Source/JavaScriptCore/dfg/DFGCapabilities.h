@@ -33,13 +33,13 @@
 #include "Interpreter.h"
 #include "Intrinsic.h"
 #include "Options.h"
-#include <wtf/Platform.h>
 
 namespace JSC { namespace DFG {
 
 #if ENABLE(DFG_JIT)
 // Fast check functions; if they return true it is still necessary to
 // check opcodes.
+bool isSupported(CodeBlock*);
 bool mightCompileEval(CodeBlock*);
 bool mightCompileProgram(CodeBlock*);
 bool mightCompileFunctionForCall(CodeBlock*);
@@ -96,19 +96,28 @@ inline CapabilityLevel functionForConstructCapabilityLevel(CodeBlock* codeBlock)
     return capabilityLevel(codeBlock);
 }
 
-inline bool canInlineFunctionForCall(CodeBlock* codeBlock)
+inline CapabilityLevel inlineFunctionForCallCapabilityLevel(CodeBlock* codeBlock)
 {
-    return mightInlineFunctionForCall(codeBlock) && canInline(capabilityLevel(codeBlock));
+    if (!mightInlineFunctionForCall(codeBlock))
+        return CannotCompile;
+    
+    return capabilityLevel(codeBlock);
 }
 
-inline bool canInlineFunctionForClosureCall(CodeBlock* codeBlock)
+inline CapabilityLevel inlineFunctionForClosureCallCapabilityLevel(CodeBlock* codeBlock)
 {
-    return mightInlineFunctionForClosureCall(codeBlock) && canInline(capabilityLevel(codeBlock));
+    if (!mightInlineFunctionForClosureCall(codeBlock))
+        return CannotCompile;
+    
+    return capabilityLevel(codeBlock);
 }
 
-inline bool canInlineFunctionForConstruct(CodeBlock* codeBlock)
+inline CapabilityLevel inlineFunctionForConstructCapabilityLevel(CodeBlock* codeBlock)
 {
-    return mightInlineFunctionForConstruct(codeBlock) && canInline(capabilityLevel(codeBlock));
+    if (!mightInlineFunctionForConstruct(codeBlock))
+        return CannotCompile;
+    
+    return capabilityLevel(codeBlock);
 }
 
 inline bool mightInlineFunctionFor(CodeBlock* codeBlock, CodeSpecializationKind kind)
@@ -124,16 +133,21 @@ inline bool mightInlineFunction(CodeBlock* codeBlock)
     return mightInlineFunctionFor(codeBlock, codeBlock->specializationKind());
 }
 
-inline bool canInlineFunctionFor(CodeBlock* codeBlock, CodeSpecializationKind kind, bool isClosureCall)
+inline CapabilityLevel inlineFunctionForCapabilityLevel(CodeBlock* codeBlock, CodeSpecializationKind kind, bool isClosureCall)
 {
     if (isClosureCall) {
         ASSERT(kind == CodeForCall);
-        return canInlineFunctionForClosureCall(codeBlock);
+        return inlineFunctionForClosureCallCapabilityLevel(codeBlock);
     }
     if (kind == CodeForCall)
-        return canInlineFunctionForCall(codeBlock);
+        return inlineFunctionForCallCapabilityLevel(codeBlock);
     ASSERT(kind == CodeForConstruct);
-    return canInlineFunctionForConstruct(codeBlock);
+    return inlineFunctionForConstructCapabilityLevel(codeBlock);
+}
+
+inline bool isSmallEnoughToInlineCodeInto(CodeBlock* codeBlock)
+{
+    return codeBlock->instructionCount() <= Options::maximumInliningCallerSize();
 }
 
 } } // namespace JSC::DFG

@@ -74,7 +74,7 @@ namespace WebCore {
     class SharedBuffer;
     class SubstituteResource;
 
-    typedef HashSet<RefPtr<ResourceLoader>> ResourceLoaderSet;
+    typedef HashMap<unsigned long, RefPtr<ResourceLoader>> ResourceLoaderMap;
     typedef Vector<ResourceResponse> ResponseVector;
 
     class DocumentLoader : public RefCounted<DocumentLoader>, private CachedRawResourceClient {
@@ -144,7 +144,7 @@ namespace WebCore {
         void setTitle(const StringWithDirection&);
         const String& overrideEncoding() const { return m_overrideEncoding; }
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
         void schedule(WTF::SchedulePair*);
         void unschedule(WTF::SchedulePair*);
 #endif
@@ -238,7 +238,7 @@ namespace WebCore {
         
         void didTellClientAboutLoad(const String& url)
         { 
-#if !PLATFORM(MAC)
+#if !PLATFORM(COCOA)
             // Don't include data urls here, as if a lot of data is loaded
             // that way, we hold on to the (large) url string for too long.
             if (protocolIs(url, "data"))
@@ -331,9 +331,9 @@ namespace WebCore {
         Ref<CachedResourceLoader> m_cachedResourceLoader;
 
         CachedResourceHandle<CachedRawResource> m_mainResource;
-        ResourceLoaderSet m_subresourceLoaders;
-        ResourceLoaderSet m_multipartSubresourceLoaders;
-        ResourceLoaderSet m_plugInStreamLoaders;
+        ResourceLoaderMap m_subresourceLoaders;
+        ResourceLoaderMap m_multipartSubresourceLoaders;
+        ResourceLoaderMap m_plugInStreamLoaders;
         
         mutable DocumentWriter m_writer;
 

@@ -118,6 +118,11 @@ public:
     LayoutUnit(double value) { REPORT_OVERFLOW(isInBounds(value)); m_value = clampTo<int>(value); }
 #endif
 
+    static LayoutUnit fromPixel(int value)
+    {
+        return LayoutUnit(value);
+    }
+
     static LayoutUnit fromFloatCeil(float value)
     {
         LayoutUnit v;
@@ -185,7 +190,7 @@ public:
     operator double() const { return toDouble(); }
     operator bool() const { return m_value; }
 
-    LayoutUnit operator++(int)
+    LayoutUnit& operator++()
     {
         m_value += kEffectiveFixedPointDenominator;
         return *this;
@@ -930,6 +935,27 @@ inline int floorToInt(LayoutUnit value)
     return value.floor();
 }
 
+inline float roundToDevicePixel(LayoutUnit value, float pixelSnappingFactor)
+{
+    return roundf((value.rawValue() * pixelSnappingFactor) / kEffectiveFixedPointDenominator) / pixelSnappingFactor;
+}
+
+inline float floorToDevicePixel(LayoutUnit value, float pixelSnappingFactor)
+{
+    return floorf((value.rawValue() * pixelSnappingFactor) / kEffectiveFixedPointDenominator) / pixelSnappingFactor;
+}
+
+inline float ceilToDevicePixel(LayoutUnit value, float pixelSnappingFactor)
+{
+    return ceilf((value.rawValue() * pixelSnappingFactor) / kEffectiveFixedPointDenominator) / pixelSnappingFactor;
+}
+
+inline float snapSizeToDevicePixel(LayoutUnit size, LayoutUnit location, float pixelSnappingFactor)
+{
+    LayoutUnit fraction = location.fraction();
+    return roundToDevicePixel(fraction + size, pixelSnappingFactor) - roundToDevicePixel(fraction, pixelSnappingFactor);
+}
+
 inline LayoutUnit roundedLayoutUnit(float value)
 {
 #if ENABLE(SUBPIXEL_LAYOUT)
@@ -951,11 +977,6 @@ inline LayoutUnit ceiledLayoutUnit(float value)
 inline LayoutUnit absoluteValue(const LayoutUnit& value)
 {
     return value.abs();
-}
-
-inline LayoutUnit layoutMod(const LayoutUnit& numerator, const LayoutUnit& denominator)
-{
-    return numerator % denominator;
 }
 
 inline bool isIntegerValue(const LayoutUnit value)

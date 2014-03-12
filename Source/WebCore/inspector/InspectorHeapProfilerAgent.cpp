@@ -31,12 +31,12 @@
 #include "config.h"
 #include "InspectorHeapProfilerAgent.h"
 
-#if ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
+#if ENABLE(INSPECTOR)
 
 #include "CommandLineAPIHost.h"
 #include "InstrumentingAgents.h"
-#include "PageInjectedScriptManager.h"
 #include "ScriptProfiler.h"
+#include "WebInjectedScriptManager.h"
 #include <inspector/InjectedScript.h>
 
 using namespace Inspector;
@@ -45,7 +45,7 @@ namespace WebCore {
 
 static const char* const UserInitiatedProfileNameHeap = "org.webkit.profiles.user-initiated";
 
-InspectorHeapProfilerAgent::InspectorHeapProfilerAgent(InstrumentingAgents* instrumentingAgents, PageInjectedScriptManager* injectedScriptManager)
+InspectorHeapProfilerAgent::InspectorHeapProfilerAgent(InstrumentingAgents* instrumentingAgents, WebInjectedScriptManager* injectedScriptManager)
     : InspectorAgentBase(ASCIILiteral("HeapProfiler"), instrumentingAgents)
     , m_injectedScriptManager(injectedScriptManager)
     , m_nextUserInitiatedHeapSnapshotNumber(1)
@@ -85,7 +85,7 @@ void InspectorHeapProfilerAgent::didCreateFrontendAndBackend(Inspector::Inspecto
     m_backendDispatcher = InspectorHeapProfilerBackendDispatcher::create(backendDispatcher, this);
 }
 
-void InspectorHeapProfilerAgent::willDestroyFrontendAndBackend()
+void InspectorHeapProfilerAgent::willDestroyFrontendAndBackend(InspectorDisconnectReason)
 {
     m_frontendDispatcher = nullptr;
     m_backendDispatcher.clear();
@@ -103,7 +103,6 @@ PassRefPtr<Inspector::TypeBuilder::HeapProfiler::ProfileHeader> InspectorHeapPro
     RefPtr<Inspector::TypeBuilder::HeapProfiler::ProfileHeader> header = Inspector::TypeBuilder::HeapProfiler::ProfileHeader::create()
         .setUid(snapshot.uid())
         .setTitle(snapshot.title());
-    header->setMaxJSObjectId(snapshot.maxSnapshotJSObjectId());
     return header.release();
 }
 
@@ -230,4 +229,4 @@ void InspectorHeapProfilerAgent::getHeapObjectId(ErrorString* errorString, const
 
 } // namespace WebCore
 
-#endif // ENABLE(JAVASCRIPT_DEBUGGER) && ENABLE(INSPECTOR)
+#endif // ENABLE(INSPECTOR)

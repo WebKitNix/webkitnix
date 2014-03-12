@@ -25,22 +25,17 @@
 #include "FrameView.h"
 #include "LayoutState.h"
 #include "PODFreeListArena.h"
+#include "Region.h"
 #include "RenderBlockFlow.h"
+#include <wtf/HashSet.h>
 #include <wtf/OwnPtr.h>
 
 namespace WebCore {
 
 class FlowThreadController;
 class ImageQualityController;
-class RenderQuote;
-
-#if USE(ACCELERATED_COMPOSITING)
 class RenderLayerCompositor;
-#endif
-
-#if ENABLE(CSS_SHADERS) && USE(3D_GRAPHICS)
-class CustomFilterGlobalContext;
-#endif
+class RenderQuote;
 
 class RenderView final : public RenderBlockFlow {
 public:
@@ -78,10 +73,10 @@ public:
     virtual LayoutRect visualOverflowRect() const override;
     virtual void computeRectForRepaint(const RenderLayerModelObject* repaintContainer, LayoutRect&, bool fixed = false) const override;
     void repaintRootContents();
-    void repaintViewRectangle(const LayoutRect&, bool immediate = false) const;
+    void repaintViewRectangle(const LayoutRect&) const;
     // Repaint the view, and all composited layers that intersect the given absolute rectangle.
     // FIXME: ideally we'd never have to do this, if all repaints are container-relative.
-    void repaintRectangleInViewAndCompositedLayers(const LayoutRect&, bool immediate = false);
+    void repaintRectangleInViewAndCompositedLayers(const LayoutRect&);
     void repaintViewAndCompositedLayers();
 
     virtual void paint(PaintInfo&, const LayoutPoint&) override;
@@ -102,11 +97,7 @@ public:
     virtual void absoluteRects(Vector<IntRect>&, const LayoutPoint& accumulatedOffset) const override;
     virtual void absoluteQuads(Vector<FloatQuad>&, bool* wasFixed) const override;
 
-#if USE(ACCELERATED_COMPOSITING)
     void setMaximalOutlineSize(int o);
-#else
-    void setMaximalOutlineSize(int o) { m_maximalOutlineSize = o; }
-#endif
     int maximalOutlineSize() const { return m_maximalOutlineSize; }
 
     LayoutRect viewRect() const;
@@ -184,14 +175,8 @@ public:
     // Notification that this view moved into or out of a native window.
     void setIsInWindow(bool);
 
-#if USE(ACCELERATED_COMPOSITING)
     RenderLayerCompositor& compositor();
     bool usesCompositing() const;
-#endif
-
-#if ENABLE(CSS_SHADERS) && USE(3D_GRAPHICS)
-    CustomFilterGlobalContext* customFilterGlobalContext();
-#endif
 
     IntRect unscaledDocumentRect() const;
     LayoutRect backgroundRect(RenderBox* backgroundRenderer) const;
@@ -206,11 +191,6 @@ public:
     FlowThreadController& flowThreadController();
 
     virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle) override;
-
-#if PLATFORM(IOS)
-    enum ContainingBlockCheck { CheckContainingBlock, DontCheckContainingBlock };
-    bool hasCustomFixedPosition(const RenderObject&, ContainingBlockCheck = CheckContainingBlock) const;
-#endif
 
     IntervalArena* intervalArena();
 
@@ -227,8 +207,6 @@ public:
     void removeRenderCounter() { ASSERT(m_renderCounterCount > 0); m_renderCounterCount--; }
     bool hasRenderCounters() { return m_renderCounterCount; }
     
-    virtual void addChild(RenderObject* newChild, RenderObject* beforeChild = 0) override;
-
     IntRect pixelSnappedLayoutOverflowRect() const { return pixelSnappedIntRect(layoutOverflowRect()); }
 
     ImageQualityController& imageQualityController();
@@ -242,6 +220,21 @@ public:
     void didCreateRenderer() { ++m_rendererCount; }
     void didDestroyRenderer() { --m_rendererCount; }
 
+    void resumePausedImageAnimationsIfNeeded();
+    void addRendererWithPausedImageAnimations(RenderElement&);
+    void removeRendererWithPausedImageAnimations(RenderElement&);
+
+    class RepaintRegionAccumulator {
+        WTF_MAKE_NONCOPYABLE(RepaintRegionAccumulator);
+    public:
+        RepaintRegionAccumulator(RenderView*);
+        ~RepaintRegionAccumulator();
+
+    private:
+        RenderView* m_rootView;
+        bool m_wasAccumulatingRepaintRegion;
+    };
+
 protected:
     virtual void mapLocalToContainer(const RenderLayerModelObject* repaintContainer, TransformState&, MapCoordinatesFlags = ApplyContainerFlip, bool* wasFixed = 0) const override;
     virtual const RenderObject* pushMappingToContainer(const RenderLayerModelObject* ancestorToStopAt, RenderGeometryMap&) const override;
@@ -249,12 +242,13 @@ protected:
     virtual bool requiresColumns(int desiredColumnCount) const override;
     
 private:
-    bool initializeLayoutState(LayoutState&);
+    void initializeLayoutState(LayoutState&);
 
-    virtual void calcColumnWidth() override;
+    virtual void computeColumnCountAndWidth() override;
     virtual ColumnInfo::PaginationUnit paginationUnit() const override;
 
     bool shouldRepaint(const LayoutRect&) const;
+    void flushAccumulatedRepaintRegion() const;
 
     // These functions may only be accessed by LayoutStateMaintainer.
     bool pushLayoutState(RenderBox& renderer, const LayoutSize& offset, LayoutUnit pageHeight = 0, bool pageHeightChanged = false, ColumnInfo* colInfo = nullptr)
@@ -262,7 +256,7 @@ private:
         // We push LayoutState even if layoutState is disabled because it stores layoutDelta too.
         if (!doingFullRepaint() || m_layoutState->isPaginated() || renderer.hasColumns() || renderer.flowThreadContainingBlock()
             || m_layoutState->lineGrid() || (renderer.style().lineGrid() != RenderStyle::initialLineGrid() && renderer.isRenderBlockFlow())
-#if ENABLE(CSS_SHAPES)
+#if ENABLE(CSS_SHAPES) && ENABLE(CSS_SHAPE_INSIDE)
             || (renderer.isRenderBlock() && toRenderBlock(renderer).shapeInsideInfo())
             || (m_layoutState->shapeInsideInfo() && renderer.isRenderBlock() && !toRenderBlock(renderer).allowsShapeInsideInfoSharing())
 #endif
@@ -311,6 +305,8 @@ private:
 
     uint64_t m_rendererCount;
 
+    mutable std::unique_ptr<Region> m_accumulatedRepaintRegion;
+
     // FIXME: Only used by embedded WebViews inside AppKit NSViews.  Find a way to remove.
     struct LegacyPrinting {
         LegacyPrinting()
@@ -338,12 +334,7 @@ private:
     bool m_pageLogicalHeightChanged;
     std::unique_ptr<LayoutState> m_layoutState;
     unsigned m_layoutStateDisableCount;
-#if USE(ACCELERATED_COMPOSITING)
     OwnPtr<RenderLayerCompositor> m_compositor;
-#endif
-#if ENABLE(CSS_SHADERS) && USE(3D_GRAPHICS)
-    OwnPtr<CustomFilterGlobalContext> m_customFilterGlobalContext;
-#endif
     OwnPtr<FlowThreadController> m_flowThreadController;
     RefPtr<IntervalArena> m_intervalArena;
 
@@ -354,9 +345,11 @@ private:
 #if ENABLE(CSS_FILTERS)
     bool m_hasSoftwareFilters;
 #endif
+
+    HashSet<RenderElement*> m_renderersWithPausedImageAnimation;
 };
 
-RENDER_OBJECT_TYPE_CASTS(RenderView, isRenderView());
+RENDER_OBJECT_TYPE_CASTS(RenderView, isRenderView())
 
 // Stack-based class to assist with LayoutState push/pop
 class LayoutStateMaintainer {

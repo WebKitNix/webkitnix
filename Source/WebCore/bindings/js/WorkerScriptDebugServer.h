@@ -31,35 +31,34 @@
 #ifndef WorkerScriptDebugServer_h
 #define WorkerScriptDebugServer_h
 
-#if ENABLE(JAVASCRIPT_DEBUGGER)
+#if ENABLE(INSPECTOR)
 
-#include "ScriptDebugServer.h"
+#include <inspector/ScriptDebugServer.h>
 
 namespace WebCore {
 
 class WorkerGlobalScope;
 
-class WorkerScriptDebugServer final : public ScriptDebugServer {
+class WorkerScriptDebugServer final : public Inspector::ScriptDebugServer {
     WTF_MAKE_NONCOPYABLE(WorkerScriptDebugServer);
 public:
     WorkerScriptDebugServer(WorkerGlobalScope*, const String&);
     ~WorkerScriptDebugServer() { }
 
-    void addListener(ScriptDebugListener*);
-    void removeListener(ScriptDebugListener*);
+    virtual void recompileAllJSFunctions() override;
+
+    void addListener(Inspector::ScriptDebugListener*);
+    void removeListener(Inspector::ScriptDebugListener*, bool skipRecompile);
 
     void interruptAndRunTask(PassOwnPtr<ScriptDebugServer::Task>);
-
-    void recompileAllJSFunctions() override;
 
 private:
     virtual ListenerSet* getListenersForGlobalObject(JSC::JSGlobalObject*) override { return &m_listeners; }
     virtual void didPause(JSC::JSGlobalObject*) override { }
     virtual void didContinue(JSC::JSGlobalObject*) override { }
-
-    virtual bool isContentScript(JSC::ExecState*) override { return false; }
-
     virtual void runEventLoopWhilePaused() override;
+    virtual bool isContentScript(JSC::ExecState*) const override { return false; }
+    virtual void reportException(JSC::ExecState*, JSC::JSValue) const override;
 
     WorkerGlobalScope* m_workerGlobalScope;
     ListenerSet m_listeners;
@@ -68,6 +67,6 @@ private:
 
 } // namespace WebCore
 
-#endif // ENABLE(JAVASCRIPT_DEBUGGER)
+#endif // ENABLE(INSPECTOR)
 
 #endif // WorkerScriptDebugServer_h

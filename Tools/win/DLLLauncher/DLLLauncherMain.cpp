@@ -95,6 +95,11 @@ static wstring applePathFromRegistry(const wstring& key, const wstring& value)
     return path;
 }
 
+static wstring appleApplicationSupportDirectory()
+{
+    return applePathFromRegistry(L"SOFTWARE\\Apple Inc.\\Apple Application Support", L"InstallDir");
+}
+
 static wstring copyEnvironmentVariable(const wstring& variable)
 {
     DWORD length = ::GetEnvironmentVariableW(variable.c_str(), 0, 0);
@@ -133,21 +138,20 @@ static bool modifyPath(const wstring& programName)
 #ifdef WIN_CAIRO
 
 #if defined(_M_X64)
-    wstring path = copyEnvironmentVariable(L"GSTREAMER_1_0_ROOT_X86_64") + L"bin";
+    wstring pathGStreamer = copyEnvironmentVariable(L"GSTREAMER_1_0_ROOT_X86_64") + L"bin";
+    wstring pathWinCairo = copyEnvironmentVariable(L"WEBKIT_LIBRARIES") + L"\\bin64";
 #else
-    wstring path = copyEnvironmentVariable(L"GSTREAMER_1_0_ROOT_X86") + L"bin";
+    wstring pathGStreamer = copyEnvironmentVariable(L"GSTREAMER_1_0_ROOT_X86") + L"bin";
+    wstring pathWinCairo = copyEnvironmentVariable(L"WEBKIT_LIBRARIES") + L"\\bin32";
 #endif
-    if (directoryExists(path))
-        prependPath(path);
+    prependPath(pathWinCairo);
+    if (directoryExists(pathGStreamer))
+        prependPath(pathGStreamer);
     return true;
 
 #else
 
-#if defined(_M_X64)
-    static const wstring pathPrefix = L"C:\\Program Files\\Common Files\\Apple\\Apple Application Support";
-#else
-    static const wstring pathPrefix = L"C:\\Program Files (x86)\\Common Files\\Apple\\Apple Application Support";
-#endif
+    const wstring& pathPrefix = appleApplicationSupportDirectory();
 
     if (!directoryExists(pathPrefix)) {
         fatalError(programName, L"Failed to determine path to AAS directory.");

@@ -19,6 +19,8 @@
  */
 
 [
+    Constructor,
+    ConstructorCallWith=ScriptExecutionContext,
     CustomToJSObject,
     JSGenerateToNativeObject,
 ] interface Document : Node {
@@ -49,7 +51,7 @@
                                                                           [TreatNullAs=NullString,Default=Undefined] optional DOMString qualifiedName);
     [ObjCLegacyUnnamedParameters] NodeList getElementsByTagNameNS([TreatNullAs=NullString,Default=Undefined] optional DOMString namespaceURI,
                                                    [Default=Undefined] optional DOMString localName);
-    Element getElementById([Default=Undefined] optional DOMString elementId);
+    Element getElementById([Default=Undefined,ObjCExplicitAtomicString] optional DOMString elementId);
 
     // DOM Level 3 Core
 
@@ -201,10 +203,8 @@
                                               
 #endif
 
-#if !defined(LANGUAGE_CPP) || !LANGUAGE_CPP
 #if !defined(LANGUAGE_OBJECTIVE_C) || !LANGUAGE_OBJECTIVE_C
     CanvasRenderingContext getCSSCanvasContext(DOMString contextId, DOMString name, long width, long height);
-#endif
 #endif
 
     // HTML 5
@@ -317,6 +317,10 @@
     [NotEnumerable, Conditional=POINTER_LOCK] attribute EventListener onwebkitpointerlockchange;
     [NotEnumerable, Conditional=POINTER_LOCK] attribute EventListener onwebkitpointerlockerror;
     [NotEnumerable, Conditional=CSP_NEXT] attribute EventListener onsecuritypolicyviolation;
+    [NotEnumerable, Conditional=WILL_REVEAL_EDGE_EVENTS] attribute EventListener onwebkitwillrevealbottom;
+    [NotEnumerable, Conditional=WILL_REVEAL_EDGE_EVENTS] attribute EventListener onwebkitwillrevealleft;
+    [NotEnumerable, Conditional=WILL_REVEAL_EDGE_EVENTS] attribute EventListener onwebkitwillrevealright;
+    [NotEnumerable, Conditional=WILL_REVEAL_EDGE_EVENTS] attribute EventListener onwebkitwillrevealtop;
 #endif
 
 #if defined(ENABLE_TOUCH_EVENTS) && ENABLE_TOUCH_EVENTS
@@ -340,11 +344,6 @@
 #endif // defined(WTF_PLATFORM_IOS) && WTF_PLATFORM_IOS
 #endif
 
-#if defined(LANGUAGE_CPP) && LANGUAGE_CPP
-    // Extra WebCore methods exposed to allow compile-time casting in C++
-    boolean isHTMLDocument();
-#endif
-
     // Page visibility API.
     [Conditional=PAGE_VISIBILITY_API] readonly attribute DOMString visibilityState;
     [Conditional=PAGE_VISIBILITY_API] readonly attribute boolean hidden;
@@ -354,5 +353,8 @@
 
     // currentscript API: http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html#dom-document-currentscript
     readonly attribute HTMLScriptElement currentScript;
+
+    // http://www.w3.org/TR/2014/WD-dom-20140204/#dom-document-origin
+    readonly attribute DOMString origin;
 };
 

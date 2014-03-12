@@ -26,6 +26,7 @@
 #ifndef Timer_h
 #define Timer_h
 
+#include <chrono>
 #include <functional>
 #include <wtf/Noncopyable.h>
 #include <wtf/Threading.h>
@@ -43,7 +44,7 @@ class TimerHeapElement;
 
 class TimerBase {
     WTF_MAKE_NONCOPYABLE(TimerBase);
-    WTF_FASTMALLOC_OPERATORS;
+    WTF_MAKE_FAST_ALLOCATED;
 public:
     TimerBase();
     virtual ~TimerBase();
@@ -52,6 +53,7 @@ public:
 
     void startRepeating(double repeatInterval) { start(repeatInterval, repeatInterval); }
     void startOneShot(double interval) { start(interval, 0); }
+    void startOneShot(std::chrono::milliseconds interval) { startOneShot(interval.count() * 0.001); }
 
     void stop();
     bool isActive() const;
@@ -139,13 +141,7 @@ inline bool TimerBase::isActive() const
 #if !PLATFORM(IOS)
     ASSERT(m_thread == currentThread());
 #else
-    // On iOS timers are always run on the main thread or the Web Thread.
-    // Unless we have workers enabled in which case timers can run on other threads.
-#if ENABLE(WORKERS)
     ASSERT(WebThreadIsCurrent() || pthread_main_np() || m_thread == currentThread());
-#else
-    ASSERT(WebThreadIsCurrent() || pthread_main_np());
-#endif
 #endif // PLATFORM(IOS)
     return m_nextFireTime;
 }

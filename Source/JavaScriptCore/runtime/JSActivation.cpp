@@ -32,7 +32,7 @@
 #include "Arguments.h"
 #include "Interpreter.h"
 #include "JSFunction.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 using namespace std;
 
@@ -58,7 +58,7 @@ void JSActivation::visitChildren(JSCell* cell, SlotVisitor& visitor)
 
 inline bool JSActivation::symbolTableGet(PropertyName propertyName, PropertySlot& slot)
 {
-    SymbolTableEntry entry = symbolTable()->inlineGet(propertyName.publicName());
+    SymbolTableEntry entry = symbolTable()->inlineGet(propertyName.uid());
     if (entry.isNull())
         return false;
 
@@ -72,7 +72,7 @@ inline bool JSActivation::symbolTableGet(PropertyName propertyName, PropertySlot
 
 inline bool JSActivation::symbolTableGet(PropertyName propertyName, PropertyDescriptor& descriptor)
 {
-    SymbolTableEntry entry = symbolTable()->inlineGet(propertyName.publicName());
+    SymbolTableEntry entry = symbolTable()->inlineGet(propertyName.uid());
     if (entry.isNull())
         return false;
 
@@ -89,7 +89,7 @@ inline bool JSActivation::symbolTablePut(ExecState* exec, PropertyName propertyN
     VM& vm = exec->vm();
     ASSERT(!Heap::heap(value) || Heap::heap(value) == Heap::heap(this));
     
-    SymbolTableEntry entry = symbolTable()->inlineGet(propertyName.publicName());
+    SymbolTableEntry entry = symbolTable()->inlineGet(propertyName.uid());
     if (entry.isNull())
         return false;
     if (entry.isReadOnly()) {
@@ -136,7 +136,7 @@ inline bool JSActivation::symbolTablePutWithAttributes(VM& vm, PropertyName prop
     WriteBarrierBase<Unknown>* reg;
     {
         ConcurrentJITLocker locker(symbolTable()->m_lock);
-        SymbolTable::Map::iterator iter = symbolTable()->find(locker, propertyName.publicName());
+        SymbolTable::Map::iterator iter = symbolTable()->find(locker, propertyName.uid());
         if (iter == symbolTable()->end(locker))
             return false;
         SymbolTableEntry& entry = iter->value;
@@ -210,9 +210,9 @@ JSValue JSActivation::toThis(JSCell*, ExecState* exec, ECMAMode ecmaMode)
     return exec->globalThisValue();
 }
 
-EncodedJSValue JSActivation::argumentsGetter(ExecState*, EncodedJSValue slotBase, EncodedJSValue, PropertyName)
+EncodedJSValue JSActivation::argumentsGetter(ExecState*, JSObject* slotBase, EncodedJSValue, PropertyName)
 {
-    JSActivation* activation = jsCast<JSActivation*>(JSValue::decode(slotBase));
+    JSActivation* activation = jsCast<JSActivation*>(slotBase);
     CallFrame* callFrame = CallFrame::create(reinterpret_cast<Register*>(activation->m_registers));
     ASSERT(!activation->isTornOff() && (callFrame->codeBlock()->usesArguments() || callFrame->codeBlock()->usesEval()));
     if (activation->isTornOff() || !(callFrame->codeBlock()->usesArguments() || callFrame->codeBlock()->usesEval()))

@@ -128,12 +128,10 @@ public:
     virtual void needTouchEvents(bool);
 #endif
 
-#if USE(ACCELERATED_COMPOSITING)
     virtual void attachRootGraphicsLayer(Frame*, GraphicsLayer*);
     virtual void setNeedsOneShotDrawingSynchronization();
     virtual void scheduleCompositingLayerFlush();
     virtual CompositingTriggerFlags allowedCompositingTriggers() const;
-#endif
 
 #if ENABLE(FULLSCREEN_API)
     virtual bool supportsFullScreenForElement(const WebCore::Element*, bool withKeyboard);
@@ -149,7 +147,6 @@ public:
 
     virtual void runOpenPanel(Frame*, PassRefPtr<FileChooser>);
     virtual void loadIconForFiles(const Vector<String>&, FileIconLoader*);
-    virtual void formStateDidChange(const Node*);
 
     virtual void setCursor(const Cursor&);
     virtual void setCursorHiddenUntilMouseMoves(bool);
@@ -163,10 +160,10 @@ public:
 
     virtual void cancelGeolocationPermissionForFrame(Frame*, Geolocation*);
 
-    virtual void invalidateContents(const IntRect&, bool);
-    virtual void invalidateRootView(const IntRect&, bool);
-    virtual void invalidateContentsAndRootView(const IntRect&, bool);
-    virtual void invalidateContentsForSlowScroll(const IntRect&, bool);
+    virtual void invalidateContents(const IntRect&);
+    virtual void invalidateRootView(const IntRect&);
+    virtual void invalidateContentsAndRootView(const IntRect&);
+    virtual void invalidateContentsForSlowScroll(const IntRect&);
     virtual void scroll(const IntSize&, const IntRect&, const IntRect&);
     virtual void cancelGeolocationPermissionRequestForFrame(Frame*);
     virtual void iconForFiles(const Vector<String, 0u>&, PassRefPtr<FileChooser>);

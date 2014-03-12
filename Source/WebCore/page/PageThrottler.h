@@ -29,9 +29,11 @@
 #include "Timer.h"
 
 #include "UserActivity.h"
+#include "ViewState.h"
 #include <wtf/HashSet.h>
 #include <wtf/OwnPtr.h>
 #include <wtf/PassOwnPtr.h>
+#include <wtf/WeakPtr.h>
 
 namespace WebCore {
 
@@ -40,41 +42,35 @@ class PageActivityAssertionToken;
 
 class PageThrottler {
 public:
-    PageThrottler(Page&);
-    ~PageThrottler();
+    PageThrottler(Page&, ViewState::Flags);
 
-    std::unique_ptr<PageActivityAssertionToken> createActivityToken();
+    void setViewState(ViewState::Flags);
 
-    bool shouldThrottleAnimations() const { return m_throttleState != PageNotThrottledState; }
-    bool shouldThrottleTimers() const { return m_throttleState != PageNotThrottledState; }
+    void didReceiveUserInput() { m_hysteresis.impulse(); }
+    void pluginDidEvaluate() { m_hysteresis.impulse(); }
+    std::unique_ptr<PageActivityAssertionToken> mediaActivityToken();
+    std::unique_ptr<PageActivityAssertionToken> pageLoadActivityToken();
 
-    void setIsVisuallyIdle(bool);
-
-    void reportInterestingEvent();
+    void hiddenPageDOMTimerThrottlingStateChanged();
 
 private:
-    enum PageThrottleState {
-        PageNotThrottledState,
-        PageWaitingToThrottleState,
-        PageThrottledState
-    };
-
     friend class PageActivityAssertionToken;
-    void addActivityToken(PageActivityAssertionToken&);
-    void removeActivityToken(PageActivityAssertionToken&);
+    WeakPtr<PageThrottler> weakPtr() { return m_weakPtrFactory.createWeakPtr(); }
+    void incrementActivityCount();
+    void decrementActivityCount();
 
-    void startThrottleHysteresisTimer();
-    void stopThrottleHysteresisTimer();
-    void throttleHysteresisTimerFired(Timer<PageThrottler>&);
+    void updateHysteresis();
 
-    void throttlePage();
-    void unthrottlePage();
+    friend class HysteresisActivity<PageThrottler>;
+    void started();
+    void stopped();
 
     Page& m_page;
-    PageThrottleState m_throttleState;
-    Timer<PageThrottler> m_throttleHysteresisTimer;
-    HashSet<PageActivityAssertionToken*> m_activityTokens;
-    UserActivity m_visuallyNonIdle;
+    ViewState::Flags m_viewState;
+    WeakPtrFactory<PageThrottler> m_weakPtrFactory;
+    HysteresisActivity<PageThrottler> m_hysteresis;
+    UserActivity::Impl m_activity;
+    size_t m_activityCount;
 };
 
 }

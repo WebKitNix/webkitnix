@@ -30,6 +30,7 @@
 #include "CSSValueKeywords.h"
 #include "CairoUtilitiesEfl.h"
 #include "ExceptionCodePlaceholder.h"
+#include "FloatRoundedRect.h"
 #include "FontDescription.h"
 #include "GraphicsContext.h"
 #include "HTMLInputElement.h"
@@ -1028,11 +1029,8 @@ void RenderThemeEfl::systemFont(CSSValueID, FontDescription& fontDescription) co
 {
     // It was called by RenderEmbeddedObject::paintReplaced to render alternative string.
     // To avoid cairo_error while rendering, fontDescription should be passed.
-    DEFINE_STATIC_LOCAL(String, fontFace, (ASCIILiteral("Sans")));
-    float fontSize = defaultFontSize;
-
-    fontDescription.setOneFamily(fontFace);
-    fontDescription.setSpecifiedSize(fontSize);
+    fontDescription.setOneFamily("Sans");
+    fontDescription.setSpecifiedSize(defaultFontSize);
     fontDescription.setIsAbsoluteSize(true);
     fontDescription.setGenericFamily(FontDescription::NoFamily);
     fontDescription.setWeight(FontWeightNormal);
@@ -1245,7 +1243,7 @@ bool RenderThemeEfl::paintMediaSliderTrack(RenderObject* object, const PaintInfo
 bool RenderThemeEfl::paintMediaSliderThumb(RenderObject*, const PaintInfo& info, const IntRect& rect)
 {
     IntSize thumbRect(3, 3);
-    info.context->fillRoundedRect(rect, thumbRect, thumbRect, thumbRect, thumbRect, m_sliderThumbColor, ColorSpaceDeviceRGB);
+    info.context->fillRoundedRect(FloatRoundedRect(rect, thumbRect, thumbRect, thumbRect, thumbRect), m_sliderThumbColor, ColorSpaceDeviceRGB);
     return true;
 }
 

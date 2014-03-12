@@ -25,8 +25,6 @@
 
 #include "config.h"
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #include "GraphicsLayer.h"
 
 #include "FloatPoint.h"
@@ -298,7 +296,7 @@ void GraphicsLayer::setReplicatedByLayer(GraphicsLayer* layer)
     m_replicaLayer = layer;
 }
 
-void GraphicsLayer::setOffsetFromRenderer(const IntSize& offset, ShouldSetNeedsDisplay shouldSetNeedsDisplay)
+void GraphicsLayer::setOffsetFromRenderer(const FloatSize& offset, ShouldSetNeedsDisplay shouldSetNeedsDisplay)
 {
     if (offset == m_offsetFromRenderer)
         return;
@@ -326,13 +324,13 @@ void GraphicsLayer::setBackgroundColor(const Color& color)
     m_backgroundColor = color;
 }
 
-void GraphicsLayer::paintGraphicsLayerContents(GraphicsContext& context, const IntRect& clip)
+void GraphicsLayer::paintGraphicsLayerContents(GraphicsContext& context, const FloatRect& clip)
 {
     if (m_client) {
-        IntSize offset = offsetFromRenderer();
+        FloatSize offset = offsetFromRenderer();
         context.translate(-offset);
 
-        IntRect clipRect(clip);
+        FloatRect clipRect(clip);
         clipRect.move(offset);
 
         m_client->paintContents(this, context, m_paintingPhase, clipRect);
@@ -793,5 +791,3 @@ void showGraphicsLayerTree(const WebCore::GraphicsLayer* layer)
     fprintf(stderr, "%s\n", output.utf8().data());
 }
 #endif
-
-#endif // USE(ACCELERATED_COMPOSITING)

@@ -27,7 +27,6 @@
 #include "JITExceptions.h"
 
 #include "CallFrame.h"
-#include "CallFrameInlines.h"
 #include "CodeBlock.h"
 #include "Interpreter.h"
 #include "JITStubs.h"
@@ -36,13 +35,18 @@
 #include "LLIntOpcode.h"
 #include "LLIntThunks.h"
 #include "Opcode.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include "VM.h"
 
 namespace JSC {
 
 void genericUnwind(VM* vm, ExecState* callFrame, JSValue exceptionValue)
 {
+    if (Options::breakOnThrow()) {
+        dataLog("In call frame ", RawPointer(callFrame), " for code block ", *callFrame->codeBlock(), "\n");
+        CRASH();
+    }
+    
     RELEASE_ASSERT(exceptionValue);
     HandlerInfo* handler = vm->interpreter->unwind(callFrame, exceptionValue); // This may update callFrame.
 
@@ -56,7 +60,7 @@ void genericUnwind(VM* vm, ExecState* callFrame, JSValue exceptionValue)
         catchRoutine = catchPCForInterpreter->u.pointer;
 #endif
     } else
-        catchRoutine = LLInt::getCodePtr(returnFromJavaScript);
+        catchRoutine = LLInt::getCodePtr(handleUncaughtException);
     
     vm->callFrameForThrow = callFrame;
     vm->targetMachinePCForThrow = catchRoutine;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,6 +29,7 @@
 #if ENABLE(FTL_JIT)
 
 #include "FTLSaveRestore.h"
+#include "RegisterSet.h"
 #include <wtf/CommaPrinter.h>
 #include <wtf/DataLog.h>
 #include <wtf/ListDump.h>
@@ -128,10 +129,36 @@ FPRReg Location::fpr() const
     RELEASE_ASSERT(isFPR());
     return static_cast<FPRReg>(dwarfRegNum() - 17);
 }
+#elif CPU(ARM64)
+// This decodes Dwarf flavour 0 for ARM64.
+bool Location::isGPR() const
+{
+    return kind() == Register && dwarfRegNum() >= 0 && dwarfRegNum() <= 31;
+}
+
+GPRReg Location::gpr() const
+{
+    RELEASE_ASSERT(involvesGPR());
+    return static_cast<GPRReg>(dwarfRegNum());
+}
+
+bool Location::isFPR() const
+{
+    return kind() == Register && dwarfRegNum() >= 64 && dwarfRegNum() <= 95;
+}
+
+FPRReg Location::fpr() const
+{
+    RELEASE_ASSERT(isFPR());
+    return static_cast<FPRReg>(dwarfRegNum() - 64);
+}
+#else // CPU cases for Location methods
+#error "CPU architecture not supported."
+#endif // CPU cases for Location methods
 
 void Location::restoreInto(MacroAssembler& jit, char* savedRegisters, GPRReg result, unsigned numFramesToPop) const
 {
-    if (involvesGPR() && MacroAssembler::isStackRelated(gpr())) {
+    if (involvesGPR() && RegisterSet::stackRegisters().get(gpr())) {
         // Make the result GPR contain the appropriate stack register.
         if (numFramesToPop) {
             jit.move(MacroAssembler::framePointerRegister, result);
@@ -148,7 +175,7 @@ void Location::restoreInto(MacroAssembler& jit, char* savedRegisters, GPRReg res
     }
     
     if (isGPR()) {
-        if (MacroAssembler::isStackRelated(gpr())) {
+        if (RegisterSet::stackRegisters().get(gpr())) {
             // Already restored into result.
         } else
             jit.load64(savedRegisters + offsetOfGPR(gpr()), result);
@@ -171,7 +198,7 @@ void Location::restoreInto(MacroAssembler& jit, char* savedRegisters, GPRReg res
         return;
         
     case Indirect:
-        if (MacroAssembler::isStackRelated(gpr())) {
+        if (RegisterSet::stackRegisters().get(gpr())) {
             // The stack register is already recovered into result.
             jit.load64(MacroAssembler::Address(result, offset()), result);
             return;
@@ -194,9 +221,6 @@ void Location::restoreInto(MacroAssembler& jit, char* savedRegisters, GPRReg res
     
     RELEASE_ASSERT_NOT_REACHED();
 }
-#else // CPU cases for Location methods
-#error "CPU architecture not supported."
-#endif // CPU cases for Location methods
 
 GPRReg Location::directGPR() const
 {

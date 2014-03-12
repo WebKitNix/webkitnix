@@ -32,7 +32,7 @@
 #include "DFGBlockInsertionSet.h"
 #include "DFGGraph.h"
 #include "DFGPhase.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 #include <wtf/HashMap.h>
 
 namespace JSC { namespace DFG {
@@ -73,9 +73,11 @@ public:
 private:
     void breakCriticalEdge(BasicBlock* predecessor, BasicBlock** successor)
     {
-        BasicBlock* pad = m_insertionSet.insertBefore(*successor);
+        // Note that we pass NaN for the count of the critical edge block, because we honestly
+        // don't know its execution frequency.
+        BasicBlock* pad = m_insertionSet.insertBefore(*successor, QNaN);
         pad->appendNode(
-            m_graph, SpecNone, Jump, (*successor)->at(0)->codeOrigin, OpInfo(*successor));
+            m_graph, SpecNone, Jump, (*successor)->at(0)->origin, OpInfo(*successor));
         pad->predecessors.append(predecessor);
         (*successor)->replacePredecessor(predecessor, pad);
         

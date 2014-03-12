@@ -51,39 +51,22 @@ RTCPeerConnectionHandlerMock::RTCPeerConnectionHandlerMock(RTCPeerConnectionHand
 {
 }
 
-bool RTCPeerConnectionHandlerMock::initialize(PassRefPtr<RTCConfiguration>, PassRefPtr<MediaConstraints> constraints)
+bool RTCPeerConnectionHandlerMock::initialize(PassRefPtr<RTCConfiguration>)
 {
-    String invalidQuery = MediaConstraintsMock::verifyConstraints(constraints);
-    if (!invalidQuery.isEmpty())
-        return false;
-
     RefPtr<IceConnectionNotifier> notifier = adoptRef(new IceConnectionNotifier(m_client, RTCPeerConnectionHandlerClient::IceConnectionStateCompleted, RTCPeerConnectionHandlerClient::IceGatheringStateComplete));
     m_timerEvents.append(adoptRef(new TimerEvent(this, notifier)));
     return true;
 }
 
-void RTCPeerConnectionHandlerMock::createOffer(PassRefPtr<RTCSessionDescriptionRequest> request, PassRefPtr<MediaConstraints> constraints)
+void RTCPeerConnectionHandlerMock::createOffer(PassRefPtr<RTCSessionDescriptionRequest> request, PassRefPtr<RTCOfferOptions>)
 {
-    String succeedValue;
-    RefPtr<SessionRequestNotifier> notifier;
-    if (constraints->getMandatoryConstraintValue("succeed", succeedValue) && succeedValue == "false")
-        notifier = adoptRef(new SessionRequestNotifier(request, 0, RTCPeerConnectionHandler::incompatibleConstraintsErrorName()));
-    else
-        notifier = adoptRef(new SessionRequestNotifier(request, RTCSessionDescriptionDescriptor::create("offer", "local")));
-
+    RefPtr<SessionRequestNotifier> notifier = adoptRef(new SessionRequestNotifier(request, RTCSessionDescriptionDescriptor::create("offer", "local")));
     m_timerEvents.append(adoptRef(new TimerEvent(this, notifier)));
 }
 
-void RTCPeerConnectionHandlerMock::createAnswer(PassRefPtr<RTCSessionDescriptionRequest> request, PassRefPtr<MediaConstraints> constraints)
+void RTCPeerConnectionHandlerMock::createAnswer(PassRefPtr<RTCSessionDescriptionRequest> request, PassRefPtr<RTCOfferAnswerOptions>)
 {
-    RefPtr<SessionRequestNotifier> notifier;
-    // We can only create an answer if we have already had an offer and the remote session description is stored.
-    String succeedValue;
-    if (constraints->getMandatoryConstraintValue("succeed", succeedValue) && succeedValue == "false")
-        notifier = adoptRef(new SessionRequestNotifier(request, 0, RTCPeerConnectionHandler::incompatibleConstraintsErrorName()));
-    else
-        notifier = adoptRef(new SessionRequestNotifier(request, RTCSessionDescriptionDescriptor::create("answer", "local")));
-
+    RefPtr<SessionRequestNotifier> notifier = adoptRef(new SessionRequestNotifier(request, RTCSessionDescriptionDescriptor::create("answer", "local")));
     m_timerEvents.append(adoptRef(new TimerEvent(this, notifier)));
 }
 
@@ -143,7 +126,7 @@ PassRefPtr<RTCSessionDescriptionDescriptor> RTCPeerConnectionHandlerMock::remote
     return m_remoteSessionDescription;
 }
 
-bool RTCPeerConnectionHandlerMock::updateIce(PassRefPtr<RTCConfiguration>, PassRefPtr<MediaConstraints>)
+bool RTCPeerConnectionHandlerMock::updateIce(PassRefPtr<RTCConfiguration>)
 {
     return true;
 }
@@ -155,12 +138,8 @@ bool RTCPeerConnectionHandlerMock::addIceCandidate(PassRefPtr<RTCVoidRequest> re
     return true;
 }
 
-bool RTCPeerConnectionHandlerMock::addStream(PassRefPtr<MediaStreamPrivate>, PassRefPtr<MediaConstraints> constraints)
+bool RTCPeerConnectionHandlerMock::addStream(PassRefPtr<MediaStreamPrivate>)
 {
-    String invalidQuery = MediaConstraintsMock::verifyConstraints(constraints);
-    if (!invalidQuery.isEmpty())
-        return false;
-
     // Spec states that every time a stream is added, a negotiationneeded event must be fired.
     m_client->negotiationNeeded();
     return true;

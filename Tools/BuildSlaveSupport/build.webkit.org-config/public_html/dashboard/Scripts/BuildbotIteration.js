@@ -59,8 +59,23 @@ BuildbotIteration.EXCEPTION = 4;
 BuildbotIteration.RETRY = 5;
 
 BuildbotIteration.Event = {
-    Updated: "updated"
+    Updated: "updated",
+    UnauthorizedAccess: "unauthorized-access"
 };
+
+// See <http://docs.buildbot.net/0.8.8/manual/cfg-properties.html>.
+function isMultiCodebaseGotRevisionProperty(property)
+{
+    return property[0] === "got_revision" && typeof property[1] === "object";
+}
+
+function parseRevisionProperty(property, key)
+{
+    if (!property)
+        return null;
+    var value = property[1];
+    return parseInt(isMultiCodebaseGotRevisionProperty(property) ? value[key] : value, 10);
+}
 
 BuildbotIteration.prototype = {
     constructor: BuildbotIteration,
@@ -143,6 +158,9 @@ BuildbotIteration.prototype = {
         if (this.loaded && this._finished)
             return;
 
+        if (this.queue.buildbot.needsAuthentication && this.queue.buildbot.authenticationStatus === Buildbot.AuthenticationStatus.InvalidCredentials)
+            return;
+
         function collectTestResults(data, stepName)
         {
             var testStep = data.steps.findFirst(function(step) { return step.name === stepName; });
@@ -197,14 +215,29 @@ BuildbotIteration.prototype = {
         }
 
         JSON.load(this.queue.baseURL + "/builds/" + this.id, function(data) {
+            this.queue.buildbot.isAuthenticated = true;
             if (!data || !data.properties)
                 return;
 
-            var openSourceRevisionProperty = data.properties.findFirst(function(property) { return property[0] === "got_revision" || property[0] === "revision" || property[0] === "opensource_got_revision"; });
-            this.openSourceRevision = openSourceRevisionProperty ? parseInt(openSourceRevisionProperty[1], 10) : null;
+            // The property got_revision may have the following forms:
+            //
+            // ["got_revision",{"Internal":"1357","WebKitOpenSource":"2468"},"Source"]
+            // OR
+            // ["got_revision","2468_1357","Source"]
+            // OR
+            // ["got_revision","2468","Source"]
+            //
+            // When extracting the OpenSource revision from property got_revision we don't need to check whether the
+            // value of got_revision is a dictionary (represents multiple codebases) or a string literal because we
+            // assume that got_revision contains the OpenSource revision. However, it may not have the Internal
+            // revision. Therefore, we only look at got_revision to extract the Internal revision when it's
+            // a dictionary.
 
-            var internalRevisionProperty = data.properties.findFirst(function(property) { return property[0] === "internal_got_revision"; });
-            this.internalRevision = internalRevisionProperty ? parseInt(internalRevisionProperty[1], 10) : null;
+            var openSourceRevisionProperty = data.properties.findFirst(function(property) { return property[0] === "got_revision" || property[0] === "revision" || property[0] === "opensource_got_revision"; });
+            this.openSourceRevision = parseRevisionProperty(openSourceRevisionProperty, "WebKitOpenSource");
+
+            var internalRevisionProperty = data.properties.findFirst(function(property) { return property[0] === "internal_got_revision" || isMultiCodebaseGotRevisionProperty(property); });
+            this.internalRevision = parseRevisionProperty(internalRevisionProperty, "Internal");
 
             var layoutTestResults = collectTestResults.call(this, data, "layout-test");
             this.layoutTestResults = layoutTestResults ? new BuildbotTestResults(this, layoutTestResults) : null;
@@ -243,11 +276,20 @@ BuildbotIteration.prototype = {
             this.queue.sortIterations();
 
             this.dispatchEventToListeners(BuildbotIteration.Event.Updated);
-        }.bind(this));
+        }.bind(this),
+        function(data) {
+            if (data.errorType === JSON.LoadError && data.errorHTTPCode === 401) {
+                this.queue.buildbot.isAuthenticated = false;
+                this.dispatchEventToListeners(BuildbotIteration.Event.UnauthorizedAccess);
+            }
+        }.bind(this), {withCredentials: this.queue.buildbot.needsAuthentication});
     },
 
     loadLayoutTestResults: function(callback)
     {
+        if (this.queue.buildbot.needsAuthentication && this.queue.buildbot.authenticationStatus === Buildbot.AuthenticationStatus.InvalidCredentials)
+            return;
+
         function collectResults(subtree, predicate)
         {
             // Results object is a trie:
@@ -311,12 +353,7 @@ BuildbotIteration.prototype = {
         }
 
         JSON.load(this.queue.buildbot.layoutTestFullResultsURLForIteration(this), function(data) {
-            if (data.error) {
-                console.log(data.error);
-                callback();
-                return;
-            }
-
+            this.queue.buildbot.isAuthenticated = true;
             this.hasPrettyPatch = data.has_pretty_patch;
 
             this.layoutTestResults.regressions = collectResults(data.tests, function(info) { return info["report"] === "REGRESSION" });
@@ -329,6 +366,14 @@ BuildbotIteration.prototype = {
             console.assert(data.num_missing === this.layoutTestResults.testsWithMissingResults.length);
 
             callback();
-        }.bind(this), "ADD_RESULTS");
+        }.bind(this),
+        function(data) {
+            if (data.errorType === JSON.LoadError && data.errorHTTPCode === 401) {
+                this.queue.buildbot.isAuthenticated = false;
+                this.dispatchEventToListeners(BuildbotIteration.Event.UnauthorizedAccess);
+            }
+            console.log(data.error);
+            callback();
+        }.bind(this), {jsonpCallbackName: "ADD_RESULTS", withCredentials: this.queue.buildbot.needsAuthentication});
     }
 };

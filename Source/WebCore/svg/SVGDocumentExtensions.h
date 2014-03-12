@@ -21,7 +21,6 @@
 #ifndef SVGDocumentExtensions_h
 #define SVGDocumentExtensions_h
 
-#if ENABLE(SVG)
 #include <wtf/Forward.h>
 #include <wtf/HashMap.h>
 #include <wtf/HashSet.h>
@@ -62,7 +61,7 @@ public:
     void reportWarning(const String&);
     void reportError(const String&);
 
-    SVGResourcesCache* resourcesCache() const { return m_resourcesCache.get(); }
+    SVGResourcesCache& resourcesCache() { return *m_resourcesCache; }
 
     HashSet<SVGElement*>* setOfElementsReferencingTarget(SVGElement* referencedElement) const;
     void addElementReferencingTarget(SVGElement* referencingElement, SVGElement* referencedElement);
@@ -110,5 +109,4 @@ private:
 
 }
 
-#endif
 #endif

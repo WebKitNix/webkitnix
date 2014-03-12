@@ -49,18 +49,18 @@
 #endif
 
 #if USE(SOUP)
+#include "GUniquePtrSoup.h"
 #include <libsoup/soup.h>
-#include <wtf/gobject/GOwnPtr.h>
 #include <wtf/gobject/GRefPtr.h>
 class Frame;
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 OBJC_CLASS NSURLAuthenticationChallenge;
 OBJC_CLASS NSURLConnection;
 #endif
 
-#if PLATFORM(MAC) || USE(CFNETWORK)
+#if PLATFORM(COCOA) || USE(CFNETWORK)
 typedef const struct __CFURLStorageSession* CFURLStorageSessionRef;
 #endif
 
@@ -112,7 +112,7 @@ namespace WebCore {
             , m_redirectCount(0)
             , m_previousPosition(0)
 #endif
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
             , m_startWhenScheduled(false)
             , m_needsSiteSpecificQuirks(false)
             , m_currentMacChallenge(nil)
@@ -150,15 +150,15 @@ namespace WebCore {
         ResourceRequest m_currentRequest;
         RefPtr<ResourceHandleCFURLConnectionDelegate> m_connectionDelegate;
 #endif
-#if PLATFORM(MAC) && !USE(CFNETWORK)
+#if PLATFORM(COCOA) && !USE(CFNETWORK)
         RetainPtr<NSURLConnection> m_connection;
         RetainPtr<id> m_delegate;
 #endif
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
         bool m_startWhenScheduled;
         bool m_needsSiteSpecificQuirks;
 #endif
-#if PLATFORM(MAC) || USE(CFNETWORK)
+#if PLATFORM(COCOA) || USE(CFNETWORK)
         RetainPtr<CFURLStorageSessionRef> m_storageSession;
 #endif
 #if USE(WININET)
@@ -197,7 +197,7 @@ namespace WebCore {
         GRefPtr<GCancellable> m_cancellable;
         GRefPtr<GAsyncResult> m_deferredResult;
         GRefPtr<GSource> m_timeoutSource;
-        GOwnPtr<SoupBuffer> m_soupBuffer;
+        GUniquePtr<SoupBuffer> m_soupBuffer;
         unsigned long m_bodySize;
         unsigned long m_bodyDataSent;
         SoupSession* soupSession();
@@ -211,7 +211,7 @@ namespace WebCore {
         } m_credentialDataToSaveInPersistentStore;
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
         // We need to keep a reference to the original challenge to be able to cancel it.
         // It is almost identical to m_currentWebChallenge.nsURLAuthenticationChallenge(), but has a different sender.
         NSURLAuthenticationChallenge *m_currentMacChallenge;

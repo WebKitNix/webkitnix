@@ -26,8 +26,6 @@
 #ifndef JITThunks_h
 #define JITThunks_h
 
-#include <wtf/Platform.h>
-
 #if ENABLE(JIT)
 
 #include "CallData.h"
@@ -54,6 +52,7 @@ public:
 
     MacroAssemblerCodePtr ctiNativeCall(VM*);
     MacroAssemblerCodePtr ctiNativeConstruct(VM*);
+    MacroAssemblerCodePtr ctiNativeTailCall(VM*);    
 
     MacroAssemblerCodeRef ctiStub(VM*, ThunkGenerator);
 

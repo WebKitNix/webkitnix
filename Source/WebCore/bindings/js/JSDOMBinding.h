@@ -34,14 +34,11 @@
 #include <heap/Weak.h>
 #include <heap/WeakInlines.h>
 #include <runtime/Error.h>
-#include <runtime/FunctionPrototype.h>
 #include <runtime/JSArray.h>
 #include <runtime/JSArrayBuffer.h>
-#include <runtime/JSDataView.h>
+#include <runtime/JSCInlines.h>
 #include <runtime/JSTypedArrays.h>
 #include <runtime/Lookup.h>
-#include <runtime/ObjectPrototype.h>
-#include <runtime/Operations.h>
 #include <runtime/TypedArrayInlines.h>
 #include <runtime/TypedArrays.h>
 #include <wtf/Forward.h>
@@ -117,7 +114,7 @@ template<class WrapperClass> inline JSC::JSObject* getDOMPrototype(JSC::VM& vm, 
 
 inline JSC::WeakHandleOwner* wrapperOwner(DOMWrapperWorld& world, JSC::ArrayBuffer*)
 {
-    return static_cast<WebCoreTypedArrayController*>(world.vm()->m_typedArrayController.get())->wrapperOwner();
+    return static_cast<WebCoreTypedArrayController*>(world.vm().m_typedArrayController.get())->wrapperOwner();
 }
 
 inline void* wrapperContext(DOMWrapperWorld& world, JSC::ArrayBuffer*)
@@ -464,14 +461,6 @@ inline PassRefPtr<JSC::Uint32Array> toUint32Array(JSC::JSValue value) { return J
 inline PassRefPtr<JSC::Float32Array> toFloat32Array(JSC::JSValue value) { return JSC::toNativeTypedView<JSC::Float32Adaptor>(value); }
 inline PassRefPtr<JSC::Float64Array> toFloat64Array(JSC::JSValue value) { return JSC::toNativeTypedView<JSC::Float64Adaptor>(value); }
 
-inline PassRefPtr<JSC::DataView> toDataView(JSC::JSValue value)
-{
-    JSC::JSDataView* wrapper = JSC::jsDynamicCast<JSC::JSDataView*>(value);
-    if (!wrapper)
-        return 0;
-    return wrapper->typedImpl();
-}
-
 template<class T> struct NativeValueTraits;
 
 template<>
@@ -578,7 +567,7 @@ bool shouldAllowAccessToFrame(JSC::ExecState*, Frame*, String& message);
 bool shouldAllowAccessToDOMWindow(JSC::ExecState*, DOMWindow&, String& message);
 
 void printErrorMessageForFrame(Frame*, const String& message);
-JSC::EncodedJSValue objectToStringFunctionGetter(JSC::ExecState*, JSC::EncodedJSValue, JSC::EncodedJSValue, JSC::PropertyName);
+JSC::EncodedJSValue objectToStringFunctionGetter(JSC::ExecState*, JSC::JSObject*, JSC::EncodedJSValue, JSC::PropertyName);
 
 inline JSC::JSValue jsStringWithCache(JSC::ExecState* exec, const String& s)
 {
@@ -612,16 +601,19 @@ inline AtomicString propertyNameToAtomicString(JSC::PropertyName propertyName)
 }
 
 template <class ThisImp>
-inline const JSC::HashEntry* getStaticValueSlotEntryWithoutCaching(JSC::ExecState* exec, JSC::PropertyName propertyName)
+inline const JSC::HashTableValue* getStaticValueSlotEntryWithoutCaching(JSC::ExecState* exec, JSC::PropertyName propertyName)
 {
-    const JSC::HashEntry* entry = ThisImp::info()->propHashTable(exec)->entry(exec, propertyName);
+    const JSC::HashTable* table = ThisImp::info()->propHashTable(exec);
+    if (!table)
+        return getStaticValueSlotEntryWithoutCaching<typename ThisImp::Base>(exec, propertyName);
+    const JSC::HashTableValue* entry = table->entry(exec, propertyName);
     if (!entry) // not found, forward to parent
         return getStaticValueSlotEntryWithoutCaching<typename ThisImp::Base>(exec, propertyName);
     return entry;
 }
 
 template <>
-inline const JSC::HashEntry* getStaticValueSlotEntryWithoutCaching<JSDOMWrapper>(JSC::ExecState*, JSC::PropertyName)
+inline const JSC::HashTableValue* getStaticValueSlotEntryWithoutCaching<JSDOMWrapper>(JSC::ExecState*, JSC::PropertyName)
 {
     return 0;
 }
@@ -641,19 +633,6 @@ class HasMemoryCostMemberFunction {
 
 public:
     static const bool value = sizeof(test<T>(0)) == sizeof(YesType);
-};
-
-template <typename T, bool hasReportCostFunction = HasMemoryCostMemberFunction<T>::value > struct ReportMemoryCost;
-template <typename T> struct ReportMemoryCost<T, true> {
-    static void reportMemoryCost(JSC::ExecState* exec, T* impl)
-    {
-        exec->heap()->reportExtraMemoryCost(impl->memoryCost());
-    }
-};
-template <typename T> struct ReportMemoryCost<T, false> {
-    static void reportMemoryCost(JSC::ExecState*, T*)
-    {
-    }
 };
 
 enum SecurityReportingOption {

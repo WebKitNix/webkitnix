@@ -32,7 +32,7 @@ class SubresourceLoader;
 
 class CachedRawResource final : public CachedResource {
 public:
-    CachedRawResource(ResourceRequest&, Type);
+    CachedRawResource(ResourceRequest&, Type, SessionID);
 
     // FIXME: AssociatedURLLoader shouldn't be a DocumentThreadableLoader and therefore shouldn't
     // use CachedRawResource. However, it is, and it needs to be able to defer loading.
@@ -87,6 +87,8 @@ private:
 
     Vector<RedirectPair> m_redirectChain;
 };
+
+TYPE_CASTS_BASE(CachedRawResource, CachedResource, resource, resource->isMainOrRawResource(), resource.isMainOrRawResource())
 
 }
 

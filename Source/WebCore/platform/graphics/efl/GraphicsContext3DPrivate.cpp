@@ -21,8 +21,6 @@
 #include "config.h"
 #include "GraphicsContext3DPrivate.h"
 
-#if USE(3D_GRAPHICS) || USE(ACCELERATED_COMPOSITING)
-
 #include "HostWindow.h"
 #include "NotImplemented.h"
 
@@ -105,12 +103,6 @@ void GraphicsContext3DPrivate::releaseResources()
         m_offScreenContext->destroy();
         m_offScreenContext->releaseCurrent();
     }
-}
-
-bool GraphicsContext3DPrivate::createSurface(PageClientEfl*, bool)
-{
-    notImplemented();
-    return false;
 }
 
 void GraphicsContext3DPrivate::setContextLostCallback(PassOwnPtr<GraphicsContext3D::ContextLostCallback> callBack)
@@ -275,5 +267,3 @@ GraphicsSurface::Flags GraphicsContext3DPrivate::graphicsSurfaceFlags() const
 #endif
 
 } // namespace WebCore
-
-#endif // USE(3D_GRAPHICS) || USE(ACCELERATED_COMPOSITING)

@@ -28,7 +28,7 @@
 
 #include "AuthenticationChallenge.h"
 #include "CookieJarSoup.h"
-#include "GOwnPtrSoup.h"
+#include "GUniquePtrSoup.h"
 #include "Logging.h"
 #include "ResourceHandle.h"
 #include <libsoup/soup.h>
@@ -50,7 +50,7 @@ inline static void soupLogPrinter(SoupLogger*, SoupLoggerLogLevel, char directio
 
 SoupNetworkSession& SoupNetworkSession::defaultSession()
 {
-    static NeverDestroyed<SoupNetworkSession> networkSession(soupCookieJar());
+    static SoupNetworkSession networkSession(soupCookieJar());
     return networkSession;
 }
 
@@ -78,6 +78,7 @@ static void authenticateCallback(SoupSession* session, SoupMessage* soupMessage,
     handle->didReceiveAuthenticationChallenge(AuthenticationChallenge(session, soupMessage, soupAuth, retrying, handle.get()));
 }
 
+#if ENABLE(WEB_TIMING)
 static void requestStartedCallback(SoupSession*, SoupMessage* soupMessage, SoupSocket*, gpointer)
 {
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(G_OBJECT(soupMessage), "handle"));
@@ -85,6 +86,7 @@ static void requestStartedCallback(SoupSession*, SoupMessage* soupMessage, SoupS
         return;
     handle->didStartRequest();
 }
+#endif
 
 SoupNetworkSession::SoupNetworkSession(SoupCookieJar* cookieJar)
     : m_soupSession(adoptGRef(soup_session_async_new()))
@@ -208,7 +210,7 @@ char* SoupNetworkSession::httpProxy() const
     if (!soupResolver)
         return nullptr;
 
-    GOwnPtr<SoupURI> uri;
+    GUniqueOutPtr<SoupURI> uri;
     g_object_get(soupResolver, SOUP_PROXY_RESOLVER_WK_PROXY_URI, &uri.outPtr(), nullptr);
 
     return uri ? soup_uri_to_string(uri.get(), FALSE) : nullptr;

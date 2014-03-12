@@ -28,8 +28,9 @@
 #include <wtf/Deque.h>
 #include <wtf/OwnPtr.h>
 #include <wtf/PassOwnPtr.h>
-#include <wtf/gobject/GOwnPtr.h>
+#include <wtf/ProcessID.h>
 #include <wtf/gobject/GRefPtr.h>
+#include <wtf/gobject/GUniquePtr.h>
 #include <wtf/text/CString.h>
 
 static const char introspectionXML[] =
@@ -47,6 +48,9 @@ static const char introspectionXML[] =
     "  </method>"
     "  <method name='GetInitializationUserData'>"
     "   <arg type='s' name='userData' direction='out'/>"
+    "  </method>"
+    "  <method name='GetProcessIdentifier'>"
+    "   <arg type='u' name='identifier' direction='out'/>"
     "  </method>"
     "  <signal name='DocumentLoaded'/>"
     "  <signal name='URIChanged'>"
@@ -131,8 +135,8 @@ static gboolean sendRequestCallback(WebKitWebPage*, WebKitURIRequest* request, W
     g_assert(requestURI);
 
     if (const char* suffix = g_strrstr(requestURI, "/remove-this/javascript.js")) {
-        GOwnPtr<char> prefix(g_strndup(requestURI, strlen(requestURI) - strlen(suffix)));
-        GOwnPtr<char> newURI(g_strdup_printf("%s/javascript.js", prefix.get()));
+        GUniquePtr<char> prefix(g_strndup(requestURI, strlen(requestURI) - strlen(suffix)));
+        GUniquePtr<char> newURI(g_strdup_printf("%s/javascript.js", prefix.get()));
         webkit_uri_request_set_uri(request, newURI.get());
     } else if (g_str_has_suffix(requestURI, "/add-do-not-track-header")) {
         SoupMessageHeaders* headers = webkit_uri_request_get_http_headers(request);
@@ -199,7 +203,7 @@ static void methodCallCallback(GDBusConnection* connection, const char* sender, 
             return;
 
         WebKitDOMDocument* document = webkit_web_page_get_dom_document(page);
-        GOwnPtr<char> title(webkit_dom_document_get_title(document));
+        GUniquePtr<char> title(webkit_dom_document_get_title(document));
         g_dbus_method_invocation_return_value(invocation, g_variant_new("(s)", title.get()));
     } else if (!g_strcmp0(methodName, "RunJavaScriptInIsolatedWorld")) {
         uint64_t pageID;
@@ -223,6 +227,9 @@ static void methodCallCallback(GDBusConnection* connection, const char* sender, 
         g_assert(g_variant_is_of_type(initializationUserData.get(), G_VARIANT_TYPE_STRING));
         g_dbus_method_invocation_return_value(invocation, g_variant_new("(s)",
             g_variant_get_string(initializationUserData.get(), nullptr)));
+    } else if (!g_strcmp0(methodName, "GetProcessIdentifier")) {
+        g_dbus_method_invocation_return_value(invocation,
+            g_variant_new("(u)", static_cast<guint32>(getCurrentProcessID())));
     }
 }
 
@@ -236,7 +243,7 @@ static void busAcquiredCallback(GDBusConnection* connection, const char* name, g
     if (!introspectionData)
         introspectionData = g_dbus_node_info_new_for_xml(introspectionXML, 0);
 
-    GOwnPtr<GError> error;
+    GUniqueOutPtr<GError> error;
     unsigned registrationID = g_dbus_connection_register_object(
         connection,
         "/org/webkit/gtk/WebExtensionTest",
@@ -262,6 +269,18 @@ static void busAcquiredCallback(GDBusConnection* connection, const char* name, g
     }
 }
 
+static GUniquePtr<char> makeBusName(GVariant* userData)
+{
+    // When the web extension is used by TestMultiprocess, an uint32
+    // identifier is passed as user data. It uniquely identifies
+    // the web process, and the UI side expects it added as suffix to
+    // the bus name.
+    if (userData && g_variant_is_of_type(userData, G_VARIANT_TYPE_UINT32))
+        return GUniquePtr<char>(g_strdup_printf("org.webkit.gtk.WebExtensionTest%u", g_variant_get_uint32(userData)));
+
+    return GUniquePtr<char>(g_strdup("org.webkit.gtk.WebExtensionTest"));
+}
+
 extern "C" void webkit_web_extension_initialize_with_user_data(WebKitWebExtension* extension, GVariant* userData)
 {
     initializationUserData = userData;
@@ -269,9 +288,10 @@ extern "C" void webkit_web_extension_initialize_with_user_data(WebKitWebExtensio
     g_signal_connect(extension, "page-created", G_CALLBACK(pageCreatedCallback), extension);
     g_signal_connect(webkit_script_world_get_default(), "window-object-cleared", G_CALLBACK(windowObjectCleared), 0);
 
+    GUniquePtr<char> busName(makeBusName(userData));
     g_bus_own_name(
         G_BUS_TYPE_SESSION,
-        "org.webkit.gtk.WebExtensionTest",
+        busName.get(),
         G_BUS_NAME_OWNER_FLAGS_NONE,
         busAcquiredCallback,
         0, 0,

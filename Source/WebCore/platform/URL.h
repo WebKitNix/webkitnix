@@ -35,7 +35,11 @@
 typedef const struct __CFURL* CFURLRef;
 #endif
 
-#if PLATFORM(MAC)
+#if USE(SOUP)
+#include "GUniquePtrSoup.h"
+#endif
+
+#if USE(FOUNDATION)
 OBJC_CLASS NSURL;
 #endif
 
@@ -67,6 +71,8 @@ public:
     // the same way we treate null and empty base URLs.
     URL(const URL& base, const String& relative);
     URL(const URL& base, const String& relative, const TextEncoding&);
+
+    static URL fakeURLWithRelativePart(const String&);
 
     String strippedForUseAsReferrer() const;
 
@@ -160,7 +166,12 @@ public:
     RetainPtr<CFURLRef> createCFURL() const;
 #endif
 
-#if PLATFORM(MAC)
+#if USE(SOUP)
+    URL(SoupURI*);
+    GUniquePtr<SoupURI> createSoupURI() const;
+#endif
+
+#if USE(FOUNDATION)
     URL(NSURL*);
     operator NSURL*() const;
 #endif
@@ -225,6 +236,7 @@ const URL& blankURL();
 
 bool protocolIs(const String& url, const char* protocol);
 bool protocolIsJavaScript(const String& url);
+bool protocolIsInHTTPFamily(const String& url);
 
 bool isDefaultPortForProtocol(unsigned short port, const String& protocol);
 bool portAllowed(const URL&); // Blacklist ports that should never be used for Web resources.

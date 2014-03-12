@@ -26,7 +26,7 @@
 #include "JSGlobalObject.h"
 #include "JSLock.h"
 #include "JSObject.h"
-
+#include "JSCInlines.h"
 
 namespace JSC {
 
@@ -108,15 +108,15 @@ MarkedSpace::~MarkedSpace()
     ASSERT(!m_blocks.set().size());
 }
 
-struct LastChanceToFinalize : MarkedBlock::VoidFunctor {
-    void operator()(MarkedBlock* block) { block->lastChanceToFinalize(); }
+struct LastChanceToFinalize {
+    void operator()(MarkedAllocator& allocator) { allocator.lastChanceToFinalize(); }
 };
 
 void MarkedSpace::lastChanceToFinalize()
 {
     DelayedReleaseScope delayedReleaseScope(*this);
     stopAllocating();
-    forEachBlock<LastChanceToFinalize>();
+    forEachAllocator<LastChanceToFinalize>();
 }
 
 void MarkedSpace::sweep()
@@ -213,7 +213,6 @@ struct ResumeAllocatingFunctor {
 void MarkedSpace::resumeAllocating()
 {
     ASSERT(isIterating());
-    DelayedReleaseScope scope(*this);
     forEachAllocator<ResumeAllocatingFunctor>();
 }
 
@@ -318,12 +317,6 @@ void MarkedSpace::clearNewlyAllocated()
 #endif
 }
 
-#ifndef NDEBUG
-struct VerifyMarked : MarkedBlock::VoidFunctor {
-    void operator()(MarkedBlock* block) { ASSERT(block->needsSweeping()); }
-};
-#endif
-
 void MarkedSpace::clearMarks()
 {
     if (m_heap->operationInProgress() == EdenCollection) {
@@ -331,9 +324,6 @@ void MarkedSpace::clearMarks()
             m_blocksWithNewObjects[i]->clearMarks();
     } else
         forEachBlock<ClearMarks>();
-#ifndef NDEBUG
-    forEachBlock<VerifyMarked>();
-#endif
 }
 
 void MarkedSpace::willStartIterating()
@@ -346,6 +336,7 @@ void MarkedSpace::willStartIterating()
 void MarkedSpace::didFinishIterating()
 {
     ASSERT(isIterating());
+    DelayedReleaseScope scope(*this);
     resumeAllocating();
     m_isIterating = false;
 }

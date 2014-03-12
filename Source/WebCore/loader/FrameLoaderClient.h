@@ -38,7 +38,7 @@
 #include <wtf/Forward.h>
 #include <wtf/Vector.h>
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
 #ifdef __OBJC__ 
 #import <Foundation/Foundation.h>
 typedef id RemoteAXObjectRef;
@@ -49,9 +49,9 @@ typedef void* RemoteAXObjectRef;
 
 typedef class _jobject* jobject;
 
-#if PLATFORM(MAC) && !defined(__OBJC__)
-class NSCachedURLResponse;
-class NSView;
+#if PLATFORM(COCOA)
+OBJC_CLASS NSCachedURLResponse;
+OBJC_CLASS NSView;
 #endif
 
 namespace WebCore {
@@ -93,7 +93,6 @@ namespace WebCore {
 #endif
     class SecurityOrigin;
     class SharedBuffer;
-    class SocketStreamHandle;
     class StringWithDirection;
     class SubstituteData;
     class Widget;
@@ -115,9 +114,10 @@ namespace WebCore {
         virtual bool hasWebView() const = 0; // mainly for assertions
 
         virtual void makeRepresentation(DocumentLoader*) = 0;
-        virtual void forceLayout() = 0;
+        
 #if PLATFORM(IOS)
-        virtual void forceLayoutWithoutRecalculatingStyles() = 0;
+        // Returns true if the client forced the layout.
+        virtual bool forceLayoutOnRestoreFromPageCache() = 0;
 #endif
         virtual void forceLayoutForNonHTML() = 0;
 
@@ -201,7 +201,6 @@ namespace WebCore {
         virtual void updateGlobalHistoryRedirectLinks() = 0;
 
         virtual bool shouldGoToHistoryItem(HistoryItem*) const = 0;
-        virtual bool shouldStopLoadingForHistoryItem(HistoryItem*) const = 0;
         virtual void updateGlobalHistoryItemForPage() { }
 
         // This frame has set its opener to null, disowning it for the lifetime of the frame.
@@ -284,7 +283,7 @@ namespace WebCore {
 
         virtual void registerForIconNotification(bool listen = true) = 0;
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
         // Allow an accessibility object to retrieve a Frame parent if there's no PlatformWidget.
         virtual RemoteAXObjectRef accessibilityRemoteObject() = 0;
         virtual NSCachedURLResponse* willCacheResponse(DocumentLoader*, unsigned long identifier, NSCachedURLResponse*) const = 0;
@@ -313,8 +312,6 @@ namespace WebCore {
 
         virtual bool shouldPaintBrokenImage(const URL&) const { return true; }
 
-        virtual void dispatchWillOpenSocketStream(SocketStreamHandle*) { }
-
         virtual void dispatchGlobalObjectAvailable(DOMWrapperWorld&) { }
         virtual void dispatchWillDisconnectDOMWindowExtensionFromGlobalObject(DOMWindowExtension*) { }
         virtual void dispatchDidReconnectDOMWindowExtensionToGlobalObject(DOMWindowExtension*) { }
@@ -329,7 +326,8 @@ namespace WebCore {
         // Informs the embedder that a WebGL canvas inside this frame received a lost context
         // notification with the given GL_ARB_robustness guilt/innocence code (see Extensions3D.h).
         virtual void didLoseWebGLContext(int) { }
-        virtual WebGLLoadPolicy webGLPolicyForURL(const String&) const { return WebGLAllow; }
+        virtual WebGLLoadPolicy webGLPolicyForURL(const String&) const { return WebGLAllowCreation; }
+        virtual WebGLLoadPolicy resolveWebGLPolicyForURL(const String&) const { return WebGLAllowCreation; }
 #endif
 
         virtual void forcePageTransitionIfNeeded() { }

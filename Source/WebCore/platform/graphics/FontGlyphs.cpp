@@ -32,7 +32,6 @@
 #include "Font.h"
 #include "FontCache.h"
 #include "SegmentedFontData.h"
-#include <wtf/unicode/Unicode.h>
 
 namespace WebCore {
 
@@ -307,7 +306,7 @@ std::pair<GlyphData, GlyphPage*> FontGlyphs::glyphDataAndPageForCharacter(const 
                             variant = BrokenIdeographVariant;
                             break;
                         }
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
                         else if (data.fontData->platformData().syntheticOblique())
                             return glyphDataAndPageForCJKCharacterWithoutSyntheticItalic(c, data, page, pageNumber);
 #endif

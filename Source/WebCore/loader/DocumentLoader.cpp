@@ -67,7 +67,6 @@
 #include <wtf/Ref.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
-#include <wtf/unicode/Unicode.h>
 
 #if ENABLE(WEB_ARCHIVE) || ENABLE(MHTML)
 #include "ArchiveFactory.h"
@@ -79,34 +78,35 @@
 
 namespace WebCore {
 
-static void cancelAll(const ResourceLoaderSet& loaders)
+static void cancelAll(const ResourceLoaderMap& loaders)
 {
     Vector<RefPtr<ResourceLoader>> loadersCopy;
-    copyToVector(loaders, loadersCopy);
-    size_t size = loadersCopy.size();
-    for (size_t i = 0; i < size; ++i)
-        loadersCopy[i]->cancel();
+    copyValuesToVector(loaders, loadersCopy);
+    for (auto& loader : loadersCopy)
+        loader->cancel();
 }
 
-static void setAllDefersLoading(const ResourceLoaderSet& loaders, bool defers)
+static void setAllDefersLoading(const ResourceLoaderMap& loaders, bool defers)
 {
     Vector<RefPtr<ResourceLoader>> loadersCopy;
-    copyToVector(loaders, loadersCopy);
-    size_t size = loadersCopy.size();
-    for (size_t i = 0; i < size; ++i)
-        loadersCopy[i]->setDefersLoading(defers);
+    copyValuesToVector(loaders, loadersCopy);
+    for (auto& loader : loadersCopy)
+        loader->setDefersLoading(defers);
 }
 
-static bool areAllLoadersPageCacheAcceptable(const ResourceLoaderSet& loaders)
+static bool areAllLoadersPageCacheAcceptable(const ResourceLoaderMap& loaders)
 {
     Vector<RefPtr<ResourceLoader>> loadersCopy;
-    copyToVector(loaders, loadersCopy);
+    copyValuesToVector(loaders, loadersCopy);
     for (auto& loader : loadersCopy) {
         ResourceHandle* handle = loader->handle();
         if (!handle)
             return false;
 
-        CachedResource* cachedResource = memoryCache()->resourceForURL(handle->firstRequest().url());
+        if (!loader->frameLoader())
+            return false;
+
+        CachedResource* cachedResource = memoryCache()->resourceForURL(handle->firstRequest().url(), loader->frameLoader()->frame().page()->sessionID());
         if (!cachedResource)
             return false;
 
@@ -441,7 +441,7 @@ void DocumentLoader::finishedLoading(double finishTime)
     if (!m_mainDocumentError.isNull())
         return;
     clearMainResourceLoader();
-    if (!frameLoader()->stateMachine()->creatingInitialEmptyDocument())
+    if (!frameLoader()->stateMachine().creatingInitialEmptyDocument())
         frameLoader()->checkLoadComplete();
 
     // If the document specified an application cache manifest, it violates the author's intent if we store it in the memory cache
@@ -605,7 +605,8 @@ void DocumentLoader::responseReceived(CachedResource* resource, const ResourceRe
         return;
 
     DEFINE_STATIC_LOCAL(AtomicString, xFrameOptionHeader, ("x-frame-options", AtomicString::ConstructFromLiteral));
-    HTTPHeaderMap::const_iterator it = response.httpHeaderFields().find(xFrameOptionHeader);
+
+    auto it = response.httpHeaderFields().find(xFrameOptionHeader);
     if (it != response.httpHeaderFields().end()) {
         String content = it->value;
         ASSERT(m_mainResource);
@@ -614,7 +615,7 @@ void DocumentLoader::responseReceived(CachedResource* resource, const ResourceRe
         if (frameLoader()->shouldInterruptLoadForXFrameOptions(content, response.url(), identifier)) {
             InspectorInstrumentation::continueAfterXFrameOptionsDenied(m_frame, this, identifier, response);
             String message = "Refused to display '" + response.url().stringCenterEllipsizedToLength() + "' in a frame because it set 'X-Frame-Options' to '" + content + "'.";
-            frame()->document()->addConsoleMessage(SecurityMessageSource, ErrorMessageLevel, message, identifier);
+            frame()->document()->addConsoleMessage(MessageSource::Security, MessageLevel::Error, message, identifier);
             frame()->document()->enforceSandboxFlags(SandboxOrigin);
             if (HTMLFrameOwnerElement* ownerElement = frame()->ownerElement())
                 ownerElement->dispatchEvent(Event::create(eventNames().loadEvent, false, false));
@@ -635,10 +636,8 @@ void DocumentLoader::responseReceived(CachedResource* resource, const ResourceRe
     if (m_isLoadingMultipartContent) {
         setupForReplace();
         m_mainResource->clear();
-    } else if (response.isMultipart()) {
-        FeatureObserver::observe(m_frame->document(), FeatureObserver::MultipartMainResource);
+    } else if (response.isMultipart())
         m_isLoadingMultipartContent = true;
-    }
 
     m_response = response;
 
@@ -800,7 +799,7 @@ void DocumentLoader::commitData(const char* bytes, size_t length)
             m_frame->document()->securityOrigin()->grantLoadLocalResources();
         }
 
-        if (frameLoader()->stateMachine()->creatingInitialEmptyDocument())
+        if (frameLoader()->stateMachine().creatingInitialEmptyDocument())
             return;
         
 #if ENABLE(MHTML)
@@ -849,12 +848,6 @@ void DocumentLoader::dataReceived(CachedResource* resource, const char* data, in
     ASSERT(length);
     ASSERT_UNUSED(resource, resource == m_mainResource);
     ASSERT(!m_response.isNull());
-
-#if USE(CFNETWORK) || PLATFORM(MAC)
-    // Workaround for <rdar://problem/6060782>
-    if (m_response.isNull())
-        m_response = ResourceResponse(URL(), "text/html", 0, String(), String());
-#endif
 
     // There is a bug in CFNetwork where callbacks can be dispatched even when loads are deferred.
     // See <rdar://problem/6304600> for more details.
@@ -1346,14 +1339,18 @@ void DocumentLoader::addSubresourceLoader(ResourceLoader* loader)
     // if we are just starting the main resource load.
     if (!m_gotFirstByte)
         return;
-    ASSERT(!m_subresourceLoaders.contains(loader));
+    ASSERT(loader->identifier());
+    ASSERT(!m_subresourceLoaders.contains(loader->identifier()));
     ASSERT(!mainResourceLoader() || mainResourceLoader() != loader);
-    m_subresourceLoaders.add(loader);
+
+    m_subresourceLoaders.add(loader->identifier(), loader);
 }
 
 void DocumentLoader::removeSubresourceLoader(ResourceLoader* loader)
 {
-    if (!m_subresourceLoaders.remove(loader))
+    ASSERT(loader->identifier());
+
+    if (!m_subresourceLoaders.remove(loader->identifier()))
         return;
     checkLoadComplete();
     if (Frame* frame = m_frame)
@@ -1362,12 +1359,18 @@ void DocumentLoader::removeSubresourceLoader(ResourceLoader* loader)
 
 void DocumentLoader::addPlugInStreamLoader(ResourceLoader* loader)
 {
-    m_plugInStreamLoaders.add(loader);
+    ASSERT(loader->identifier());
+    ASSERT(!m_plugInStreamLoaders.contains(loader->identifier()));
+
+    m_plugInStreamLoaders.add(loader->identifier(), loader);
 }
 
 void DocumentLoader::removePlugInStreamLoader(ResourceLoader* loader)
 {
-    m_plugInStreamLoaders.remove(loader);
+    ASSERT(loader->identifier());
+    ASSERT(loader == m_plugInStreamLoaders.get(loader->identifier()));
+
+    m_plugInStreamLoaders.remove(loader->identifier());
     checkLoadComplete();
 }
 
@@ -1382,7 +1385,7 @@ bool DocumentLoader::maybeLoadEmpty()
     if (!shouldLoadEmpty && !frameLoader()->client().representationExistsForURLScheme(m_request.url().protocol()))
         return false;
 
-    if (m_request.url().isEmpty() && !frameLoader()->stateMachine()->creatingInitialEmptyDocument())
+    if (m_request.url().isEmpty() && !frameLoader()->stateMachine().creatingInitialEmptyDocument())
         m_request.setURL(blankURL());
     String mimeType = shouldLoadEmpty ? "text/html" : frameLoader()->client().generatedMIMETypeForURLScheme(m_request.url().protocol());
     m_response = ResourceResponse(m_request.url(), mimeType, 0, String(), String());
@@ -1492,8 +1495,12 @@ void DocumentLoader::clearMainResource()
 
 void DocumentLoader::subresourceLoaderFinishedLoadingOnePart(ResourceLoader* loader)
 {
-    m_multipartSubresourceLoaders.add(loader);
-    m_subresourceLoaders.remove(loader);
+    ASSERT(loader->identifier());
+    ASSERT(!m_multipartSubresourceLoaders.contains(loader->identifier()));
+    ASSERT(m_subresourceLoaders.contains(loader->identifier()));
+
+    m_multipartSubresourceLoaders.add(loader->identifier(), loader);
+    m_subresourceLoaders.remove(loader->identifier());
     checkLoadComplete();
     if (Frame* frame = m_frame)
         frame->loader().checkLoadComplete();    

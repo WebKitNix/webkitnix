@@ -30,8 +30,8 @@ using namespace WebCore;
 
 void PlatformStrategiesGtk::initialize()
 {
-    DEFINE_STATIC_LOCAL(PlatformStrategiesGtk, platformStrategies, ());
-    setPlatformStrategies(&platformStrategies);
+    static NeverDestroyed<PlatformStrategiesGtk> platformStrategies;
+    setPlatformStrategies(&platformStrategies.get());
 }
 
 PlatformStrategiesGtk::PlatformStrategiesGtk()
@@ -71,11 +71,6 @@ SharedWorkerStrategy* PlatformStrategiesGtk::createSharedWorkerStrategy()
 }
 
 StorageStrategy* PlatformStrategiesGtk::createStorageStrategy()
-{
-    return this;
-}
-
-VisitedLinkStrategy* PlatformStrategiesGtk::createVisitedLinkStrategy()
 {
     return this;
 }
@@ -142,15 +137,4 @@ void PlatformStrategiesGtk::getPluginInfo(const Page* page, Vector<PluginInfo>& 
 
         outPlugins.append(pluginInfo);
     }
-}
-
-// VisitedLinkStrategy
-bool PlatformStrategiesGtk::isLinkVisited(Page* page, LinkHash hash, const URL&, const AtomicString&)
-{
-    return page->group().isLinkVisited(hash);
-}
-
-void PlatformStrategiesGtk::addVisitedLink(Page* page, LinkHash hash)
-{
-    page->group().addVisitedLinkHash(hash);
 }

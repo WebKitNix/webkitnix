@@ -406,7 +406,7 @@ RetainPtr<CFDataRef> LegacyWebArchive::rawDataRepresentation()
     return plistData;
 }
 
-#if !PLATFORM(MAC)
+#if !PLATFORM(COCOA)
 
 ResourceResponse LegacyWebArchive::createResourceResponseFromMacArchivedData(CFDataRef responseData)
 {
@@ -554,7 +554,7 @@ PassRefPtr<LegacyWebArchive> LegacyWebArchive::create(const String& markupString
 #if ENABLE(CACHE_PARTITIONING)
                 request.setCachePartition(frame->document()->topOrigin()->cachePartition());
 #endif
-                CachedResource* cachedResource = memoryCache()->resourceForRequest(request);
+                CachedResource* cachedResource = memoryCache()->resourceForRequest(request, frame->page()->sessionID());
                 if (cachedResource) {
                     ResourceBuffer* data = cachedResource->resourceBuffer();
                     resource = ArchiveResource::create(data ? data->sharedBuffer() : 0, subresourceURL, cachedResource->response());

@@ -44,6 +44,11 @@ BuildbotTesterQueueView.prototype = {
 
         function appendBuilderQueueStatus(queue)
         {
+            if (queue.buildbot.needsAuthentication && !queue.buildbot.isAuthenticated) {
+                this._appendUnauthorizedLineView(queue);
+                return;
+            }
+
             this._appendPendingRevisionCount(queue);
 
             var appendedStatus = false;
@@ -56,7 +61,8 @@ BuildbotTesterQueueView.prototype = {
 
                 --limit;
 
-                var messageElement = this.revisionContentForIteration(iteration);
+                var willHaveAnotherStatusLine = i + 1 < queue.iterations.length && limit > 0 && !iteration.successful; // This is not 100% correct, as the remaining iterations may not be finished or loaded yet, but close enough.
+                var messageElement = this.revisionContentForIteration(iteration, (iteration.productive && willHaveAnotherStatusLine) ? iteration.previousProductiveIteration : null);
 
                 var layoutTestResults = iteration.layoutTestResults || {failureCount: 0};
                 var javascriptTestResults = iteration.javascriptTestResults || {failureCount: 0};
@@ -206,6 +212,31 @@ BuildbotTesterQueueView.prototype = {
                 addFailureInfoLink(rowElement, "test-history-link", "history", testHistory.historyPageURLForTest(test.path));
 
             content.appendChild(rowElement);
+        }
+
+        // Work around bug 80159: -webkit-user-select:none not respected when copying content.
+        // We set clipboard data manually, temporarily making non-selectable content hidden
+        // to easily get accurate selection text.
+        content.oncopy = function(event) {
+            var iterator = document.createNodeIterator(
+                event.currentTarget,
+                NodeFilter.SHOW_ELEMENT,
+                {
+                    acceptNode: function(element) {
+                        if (window.getComputedStyle(element).webkitUserSelect !== "none")
+                            return NodeFilter.FILTER_ACCEPT;
+                        return NodeFilter.FILTER_SKIP;
+                    }
+                }
+            );
+
+            while ((node = iterator.nextNode()))
+                node.style.visibility = "visible";
+
+            event.currentTarget.style.visibility = "hidden";
+            event.clipboardData.setData('text', window.getSelection());
+            event.currentTarget.style.visibility = "";
+            return false;
         }
 
         return content;

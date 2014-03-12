@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,6 +31,7 @@
 #include "CCallHelpers.h"
 #include "FTLState.h"
 #include "GPRInfo.h"
+#include "JSCInlines.h"
 
 namespace JSC { namespace FTL {
 
@@ -51,8 +52,9 @@ public:
         , m_numArgs(numArgs)
         , m_returnRegister(returnRegister)
     {
-        // We don't care that you're using callee-save or stack registers.
+        // We don't care that you're using callee-save, stack, or hardware registers.
         m_usedRegisters.exclude(RegisterSet::stackRegisters());
+        m_usedRegisters.exclude(RegisterSet::reservedHardwareRegisters());
         m_usedRegisters.exclude(RegisterSet::calleeSaveRegisters());
         
         // The return register doesn't need to be saved.
@@ -134,11 +136,13 @@ public:
         return SlowPathCallKey(usedRegisters(), callTarget, offset());
     }
     
-    MacroAssembler::Call makeCall(void* callTarget)
+    MacroAssembler::Call makeCall(void* callTarget, MacroAssembler::JumpList* exceptionTarget)
     {
         MacroAssembler::Call result = m_jit.call();
         m_state.finalizer->slowPathCalls.append(SlowPathCall(
             result, keyWithTarget(callTarget)));
+        if (exceptionTarget)
+            exceptionTarget->append(m_jit.emitExceptionCheck());
         return result;
     }
     
@@ -157,32 +161,44 @@ private:
 
 } // anonymous namespace
 
-MacroAssembler::Call callOperation(
-    State& state, const RegisterSet& usedRegisters, CCallHelpers& jit, 
-    J_JITOperation_ESsiJI operation, GPRReg result, GPRReg callFrameRegister,
-    StructureStubInfo* stubInfo, GPRReg object, StringImpl* uid)
+void storeCodeOrigin(State& state, CCallHelpers& jit, CodeOrigin codeOrigin)
 {
+    if (!codeOrigin.isSet())
+        return;
+    
+    unsigned index = state.jitCode->common.addCodeOrigin(codeOrigin);
+    unsigned locationBits = CallFrame::Location::encodeAsCodeOriginIndex(index);
+    jit.store32(
+        CCallHelpers::TrustedImm32(locationBits),
+        CCallHelpers::tagFor(static_cast<VirtualRegister>(JSStack::ArgumentCount)));
+}
+
+MacroAssembler::Call callOperation(
+    State& state, const RegisterSet& usedRegisters, CCallHelpers& jit,
+    CodeOrigin codeOrigin, MacroAssembler::JumpList* exceptionTarget,
+    J_JITOperation_ESsiJI operation, GPRReg result, StructureStubInfo* stubInfo,
+    GPRReg object, StringImpl* uid)
+{
+    storeCodeOrigin(state, jit, codeOrigin);
     CallContext context(state, usedRegisters, jit, 4, result);
-    jit.setupArguments(
-        callFrameRegister, CCallHelpers::TrustedImmPtr(stubInfo), object,
+    jit.setupArgumentsWithExecState(
+        CCallHelpers::TrustedImmPtr(stubInfo), object,
         CCallHelpers::TrustedImmPtr(uid));
-    return context.makeCall(bitwise_cast<void*>(operation));
-    // FIXME: FTL should support exceptions.
-    // https://bugs.webkit.org/show_bug.cgi?id=113622
+    return context.makeCall(bitwise_cast<void*>(operation), exceptionTarget);
 }
 
 MacroAssembler::Call callOperation(
     State& state, const RegisterSet& usedRegisters, CCallHelpers& jit, 
-    V_JITOperation_ESsiJJI operation, GPRReg callFrameRegister,
-    StructureStubInfo* stubInfo, GPRReg value, GPRReg object, StringImpl* uid)
+    CodeOrigin codeOrigin, MacroAssembler::JumpList* exceptionTarget,
+    V_JITOperation_ESsiJJI operation, StructureStubInfo* stubInfo, GPRReg value,
+    GPRReg object, StringImpl* uid)
 {
+    storeCodeOrigin(state, jit, codeOrigin);
     CallContext context(state, usedRegisters, jit, 5, InvalidGPRReg);
-    jit.setupArguments(
-        callFrameRegister, CCallHelpers::TrustedImmPtr(stubInfo), value, object,
+    jit.setupArgumentsWithExecState(
+        CCallHelpers::TrustedImmPtr(stubInfo), value, object,
         CCallHelpers::TrustedImmPtr(uid));
-    return context.makeCall(bitwise_cast<void*>(operation));
-    // FIXME: FTL should support exceptions.
-    // https://bugs.webkit.org/show_bug.cgi?id=113622
+    return context.makeCall(bitwise_cast<void*>(operation), exceptionTarget);
 }
 
 } } // namespace JSC::FTL

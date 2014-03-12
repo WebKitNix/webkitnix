@@ -89,7 +89,7 @@ void RenderTheme::adjustStyle(StyleResolver& styleResolver, RenderStyle& style, 
         || style.display() == TABLE_ROW || style.display() == TABLE_COLUMN_GROUP || style.display() == TABLE_COLUMN
         || style.display() == TABLE_CELL || style.display() == TABLE_CAPTION)
         style.setDisplay(INLINE_BLOCK);
-    else if (style.display() == COMPACT || style.display() == RUN_IN || style.display() == LIST_ITEM || style.display() == TABLE)
+    else if (style.display() == COMPACT || style.display() == LIST_ITEM || style.display() == TABLE)
         style.setDisplay(BLOCK);
 
     if (UAHasAppearance && isControlStyled(&style, border, background, backgroundColor)) {
@@ -181,6 +181,7 @@ void RenderTheme::adjustStyle(StyleResolver& styleResolver, RenderStyle& style, 
                 style.font().update(0);
         }
     }
+    break;
     default:
         break;
     }
@@ -251,6 +252,10 @@ void RenderTheme::adjustStyle(StyleResolver& styleResolver, RenderStyle& style, 
 #if ENABLE(INPUT_SPEECH)
     case InputSpeechButtonPart:
         return adjustInputFieldSpeechButtonStyle(&styleResolver, &style, e);
+#endif
+#if ENABLE(IMAGE_CONTROLS)
+    case ImageControlsButtonPart:
+        break;
 #endif
     default:
         break;
@@ -385,6 +390,10 @@ bool RenderTheme::paint(RenderObject* o, const PaintInfo& paintInfo, const IntRe
     case InputSpeechButtonPart:
         return paintInputFieldSpeechButton(o, paintInfo, r);
 #endif
+#if ENABLE(IMAGE_CONTROLS)
+    case ImageControlsButtonPart:
+        return paintImageControlsButton(o, paintInfo, r);
+#endif
     default:
         break;
     }
@@ -438,6 +447,9 @@ bool RenderTheme::paintBorderOnly(RenderObject* o, const PaintInfo& paintInfo, c
     case SearchFieldResultsButtonPart:
 #if ENABLE(INPUT_SPEECH)
     case InputSpeechButtonPart:
+#endif
+#if ENABLE(IMAGE_CONTROLS)
+    case ImageControlsButtonPart:
 #endif
     default:
         break;
@@ -497,6 +509,9 @@ bool RenderTheme::paintDecorations(RenderObject* renderer, const PaintInfo& pain
     case SearchFieldResultsButtonPart:
 #if ENABLE(INPUT_SPEECH)
     case InputSpeechButtonPart:
+#endif
+#if ENABLE(IMAGE_CONTROLS)
+    case ImageControlsButtonPart:
 #endif
     default:
         break;
@@ -683,7 +698,7 @@ bool RenderTheme::isControlStyled(const RenderStyle* style, const BorderData& bo
     case ContinuousCapacityLevelIndicatorPart:
     case DiscreteCapacityLevelIndicatorPart:
     case RatingLevelIndicatorPart:
-    case SearchFieldPart:
+    // FIXME: SearchFieldPart should be included here when making search fields style-able.
     case TextFieldPart:
     case TextAreaPart:
         // Test the style to see if the UA border and background match.

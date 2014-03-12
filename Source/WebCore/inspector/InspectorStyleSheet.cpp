@@ -28,7 +28,6 @@
 
 #include "InspectorStyleSheet.h"
 
-#include "CSSHostRule.h"
 #include "CSSImportRule.h"
 #include "CSSMediaRule.h"
 #include "CSSParser.h"
@@ -39,7 +38,6 @@
 #include "CSSStyleRule.h"
 #include "CSSStyleSheet.h"
 #include "CSSSupportsRule.h"
-#include "ContentSearchUtils.h"
 #include "ContentSecurityPolicy.h"
 #include "Document.h"
 #include "Element.h"
@@ -50,7 +48,6 @@
 #include "InspectorCSSAgent.h"
 #include "InspectorPageAgent.h"
 #include "Node.h"
-#include "RegularExpression.h"
 #include "SVGNames.h"
 #include "StyleProperties.h"
 #include "StyleResolver.h"
@@ -59,11 +56,11 @@
 #include "StyleSheetContents.h"
 #include "StyleSheetList.h"
 #include "WebKitCSSKeyframesRule.h"
+#include <inspector/ContentSearchUtilities.h>
 #include <inspector/InspectorValues.h>
-#include <wtf/OwnPtr.h>
-#include <wtf/PassOwnPtr.h>
 #include <wtf/Vector.h>
 #include <wtf/text/StringBuilder.h>
+#include <yarr/RegularExpression.h>
 
 using Inspector::TypeBuilder::Array;
 using WebCore::RuleSourceDataList;
@@ -78,15 +75,15 @@ public:
     void setText(const String& text);
     bool hasText() const { return m_hasText; }
     RuleSourceDataList* sourceData() const { return m_sourceData.get(); }
-    void setSourceData(PassOwnPtr<RuleSourceDataList>);
-    bool hasSourceData() const { return m_sourceData; }
+    void setSourceData(std::unique_ptr<RuleSourceDataList>);
+    bool hasSourceData() const { return m_sourceData != nullptr; }
     PassRefPtr<WebCore::CSSRuleSourceData> ruleSourceDataAt(unsigned) const;
 
 private:
 
     String m_text;
     bool m_hasText;
-    OwnPtr<RuleSourceDataList> m_sourceData;
+    std::unique_ptr<RuleSourceDataList> m_sourceData;
 };
 
 ParsedStyleSheet::ParsedStyleSheet()
@@ -109,10 +106,6 @@ static void flattenSourceData(RuleSourceDataList* dataList, RuleSourceDataList* 
             target->append(data);
         else if (data->type == CSSRuleSourceData::MEDIA_RULE)
             flattenSourceData(&data->childRules, target);
-#if ENABLE(SHADOW_DOM)
-        else if (data->type == CSSRuleSourceData::HOST_RULE)
-            flattenSourceData(&data->childRules, target);
-#endif
 #if ENABLE(CSS3_CONDITIONAL_RULES)
         else if (data->type == CSSRuleSourceData::SUPPORTS_RULE)
             flattenSourceData(&data->childRules, target);
@@ -120,14 +113,14 @@ static void flattenSourceData(RuleSourceDataList* dataList, RuleSourceDataList* 
     }
 }
 
-void ParsedStyleSheet::setSourceData(PassOwnPtr<RuleSourceDataList> sourceData)
+void ParsedStyleSheet::setSourceData(std::unique_ptr<RuleSourceDataList> sourceData)
 {
     if (!sourceData) {
-        m_sourceData.clear();
+        m_sourceData.reset();
         return;
     }
 
-    m_sourceData = adoptPtr(new RuleSourceDataList());
+    m_sourceData = std::make_unique<RuleSourceDataList>();
 
     // FIXME: This is a temporary solution to retain the original flat sourceData structure
     // containing only style rules, even though CSSParser now provides the full rule source data tree.
@@ -158,8 +151,8 @@ static PassRefPtr<Inspector::TypeBuilder::CSS::SourceRange> buildSourceRangeObje
 {
     if (!lineEndings)
         return nullptr;
-    TextPosition start = ContentSearchUtils::textPositionFromOffset(range.start, *lineEndings);
-    TextPosition end = ContentSearchUtils::textPositionFromOffset(range.end, *lineEndings);
+    TextPosition start = ContentSearchUtilities::textPositionFromOffset(range.start, *lineEndings);
+    TextPosition end = ContentSearchUtilities::textPositionFromOffset(range.end, *lineEndings);
 
     RefPtr<Inspector::TypeBuilder::CSS::SourceRange> result = Inspector::TypeBuilder::CSS::SourceRange::create()
         .setStartLine(start.m_line.zeroBasedInt())
@@ -226,11 +219,6 @@ static PassRefPtr<CSSRuleList> asCSSRuleList(CSSRule* rule)
     if (rule->type() == CSSRule::WEBKIT_KEYFRAMES_RULE)
         return static_cast<WebKitCSSKeyframesRule*>(rule)->cssRules();
 
-#if ENABLE(SHADOW_DOM)
-    if (rule->type() == CSSRule::HOST_RULE)
-        return static_cast<CSSHostRule*>(rule)->cssRules();
-#endif
-
 #if ENABLE(CSS3_CONDITIONAL_RULES)
     if (rule->type() == CSSRule::SUPPORTS_RULE)
         return static_cast<CSSSupportsRule*>(rule)->cssRules();
@@ -294,9 +282,9 @@ static void fillMediaListChain(CSSRule* rule, Array<Inspector::TypeBuilder::CSS:
     }
 }
 
-static PassOwnPtr<CSSParser> createCSSParser(Document* document)
+static std::unique_ptr<CSSParser> createCSSParser(Document* document)
 {
-    return adoptPtr(new CSSParser(document ? CSSParserContext(*document) : strictCSSParserContext()));
+    return std::make_unique<CSSParser>(document ? CSSParserContext(*document) : strictCSSParserContext());
 }
 
 PassRefPtr<InspectorStyle> InspectorStyle::create(const InspectorCSSId& styleId, PassRefPtr<CSSStyleDeclaration> style, InspectorStyleSheet* parentStyleSheet)
@@ -531,7 +519,7 @@ PassRefPtr<Inspector::TypeBuilder::CSS::CSSStyle> InspectorStyle::styleWithPrope
     HashSet<String> foundShorthands;
     String previousPriority;
     String previousStatus;
-    OwnPtr<Vector<size_t>> lineEndings(m_parentStyleSheet ? m_parentStyleSheet->lineEndings() : PassOwnPtr<Vector<size_t>>());
+    std::unique_ptr<Vector<size_t>> lineEndings(m_parentStyleSheet ? m_parentStyleSheet->lineEndings() : nullptr);
     RefPtr<CSSRuleSourceData> sourceData = extractSourceData();
     unsigned ruleBodyRangeStart = sourceData ? sourceData->ruleBodyRange.start : 0;
 
@@ -723,7 +711,7 @@ NewLineAndWhitespace& InspectorStyle::newLineAndWhitespaceDelimiters() const
     int propertyIndex = 0;
     bool isFullPrefixScanned = false;
     bool lineFeedTerminated = false;
-    const UChar* characters = text.characters();
+    const UChar* characters = text.deprecatedCharacters();
     while (propertyIndex < propertyCount) {
         const WebCore::CSSPropertySourceData& currentProperty = sourcePropertyData->at(propertyIndex++);
 
@@ -1005,7 +993,7 @@ PassRefPtr<Inspector::TypeBuilder::CSS::CSSStyleSheetHeader> InspectorStyleSheet
 
 static PassRefPtr<Inspector::TypeBuilder::Array<String>> selectorsFromSource(const CSSRuleSourceData* sourceData, const String& sheetText)
 {
-    DEFINE_STATIC_LOCAL(RegularExpression, comment, ("/\\*[^]*?\\*/", TextCaseSensitive, MultilineEnabled));
+    DEFINE_STATIC_LOCAL(JSC::Yarr::RegularExpression, comment, ("/\\*[^]*?\\*/", TextCaseSensitive, JSC::Yarr::MultilineEnabled));
     RefPtr<Inspector::TypeBuilder::Array<String>> result = Inspector::TypeBuilder::Array<String>::create();
     const SelectorRangeList& ranges = sourceData->selectorRanges;
     for (size_t i = 0, size = ranges.size(); i < size; ++i) {
@@ -1221,11 +1209,11 @@ RefPtr<CSSRuleSourceData> InspectorStyleSheet::ruleSourceDataFor(CSSStyleDeclara
     return m_parsedStyleSheet->ruleSourceDataAt(ruleIndexByStyle(style));
 }
 
-PassOwnPtr<Vector<size_t>> InspectorStyleSheet::lineEndings() const
+std::unique_ptr<Vector<size_t>> InspectorStyleSheet::lineEndings() const
 {
     if (!m_parsedStyleSheet->hasText())
-        return PassOwnPtr<Vector<size_t>>();
-    return ContentSearchUtils::lineEndings(m_parsedStyleSheet->text());
+        return nullptr;
+    return ContentSearchUtilities::lineEndings(m_parsedStyleSheet->text());
 }
 
 unsigned InspectorStyleSheet::ruleIndexByStyle(CSSStyleDeclaration* pageStyle) const
@@ -1280,9 +1268,9 @@ bool InspectorStyleSheet::ensureSourceData()
         return false;
 
     RefPtr<StyleSheetContents> newStyleSheet = StyleSheetContents::create();
-    OwnPtr<RuleSourceDataList> ruleSourceDataResult = adoptPtr(new RuleSourceDataList());
+    auto ruleSourceDataResult = std::make_unique<RuleSourceDataList>();
     createCSSParser(m_pageStyleSheet->ownerDocument())->parseSheet(newStyleSheet.get(), m_parsedStyleSheet->text(), 0, ruleSourceDataResult.get());
-    m_parsedStyleSheet->setSourceData(ruleSourceDataResult.release());
+    m_parsedStyleSheet->setSourceData(std::move(ruleSourceDataResult));
     return m_parsedStyleSheet->hasSourceData();
 }
 
@@ -1397,11 +1385,7 @@ bool InspectorStyleSheet::inlineStyleSheetText(String* result) const
         return false;
     Element* ownerElement = toElement(ownerNode);
 
-    if (!isHTMLStyleElement(ownerElement)
-#if ENABLE(SVG)
-        && !ownerElement->hasTagName(SVGNames::styleTag)
-#endif
-    )
+    if (!isHTMLStyleElement(ownerElement) && !ownerElement->hasTagName(SVGNames::styleTag))
         return false;
     *result = ownerElement->textContent();
     return true;
@@ -1490,9 +1474,9 @@ bool InspectorStyleSheetForInlineStyle::setStyleText(CSSStyleDeclaration* style,
     return !ec;
 }
 
-PassOwnPtr<Vector<size_t>> InspectorStyleSheetForInlineStyle::lineEndings() const
+std::unique_ptr<Vector<size_t>> InspectorStyleSheetForInlineStyle::lineEndings() const
 {
-    return ContentSearchUtils::lineEndings(elementStyleText());
+    return ContentSearchUtilities::lineEndings(elementStyleText());
 }
 
 Document* InspectorStyleSheetForInlineStyle::ownerDocument() const

@@ -35,6 +35,7 @@ class FloatRect;
 class Font;
 class GraphicsContext;
 class GlyphBuffer;
+class GlyphToPathTranslator;
 class SimpleFontData;
 struct GlyphData;
 struct WidthIterator;
@@ -59,14 +60,11 @@ public:
 
     typedef unsigned RoundingHacks;
 
-#if ENABLE(8BIT_TEXTRUN)
     TextRun(const LChar* c, unsigned len, float xpos = 0, float expansion = 0, ExpansionBehavior expansionBehavior = AllowTrailingExpansion | ForbidLeadingExpansion, TextDirection direction = LTR, bool directionalOverride = false, bool characterScanForCodePath = true, RoundingHacks roundingHacks = RunRounding | WordRounding)
         : m_charactersLength(len)
         , m_len(len)
         , m_xpos(xpos)
-#if ENABLE(SVG)
         , m_horizontalGlyphStretch(1)
-#endif
         , m_expansion(expansion)
         , m_expansionBehavior(expansionBehavior)
         , m_is8Bit(true)
@@ -81,15 +79,12 @@ public:
     {
         m_data.characters8 = c;
     }
-#endif
 
     TextRun(const UChar* c, unsigned len, float xpos = 0, float expansion = 0, ExpansionBehavior expansionBehavior = AllowTrailingExpansion | ForbidLeadingExpansion, TextDirection direction = LTR, bool directionalOverride = false, bool characterScanForCodePath = true, RoundingHacks roundingHacks = RunRounding | WordRounding)
         : m_charactersLength(len)
         , m_len(len)
         , m_xpos(xpos)
-#if ENABLE(SVG)
         , m_horizontalGlyphStretch(1)
-#endif
         , m_expansion(expansion)
         , m_expansionBehavior(expansionBehavior)
         , m_is8Bit(false)
@@ -109,9 +104,7 @@ public:
         : m_charactersLength(s.length())
         , m_len(s.length())
         , m_xpos(xpos)
-#if ENABLE(SVG)
         , m_horizontalGlyphStretch(1)
-#endif
         , m_expansion(expansion)
         , m_expansionBehavior(expansionBehavior)
         , m_allowTabs(false)
@@ -123,18 +116,13 @@ public:
         , m_disableSpacing(false)
         , m_tabSize(0)
     {
-#if ENABLE(8BIT_TEXTRUN)
         if (m_charactersLength && s.is8Bit()) {
             m_data.characters8 = s.characters8();
             m_is8Bit = true;
         } else {
-            m_data.characters16 = s.characters();
+            m_data.characters16 = s.deprecatedCharacters();
             m_is8Bit = false;
         }
-#else
-        m_data.characters16 = s.deprecatedCharacters();
-        m_is8Bit = false;
-#endif
     }
 
     TextRun subRun(unsigned startOffset, unsigned length) const
@@ -143,14 +131,10 @@ public:
 
         TextRun result = *this;
 
-#if ENABLE(8BIT_TEXTRUN)
         if (is8Bit()) {
             result.setText(data8(startOffset), length);
             return result;
         }
-#else
-        ASSERT(!is8Bit());
-#endif
         result.setText(data16(startOffset), length);
         return result;
     }
@@ -172,16 +156,12 @@ public:
         return String(m_data.characters16, m_len);
     }
 
-#if ENABLE(8BIT_TEXTRUN)
     void setText(const LChar* c, unsigned len) { m_data.characters8 = c; m_len = len; m_is8Bit = true;}
-#endif
     void setText(const UChar* c, unsigned len) { m_data.characters16 = c; m_len = len; m_is8Bit = false;}
     void setCharactersLength(unsigned charactersLength) { m_charactersLength = charactersLength; }
 
-#if ENABLE(SVG)
     float horizontalGlyphStretch() const { return m_horizontalGlyphStretch; }
     void setHorizontalGlyphStretch(float scale) { m_horizontalGlyphStretch = scale; }
-#endif
 
     bool allowTabs() const { return m_allowTabs; }
     unsigned tabSize() const { return m_tabSize; }
@@ -209,6 +189,7 @@ public:
 
     class RenderingContext : public RefCounted<RenderingContext> {
     public:
+        virtual std::unique_ptr<GlyphToPathTranslator> createGlyphToPathTranslator(const SimpleFontData&, const GlyphBuffer&, int from, int numGlyphs, const FloatPoint&) const = 0;
         virtual ~RenderingContext() { }
 
 #if ENABLE(SVG_FONTS)
@@ -239,9 +220,7 @@ private:
     // start of the containing block. In the case of right alignment or center alignment, left start of
     // the text line is not the same as left start of the containing block.
     float m_xpos;  
-#if ENABLE(SVG)
     float m_horizontalGlyphStretch;
-#endif
 
     float m_expansion;
     ExpansionBehavior m_expansionBehavior : 2;

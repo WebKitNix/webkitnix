@@ -56,7 +56,6 @@
 #include "StyleProperties.h"
 #include "SubframeLoader.h"
 #include "Text.h"
-#include "TextIterator.h"
 #include "XMLNames.h"
 #include "markup.h"
 #include <wtf/NeverDestroyed.h>
@@ -290,6 +289,12 @@ static NEVER_INLINE void populateEventNameForAttributeLocalNameMap(HashMap<Atomi
         &ontouchstartAttr,
         &onvolumechangeAttr,
         &onwaitingAttr,
+#if ENABLE(WILL_REVEAL_EDGE_EVENTS)
+        &onwebkitwillrevealbottomAttr,
+        &onwebkitwillrevealleftAttr,
+        &onwebkitwillrevealrightAttr,
+        &onwebkitwillrevealtopAttr,
+#endif
         &onwheelAttr,
 #if ENABLE(IOS_GESTURE_EVENTS)
         &ongesturechangeAttr,
@@ -333,7 +338,7 @@ static NEVER_INLINE void populateEventNameForAttributeLocalNameMap(HashMap<Atomi
 
 void HTMLElement::parseAttribute(const QualifiedName& name, const AtomicString& value)
 {
-    if (isIdAttributeName(name) || name == classAttr || name == styleAttr)
+    if (name == HTMLNames::idAttr || name == HTMLNames::classAttr || name == HTMLNames::styleAttr)
         return StyledElement::parseAttribute(name, value);
 
     if (name == dirAttr)
@@ -812,7 +817,7 @@ HTMLFormElement* HTMLElement::virtualForm() const
 
 static inline bool elementAffectsDirectionality(const Node& node)
 {
-    return node.isHTMLElement() && (node.hasTagName(bdiTag) || toHTMLElement(node).hasAttribute(dirAttr));
+    return node.isHTMLElement() && (toHTMLElement(node).hasTagName(bdiTag) || toHTMLElement(node).fastHasAttribute(dirAttr));
 }
 
 static void setHasDirAutoFlagRecursively(Node* firstNode, bool flag, Node* lastNode = nullptr)

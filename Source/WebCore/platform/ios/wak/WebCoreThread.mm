@@ -210,7 +210,7 @@ static void SendDelegateMessage(NSInvocation *invocation)
 
         {
             // Code block created to scope JSC::JSLock::DropAllLocks outside of WebThreadLock()
-            JSC::JSLock::DropAllLocks dropAllLocks(WebCore::JSDOMWindowBase::commonVM(), JSC::JSLock::DropAllLocks::AlwaysDropLocks);
+            JSC::JSLock::DropAllLocks dropAllLocks(WebCore::JSDOMWindowBase::commonVM());
             _WebThreadUnlock();
 
             CFRunLoopSourceSignal(delegateSource);
@@ -248,7 +248,7 @@ void WebThreadRunOnMainThread(void(^delegateBlock)())
         return;
     }
 
-    JSC::JSLock::DropAllLocks dropAllLocks(WebCore::JSDOMWindowBase::commonVM(), JSC::JSLock::DropAllLocks::AlwaysDropLocks);
+    JSC::JSLock::DropAllLocks dropAllLocks(WebCore::JSDOMWindowBase::commonVM());
     _WebThreadUnlock();
 
     void (^delegateBlockCopy)() = Block_copy(delegateBlock);
@@ -653,10 +653,8 @@ void *RunWebThread(void *arg)
     WTF::initializeWebThread();
     JSC::initializeThreading();
     
-#if ENABLE(WORKERS)
     // Make sure that the WebThread and the main thread share the same ThreadGlobalData objects.
     WebCore::threadGlobalData().setWebCoreThreadData();
-#endif
     initializeWebThreadIdentifier();
 
 #if HAVE(PTHREAD_SETNAME_NP)
@@ -703,12 +701,10 @@ static void StartWebThread()
 {
     webThreadStarted = TRUE;
 
-#if ENABLE(WORKERS)
     // Initialize ThreadGlobalData on the main UI thread so that the WebCore thread
     // can later set it's thread-specific data to point to the same objects.
     WebCore::ThreadGlobalData& unused = WebCore::threadGlobalData();
     (void)unused;
-#endif
 
     // Initialize AtomicString on the main thread.
     WTF::AtomicString::init();

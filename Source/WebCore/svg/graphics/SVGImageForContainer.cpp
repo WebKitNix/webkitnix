@@ -20,12 +20,11 @@
 #include "config.h"
 #include "SVGImageForContainer.h"
 
-#if ENABLE(SVG)
 #include "AffineTransform.h"
 #include "FloatRect.h"
 #include "FloatSize.h"
+#include "FrameView.h"
 #include "Image.h"
-#include "SVGImage.h"
 
 namespace WebCore {
 
@@ -55,5 +54,3 @@ PassNativeImagePtr SVGImageForContainer::nativeImageForCurrentFrame()
 }
 
 } // namespace WebCore
-
-#endif // ENABLE(SVG)

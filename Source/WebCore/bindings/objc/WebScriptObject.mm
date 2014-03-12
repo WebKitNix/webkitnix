@@ -20,16 +20,14 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #import "config.h"
 #import "WebScriptObjectPrivate.h"
 
 #import "BridgeJSC.h"
-#import "Console.h"
 #import "DOMInternal.h"
-#import "DOMWindow.h"
 #import "Frame.h"
 #import "JSDOMWindow.h"
 #import "JSDOMWindowCustom.h"
@@ -551,7 +549,7 @@ static void getListFromNSArray(ExecState *exec, NSArray *array, RootObject* root
     if (value.isString()) {
         ExecState* exec = rootObject->globalObject()->globalExec();
         const String& u = asString(value)->value(exec);
-        return [NSString stringWithCharacters:u.characters() length:u.length()];
+        return [NSString stringWithCharacters:u.deprecatedCharacters() length:u.length()];
     }
 
     if (value.isNumber())

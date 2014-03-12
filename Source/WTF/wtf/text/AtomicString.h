@@ -85,7 +85,13 @@ public:
     AtomicString(WTF::HashTableDeletedValueType) : m_string(WTF::HashTableDeletedValue) { }
     bool isHashTableDeletedValue() const { return m_string.isHashTableDeletedValue(); }
 
-    WTF_EXPORT_STRING_API static AtomicStringImpl* find(const StringImpl*);
+    WTF_EXPORT_STRING_API static AtomicStringImpl* findStringWithHash(const StringImpl&);
+    static AtomicStringImpl* find(StringImpl* string)
+    {
+        if (!string || string->isAtomic())
+            return static_cast<AtomicStringImpl*>(string);
+        return findSlowCase(*string);
+    }
 
     operator const String&() const { return m_string; }
     const String& string() const { return m_string; };
@@ -93,7 +99,6 @@ public:
     AtomicStringImpl* impl() const { return static_cast<AtomicStringImpl *>(m_string.impl()); }
 
     bool is8Bit() const { return m_string.is8Bit(); }
-    const UChar* characters() const { return m_string.deprecatedCharacters(); } // FIXME: Delete this.
     const LChar* characters8() const { return m_string.characters8(); }
     const UChar* characters16() const { return m_string.characters16(); }
     unsigned length() const { return m_string.length(); }
@@ -191,6 +196,7 @@ private:
     WTF_EXPORT_STRING_API static PassRefPtr<StringImpl> add(CFStringRef);
 #endif
 
+    WTF_EXPORT_STRING_API static AtomicStringImpl* findSlowCase(StringImpl&);
     WTF_EXPORT_STRING_API static AtomicString fromUTF8Internal(const char*, const char*);
 
 #if !ASSERT_DISABLED

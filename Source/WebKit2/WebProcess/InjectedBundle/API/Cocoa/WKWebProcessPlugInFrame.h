@@ -31,12 +31,19 @@
 #import <Foundation/Foundation.h>
 #import <JavaScriptCore/JSContext.h>
 
+@class WKFrameHandle;
 @class WKWebProcessPlugInHitTestResult;
 @class WKWebProcessPlugInNodeHandle;
 @class WKWebProcessPlugInScriptWorld;
 
 WK_API_CLASS
 @interface WKWebProcessPlugInFrame : NSObject
+
+@property (nonatomic, readonly) NSURL *URL;
+@property (nonatomic, readonly) NSArray *childFrames;
+@property (nonatomic, readonly) BOOL containsAnyFormElements;
+
+@property (nonatomic, readonly) WKFrameHandle *handle;
 
 - (JSContext *)jsContextForWorld:(WKWebProcessPlugInScriptWorld *)world;
 - (WKWebProcessPlugInHitTestResult *)hitTest:(CGPoint)point;

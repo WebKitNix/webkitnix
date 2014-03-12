@@ -30,16 +30,20 @@
  */
 
 #include "config.h"
-
-#if ENABLE(JAVASCRIPT_DEBUGGER)
 #include "WorkerScriptDebugServer.h"
 
+#if ENABLE(INSPECTOR)
+
+#include "JSDOMBinding.h"
+#include "Timer.h"
 #include "WorkerDebuggerAgent.h"
 #include "WorkerGlobalScope.h"
 #include "WorkerRunLoop.h"
 #include "WorkerThread.h"
 #include <runtime/VM.h>
 #include <wtf/PassOwnPtr.h>
+
+using namespace Inspector;
 
 namespace WebCore {
 
@@ -64,7 +68,7 @@ void WorkerScriptDebugServer::addListener(ScriptDebugListener* listener)
     }
 }
 
-void WorkerScriptDebugServer::removeListener(ScriptDebugListener* listener)
+void WorkerScriptDebugServer::removeListener(ScriptDebugListener* listener, bool skipRecompile)
 {
     if (!listener)
         return;
@@ -73,7 +77,8 @@ void WorkerScriptDebugServer::removeListener(ScriptDebugListener* listener)
 
     if (m_listeners.isEmpty()) {
         m_workerGlobalScope->script()->detachDebugger(this);
-        recompileAllJSFunctions();
+        if (!skipRecompile)
+            recompileAllJSFunctions();
     }
 }
 
@@ -87,11 +92,18 @@ void WorkerScriptDebugServer::recompileAllJSFunctions()
 
 void WorkerScriptDebugServer::runEventLoopWhilePaused()
 {
+    TimerBase::fireTimersInNestedEventLoop();
+
     MessageQueueWaitResult result;
     do {
-        result = m_workerGlobalScope->thread()->runLoop().runInMode(m_workerGlobalScope, m_debuggerTaskMode);
+        result = m_workerGlobalScope->thread().runLoop().runInMode(m_workerGlobalScope, m_debuggerTaskMode);
     // Keep waiting until execution is resumed.
     } while (result != MessageQueueTerminated && !m_doneProcessingDebuggerEvents);
+}
+
+void WorkerScriptDebugServer::reportException(JSC::ExecState* exec, JSC::JSValue exception) const
+{
+    WebCore::reportException(exec, exception);
 }
 
 void WorkerScriptDebugServer::interruptAndRunTask(PassOwnPtr<ScriptDebugServer::Task>)
@@ -100,4 +112,4 @@ void WorkerScriptDebugServer::interruptAndRunTask(PassOwnPtr<ScriptDebugServer::
 
 } // namespace WebCore
 
-#endif // ENABLE(JAVASCRIPT_DEBUGGER)
+#endif // ENABLE(INSPECTOR)

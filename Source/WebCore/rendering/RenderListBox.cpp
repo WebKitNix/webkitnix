@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006, 2007, 2008, 2011 Apple Inc. All rights reserved.
+ * Copyright (C) 2006, 2007, 2008, 2011, 2014 Apple Inc. All rights reserved.
  *               2009 Torch Mobile Inc. All rights reserved. (http://www.torchmobile.com/)
  *
  * Redistribution and use in source and binary forms, with or without
@@ -143,11 +143,6 @@ void RenderListBox::updateFromElement()
     }
 }
 
-bool RenderListBox::canBeReplacedWithInlineRunIn() const
-{
-    return false;
-}
-
 void RenderListBox::selectionChanged()
 {
     repaint();
@@ -224,7 +219,7 @@ void RenderListBox::computePreferredLogicalWidths()
         m_minPreferredLogicalWidth = std::min(m_minPreferredLogicalWidth, adjustContentBoxLogicalWidthForBoxSizing(style().maxWidth().value()));
     }
 
-    LayoutUnit toAdd = borderAndPaddingWidth();
+    LayoutUnit toAdd = horizontalBorderAndPaddingExtent();
     m_minPreferredLogicalWidth += toAdd;
     m_maxPreferredLogicalWidth += toAdd;
                                 
@@ -258,7 +253,7 @@ LayoutUnit RenderListBox::listHeight() const
 
 void RenderListBox::computeLogicalHeight(LayoutUnit, LayoutUnit logicalTop, LogicalExtentComputedValues& computedValues) const
 {
-    LayoutUnit height = itemHeight() * size() - rowSpacing + borderAndPaddingHeight();
+    LayoutUnit height = itemHeight() * size() - rowSpacing + verticalBorderAndPaddingExtent();
     RenderBox::computeLogicalHeight(height, logicalTop, computedValues);
 }
 
@@ -350,7 +345,7 @@ void RenderListBox::paintScrollbar(PaintInfo& paintInfo, const LayoutPoint& pain
             m_vBar->width(),
             height() - (borderTop() + borderBottom()));
         m_vBar->setFrameRect(scrollRect);
-        m_vBar->paint(paintInfo.context, paintInfo.rect);
+        m_vBar->paint(paintInfo.context, pixelSnappedIntRect(paintInfo.rect));
     }
 }
 
@@ -592,7 +587,7 @@ bool RenderListBox::listIndexIsVisible(int index)
     return index >= m_indexOffset && index < m_indexOffset + numVisibleItems();
 }
 
-bool RenderListBox::scroll(ScrollDirection direction, ScrollGranularity granularity, float multiplier, Element**)
+bool RenderListBox::scroll(ScrollDirection direction, ScrollGranularity granularity, float multiplier, Element**, RenderBox*, const IntPoint&)
 {
     return ScrollableArea::scroll(direction, granularity, multiplier);
 }
@@ -764,16 +759,6 @@ IntSize RenderListBox::contentsSize() const
     return IntSize(scrollWidth(), scrollHeight());
 }
 
-int RenderListBox::visibleHeight() const
-{
-    return height();
-}
-
-int RenderListBox::visibleWidth() const
-{
-    return width();
-}
-
 IntPoint RenderListBox::lastKnownMousePosition() const
 {
     return view().frameView().lastKnownMousePosition();
@@ -840,10 +825,42 @@ void RenderListBox::setHasVerticalScrollbar(bool hasScrollbar)
         m_vBar->styleChanged();
 
     // Force an update since we know the scrollbars have changed things.
-#if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
+#if ENABLE(DASHBOARD_SUPPORT)
     if (document().hasAnnotatedRegions())
         document().setAnnotatedRegionsDirty(true);
 #endif
 }
 
+bool RenderListBox::scrolledToTop() const
+{
+    Scrollbar* vbar = verticalScrollbar();
+    if (!vbar)
+        return true;
+    
+    return vbar->value() <= 0;
+}
+
+bool RenderListBox::scrolledToBottom() const
+{
+    Scrollbar* vbar = verticalScrollbar();
+    if (!vbar)
+        return true;
+
+    return vbar->value() >= vbar->maximum();
+}
+
+bool RenderListBox::scrolledToLeft() const
+{
+    // We do not scroll horizontally in a select element, so always report
+    // that we are at the full extent of the scroll.
+    return true;
+}
+
+bool RenderListBox::scrolledToRight() const
+{
+    // We do not scroll horizontally in a select element, so always report
+    // that we are at the full extent of the scroll.
+    return true;
+}
+    
 } // namespace WebCore

@@ -37,14 +37,11 @@
 #include "HTMLNames.h"
 #include "HTMLParamElement.h"
 #include "HTMLParserIdioms.h"
+#include "SVGNames.h"
 #include "Settings.h"
 #include "TextResourceDecoder.h"
 #include "XLinkNames.h"
 #include <wtf/MainThread.h>
-
-#if ENABLE(SVG)
-#include "SVGNames.h"
-#endif
 
 namespace WebCore {
 
@@ -181,12 +178,7 @@ static ContentSecurityPolicy::ReflectedXSSDisposition combineXSSProtectionHeader
 
 static bool isSemicolonSeparatedAttribute(const HTMLToken::Attribute& attribute)
 {
-#if ENABLE(SVG)
     return threadSafeMatch(attribute.name, SVGNames::valuesAttr);
-#else
-    UNUSED_PARAM(attribute);
-    return false;
-#endif
 }
 
 static bool semicolonSeparatedValueContainsJavaScriptURL(const String& value)
@@ -288,7 +280,7 @@ void XSSAuditor::init(Document* document, XSSAuditorDelegate* auditorDelegate)
             }
         }
         if (xssProtectionHeader == ContentSecurityPolicy::ReflectedXSSInvalid)
-            document->addConsoleMessage(SecurityMessageSource, ErrorMessageLevel, "Error parsing header X-XSS-Protection: " + headerValue + ": "  + errorDetails + " at character position " + String::format("%u", errorPosition) + ". The default protections will be applied.");
+            document->addConsoleMessage(MessageSource::Security, MessageLevel::Error, "Error parsing header X-XSS-Protection: " + headerValue + ": "  + errorDetails + " at character position " + String::format("%u", errorPosition) + ". The default protections will be applied.");
 
         ContentSecurityPolicy::ReflectedXSSDisposition cspHeader = document->contentSecurityPolicy()->reflectedXSSDisposition();
         m_didSendValidCSPHeader = cspHeader != ContentSecurityPolicy::ReflectedXSSUnset && cspHeader != ContentSecurityPolicy::ReflectedXSSInvalid;

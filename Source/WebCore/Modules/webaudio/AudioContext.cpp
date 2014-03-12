@@ -55,7 +55,7 @@
 #include "Page.h"
 #include "PannerNode.h"
 #include "PeriodicWave.h"
-#include "ScriptCallStack.h"
+#include <inspector/ScriptCallStack.h>
 #include "ScriptController.h"
 #include "ScriptProcessorNode.h"
 #include "WaveShaperNode.h"
@@ -196,7 +196,7 @@ void AudioContext::constructCommon()
         m_restrictions = NoRestrictions;
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     addBehaviorRestriction(RequirePageConsentForAudioStartRestriction);
 #endif
 }
@@ -1001,12 +1001,12 @@ void AudioContext::fireCompletionEvent()
 
 void AudioContext::incrementActiveSourceCount()
 {
-    atomicIncrement(&m_activeSourceCount);
+    ++m_activeSourceCount;
 }
 
 void AudioContext::decrementActiveSourceCount()
 {
-    atomicDecrement(&m_activeSourceCount);
+    --m_activeSourceCount;
 }
 
 } // namespace WebCore

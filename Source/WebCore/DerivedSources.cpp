@@ -27,6 +27,9 @@
 
 #include "HTMLElementFactory.cpp"
 #include "HTMLEntityTable.cpp"
+#if ENABLE(WEBGL)
+#include "JSANGLEInstancedArrays.cpp"
+#endif
 #include "JSAbstractWorker.cpp"
 #include "JSAttr.cpp"
 #include "JSBarProp.cpp"
@@ -38,7 +41,6 @@
 #include "JSCanvasRenderingContext.cpp"
 #include "JSCanvasRenderingContext2D.cpp"
 #if ENABLE(WEBGL)
-#include "JSEXTDrawBuffers.cpp"
 #include "JSEXTTextureFilterAnisotropic.cpp"
 #include "JSOESElementIndexUint.cpp"
 #include "JSOESStandardDerivatives.cpp"
@@ -57,6 +59,7 @@
 #include "JSWebGLDebugRendererInfo.cpp"
 #include "JSWebGLDebugShaders.cpp"
 #include "JSWebGLDepthTexture.cpp"
+#include "JSWebGLDrawBuffers.cpp"
 #include "JSWebGLFramebuffer.cpp"
 #include "JSWebGLLoseContext.cpp"
 #include "JSWebGLProgram.cpp"
@@ -77,7 +80,6 @@
 #include "JSCommandLineAPIHost.cpp"
 #include "JSComment.cpp"
 #include "JSCompositionEvent.cpp"
-#include "JSConsole.cpp"
 #include "JSCoordinates.cpp"
 #include "JSCounter.cpp"
 #include "JSCrypto.cpp"
@@ -86,7 +88,6 @@
 #include "JSCSSFontFaceLoadEvent.cpp"
 #endif
 #include "JSCSSFontFaceRule.cpp"
-#include "JSCSSHostRule.cpp"
 #include "JSCSSImportRule.cpp"
 #include "JSCSSMediaRule.cpp"
 #include "JSCSSPageRule.cpp"
@@ -240,12 +241,12 @@
 #include "JSIDBTransaction.cpp"
 #include "JSImageData.cpp"
 #include "JSInspectorFrontendHost.cpp"
-#include "JSJavaScriptCallFrame.cpp"
 #include "JSKeyboardEvent.cpp"
 #include "JSLocation.cpp"
 #include "JSMediaController.cpp"
 #if ENABLE(MEDIA_CONTROLS_SCRIPT)
 #include "JSMediaControlsHost.cpp"
+#include "UserAgentScriptsData.cpp"
 #endif
 #include "JSMediaError.cpp"
 #include "JSMediaList.cpp"
@@ -287,7 +288,6 @@
 #include "JSScreen.cpp"
 #include "JSScriptProfile.cpp"
 #include "JSScriptProfileNode.cpp"
-#include "JSShadowRoot.cpp"
 #include "JSSharedWorker.cpp"
 #include "JSSharedWorkerGlobalScope.cpp"
 #include "JSSQLError.cpp"
@@ -462,12 +462,14 @@
 #if ENABLE(VIDEO_TRACK)
 #include "JSAudioTrack.cpp"
 #include "JSAudioTrackList.cpp"
+#include "JSDataCue.cpp"
 #include "JSHTMLTrackElement.cpp"
 #include "JSTextTrack.cpp"
 #include "JSTextTrackCue.cpp"
 #include "JSTextTrackCueList.cpp"
 #include "JSTextTrackList.cpp"
 #include "JSTrackEvent.cpp"
+#include "JSVTTCue.cpp"
 #include "JSVideoTrack.cpp"
 #include "JSVideoTrackList.cpp"
 #endif
@@ -481,9 +483,6 @@
 #include "JSValidityState.cpp"
 #include "JSVoidCallback.cpp"
 #include "JSWebKitAnimationEvent.cpp"
-#if ENABLE(CSS_SHADERS)
-#include "JSWebKitCSSFilterRule.cpp"
-#endif
 #if ENABLE(CSS_FILTERS)
 #include "JSWebKitCSSFilterValue.cpp"
 #endif
@@ -491,9 +490,6 @@
 #include "JSWebKitCSSKeyframesRule.cpp"
 #include "JSWebKitCSSTransformValue.cpp"
 #include "JSWebKitCSSMatrix.cpp"
-#if ENABLE(CSS_SHADERS)
-#include "JSWebKitCSSMixFunctionValue.cpp"
-#endif
 #include "JSWebKitCSSRegionRule.cpp"
 #include "JSWebKitNamedFlow.cpp"
 #include "JSWebKitPoint.cpp"

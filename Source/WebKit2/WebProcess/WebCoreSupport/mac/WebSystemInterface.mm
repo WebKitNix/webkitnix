@@ -143,11 +143,13 @@ void InitWebCoreSystemInterface(void)
 #endif // !PLATFORM(IOS_SIMULATOR)
         INIT(CreateCTTypesetterWithUniCharProviderAndOptions);
         INIT(CTRunGetInitialAdvance);
+#if PLATFORM(MAC) || PLATFORM(IOS_SIMULATOR)
+        INIT(SetCrashReportApplicationSpecificInformation);
+#endif
 #if !PLATFORM(IOS)
         INIT(RecommendedScrollerStyle);
         INIT(ExecutableWasLinkedOnOrBeforeSnowLeopard);
         INIT(CopyDefaultSearchProviderDisplayName);
-        INIT(SetCrashReportApplicationSpecificInformation);
         INIT(AVAssetResolvedURL);
         INIT(Cursor);
         INIT(WindowSetScaledFrame);
@@ -164,10 +166,8 @@ void InitWebCoreSystemInterface(void)
 #endif
 
 #if !PLATFORM(IOS)
-#if PLATFORM(MAC)
         INIT(SpeechSynthesisGetVoiceIdentifiers);
         INIT(SpeechSynthesisGetDefaultVoiceIdentifierForLocale);
-#endif
         INIT(GetAXTextMarkerTypeID);
         INIT(GetAXTextMarkerRangeTypeID);
         INIT(CreateAXTextMarker);
@@ -211,7 +211,7 @@ void InitWebCoreSystemInterface(void)
         INIT(GetVendorNameForNavigator);
 #endif
 
-#if !PLATFORM(IOS) && PLATFORM(MAC) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
+#if !PLATFORM(IOS) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
         INIT(NSElasticDeltaForTimeDelta);
         INIT(NSElasticDeltaForReboundDelta);
         INIT(NSReboundDeltaForElasticDelta);
@@ -231,5 +231,8 @@ void InitWebCoreSystemInterface(void)
 #if ENABLE(CACHE_PARTITIONING)
         INIT(CachePartitionKey);
 #endif
+        
+        INIT(ExernalDeviceTypeForPlayer);
+        INIT(ExernalDeviceDisplayNameForPlayer);
     });
 }

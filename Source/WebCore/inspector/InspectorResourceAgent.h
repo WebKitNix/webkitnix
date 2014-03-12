@@ -34,7 +34,7 @@
 #include "InspectorWebAgentBase.h"
 #include "InspectorWebBackendDispatchers.h"
 #include "InspectorWebFrontendDispatchers.h"
-#include <wtf/PassOwnPtr.h>
+#include <wtf/HashSet.h>
 #include <wtf/RefCounted.h>
 #include <wtf/Vector.h>
 #include <wtf/text/WTFString.h>
@@ -81,7 +81,7 @@ public:
     ~InspectorResourceAgent();
 
     virtual void didCreateFrontendAndBackend(Inspector::InspectorFrontendChannel*, Inspector::InspectorBackendDispatcher*) override;
-    virtual void willDestroyFrontendAndBackend() override;
+    virtual void willDestroyFrontendAndBackend(Inspector::InspectorDisconnectReason) override;
 
     void willSendRequest(unsigned long identifier, DocumentLoader*, ResourceRequest&, const ResourceResponse& redirectResponse);
     void markResourceAsCached(unsigned long identifier);
@@ -138,6 +138,8 @@ public:
     virtual void clearBrowserCookies(ErrorString*) override;
     virtual void setCacheDisabled(ErrorString*, bool cacheDisabled) override;
 
+    virtual void loadResource(ErrorString*, const String& frameId, const String& url, PassRefPtr<LoadResourceCallback>) override;
+
 private:
     void enable();
 
@@ -145,11 +147,13 @@ private:
     InspectorClient* m_client;
     std::unique_ptr<Inspector::InspectorNetworkFrontendDispatcher> m_frontendDispatcher;
     RefPtr<Inspector::InspectorNetworkBackendDispatcher> m_backendDispatcher;
-    OwnPtr<NetworkResourcesData> m_resourcesData;
+    std::unique_ptr<NetworkResourcesData> m_resourcesData;
     bool m_enabled;
     bool m_cacheDisabled;
     bool m_loadingXHRSynchronously;
     RefPtr<Inspector::InspectorObject> m_extraRequestHeaders;
+
+    HashSet<unsigned long> m_hiddenRequestIdentifiers;
 
     typedef HashMap<ThreadableLoaderClient*, RefPtr<XHRReplayData>> PendingXHRReplayDataMap;
     PendingXHRReplayDataMap m_pendingXHRReplayData;

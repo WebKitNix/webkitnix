@@ -47,7 +47,6 @@ using namespace HTMLNames;
 RuleSet* CSSDefaultStyleSheets::defaultStyle;
 RuleSet* CSSDefaultStyleSheets::defaultQuirksStyle;
 RuleSet* CSSDefaultStyleSheets::defaultPrintStyle;
-RuleSet* CSSDefaultStyleSheets::defaultViewSourceStyle;
 
 StyleSheetContents* CSSDefaultStyleSheets::simpleDefaultStyleSheet;
 StyleSheetContents* CSSDefaultStyleSheets::defaultStyleSheet;
@@ -57,6 +56,7 @@ StyleSheetContents* CSSDefaultStyleSheets::mathMLStyleSheet;
 StyleSheetContents* CSSDefaultStyleSheets::mediaControlsStyleSheet;
 StyleSheetContents* CSSDefaultStyleSheets::fullscreenStyleSheet;
 StyleSheetContents* CSSDefaultStyleSheets::plugInsStyleSheet;
+StyleSheetContents* CSSDefaultStyleSheets::imageControlsStyleSheet;
 
 // FIXME: It would be nice to use some mechanism that guarantees this is in sync with the real UA stylesheet.
 static const char* simpleUserAgentStyleSheet = "html,body,div{display:block}head{display:none}body{margin:8px}div:focus,span:focus,a:focus{outline:auto 5px -webkit-focus-ring-color}a:-webkit-any-link{color:-webkit-link;text-decoration:underline}a:-webkit-any-link:active{color:-webkit-activelink}";
@@ -107,14 +107,14 @@ void CSSDefaultStyleSheets::loadFullDefaultStyle()
         ASSERT(defaultPrintStyle == defaultStyle);
         delete defaultStyle;
         simpleDefaultStyleSheet->deref();
-        defaultStyle = RuleSet::create().leakPtr();
-        defaultPrintStyle = RuleSet::create().leakPtr();
+        defaultStyle = std::make_unique<RuleSet>().release();
+        defaultPrintStyle = std::make_unique<RuleSet>().release();
         simpleDefaultStyleSheet = 0;
     } else {
         ASSERT(!defaultStyle);
-        defaultStyle = RuleSet::create().leakPtr();
-        defaultPrintStyle = RuleSet::create().leakPtr();
-        defaultQuirksStyle = RuleSet::create().leakPtr();
+        defaultStyle = std::make_unique<RuleSet>().release();
+        defaultPrintStyle = std::make_unique<RuleSet>().release();
+        defaultQuirksStyle = std::make_unique<RuleSet>().release();
     }
 
     // Strict-mode rules.
@@ -134,27 +134,16 @@ void CSSDefaultStyleSheets::loadSimpleDefaultStyle()
     ASSERT(!defaultStyle);
     ASSERT(!simpleDefaultStyleSheet);
 
-    defaultStyle = RuleSet::create().leakPtr();
+    defaultStyle = std::make_unique<RuleSet>().release();
     // There are no media-specific rules in the simple default style.
     defaultPrintStyle = defaultStyle;
-    defaultQuirksStyle = RuleSet::create().leakPtr();
+    defaultQuirksStyle = std::make_unique<RuleSet>().release();
 
     simpleDefaultStyleSheet = parseUASheet(simpleUserAgentStyleSheet, strlen(simpleUserAgentStyleSheet));
     defaultStyle->addRulesFromSheet(simpleDefaultStyleSheet, screenEval());
 
     // No need to initialize quirks sheet yet as there are no quirk rules for elements allowed in simple default style.
 }
-
-RuleSet* CSSDefaultStyleSheets::viewSourceStyle()
-{
-    if (!defaultViewSourceStyle) {
-        static StyleSheetContents* viewSourceStyleSheet = parseUASheet(sourceUserAgentStyleSheet, sizeof(sourceUserAgentStyleSheet));
-        defaultViewSourceStyle = RuleSet::create().leakPtr();
-        defaultViewSourceStyle->addRulesFromSheet(viewSourceStyleSheet, screenEval());
-    }
-    return defaultViewSourceStyle;
-}
-
 
 void CSSDefaultStyleSheets::ensureDefaultStyleSheetsForElement(Element* element, bool& changedDefaultStyle)
 {
@@ -163,7 +152,6 @@ void CSSDefaultStyleSheets::ensureDefaultStyleSheetsForElement(Element* element,
         changedDefaultStyle = true;
     }
 
-#if ENABLE(SVG)
     if (element->isSVGElement() && !svgStyleSheet) {
         // SVG rules.
         svgStyleSheet = parseUASheet(svgUserAgentStyleSheet, sizeof(svgUserAgentStyleSheet));
@@ -171,7 +159,6 @@ void CSSDefaultStyleSheets::ensureDefaultStyleSheetsForElement(Element* element,
         defaultPrintStyle->addRulesFromSheet(svgStyleSheet, printEval());
         changedDefaultStyle = true;
     }
-#endif
 
 #if ENABLE(MATHML)
     if (element->isMathMLElement() && !mathMLStyleSheet) {
@@ -201,6 +188,16 @@ void CSSDefaultStyleSheets::ensureDefaultStyleSheetsForElement(Element* element,
         fullscreenStyleSheet = parseUASheet(fullscreenRules);
         defaultStyle->addRulesFromSheet(fullscreenStyleSheet, screenEval());
         defaultQuirksStyle->addRulesFromSheet(fullscreenStyleSheet, screenEval());
+        changedDefaultStyle = true;
+    }
+#endif
+
+#if ENABLE(IMAGE_CONTROLS)
+    if (!imageControlsStyleSheet && element->isImageControlsRootElement()) {
+        String imageControlsRules = RenderTheme::themeForPage(element->document().page())->imageControlsStyleSheet();
+        imageControlsStyleSheet = parseUASheet(imageControlsRules);
+        defaultStyle->addRulesFromSheet(imageControlsStyleSheet, screenEval());
+        defaultPrintStyle->addRulesFromSheet(imageControlsStyleSheet, printEval());
         changedDefaultStyle = true;
     }
 #endif

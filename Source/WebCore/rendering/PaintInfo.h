@@ -26,10 +26,7 @@
 #ifndef PaintInfo_h
 #define PaintInfo_h
 
-#if ENABLE(SVG)
 #include "AffineTransform.h"
-#endif
-
 #include "GraphicsContext.h"
 #include "IntRect.h"
 #include "LayoutRect.h"
@@ -43,8 +40,8 @@ namespace WebCore {
 class OverlapTestRequestClient;
 class RenderInline;
 class RenderLayerModelObject;
+class RenderNamedFlowFragment;
 class RenderObject;
-class RenderRegion;
 
 typedef HashMap<OverlapTestRequestClient*, IntRect> OverlapTestRequestMap;
 
@@ -53,18 +50,18 @@ typedef HashMap<OverlapTestRequestClient*, IntRect> OverlapTestRequestMap;
  * (tx|ty) is the calculated position of the parent
  */
 struct PaintInfo {
-    PaintInfo(GraphicsContext* newContext, const IntRect& newRect, PaintPhase newPhase, PaintBehavior newPaintBehavior,
-        RenderObject* newSubtreePaintRoot = nullptr, RenderRegion* region = nullptr, ListHashSet<RenderInline*>* newOutlineObjects = nullptr,
+    PaintInfo(GraphicsContext* newContext, const LayoutRect& newRect, PaintPhase newPhase, PaintBehavior newPaintBehavior,
+        RenderObject* newSubtreePaintRoot = nullptr, RenderNamedFlowFragment* namedFlowFragment = nullptr, ListHashSet<RenderInline*>* newOutlineObjects = nullptr,
         OverlapTestRequestMap* overlapTestRequests = nullptr, const RenderLayerModelObject* newPaintContainer = nullptr)
-        : context(newContext)
-        , rect(newRect)
-        , phase(newPhase)
-        , paintBehavior(newPaintBehavior)
-        , subtreePaintRoot(newSubtreePaintRoot)
-        , renderRegion(region)
-        , outlineObjects(newOutlineObjects)
-        , overlapTestRequests(overlapTestRequests)
-        , paintContainer(newPaintContainer)
+            : context(newContext)
+            , rect(newRect)
+            , phase(newPhase)
+            , paintBehavior(newPaintBehavior)
+            , subtreePaintRoot(newSubtreePaintRoot)
+            , renderNamedFlowFragment(namedFlowFragment)
+            , outlineObjects(newOutlineObjects)
+            , overlapTestRequests(overlapTestRequests)
+            , paintContainer(newPaintContainer)
     {
     }
 
@@ -90,7 +87,6 @@ struct PaintInfo {
     bool skipRootBackground() const { return paintBehavior & PaintBehaviorSkipRootBackground; }
     bool paintRootBackgroundOnly() const { return paintBehavior & PaintBehaviorRootBackgroundOnly; }
 
-#if ENABLE(SVG)
     void applyTransform(const AffineTransform& localToAncestorTransform)
     {
         if (localToAncestorTransform.isIdentity())
@@ -98,19 +94,20 @@ struct PaintInfo {
 
         context->concatCTM(localToAncestorTransform);
 
-        if (rect.isInfinite())
+        if (rect == LayoutRect::infiniteRect())
             return;
 
-        rect = localToAncestorTransform.inverse().mapRect(rect);
+        FloatRect tranformedRect(localToAncestorTransform.inverse().mapRect(rect));
+        rect.setLocation(LayoutPoint(tranformedRect.location()));
+        rect.setSize(LayoutSize(tranformedRect.size()));
     }
-#endif
 
     GraphicsContext* context;
-    IntRect rect;
+    LayoutRect rect;
     PaintPhase phase;
     PaintBehavior paintBehavior;
     RenderObject* subtreePaintRoot; // used to draw just one element and its visual children
-    RenderRegion* renderRegion;
+    RenderNamedFlowFragment* renderNamedFlowFragment;
     ListHashSet<RenderInline*>* outlineObjects; // used to list outlines that should be painted by a block with inline children
     OverlapTestRequestMap* overlapTestRequests;
     const RenderLayerModelObject* paintContainer; // the layer object that originates the current painting

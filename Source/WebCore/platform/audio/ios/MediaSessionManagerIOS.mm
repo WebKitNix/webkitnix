@@ -30,25 +30,38 @@
 
 #import "Logging.h"
 #import "MediaSession.h"
+#import "NotImplemented.h"
 #import "SoftLinking.h"
-#import "WebCoreThreadRun.h"
 #import "WebCoreSystemInterface.h"
+#import "WebCoreThreadRun.h"
 #import <AVFoundation/AVAudioSession.h>
+#import <UIKit/UIApplication.h>
 #import <objc/runtime.h>
 #import <wtf/RetainPtr.h>
 
 SOFT_LINK_FRAMEWORK(AVFoundation)
+SOFT_LINK_FRAMEWORK(UIKit)
 
 SOFT_LINK_CLASS(AVFoundation, AVAudioSession)
 
 SOFT_LINK_POINTER(AVFoundation, AVAudioSessionInterruptionNotification, NSString *)
 SOFT_LINK_POINTER(AVFoundation, AVAudioSessionInterruptionTypeKey, NSString *)
 SOFT_LINK_POINTER(AVFoundation, AVAudioSessionInterruptionOptionKey, NSString *)
+SOFT_LINK_POINTER(UIKit, UIApplicationWillResignActiveNotification, NSString *)
+SOFT_LINK_POINTER(UIKit, UIApplicationWillEnterForegroundNotification, NSString *)
+SOFT_LINK_POINTER(UIKit, UIApplicationDidBecomeActiveNotification, NSString *)
 
 #define AVAudioSession getAVAudioSessionClass()
 #define AVAudioSessionInterruptionNotification getAVAudioSessionInterruptionNotification()
 #define AVAudioSessionInterruptionTypeKey getAVAudioSessionInterruptionTypeKey()
 #define AVAudioSessionInterruptionOptionKey getAVAudioSessionInterruptionOptionKey()
+#define UIApplicationWillResignActiveNotification getUIApplicationWillResignActiveNotification()
+#define UIApplicationWillEnterForegroundNotification getUIApplicationWillEnterForegroundNotification()
+#define UIApplicationDidBecomeActiveNotification getUIApplicationDidBecomeActiveNotification()
+
+NSString* WebUIApplicationWillResignActiveNotification = @"WebUIApplicationWillResignActiveNotification";
+NSString* WebUIApplicationWillEnterForegroundNotification = @"WebUIApplicationWillEnterForegroundNotification";
+NSString* WebUIApplicationDidBecomeActiveNotification = @"WebUIApplicationDidBecomeActiveNotification";
 
 using namespace WebCore;
 
@@ -57,9 +70,11 @@ using namespace WebCore;
 }
 
 - (id)initWithCallback:(MediaSessionManageriOS*)callback;
-- (void)interruption:(NSNotification*)notification;
+- (void)clearCallback;
+- (void)interruption:(NSNotification *)notification;
+- (void)applicationWillEnterForeground:(NSNotification *)notification;
+- (void)applicationWillResignActive:(NSNotification *)notification;
 @end
-
 
 namespace WebCore {
 
@@ -73,6 +88,12 @@ MediaSessionManageriOS::MediaSessionManageriOS()
     :MediaSessionManager()
     , m_objcObserver(adoptNS([[WebMediaSessionHelper alloc] initWithCallback:this]))
 {
+    resetRestrictions();
+}
+
+MediaSessionManageriOS::~MediaSessionManageriOS()
+{
+    [m_objcObserver clearCallback];
 }
 
 void MediaSessionManageriOS::resetRestrictions()
@@ -84,11 +105,20 @@ void MediaSessionManageriOS::resetRestrictions()
         addRestriction(MediaSession::Video, InlineVideoPlaybackRestricted);
 
     addRestriction(MediaSession::Video, ConcurrentPlaybackNotPermitted);
+    addRestriction(MediaSession::Video, BackgroundPlaybackNotPermitted);
+
     removeRestriction(MediaSession::Audio, MetadataPreloadingNotPermitted);
     removeRestriction(MediaSession::Video, MetadataPreloadingNotPermitted);
     addRestriction(MediaSession::Audio, AutoPreloadingNotPermitted);
     addRestriction(MediaSession::Video, AutoPreloadingNotPermitted);
 }
+
+#if ENABLE(IOS_AIRPLAY)
+void MediaSessionManageriOS::showPlaybackTargetPicker()
+{
+    notImplemented();
+}
+#endif
 
 } // namespace WebCore
 
@@ -103,7 +133,15 @@ void MediaSessionManageriOS::resetRestrictions()
 
     NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
     [center addObserver:self selector:@selector(interruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
-    
+
+    // FIXME: These need to be piped through from the UI process in WK2 mode.
+    [center addObserver:self selector:@selector(applicationWillEnterForeground:) name:UIApplicationWillEnterForegroundNotification object:nil];
+    [center addObserver:self selector:@selector(applicationWillEnterForeground:) name:WebUIApplicationWillEnterForegroundNotification object:nil];
+    [center addObserver:self selector:@selector(applicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
+    [center addObserver:self selector:@selector(applicationDidBecomeActive:) name:WebUIApplicationDidBecomeActiveNotification object:nil];
+    [center addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
+    [center addObserver:self selector:@selector(applicationWillResignActive:) name:WebUIApplicationWillResignActiveNotification object:nil];
+
     return self;
 }
 
@@ -111,6 +149,11 @@ void MediaSessionManageriOS::resetRestrictions()
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [super dealloc];
+}
+
+- (void)clearCallback
+{
+    _callback = nil;
 }
 
 - (void)interruption:(NSNotification *)notification
@@ -133,6 +176,51 @@ void MediaSessionManageriOS::resetRestrictions()
         else
             _callback->endInterruption(flags);
 
+    });
+}
+
+- (void)applicationWillEnterForeground:(NSNotification *)notification
+{
+    UNUSED_PARAM(notification);
+
+    if (!_callback)
+        return;
+
+    WebThreadRun(^{
+        if (!_callback)
+            return;
+
+        _callback->applicationWillEnterForeground();
+    });
+}
+
+- (void)applicationDidBecomeActive:(NSNotification *)notification
+{
+    UNUSED_PARAM(notification);
+
+    if (!_callback)
+        return;
+
+    WebThreadRun(^{
+        if (!_callback)
+            return;
+
+        _callback->applicationWillEnterForeground();
+    });
+}
+
+- (void)applicationWillResignActive:(NSNotification *)notification
+{
+    UNUSED_PARAM(notification);
+
+    if (!_callback)
+        return;
+    
+    WebThreadRun(^{
+        if (!_callback)
+            return;
+        
+        _callback->applicationWillEnterBackground();
     });
 }
 

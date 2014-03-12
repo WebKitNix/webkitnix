@@ -938,7 +938,7 @@ static inline WebHistoryDateKey dateKey(NSTimeInterval date)
     item->setLastVisitWasFailure(wasFailure);
 
     if ([method length])
-        item->setLastVisitWasHTTPNonGet([method caseInsensitiveCompare:@"GET"] && (![[url scheme] caseInsensitiveCompare:@"http"] || ![[url scheme] caseInsensitiveCompare:@"https"]));
+        entry->_private->_lastVisitWasHTTPNonGet = [method caseInsensitiveCompare:@"GET"] && (![[url scheme] caseInsensitiveCompare:@"http"] || ![[url scheme] caseInsensitiveCompare:@"https"]);
 
     item->setRedirectURLs(nullptr);
 
@@ -970,6 +970,6 @@ void WebHistoryWriter::writeHistoryItems(BinaryPropertyListObjectStream& stream)
         NSArray *entries = m_entriesByDate->get(m_dateKeys[dateIndex]).get();
         NSUInteger entryCount = [entries count];
         for (NSUInteger entryIndex = 0; entryIndex < entryCount; ++entryIndex)
-            writeHistoryItem(stream, core([entries objectAtIndex:entryIndex]));
+            writeHistoryItem(stream, [entries objectAtIndex:entryIndex]);
     }
 }

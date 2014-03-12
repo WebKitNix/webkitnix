@@ -1,3 +1,103 @@
+2014-03-10  Brent Fulgham  <bfulgham@apple.com>
+
+        [Win] Pass environment to Pre-Build, Pre-Link, and Post-Build Stages.
+        https://bugs.webkit.org/show_bug.cgi?id=130023
+
+        Reviewed by Dean Jackson.
+
+        * win/tools/vsprops/common.props: Pass WEBKIT_LIBRARIES value to subprocesses.
+        * win/tools/vsprops/debugsuffix.props: Make sure OFFICIAL_BUILD is set.
+        * win/tools/vsprops/production.props: Ditto.
+
+2014-03-06  Dean Jackson  <dino@apple.com>
+
+        Update WebKitSystemInterface.
+        <rdar://problem/16256214>
+
+        * libWebKitSystemInterfaceLion.a:
+        * libWebKitSystemInterfaceMavericks.a:
+        * libWebKitSystemInterfaceMountainLion.a:
+
+2014-03-05  Dean Jackson  <dino@apple.com>
+
+        https://bugs.webkit.org/show_bug.cgi?id=129722
+        Update WKSI, again, to fix the build.
+
+        * libWebKitSystemInterfaceLion.a:
+        * libWebKitSystemInterfaceMavericks.a:
+        * libWebKitSystemInterfaceMountainLion.a:
+
+2014-03-05  Dean Jackson  <dino@apple.com>
+
+        https://bugs.webkit.org/show_bug.cgi?id=129722
+
+        And remember to copy the header file!
+
+        * WebKitSystemInterface.h:
+
+2014-03-05  Dean Jackson  <dino@apple.com>
+
+        https://bugs.webkit.org/show_bug.cgi?id=129722
+        Update WKSI.
+
+        * libWebKitSystemInterfaceLion.a:
+        * libWebKitSystemInterfaceMavericks.a:
+        * libWebKitSystemInterfaceMountainLion.a:
+
+2014-03-05  Eric Carlson  <eric.carlson@apple.com>
+
+        [iOS] Show external device name/type in placeholder
+        https://bugs.webkit.org/show_bug.cgi?id=129723
+
+        Reviewed by Jer Noble.
+
+        * WebKitSystemInterface.h:
+        * libWebKitSystemInterfaceLion.a:
+        * libWebKitSystemInterfaceMavericks.a:
+        * libWebKitSystemInterfaceMountainLion.a:
+
+2014-02-21  Jeffrey Pfau  <jpfau@apple.com>
+
+        [Mac] Cache callbacks for cache partitioning may be passed null
+        https://bugs.webkit.org/show_bug.cgi?id=129175
+
+        Reviewed by Brady Eidson.
+
+        * libWebKitSystemInterfaceLion.a:
+        * libWebKitSystemInterfaceMavericks.a:
+        * libWebKitSystemInterfaceMountainLion.a:
+
+2014-02-11  Roger Fong  <roger_fong@apple.com>
+
+        [Windows] Set ENABLE_CSS_SHAPE_INSIDE feature flag on Windows.
+
+        * win/tools/vsprops/FeatureDefines.props:
+
+2014-02-04  Andreas Kling  <akling@apple.com>
+
+        Remove <iframe seamless> support.
+        <https://webkit.org/b/128213>
+
+        Rubber-stamped by Antti Koivisto.
+
+        * win/tools/vsprops/FeatureDefines.props:
+
+2014-01-29  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Remove ENABLE(JAVASCRIPT_DEBUGGER) leftovers
+        https://bugs.webkit.org/show_bug.cgi?id=127845
+
+        Reviewed by Joseph Pecoraro.
+
+        * win/tools/vsprops/FeatureDefines.props:
+        * win/tools/vsprops/FeatureDefinesCairo.props:
+
+2014-01-23  Roger Fong  <roger_fong@apple.com>
+
+        [Windows] Unreviewed. Disable unnecessary warning C4309, "truncation of constant value".
+
+        * win/tools/vsprops/common.props:
+
 2014-01-16  Alexey Proskuryakov  <ap@apple.com>
 
         [Mac] [iOS] Add support for CFHTTPCookieStorageAcceptPolicyExclusivelyFromMainDocumentDomain

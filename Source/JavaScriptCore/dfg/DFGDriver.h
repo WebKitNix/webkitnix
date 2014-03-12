@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,7 +29,6 @@
 #include "CallFrame.h"
 #include "DFGCompilationMode.h"
 #include "DFGPlan.h"
-#include <wtf/Platform.h>
 
 namespace JSC {
 
@@ -40,16 +39,14 @@ class VM;
 
 namespace DFG {
 
-class Worklist;
-
 JS_EXPORT_PRIVATE unsigned getNumCompilations();
 
 // If the worklist is non-null, we do a concurrent compile. Otherwise we do a synchronous
 // compile. Even if we do a synchronous compile, we call the callback with the result.
 CompilationResult compile(
-    VM&, CodeBlock*, CompilationMode, unsigned osrEntryBytecodeIndex,
-    const Operands<JSValue>& mustHandleValues,
-    PassRefPtr<DeferredCompilationCallback>, Worklist*);
+    VM&, CodeBlock*, CodeBlock* profiledDFGCodeBlock, CompilationMode,
+    unsigned osrEntryBytecodeIndex, const Operands<JSValue>& mustHandleValues,
+    PassRefPtr<DeferredCompilationCallback>);
 
 } } // namespace JSC::DFG
 

@@ -82,6 +82,7 @@ private:
 
     // Called from WebInspectorClient
     WebPage* createInspectorPage();
+    WebPage* createInspectorPageForTest();
     void destroyInspectorPage();
 
     // Called from WebInspectorFrontendClient
@@ -122,7 +123,7 @@ private:
     WebPage* m_inspectorPage;
     WebInspectorFrontendClient* m_frontendClient;
     WebCore::InspectorFrontendChannel* m_frontendChannel;
-#if PLATFORM(MAC)
+#if PLATFORM(COCOA)
     mutable String m_localizedStringsURL;
     mutable bool m_hasLocalizedStringsURL;
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Apple Inc. All rights reserved.
+ * Copyright (C) 2013, 2014 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,7 +33,7 @@
 #include "DFGGraph.h"
 #include "DFGLoopPreHeaderCreationPhase.h"
 #include "DFGPhase.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 namespace JSC { namespace DFG {
 
@@ -63,9 +63,12 @@ public:
             BasicBlock* block = m_graph.block(blockIndex);
             if (!block)
                 continue;
+            unsigned nodeIndex = 0;
             Node* firstNode = block->at(0);
+            while (firstNode->isSemanticallySkippable())
+                firstNode = block->at(++nodeIndex);
             if (firstNode->op() == LoopHint
-                && firstNode->codeOrigin == CodeOrigin(bytecodeIndex)) {
+                && firstNode->origin.semantic == CodeOrigin(bytecodeIndex)) {
                 target = block;
                 break;
             }
@@ -80,20 +83,9 @@ public:
         
         BlockInsertionSet insertionSet(m_graph);
         
-        BasicBlock* newRoot = insertionSet.insert(0);
-        CodeOrigin codeOrigin = target->at(0)->codeOrigin;
+        BasicBlock* newRoot = insertionSet.insert(0, QNaN);
+        NodeOrigin origin = target->at(0)->origin;
         
-        for (int argument = 0; argument < baseline->numParameters(); ++argument) {
-            Node* oldNode = target->variablesAtHead.argument(argument);
-            if (!oldNode) {
-                // Just for sanity, always have a SetArgument even if it's not needed.
-                oldNode = m_graph.m_arguments[argument];
-            }
-            Node* node = newRoot->appendNode(
-                m_graph, SpecNone, SetArgument, codeOrigin,
-                OpInfo(oldNode->variableAccessData()));
-            m_graph.m_arguments[argument] = node;
-        }
         Vector<Node*> locals(baseline->m_numCalleeRegisters);
         for (int local = 0; local < baseline->m_numCalleeRegisters; ++local) {
             Node* previousHead = target->variablesAtHead.local(local);
@@ -101,13 +93,26 @@ public:
                 continue;
             VariableAccessData* variable = previousHead->variableAccessData();
             locals[local] = newRoot->appendNode(
-                m_graph, variable->prediction(), ExtractOSREntryLocal, codeOrigin,
+                m_graph, variable->prediction(), ExtractOSREntryLocal, origin,
                 OpInfo(variable->local().offset()));
             
             newRoot->appendNode(
-                m_graph, SpecNone, MovHint, codeOrigin, OpInfo(variable->local().offset()),
+                m_graph, SpecNone, MovHint, origin, OpInfo(variable->local().offset()),
                 Edge(locals[local]));
         }
+
+        for (int argument = 0; argument < baseline->numParameters(); ++argument) {
+            Node* oldNode = target->variablesAtHead.argument(argument);
+            if (!oldNode) {
+                // Just for sanity, always have a SetArgument even if it's not needed.
+                oldNode = m_graph.m_arguments[argument];
+            }
+            Node* node = newRoot->appendNode(
+                m_graph, SpecNone, SetArgument, origin,
+                OpInfo(oldNode->variableAccessData()));
+            m_graph.m_arguments[argument] = node;
+        }
+        
         for (int local = 0; local < baseline->m_numCalleeRegisters; ++local) {
             Node* previousHead = target->variablesAtHead.local(local);
             if (!previousHead)
@@ -115,11 +120,11 @@ public:
             VariableAccessData* variable = previousHead->variableAccessData();
             Node* node = locals[local];
             newRoot->appendNode(
-                m_graph, SpecNone, SetLocal, codeOrigin, OpInfo(variable), Edge(node));
+                m_graph, SpecNone, SetLocal, origin, OpInfo(variable), Edge(node));
         }
         
         newRoot->appendNode(
-            m_graph, SpecNone, Jump, codeOrigin,
+            m_graph, SpecNone, Jump, origin,
             OpInfo(createPreHeader(m_graph, insertionSet, target)));
         
         insertionSet.execute();

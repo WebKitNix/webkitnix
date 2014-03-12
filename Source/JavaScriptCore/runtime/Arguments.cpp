@@ -25,12 +25,11 @@
 #include "config.h"
 #include "Arguments.h"
 
-#include "CallFrameInlines.h"
 #include "JSActivation.h"
 #include "JSArgumentsIterator.h"
 #include "JSFunction.h"
 #include "JSGlobalObject.h"
-#include "Operations.h"
+#include "JSCInlines.h"
 
 using namespace std;
 
@@ -59,20 +58,22 @@ void Arguments::destroy(JSCell* cell)
     static_cast<Arguments*>(cell)->Arguments::~Arguments();
 }
 
-void Arguments::copyToArguments(ExecState* exec, CallFrame* callFrame, uint32_t length)
+void Arguments::copyToArguments(ExecState* exec, CallFrame* callFrame, uint32_t copyLength, int32_t firstVarArgOffset)
 {
+    uint32_t length = copyLength + firstVarArgOffset;
+
     if (UNLIKELY(m_overrodeLength)) {
         length = min(get(exec, exec->propertyNames().length).toUInt32(exec), length);
-        for (unsigned i = 0; i < length; i++)
+        for (unsigned i = firstVarArgOffset; i < length; i++)
             callFrame->setArgument(i, get(exec, i));
         return;
     }
     ASSERT(length == this->length(exec));
-    for (size_t i = 0; i < length; ++i) {
+    for (size_t i = firstVarArgOffset; i < length; ++i) {
         if (JSValue value = tryGetArgument(i))
-            callFrame->setArgument(i, value);
+            callFrame->setArgument(i - firstVarArgOffset, value);
         else
-            callFrame->setArgument(i, get(exec, i));
+            callFrame->setArgument(i - firstVarArgOffset, get(exec, i));
     }
 }
 
@@ -113,7 +114,7 @@ void Arguments::createStrictModeCallerIfNecessary(ExecState* exec)
     m_overrodeCaller = true;
     PropertyDescriptor descriptor;
     descriptor.setAccessorDescriptor(globalObject()->throwTypeErrorGetterSetter(vm), DontEnum | DontDelete | Accessor);
-    methodTable()->defineOwnProperty(this, exec, vm.propertyNames->caller, descriptor, false);
+    methodTable(exec->vm())->defineOwnProperty(this, exec, vm.propertyNames->caller, descriptor, false);
 }
 
 void Arguments::createStrictModeCalleeIfNecessary(ExecState* exec)
@@ -125,7 +126,7 @@ void Arguments::createStrictModeCalleeIfNecessary(ExecState* exec)
     m_overrodeCallee = true;
     PropertyDescriptor descriptor;
     descriptor.setAccessorDescriptor(globalObject()->throwTypeErrorGetterSetter(vm), DontEnum | DontDelete | Accessor);
-    methodTable()->defineOwnProperty(this, exec, vm.propertyNames->callee, descriptor, false);
+    methodTable(exec->vm())->defineOwnProperty(this, exec, vm.propertyNames->callee, descriptor, false);
 }
 
 bool Arguments::getOwnPropertySlot(JSObject* object, ExecState* exec, PropertyName propertyName, PropertySlot& slot)

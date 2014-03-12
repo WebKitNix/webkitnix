@@ -26,8 +26,6 @@
 #ifndef RemoteLayerBackingStore_h
 #define RemoteLayerBackingStore_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
 #include "ShareableBitmap.h"
 #include <WebCore/FloatRect.h>
 #include <WebCore/Region.h>
@@ -71,8 +69,7 @@ public:
 
     void enumerateRectsBeingDrawn(CGContextRef, void (^)(CGRect));
 
-private:
-    bool hasFrontBuffer()
+    bool hasFrontBuffer() const
     {
 #if USE(IOSURFACE)
         if (m_acceleratesDrawing)
@@ -80,6 +77,7 @@ private:
 #endif
         return !!m_frontBuffer;
     }
+private:
 
     void drawInContext(WebCore::GraphicsContext&, CGImageRef frontImage);
 
@@ -101,7 +99,5 @@ private:
 };
 
 } // namespace WebKit
-
-#endif // USE(ACCELERATED_COMPOSITING)
 
 #endif // RemoteLayerBackingStore_h

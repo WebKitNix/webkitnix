@@ -13,8 +13,6 @@ webkitgtk_gdom_built_sources += \
 	DerivedSources/webkitdom/WebKitDOMCharacterDataPrivate.h \
 	DerivedSources/webkitdom/WebKitDOMComment.cpp \
 	DerivedSources/webkitdom/WebKitDOMCommentPrivate.h \
-	DerivedSources/webkitdom/WebKitDOMConsole.cpp \
-	DerivedSources/webkitdom/WebKitDOMConsolePrivate.h \
 	DerivedSources/webkitdom/WebKitDOMCSSRule.cpp \
 	DerivedSources/webkitdom/WebKitDOMCSSRuleList.cpp \
 	DerivedSources/webkitdom/WebKitDOMCSSRuleListPrivate.h \
@@ -246,8 +244,6 @@ webkitgtk_gdom_built_sources += \
 	DerivedSources/webkitdom/WebKitDOMRangePrivate.h \
 	DerivedSources/webkitdom/WebKitDOMScreen.cpp \
 	DerivedSources/webkitdom/WebKitDOMScreenPrivate.h \
-	DerivedSources/webkitdom/WebKitDOMShadowRoot.cpp \
-	DerivedSources/webkitdom/WebKitDOMShadowRootPrivate.h \
 	DerivedSources/webkitdom/WebKitDOMStorage.cpp \
 	DerivedSources/webkitdom/WebKitDOMStorageInfo.cpp \
 	DerivedSources/webkitdom/WebKitDOMStorageInfoPrivate.h \
@@ -262,6 +258,8 @@ webkitgtk_gdom_built_sources += \
 	DerivedSources/webkitdom/WebKitDOMStyleSheetPrivate.h \
 	DerivedSources/webkitdom/WebKitDOMText.cpp \
 	DerivedSources/webkitdom/WebKitDOMTextPrivate.h \
+	DerivedSources/webkitdom/WebKitDOMTouch.cpp \
+	DerivedSources/webkitdom/WebKitDOMTouchPrivate.h \
 	DerivedSources/webkitdom/WebKitDOMTimeRanges.cpp \
 	DerivedSources/webkitdom/WebKitDOMTimeRangesPrivate.h \
 	DerivedSources/webkitdom/WebKitDOMTreeWalker.cpp \
@@ -323,6 +321,7 @@ webkitgtk_gdom_built_h_api += \
 	DerivedSources/webkitdom/WebKitDOMProcessingInstruction.h \
 	DerivedSources/webkitdom/WebKitDOMRange.h \
 	DerivedSources/webkitdom/WebKitDOMText.h \
+	DerivedSources/webkitdom/WebKitDOMTouch.h \
 	DerivedSources/webkitdom/WebKitDOMTreeWalker.h \
 	DerivedSources/webkitdom/WebKitDOMUIEvent.h \
 	DerivedSources/webkitdom/WebKitDOMBlob.h \
@@ -397,7 +396,6 @@ webkitgtk_gdom_built_h_api += \
 	DerivedSources/webkitdom/WebKitDOMValidityState.h \
 	DerivedSources/webkitdom/WebKitDOMDOMApplicationCache.h \
 	DerivedSources/webkitdom/WebKitDOMBarProp.h \
-	DerivedSources/webkitdom/WebKitDOMConsole.h \
 	DerivedSources/webkitdom/WebKitDOMCustom.h \
 	DerivedSources/webkitdom/WebKitDOMDeprecated.h \
 	DerivedSources/webkitdom/WebKitDOMDOMWindowCSS.h \
@@ -409,7 +407,6 @@ webkitgtk_gdom_built_h_api += \
 	DerivedSources/webkitdom/WebKitDOMObject.h \
 	DerivedSources/webkitdom/WebKitDOMNavigator.h \
 	DerivedSources/webkitdom/WebKitDOMScreen.h \
-	DerivedSources/webkitdom/WebKitDOMShadowRoot.h \
 	DerivedSources/webkitdom/WebKitDOMWebKitPoint.h \
 	DerivedSources/webkitdom/WebKitDOMWebKitNamedFlow.h \
 	DerivedSources/webkitdom/WebKitDOMDOMMimeType.h \
@@ -480,7 +477,6 @@ DerivedSources/webkitdom/webkitdom.h: $(WebCore)/bindings/scripts/gobject-genera
 DerivedSources/webkitdom/webkitdomdefines.h: $(WebCore)/bindings/scripts/gobject-generate-headers.pl $(WebCore)/bindings/gobject/GNUmakefile.am
 	$(AM_V_GEN)echo $(gdom_class_list) | $(PERL) $< defines > $@
 
-noinst_DATA += DerivedSources/webkitdom/webkitdom.symbols
 gdom_symbol_files += $(patsubst %.h,%.symbols, $(filter DerivedSources/webkitdom/WebKitDOM%.h, $(webkitgtk_gdom_built_h_api)))
 
 $(top_builddir)/DerivedSources/webkitdom/WebKitDOMObject.symbols: $(WebCore)/bindings/gobject/WebKitDOMObject.symbols
@@ -497,11 +493,6 @@ $(top_builddir)/DerivedSources/webkitdom/WebKitDOMDeprecated.symbols: $(WebCore)
 
 DerivedSources/webkitdom/WebKitDOM%.symbols: DerivedSources/webkitdom/WebKitDOM%.h
 	@true
-
-DerivedSources/webkitdom/webkitdom.symbols: $(gdom_symbol_files) $(WebCore)/bindings/gobject/webkitdom.symbols $(WebCore)/bindings/scripts/gobject-run-api-break-test
-	$(AM_V_GEN)cat $(gdom_symbol_files) > gdom-gen-symbols \
-	&& $(PYTHON) $(WebCore)/bindings/scripts/gobject-run-api-break-test $(WebCore)/bindings/gobject/webkitdom.symbols gdom-gen-symbols \
-	&& mv gdom-gen-symbols $@
 
 EXTRA_DIST += \
 	$(WebCore)/bindings/gobject/WebKitDOMCustom.symbols \
@@ -534,7 +525,7 @@ $(top_builddir)/DerivedSources/webkitdom/WebKitDOMDeprecated.h: $(WebCore)/bindi
 	$(AM_V_GEN)cp -f $< $@
 
 # Filter out SVG and IndexedDB for now
-gdom_feature_defines := $(filter-out ENABLE_INDEXED_DATABASE=1, $(filter-out ENABLE_SVG%, $(feature_defines))) ENABLE_INDEXED_DATABASE=0
+gdom_feature_defines := $(filter-out ENABLE_INDEXED_DATABASE=1, $(feature_defines)) ENABLE_INDEXED_DATABASE=0
 DerivedSources/webkitdom/WebKitDOM%.cpp DerivedSources/webkitdom/WebKitDOM%.h DerivedSources/webkitdom/WebKitDOM%Private.h: %.idl $(SCRIPTS_FOR_GENERATE_BINDINGS) $(WebCore)/bindings/scripts/CodeGeneratorGObject.pm $(WebCore)/bindings/gobject/GNUmakefile.am $(supplemental_dependency_file)
 	$(AM_V_GEN)$(PERL) -I$(WebCore)/bindings/scripts $(WebCore)/bindings/scripts/generate-bindings.pl --include $(WebCore)/Modules --include $(WebCore)/dom --include $(WebCore)/html --include $(WebCore)/css --include $(WebCore)/page --include $(WebCore)/fileapi --include $(WebCore)/xml --include $(WebCore)/svg --outputDir "$(GENSOURCES_WEBKITDOM)" --defines "LANGUAGE_GOBJECT=1 $(gdom_feature_defines)" --generator GObject --supplementalDependencyFile $(supplemental_dependency_file) $<
 
@@ -577,12 +568,15 @@ libGObjectDOMBindings_la_CFLAGS = \
 	-fvisibility=hidden \
 	$(global_cflags)
 
+webkitgtk_gdom_include_dirs = \
+	-I$(WebCore)/bindings \
+	-I$(WebCore)/bindings/gobject \
+	-I$(GENSOURCES_WEBKITDOM)
+
 libGObjectDOMBindings_la_CPPFLAGS = \
 	-DBUILDING_WebCore \
 	-DBUILDING_WEBKIT \
-	-I$(WebCore)/bindings \
-	-I$(WebCore)/bindings/gobject \
-	-I$(GENSOURCES_WEBKITDOM) \
+	$(webkitgtk_gdom_include_dirs) \
 	$(global_cppflags) \
 	$(platform_cppflags) \
 	$(platformgtk_cppflags) \
@@ -593,3 +587,13 @@ libGObjectDOMBindings_la_CPPFLAGS = \
 	$(FREETYPE_CFLAGS) \
 	$(GLIB_CFLAGS) \
 	$(LIBSOUP_CFLAGS)
+
+gtkdoc-webkitdom.cfg: $(WebCore)/bindings/gobject/GNUmakefile.am $(srcdir)/Tools/gtk/GNUmakefile.am
+	$(AM_V_GEN)echo "[webkitdomgtk]" > $@ && \
+	echo "pkgconfig_file=$(webkitdom_pkgconfig_file)" >> $@ && \
+	echo "namespace=webkit_dom" >> $@ && \
+	echo "doc_dir=DerivedSources/webkitdom/docs" >> $@ && \
+	echo -e "cflags=-I$(srcdir)/Source $(webkitgtk_gdom_include_dirs)" >> $@ && \
+	echo "source_dirs=$(top_builddir)/DerivedSources/webkitdom $(srcdir)/Source/WebCore/bindings/gobject" >> $@ && \
+	echo "headers=$(webkitgtk_gdom_built_h_api) DerivedSources/webkitdom/WebKitDOMDeprecated.h" >> $@
+BUILT_SOURCES += gtkdoc-webkitdom.cfg

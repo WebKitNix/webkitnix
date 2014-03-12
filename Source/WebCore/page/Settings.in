@@ -95,7 +95,7 @@ downloadableBinaryFontsEnabled initial=true
 
 xssAuditorEnabled initial=false
 unsafePluginPastingEnabled initial=true
-acceleratedCompositingForFixedPositionEnabled initial=false
+acceleratedCompositingForFixedPositionEnabled initial=defaultAcceleratedCompositingForFixedPositionEnabled
 acceleratedCompositingForOverflowScrollEnabled initial=false
 
 # Works only in conjunction with forceCompositingMode.
@@ -204,3 +204,17 @@ mediaSourceEnabled initial=false
 allowMultiElementImplicitSubmission initial=false
 
 mediaPlaybackAllowsAirPlay initial=true, conditional=IOS_AIRPLAY
+
+shouldConvertPositionStyleOnCopy initial=false
+
+maxParseDuration type=double, initial=-1
+standalone initial=false
+telephoneNumberParsingEnabled initial=false
+mediaDataLoadsAutomatically initial=false
+shouldTransformsAffectOverflow initial=true
+shouldDispatchJavaScriptWindowOnErrorEvents initial=false
+alwaysUseAcceleratedOverflowScroll initial=false
+imageControlsEnabled initial=false, conditional=IMAGE_CONTROLS
+
+# FIXME: This is unneeded and should be removed.
+alwaysUseBaselineOfPrimaryFont initial=false

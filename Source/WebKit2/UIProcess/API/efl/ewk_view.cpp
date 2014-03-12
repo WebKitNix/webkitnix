@@ -92,7 +92,6 @@ Eina_Bool ewk_view_smart_class_set(Ewk_View_Smart_Class* api)
 Evas_Object* EWKViewCreate(WKContextRef context, WKPageGroupRef pageGroup, Evas* canvas, Evas_Smart* smart)
 {
     WKRetainPtr<WKViewRef> wkView = adoptWK(WKViewCreate(context, pageGroup));
-    WKPageSetUseFixedLayout(WKViewGetPage(wkView.get()), true);
     if (EwkView* ewkView = EwkView::create(wkView.get(), canvas, smart))
         return ewkView->evasObject();
 
@@ -374,15 +373,29 @@ Eina_Bool ewk_view_user_agent_set(Evas_Object* ewkView, const char* userAgent)
     return true;
 }
 
-// EwkFindOptions should be matched up orders with WkFindOptions.
-COMPILE_ASSERT_MATCHING_ENUM(EWK_FIND_OPTIONS_CASE_INSENSITIVE, kWKFindOptionsCaseInsensitive);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_FIND_OPTIONS_AT_WORD_STARTS, kWKFindOptionsAtWordStarts);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_FIND_OPTIONS_TREAT_MEDIAL_CAPITAL_AS_WORD_START, kWKFindOptionsTreatMedialCapitalAsWordStart);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_FIND_OPTIONS_BACKWARDS, kWKFindOptionsBackwards);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_FIND_OPTIONS_WRAP_AROUND, kWKFindOptionsWrapAround);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_FIND_OPTIONS_SHOW_OVERLAY, kWKFindOptionsShowOverlay);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_FIND_OPTIONS_SHOW_FIND_INDICATOR, kWKFindOptionsShowFindIndicator);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_FIND_OPTIONS_SHOW_HIGHLIGHT, kWKFindOptionsShowHighlight);
+inline WKFindOptions toWKFindOptions(Ewk_Find_Options options)
+{
+    unsigned wkFindOptions = 0;
+
+    if (options & EWK_FIND_OPTIONS_CASE_INSENSITIVE)
+        wkFindOptions |= kWKFindOptionsCaseInsensitive;
+    if (options & EWK_FIND_OPTIONS_AT_WORD_STARTS)
+        wkFindOptions |= kWKFindOptionsAtWordStarts;
+    if (options & EWK_FIND_OPTIONS_TREAT_MEDIAL_CAPITAL_AS_WORD_START)
+        wkFindOptions |= kWKFindOptionsTreatMedialCapitalAsWordStart;
+    if (options & EWK_FIND_OPTIONS_BACKWARDS)
+        wkFindOptions |= kWKFindOptionsBackwards;
+    if (options & EWK_FIND_OPTIONS_WRAP_AROUND)
+        wkFindOptions |= kWKFindOptionsWrapAround;
+    if (options & EWK_FIND_OPTIONS_SHOW_OVERLAY)
+        wkFindOptions |= kWKFindOptionsShowOverlay;
+    if (options & EWK_FIND_OPTIONS_SHOW_FIND_INDICATOR)
+        wkFindOptions |= kWKFindOptionsShowFindIndicator;
+    if (options & EWK_FIND_OPTIONS_SHOW_HIGHLIGHT)
+        wkFindOptions |= kWKFindOptionsShowHighlight;
+
+    return static_cast<WKFindOptions>(wkFindOptions);
+}
 
 Eina_Bool ewk_view_text_find(Evas_Object* ewkView, const char* text, Ewk_Find_Options options, unsigned maxMatchCount)
 {
@@ -390,7 +403,7 @@ Eina_Bool ewk_view_text_find(Evas_Object* ewkView, const char* text, Ewk_Find_Op
     EINA_SAFETY_ON_NULL_RETURN_VAL(text, false);
 
     WKRetainPtr<WKStringRef> wkText = adoptWK(WKStringCreateWithUTF8CString(text));
-    WKPageFindString(impl->wkPage(), wkText.get(), static_cast<WebKit::FindOptions>(options), maxMatchCount);
+    WKPageFindString(impl->wkPage(), wkText.get(), toWKFindOptions(options), maxMatchCount);
 
     return true;
 }
@@ -508,18 +521,51 @@ Eina_Bool ewk_view_inspector_close(Evas_Object* ewkView)
 #endif
 }
 
-// Ewk_Pagination_Mode should be matched up orders with WKPaginationMode.
-COMPILE_ASSERT_MATCHING_ENUM(EWK_PAGINATION_MODE_UNPAGINATED, kWKPaginationModeUnpaginated);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_PAGINATION_MODE_LEFT_TO_RIGHT, kWKPaginationModeLeftToRight);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_PAGINATION_MODE_RIGHT_TO_LEFT, kWKPaginationModeRightToLeft);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_PAGINATION_MODE_TOP_TO_BOTTOM, kWKPaginationModeTopToBottom);
-COMPILE_ASSERT_MATCHING_ENUM(EWK_PAGINATION_MODE_BOTTOM_TO_TOP, kWKPaginationModeBottomToTop);
+inline WKPaginationMode toWKPaginationMode(Ewk_Pagination_Mode mode)
+{
+    switch (mode) {
+    case EWK_PAGINATION_MODE_INVALID:
+        break;
+    case EWK_PAGINATION_MODE_UNPAGINATED:
+        return kWKPaginationModeUnpaginated;
+    case EWK_PAGINATION_MODE_LEFT_TO_RIGHT:
+        return kWKPaginationModeLeftToRight;
+    case EWK_PAGINATION_MODE_RIGHT_TO_LEFT:
+        return kWKPaginationModeRightToLeft;
+    case EWK_PAGINATION_MODE_TOP_TO_BOTTOM:
+        return kWKPaginationModeTopToBottom;
+    case EWK_PAGINATION_MODE_BOTTOM_TO_TOP:
+        return kWKPaginationModeBottomToTop;
+    }
+    ASSERT_NOT_REACHED();
+
+    return kWKPaginationModeUnpaginated;
+}
+
+inline Ewk_Pagination_Mode toEwkPaginationMode(WKPaginationMode mode)
+{
+    switch (mode) {
+    case kWKPaginationModeUnpaginated:
+        return EWK_PAGINATION_MODE_UNPAGINATED;
+    case kWKPaginationModeLeftToRight:
+        return EWK_PAGINATION_MODE_LEFT_TO_RIGHT;
+    case kWKPaginationModeRightToLeft:
+        return EWK_PAGINATION_MODE_RIGHT_TO_LEFT;
+    case kWKPaginationModeTopToBottom:
+        return EWK_PAGINATION_MODE_TOP_TO_BOTTOM;
+    case kWKPaginationModeBottomToTop:
+        return EWK_PAGINATION_MODE_BOTTOM_TO_TOP;
+    }
+    ASSERT_NOT_REACHED();
+
+    return EWK_PAGINATION_MODE_UNPAGINATED;
+}
 
 Eina_Bool ewk_view_pagination_mode_set(Evas_Object* ewkView, Ewk_Pagination_Mode mode)
 {
     EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl, false);
 
-    WKPageSetPaginationMode(impl->wkPage(), static_cast<WKPaginationMode>(mode));
+    WKPageSetPaginationMode(impl->wkPage(), toWKPaginationMode(mode));
 
     return true;
 }
@@ -528,7 +574,7 @@ Ewk_Pagination_Mode ewk_view_pagination_mode_get(const Evas_Object* ewkView)
 {
     EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl, EWK_PAGINATION_MODE_INVALID);
     
-    return static_cast<Ewk_Pagination_Mode>(WKPageGetPaginationMode(impl->wkPage()));
+    return toEwkPaginationMode(WKPageGetPaginationMode(impl->wkPage()));
 }
 
 Eina_Bool ewk_view_fullscreen_exit(Evas_Object* ewkView)
@@ -612,22 +658,6 @@ Eina_Bool ewk_view_page_contents_get(const Evas_Object* ewkView, Ewk_Page_Conten
     return true;
 }
 
-Eina_Bool ewk_view_source_mode_set(Evas_Object* ewkView, Eina_Bool enabled)
-{
-    EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl, false);
-
-    WKViewSetShowsAsSource(impl->wkView(), enabled);
-
-    return true;
-}
-
-Eina_Bool ewk_view_source_mode_get(const Evas_Object* ewkView)
-{
-    EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl, false);
-
-    return WKViewGetShowsAsSource(impl->wkView());
-}
-
 struct Ewk_View_Script_Execute_Callback_Context {
     Ewk_View_Script_Execute_Callback_Context(Ewk_View_Script_Execute_Cb callback, Evas_Object* ewkView, void* userData)
         : m_callback(callback)
@@ -674,4 +704,20 @@ Eina_Bool ewk_view_script_execute(Evas_Object* ewkView, const char* script, Ewk_
     WKRetainPtr<WKStringRef> scriptString(AdoptWK, WKStringCreateWithUTF8CString(script));
     WKPageRunJavaScriptInMainFrame(impl->wkPage(), scriptString.get(), context, runJavaScriptCallback);
     return true;
+}
+
+Eina_Bool ewk_view_layout_fixed_set(Evas_Object* ewkView, Eina_Bool enabled)
+{
+    EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl, false);
+
+    WKPageSetUseFixedLayout(WKViewGetPage(impl->wkView()), enabled);
+
+    return true;
+}
+
+Eina_Bool ewk_view_layout_fixed_get(const Evas_Object* ewkView)
+{
+    EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl, false);
+
+    return WKPageUseFixedLayout(WKViewGetPage(impl->wkView()));
 }

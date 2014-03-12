@@ -30,17 +30,15 @@
 #include "DecodeEscapeSequences.h"
 #include "MIMETypeRegistry.h"
 #include "TextEncoding.h"
+#include "UUID.h"
 #include <stdio.h>
+#include <unicode/uidna.h>
 #include <wtf/HashMap.h>
 #include <wtf/HexNumber.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/StringBuilder.h>
 #include <wtf/text/StringHash.h>
-
-#if USE(ICU_UNICODE)
-#include <unicode/uidna.h>
-#endif
 
 // FIXME: This file makes too much use of the + operator on String.
 // We either have to optimize that operator so it doesn't involve
@@ -1504,14 +1502,12 @@ static void appendEncodedHostname(UCharBuffer& buffer, const UChar* str, unsigne
         return;
     }
 
-#if USE(ICU_UNICODE)
     UChar hostnameBuffer[hostnameBufferLength];
     UErrorCode error = U_ZERO_ERROR;
     int32_t numCharactersConverted = uidna_IDNToASCII(str, strLen, hostnameBuffer,
         hostnameBufferLength, UIDNA_ALLOW_UNASSIGNED, 0, &error);
     if (error == U_ZERO_ERROR)
         buffer.append(hostnameBuffer, numCharactersConverted);
-#endif
 }
 
 static void findHostnamesInMailToURL(const UChar* str, int strLen, Vector<std::pair<int, int>>& nameRanges)
@@ -1775,6 +1771,16 @@ bool protocolIsJavaScript(const String& url)
     return protocolIs(url, "javascript");
 }
 
+bool protocolIsInHTTPFamily(const String& url)
+{
+    // Do the comparison without making a new string object.
+    return isLetterMatchIgnoringCase(url[0], 'h')
+        && isLetterMatchIgnoringCase(url[1], 't')
+        && isLetterMatchIgnoringCase(url[2], 't')
+        && isLetterMatchIgnoringCase(url[3], 'p')
+        && (url[4] == ':' || (isLetterMatchIgnoringCase(url[4], 's') && url[5] == ':'));
+}
+
 const URL& blankURL()
 {
     DEFINE_STATIC_LOCAL(URL, staticBlankURL, (ParsedURLString, "about:blank"));
@@ -1940,6 +1946,11 @@ String URL::stringCenterEllipsizedToLength(unsigned length) const
         return string();
 
     return string().left(length / 2 - 1) + "..." + string().right(length / 2 - 2);
+}
+
+URL URL::fakeURLWithRelativePart(const String& relativePart)
+{
+    return URL(URL(), "webkit-fake-url://" + createCanonicalUUIDString() + '/' + relativePart);
 }
 
 }
