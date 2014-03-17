@@ -128,6 +128,7 @@ void WebViewNix::setContentScaleFactor(float scaleFactor)
         return;
 
     WebView::setContentScaleFactor(scaleFactor);
+    m_scaleFactorToSync = 0;
 }
 
 float WebViewNix::contentScaleFactor() const
