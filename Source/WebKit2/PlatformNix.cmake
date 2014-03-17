@@ -381,6 +381,7 @@ set(WebKitNix_WebKit2_HEADERS
     UIProcess/API/C/WKProtectionSpace.h
     UIProcess/API/C/WKProtectionSpaceTypes.h
     UIProcess/API/C/WKResourceCacheManager.h
+    UIProcess/API/C/WKSessionRef.h
     UIProcess/API/C/WKTextChecker.h
     UIProcess/API/C/WKVibration.h
     UIProcess/API/C/WebKit2_C.h
