@@ -20,7 +20,6 @@
 
 editing/selection/empty-cell-right-click.html [ Skip ]
 fast/css/css-keyframe-style-mutate-crash.html [ Skip ]
-fast/frames/seamless/seamless-window-location-href.html [ Skip ]
 fast/hidpi/image-set-without-specified-width.html [ Skip ]
 fast/hidpi/resize-corner-hidpi.html [ Skip ]
 fast/xmlhttprequest/xmlhttprequest-recursive-sync-event.html [ Skip ]
@@ -28,7 +27,6 @@ storage/indexeddb/keypath-fetch-key.html [ Skip ]
 
 # sometimes crash
 fast/dom/Window/redirect-with-timer.html [ Pass Crash ]
-fast/frames/seamless/seamless-window-location-sandbox.html [ Pass Crash ]
 fast/replaced/object-with-embed-url-param.html [ Pass Crash ]
 fast/spatial-navigation/snav-1st-stop.html [ Pass Crash ]
 fast/spatial-navigation/snav-clipped-overflowed-content.html [ Pass Crash ]
@@ -122,9 +120,12 @@ css2.1/t1602-c43-center-00-d-ag.html
 css2.1/t1604-c542-letter-sp-00-b-a.html
 
 # failing css3 tests that need further investigation
+css3/compositing/blend-mode-blended-element-overlapping-composited-sibling-should-have-compositing-layer.html
+css3/compositing/blend-mode-parent-of-composited-blended-has-layer.html
 css3/compositing/blend-mode-property-parsing.html
 css3/compositing/blend-mode-property.html
-css3/compositing/should-have-compositing-layer.html
+css3/compositing/blend-mode-simple-composited.html
+css3/compositing/blend-mode-with-composited-descendant-should-have-layer.html
 css3/device-adapt/opera/constrain-021.xhtml [ Failure ]
 css3/device-adapt/opera/constrain-022.xhtml [ Failure ]
 css3/device-adapt/opera/orientation-001.xhtml [ Skip ]
@@ -152,8 +153,6 @@ css3/zoom-coords.xhtml
 
 # failing css3 tests
 css3/filters/composited-during-animation-layertree.html [ Failure ]
-css3/filters/custom/custom-filter-composite-fractional-source-alpha.html [ ImageOnlyFailure ]
-css3/filters/custom/filter-fallback-to-software.html [ ImageOnlyFailure ]
 css3/filters/effect-blur-hw.html [ Failure ]
 css3/filters/effect-blur.html [ Failure ]
 css3/filters/effect-brightness-hw.html [ Failure ]
@@ -842,13 +841,6 @@ fast/frames/onlyCommentInIFrame.html [ Skip ]
 fast/frames/sandboxed-iframe-about-blank.html [ Skip ]
 fast/frames/sandboxed-iframe-navigation-allowed.html [ Skip ]
 fast/frames/sandboxed-iframe-plugins.html [ Skip ]
-fast/frames/seamless/seamless-nested.html [ Skip ]
-fast/frames/seamless/seamless-percent-height.html [ Skip ]
-fast/frames/seamless/seamless-quirks.html [ Skip ]
-fast/frames/seamless/seamless-sandbox-flag.html [ Skip ]
-fast/frames/seamless/seamless-sandbox-srcdoc.html [ Skip ]
-fast/frames/seamless/seamless-srcdoc.html [ Skip ]
-fast/frames/seamless/seamless-window-location-replace.html [ Skip ]
 fast/frames/transparent-scrollbar.html [ Skip ]
 fast/frames/take-focus-from-iframe.html [ Skip ]
 fast/frames/unload-reparent-sibling-frame.html [ Skip ]
@@ -999,7 +991,6 @@ fast/regions/percentage-margins-rtl-variable-width-regions.html [ Skip ]
 fast/regions/percentage-margins-variable-width-regions.html [ Skip ]
 fast/regions/selection/selecting-text-through-different-region-flows.html [ Skip ]
 fast/regions/full-screen-video-from-region.html [ Skip ]
-fast/regions/style-scoped [ Skip ]
 # flakey tests
 fast/regions/auto-size/autoheight-singleregion-breakbeforealways-minheight.html [ Skip ]
 fast/regions/auto-size/autosize-region-window-resize.html [ Skip ]
@@ -1008,6 +999,8 @@ fast/regions/region-styling/region-style-image-background-color.html [ Skip ]
 fast/regions/region-styling/region-style-inline-background-color.html [ Skip ]
 
 # flakey tests
+fast/regions/repaint/overflow-flipped-writing-mode-block-in-regions.html [ Skip ]
+fast/regions/repaint/region-painting-invalidation.html [ Skip ]
 fast/repaint/absolute-position-moved.html [ Skip ]
 fast/repaint/background-generated.html [ Skip ]
 fast/repaint/block-layout-inline-children-float-positioned.html [ Skip ]
@@ -1052,11 +1045,9 @@ fast/repaint/opacity-change-on-overflow-float.html [ Skip ]
 fast/repaint/outline-inset.html [ Skip ]
 fast/repaint/outline-shrinking.html [ Skip ]
 fast/repaint/overflow-flipped-writing-mode-block.html [ Skip ]
-fast/repaint/overflow-flipped-writing-mode-block-in-regions.html [ Skip ]
 fast/repaint/overflow-hide.html	 [ Skip ]
 fast/repaint/percent-minheight-resize.html [ Skip ]
 fast/repaint/positioned-document-element.html [ Skip ]
-fast/repaint/region-painting-invalidation.html [ Skip ]
 fast/repaint/repaint-resized-overflow.html [ Skip ]
 fast/repaint/scroll-absolute-layer-with-reflection.html [ Skip ]
 fast/repaint/scroll-fixed-layer-with-no-visible-content.html [ Skip ]
@@ -1084,6 +1075,9 @@ fast/repaint/transform-translate.html [ Skip ]
 fast/repaint/view-background-from-body-1.html [ Skip ]
 fast/repaint/view-background-from-body-2.html [ Skip ]
 # failures/flakeys
+fast/regions/repaint/japanese-rl-selection-repaint-in-regions.html [ Skip ]
+fast/regions/repaint/region-painting-in-composited-view.html [ Skip ]
+fast/regions/repaint/region-painting-via-layout.html [ Skip ]
 fast/repaint/4774354.html [ Skip ]
 fast/repaint/4776765.html [ Skip ]
 fast/repaint/absolute-position-change-containing-block.html [ Skip ]
@@ -1113,7 +1107,6 @@ fast/repaint/inline-color-change.html [ Skip ]
 fast/repaint/invisible-objects.html [ Skip ]
 fast/repaint/japanese-rl-selection-clear.html [ Skip ]
 fast/repaint/japanese-rl-selection-repaint.html [ Skip ]
-fast/repaint/japanese-rl-selection-repaint-in-regions.html [ Skip ]
 fast/repaint/layer-hide-when-needs-layout.html [ Skip ]
 fast/repaint/line-overflow.html [ Skip ]
 fast/repaint/lines-with-layout-delta.html [ Skip ]
@@ -1129,8 +1122,6 @@ fast/repaint/overflow-scroll-in-overflow-scroll-scrolled.html [ Skip ]
 fast/repaint/overflow-show.html [ Skip ]
 fast/repaint/overhanging-float-detach-repaint.html [ Skip ]
 fast/repaint/reflection-repaint-test.html [ Skip ]
-fast/repaint/region-painting-in-composited-view.html [ Skip ]
-fast/repaint/region-painting-via-layout.html [ Skip ]
 fast/repaint/renderer-destruction-by-invalidateSelection-crash.html [ Skip ]
 fast/repaint/repaint-across-writing-mode-boundary.html [ Skip ]
 fast/repaint/repaint-svg-after-style-change.html [ Skip ]
@@ -1335,13 +1326,10 @@ http/tests/cookies/third-party-cookie-relaxing.html [ Skip ]
 http/tests/fullscreen/fullscreenelement-different-origin.html [ Skip ]
 http/tests/fullscreen/fullscreenelement-same-origin.html [ Skip ]
 http/tests/history/back-with-fragment-change.php [ Skip ]
-http/tests/inspector [ Skip ]
-http/tests/inspector-enabled/console-log-before-frame-navigation.html [ Skip ]
-http/tests/inspector-enabled/database-open.html [ Skip ]
-http/tests/inspector-enabled/dedicated-workers-list.html [ Skip ]
-http/tests/inspector-enabled/dom-storage-open.html [ Skip ]
-http/tests/inspector-enabled/dynamic-scripts.html [ Skip ]
-http/tests/inspector-enabled/injected-script-discard.html [ Skip ]
+
+# Skip tests of old inspector
+inspector-obsolete [ Skip ]
+
 http/tests/loading/post-in-iframe-with-back-navigation.html [ Skip ]
 http/tests/local/blob/send-hybrid-blob.html [ Skip ]
 http/tests/local/drag-over-remote-content.html [ Skip ]
@@ -1574,6 +1562,23 @@ svg/carto.net/tabgroup.svg [ Skip ]
 svg/carto.net/window.svg [ Skip ]
 
 svg/clip-path/clip-path-shape-polygon-relative.svg [ Skip ]
+svg/clip-path/clip-path-content-use-007.svg [ Skip ]
+svg/clip-path/clip-path-css-transform-003.svg [ Skip ]
+svg/clip-path/clip-path-css-transform-004.svg [ Skip ]
+svg/clip-path/clip-path-dom-child-changes.svg [ Skip ]
+svg/clip-path/clip-path-dom-clippathunits.svg [ Skip ]
+svg/clip-path/clip-path-dom-href.svg [ Skip ]
+svg/clip-path/clip-path-dom-id.svg [ Skip ]
+svg/clip-path/clip-path-negative-scale.svg [ Skip ]
+svg/clip-path/clip-path-no-content-004.svg [ Skip ]
+svg/clip-path/clip-path-on-marker-001.svg [ Skip ]
+svg/clip-path/clip-path-on-marker-002.svg [ Skip ]
+svg/clip-path/clip-path-on-marker-003.svg [ Skip ]
+svg/clip-path/clip-path-recursion-001.svg [ Skip ]
+svg/clip-path/clip-path-recursion-002.svg [ Skip ]
+svg/clip-path/clip-path-with-transform.svg [ Skip ]
+svg/clip-path/mask-nested-clip-path-010.svg [ Skip ]
+svg/masking/mask-negative-scale.svg [ Skip ]
 
 svg/custom/SVGException.html [ Skip ]
 svg/custom/absolute-sized-content-with-resources.xhtml [ Skip ]
@@ -1582,12 +1587,6 @@ svg/custom/animate-path-morphing.svg [ Skip ]
 svg/custom/bug45331.svg [ Skip ]
 svg/custom/circle-move-invalidation.svg [ Skip ]
 svg/custom/circular-marker-reference-2.svg [ Skip ]
-svg/custom/clamped-masking-clipping.svg [ Skip ]
-svg/custom/clip-mask-negative-scale.svg [ Skip ]
-svg/custom/clip-path-child-changes.svg [ Skip ]
-svg/custom/clip-path-href-changes.svg [ Skip ]
-svg/custom/clip-path-id-changes.svg [ Skip ]
-svg/custom/clip-path-units-changes.svg [ Skip ]
 svg/custom/convolution-crash.svg [ Skip ]
 svg/custom/createImageElement.svg [ Skip ]
 svg/custom/createImageElement2.xhtml [ Skip ]
@@ -2683,8 +2682,6 @@ fast/events/touch/gesture/touch-gesture-scroll-div-twice-propagated.html [ Failu
 fast/events/touch/gesture/touch-gesture-scroll-iframe-editable.html [ Failure ]
 fast/events/touch/gesture/touch-gesture-scroll-page-propagated.html [ Failure ]
 fast/css/table-rules-attribute.html [ ImageOnlyFailure Pass ]
-fast/css/variables/var-inside-pair.html [ ImageOnlyFailure Pass ]
-fast/css/variables/var-inside-shape.html [ ImageOnlyFailure Pass ]
 fast/css/vertical-align-baseline-rowspan-009.htm [ ImageOnlyFailure Pass ]
 fast/layers/no-clipping-overflow-hidden-added-after-transform.html [ ImageOnlyFailure Pass ]
 fast/layers/no-clipping-overflow-hidden-added-after-transition.html [ ImageOnlyFailure Pass ]
@@ -2709,8 +2706,6 @@ compositing/overlap-blending/children-opacity-huge.html [ ImageOnlyFailure ]
 compositing/overlap-blending/children-opacity-no-overlap.html [ ImageOnlyFailure ]
 compositing/overlap-blending/reflection-opacity-huge.html [ ImageOnlyFailure ]
 compositing/transitions/transform-on-large-layer.html [ ImageOnlyFailure ]
-css3/filters/custom/custom-filter-nonseparable-blend-mode-color.html [ ImageOnlyFailure ]
-css3/filters/custom/custom-filter-nonseparable-blend-mode-luminosity.html [ ImageOnlyFailure ]
 css3/line-break/line-break-auto-hyphens.html [ ImageOnlyFailure ]
 css3/line-break/line-break-auto-sound-marks.html [ ImageOnlyFailure ]
 css3/line-break/line-break-loose-half-kana.html [ ImageOnlyFailure ]
@@ -2739,7 +2734,6 @@ compositing/animation/animation-compositing.html [ Timeout Pass ]
 compositing/color-matching/pdf-image-match.html [ Missing ]
 
 # Failures before merge that removes Chromium
-css3/filters/custom/custom-filter-animation.html [ Failure Pass ]
 fast/hidpi/video-controls-in-hidpi.html [ Failure Pass Crash ]
 compositing/repaint/clipped-layer-size-change.html [ ImageOnlyFailure Pass ]
 fast/backgrounds/obscured-background-child-style-change.html [ ImageOnlyFailure Pass ]
@@ -2860,8 +2854,6 @@ http/tests/xmlhttprequest/origin-whitelisting-https.html [ Failure Pass ]
 # These tests fail with timeout
 fast/events/wheelevent-in-text-node.html
 html5lib/generated/run-template-data.html
-inspector-protocol/heap-profiler/heap-snapshot-with-detached-dom-tree.html
-inspector-protocol/heap-profiler/heap-snapshot-with-event-listener.html
 
 #############################################################
 # After pixel tests support.
@@ -3147,7 +3139,6 @@ compositing/geometry/fixed-position-iframe-composited-page-scale-down.html [ Mis
 
 accessibility [ Skip ]
 batterystatus [ Skip ]
-fast/mediastream [ Skip ]
 fast/notifications [ Skip ]
 fullscreen [ Skip ]
 java [ Skip ]
@@ -3175,8 +3166,6 @@ editing/selection/user-select-all-with-single-click.html [ Skip ]
 editing/shadow
 editing/text-iterator/basic-iteration-shadowdom.html
 fast/dom/shadow
-fast/frames/detached-shadow-frame.html
-inspector/elements/update-shadowdom.html
 
 # ENABLE(CSS3_TEXT_DECORATION) is disabled
 fast/css3-text/css3-text-decoration/getComputedStyle/getComputedStyle-text-decoration-color.html
@@ -3387,8 +3376,6 @@ fast/dom/HTMLMeterElement/meter-styles.html [ Missing ]
 fast/forms/007.html [ Missing ]
 fast/forms/label/labelable-elements.html [ Missing ]
 fast/forms/range/range-thumb-height-percentage.html [ Missing ]
-fast/frames/viewsource-attribute.html [ Missing ]
-fast/frames/viewsource-on-image-file.html [ Missing ]
 fast/html/details-add-child-1.html [ Missing ]
 fast/html/details-add-child-2.html [ Missing ]
 fast/html/details-add-details-child-1.html [ Missing ]
@@ -3641,8 +3628,6 @@ printing/standards-percentage-heights.html
 # Flakey and failing tests after merge 40a701d 8335e4a
 animations/animation-delay-changed.html
 compositing/overflow/composited-scrolling-paint-phases.html
-css3/filters/custom/custom-filter-nonseparable-blend-mode-hue.html [ ImageOnlyFailure ]
-css3/filters/custom/custom-filter-nonseparable-blend-mode-saturation.html [ ImageOnlyFailure ]
 editing/pasteboard/line-feed-between-br-and-b-should-not-reorder-pasted-content.html
 editing/pasteboard/paste-table-003.html
 editing/pasteboard/paste-table-cells.html
@@ -3655,7 +3640,6 @@ fast/css/first-letter-removed-added.html
 fast/css/getComputedStyle/computed-style-without-renderer.html
 fast/css/getComputedStyle/computed-style.html
 fast/css/tab-size.html
-fast/regions/seamless-iframe-flowed-into-regions.html
 http/tests/misc/delete-frame-during-readystatechange-with-gc-after-video-removal.html
 
 # Flakey and failing tests after merge dff29f8 8abe6e2
@@ -3686,7 +3670,6 @@ fast/workers/worker-storagequota-query-usage.html [ Failure ]
 # Failing or flakey tests after merge f6080a8 eddb086
 perf/show-hide-table-rows.html [ Failure Pass ]
 compositing/patterns/direct-pattern-compositing-change.html [ ImageOnlyFailure Pass ]
-css3/filters/custom-with-at-rule-syntax/parsing-custom-function-invalid.html [ Failure ]
 fast/events/touch/frame-hover-update.html [ Failure ]
 svg/animations/animate-text-nested-transforms.html [ Failure ]
 compositing/patterns/direct-pattern-compositing-contain.html [ Crash Failure ]
@@ -3729,11 +3712,9 @@ editing/spelling/spelling-attribute-at-child.html
 editing/spelling/spelling-attribute-change.html
 editing/spelling/spelling-backspace-between-lines.html
 editing/spelling/spelling-double-clicked-word.html
-editing/spelling/spelling-exactly-selected-multiple-words.html
 editing/spelling/spelling-exactly-selected-word.html
 editing/spelling/spelling-hasspellingmarker.html
 editing/spelling/spelling-linebreak.html
-editing/spelling/spelling-should-select-multiple-words.html
 editing/spelling/spelling-with-punctuation-selection.html
 editing/spelling/spelling-with-whitespace-selection.html
 editing/spelling/context-menu-suggestions-multiword-selection.html
@@ -3839,6 +3820,4 @@ http/tests/security/cross-origin-worker-indexeddb.html [ Skip ]
 http/tests/security/no-indexeddb-from-sandbox.html [ Skip ]
 
 # Uncomment when Enabling media stream
-# fast/mediastream [ Skip ]
-# fast/mediastream/enabled.html [ Pass ]
-# fast/mediastream/no-interface-object.html [ Pass ]
+fast/mediastream/ [ Pass ]
