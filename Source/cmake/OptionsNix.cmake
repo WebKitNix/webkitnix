@@ -118,6 +118,12 @@ WEBKIT_OPTION_DEFAULTS("NIX")
 WEBKIT_OPTION_DEFINE(WTF_USE_OPENGL_ES_2 "Use EGL + OpenGLES2" OFF)
 WEBKIT_OPTION_DEFINE(WTF_USE_CURL "Use libCurl as network backend" OFF)
 
+# push of rbp is needed after JSC JIT uses CStack
+if (CMAKE_COMPILER_IS_GNUCC)
+    set(CMAKE_C_FLAGS_RELEASE "-fno-omit-frame-pointer ${CMAKE_C_FLAGS_RELEASE}")
+    set(CMAKE_CXX_FLAGS_RELEASE "-fno-omit-frame-pointer ${CMAKE_CXX_FLAGS_RELEASE}")
+endif ()
+
 if (WTF_USE_CURL)
     find_package(CURL REQUIRED)
     find_package(OpenSSL REQUIRED)
