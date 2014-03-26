@@ -41,33 +41,7 @@ using namespace WebCore;
 
 namespace Nix {
 
-#if ENABLE(MEDIA_STREAM)
-MediaStream::MediaStream(const PassRefPtr<WebCore::MediaStreamPrivate>& mediaStreamDescriptor)
-    : m_private(mediaStreamDescriptor)
-{
-}
-
-MediaStream::MediaStream(WebCore::MediaStreamPrivate* mediaStreamDescriptor)
-    : m_private(mediaStreamDescriptor)
-{
-}
-
-MediaStream& MediaStream::operator=(const PassRefPtr<WebCore::MediaStreamPrivate>& mediaStreamDescriptor)
-{
-    m_private = mediaStreamDescriptor;
-    return *this;
-}
-
-MediaStream::operator PassRefPtr<WebCore::MediaStreamPrivate>() const
-{
-    return m_private.get();
-}
-
-MediaStream::operator WebCore::MediaStreamPrivate*() const
-{
-    return m_private.get();
-}
-#endif // ENABLE(MEDIA_STREAM)
+DEFINE_NIX_API_ASSIGNMENT_IMPL(MediaStream);
 
 MediaStream::MediaStream()
 {

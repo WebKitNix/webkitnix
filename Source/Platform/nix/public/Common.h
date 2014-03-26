@@ -31,9 +31,60 @@
 
 #include <stddef.h> // For size_t
 
+#define DEFINE_NIX_API_ASSIGNMENT(type) \
+        type operator=(const type&); \
+        type operator=(type&); \
+
+#define DEFINE_NIX_API_ASSIGNMENT_IMPL(type) \
+    type type::operator=(const type& other) \
+    { \
+        m_private = other.m_private; \
+        return *this; \
+    } \
+    type type::operator=(type& other) \
+    { \
+        m_private = other.m_private; \
+        return *this; \
+    } \
+
 #if BUILDING_NIX__
 #include <wtf/PassRefPtr.h>
 #include <wtf/RefPtr.h>
+
+#define DEFINE_BASE_NIX_API_INTERNAL(type, webcoreType) \
+        type(const WTF::PassRefPtr<WebCore::webcoreType>& value) \
+            : m_private(value) \
+        { \
+        } \
+        type(WebCore::webcoreType* value) \
+            : m_private(value) \
+        { \
+        } \
+        type& operator=(WebCore::webcoreType* value) \
+        { \
+            m_private = value; \
+            return *this; \
+        } \
+        type& operator=(const WTF::PassRefPtr<WebCore::webcoreType>& value) \
+        { \
+            m_private = value; \
+            return *this; \
+        } \
+        operator WTF::PassRefPtr<WebCore::webcoreType>() const \
+        { \
+            return toWebCoreType(); \
+        } \
+        operator WebCore::webcoreType*() const \
+        { \
+            return toWebCoreType(); \
+        } \
+    protected: \
+        WebCore::webcoreType* toWebCoreType() const \
+        { \
+            return m_private.get(); \
+        } \
+        WTF::RefPtr<WebCore::webcoreType> m_private; \
+
 #endif
 
 #endif // Nix_Common_h

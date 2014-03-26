@@ -36,17 +36,17 @@ class MediaStreamAudioSource;
 namespace Nix {
 class AudioDestinationConsumer;
 
-class MediaStreamAudioSource : public MediaStreamSource {
+class NIX_EXPORT MediaStreamAudioSource : public MediaStreamSource {
 public:
-    NIX_EXPORT MediaStreamAudioSource();
+    MediaStreamAudioSource();
 
-    NIX_EXPORT const char* deviceId() const;
-    NIX_EXPORT void setDeviceId(const char*);
+    const char* deviceId() const;
+    void setDeviceId(const char*);
 
     // The Nix::AudioDestinationConsumer is not owned, and has to be disposed of separately
     // after calling removeAudioConsumer.
-    NIX_EXPORT void addAudioConsumer(AudioDestinationConsumer*);
-    NIX_EXPORT bool removeAudioConsumer(AudioDestinationConsumer*);
+    void addAudioConsumer(AudioDestinationConsumer*);
+    bool removeAudioConsumer(AudioDestinationConsumer*);
 
 #if BUILDING_NIX__
     MediaStreamAudioSource(const WTF::PassRefPtr<WebCore::MediaStreamAudioSource>&);

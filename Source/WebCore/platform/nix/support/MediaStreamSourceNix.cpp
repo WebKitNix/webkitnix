@@ -39,28 +39,7 @@
 
 namespace Nix {
 
-#if ENABLE(MEDIA_STREAM)
-MediaStreamSource::MediaStreamSource(const PassRefPtr<WebCore::MediaStreamSource>& mediaStreamSource)
-    : m_private(mediaStreamSource)
-{
-}
-
-MediaStreamSource& MediaStreamSource::operator=(WebCore::MediaStreamSource* mediaStreamSource)
-{
-    m_private = mediaStreamSource;
-    return *this;
-}
-
-MediaStreamSource::operator PassRefPtr<WebCore::MediaStreamSource>() const
-{
-    return m_private.get();
-}
-
-MediaStreamSource::operator WebCore::MediaStreamSource*() const
-{
-    return m_private.get();
-}
-#endif // ENABLE(MEDIA_STREAM)
+DEFINE_NIX_API_ASSIGNMENT_IMPL(MediaStreamSource);
 
 MediaStreamSource::~MediaStreamSource()
 {

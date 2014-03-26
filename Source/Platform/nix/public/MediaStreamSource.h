@@ -72,14 +72,9 @@ public:
 
     // FIXME Add support for capabilites.
 
+    DEFINE_NIX_API_ASSIGNMENT(MediaStreamSource);
 #if BUILDING_NIX__
-    MediaStreamSource(const WTF::PassRefPtr<WebCore::MediaStreamSource>&);
-    MediaStreamSource& operator=(WebCore::MediaStreamSource*);
-    operator WTF::PassRefPtr<WebCore::MediaStreamSource>() const;
-    operator WebCore::MediaStreamSource*() const;
-
-protected:
-    WTF::RefPtr<WebCore::MediaStreamSource> m_private;
+    DEFINE_BASE_NIX_API_INTERNAL(MediaStreamSource, MediaStreamSource);
 #endif
 };
 

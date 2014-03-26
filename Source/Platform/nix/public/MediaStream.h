@@ -60,16 +60,9 @@ public:
     void addSource(const MediaStreamSource&);
     void removeSource(const MediaStreamSource&);
 
+    DEFINE_NIX_API_ASSIGNMENT(MediaStream);
 #if BUILDING_NIX__
-    MediaStream(WebCore::MediaStreamPrivate*);
-    MediaStream(const WTF::PassRefPtr<WebCore::MediaStreamPrivate>&);
-    operator WTF::PassRefPtr<WebCore::MediaStreamPrivate>() const;
-    operator WebCore::MediaStreamPrivate*() const;
-    MediaStream& operator=(const WTF::PassRefPtr<WebCore::MediaStreamPrivate>&);
-    WebCore::MediaStreamPrivate* toWebCoreMediaStreamPrivate() const;
-
-private:
-    WTF::RefPtr<WebCore::MediaStreamPrivate> m_private;
+    DEFINE_BASE_NIX_API_INTERNAL(MediaStream, MediaStreamPrivate);
 #endif
 };
 
