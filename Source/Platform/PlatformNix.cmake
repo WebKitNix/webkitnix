@@ -22,7 +22,6 @@ set(Platform_HEADERS
     nix/public/MediaStreamSource.h
     nix/public/MultiChannelPCMData.h
     nix/public/Platform.h
-    nix/public/PrivatePtr.h
     nix/public/Rect.h
     nix/public/Size.h
     nix/public/ThemeEngine.h

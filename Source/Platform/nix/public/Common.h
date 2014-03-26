@@ -31,4 +31,9 @@
 
 #include <stddef.h> // For size_t
 
+#if BUILDING_NIX__
+#include <wtf/PassRefPtr.h>
+#include <wtf/RefPtr.h>
+#endif
+
 #endif // Nix_Common_h

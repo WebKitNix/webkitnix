@@ -28,7 +28,6 @@
 #define Nix_MediaStreamSource_h
 
 #include "Common.h"
-#include "PrivatePtr.h"
 
 namespace WebCore {
 class MediaStreamSource;
@@ -78,10 +77,10 @@ public:
     MediaStreamSource& operator=(WebCore::MediaStreamSource*);
     operator WTF::PassRefPtr<WebCore::MediaStreamSource>() const;
     operator WebCore::MediaStreamSource*() const;
-#endif
 
 protected:
-    PrivatePtr<WebCore::MediaStreamSource> m_private;
+    WTF::RefPtr<WebCore::MediaStreamSource> m_private;
+#endif
 };
 
 } // namespace Nix

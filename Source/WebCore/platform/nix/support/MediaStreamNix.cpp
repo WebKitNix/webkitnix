@@ -76,7 +76,7 @@ MediaStream::MediaStream()
 MediaStream::~MediaStream()
 {
 #if ENABLE(MEDIA_STREAM)
-    m_private.reset();
+    m_private.clear();
 #endif
 }
 
@@ -145,7 +145,7 @@ void MediaStream::initialize(std::vector<MediaStreamSource*>& audioSources, std:
 bool MediaStream::isNull() const
 {
 #if ENABLE(MEDIA_STREAM)
-    return m_private.isNull();
+    return !m_private;
 #else
     return true;
 #endif

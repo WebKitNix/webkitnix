@@ -68,7 +68,12 @@ void MediaConstraints::assign(const MediaConstraints& other)
 
 void MediaConstraints::reset()
 {
-    m_private.reset();
+    m_private.clear();
+}
+
+bool MediaConstraints::isNull() const
+{
+    return !m_private;
 }
 
 void MediaConstraints::getMandatoryConstraints(std::vector<MediaConstraint>& constraints) const

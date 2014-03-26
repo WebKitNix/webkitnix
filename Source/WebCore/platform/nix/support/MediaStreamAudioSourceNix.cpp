@@ -121,7 +121,7 @@ MediaStreamAudioSource::MediaStreamAudioSource()
 const char* MediaStreamAudioSource::deviceId() const
 {
 #if ENABLE(MEDIA_STREAM)
-    ASSERT(!m_private.isNull());
+    ASSERT(!isNull());
     return toWebCoreAudioSource()->deviceId().utf8().data();
 #else
     return nullptr;
@@ -131,7 +131,7 @@ const char* MediaStreamAudioSource::deviceId() const
 void MediaStreamAudioSource::setDeviceId(const char* deviceId)
 {
 #if ENABLE(MEDIA_STREAM)
-    ASSERT(!m_private.isNull());
+    ASSERT(!isNull());
     toWebCoreAudioSource()->setDeviceId(deviceId);
 #else
     UNUSED_PARAM(deviceId);
@@ -142,7 +142,7 @@ void MediaStreamAudioSource::addAudioConsumer(AudioDestinationConsumer* consumer
 {
 #if ENABLE(MEDIA_STREAM)
     ASSERT(isMainThread());
-    ASSERT(!m_private.isNull() && consumer);
+    ASSERT(!isNull() && consumer);
 
     toWebCoreAudioSource()->addAudioConsumer(ConsumerWrapper::create(consumer));
 #else
@@ -154,7 +154,7 @@ bool MediaStreamAudioSource::removeAudioConsumer(AudioDestinationConsumer* consu
 {
 #if ENABLE(MEDIA_STREAM)
     ASSERT(isMainThread());
-    ASSERT(!m_private.isNull() && consumer);
+    ASSERT(!isNull() && consumer);
 
     const WTF::Vector<RefPtr<WebCore::AudioDestinationConsumer> >& consumers = toWebCoreAudioSource()->audioConsumers();
     for (WTF::Vector<RefPtr<WebCore::AudioDestinationConsumer> >::const_iterator it = consumers.begin(); it != consumers.end(); ++it) {

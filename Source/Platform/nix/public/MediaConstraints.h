@@ -28,7 +28,6 @@
 #define Nix_MediaConstraints_h
 
 #include "Common.h"
-#include "PrivatePtr.h"
 
 #include <cstddef>
 #include <string>
@@ -64,7 +63,7 @@ public:
     void assign(const MediaConstraints&);
 
     void reset();
-    NIX_EXPORT bool isNull() const { return m_private.isNull(); }
+    NIX_EXPORT bool isNull() const;
 
     NIX_EXPORT void getMandatoryConstraints(std::vector<MediaConstraint>&) const;
     NIX_EXPORT void getOptionalConstraints(std::vector<MediaConstraint>&) const;
@@ -75,10 +74,10 @@ public:
 #ifdef BUILDING_NIX__
     MediaConstraints(const WTF::PassRefPtr<WebCore::MediaConstraints>&);
     MediaConstraints(WebCore::MediaConstraints*);
-#endif
 
 private:
-    PrivatePtr<WebCore::MediaConstraints> m_private;
+    WTF::RefPtr<WebCore::MediaConstraints> m_private;
+#endif
 };
 
 } // namespace Nix
