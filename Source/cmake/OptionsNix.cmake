@@ -88,8 +88,6 @@ set(WebKit2_OUTPUT_NAME WebKitNix)
 set(DATA_INSTALL_DIR "share/${WebKit2_OUTPUT_NAME}-${PROJECT_VERSION_MAJOR}" CACHE PATH "Installation path for WebKitNix data")
 add_definitions(-DDATA_DIR="${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}")
 
-add_definitions(-DBUILDING_NIX__=1)
-
 find_package(Cairo 1.12.8 REQUIRED)
 find_package(Fontconfig 2.8.0 REQUIRED)
 find_package(Freetype2 REQUIRED)

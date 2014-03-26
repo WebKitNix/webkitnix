@@ -1,3 +1,5 @@
+add_definitions(-DBUILDING_NIX__=1)
+
 list(APPEND WebKitTestRunner_LINK_FLAGS
 )
 

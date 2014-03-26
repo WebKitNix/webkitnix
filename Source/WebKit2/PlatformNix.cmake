@@ -273,10 +273,10 @@ set(WebKitNix_HEADERS
     UIProcess/API/nix/NIXView.h
 )
 
-macro(PROCESS_HEADER_IFDEFS _file _enable _output)
+macro(PROCESS_HEADER_IFDEFS _file _enable _prefix _output)
     get_filename_component(_absolute "${_file}" ABSOLUTE)
     get_filename_component(_filename "${_file}" NAME)
-    set(${_output} "${CMAKE_BINARY_DIR}/${_filename}")
+    set(${_output} "${CMAKE_BINARY_DIR}/${_prefix}/${_filename}")
     file(READ "${_absolute}" _contents)
     foreach (_define ${_enable})
         string(REGEX REPLACE "#if defined\\(${_define}\\)\n*([^\n]*)\n#endif" "\\1" _contents "${_contents}")
@@ -284,7 +284,7 @@ macro(PROCESS_HEADER_IFDEFS _file _enable _output)
     file(WRITE "${${_output}}" "${_contents}")
 endmacro()
 
-PROCESS_HEADER_IFDEFS(Shared/API/c/WKBase.h "BUILDING_NIX__" _Shared_API_c_WKBase_h)
+PROCESS_HEADER_IFDEFS(Shared/API/c/WKBase.h "BUILDING_NIX__" "WebKit2" _Shared_API_c_WKBase_h)
 
 set(WebKitNix_WebKit2_HEADERS
     "${_Shared_API_c_WKBase_h}"

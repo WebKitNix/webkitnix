@@ -1,3 +1,5 @@
+add_definitions(-DWTF_PLATFORM_NIX)
+
 set(TestWebKitAPI_INCLUDE_DIRS
     ${DERIVED_SOURCES_WEBKIT2_DIR}/include
     ${WEBKIT2_DIR}/UIProcess/API/nix

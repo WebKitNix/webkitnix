@@ -1,13 +1,14 @@
 # -----------------------------------------------------------------------------
 # Add module directories
 # -----------------------------------------------------------------------------
+if ("${PORT}" STREQUAL "Nix")
+    add_definitions(-DBUILDING_NIX__=1)
+    add_subdirectory(Platform)
+endif ()
+
 add_subdirectory(WTF)
 
 add_subdirectory(JavaScriptCore)
-
-if ("${PORT}" STREQUAL "Nix")
-    add_subdirectory(Platform)
-endif ()
 
 if (ENABLE_API_TESTS)
     add_subdirectory(cmake/gtest)
