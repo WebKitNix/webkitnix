@@ -90,18 +90,6 @@ list(APPEND WebCore_SOURCES
     platform/mediastream/nix/MediaStreamCenterNix.cpp
     platform/mediastream/nix/UserMediaClientNix.cpp
 
-    platform/mediastream/webrtc/MediaConstraintsWebRTC.cpp
-    platform/mediastream/webrtc/RTCDataChannelHandlerWebRTC.cpp
-    platform/mediastream/webrtc/RTCPeerConnectionHandlerWebRTC.cpp
-    platform/mediastream/webrtc/WebRTCUtils.cpp
-
-    platform/mediastream/webrtc/observers/CreateSessionDescriptionObserver.cpp
-    platform/mediastream/webrtc/observers/GetStatsObserver.cpp
-    platform/mediastream/webrtc/observers/MediaStreamWebRTCObserver.cpp
-    platform/mediastream/webrtc/observers/RTCDataChannelObserver.cpp
-    platform/mediastream/webrtc/observers/RTCPeerConnectionObserver.cpp
-    platform/mediastream/webrtc/observers/SetSessionDescriptionObserver.cpp
-
     platform/nix/CursorNix.cpp
     platform/nix/DragDataNix.cpp
     platform/nix/DragImageNix.cpp
@@ -135,14 +123,6 @@ list(APPEND WebCore_SOURCES
     plugins/PluginPackageNone.cpp
     plugins/PluginViewNone.cpp
 )
-
-if (ENABLE_MEDIA_STREAM)
-    list(APPEND WebCore_LIBRARIES ${WEBRTCLIB_LIBRARIES})
-    list(APPEND WebCore_INCLUDE_DIRECTORIES
-        platform/mediastream/webrtc
-        ${WEBRTCLIB_INCLUDE_DIRS}
-    )
-endif ()
 
 if (WTF_USE_OPENGL_ES_2)
     list(APPEND WebCore_SOURCES

@@ -13,7 +13,6 @@
       <dep package="glib"/>
       <dep package="glib-networking"/>
       <dep package="libsoup"/>
-      <dep package="libwebrtc"/>
     </dependencies>
   </metamodule>
 
@@ -115,9 +114,5 @@
            repo="freedesktop.org"
            hash="sha256:d07c0ffdbbbfdfbb6c65e73fe9c76466e87dbf04b094cbd0abf5fd7d571a4004"/>
    </autotools>
-
- <autotools id="libwebrtc">
-   <branch repo="git.github.com" module="WebKitNix/libwebrtc-meta.git" checkoutdir="libwebrtc"/>
- </autotools>
 
 </moduleset>

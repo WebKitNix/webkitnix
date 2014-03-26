@@ -35,24 +35,15 @@
 
 #include "RTCPeerConnectionHandler.h"
 
-#if USE(WEBRTCLIB)
-#include "RTCPeerConnectionHandlerWebRTC.h"
-#endif
-
 #include <wtf/PassOwnPtr.h>
 #include <wtf/NeverDestroyed.h>
 
 namespace WebCore {
 class RTCPeerConnectionHandlerClient;
 
-static std::unique_ptr<RTCPeerConnectionHandler> createHandler(RTCPeerConnectionHandlerClient* client)
+static std::unique_ptr<RTCPeerConnectionHandler> createHandler(RTCPeerConnectionHandlerClient*)
 {
-#if USE(WEBRTCLIB)
-    return std::make_unique<RTCPeerConnectionHandlerWebRTC>(client);
-#else
-    UNUSED_PARAM(client);
     return nullptr;
-#endif
 }
 
 CreatePeerConnectionHandler RTCPeerConnectionHandler::create = createHandler;

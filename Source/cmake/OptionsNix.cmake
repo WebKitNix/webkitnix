@@ -103,10 +103,6 @@ find_package(PNG REQUIRED)
 find_package(Sqlite REQUIRED)
 find_package(Threads REQUIRED)
 find_package(ZLIB REQUIRED)
-if (ENABLE_MEDIA_STREAM)
-    find_package(WebRTC REQUIRED)
-    add_definitions(-DWTF_USE_WEBRTCLIB=1)
-endif ()
 
 # Variable that must exists on CMake space
 # to keep common CMake files working as desired for us
